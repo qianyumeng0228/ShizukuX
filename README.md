@@ -2,7 +2,7 @@
 
 # ShizukuX
 
-An enhanced version of [Shizuku](https://github.com/RikkaApps/Shizuku) with quality-of-life improvements, backported optimizations, and a strategic 2026-era API.
+An enhanced version of [Shizuku](https://github.com/RikkaApps/Shizuku) with quality-of-life improvements, backported optimizations, and advanced system APIs.
 
 Shizuku lets normal apps use system-level APIs directly via a privileged process started with adb or root. ShizukuX keeps full compatibility while adding features for power users and developers.
 
@@ -26,7 +26,7 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 *   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues.
 *   **Quick Settings Tile**: Conveniently view and toggle the service status from your notification panel.
 
-## 🚀 2026 Strategic API Extensions
+## 🚀 Advanced System APIs (2026)
 
 ShizukuX provides a foundational bridge for the next generation of Android (Android 16/17+):
 
@@ -48,7 +48,7 @@ ShizukuX makes regular Shizuku apps faster and more compatible without any code 
 
 Everything in ShizukuX is optional. Use the **Plus Features** category in Settings to toggle:
 *   Transparent Shell Interception
-*   Specific API Bridges (AVF, Storage, Intelligence, etc.)
+*   Advanced System APIs (AVF, Storage, Intelligence, etc.)
 *   Home screen card visibility
 *   Activity Logging
 
