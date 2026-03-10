@@ -134,6 +134,15 @@ abstract class HomeActivity : AppBarActivity() {
         val itemTouchHelper = ItemTouchHelper(dragCallback)
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
+        HomeEditMode.onChanged = { 
+            adapter.updateData() 
+            invalidateOptionsMenu()
+            if (HomeEditMode.isActive) {
+                supportActionBar?.setTitle(R.string.home_edit_mode_hint)
+            } else {
+                supportActionBar?.setTitle(R.string.app_name)
+            }
+        }
         HomeEditMode.startDragCallback = { vh -> itemTouchHelper.startDrag(vh) }
         HomeEditMode.exit()
 
@@ -190,6 +199,15 @@ abstract class HomeActivity : AppBarActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
         return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        if (HomeEditMode.isActive) {
+            menu.findItem(R.id.action_stop)?.isVisible = false
+            menu.findItem(R.id.action_settings)?.isVisible = false
+            menu.findItem(R.id.action_about)?.isVisible = false
+        }
+        return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

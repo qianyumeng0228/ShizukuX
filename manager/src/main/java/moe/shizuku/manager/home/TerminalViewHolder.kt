@@ -48,6 +48,7 @@ class TerminalViewHolder(private val binding: HomeTerminalBinding, private val r
     override fun onBind() {
         val context = itemView.context
         itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
+        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
         if (!data.isRunning) {
             root.isEnabled = false
             summary.text =

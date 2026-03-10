@@ -31,6 +31,10 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.utils.AppContextManager
 
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import moe.shizuku.manager.utils.RootCompatHelper
+
 class RootCompatibilityActivity : AppBarActivity() {
 
     override fun getLayoutId() = R.layout.activity_root_compatibility
@@ -55,11 +59,32 @@ class RootCompatibilityActivity : AppBarActivity() {
         val suPathCard = findViewById<MaterialCardView>(R.id.su_path_card)
         val suPathText = findViewById<TextView>(R.id.su_path_text)
         val copyPathButton = findViewById<MaterialButton>(R.id.copy_path_button)
+        val magicSetupAllButton = findViewById<MaterialButton>(R.id.magic_setup_all_button)
 
         if (resolvedSuPath != null) {
             suPathCard.isVisible = true
             suPathText.text = resolvedSuPath
             copyPathButton.setOnClickListener { copyToClipboard(resolvedSuPath!!) }
+            
+            magicSetupAllButton.setOnClickListener {
+                lifecycleScope.launch {
+                    val supported = listOf("org.adaway", "dev.ukanth.ufirewall")
+                    var count = 0
+                    supported.forEach { pkg ->
+                        try {
+                            packageManager.getPackageInfo(pkg, 0)
+                            if (RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, resolvedSuPath!!)) {
+                                count++
+                            }
+                        } catch (ignored: Exception) {}
+                    }
+                    if (count > 0) {
+                        Toast.makeText(this@RootCompatibilityActivity, getString(R.string.root_hub_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         } else {
             suPathCard.isVisible = false
         }
@@ -108,13 +133,30 @@ class RootCompatibilityActivity : AppBarActivity() {
         return try {
             val uri = Uri.parse(uriStr)
             val docId = DocumentsContract.getTreeDocumentId(uri)
+            
+            // Check for common volume patterns
             when {
                 docId.startsWith("primary:") -> {
                     val relative = docId.removePrefix("primary:")
                     if (relative.isEmpty()) "/storage/emulated/0/su"
                     else "/storage/emulated/0/$relative/su"
                 }
-                else -> null // SD card volumes can't be reliably resolved
+                docId.contains(":") -> {
+                    // Try to resolve secondary SD cards if possible (best-effort)
+                    val parts = docId.split(":")
+                    val volumeId = parts[0]
+                    val relative = parts[1]
+                    "/storage/$volumeId/$relative/su"
+                }
+                // Handle direct directory names if primary prefix is missing
+                docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies") -> {
+                    "/storage/emulated/0/$docId/su"
+                }
+                else -> {
+                    // Fallback to internal app storage if it looks like a relative path
+                    if (!docId.startsWith("/")) "/storage/emulated/0/$docId/su"
+                    else null
+                }
             }
         } catch (e: Exception) {
             null
@@ -169,6 +211,19 @@ class RootCompatibilityActivity : AppBarActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = items[position]
+            
+            // M3E Expressive Animation: Scale and Fade Entrance for items
+            holder.itemView.alpha = 0f
+            holder.itemView.scaleX = 0.96f
+            holder.itemView.scaleY = 0.96f
+            holder.itemView.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(450)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+
             if (holder is HeaderViewHolder) {
                 holder.title.text = item as String
             } else if (holder is AppViewHolder) {
@@ -183,23 +238,41 @@ class RootCompatibilityActivity : AppBarActivity() {
                 holder.itemView.findViewById<View>(R.id.switch_widget).visibility = View.GONE
                 holder.itemView.findViewById<View>(R.id.checkbox).visibility = View.GONE
 
-                val navHint = metadata?.suPathSettingNav
-                if (navHint != null) {
-                    holder.suPathNav.text = navHint
-                    holder.suPathNav.visibility = View.VISIBLE
-                    holder.suCopyOpen.visibility = View.VISIBLE
-                    holder.suCopyOpen.setOnClickListener {
+                val navHint = metadata?.suPathSettingNav ?: context.getString(R.string.root_hub_default_nav_hint)
+                holder.suPathNav.text = navHint
+                holder.suPathNav.visibility = View.VISIBLE
+                
+                holder.suCopyOpen.visibility = View.VISIBLE
+                holder.suCopyOpen.setOnClickListener {
+                    val path = resolvedSuPath
+                    if (path != null) {
+                        copyToClipboard(path)
+                        launchOrStore(pkg)
+                    } else {
+                        Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_no_export, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                // Automation: Magic Setup for supported apps
+                val isMagicSupported = pkg in listOf("org.adaway", "dev.ukanth.ufirewall")
+                holder.suMagicSetup.isVisible = isMagicSupported
+                if (isMagicSupported) {
+                    holder.suMagicSetup.setOnClickListener {
                         val path = resolvedSuPath
-                        if (path != null) {
-                            copyToClipboard(path)
-                            launchOrStore(pkg)
-                        } else {
+                        if (path == null) {
                             Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_no_export, Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        lifecycleScope.launch {
+                            val success = RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, path)
+                            if (success) {
+                                Toast.makeText(this@RootCompatibilityActivity, getString(R.string.root_hub_magic_setup_success, holder.appName.text), Toast.LENGTH_LONG).show()
+                                launchOrStore(pkg)
+                            } else {
+                                Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_magic_setup_fail, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
-                } else {
-                    holder.suPathNav.visibility = View.GONE
-                    holder.suCopyOpen.visibility = View.GONE
                 }
 
                 try {
@@ -254,5 +327,6 @@ class RootCompatibilityActivity : AppBarActivity() {
         val description: TextView = view.findViewById(R.id.app_context)
         val suPathNav: TextView = view.findViewById(R.id.su_path_nav)
         val suCopyOpen: MaterialButton = view.findViewById(R.id.su_copy_open)
+        val suMagicSetup: MaterialButton = view.findViewById(R.id.su_magic_setup)
     }
 }

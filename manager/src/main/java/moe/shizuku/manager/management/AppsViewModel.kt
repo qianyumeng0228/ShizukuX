@@ -124,9 +124,13 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                         FilterState.GRANTED -> appInfo != null && runCatching {
                             AuthorizationManager.granted(pi.packageName, appInfo.uid)
                         }.getOrDefault(false)
-                        FilterState.DENIED -> appInfo == null || runCatching {
-                            !AuthorizationManager.granted(pi.packageName, appInfo.uid)
-                        }.getOrDefault(true)
+                        FilterState.DENIED -> {
+                            val isGranted = appInfo != null && runCatching {
+                                AuthorizationManager.granted(pi.packageName, appInfo.uid)
+                            }.getOrDefault(false)
+                            // If it's not granted, it's considered denied/pending in this view
+                            !isGranted
+                        }
                     }
                     matchesSearch && matchesFilter
                 }

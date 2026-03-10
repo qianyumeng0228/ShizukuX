@@ -60,6 +60,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun reload() {
+        _serviceStatus.postValue(Resource.loading(null))
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val status = load()

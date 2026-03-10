@@ -22,6 +22,15 @@ class StorageProxyImpl : IStorageProxy.Stub() {
         return File(path).exists()
     }
 
+    override fun delete(path: String?): Boolean {
+        if (path == null) return false
+        return try {
+            File(path).delete()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     override fun listFiles(path: String?): List<String> {
         if (path == null) return emptyList()
         return File(path).list()?.toList() ?: emptyList()

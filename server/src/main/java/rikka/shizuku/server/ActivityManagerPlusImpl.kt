@@ -1,20 +1,45 @@
 package rikka.shizuku.server
 
 import moe.shizuku.server.IActivityManagerPlus
+import rikka.hidden.compat.ActivityManagerApis
+import rikka.shizuku.server.util.UserHandleCompat
 
 class ActivityManagerPlusImpl : IActivityManagerPlus.Stub() {
     override fun deepForceStop(packageName: String?): Boolean {
-        // Placeholder: Native call to ActivityManagerApis with aggressive flags
-        return false
+        if (packageName == null) return false
+        try {
+            ActivityManagerApis.forceStopPackageNoThrow(packageName, UserHandleCompat.myUserId())
+            return true
+        } catch (e: Exception) {
+            return false
+        }
     }
 
     override fun setAppStandbyBucket(packageName: String?, bucket: Int): Boolean {
-        // Placeholder: Call IAppStandby or UsageStatsManagerInternal
-        return false
+        if (packageName == null) return false
+        return try {
+            val bucketStr = when (bucket) {
+                10 -> "active"
+                20 -> "working_set"
+                30 -> "frequent"
+                40 -> "rare"
+                45 -> "restricted"
+                50 -> "restricted"
+                else -> bucket.toString()
+            }
+            val process = Runtime.getRuntime().exec(arrayOf("am", "set-standby-bucket", packageName, bucketStr))
+            process.waitFor() == 0
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override fun killAllBackgroundProcesses(): Boolean {
-        // Placeholder: Invoke Process.killProcessQuiet or ActivityManager.killAllBackgroundProcesses
-        return false
+        try {
+            ActivityManagerApis.killAllBackgroundProcessesNoThrow()
+            return true
+        } catch (e: Exception) {
+            return false
+        }
     }
 }

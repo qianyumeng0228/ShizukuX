@@ -19,9 +19,9 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
         setPreferencesFromResource(R.xml.settings_legacy_compat, rootKey)
         val context = requireContext()
 
-        // Sync current fake_su state to server on fragment open
+        // Sync current su_bridge state to server on fragment open
         if (Shizuku.pingBinder()) {
-            notifyServerFeatureUpdate("fake_su", ShizukuSettings.isFakeSuEnabled())
+            notifyServerFeatureUpdate("su_bridge", ShizukuSettings.isSuBridgeEnabled())
         }
 
         findPreference<TwoStatePreference>("adb_proxy_enabled")?.setOnPreferenceChangeListener { _, newValue ->
@@ -32,9 +32,9 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        findPreference<TwoStatePreference>("fake_su_enabled")?.setOnPreferenceChangeListener { _, newValue ->
+        findPreference<TwoStatePreference>("su_bridge_enabled")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
-                notifyServerFeatureUpdate("fake_su", newValue)
+                notifyServerFeatureUpdate("su_bridge", newValue)
             }
             true
         }

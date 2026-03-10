@@ -114,13 +114,30 @@
                         android:textAppearance="?textAppearanceBodySmall"
                         android:textColor="?attr/colorOnSecondaryContainer" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/copy_path_button"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="@string/root_hub_copy_path" />
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/copy_path_button"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/root_hub_copy_path" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/magic_setup_all_button"
+                            style="@style/Widget.Material3.Button.FilledTonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/root_hub_magic_setup_all"
+                            app:icon="@drawable/ic_server_ok_24dp"
+                            app:iconPadding="8dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 

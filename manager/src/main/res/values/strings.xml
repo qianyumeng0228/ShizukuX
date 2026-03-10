@@ -277,12 +277,12 @@
     <string name="settings_category_legacy_compatibility">Legacy App Compatibility</string>
     <string name="settings_adb_proxy">Local ADB Proxy Server</string>
     <string name="settings_adb_proxy_summary">Emulate an ADB server on port 15555 to support apps requiring Wireless ADB without keeping the system feature active.</string>
-    <string name="settings_fake_su">Fake SU Binary (su wrapper)</string>
+    <string name="settings_fake_su">SU Bridge (su wrapper)</string>
     <string name="settings_fake_su_summary">Provide a Shizuku-backed \'su\' binary for legacy root apps that support custom paths.</string>
     <string name="settings_root_compatibility_hub">Root Compatibility Hub</string>
     <string name="settings_root_compatibility_hub_summary">Configure and manage legacy root apps to work with ShizukuX privileges.</string>
     <string name="root_hub_title">Root Compatibility</string>
-    <string name="root_hub_description">Many legacy apps are built strictly for root access. ShizukuX can "trick" these apps into using its privileges by providing a fake SU binary.</string>
+    <string name="root_hub_description">Many legacy apps are built strictly for root access. ShizukuX can "trick" these apps into using its privileges by providing a su bridge binary.</string>
     <string name="root_hub_suggested_apps">Suggested Apps</string>
     <string name="root_hub_suggested_apps_desc">These apps are known to allow custom SU paths. Point them to your exported \'su\' script.</string>
     <string name="root_hub_active_sessions">Active Root Sessions</string>
@@ -294,8 +294,15 @@
     <string name="root_hub_app_instruction">Set path in Settings > %s</string>
     <string name="root_hub_su_path_label">Exported su path</string>
     <string name="root_hub_copy_path">Copy path</string>
-    <string name="root_hub_path_copied">Path copied to clipboard</string>
-    <string name="root_hub_no_export">Export files first from the Home screen</string>
+    <string name="root_hub_default_nav_hint">Set custom SU path in app settings</string>
+    <string name="root_hub_path_copied">SU path copied to clipboard</string>
+
+    <string name="root_hub_magic_setup">Magic Setup</string>
+    <string name="root_hub_magic_setup_success">Magic Setup completed! ShizukuX has configured %s for you.</string>
+    <string name="root_hub_magic_setup_fail">Magic Setup failed. Please use manual copy path instead.</string>
+    <string name="root_hub_magic_setup_all">Magic Setup All</string>
+    <string name="root_hub_magic_setup_all_summary">ShizukuX configured %d apps for you!</string>
+    <string name="root_hub_magic_setup_all_no_apps">No supported root apps found for automation.</string>
     <string name="root_hub_copy_open">Copy path &amp; open</string>
 
     <!-- Bug Report Dialog -->
@@ -435,7 +442,7 @@
     <string name="settings_nav_ui_summary">Theme, colors, language</string>
     <string name="settings_nav_app_management_summary">Swipe and long-press actions</string>
     <string name="settings_nav_home_summary">Visible cards and shortcuts</string>
-    <string name="settings_nav_legacy_summary">ADB proxy, fake su, root compatibility</string>
+    <string name="settings_nav_legacy_summary">ADB proxy, su bridge, root compatibility</string>
     <string name="settings_nav_advanced_summary">Diagnostics, logs, help</string>
 
 </resources>

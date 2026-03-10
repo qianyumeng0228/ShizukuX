@@ -245,6 +245,19 @@ class AppViewHolder(private val binding: AppListItemBinding) :
     override fun onBind() {
         val appInfo = ai ?: return
         val context = itemView.context
+        
+        // M3E Expressive Animation: Scale and Fade Entrance
+        itemView.alpha = 0f
+        itemView.scaleX = 0.95f
+        itemView.scaleY = 0.95f
+        itemView.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(400)
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
+
         val pm = context.packageManager
         val userId = UserHandleCompat.getUserId(appInfo.uid)
         icon.setImageDrawable(appInfo.loadIcon(pm))

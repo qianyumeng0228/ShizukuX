@@ -116,9 +116,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 
         recyclerView = binding.list
         recyclerView.adapter = adapter
+        
+        // M3E 2026 Layout Animation for fluid motion on entry
         recyclerView.layoutAnimation = AnimationUtils.loadLayoutAnimation(
             this, R.anim.layout_animation_slide_bottom
         )
+        
         recyclerView.setBackgroundColor(Color.TRANSPARENT)
         recyclerView.addItemDecoration(AppListItemDecoration(this))
         recyclerView.fixEdgeEffect()

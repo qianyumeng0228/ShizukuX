@@ -1,6 +1,6 @@
 #!/system/bin/sh
 
-# ShizukuPlus Fake SU Wrapper
+# ShizukuPlus SU Bridge (su wrapper)
 # Allows legacy root apps to function via ShizukuX privileges.
 # Drop-in replacement for /system/bin/su for apps that support custom paths.
 

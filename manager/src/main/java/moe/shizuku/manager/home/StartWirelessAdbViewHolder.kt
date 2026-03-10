@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.core.view.isVisible
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
@@ -130,9 +129,9 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
         }
     }
 
-    override fun onBind(payloads: MutableList<Any>) {
-        super.onBind(payloads)
+    override fun onBind() {
         itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
+        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

@@ -72,7 +72,7 @@ public class ShizukuSettings {
 
         // Legacy Compatibility (ShizukuX additions)
         public static final String KEY_ADB_PROXY_ENABLED = "adb_proxy_enabled";
-        public static final String KEY_FAKE_SU_ENABLED = "fake_su_enabled";
+        public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
 
         // Long-press action toggles (ShizukuX additions)
@@ -407,9 +407,9 @@ public class ShizukuSettings {
         return p != null && p.getBoolean(Keys.KEY_ADB_PROXY_ENABLED, false);
     }
 
-    public static boolean isFakeSuEnabled() {
+    public static boolean isSuBridgeEnabled() {
         SharedPreferences p = getPreferences();
-        return p != null && p.getBoolean(Keys.KEY_FAKE_SU_ENABLED, false);
+        return p != null && p.getBoolean(Keys.KEY_SU_BRIDGE_ENABLED, false);
     }
 
     public static boolean showStartAdbHome() {

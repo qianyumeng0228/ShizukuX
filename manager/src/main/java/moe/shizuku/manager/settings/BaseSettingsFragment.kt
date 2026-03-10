@@ -64,6 +64,9 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         val context = recyclerView.context
         val cardMarginPx = (16 * context.resources.displayMetrics.density).toInt()
 
+        // Fix Sentry: IllegalArgumentException Providing a LayoutTransition into RecyclerView is not supported
+        recyclerView.layoutTransition = null
+
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx, 0, cardMarginPx, 0)
         recyclerView.clipToPadding = false

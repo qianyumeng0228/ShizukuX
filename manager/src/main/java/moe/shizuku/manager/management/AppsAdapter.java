@@ -9,6 +9,9 @@ import java.util.Set;
 import rikka.recyclerview.BaseRecyclerViewAdapter;
 import rikka.recyclerview.ClassCreatorPool;
 
+import androidx.recyclerview.widget.DiffUtil;
+import java.util.ArrayList;
+
 public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
 
     public static final class HeaderMarker {}
@@ -25,53 +28,48 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
         setHasStableIds(true);
     }
 
-    public boolean isSelectionMode() {
-        return selectionMode;
-    }
-
-    public void setSelectionMode(boolean selectionMode) {
-        this.selectionMode = selectionMode;
-        if (!selectionMode) {
-            selectedPackages.clear();
-        }
-        notifyDataSetChanged();
-    }
-
-    public Set<String> getSelectedPackages() {
-        return selectedPackages;
-    }
-
-    public void toggleSelection(String packageName) {
-        if (selectedPackages.contains(packageName)) {
-            selectedPackages.remove(packageName);
-        } else {
-            selectedPackages.add(packageName);
-        }
-        notifyDataSetChanged();
-    }
-
-    @Override
-    public long getItemId(int position) {
-        Object item = getItemAt(position);
-        if (item instanceof PackageInfo) {
-            return ((PackageInfo) item).packageName.hashCode();
-        }
-        return item.hashCode();
-    }
-
-    @Override
-    public ClassCreatorPool onCreateCreatorPool() {
-        return new ClassCreatorPool();
-    }
+    // ... existing selection methods ...
 
     public void updateData(List<PackageInfo> data) {
-        getItems().clear();
+        final List<Object> newList = new ArrayList<>();
         if (data.isEmpty()) {
-            getItems().add(new Object());
+            newList.add(new Object());
         } else {
-            getItems().add(new HeaderMarker());
-            getItems().addAll(data);
+            newList.add(new HeaderMarker());
+            newList.addAll(data);
         }
-        notifyDataSetChanged();
+
+        final List<Object> oldList = new ArrayList<>(getItems());
+        
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+            @Override
+            public int getOldListSize() {
+                return oldList.size();
+            }
+
+            @Override
+            public int getNewListSize() {
+                return newList.size();
+            }
+
+            @Override
+            public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+                Object oldItem = oldList.get(oldItemPosition);
+                Object newItem = newList.get(newItemPosition);
+                if (oldItem instanceof PackageInfo && newItem instanceof PackageInfo) {
+                    return ((PackageInfo) oldItem).packageName.equals(((PackageInfo) newItem).packageName);
+                }
+                return oldItem.getClass().equals(newItem.getClass());
+            }
+
+            @Override
+            public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
+                return areItemsTheSame(oldItemPosition, newItemPosition);
+            }
+        });
+
+        getItems().clear();
+        getItems().addAll(newList);
+        diffResult.dispatchUpdatesTo(this);
     }
 }

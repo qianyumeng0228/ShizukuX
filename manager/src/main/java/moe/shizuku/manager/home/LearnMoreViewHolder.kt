@@ -40,5 +40,6 @@ class LearnMoreViewHolder(binding: HomeLearnMoreBinding, root: View) : BaseViewH
 
     override fun onBind() {
         itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
+        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
     }
 }

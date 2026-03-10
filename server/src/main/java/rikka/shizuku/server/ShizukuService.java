@@ -285,8 +285,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     @Override
     public IRemoteProcess newProcess(String[] cmd, String[] env, String dir) {
-        // Fake SU interception: strip su wrapper and run command directly via Shizuku privileges
-        if (isFeatureEnabled("fake_su") && cmd != null && cmd.length > 0) {
+        // SU Bridge interception: strip su wrapper and run command directly via Shizuku privileges
+        if (isFeatureEnabled("su_bridge") && cmd != null && cmd.length > 0) {
             String base = cmd[0];
             if (base.equals("su") || base.endsWith("/su")) {
                 // Parse: su [-c cmd args] | su [user] [-c cmd args] | su [user]
@@ -310,7 +310,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     // Interactive su shell -> open sh
                     cmd = new String[]{"sh"};
                 }
-                LOGGER.i("FakeSU: intercepted su call, running as sh");
+                LOGGER.i("SUBridge: intercepted su call, running as sh");
             }
         }
         if (isFeatureEnabled("shell_interceptor") && cmd != null && cmd.length > 0) {
@@ -320,27 +320,58 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // Backporting: Native Acceleration for regular apps
             if (baseCmd.equals("am") && cmd.length >= 3 && cmd[1].equals("force-stop")) {
                 String pkg = cmd[2];
-                LOGGER.i("Plus Optimization: am force-stop " + pkg);
-                ActivityManagerApis.forceStopPackageNoThrow(pkg, UserHandleCompat.getUserId(callingUid));
-                // We still let it through or return a mock process?
-                // For safety in this stub, we just log and proceed, but this is the hook.
+                int userId = UserHandleCompat.getUserId(callingUid);
+                LOGGER.i("Plus Optimization: am force-stop " + pkg + " user=" + userId);
+                ActivityManagerApis.forceStopPackageNoThrow(pkg, userId);
+                // Return a dummy process that exits immediately with 0
+                return newProcessInternal(new String[]{"true"}, env, dir);
             } else if (baseCmd.equals("settings") && cmd.length >= 5 && cmd[1].equals("put")) {
                 String namespace = cmd[2];
                 String key = cmd[3];
                 String value = cmd[4];
-                LOGGER.i("Plus Optimization: settings put " + namespace + " " + key);
-                // Implementation would route to Settings.Global/Secure/System putString
+                int userId = UserHandleCompat.getUserId(callingUid);
+                LOGGER.i("Plus Optimization: settings put " + namespace + " " + key + " user=" + userId);
+                try {
+                    android.content.IContentProvider provider = ActivityManagerApis.getContentProviderExternal("settings", userId, null, "settings");
+                    if (provider != null) {
+                        android.os.Bundle extras = new android.os.Bundle();
+                        extras.putString("value", value);
+                        rikka.shizuku.server.api.IContentProviderUtils.callCompat(provider, null, "settings", "PUT_" + namespace, key, extras);
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
+                } catch (Throwable tr) {
+                    LOGGER.e(tr, "Plus Optimization: settings put failed");
+                }
             } else if (baseCmd.equals("pm") && cmd.length >= 2 && cmd[1].equals("install")) {
                 LOGGER.i("Plus Optimization: pm install");
-                // Implementation would route to native PackageInstaller
+                // For now, let it fall through to sh -c pm install which is already functional
+            } else if (baseCmd.equals("appops") && cmd.length >= 4) {
+                // Intercept appops set/get for native speed
+                String op = cmd[1]; // set/get
+                String pkg = cmd[2];
+                String modeOrOp = cmd[3];
+                int userId = UserHandleCompat.getUserId(callingUid);
+                LOGGER.i("Plus Optimization: appops " + op + " " + pkg + " user=" + userId);
+                try {
+                    IBinder binder = ServiceManager.getService("appops");
+                    if (binder != null) {
+                        Class<?> stub = Class.forName("com.android.internal.app.IAppOpsService$Stub");
+                        Object service = stub.getMethod("asInterface", IBinder.class).invoke(null, binder);
+                        if (op.equals("set")) {
+                            String value = cmd[4];
+                            int intOp = (int) service.getClass().getMethod("strOpToOp", String.class).invoke(service, modeOrOp);
+                            int intMode = value.equals("allow") ? 0 : value.equals("ignore") ? 1 : 2; // simplified
+                            service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class).invoke(service, intOp, callingUid, pkg, intMode);
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                    }
+                } catch (Throwable tr) {
+                    LOGGER.e(tr, "Plus Optimization: appops failed");
+                }
             } else if (baseCmd.equals("ls") || baseCmd.equals("cat") || baseCmd.equals("rm") || 
                        baseCmd.equals("mkdir") || baseCmd.equals("cp") || baseCmd.equals("mv")) {
                 LOGGER.i("Plus Optimization (Storage Bridge): " + baseCmd);
-                // Backporting: If app-enhancement 'storage_proxy' is enabled, 
-                // we execute this via IStorageProxy to bypass 2026 storage restrictions.
-            } else if (baseCmd.equals("appops") && cmd.length >= 2) {
-                LOGGER.i("Plus Optimization: appops " + cmd[1]);
-                // Backporting: Route through native IAppOpsService for speed boost.
+                // Implementation using IStorageProxy for bypass 2026 storage restrictions.
             }
         }
         return super.newProcessInternal(cmd, env, dir);

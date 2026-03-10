@@ -251,7 +251,7 @@
             android:defaultValue="false" />
 
         <SwitchPreferenceCompat
-            android:key="fake_su_enabled"
+            android:key="su_bridge_enabled"
             android:title="@string/settings_fake_su"
             android:summary="@string/settings_fake_su_summary"
             android:defaultValue="false" />

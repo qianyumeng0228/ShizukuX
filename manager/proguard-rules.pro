@@ -42,6 +42,11 @@
     public static void main(java.lang.String[], java.lang.String, android.os.IBinder, android.os.Handler);
 }
 
+# Keep settings fragments instantiated by name via reflection in PreferenceFragmentCompat
+-keep public class moe.shizuku.manager.settings.** extends androidx.fragment.app.Fragment {
+    public <init>();
+}
+
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
 }
