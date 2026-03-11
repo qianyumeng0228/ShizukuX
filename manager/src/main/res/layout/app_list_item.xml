@@ -118,7 +118,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/su_magic_setup"
-                    style="@style/Widget.Material3.Button.FilledTonalButton"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
                     android:layout_marginStart="8dp"
