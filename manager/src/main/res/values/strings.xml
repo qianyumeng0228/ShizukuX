@@ -234,6 +234,7 @@
     <string name="settings_activity_log">Activity log</string>
     <string name="settings_activity_log_empty">No activity recorded yet.</string>
     <string name="settings_enable_activity_log">Enable activity log</string>
+    <string name="settings_enable_activity_log_summary">Record and display Shizuku API calls and events on the home screen.</string>
     <string name="settings_show_activity_log_home">Show Activity Log</string>
     <string name="settings_home_visibility">Home screen visibility</string>
     <string name="settings_update_app_database">Update app database</string>
