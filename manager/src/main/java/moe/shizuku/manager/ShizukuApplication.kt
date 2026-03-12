@@ -9,6 +9,7 @@ import com.topjohnwu.superuser.Shell
 import io.sentry.android.core.SentryAndroid
 import moe.shizuku.manager.ktx.logd
 import moe.shizuku.manager.service.WatchdogService
+import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.core.util.BuildUtils.atLeast30
@@ -44,6 +45,10 @@ class ShizukuApplication : Application() {
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
 
         if(ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+
+        Shizuku.addLogListener { appName, packageName, action ->
+            ActivityLogManager.log(appName, packageName, action)
+        }
     }
 
     override fun onCreate() {

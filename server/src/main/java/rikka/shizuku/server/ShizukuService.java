@@ -291,12 +291,39 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         plusSettingsMap.put(key, value);
     }
 
+    private void dispatchLog(String packageName, String action) {
+        if (!isFeatureEnabled("enable_activity_log")) return;
+        
+        mainHandler.post(() -> {
+            synchronized (clientManager) {
+                for (ClientRecord record : clientManager.getClients().values()) {
+                    if (record.packageName.equals("moe.shizuku.privileged.api")) {
+                        try {
+                            // Find app label for the caller
+                            String appLabel = packageName;
+                            ApplicationInfo ai = PackageManagerApis.getApplicationInfoNoThrow(packageName, 0, UserHandleCompat.getUserId(Binder.getCallingUid()));
+                            if (ai != null) {
+                                // Since we are in server process, we might not have access to label easily
+                                // But we pass it to manager who can resolve it
+                            }
+                            record.client.dispatchLog("", packageName, action);
+                        } catch (Throwable ignored) {}
+                    }
+                }
+            }
+        });
+    }
+
     @Override
     public IRemoteProcess newProcess(String[] cmd, String[] env, String dir) {
+        int callingUid = Binder.getCallingUid();
+        String callingPkg = clientManager.getClient(callingUid).packageName;
+        
         // SU Bridge interception: strip su wrapper and run command directly via Shizuku privileges
         if (isFeatureEnabled("su_bridge") && cmd != null && cmd.length > 0) {
             String base = cmd[0];
             if (base.equals("su") || base.endsWith("/su")) {
+                dispatchLog(callingPkg, "su " + String.join(" ", cmd));
                 java.util.List<String> args = new java.util.ArrayList<>();
                 boolean inCommand = false;
                 boolean skipNext = false;
