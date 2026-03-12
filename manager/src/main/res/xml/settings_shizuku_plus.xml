@@ -7,12 +7,14 @@
         <SwitchPreferenceCompat
             android:key="dhizuku_mode"
             android:title="@string/settings_dhizuku_mode"
-            android:summary="@string/settings_dhizuku_mode_summary" />
+            android:summary="@string/settings_dhizuku_mode_summary"
+            android:icon="@drawable/ic_system_icon" />
 
         <SwitchPreferenceCompat
             android:key="custom_api_enabled"
             android:title="@string/settings_enhanced_api"
             android:summary="@string/settings_enhanced_api_summary"
+            android:icon="@drawable/ic_code_24dp"
             android:defaultValue="true" />
 
     </PreferenceCategory>
@@ -24,6 +26,7 @@
             android:key="shell_interceptor_enabled"
             android:title="@string/settings_shell_interceptor"
             android:summary="@string/settings_shell_interceptor_summary"
+            android:icon="@drawable/ic_terminal_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -31,6 +34,7 @@
             android:key="activity_manager_plus_enabled"
             android:title="@string/settings_activity_manager_plus"
             android:summary="@string/settings_activity_manager_plus_summary"
+            android:icon="@drawable/ic_server_restart"
             android:defaultValue="true"
             android:dependency="shell_interceptor_enabled" />
 
@@ -43,6 +47,7 @@
             android:key="storage_proxy_enabled"
             android:title="@string/settings_storage_proxy"
             android:summary="@string/settings_storage_proxy_summary"
+            android:icon="@drawable/ic_baseline_link_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -50,6 +55,7 @@
             android:key="avf_manager_enabled"
             android:title="@string/settings_avf_manager"
             android:summary="@string/settings_avf_manager_summary"
+            android:icon="@drawable/ic_numeric_1_circle_outline_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -62,6 +68,7 @@
             android:key="window_manager_plus_enabled"
             android:title="@string/settings_window_manager_plus"
             android:summary="@string/settings_window_manager_plus_summary"
+            android:icon="@drawable/ic_monochrome"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -69,6 +76,7 @@
             android:key="overlay_manager_plus_enabled"
             android:title="@string/settings_overlay_manager_plus"
             android:summary="@string/settings_overlay_manager_plus_summary"
+            android:icon="@drawable/ic_outline_notifications_active_24"
             android:defaultValue="true"
             android:dependency="window_manager_plus_enabled" />
 
@@ -81,6 +89,7 @@
             android:key="network_governor_plus_enabled"
             android:title="@string/settings_network_governor_plus"
             android:summary="@string/settings_network_governor_plus_summary"
+            android:icon="@drawable/ic_wadb_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -93,6 +102,7 @@
             android:key="ai_core_plus_enabled"
             android:title="@string/settings_ai_core_plus"
             android:summary="@string/settings_ai_core_plus_summary"
+            android:icon="@drawable/ic_integration_instructions_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
@@ -100,6 +110,7 @@
             android:key="continuity_bridge_enabled"
             android:title="@string/settings_continuity_bridge"
             android:summary="@string/settings_continuity_bridge_summary"
+            android:icon="@drawable/ic_baseline_link_24"
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 

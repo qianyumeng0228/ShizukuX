@@ -4,31 +4,37 @@
     <SwitchPreferenceCompat
         android:key="show_terminal_home"
         android:title="@string/settings_show_terminal_home"
+        android:icon="@drawable/ic_terminal_24"
         android:defaultValue="true" />
 
     <SwitchPreferenceCompat
         android:key="show_automation_home"
         android:title="@string/settings_show_automation_home"
+        android:icon="@drawable/ic_autorenew"
         android:defaultValue="true" />
 
     <SwitchPreferenceCompat
         android:key="show_learn_more_home"
         android:title="@string/settings_show_learn_more_home"
+        android:icon="@drawable/ic_learn_more_24dp"
         android:defaultValue="true" />
 
     <SwitchPreferenceCompat
         android:key="show_start_adb_home"
         android:title="@string/settings_show_start_adb_home"
+        android:icon="@drawable/ic_adb_24dp"
         android:defaultValue="false" />
 
     <SwitchPreferenceCompat
         android:key="show_activity_log_home"
         android:title="@string/settings_show_activity_log_home"
+        android:icon="@drawable/ic_terminal_24"
         android:defaultValue="true" />
 
     <Preference
         android:key="update_app_database"
         android:title="@string/settings_update_app_database"
-        android:summary="@string/settings_update_app_database_summary" />
+        android:summary="@string/settings_update_app_database_summary"
+        android:icon="@drawable/ic_autorenew" />
 
 </PreferenceScreen>

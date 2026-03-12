@@ -52,17 +52,6 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 
     override fun getLayoutId() = R.layout.apps_appbar_activity
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (adapter.isSelectionMode) {
-            adapter.isSelectionMode = false
-            invalidateOptionsMenu()
-            supportActionBar?.title = getString(R.string.home_app_management_title)
-            return
-        }
-        super.onBackPressed()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -73,6 +62,19 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        // Predictive back support for selection mode
+        val backCallback = object : androidx.activity.OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                if (adapter.isSelectionMode) {
+                    adapter.isSelectionMode = false
+                    invalidateOptionsMenu()
+                    supportActionBar?.title = getString(R.string.home_app_management_title)
+                    this.isEnabled = false
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, backCallback)
 
         // Search bar
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.search_edit_text)
@@ -133,6 +135,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             }
 
             override fun onChanged() {
+                backCallback.isEnabled = adapter.isSelectionMode
                 if (adapter.isSelectionMode) {
                     supportActionBar?.title = getString(R.string.app_management_selected, adapter.selectedPackages.size)
                     invalidateOptionsMenu()
@@ -205,6 +208,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 }
                 android.R.id.home -> {
                     adapter.isSelectionMode = false
+                    backCallback.isEnabled = false
                     invalidateOptionsMenu()
                     supportActionBar?.title = getString(R.string.home_app_management_title)
                 }

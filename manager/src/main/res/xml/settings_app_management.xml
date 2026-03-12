@@ -7,7 +7,8 @@
         android:entries="@array/swipe_actions"
         android:entryValues="@array/swipe_actions_values"
         android:defaultValue="open_app"
-        android:summary="%s" />
+        android:summary="%s"
+        android:icon="@drawable/ic_outline_play_arrow_24" />
 
     <rikka.preference.SimpleMenuPreference
         android:key="swipe_left_action"
@@ -15,7 +16,8 @@
         android:entries="@array/swipe_actions"
         android:entryValues="@array/swipe_actions_values"
         android:defaultValue="app_info"
-        android:summary="%s" />
+        android:summary="%s"
+        android:icon="@drawable/ic_outline_play_arrow_24" />
 
     <Preference
         android:key="lp_category_info"
@@ -25,21 +27,25 @@
     <SwitchPreferenceCompat
         android:key="lp_open_app"
         android:title="@string/settings_lp_open_app"
-        android:defaultValue="true" />
+        android:defaultValue="true"
+        android:icon="@drawable/ic_outline_play_arrow_24" />
 
     <SwitchPreferenceCompat
         android:key="lp_app_info"
         android:title="@string/settings_lp_app_info"
-        android:defaultValue="true" />
+        android:defaultValue="true"
+        android:icon="@drawable/ic_outline_info_24" />
 
     <SwitchPreferenceCompat
         android:key="lp_toggle_permission"
         android:title="@string/settings_lp_toggle_permission"
-        android:defaultValue="true" />
+        android:defaultValue="true"
+        android:icon="@drawable/ic_server_ok_24dp" />
 
     <SwitchPreferenceCompat
         android:key="lp_hide_from_list"
         android:title="@string/settings_lp_hide_from_list"
-        android:defaultValue="true" />
+        android:defaultValue="true"
+        android:icon="@drawable/ic_close_24" />
 
 </PreferenceScreen>

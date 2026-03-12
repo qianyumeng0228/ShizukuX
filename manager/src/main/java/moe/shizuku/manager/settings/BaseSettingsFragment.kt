@@ -32,7 +32,6 @@ import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.html.text.HtmlCompat
-import rikka.recyclerview.addItemSpacing
 import rikka.recyclerview.fixEdgeEffect
 
 abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
@@ -74,14 +73,10 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
 
         ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { _, insets ->
             val systemBarsInsets = insets.getInsets(Type.systemBars() or Type.displayCutout())
-            recyclerView.addItemSpacing(
-                left = systemBarsInsets.left.toFloat(),
-                right = systemBarsInsets.right.toFloat()
-            )
             recyclerView.setPadding(
-                recyclerView.paddingLeft,
+                cardMarginPx + systemBarsInsets.left,
                 recyclerView.paddingTop,
-                recyclerView.paddingRight,
+                cardMarginPx + systemBarsInsets.right,
                 systemBarsInsets.bottom
             )
             insets
@@ -202,34 +197,62 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
             dividerPaint.strokeWidth = 1f * context.resources.displayMetrics.density
         }
 
+        override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
+            val pos = parent.getChildAdapterPosition(view)
+            if (pos == RecyclerView.NO_POSITION) return
+            
+            // Add space above category headers for M3E spacing
+            if (view.tag == "category_header") {
+                outRect.top = (12 * parent.context.resources.displayMetrics.density).toInt()
+            }
+        }
+
         override fun onDraw(c: android.graphics.Canvas, parent: RecyclerView, state: RecyclerView.State) {
             val count = parent.childCount
             if (count == 0) return
-            var cardTop = Float.MIN_VALUE
-            var cardBottom = Float.MIN_VALUE
+
+            var currentCardTop = Float.MIN_VALUE
+            var lastItemBottom = Float.MIN_VALUE
+
             for (i in 0 until count) {
                 val child = parent.getChildAt(i)
                 if (child.visibility != View.VISIBLE) continue
-                val pos = parent.getChildAdapterPosition(child)
-                if (pos == RecyclerView.NO_POSITION) continue
-                if (cardTop == Float.MIN_VALUE) cardTop = child.top.toFloat()
-                cardBottom = child.bottom.toFloat()
-                if (i < count - 1) {
-                    val next = parent.getChildAt(i + 1)
-                    if (next.visibility == View.VISIBLE) {
-                        c.drawLine(
-                            child.left.toFloat(),
-                            child.bottom.toFloat(),
-                            child.right.toFloat(),
-                            child.bottom.toFloat(),
-                            dividerPaint
-                        )
+
+                val isHeader = child.tag == "category_header"
+
+                if (isHeader) {
+                    if (currentCardTop != Float.MIN_VALUE) {
+                        drawCard(c, parent, currentCardTop, lastItemBottom)
+                        currentCardTop = Float.MIN_VALUE
+                    }
+                } else {
+                    if (currentCardTop == Float.MIN_VALUE) {
+                        currentCardTop = child.top.toFloat()
+                    }
+                    lastItemBottom = child.bottom.toFloat()
+
+                    if (i < count - 1) {
+                        val nextChild = parent.getChildAt(i + 1)
+                        if (nextChild.visibility == View.VISIBLE && nextChild.tag != "category_header") {
+                            c.drawLine(
+                                child.left.toFloat(),
+                                child.bottom.toFloat(),
+                                child.right.toFloat(),
+                                child.bottom.toFloat(),
+                                dividerPaint
+                            )
+                        }
                     }
                 }
             }
-            if (cardTop != Float.MIN_VALUE) {
-                c.drawRoundRect(cardMargin, cardTop, parent.width - cardMargin, cardBottom, cornerRadius, cornerRadius, cardPaint)
+
+            if (currentCardTop != Float.MIN_VALUE) {
+                drawCard(c, parent, currentCardTop, lastItemBottom)
             }
+        }
+
+        private fun drawCard(c: android.graphics.Canvas, parent: RecyclerView, top: Float, bottom: Float) {
+            c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, cornerRadius, cornerRadius, cardPaint)
         }
     }
 }

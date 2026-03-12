@@ -5,17 +5,20 @@
         android:key="adb_proxy_enabled"
         android:title="@string/settings_adb_proxy"
         android:summary="@string/settings_adb_proxy_summary"
+        android:icon="@drawable/ic_wadb_24"
         android:defaultValue="false" />
 
     <SwitchPreferenceCompat
         android:key="su_bridge_enabled"
         android:title="@string/settings_fake_su"
         android:summary="@string/settings_fake_su_summary"
+        android:icon="@drawable/ic_root_24dp"
         android:defaultValue="false" />
 
     <Preference
         android:key="root_compatibility_hub"
         android:title="@string/settings_root_compatibility_hub"
-        android:summary="@string/settings_root_compatibility_hub_summary" />
+        android:summary="@string/settings_root_compatibility_hub_summary"
+        android:icon="@drawable/ic_root_24dp" />
 
 </PreferenceScreen>

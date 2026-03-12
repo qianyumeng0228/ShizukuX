@@ -146,6 +146,28 @@ abstract class HomeActivity : AppBarActivity() {
         HomeEditMode.startDragCallback = { vh -> itemTouchHelper.startDrag(vh) }
         HomeEditMode.exit()
 
+        // Predictive back support for edit mode
+        val backCallback = object : androidx.activity.OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() {
+                if (HomeEditMode.isActive) {
+                    HomeEditMode.exit()
+                }
+            }
+        }
+        onBackPressedDispatcher.addCallback(this, backCallback)
+        
+        HomeEditMode.onChanged = { 
+            adapter.updateData() 
+            invalidateOptionsMenu()
+            if (HomeEditMode.isActive) {
+                supportActionBar?.setTitle(R.string.home_edit_mode_hint)
+                backCallback.isEnabled = true
+            } else {
+                supportActionBar?.setTitle(R.string.app_name)
+                backCallback.isEnabled = false
+            }
+        }
+
         ShizukuStateMachine.addListener(stateListener)
     }
 
@@ -177,15 +199,6 @@ abstract class HomeActivity : AppBarActivity() {
 
     private fun checkServerStatus() {
         homeModel.reload()
-    }
-
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun onBackPressed() {
-        if (HomeEditMode.isActive) {
-            HomeEditMode.exit()
-        } else {
-            super.onBackPressed()
-        }
     }
 
     override fun onDestroy() {

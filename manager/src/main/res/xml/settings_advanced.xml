@@ -4,29 +4,35 @@
     <Preference
         android:key="service_doctor"
         android:title="@string/home_service_doctor_title"
-        android:summary="@string/home_service_doctor_summary" />
+        android:summary="@string/home_service_doctor_summary"
+        android:icon="@drawable/ic_outline_info_24" />
 
     <SwitchPreferenceCompat
         android:key="enable_activity_log"
         android:title="@string/settings_enable_activity_log"
+        android:icon="@drawable/ic_terminal_24"
         android:defaultValue="true" />
 
     <Preference
         android:key="activity_log"
         android:title="@string/settings_activity_log"
+        android:icon="@drawable/ic_terminal_24"
         android:dependency="enable_activity_log" />
 
     <SwitchPreferenceCompat
         android:key="legacy_pairing"
         android:summary="@string/settings_legacy_pairing_summary"
-        android:title="@string/settings_legacy_pairing" />
+        android:title="@string/settings_legacy_pairing"
+        android:icon="@drawable/ic_numeric_2_circle_outline_24" />
 
     <Preference
         android:key="help"
-        android:title="@string/settings_help" />
+        android:title="@string/settings_help"
+        android:icon="@drawable/ic_help_outline_24dp" />
 
     <Preference
         android:key="report_bug"
-        android:title="@string/settings_report_bug" />
+        android:title="@string/settings_report_bug"
+        android:icon="@drawable/ic_warning_24" />
 
 </PreferenceScreen>

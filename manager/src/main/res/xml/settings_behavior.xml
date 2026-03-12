@@ -3,26 +3,31 @@
 
     <SwitchPreferenceCompat
         android:key="start_on_boot"
-        android:title="@string/settings_start_on_boot" />
+        android:title="@string/settings_start_on_boot"
+        android:icon="@drawable/ic_server_start_24dp" />
 
     <SwitchPreferenceCompat
         android:key="watchdog"
         android:summary="@string/settings_watchdog_summary"
-        android:title="@string/settings_watchdog" />
+        android:title="@string/settings_watchdog"
+        android:icon="@drawable/ic_outline_notifications_active_24" />
 
     <SwitchPreferenceCompat
         android:key="tcp_mode"
         android:title="@string/settings_tcp_mode"
+        android:icon="@drawable/ic_adb_24dp"
         android:defaultValue="true" />
 
     <EditTextPreference
         android:key="tcp_port"
         android:title="@string/settings_tcp_port"
+        android:icon="@drawable/ic_numeric_1_circle_outline_24"
         android:inputType="number" />
 
     <SwitchPreferenceCompat
         android:key="auto_disable_usb_debugging"
         android:title="@string/settings_auto_disable_usb_debugging"
-        android:summary="@string/settings_auto_disable_usb_debugging_summary" />
+        android:summary="@string/settings_auto_disable_usb_debugging_summary"
+        android:icon="@drawable/ic_warning_24" />
 
 </PreferenceScreen>
