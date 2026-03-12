@@ -65,6 +65,8 @@ import rikka.shizuku.ShizukuApiConstants;
 import rikka.shizuku.server.api.IContentProviderUtils;
 import rikka.shizuku.server.util.HandlerUtil;
 import rikka.shizuku.server.util.UserHandleCompat;
+import rikka.shizuku.server.ClientManager;
+import rikka.shizuku.server.ClientRecord;
 
 public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuClientManager, ShizukuConfigManager> {
 
@@ -295,14 +297,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (!isFeatureEnabled("enable_activity_log")) return;
         
         mainHandler.post(() -> {
-            synchronized (clientManager) {
-                for (ClientRecord record : clientManager.getClientRecords()) {
-                    if (record.packageName.equals("moe.shizuku.privileged.api")) {
-                        try {
-                            record.client.dispatchLog("", packageName, action);
-                        } catch (Throwable ignored) {}
-                    }
-                }
+            ApplicationInfo ai = getManagerApplicationInfo();
+            if (ai == null) return;
+            
+            List<ClientRecord> records = clientManager.findClients(ai.uid);
+            for (ClientRecord record : records) {
+                try {
+                    record.client.dispatchLog("", packageName, action);
+                } catch (Throwable ignored) {}
             }
         });
     }
