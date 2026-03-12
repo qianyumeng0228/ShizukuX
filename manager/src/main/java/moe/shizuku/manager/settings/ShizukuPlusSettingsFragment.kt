@@ -16,7 +16,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_shizuku_plus, rootKey)
 
-        syncAllFeaturesToServer()
+        ShizukuSettings.syncAllPlusFeaturesToServer()
 
         val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)!!
         dhizukuPref.isChecked = ShizukuSettings.isDhizukuModeEnabled()
@@ -37,10 +37,51 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 maybePromptRestart(KEY_CUSTOM_API_ENABLED, newValue) {
                     ShizukuSettings.setCustomApiEnabled(newValue)
                     customApiPref.isChecked = newValue
-                    notifyServerFeatureUpdate("custom_api", newValue)
+                    ShizukuSettings.syncAllPlusFeaturesToServer()
                 }
             }
             false
+        }
+        
+        // Experimental: Reveal Developer Options on long-press
+        customApiPref.setOnPreferenceClickListener {
+            // Not a long press but we can use this to reveal if it was already checked
+            false
+        }
+
+        val devCategory = findPreference<androidx.preference.PreferenceCategory>("category_developer")
+        if (ShizukuSettings.isVectorEnabled()) {
+            devCategory?.isVisible = true
+        }
+
+        val vectorPref = findPreference<TwoStatePreference>(KEY_VECTOR_ENABLED)
+        vectorPref?.isChecked = ShizukuSettings.isVectorEnabled()
+        vectorPref?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is Boolean) {
+                ShizukuSettings.setVectorEnabled(newValue)
+                ShizukuSettings.syncAllPlusFeaturesToServer()
+            }
+            true
+        }
+
+        val experimentalRootPref = findPreference<TwoStatePreference>(KEY_EXPERIMENTAL_ROOT_COMPAT)
+        experimentalRootPref?.isChecked = ShizukuSettings.isExperimentalRootCompatEnabled()
+        experimentalRootPref?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is Boolean) {
+                ShizukuSettings.setExperimentalRootCompatEnabled(newValue)
+                ShizukuSettings.syncAllPlusFeaturesToServer()
+            }
+            true
+        }
+
+        val spoofDevicePref = findPreference<TwoStatePreference>(KEY_SPOOF_DEVICE_ENABLED)
+        spoofDevicePref?.isChecked = ShizukuSettings.isSpoofDeviceEnabled()
+        spoofDevicePref?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is Boolean) {
+                ShizukuSettings.setSpoofDeviceEnabled(newValue)
+                ShizukuSettings.syncAllPlusFeaturesToServer()
+            }
+            true
         }
 
         val plusKeys = listOf(
@@ -54,45 +95,10 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "network_governor_plus_enabled" to "network_governor_plus",
             "activity_manager_plus_enabled" to "activity_manager_plus"
         )
-        plusKeys.forEach { (prefKey, serverKey) ->
-            findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
-                if (newValue is Boolean) notifyServerFeatureUpdate(serverKey, newValue)
+        plusKeys.forEach { (prefKey, _) ->
+            findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, _ ->
+                ShizukuSettings.syncAllPlusFeaturesToServer()
                 true
-            }
-        }
-    }
-
-    private fun notifyServerFeatureUpdate(key: String, enabled: Boolean) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val binder = Shizuku.getBinder() as? android.os.IBinder
-                if (binder != null) {
-                    IShizukuService.Stub.asInterface(binder).updatePlusFeatureEnabled(key, enabled)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun syncAllFeaturesToServer() {
-        if (!Shizuku.pingBinder()) return
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val binder = Shizuku.getBinder() as? android.os.IBinder ?: return@launch
-                val service = IShizukuService.Stub.asInterface(binder)
-                service.updatePlusFeatureEnabled("custom_api", ShizukuSettings.isCustomApiEnabled())
-                service.updatePlusFeatureEnabled("shell_interceptor", ShizukuSettings.isShellInterceptorEnabled())
-                service.updatePlusFeatureEnabled("avf_manager", ShizukuSettings.isAvfManagerEnabled())
-                service.updatePlusFeatureEnabled("storage_proxy", ShizukuSettings.isStorageProxyEnabled())
-                service.updatePlusFeatureEnabled("continuity_bridge", ShizukuSettings.isContinuityBridgeEnabled())
-                service.updatePlusFeatureEnabled("ai_core_plus", ShizukuSettings.isAICorePlusEnabled())
-                service.updatePlusFeatureEnabled("window_manager_plus", ShizukuSettings.isWindowManagerPlusEnabled())
-                service.updatePlusFeatureEnabled("overlay_manager_plus", ShizukuSettings.isOverlayManagerPlusEnabled())
-                service.updatePlusFeatureEnabled("network_governor_plus", ShizukuSettings.isNetworkGovernorPlusEnabled())
-                service.updatePlusFeatureEnabled("activity_manager_plus", ShizukuSettings.isActivityManagerPlusEnabled())
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
         }
     }

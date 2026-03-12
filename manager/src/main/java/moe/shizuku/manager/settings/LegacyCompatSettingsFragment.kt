@@ -20,9 +20,7 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
         val context = requireContext()
 
         // Sync current su_bridge state to server on fragment open
-        if (Shizuku.pingBinder()) {
-            notifyServerFeatureUpdate("su_bridge", ShizukuSettings.isSuBridgeEnabled())
-        }
+        ShizukuSettings.syncAllPlusFeaturesToServer()
 
         findPreference<TwoStatePreference>("adb_proxy_enabled")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
@@ -34,7 +32,7 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
 
         findPreference<TwoStatePreference>("su_bridge_enabled")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
-                notifyServerFeatureUpdate("su_bridge", newValue)
+                ShizukuSettings.syncAllPlusFeaturesToServer()
             }
             true
         }
@@ -42,17 +40,6 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
         findPreference<Preference>("root_compatibility_hub")?.setOnPreferenceClickListener {
             startActivity(Intent(context, RootCompatibilityActivity::class.java))
             true
-        }
-    }
-
-    private fun notifyServerFeatureUpdate(key: String, enabled: Boolean) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            try {
-                val binder = Shizuku.getBinder() ?: return@launch
-                IShizukuService.Stub.asInterface(binder).updatePlusFeatureEnabled(key, enabled)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
         }
     }
 }

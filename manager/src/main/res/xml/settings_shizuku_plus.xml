@@ -116,4 +116,35 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="category_developer"
+        android:title="@string/settings_plus_category_developer"
+        android:visible="false">
+
+        <SwitchPreferenceCompat
+            android:key="vector_enabled"
+            android:title="@string/settings_vector"
+            android:summary="@string/settings_vector_summary"
+            android:icon="@drawable/ic_code_24dp"
+            android:defaultValue="false"
+            android:dependency="custom_api_enabled" />
+
+        <SwitchPreferenceCompat
+            android:key="experimental_root_compat"
+            android:title="@string/settings_experimental_root"
+            android:summary="@string/settings_experimental_root_summary"
+            android:icon="@drawable/ic_server_ok_24dp"
+            android:defaultValue="false"
+            android:dependency="custom_api_enabled" />
+
+        <SwitchPreferenceCompat
+            android:key="spoof_device_enabled"
+            android:title="@string/settings_spoof_device"
+            android:summary="@string/settings_spoof_device_summary"
+            android:icon="@drawable/ic_outline_notifications_active_24"
+            android:defaultValue="false"
+            android:dependency="custom_api_enabled" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

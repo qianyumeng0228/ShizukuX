@@ -182,6 +182,16 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    protected fun maybeToggleSecureSetting(newValue: Boolean, onResult: (Boolean) -> Unit) {
+        val context = requireContext()
+        if (!newValue || SettingsHelper.hasWriteSecureSettings(context) || EnvironmentUtils.isRooted()) {
+            onResult(true)
+            return
+        }
+        SettingsHelper.promptWriteSecureSettings(context)
+        onResult(false)
+    }
+
     protected class SettingsItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
         private val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
         private val dividerPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)

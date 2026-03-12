@@ -39,26 +39,22 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
         tcpPortPreference = findPreference(KEY_TCP_PORT)!!
 
         startOnBootPreference.apply {
-            val hasWriteSecureSettings = context.checkSelfPermission(
-                android.Manifest.permission.WRITE_SECURE_SETTINGS
-            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
-                EnvironmentUtils.isTelevision() ||
-                EnvironmentUtils.isRooted() ||
-                hasWriteSecureSettings
-            ) {
-                isChecked = ShizukuSettings.getStartOnBoot(context)
-                setOnPreferenceChangeListener { _, newValue ->
-                    if (newValue is Boolean) {
-                        val doToggle = {
-                            maybeToggleBatterySensitiveSetting(newValue) { result ->
-                                if (result) {
-                                    ShizukuSettings.setStartOnBoot(context, newValue)
-                                    isChecked = ShizukuSettings.getStartOnBoot(context)
+            isChecked = ShizukuSettings.getStartOnBoot(context)
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) {
+                    val doToggle = {
+                        maybeToggleSecureSetting(newValue) { secureResult ->
+                            if (secureResult) {
+                                maybeToggleBatterySensitiveSetting(newValue) { batteryResult ->
+                                    if (batteryResult) {
+                                        ShizukuSettings.setStartOnBoot(context, newValue)
+                                        isChecked = ShizukuSettings.getStartOnBoot(context)
+                                    }
                                 }
                             }
                         }
-                        // https://r.android.com/2128832
+                    }
+                    // https://r.android.com/2128832
                         if (newValue &&
                             !EnvironmentUtils.isTelevision() &&
                             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
@@ -75,11 +71,6 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                     }
                     false
                 }
-            } else {
-                isEnabled = false
-                isChecked = false
-                summary = context.getString(R.string.settings_start_on_boot_summary)
-            }
         }
 
         watchdogPreference.apply {
@@ -150,6 +141,19 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                     maybePromptRestart(KEY_TCP_PORT, port ?: 5555) { applyChange() }
                 } else {
                     SnackbarHelper.show(context, requireView(), context.getString(R.string.snackbar_invalid_port))
+                }
+                false
+            }
+        }
+
+        findPreference<TwoStatePreference>(KEY_AUTO_DISABLE_USB_DEBUGGING)?.apply {
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) {
+                    maybeToggleSecureSetting(newValue) { result ->
+                        if (result) {
+                            isChecked = newValue
+                        }
+                    }
                 }
                 false
             }

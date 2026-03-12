@@ -102,7 +102,16 @@ class ServiceDoctorActivity : AppBarActivity() {
             isRunning
         ))
 
-        // 5. Xiaomi Restricted ADB
+        // 5. Secure Settings (WRITE_SECURE_SETTINGS)
+        val hasSecureSettings = SettingsHelper.hasWriteSecureSettings(this)
+        checks.add(DoctorCheck(
+            getString(R.string.doctor_check_secure_settings),
+            if (hasSecureSettings) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_not_enabled),
+            hasSecureSettings,
+            onFix = if (!hasSecureSettings) { { SettingsHelper.promptWriteSecureSettings(this) } } else null
+        ))
+
+        // 6. Xiaomi Restricted ADB
         val manufacturer = Build.MANUFACTURER.lowercase()
         if (manufacturer.contains("xiaomi")) {
             checks.add(DoctorCheck(

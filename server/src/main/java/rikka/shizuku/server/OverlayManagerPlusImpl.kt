@@ -65,4 +65,42 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             emptyList()
         }
     }
+
+    override fun injectResourceOverlay(targetPackage: String?, resourceName: String?, type: Int, value: String?): Boolean {
+        if (targetPackage == null || resourceName == null || value == null) return false
+        if (android.os.Build.VERSION.SDK_INT < 31) return false
+        
+        try {
+            val builderClass = Class.forName("android.content.om.FabricatedOverlay\$Builder")
+            val overlayName = "shizuku_plus_overlay_${System.currentTimeMillis()}"
+            
+            val builderConstructor = builderClass.getConstructor(String::class.java, String::class.java, String::class.java)
+            val builderInstance = builderConstructor.newInstance("moe.shizuku.manager", overlayName, targetPackage)
+            
+            val setResourceValueMethod = builderClass.getMethod("setResourceValue", String::class.java, Int::class.java, Int::class.java)
+            val setResourceValueStringMethod = builderClass.getMethod("setResourceValue", String::class.java, Int::class.java, String::class.java)
+            
+            if (type == 3) { // DATA_TYPE_STRING
+                setResourceValueStringMethod.invoke(builderInstance, resourceName, type, value)
+            } else {
+                setResourceValueMethod.invoke(builderInstance, resourceName, type, value.toIntOrNull() ?: 0)
+            }
+            
+            val buildMethod = builderClass.getMethod("build")
+            val overlay = buildMethod.invoke(builderInstance)
+            
+            val binder = getService() ?: return false
+            val stub = Class.forName("android.content.om.IOverlayManager\$Stub")
+            val asInterface = stub.getMethod("asInterface", IBinder::class.java)
+            val service = asInterface.invoke(null, binder)
+            
+            val registerMethod = service!!.javaClass.getMethod("registerFabricatedOverlay", Class.forName("android.content.om.FabricatedOverlay"))
+            registerMethod.invoke(service, overlay)
+            
+            return true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
 }

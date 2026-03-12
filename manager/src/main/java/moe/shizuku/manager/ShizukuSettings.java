@@ -64,6 +64,9 @@ public class ShizukuSettings {
         public static final String KEY_OVERLAY_MANAGER_PLUS_ENABLED = "overlay_manager_plus_enabled";
         public static final String KEY_NETWORK_GOVERNOR_PLUS_ENABLED = "network_governor_plus_enabled";
         public static final String KEY_ACTIVITY_MANAGER_PLUS_ENABLED = "activity_manager_plus_enabled";
+        public static final String KEY_EXPERIMENTAL_ROOT_COMPAT = "experimental_root_compat";
+        public static final String KEY_SPOOF_DEVICE_ENABLED = "spoof_device_enabled";
+        public static final String KEY_VECTOR_ENABLED = "vector_enabled";
 
         // Home card extras (ShizukuX additions)
         public static final String KEY_SHOW_START_ADB_HOME = "show_start_adb_home";
@@ -402,6 +405,36 @@ public class ShizukuSettings {
         return p == null || p.getBoolean(Keys.KEY_ACTIVITY_MANAGER_PLUS_ENABLED, true);
     }
 
+    public static boolean isVectorEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_VECTOR_ENABLED, false);
+    }
+
+    public static void setVectorEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_VECTOR_ENABLED, enable).apply();
+    }
+
+    public static boolean isExperimentalRootCompatEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_EXPERIMENTAL_ROOT_COMPAT, false);
+    }
+
+    public static void setExperimentalRootCompatEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_EXPERIMENTAL_ROOT_COMPAT, enable).apply();
+    }
+
+    public static boolean isSpoofDeviceEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_SPOOF_DEVICE_ENABLED, false);
+    }
+
+    public static void setSpoofDeviceEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_SPOOF_DEVICE_ENABLED, enable).apply();
+    }
+
     public static boolean isAdbProxyEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_ADB_PROXY_ENABLED, false);
@@ -459,5 +492,56 @@ public class ShizukuSettings {
     public static void setExportDirUri(@Nullable String uri) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putString(Keys.KEY_EXPORT_DIR_URI, uri).apply();
+    }
+
+    public static void syncAllPlusFeaturesToServer() {
+        if (!rikka.shizuku.Shizuku.pingBinder()) return;
+        new Thread(() -> {
+            try {
+                android.os.IBinder binder = (android.os.IBinder) rikka.shizuku.Shizuku.getBinder();
+                if (binder == null) return;
+                moe.shizuku.server.IShizukuService service = moe.shizuku.server.IShizukuService.Stub.asInterface(binder);
+                service.updatePlusFeatureEnabled("custom_api", isCustomApiEnabled());
+                service.updatePlusFeatureEnabled("shell_interceptor", isShellInterceptorEnabled());
+                service.updatePlusFeatureEnabled("avf_manager", isAvfManagerEnabled());
+                service.updatePlusFeatureEnabled("storage_proxy", isStorageProxyEnabled());
+                service.updatePlusFeatureEnabled("continuity_bridge", isContinuityBridgeEnabled());
+                service.updatePlusFeatureEnabled("ai_core_plus", isAICorePlusEnabled());
+                service.updatePlusFeatureEnabled("window_manager_plus", isWindowManagerPlusEnabled());
+                service.updatePlusFeatureEnabled("overlay_manager_plus", isOverlayManagerPlusEnabled());
+                service.updatePlusFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());
+                service.updatePlusFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
+                service.updatePlusFeatureEnabled("su_bridge", isSuBridgeEnabled());
+                service.updatePlusFeatureEnabled("vector", isVectorEnabled());
+                service.updatePlusFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
+                service.updatePlusFeatureEnabled("spoof_device", isSpoofDeviceEnabled());
+                
+                String suPathUri = getExportDirUri();
+                if (suPathUri != null) {
+                    try {
+                        android.net.Uri uri = android.net.Uri.parse(suPathUri);
+                        String docId = android.provider.DocumentsContract.getTreeDocumentId(uri);
+                        String resolvedPath = null;
+                        if (docId.startsWith("primary:")) {
+                            String relative = docId.substring("primary:".length());
+                            resolvedPath = "/storage/emulated/0/" + (relative.isEmpty() ? "" : relative + "/") + "su";
+                        } else if (docId.contains(":")) {
+                            String[] parts = docId.split(":");
+                            resolvedPath = "/storage/" + parts[0] + "/" + parts[1] + "/su";
+                        } else if (docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies")) {
+                            resolvedPath = "/storage/emulated/0/" + docId + "/su";
+                        }
+                        
+                        if (resolvedPath != null) {
+                            service.setPlusSetting("su_path", resolvedPath);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

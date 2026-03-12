@@ -51,6 +51,7 @@ abstract class HomeActivity : AppBarActivity() {
         if (ShizukuStateMachine.isRunning()) {
             checkServerStatus()
             appsModel.load()
+            ShizukuSettings.syncAllPlusFeaturesToServer()
         } else if (ShizukuStateMachine.isDead()) {
             checkServerStatus()
         }

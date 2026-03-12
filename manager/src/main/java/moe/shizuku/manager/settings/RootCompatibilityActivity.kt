@@ -58,28 +58,19 @@ class RootCompatibilityActivity : AppBarActivity() {
 
         resolvedSuPath = resolveSuPath()
 
-        val suPathCard = findViewById<MaterialCardView>(R.id.su_path_card)
-        val suPathText = findViewById<TextView>(R.id.su_path_text)
-        val copyPathButton = findViewById<MaterialButton>(R.id.copy_path_button)
-        val magicSetupAllButton = findViewById<MaterialButton>(R.id.magic_setup_all_button)
+        val globalSetupCard = findViewById<MaterialCardView>(R.id.global_setup_card)
+        val globalSuPath = findViewById<TextView>(R.id.global_su_path)
+        val btnCopyGlobal = findViewById<MaterialButton>(R.id.btn_copy_global)
+        val btnSetupAll = findViewById<MaterialButton>(R.id.btn_setup_all)
 
         if (resolvedSuPath != null) {
-            suPathCard.isVisible = true
-            suPathText.text = resolvedSuPath
-            copyPathButton.setOnClickListener { copyToClipboard(resolvedSuPath!!) }
+            globalSetupCard.isVisible = true
+            globalSuPath.text = resolvedSuPath
+            btnCopyGlobal.setOnClickListener { copyToClipboard(resolvedSuPath!!) }
             
-            magicSetupAllButton.setOnClickListener {
+            btnSetupAll.setOnClickListener {
                 lifecycleScope.launch {
-                    val supported = listOf("org.adaway", "dev.ukanth.ufirewall")
-                    var count = 0
-                    supported.forEach { pkg ->
-                        try {
-                            packageManager.getPackageInfo(pkg, 0)
-                            if (RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, resolvedSuPath!!)) {
-                                count++
-                            }
-                        } catch (ignored: Exception) {}
-                    }
+                    val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, resolvedSuPath!!)
                     if (count > 0) {
                         Toast.makeText(this@RootCompatibilityActivity, getString(R.string.root_hub_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
                     } else {
@@ -88,7 +79,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 }
             }
         } else {
-            suPathCard.isVisible = false
+            globalSetupCard.isVisible = false
         }
 
         val scrollView = findViewById<View>(R.id.suggested_apps_list)?.parent?.parent as? View ?: rootView
@@ -119,10 +110,37 @@ class RootCompatibilityActivity : AppBarActivity() {
 
     private fun buildItems(): List<Any> {
         val items = mutableListOf<Any>()
+        
+        // 1. Official categories from AppContextManager
         AppContextManager.getRootLegacyPackages().forEach { (category, packages) ->
             items.add(category)
             items.addAll(packages)
         }
+        
+        // 2. Scan for other potential root apps installed on the device
+        val detected = mutableListOf<String>()
+        val pm = packageManager
+        val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+        val knownPkgs = AppContextManager.getRootLegacyPackages().values.flatten().toSet()
+        
+        for (pkgInfo in installed) {
+            val pkg = pkgInfo.packageName
+            if (pkg == packageName || knownPkgs.contains(pkg)) continue
+            
+            val usesRoot = pkgInfo.requestedPermissions?.any { 
+                it.contains("ROOT", true) || it.contains("SUPERUSER", true)
+            } == true
+            
+            if (usesRoot) {
+                detected.add(pkg)
+            }
+        }
+        
+        if (detected.isNotEmpty()) {
+            items.add("Other Detected Root Apps")
+            items.addAll(detected)
+        }
+        
         return items
     }
 
@@ -235,7 +253,8 @@ class RootCompatibilityActivity : AppBarActivity() {
 
                 holder.packageName.text = pkg
                 holder.description.text = metadata?.description ?: ""
-                holder.description.visibility = View.VISIBLE
+                holder.description.visibility = if (holder.description.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+                
                 // Root support badge: color and text vary by support level
                 when (metadata?.rootSupportLevel) {
                     RootSupportLevel.ROOT_REQUIRED -> {
@@ -294,12 +313,19 @@ class RootCompatibilityActivity : AppBarActivity() {
                         }
                     }
                 }
-
+                
+                // Load App Info
                 try {
                     val info = pm.getApplicationInfo(pkg, 0)
                     holder.appName.text = info.loadLabel(pm)
                     holder.icon.setImageDrawable(info.loadIcon(pm))
                     holder.itemView.alpha = 1.0f
+                    
+                    if (metadata == null) {
+                        holder.description.text = "Installed Root App"
+                        holder.description.visibility = View.VISIBLE
+                    }
+
                     holder.itemView.setOnClickListener {
                         val intent = pm.getLaunchIntentForPackage(pkg)
                         if (intent != null) {
@@ -316,12 +342,28 @@ class RootCompatibilityActivity : AppBarActivity() {
                     holder.appName.text = pkg.split(".").last().replaceFirstChar { it.uppercase() }
                     holder.icon.setImageResource(R.drawable.ic_system_icon)
                     holder.itemView.alpha = 0.5f
+                    
+                    if (metadata == null) {
+                        holder.description.text = "Suggested Root App"
+                        holder.description.visibility = View.VISIBLE
+                    }
+
                     holder.itemView.setOnClickListener {
+                        val url = when (pkg) {
+                            "org.adaway" -> "https://f-droid.org/packages/org.adaway/"
+                            "dev.ukanth.ufirewall" -> "https://f-droid.org/packages/dev.ukanth.ufirewall/"
+                            "com.machiav3lli.neo_backup" -> "https://f-droid.org/packages/com.machiav3lli.neo_backup/"
+                            "samolego.canta" -> "https://f-droid.org/packages/samolego.canta/"
+                            "com.aistra.hail" -> "https://f-droid.org/packages/com.aistra.hail/"
+                            "thejaustin.afdroid" -> "https://github.com/thejaustin/afdroid/releases"
+                            "thejaustin.hexodus" -> "https://github.com/thejaustin/Hexodus/releases"
+                            else -> "https://play.google.com/store/apps/details?id=$pkg"
+                        }
                         try {
-                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")).apply {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             })
-                        } catch (e: Exception) {
+                        } catch (ex: Exception) {
                             try {
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")))
                             } catch (e2: Exception) {

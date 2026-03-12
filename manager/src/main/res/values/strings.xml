@@ -281,6 +281,13 @@
     <string name="settings_plus_category_display">Display &amp; Theming</string>
     <string name="settings_plus_category_network">Network &amp; Privacy</string>
     <string name="settings_plus_category_intelligence">Intelligence &amp; Continuity</string>
+    <string name="settings_plus_category_developer">Developer Options (Experimental)</string>
+    <string name="settings_vector">Vector Acceleration</string>
+    <string name="settings_vector_summary">Experimental native execution of vector-based system operations. Highly unstable.</string>
+    <string name="settings_experimental_root">Experimental Root Compatibility</string>
+    <string name="settings_experimental_root_summary">Functional workarounds for setprop, mount, and SELinux. Unstable.</string>
+    <string name="settings_spoof_device">Spoof Device Identity</string>
+    <string name="settings_spoof_device_summary">Return a generic Pixel device identity for system property queries. Unstable.</string>
 
     <!-- Legacy Compatibility -->
     <string name="settings_category_legacy_compatibility">Legacy App Compatibility</string>
@@ -296,10 +303,15 @@
     <string name="root_hub_suggested_apps_desc">These apps are known to allow custom SU paths. Point them to your exported \'su\' script.</string>
     <string name="root_hub_active_sessions">Active Root Sessions</string>
     <string name="root_hub_active_sessions_empty">No active legacy root sessions detected.</string>
+    <string name="root_hub_global_config_title">Global SU Setup</string>
+    <string name="root_hub_global_config_desc">Use this path for all apps. Automatic setup will try to configure supported apps for you.</string>
+    <string name="root_hub_setup_all">Setup All</string>
+    <string name="root_hub_setup_all_success">Automatic setup attempted for all compatible apps.</string>
     <string name="root_hub_how_to_use">How to use:</string>
     <string name="root_hub_step_1">1. Export Shizuku files from the Home screen.</string>
-    <string name="root_hub_step_2">2. Find the "SU Path" or "Binary Path" setting in your root app.</string>
+    <string name="root_hub_step_2">2. In your root app, look for "SU Path" or "Binary Path" in its settings.</string>
     <string name="root_hub_step_3">3. Change it to the path of the exported \'su\' file.</string>
+    <string name="root_hub_step_4">4. For apps without a custom path setting, enable "SU Bridge" in ShizukuX settings. This automatically redirects many legacy su calls.</string>
     <string name="root_hub_app_instruction">Set path in Settings > %s</string>
     <string name="root_hub_su_path_label">Exported su path</string>
     <string name="root_hub_copy_path">Copy path</string>
@@ -334,6 +346,7 @@
     <string name="doctor_check_battery">Battery optimization: ^1</string>
     <string name="doctor_check_adb">Wireless debugging: ^1</string>
     <string name="doctor_check_root">Root access: ^1</string>
+    <string name="doctor_check_secure_settings">Secure Settings: ^1</string>
     <string name="doctor_check_permission">ADB permission: ^1</string>
     <string name="doctor_check_server">Shizuku server: ^1</string>
     <string name="doctor_check_background">Background limits: ^1</string>
