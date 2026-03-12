@@ -422,15 +422,67 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         return newProcessInternal(new String[]{"echo", value}, env, dir);
                     } else if (prop.startsWith("ro.product.") || prop.startsWith("ro.build.")) {
                         if (!forceReal && isFeatureEnabled("spoof_device")) {
-                            LOGGER.i("SUBridge: spoofing getprop " + prop);
+                            String target = plusSettingsMap.getOrDefault("spoof_target", "pixel_8_pro");
+                            LOGGER.i("SUBridge: spoofing getprop " + prop + " as " + target);
                             String spoofValue = "";
-                            if (prop.contains("model")) spoofValue = "Pixel 8 Pro";
-                            else if (prop.contains("manufacturer")) spoofValue = "Google";
-                            else if (prop.contains("brand")) spoofValue = "google";
-                            else if (prop.contains("device")) spoofValue = "husky";
-                            else if (prop.contains("product")) spoofValue = "husky";
-                            else if (prop.contains("fingerprint")) spoofValue = "google/husky/husky:14/UD1A.230803.041/10808577:user/release-keys";
-                            else spoofValue = android.os.SystemProperties.get(prop, "");
+                            
+                            switch (target) {
+                                case "pixel_9_pro_xl":
+                                    if (prop.contains("model")) spoofValue = "Pixel 9 Pro XL";
+                                    else if (prop.contains("manufacturer")) spoofValue = "Google";
+                                    else if (prop.contains("brand")) spoofValue = "google";
+                                    else if (prop.contains("device")) spoofValue = "komodo";
+                                    else if (prop.contains("product")) spoofValue = "komodo";
+                                    else if (prop.contains("fingerprint")) spoofValue = "google/komodo/komodo:15/AP3A.241005.015/12533500:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                                case "s24_ultra":
+                                    if (prop.contains("model")) spoofValue = "SM-S928B";
+                                    else if (prop.contains("manufacturer")) spoofValue = "samsung";
+                                    else if (prop.contains("brand")) spoofValue = "samsung";
+                                    else if (prop.contains("device")) spoofValue = "eureka";
+                                    else if (prop.contains("product")) spoofValue = "eureka";
+                                    else if (prop.contains("fingerprint")) spoofValue = "samsung/eureka/eureka:14/UP1A.231005.007/S928BXXU1AXB5:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                                case "s23_ultra":
+                                    if (prop.contains("model")) spoofValue = "SM-S918B";
+                                    else if (prop.contains("manufacturer")) spoofValue = "samsung";
+                                    else if (prop.contains("brand")) spoofValue = "samsung";
+                                    else if (prop.contains("device")) spoofValue = "dm3";
+                                    else if (prop.contains("product")) spoofValue = "dm3";
+                                    else if (prop.contains("fingerprint")) spoofValue = "samsung/dm3/dm3:14/UP1A.231005.007/S918BXXU3BWK1:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                                case "oneplus_12":
+                                    if (prop.contains("model")) spoofValue = "CPH2581";
+                                    else if (prop.contains("manufacturer")) spoofValue = "OnePlus";
+                                    else if (prop.contains("brand")) spoofValue = "OnePlus";
+                                    else if (prop.contains("device")) spoofValue = "OP5929L1";
+                                    else if (prop.contains("product")) spoofValue = "OP5929L1";
+                                    else if (prop.contains("fingerprint")) spoofValue = "OnePlus/CPH2581/OP5929L1:14/UKQ1.230924.001/R.202401121400:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                                case "nothing_phone_2":
+                                    if (prop.contains("model")) spoofValue = "A065";
+                                    else if (prop.contains("manufacturer")) spoofValue = "Nothing";
+                                    else if (prop.contains("brand")) spoofValue = "Nothing";
+                                    else if (prop.contains("device")) spoofValue = "Pong";
+                                    else if (prop.contains("product")) spoofValue = "Pong";
+                                    else if (prop.contains("fingerprint")) spoofValue = "Nothing/Pong/Pong:14/UP1A.231005.007/2401121400:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                                case "pixel_8_pro":
+                                default:
+                                    if (prop.contains("model")) spoofValue = "Pixel 8 Pro";
+                                    else if (prop.contains("manufacturer")) spoofValue = "Google";
+                                    else if (prop.contains("brand")) spoofValue = "google";
+                                    else if (prop.contains("device")) spoofValue = "husky";
+                                    else if (prop.contains("product")) spoofValue = "husky";
+                                    else if (prop.contains("fingerprint")) spoofValue = "google/husky/husky:14/UD1A.230803.041/10808577:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
+                            }
                             return newProcessInternal(new String[]{"echo", spoofValue}, env, dir);
                         } else {
                             // Functional: Return actual device identity

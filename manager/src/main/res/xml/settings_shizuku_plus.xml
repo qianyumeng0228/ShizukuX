@@ -145,6 +145,16 @@
             android:defaultValue="false"
             android:dependency="custom_api_enabled" />
 
+        <rikka.preference.SimpleMenuPreference
+            android:key="spoof_target"
+            android:title="@string/settings_spoof_target"
+            android:entries="@array/spoof_targets"
+            android:entryValues="@array/spoof_targets_values"
+            android:defaultValue="pixel_8_pro"
+            android:summary="%s"
+            android:icon="@drawable/ic_system_icon"
+            android:dependency="spoof_device_enabled" />
+
     </PreferenceCategory>
 
 </PreferenceScreen>

@@ -66,6 +66,7 @@ public class ShizukuSettings {
         public static final String KEY_ACTIVITY_MANAGER_PLUS_ENABLED = "activity_manager_plus_enabled";
         public static final String KEY_EXPERIMENTAL_ROOT_COMPAT = "experimental_root_compat";
         public static final String KEY_SPOOF_DEVICE_ENABLED = "spoof_device_enabled";
+        public static final String KEY_SPOOF_TARGET = "spoof_target";
         public static final String KEY_VECTOR_ENABLED = "vector_enabled";
 
         // Home card extras (ShizukuX additions)
@@ -75,6 +76,8 @@ public class ShizukuSettings {
 
         // Legacy Compatibility (ShizukuX additions)
         public static final String KEY_ADB_PROXY_ENABLED = "adb_proxy_enabled";
+        public static final String KEY_ON_DEVICE_ADB_TCP = "on_device_adb_tcp";
+        public static final String KEY_FORCE_START_WADB = "force_start_wadb";
         public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
 
@@ -405,14 +408,34 @@ public class ShizukuSettings {
         return p == null || p.getBoolean(Keys.KEY_ACTIVITY_MANAGER_PLUS_ENABLED, true);
     }
 
-    public static boolean isVectorEnabled() {
+    public static boolean isAdbProxyEnabled() {
         SharedPreferences p = getPreferences();
-        return p != null && p.getBoolean(Keys.KEY_VECTOR_ENABLED, false);
+        return p != null && p.getBoolean(Keys.KEY_ADB_PROXY_ENABLED, false);
     }
 
-    public static void setVectorEnabled(boolean enable) {
+    public static boolean isOnDeviceAdbTcpEnabled() {
         SharedPreferences p = getPreferences();
-        if (p != null) p.edit().putBoolean(Keys.KEY_VECTOR_ENABLED, enable).apply();
+        return p != null && p.getBoolean(Keys.KEY_ON_DEVICE_ADB_TCP, false);
+    }
+
+    public static void setOnDeviceAdbTcpEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_ON_DEVICE_ADB_TCP, enable).apply();
+    }
+
+    public static boolean isForceStartWadbEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_FORCE_START_WADB, false);
+    }
+
+    public static void setForceStartWadbEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_FORCE_START_WADB, enable).apply();
+    }
+
+    public static void setAdbProxyEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_ADB_PROXY_ENABLED, enable).apply();
     }
 
     public static boolean isExperimentalRootCompatEnabled() {
@@ -433,6 +456,16 @@ public class ShizukuSettings {
     public static void setSpoofDeviceEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_SPOOF_DEVICE_ENABLED, enable).apply();
+    }
+
+    public static String getSpoofTarget() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_SPOOF_TARGET, "pixel_8_pro") : "pixel_8_pro";
+    }
+
+    public static void setSpoofTarget(String target) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putString(Keys.KEY_SPOOF_TARGET, target).apply();
     }
 
     public static boolean isAdbProxyEnabled() {
@@ -515,6 +548,9 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("vector", isVectorEnabled());
                 service.updatePlusFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
                 service.updatePlusFeatureEnabled("spoof_device", isSpoofDeviceEnabled());
+                service.setPlusSetting("spoof_target", getSpoofTarget());
+                service.updatePlusFeatureEnabled("on_device_adb_tcp", isOnDeviceAdbTcpEnabled());
+                service.updatePlusFeatureEnabled("force_start_wadb", isForceStartWadbEnabled());
                 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {

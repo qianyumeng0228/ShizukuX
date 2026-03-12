@@ -9,6 +9,20 @@
         android:defaultValue="false" />
 
     <SwitchPreferenceCompat
+        android:key="on_device_adb_tcp"
+        android:title="@string/settings_on_device_adb_tcp"
+        android:summary="@string/settings_on_device_adb_tcp_summary"
+        android:icon="@drawable/ic_adb_24dp"
+        android:defaultValue="false" />
+
+    <SwitchPreferenceCompat
+        android:key="force_start_wadb"
+        android:title="@string/settings_force_start_wadb"
+        android:summary="@string/settings_force_start_wadb_summary"
+        android:icon="@drawable/ic_server_restart"
+        android:defaultValue="false" />
+
+    <SwitchPreferenceCompat
         android:key="su_bridge_enabled"
         android:title="@string/settings_fake_su"
         android:summary="@string/settings_fake_su_summary"

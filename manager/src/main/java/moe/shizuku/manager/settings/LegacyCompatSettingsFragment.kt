@@ -30,6 +30,24 @@ class LegacyCompatSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        findPreference<TwoStatePreference>("on_device_adb_tcp")?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is Boolean) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    if (newValue) {
+                        moe.shizuku.manager.service.AdbProxyService.enableAdbTcp()
+                    } else {
+                        moe.shizuku.manager.service.AdbProxyService.disableAdbTcp()
+                    }
+                }
+            }
+            true
+        }
+
+        findPreference<TwoStatePreference>("force_start_wadb")?.setOnPreferenceChangeListener { _, _ ->
+            ShizukuSettings.syncAllPlusFeaturesToServer()
+            true
+        }
+
         findPreference<TwoStatePreference>("su_bridge_enabled")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
                 ShizukuSettings.syncAllPlusFeaturesToServer()

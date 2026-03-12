@@ -58,7 +58,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 AdbStarter.stopTcp(applicationContext, tcpPort)
             }
 
-            val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() } ?: callbackFlow {
+            val port = tcpPort.takeIf { !EnvironmentUtils.isWifiRequired() || ShizukuSettings.isForceStartWadbEnabled() } ?: callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
                     if (p > 0) trySend(p)
                 }
@@ -204,7 +204,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     companion object {
         fun enqueue(context: Context) {
             val cb = Constraints.Builder()
-            if (EnvironmentUtils.isWifiRequired())
+            if (EnvironmentUtils.isWifiRequired() && !ShizukuSettings.isForceStartWadbEnabled())
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 

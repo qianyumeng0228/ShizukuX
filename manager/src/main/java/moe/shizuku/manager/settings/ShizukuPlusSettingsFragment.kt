@@ -84,6 +84,11 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        findPreference<androidx.preference.Preference>(KEY_SPOOF_TARGET)?.setOnPreferenceChangeListener { _, _ ->
+            ShizukuSettings.syncAllPlusFeaturesToServer()
+            true
+        }
+
         val plusKeys = listOf(
             "shell_interceptor_enabled" to "shell_interceptor",
             "avf_manager_enabled" to "avf_manager",

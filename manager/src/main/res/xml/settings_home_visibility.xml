@@ -31,6 +31,13 @@
         android:icon="@drawable/ic_terminal_24"
         android:defaultValue="true" />
 
+    <SwitchPreferenceCompat
+        android:key="enable_activity_log"
+        android:title="@string/settings_enable_activity_log"
+        android:summary="@string/settings_enable_activity_log_summary"
+        android:icon="@drawable/ic_server_ok_24dp"
+        android:defaultValue="true" />
+
     <Preference
         android:key="update_app_database"
         android:title="@string/settings_update_app_database"
