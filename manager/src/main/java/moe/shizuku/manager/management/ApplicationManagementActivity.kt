@@ -136,7 +136,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             }
 
             override fun onChanged() {
-                backCallback.isEnabled = adapter.isSelectionMode
+                backCallback?.isEnabled = adapter.isSelectionMode
                 if (adapter.isSelectionMode) {
                     supportActionBar?.title = getString(R.string.app_management_selected, adapter.selectedPackages.size)
                     invalidateOptionsMenu()

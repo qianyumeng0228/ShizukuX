@@ -1,6 +1,7 @@
 package moe.shizuku.manager.utils
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,9 +65,9 @@ object RootCompatHelper {
         val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
         var count = 0
         
-        installed.forEach { pkgInfo ->
+        for (pkgInfo in installed) {
             val pkg = pkgInfo.packageName
-            if (pkg == context.packageName) return@forEach
+            if (pkg == context.packageName) continue
             
             val usesRoot = pkgInfo.requestedPermissions?.any { 
                 it.contains("ROOT", true) || it.contains("SUPERUSER", true)
