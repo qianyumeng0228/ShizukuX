@@ -476,7 +476,18 @@
 
 
     <!-- Settings navigation summaries -->
-    <string name="settings_nav_behavior_summary">Start on boot, watchdog, TCP mode</string>
+    <string name="settings_category_swipe">Swipe Actions</string>
+    <string name="settings_category_long_press">Long-press Actions</string>
+    <string name="settings_category_home_cards">Home Cards</string>
+    <string name="settings_category_activity_log">Activity Log</string>
+    <string name="settings_category_database">Database</string>
+    <string name="settings_category_network">Network</string>
+    <string name="settings_category_material_you">Material You</string>
+    <string name="settings_category_language">Language</string>
+    <string name="settings_category_appearance">Appearance</string>
+    <string name="settings_category_advanced">Advanced</string>
+
+    <string name="settings_nav_behavior_summary">Start on boot, Watchdog, and TCP mode</string>
     <string name="settings_nav_shizuku_plus_summary">Enhanced API, shell interceptor, and more</string>
     <string name="settings_nav_ui_summary">Theme, colors, language</string>
     <string name="settings_nav_app_management_summary">Swipe and long-press actions</string>

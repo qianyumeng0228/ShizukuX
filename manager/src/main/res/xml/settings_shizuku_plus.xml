@@ -2,7 +2,9 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Framework: core delegation and master Plus switch -->
-    <PreferenceCategory android:title="@string/settings_plus_category_framework">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_framework"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="dhizuku_mode"
@@ -17,10 +19,12 @@
             android:icon="@drawable/ic_code_24dp"
             android:defaultValue="true" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Performance: shell-level acceleration and process control -->
-    <PreferenceCategory android:title="@string/settings_plus_category_performance">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_performance"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="shell_interceptor_enabled"
@@ -38,10 +42,12 @@
             android:defaultValue="true"
             android:dependency="shell_interceptor_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Files & VMs: storage access and virtual machines -->
-    <PreferenceCategory android:title="@string/settings_plus_category_files">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_files"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="storage_proxy_enabled"
@@ -59,10 +65,12 @@
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Display & Theming: windows and overlay management -->
-    <PreferenceCategory android:title="@string/settings_plus_category_display">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_display"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="window_manager_plus_enabled"
@@ -80,10 +88,12 @@
             android:defaultValue="true"
             android:dependency="window_manager_plus_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Network & Privacy -->
-    <PreferenceCategory android:title="@string/settings_plus_category_network">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_network"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="network_governor_plus_enabled"
@@ -93,10 +103,12 @@
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Intelligence & Continuity -->
-    <PreferenceCategory android:title="@string/settings_plus_category_intelligence">
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_plus_category_intelligence"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="ai_core_plus_enabled"
@@ -114,12 +126,13 @@
             android:defaultValue="true"
             android:dependency="custom_api_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_developer"
         android:title="@string/settings_plus_category_developer"
-        android:visible="false">
+        android:visible="false"
+        android:defaultValue="false">
 
         <SwitchPreferenceCompat
             android:key="vector_enabled"
@@ -155,6 +168,6 @@
             android:icon="@drawable/ic_system_icon"
             android:dependency="spoof_device_enabled" />
 
-    </PreferenceCategory>
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

@@ -62,21 +62,22 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         val recyclerView = super.onCreateRecyclerView(inflater, parent, savedInstanceState)
         val context = recyclerView.context
         val cardMarginPx = (16 * context.resources.displayMetrics.density).toInt()
+        val contentPaddingPx = (8 * context.resources.displayMetrics.density).toInt()
 
         // Fix Sentry: IllegalArgumentException Providing a LayoutTransition into RecyclerView is not supported
         recyclerView.layoutTransition = null
 
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        recyclerView.setPadding(cardMarginPx, 0, cardMarginPx, 0)
+        recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)
         recyclerView.clipToPadding = false
         recyclerView.addItemDecoration(SettingsItemDecoration(context))
 
         ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { _, insets ->
             val systemBarsInsets = insets.getInsets(Type.systemBars() or Type.displayCutout())
             recyclerView.setPadding(
-                cardMarginPx + systemBarsInsets.left,
+                cardMarginPx + contentPaddingPx + systemBarsInsets.left,
                 recyclerView.paddingTop,
-                cardMarginPx + systemBarsInsets.right,
+                cardMarginPx + contentPaddingPx + systemBarsInsets.right,
                 systemBarsInsets.bottom
             )
             insets

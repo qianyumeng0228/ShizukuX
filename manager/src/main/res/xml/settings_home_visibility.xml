@@ -1,47 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <SwitchPreferenceCompat
-        android:key="show_terminal_home"
-        android:title="@string/settings_show_terminal_home"
-        android:icon="@drawable/ic_terminal_24"
-        android:defaultValue="true" />
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_home_cards"
+        android:defaultValue="true">
 
-    <SwitchPreferenceCompat
-        android:key="show_automation_home"
-        android:title="@string/settings_show_automation_home"
-        android:icon="@drawable/ic_autorenew"
-        android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="show_terminal_home"
+            android:title="@string/settings_show_terminal_home"
+            android:icon="@drawable/ic_terminal_24"
+            android:defaultValue="true" />
 
-    <SwitchPreferenceCompat
-        android:key="show_learn_more_home"
-        android:title="@string/settings_show_learn_more_home"
-        android:icon="@drawable/ic_learn_more_24dp"
-        android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="show_automation_home"
+            android:title="@string/settings_show_automation_home"
+            android:icon="@drawable/ic_autorenew"
+            android:defaultValue="true" />
 
-    <SwitchPreferenceCompat
-        android:key="show_start_adb_home"
-        android:title="@string/settings_show_start_adb_home"
-        android:icon="@drawable/ic_adb_24dp"
-        android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="show_learn_more_home"
+            android:title="@string/settings_show_learn_more_home"
+            android:icon="@drawable/ic_learn_more_24dp"
+            android:defaultValue="true" />
 
-    <SwitchPreferenceCompat
-        android:key="show_activity_log_home"
-        android:title="@string/settings_show_activity_log_home"
-        android:icon="@drawable/ic_terminal_24"
-        android:defaultValue="true" />
+        <SwitchPreferenceCompat
+            android:key="show_start_adb_home"
+            android:title="@string/settings_show_start_adb_home"
+            android:icon="@drawable/ic_adb_24dp"
+            android:defaultValue="false" />
 
-    <SwitchPreferenceCompat
-        android:key="enable_activity_log"
-        android:title="@string/settings_enable_activity_log"
-        android:summary="@string/settings_enable_activity_log_summary"
-        android:icon="@drawable/ic_server_ok_24dp"
-        android:defaultValue="true" />
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <Preference
-        android:key="update_app_database"
-        android:title="@string/settings_update_app_database"
-        android:summary="@string/settings_update_app_database_summary"
-        android:icon="@drawable/ic_autorenew" />
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_activity_log"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="show_activity_log_home"
+            android:title="@string/settings_show_activity_log_home"
+            android:icon="@drawable/ic_terminal_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="enable_activity_log"
+            android:title="@string/settings_enable_activity_log"
+            android:summary="@string/settings_enable_activity_log_summary"
+            android:icon="@drawable/ic_server_ok_24dp"
+            android:defaultValue="true" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_database"
+        android:defaultValue="true">
+
+        <Preference
+            android:key="update_app_database"
+            android:title="@string/settings_update_app_database"
+            android:summary="@string/settings_update_app_database_summary"
+            android:icon="@drawable/ic_autorenew" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

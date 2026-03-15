@@ -50,6 +50,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
         }
 
         supportFragmentManager.beginTransaction()
+            .setReorderingAllowed(true)
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()

@@ -14,8 +14,8 @@
     <dimen name="default_app_icon_size">40dp</dimen>
     <dimen name="home_icon_padding">16dp</dimen>
 
-    <dimen name="card_corner_radius">32dp</dimen>
-    <dimen name="card_corner_radius_large">36dp</dimen>
+    <dimen name="card_corner_radius">16dp</dimen>
+    <dimen name="card_corner_radius_large">24dp</dimen>
     <dimen name="card_content_padding">24dp</dimen>
 
     <dimen name="m3e_spacing_small">8dp</dimen>

@@ -1,35 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <moe.shizuku.manager.settings.IntegerSimpleMenuPreference
-        android:entries="@array/night_mode"
-        android:entryValues="@array/night_mode_value"
-        android:key="night_mode"
-        android:summary="%s"
-        android:title="@string/dark_theme"
-        android:icon="@drawable/ic_outline_dark_mode_24" />
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_dark_mode"
+        android:defaultValue="true">
 
-    <SwitchPreferenceCompat
-        android:key="black_night_theme"
-        android:summary="@string/settings_black_night_theme_summary"
-        android:title="@string/settings_black_night_theme"
-        android:icon="@drawable/ic_outline_dark_mode_24" />
+        <moe.shizuku.manager.settings.IntegerSimpleMenuPreference
+            android:entries="@array/night_mode"
+            android:entryValues="@array/night_mode_value"
+            android:key="night_mode"
+            android:summary="%s"
+            android:title="@string/dark_theme"
+            android:icon="@drawable/ic_outline_dark_mode_24" />
 
-    <SwitchPreferenceCompat
-        android:key="use_system_color"
-        android:title="@string/settings_use_system_color"
-        android:icon="@drawable/ic_monochrome" />
+        <SwitchPreferenceCompat
+            android:key="black_night_theme"
+            android:summary="@string/settings_black_night_theme_summary"
+            android:title="@string/settings_black_night_theme"
+            android:icon="@drawable/ic_outline_dark_mode_24" />
 
-    <rikka.preference.SimpleMenuPreference
-        android:defaultValue="SYSTEM"
-        android:key="language"
-        android:summary="%s"
-        android:title="@string/settings_language"
-        android:icon="@drawable/ic_outline_translate_24" />
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <Preference
-        android:key="translation"
-        android:title="@string/settings_translation"
-        android:icon="@drawable/ic_outline_translate_24" />
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_material_you"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="use_system_color"
+            android:title="@string/settings_use_system_color"
+            android:icon="@drawable/ic_monochrome" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_language"
+        android:defaultValue="true">
+
+        <rikka.preference.SimpleMenuPreference
+            android:defaultValue="SYSTEM"
+            android:key="language"
+            android:summary="%s"
+            android:title="@string/settings_language"
+            android:icon="@drawable/ic_outline_translate_24" />
+
+        <Preference
+            android:key="translation"
+            android:title="@string/settings_translation"
+            android:icon="@drawable/ic_outline_translate_24" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>
