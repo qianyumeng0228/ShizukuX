@@ -26,10 +26,10 @@ abstract class AppActivity : MaterialActivity() {
         val reenterTransition = MaterialSharedAxis(MaterialSharedAxis.X, false)
         
         // Increase duration for smoother motion
-        enterTransition.duration = 300
-        exitTransition.duration = 300
-        returnTransition.duration = 300
-        reenterTransition.duration = 300
+        enterTransition.duration = 450
+        exitTransition.duration = 450
+        returnTransition.duration = 450
+        reenterTransition.duration = 450
 
         window.enterTransition = enterTransition
         window.exitTransition = exitTransition
