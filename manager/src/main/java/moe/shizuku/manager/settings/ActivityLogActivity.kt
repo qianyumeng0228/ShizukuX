@@ -112,7 +112,18 @@ class ActivityLogActivity : AppBarActivity() {
         }
 
         fun bind(record: ActivityLogRecord) {
-            binding.appName.text = record.appName
+            val context = binding.root.context
+            val pm = context.packageManager
+            
+            try {
+                val ai = pm.getApplicationInfo(record.packageName, 0)
+                binding.appName.text = ai.loadLabel(pm)
+                binding.icon.setImageDrawable(ai.loadIcon(pm))
+            } catch (e: Exception) {
+                binding.appName.text = record.appName.ifEmpty { record.packageName }
+                binding.icon.setImageResource(R.drawable.ic_system_icon)
+            }
+            
             binding.packageName.text = record.packageName
             binding.action.text = record.action
             binding.timestamp.text = dateFormat.format(Date(record.timestamp))
