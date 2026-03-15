@@ -375,7 +375,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             v.animate()
                 .translationY(0f)
                 .setDuration(350)
-                .setInterpolator(DecelerateInterpolator())
+                .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .start()
 
             // Bounce the right-swipe icon right to hint the gesture
@@ -384,12 +384,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 iconRight.animate()
                     .translationX(dpToPx(18f))
                     .setDuration(350)
-                    .setInterpolator(DecelerateInterpolator())
+                    .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                     .withEndAction {
                         iconRight.animate()
                             .translationX(0f)
                             .setDuration(250)
-                            .setInterpolator(AccelerateInterpolator())
+                            .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                             .start()
                     }.start()
             }, 500)
@@ -400,12 +400,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 iconLeft.animate()
                     .translationX(-dpToPx(18f))
                     .setDuration(350)
-                    .setInterpolator(DecelerateInterpolator())
+                    .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                     .withEndAction {
                         iconLeft.animate()
                             .translationX(0f)
                             .setDuration(250)
-                            .setInterpolator(AccelerateInterpolator())
+                            .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                             .start()
                     }.start()
             }, 1000)
@@ -416,7 +416,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 .translationY(hint.height.toFloat())
                 .alpha(0f)
                 .setDuration(280)
-                .setInterpolator(AccelerateInterpolator())
+                .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .withEndAction { (hint.parent as? ViewGroup)?.removeView(hint) }
                 .start()
         }

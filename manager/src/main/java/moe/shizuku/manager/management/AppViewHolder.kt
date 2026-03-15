@@ -254,8 +254,8 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             .alpha(1f)
             .scaleX(1f)
             .scaleY(1f)
-            .setDuration(400)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .setDuration(500)
+            .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
             .start()
 
         val pm = context.packageManager
