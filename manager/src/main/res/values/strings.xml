@@ -8,6 +8,8 @@
     <!-- Home - Status -->
     <string name="home_status_service_is_running">%1$s is running</string>
     <string name="home_status_service_not_running">%1$s is not running</string>
+    <string name="home_status_service_user_root">root</string>
+    <string name="home_status_service_user_adb">adb</string>
     <string name="home_status_service_version">Version %2$s, %1$s</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
 
@@ -229,10 +231,14 @@
     <string name="settings_black_night_theme">Black night theme</string>
     <string name="settings_black_night_theme_summary">Use the pure black theme if night mode is enabled</string>
     <string name="settings_support">Support</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_developer_options_revealed">Developer Options revealed!</string>
+    <string name="settings_developer_options_click_more">Tap %d more times to reveal Developer Options.</string>
     <string name="settings_help">Help</string>
     <string name="settings_report_bug">Report a bug</string>
     <string name="settings_activity_log">Activity log</string>
     <string name="settings_activity_log_empty">No activity recorded yet.</string>
+    <string name="settings_activity_log_clear">Clear logs</string>
     <string name="settings_enable_activity_log">Enable activity log</string>
     <string name="settings_enable_activity_log_summary">Record and display Shizuku API calls and events on the home screen.</string>
     <string name="settings_show_activity_log_home">Show Activity Log</string>

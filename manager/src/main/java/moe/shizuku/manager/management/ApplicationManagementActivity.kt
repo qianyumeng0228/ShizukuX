@@ -443,9 +443,9 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 class AppListItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
     private val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
     private val dividerPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-    private val cornerRadius = 28f * context.resources.displayMetrics.density
-    private val dividerInset = 80f * context.resources.displayMetrics.density // icon width + margins
-    private val cardMargin = 16f * context.resources.displayMetrics.density
+    private val cornerRadius = context.resources.getDimension(R.dimen.card_corner_radius)
+    private val dividerInset = 72f * context.resources.displayMetrics.density // icon width + margins
+    private val cardMargin = context.resources.getDimension(R.dimen.m3e_spacing_medium)
 
     init {
         val typedValue = TypedValue()

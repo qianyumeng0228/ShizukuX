@@ -67,10 +67,15 @@ class ActivityLogActivity : AppBarActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        adapter.update(ActivityLogManager.getRecords())
+    }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menu.add(0, 1, 0, android.R.string.cancel).apply {
+        menu.add(0, 1, 0, R.string.settings_activity_log_clear).apply {
             setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-            setIcon(R.drawable.ic_close_24)
+            setIcon(R.drawable.ic_delete_24dp)
         }
         return true
     }

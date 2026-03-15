@@ -35,4 +35,9 @@
         android:title="@string/settings_report_bug"
         android:icon="@drawable/ic_warning_24" />
 
+    <Preference
+        android:key="version"
+        android:title="@string/settings_version"
+        android:icon="@drawable/ic_default_app_icon_background" />
+
 </PreferenceScreen>
