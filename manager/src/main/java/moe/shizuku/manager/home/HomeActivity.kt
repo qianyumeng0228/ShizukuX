@@ -172,9 +172,9 @@ abstract class HomeActivity : AppBarActivity() {
         ShizukuStateMachine.addListener(stateListener)
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent?.let {
+        intent.let {
             val showDialog = it.getBooleanExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, false)
             if (showDialog) showAccessibilityDialog()
 

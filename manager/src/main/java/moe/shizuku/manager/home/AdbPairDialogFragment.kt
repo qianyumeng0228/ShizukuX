@@ -23,7 +23,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
@@ -155,8 +155,6 @@ class AdbPairDialogFragment : DialogFragment() {
         return super.getDialog() as AlertDialog?
     }
 }
-
-import androidx.lifecycle.viewModelScope
 
 @SuppressLint("NewApi")
 class ViewModel(application: Application) : AndroidViewModel(application) {

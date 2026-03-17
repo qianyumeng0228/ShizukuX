@@ -11,7 +11,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
@@ -146,7 +146,7 @@ class AdbPairingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopSearch()
-        kotlinx.coroutines.cancel(serviceScope)
+        serviceScope.cancel()
     }
 
     private fun onStart(): Notification {
