@@ -92,6 +92,7 @@ abstract class HomeActivity : AppBarActivity() {
 
         val recyclerView = binding.list
         recyclerView.adapter = adapter
+        (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
 
         val cardSpacing = resources.getDimension(R.dimen.card_spacing)

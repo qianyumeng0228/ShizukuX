@@ -46,6 +46,8 @@ class HomeAdapter(
         }
     }
 
+    private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope)
+
     init {
         setHasStableIds(true)
         HomeEditMode.onChanged = { updateData() }
@@ -89,7 +91,7 @@ class HomeAdapter(
                         ID_START_ROOT -> if (isPrimaryUser && EnvironmentUtils.isRooted()) 
                             addItem(StartRootViewHolder.CREATOR, rootRestart, id)
                         ID_START_WADB -> if (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0))
-                            addItem(StartWirelessAdbViewHolder.creator(scope), null, id)
+                            addItem(startWadbCreator, null, id)
                         ID_START_ADB -> if (isPrimaryUser && ShizukuSettings.showStartAdbHome())
                             addItem(StartAdbViewHolder.CREATOR, null, id)
                         ID_AUTOMATION -> if (ShizukuSettings.showAutomationHome())
