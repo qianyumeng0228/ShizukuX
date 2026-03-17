@@ -95,9 +95,7 @@ class AdbClient(private val host: String, private val port: Int, private val key
                     message = read()
                     val remoteId = message.arg0
                     if (message.command == A_WRTE) {
-                        if (message.data_length > 0) {
-                            listener?.invoke(message.data!!)
-                        }
+                        message.data?.let { listener?.invoke(it) }
                         write(A_OKAY, localId, remoteId)
                     } else if (message.command == A_CLSE) {
                         write(A_CLSE, localId, remoteId)

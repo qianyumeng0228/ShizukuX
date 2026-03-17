@@ -75,7 +75,9 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 }
             }
         }
-        onBackPressedDispatcher.addCallback(this, backCallback!!)
+        backCallback?.let {
+            onBackPressedDispatcher.addCallback(this, it)
+        }
 
         // Search bar
         findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.search_edit_text)

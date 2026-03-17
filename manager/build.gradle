@@ -50,7 +50,7 @@ android {
     externalNativeBuild {
         cmake {
             path = file("src/main/jni/CMakeLists.txt")
-            version = "3.31.0+"
+            version = "3.22.1"
         }
     }
     kotlinOptions {
@@ -167,8 +167,8 @@ configurations.configureEach {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.coroutines.android
 
     implementation project(":server")
     implementation project(":rish")
@@ -179,44 +179,45 @@ dependencies {
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub
 
-    implementation "androidx.browser:browser:1.8.0"
-    implementation "androidx.core:core-ktx:1.16.0"
-    implementation "androidx.fragment:fragment-ktx:1.8.7"
-    implementation "androidx.recyclerview:recyclerview:1.4.0"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0"
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.9.0"
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.9.0"
-    implementation "androidx.preference:preference-ktx:1.2.1"
-    implementation "androidx.work:work-runtime-ktx:2.10.4"
+    implementation libs.androidx.browser
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.fragment.ktx
+    implementation libs.androidx.recyclerview
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.preference.ktx
+    implementation libs.androidx.work.runtime.ktx
+    implementation libs.androidx.activity.ktx
 
-    implementation "com.google.android.material:material:1.14.0-alpha09"
+    implementation libs.material
 
-    implementation "com.github.topjohnwu.libsu:core:6.0.0"
+    implementation libs.libsu.core
 
-    implementation "dev.rikka.rikkax.appcompat:appcompat:1.6.1"
-    implementation "dev.rikka.rikkax.compatibility:compatibility:2.0.0"
-    implementation "dev.rikka.rikkax.core:core-ktx:1.4.1"
-    implementation "dev.rikka.rikkax.material:material:2.7.2"
-    implementation "dev.rikka.rikkax.material:material-preference:2.0.0"
-    implementation "dev.rikka.rikkax.html:html-ktx:1.1.2"
-    implementation "dev.rikka.rikkax.recyclerview:recyclerview-adapter:1.3.0"
-    implementation "dev.rikka.rikkax.recyclerview:recyclerview-ktx:1.3.2"
-    implementation "dev.rikka.rikkax.insets:insets:1.3.0"
-    implementation "dev.rikka.rikkax.layoutinflater:layoutinflater:1.3.0"
-    implementation "dev.rikka.rikkax.preference:simplemenu-preference:1.0.3"
-    implementation "dev.rikka.rikkax.lifecycle:lifecycle-resource-livedata:1.0.1"
+    implementation libs.rikkax.appcompat
+    implementation libs.rikkax.compatibility
+    implementation libs.rikkax.core
+    implementation libs.rikkax.material
+    implementation libs.rikkax.material.preference
+    implementation libs.rikkax.html.ktx
+    implementation libs.rikkax.recyclerview.adapter
+    implementation libs.rikkax.recyclerview.ktx
+    implementation libs.rikkax.insets
+    implementation libs.rikkax.layoutinflater
+    implementation libs.rikkax.simplemenu.preference
+    implementation libs.rikkax.lifecycle.resource
 
-    implementation "io.github.vvb2060.ndk:boringssl:20250114"
+    implementation libs.boringssl
 
-    implementation "org.lsposed.libcxx:libcxx:27.0.12077973"
-    implementation "org.lsposed.hiddenapibypass:hiddenapibypass:6.1"
+    implementation libs.libcxx
+    implementation libs.hiddenapibypass
 
-    implementation "org.bouncycastle:bcpkix-jdk18on:1.81"
+    implementation libs.bouncycastle.bcpkix
 
-    implementation "me.zhanghai.android.appiconloader:appiconloader:1.5.0"
+    implementation libs.appiconloader
 
-    implementation "io.sentry:sentry-android-core:8.14.0"
-    implementation "io.sentry:sentry-android-fragment:8.14.0"
+    implementation libs.sentry.android.core
+    implementation libs.sentry.android.fragment
 }
 
 sentry {

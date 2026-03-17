@@ -73,12 +73,15 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             ?.value
             ?.let { password = it }
 
-        if (port != null && password != null) {
-            val port = port!!
-            val password = password!!
+        val currentPort = port
+        val currentPassword = password
+        if (currentPort != null && currentPassword != null) {
+            val portValue = currentPort
+            val passwordValue = currentPassword
 
             var toastMsg = getString(R.string.notification_adb_pairing_failed_title)
-            GlobalScope.launch(Dispatchers.IO) {
+            // Use service-specific scope or CoroutineScope(Dispatchers.IO)
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
                 val host = "127.0.0.1"
 
                 val key = try {
@@ -88,7 +91,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                     return@launch
                 }
 
-                AdbPairingClient(host, port, password, key).runCatching {
+                AdbPairingClient(host, portValue, passwordValue, key).runCatching {
                     start()
                 }.onFailure {
                     when (it) {

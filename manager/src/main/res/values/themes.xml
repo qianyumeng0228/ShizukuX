@@ -13,6 +13,8 @@
         <item name="preferenceTheme">@style/AppTheme.PreferenceThemeOverlay</item>
 
         <item name="appColorPrimary">@color/app_color_light</item>
+        <item name="textColorOnSurfaceHighEmphasis">#DE000000</item>
+        <item name="textColorOnSurfaceMediumEmphasis">#99000000</item>
 
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
@@ -39,6 +41,8 @@
         <item name="preferenceTheme">@style/AppTheme.PreferenceThemeOverlay</item>
         
         <item name="appColorPrimary">@color/app_color_dark</item>
+        <item name="textColorOnSurfaceHighEmphasis">#DEFFFFFF</item>
+        <item name="textColorOnSurfaceMediumEmphasis">#99FFFFFF</item>
 
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>

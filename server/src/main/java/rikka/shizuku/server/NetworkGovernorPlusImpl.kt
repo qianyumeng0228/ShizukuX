@@ -40,7 +40,7 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
         return try {
             val stub = Class.forName("android.net.INetworkPolicyManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return false
 
             val userId = UserHandleCompat.getUserId(Process.myUid())
             val ai = PackageManagerApis.getApplicationInfoNoThrow(packageName, 0, userId)
@@ -49,7 +49,7 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
 
             // Policy: 1 = REJECT_METERED_BACKGROUND, 0 = NONE
             val policy = if (restricted) 1 else 0
-            val method = service!!.javaClass.getMethod("setUidPolicy", Int::class.java, Int::class.java)
+            val method = service.javaClass.getMethod("setUidPolicy", Int::class.java, Int::class.java)
             method.invoke(service, uid, policy)
             true
         } catch (e: Exception) {
@@ -63,14 +63,14 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
         return try {
             val stub = Class.forName("android.net.INetworkPolicyManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return false
 
             val userId = UserHandleCompat.getUserId(Process.myUid())
             val ai = PackageManagerApis.getApplicationInfoNoThrow(packageName, 0, userId)
                 ?: return false
             val uid = ai.uid
 
-            val method = service!!.javaClass.getMethod("getUidPolicy", Int::class.java)
+            val method = service.javaClass.getMethod("getUidPolicy", Int::class.java)
             val policy = method.invoke(service, uid) as Int
             policy != 0
         } catch (e: Exception) {

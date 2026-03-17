@@ -58,8 +58,14 @@ class ShizukuApplication : Application() {
         if (BuildConfig.SENTRY_DSN.isNotEmpty()) {
             SentryAndroid.init(this) { options ->
                 options.dsn = BuildConfig.SENTRY_DSN
-                options.isAttachScreenshot = false
+                // Enable rich crash/glitch reporting
+                options.isAttachScreenshot = true
+                options.isAttachViewHierarchy = true
+                options.isAnrEnabled = true
+                options.tracesSampleRate = 1.0
+                
                 options.release = "shizuku-plus@${BuildConfig.VERSION_NAME}"
+                options.environment = if (BuildConfig.DEBUG) "development" else "production"
             }
         }
         init(this)

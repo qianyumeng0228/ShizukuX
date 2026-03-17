@@ -30,11 +30,11 @@ class UISettingsFragment : BaseSettingsFragment() {
         setPreferencesFromResource(R.xml.settings_ui, rootKey)
         val context = requireContext()
 
-        nightModePreference = findPreference(KEY_NIGHT_MODE)!!
-        blackNightThemePreference = findPreference(KEY_BLACK_NIGHT_THEME)!!
-        useSystemColorPreference = findPreference(KEY_USE_SYSTEM_COLOR)!!
-        languagePreference = findPreference(KEY_LANGUAGE)!!
-        translationPreference = findPreference(KEY_TRANSLATION)!!
+        nightModePreference = requireNotNull(findPreference(KEY_NIGHT_MODE))
+        blackNightThemePreference = requireNotNull(findPreference(KEY_BLACK_NIGHT_THEME))
+        useSystemColorPreference = requireNotNull(findPreference(KEY_USE_SYSTEM_COLOR))
+        languagePreference = requireNotNull(findPreference(KEY_LANGUAGE))
+        translationPreference = requireNotNull(findPreference(KEY_TRANSLATION))
 
         nightModePreference.apply {
             value = ShizukuSettings.getNightMode()

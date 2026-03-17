@@ -16,9 +16,9 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
         return try {
             val stub = Class.forName("android.content.om.IOverlayManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return false
 
-            val method = service!!.javaClass.getMethod("setEnabled", String::class.java, Boolean::class.java, Int::class.java)
+            val method = service.javaClass.getMethod("setEnabled", String::class.java, Boolean::class.java, Int::class.java)
             method.invoke(service, packageName, enabled, UserHandleCompat.getUserId(Process.myUid()))
             true
         } catch (e: Exception) {
@@ -32,9 +32,9 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
         return try {
             val stub = Class.forName("android.content.om.IOverlayManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return false
 
-            val method = service!!.javaClass.getMethod("setHighestPriority", String::class.java, Int::class.java)
+            val method = service.javaClass.getMethod("setHighestPriority", String::class.java, Int::class.java)
             method.invoke(service, packageName, UserHandleCompat.getUserId(Process.myUid()))
             true
         } catch (e: Exception) {
@@ -47,9 +47,9 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
         return try {
             val stub = Class.forName("android.content.om.IOverlayManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return emptyList()
 
-            val method = service!!.javaClass.getMethod("getAllOverlays", Int::class.java)
+            val method = service.javaClass.getMethod("getAllOverlays", Int::class.java)
             val result = method.invoke(service, UserHandleCompat.getUserId(Process.myUid())) as Map<*, *>
 
             val list = mutableListOf<String>()
@@ -92,9 +92,9 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             val binder = getService() ?: return false
             val stub = Class.forName("android.content.om.IOverlayManager\$Stub")
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
-            val service = asInterface.invoke(null, binder)
+            val service = asInterface.invoke(null, binder) ?: return false
             
-            val registerMethod = service!!.javaClass.getMethod("registerFabricatedOverlay", Class.forName("android.content.om.FabricatedOverlay"))
+            val registerMethod = service.javaClass.getMethod("registerFabricatedOverlay", Class.forName("android.content.om.FabricatedOverlay"))
             registerMethod.invoke(service, overlay)
             
             return true

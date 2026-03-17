@@ -65,7 +65,8 @@ class StartRootViewHolder(private val binding: HomeStartRootBinding, root: View)
         itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
         start.isEnabled = true
         restart.isEnabled = true
-        if (data!!) {
+        val isRunning = data == true
+        if (isRunning) {
             start.visibility = View.GONE
             restart.visibility = View.VISIBLE
         } else {

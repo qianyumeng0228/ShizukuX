@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import android.view.Window
+import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import moe.shizuku.manager.R
 import rikka.core.res.isNight
@@ -16,6 +17,7 @@ import com.google.android.material.transition.platform.MaterialSharedAxis
 abstract class AppActivity : MaterialActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         // Enable window transitions
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         

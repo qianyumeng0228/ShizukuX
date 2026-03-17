@@ -18,7 +18,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         ShizukuSettings.syncAllPlusFeaturesToServer()
 
-        val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)!!
+        val dhizukuPref = requireNotNull(findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE))
         dhizukuPref.isChecked = ShizukuSettings.isDhizukuModeEnabled()
         dhizukuPref.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
@@ -30,7 +30,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             false
         }
 
-        val customApiPref = findPreference<TwoStatePreference>(KEY_CUSTOM_API_ENABLED)!!
+        val customApiPref = requireNotNull(findPreference<TwoStatePreference>(KEY_CUSTOM_API_ENABLED))
         customApiPref.isChecked = ShizukuSettings.isCustomApiEnabled()
         customApiPref.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {

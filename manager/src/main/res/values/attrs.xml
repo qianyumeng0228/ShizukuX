@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <attr name="appColorPrimary" format="reference" />
+    <attr name="textColorOnSurfaceHighEmphasis" format="color|reference" />
+    <attr name="textColorOnSurfaceMediumEmphasis" format="color|reference" />
 </resources>

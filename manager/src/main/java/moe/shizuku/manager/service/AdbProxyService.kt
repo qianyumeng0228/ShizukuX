@@ -168,9 +168,9 @@ class AdbProxyService : Service() {
             val writer = PrintWriter(socket.getOutputStream(), true, Charsets.UTF_8)
             writer.println("SHIZUKU_PROXY/1.0 READY")
             try {
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    val cmd = line!!.trim()
+                while (true) {
+                    val currentLine = reader.readLine() ?: break
+                    val cmd = currentLine.trim()
                     if (cmd.isEmpty()) continue
                     if (cmd == "exit" || cmd == "quit") break
                     if (cmd.length > MAX_CMD_LEN) {

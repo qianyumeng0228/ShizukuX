@@ -64,14 +64,14 @@ class RootCompatibilityActivity : AppBarActivity() {
         val btnCopyGlobal = findViewById<MaterialButton>(R.id.btn_copy_global)
         val btnSetupAll = findViewById<MaterialButton>(R.id.btn_setup_all)
 
-        if (resolvedSuPath != null) {
+        resolvedSuPath?.let { path ->
             globalSetupCard.isVisible = true
-            globalSuPath.text = resolvedSuPath
-            btnCopyGlobal.setOnClickListener { copyToClipboard(resolvedSuPath!!) }
+            globalSuPath.text = path
+            btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
             
             btnSetupAll.setOnClickListener {
                 lifecycleScope.launch {
-                    val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, resolvedSuPath!!)
+                    val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
                     if (count > 0) {
                         Toast.makeText(this@RootCompatibilityActivity, getString(R.string.root_hub_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
                     } else {
@@ -79,7 +79,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                     }
                 }
             }
-        } else {
+        } ?: run {
             globalSetupCard.isVisible = false
         }
 

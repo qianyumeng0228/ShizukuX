@@ -113,6 +113,7 @@
     <!-- Home - Application management -->
     <string name="home_app_management_title">应用管理</string>
     <plurals name="home_app_management_authorized_apps_count">
+        <item quantity="one"><![CDATA[已授权 %d 个应用]]></item>
         <item quantity="other"><![CDATA[已授权 %d 个应用]]></item>
     </plurals>
     <string name="home_app_management_view_authorized_apps"><![CDATA[点按以管理授权的应用]]></string>
@@ -272,4 +273,35 @@
     <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> 支持现代 Shizuku，但它正在请求旧式 Shizuku。这可能是因为 Shizuku 没有运行，请在 Shizuku 应用内检查。<p>旧式 Shizuku 已于 2019 年 3 月被弃用。]]></string>
     <string name="dialog_requesting_legacy_button_open_shizuku">打开 Shizuku</string>
     <string name="wadb_notification_attempt_now">现在尝试</string>
+
+    <string name="settings_category_general">通用</string>
+    <string name="settings_category_dark_mode">夜间模式</string>
+    <string name="settings_category_automatic">自动</string>
+    <string name="doctor_button_fix">修复</string>
+
+    <string name="settings_category_appearance">外观</string>
+    <string name="settings_category_advanced">高级</string>
+    <string name="settings_category_swipe">滑动操作</string>
+    <string name="settings_category_long_press">长按操作</string>
+    <string name="settings_category_home_cards">主页卡片</string>
+    <string name="settings_category_activity_log">活动日志</string>
+    <string name="settings_category_database">数据库</string>
+    <string name="settings_category_network">网络</string>
+    <string name="settings_category_material_you">Material You</string>
+    <string name="settings_category_language">语言</string>
+
+    <string name="root_hub_magic_setup_all_summary">ShizukuX 已为您配置了 %d 个应用！</string>
+    <string name="root_hub_magic_setup_success">Magic Setup 完成！ShizukuX 已为您配置了 %s。</string>
+    <string name="root_hub_magic_setup_fail">Magic Setup 失败。请尝试手动复制路径。</string>
+    <string name="root_hub_magic_setup_all_no_apps">未找到支持自动化设置的 root 应用。</string>
+    <string name="root_hub_path_copied">SU 路径已复制到剪贴板</string>
+    <string name="root_hub_no_export">未设置 SU 路径。请先在主页导出 Shizuku 文件。</string>
+    
+    <string name="settings_nav_behavior_summary">开机启动、Watchdog 和 TCP 模式</string>
+    <string name="settings_nav_shizuku_plus_summary">增强型 API、Shell 加速器等</string>
+    <string name="settings_nav_ui_summary">主题、颜色、语言</string>
+    <string name="settings_nav_app_management_summary">滑动和长按操作</string>
+    <string name="settings_nav_home_summary">可见卡片和快捷方式</string>
+    <string name="settings_nav_legacy_summary">ADB 代理、SU 桥接、Root 兼容性</string>
+    <string name="settings_nav_advanced_summary">诊断、日志、帮助</string>
 </resources>

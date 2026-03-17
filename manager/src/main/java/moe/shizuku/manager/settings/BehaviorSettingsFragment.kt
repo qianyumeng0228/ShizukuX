@@ -33,10 +33,10 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
         setPreferencesFromResource(R.xml.settings_behavior, rootKey)
         val context = requireContext()
 
-        startOnBootPreference = findPreference(KEY_START_ON_BOOT)!!
-        watchdogPreference = findPreference(KEY_WATCHDOG)!!
-        tcpModePreference = findPreference(KEY_TCP_MODE)!!
-        tcpPortPreference = findPreference(KEY_TCP_PORT)!!
+        startOnBootPreference = requireNotNull(findPreference(KEY_START_ON_BOOT))
+        watchdogPreference = requireNotNull(findPreference(KEY_WATCHDOG))
+        tcpModePreference = requireNotNull(findPreference(KEY_TCP_MODE))
+        tcpPortPreference = requireNotNull(findPreference(KEY_TCP_PORT))
 
         startOnBootPreference.apply {
             isChecked = ShizukuSettings.getStartOnBoot(context)
