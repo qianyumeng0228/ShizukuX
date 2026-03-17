@@ -91,9 +91,8 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             return true
         }
         val context = v.context
-        val pm = context.packageManager
         val appInfo = ai ?: return true
-        val appLabel = appInfo.loadLabel(pm)
+        val appLabel = AppIconCache.getLabel(context, appInfo)
         val isGranted = runCatching { AuthorizationManager.granted(packageName, appInfo.uid) }.getOrDefault(false)
 
         val enabled = buildEnabledActions(context, isGranted)
@@ -110,8 +109,8 @@ class AppViewHolder(private val binding: AppListItemBinding) :
     }
 
     private fun buildEnabledActions(context: Context, isGranted: Boolean): List<LpAction> {
+        val appLabel = ai?.let { AppIconCache.getLabel(context, it) } ?: packageName
         val pm = context.packageManager
-        val appLabel = ai?.loadLabel(pm)?.toString() ?: packageName
         return buildList {
             if (ShizukuSettings.getLongPressOpenApp()) {
                 add(LpAction(context.getString(R.string.app_management_context_open_app)) {
@@ -172,7 +171,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
         }
         val context = v.context
         val appInfo = ai ?: return
-        val appLabel = appInfo.loadLabel(context.packageManager).toString()
+        val appLabel = AppIconCache.getLabel(context, appInfo)
         try {
             if (AuthorizationManager.granted(packageName, appInfo.uid)) {
                 AuthorizationManager.revoke(packageName, appInfo.uid)
@@ -234,7 +233,8 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             .setMessage(R.string.app_management_enhancements_desc)
             .setMultiChoiceItems(enhancements.map { "${it.title}: ${it.description}" }.toTypedArray(), checkedItems) { _, which, isChecked ->
                 ShizukuSettings.setAppEnhancementEnabled(packageName, enhancements[which].key, isChecked)
-                ActivityLogManager.log(ai?.loadLabel(context.packageManager)?.toString() ?: packageName, packageName, "Toggle Enhancement: ${enhancements[which].key} -> $isChecked")
+                val appLabel = ai?.let { AppIconCache.getLabel(context, it) } ?: packageName
+                ActivityLogManager.log(appLabel, packageName, "Toggle Enhancement: ${enhancements[which].key} -> $isChecked")
             }
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 adapter.notifyItemChanged(adapterPosition)
@@ -258,14 +258,14 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
             .start()
 
-        val pm = context.packageManager
         val userId = UserHandleCompat.getUserId(appInfo.uid)
-        icon.setImageDrawable(appInfo.loadIcon(pm))
+        val appLabel = AppIconCache.getLabel(context, appInfo)
+        
         name.text = if (userId != UserHandleCompat.myUserId()) {
             val userInfo = ShizukuSystemApis.getUserInfo(userId)
-            "${appInfo.loadLabel(pm)} - ${userInfo.name} ($userId)"
+            "$appLabel - ${userInfo.name} ($userId)"
         } else {
-            appInfo.loadLabel(pm)
+            appLabel
         }
 
         val appsAdapter = adapter as AppsAdapter

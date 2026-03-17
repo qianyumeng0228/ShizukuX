@@ -28,6 +28,7 @@ object AppIconCache : CoroutineScope {
     override val coroutineContext: CoroutineContext get() = Dispatchers.Main
 
     private val lruCache: LruCache<Triple<String, Int, Int>, Bitmap>
+    private val labelCache = LruCache<String, String>(500)
 
     private val dispatcher: CoroutineDispatcher
 
@@ -68,6 +69,14 @@ object AppIconCache : CoroutineScope {
         lruCache.remove(Triple(packageName, userId, size))
     }
 
+    fun getLabel(context: Context, info: ApplicationInfo): String {
+        val cached = labelCache[info.packageName]
+        if (cached != null) return cached
+        val label = info.loadLabel(context.packageManager).toString()
+        labelCache.put(info.packageName, label)
+        return label
+    }
+
     @SuppressLint("NewApi")
     fun getOrLoadBitmap(context: Context, info: ApplicationInfo, userId: Int, size: Int): Bitmap? {
         val cachedBitmap = get(info.packageName, userId, size)
@@ -95,6 +104,12 @@ object AppIconCache : CoroutineScope {
             if (cachedBitmap != null) {
                 view.setImageBitmap(cachedBitmap)
                 return@launch
+            }
+            
+            if (Build.VERSION.SDK_INT >= 26) {
+                view.setImageResource(R.drawable.ic_default_app_icon)
+            } else {
+                view.setImageDrawable(null)
             }
 
             val bitmap = try {
