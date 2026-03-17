@@ -48,6 +48,10 @@ class HomeAdapter(
 
     private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope)
 
+    var isDragging = false
+    private var isUpdating = false
+    private var lastUpdateDataTime = 0L
+
     init {
         setHasStableIds(true)
         HomeEditMode.onChanged = { updateData() }
@@ -61,8 +65,16 @@ class HomeAdapter(
     override fun onCreateCreatorPool(): IndexCreatorPool = IndexCreatorPool()
 
     fun updateData() {
+        if (isUpdating) return
+        val now = System.currentTimeMillis()
+        if (now - lastUpdateDataTime < 100) return
+        lastUpdateDataTime = now
+        isUpdating = true
         scope.launch {
-            val status = homeModel.serviceStatus.value?.data ?: return@launch
+            val status = homeModel.serviceStatus.value?.data ?: run {
+                isUpdating = false
+                return@launch
+            }
             val grantedCount = appsModel.grantedCount.value?.data ?: 0
             val adbPermission = status.permission
             val running = status.isRunning
@@ -71,6 +83,10 @@ class HomeAdapter(
             val hidden = ShizukuSettings.getHiddenHomeCards()
 
             withContext(Dispatchers.Main) {
+                if (isDragging) {
+                    isUpdating = false
+                    return@withContext
+                }
                 clear()
 
                 // Fixed cards
@@ -102,6 +118,7 @@ class HomeAdapter(
                 }
 
                 notifyDataSetChanged()
+                isUpdating = false
             }
         }
     }

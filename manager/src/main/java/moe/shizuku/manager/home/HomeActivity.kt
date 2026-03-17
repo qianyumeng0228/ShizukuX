@@ -125,10 +125,20 @@ abstract class HomeActivity : AppBarActivity() {
                 return true
             }
 
+            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
+                super.onSelectedChanged(viewHolder, actionState)
+                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
+                    adapter.isDragging = true
+                } else if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
+                    adapter.isDragging = false
+                }
+            }
+
             override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {}
 
             override fun clearView(rv: RecyclerView, vh: RecyclerView.ViewHolder) {
                 super.clearView(rv, vh)
+                adapter.isDragging = false
                 adapter.persistCardOrder()
                 adapter.updateData()
             }
@@ -136,15 +146,6 @@ abstract class HomeActivity : AppBarActivity() {
         val itemTouchHelper = ItemTouchHelper(dragCallback)
         itemTouchHelper.attachToRecyclerView(recyclerView)
 
-        HomeEditMode.onChanged = { 
-            adapter.updateData() 
-            invalidateOptionsMenu()
-            if (HomeEditMode.isActive) {
-                supportActionBar?.setTitle(R.string.home_edit_mode_hint)
-            } else {
-                supportActionBar?.setTitle(R.string.app_name)
-            }
-        }
         HomeEditMode.startDragCallback = { vh -> itemTouchHelper.startDrag(vh) }
         HomeEditMode.exit()
 
@@ -159,14 +160,17 @@ abstract class HomeActivity : AppBarActivity() {
         onBackPressedDispatcher.addCallback(this, backCallback)
         
         HomeEditMode.onChanged = { 
-            adapter.updateData() 
-            invalidateOptionsMenu()
-            if (HomeEditMode.isActive) {
-                supportActionBar?.setTitle(R.string.home_edit_mode_hint)
-                backCallback.isEnabled = true
-            } else {
-                supportActionBar?.setTitle(R.string.app_name)
-                backCallback.isEnabled = false
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(150)
+                adapter.updateData() 
+                invalidateOptionsMenu()
+                if (HomeEditMode.isActive) {
+                    supportActionBar?.setTitle(R.string.home_edit_mode_hint)
+                    backCallback.isEnabled = true
+                } else {
+                    supportActionBar?.setTitle(R.string.app_name)
+                    backCallback.isEnabled = false
+                }
             }
         }
 
