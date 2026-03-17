@@ -66,6 +66,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
 
         // Fix Sentry: IllegalArgumentException Providing a LayoutTransition into RecyclerView is not supported
         recyclerView.layoutTransition = null
+        recyclerView.itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator()
 
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)

@@ -2,6 +2,7 @@ package moe.shizuku.manager.settings
 
 import android.os.Bundle
 import android.widget.Toast
+import androidx.annotation.Keep
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +11,7 @@ import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.utils.AppContextManager
 
+@Keep
 class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {

@@ -58,8 +58,11 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
         Object item = getItemAt(position);
         if (item instanceof PackageInfo) {
             return ((PackageInfo) item).packageName.hashCode();
+        } else if (item instanceof HeaderMarker) {
+            return 1L;
+        } else {
+            return 2L;
         }
-        return item.hashCode();
     }
 
     @Override
