@@ -15,7 +15,8 @@
             android:id="@android:id/icon"
             style="@style/CardIcon"
             android:duplicateParentState="true"
-            android:importantForAccessibility="no"
+            android:importantForAccessibility="yes"
+            android:contentDescription="@string/accessibility_icon_automation"
             android:src="@drawable/ic_integration_instructions_24" />
 
         <TextView
@@ -49,6 +50,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/home_automation_button_view_intents"
+        android:contentDescription="@string/accessibility_button_view_intents"
         app:icon="@drawable/ic_code_24dp" />
 
 </LinearLayout>

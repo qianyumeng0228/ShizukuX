@@ -299,12 +299,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         mainHandler.post(() -> {
             ApplicationInfo ai = getManagerApplicationInfo();
             if (ai == null) return;
-            
+
             List<ClientRecord> records = clientManager.findClients(ai.uid);
             for (ClientRecord record : records) {
                 try {
                     record.client.dispatchLog("", packageName, action);
-                } catch (Throwable ignored) {}
+                } catch (Throwable e) {
+                    LOGGER.w(e, "Failed to dispatch log for package %s", packageName);
+                }
             }
         });
     }
@@ -414,9 +416,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 .getMethod("asInterface", IBinder.class).invoke(null, binder);
                             java.lang.reflect.Method setMode = service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class);
                             // 24 = OP_SYSTEM_ALERT_WINDOW, 43 = OP_GET_USAGE_STATS, 63 = OP_WRITE_SETTINGS
-                            int[] opsToElevate = {24, 43, 63, 65, 100}; 
+                            int[] opsToElevate = {24, 43, 63, 65, 100};
                             for (int op : opsToElevate) {
-                                try { setMode.invoke(service, op, callingUid, null, 0); } catch (Exception ignored) {}
+                                try {
+                                    setMode.invoke(service, op, callingUid, null, 0);
+                                } catch (Exception e) {
+                                    LOGGER.w(e, "SUBridge: Failed to set AppOps mode %d for uid %d", op, callingUid);
+                                }
                             }
                         }
                     } catch (Exception e) {
@@ -960,7 +966,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 ActivityManagerApis.forceStopPackageNoThrow(MANAGER_APPLICATION_ID, userId);
                 try {
                     Thread.sleep(1000);
-                } catch (InterruptedException ignored) {}
+                } catch (InterruptedException e) {
+                    LOGGER.w(e, "Interrupted while sleeping before retry");
+                    Thread.currentThread().interrupt();
+                }
                 success = sendBinderToUserApp(binder, MANAGER_APPLICATION_ID, userId);
                 if (success) {
                     LOGGER.e("retry succeeded");

@@ -29,6 +29,7 @@ boringssl = "20250114"
 libcxx = "27.0.12077973"
 hidden-api = "4.4.0"
 refine = "4.4.0"
+room = "2.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -74,6 +75,10 @@ sentry-android-core = { group = "io.sentry", name = "sentry-android-core", versi
 sentry-android-fragment = { group = "io.sentry", name = "sentry-android-fragment", version.ref = "sentry" }
 boringssl = { group = "io.github.vvb2060.ndk", name = "boringssl", version.ref = "boringssl" }
 libcxx = { group = "org.lsposed.libcxx", name = "libcxx", version.ref = "libcxx" }
+
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

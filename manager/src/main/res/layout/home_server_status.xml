@@ -9,7 +9,8 @@
         android:id="@android:id/icon"
         style="@style/CardIcon"
         android:duplicateParentState="true"
-        android:importantForAccessibility="no"
+        android:importantForAccessibility="yes"
+        android:contentDescription="@string/accessibility_icon_server_status"
         android:src="@drawable/ic_server_error_24dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -55,6 +56,7 @@
             android:layout_marginTop="8dp"
             android:text="@string/settings_activity_log"
             android:visibility="gone"
+            android:contentDescription="@string/accessibility_button_activity_log"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@android:id/text2"
             tools:visibility="visible" />

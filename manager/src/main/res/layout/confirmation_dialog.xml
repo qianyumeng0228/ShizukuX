@@ -10,7 +10,8 @@
         android:layout_width="24dp"
         android:layout_height="24dp"
         android:layout_gravity="center"
-        android:importantForAccessibility="no"
+        android:importantForAccessibility="yes"
+        android:contentDescription="@string/accessibility_icon_info"
         android:src="@drawable/ic_system_icon"
         android:tint="?android:colorAccent"
         android:tintMode="src_in" />

@@ -13,6 +13,7 @@ import android.provider.Settings
 import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.view.animation.DecelerateInterpolator
@@ -64,6 +65,13 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        // Empty state view
+        val emptyStateView = binding.emptyStateView
+        emptyStateView.setIcon(R.drawable.ic_empty_search_24)
+        emptyStateView.setTitle(R.string.empty_state_title_no_results)
+        emptyStateView.setDescription(R.string.empty_state_description_no_results)
+        emptyStateView.hideActionButton()
+
         // Predictive back support for selection mode
         backCallback = object : androidx.activity.OnBackPressedCallback(false) {
             override fun handleOnBackPressed() {
@@ -102,8 +110,15 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         viewModel.packages.observe(this) {
             when (it.status) {
                 Status.SUCCESS -> {
-                    adapter.updateData(it.data as List<PackageInfo>)
-                    if (firstLoad && !it.data.isNullOrEmpty()) {
+                    val data = it.data as List<PackageInfo>
+                    adapter.updateData(data)
+                    
+                    // Show empty state when filtered results are empty
+                    val hasData = data.isNotEmpty()
+                    emptyStateView.visibility = if (hasData) View.GONE else View.VISIBLE
+                    recyclerView.visibility = if (hasData) View.VISIBLE else View.GONE
+                    
+                    if (firstLoad && !data.isNullOrEmpty()) {
                         firstLoad = false
                         recyclerView.scheduleLayoutAnimation()
                         maybeShowSwipeHint()

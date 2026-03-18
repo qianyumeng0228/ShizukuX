@@ -3,6 +3,7 @@ package moe.shizuku.manager.shell
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.util.Log
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
@@ -21,6 +22,8 @@ import rikka.insets.*
 class ShellTutorialActivity : AppBarActivity() {
 
     companion object {
+
+        private val TAG = ShellTutorialActivity::class.java.simpleName
 
         private val SH_NAME = "rish"
         private val DEX_NAME = "rish_shizuku.dex"
@@ -54,8 +57,26 @@ class ShellTutorialActivity : AppBarActivity() {
             }
 
             fun writeToDocument(name: String) {
-                DocumentsContract.createDocument(contentResolver, doc, "application/octet-stream", name)?.runCatching {
-                    cr.openOutputStream(this)?.let { assets.open(name).copyTo(it) }
+                val documentUri = DocumentsContract.createDocument(contentResolver, doc, "application/octet-stream", name)
+                if (documentUri == null) {
+                    Log.e(TAG, "Failed to create document for $name")
+                    return
+                }
+
+                try {
+                    cr.openOutputStream(documentUri)?.use { outputStream ->
+                        assets.open(name).use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to write $name to document", e)
+                    // Clean up the document if writing failed
+                    try {
+                        DocumentsContract.deleteDocument(contentResolver, documentUri)
+                    } catch (deleteEx: Exception) {
+                        Log.e(TAG, "Failed to delete incomplete document for $name", deleteEx)
+                    }
                 }
             }
 

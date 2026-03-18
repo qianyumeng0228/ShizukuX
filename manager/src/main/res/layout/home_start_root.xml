@@ -15,7 +15,8 @@
             android:id="@android:id/icon"
             style="@style/CardIcon"
             android:duplicateParentState="true"
-            android:importantForAccessibility="no"
+            android:importantForAccessibility="yes"
+            android:contentDescription="@string/accessibility_icon_root"
             android:src="@drawable/ic_root_24dp" />
 
         <TextView
@@ -46,6 +47,7 @@
         style="@style/CardButton"
         android:enabled="false"
         android:text="@string/home_root_button_start"
+        android:contentDescription="@string/accessibility_button_start"
         app:icon="@drawable/ic_server_start_24dp" />
 
     <com.google.android.material.button.MaterialButton
@@ -54,6 +56,7 @@
         android:enabled="false"
         android:text="@string/home_root_button_restart"
         android:visibility="gone"
+        android:contentDescription="@string/accessibility_button_restart"
         app:icon="@drawable/ic_server_restart"
         tools:visibility="visible" />
 

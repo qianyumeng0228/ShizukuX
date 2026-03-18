@@ -18,6 +18,7 @@ import moe.shizuku.manager.receiver.BootCompleteReceiver;
 import moe.shizuku.manager.utils.Token;
 import moe.shizuku.manager.utils.EmptySharedPreferencesImpl;
 import moe.shizuku.manager.utils.EnvironmentUtils;
+import moe.shizuku.manager.utils.InputValidationUtils;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 public class ShizukuSettings {
@@ -49,6 +50,7 @@ public class ShizukuSettings {
         public static final String KEY_SHOW_LEARN_MORE_HOME = "show_learn_more_home";
         public static final String KEY_SHOW_ACTIVITY_LOG_HOME = "show_activity_log_home";
         public static final String KEY_ENABLE_ACTIVITY_LOG = "enable_activity_log";
+        public static final String KEY_ACTIVITY_LOG_RETENTION = "activity_log_retention";
         public static final String KEY_LAST_DB_UPDATE = "last_db_update";
         public static final String KEY_REMOTE_DB_JSON = "remote_db_json";
 
@@ -68,6 +70,7 @@ public class ShizukuSettings {
         public static final String KEY_SPOOF_DEVICE_ENABLED = "spoof_device_enabled";
         public static final String KEY_SPOOF_TARGET = "spoof_target";
         public static final String KEY_VECTOR_ENABLED = "vector_enabled";
+        public static final String KEY_HIDE_DISABLED_PLUS_FEATURES = "hide_disabled_plus_features";
 
         // Home card extras (ShizukuX additions)
         public static final String KEY_SHOW_START_ADB_HOME = "show_start_adb_home";
@@ -295,6 +298,16 @@ public class ShizukuSettings {
         return p == null || p.getBoolean(Keys.KEY_ENABLE_ACTIVITY_LOG, true);
     }
 
+    public static int getActivityLogRetention() {
+        SharedPreferences p = getPreferences();
+        return p == null ? 100 : p.getInt(Keys.KEY_ACTIVITY_LOG_RETENTION, 100);
+    }
+
+    public static void setActivityLogRetention(int retention) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putInt(Keys.KEY_ACTIVITY_LOG_RETENTION, retention).apply();
+    }
+
     public static String getRemoteDbJson() {
         SharedPreferences p = getPreferences();
         return p == null ? null : p.getString(Keys.KEY_REMOTE_DB_JSON, null);
@@ -473,7 +486,19 @@ public class ShizukuSettings {
         return p != null ? p.getString(Keys.KEY_SPOOF_TARGET, "pixel_8_pro") : "pixel_8_pro";
     }
 
+    /**
+     * Sets the spoof target device.
+     *
+     * @param target the spoof target to set
+     * @throws IllegalArgumentException if the target is not in the whitelist of valid devices
+     */
     public static void setSpoofTarget(String target) {
+        if (!InputValidationUtils.isValidSpoofTarget(target)) {
+            throw new IllegalArgumentException(
+                "Invalid spoof target: " + target + ". Valid targets are: " +
+                InputValidationUtils.getValidSpoofTargets()
+            );
+        }
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putString(Keys.KEY_SPOOF_TARGET, target).apply();
     }
@@ -530,6 +555,16 @@ public class ShizukuSettings {
     public static void setExportDirUri(@Nullable String uri) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putString(Keys.KEY_EXPORT_DIR_URI, uri).apply();
+    }
+
+    public static boolean isHideDisabledPlusFeaturesEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_HIDE_DISABLED_PLUS_FEATURES, false);
+    }
+
+    public static void setHideDisabledPlusFeaturesEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_HIDE_DISABLED_PLUS_FEATURES, enable).apply();
     }
 
     public static void syncAllPlusFeaturesToServer() {

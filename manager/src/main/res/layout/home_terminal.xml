@@ -9,7 +9,8 @@
         android:id="@android:id/icon"
         style="@style/CardIcon"
         android:duplicateParentState="true"
-        android:importantForAccessibility="no"
+        android:importantForAccessibility="yes"
+        android:contentDescription="@string/accessibility_icon_terminal"
         android:src="@drawable/ic_terminal_24" />
 
     <LinearLayout

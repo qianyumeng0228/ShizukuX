@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -39,6 +40,10 @@ import kotlinx.coroutines.launch
 import moe.shizuku.manager.utils.RootCompatHelper
 
 class RootCompatibilityActivity : AppBarActivity() {
+
+    companion object {
+        private const val TAG = "RootCompatibilityAct"
+    }
 
     override fun getLayoutId() = R.layout.activity_root_compatibility
 
@@ -324,7 +329,9 @@ class RootCompatibilityActivity : AppBarActivity() {
                 try {
                     pm.getPackageInfo(pkg, 0)
                     isInstalled = true
-                } catch (ignored: Exception) {}
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to check if package $pkg is installed", e)
+                }
 
                 holder.suMagicSetup.isVisible = isInstalled
                 if (isInstalled) {

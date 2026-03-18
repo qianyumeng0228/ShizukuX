@@ -8,12 +8,32 @@ import moe.shizuku.server.INetworkGovernorPlus
 import rikka.hidden.compat.ActivityManagerApis
 import rikka.hidden.compat.PackageManagerApis
 import rikka.shizuku.server.api.IContentProviderUtils
+import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.UserHandleCompat
 
 class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
-    
+
     override fun setPrivateDns(mode: String?, hostname: String?): Boolean {
         // mode: "off", "opportunistic", "hostname"
+        
+        // Validate DNS mode parameter
+        if (mode != null && !InputValidationUtils.isValidDnsMode(mode)) {
+            throw IllegalArgumentException(
+                "Invalid DNS mode: $mode. Valid modes are: off, opportunistic, hostname"
+            )
+        }
+        
+        // Validate and sanitize DNS hostname parameter
+        val sanitizedHostname = if (hostname != null) {
+            InputValidationUtils.validateAndSanitizeHostname(hostname).also { sanitized ->
+                if (sanitized == null) {
+                    throw IllegalArgumentException(
+                        "Invalid DNS hostname: $hostname. Must be a valid hostname format"
+                    )
+                }
+            }
+        } else null
+        
         val userId = UserHandleCompat.getUserId(Process.myUid())
         try {
             val provider = ActivityManagerApis.getContentProviderExternal("settings", userId, null, "settings")
@@ -22,8 +42,8 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
                     val extras = Bundle().apply { putString("value", mode) }
                     IContentProviderUtils.callCompat(provider, null, "settings", "PUT_global", "private_dns_mode", extras)
                 }
-                if (hostname != null) {
-                    val extras = Bundle().apply { putString("value", hostname) }
+                if (sanitizedHostname != null) {
+                    val extras = Bundle().apply { putString("value", sanitizedHostname) }
                     IContentProviderUtils.callCompat(provider, null, "settings", "PUT_global", "private_dns_specifier", extras)
                 }
                 return true

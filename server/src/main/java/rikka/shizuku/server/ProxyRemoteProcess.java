@@ -3,10 +3,12 @@ package rikka.shizuku.server;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
+import android.util.Log;
 import java.io.IOException;
 import moe.shizuku.server.IRemoteProcess;
 
 public class ProxyRemoteProcess extends IRemoteProcess.Stub {
+    private static final String TAG = "ProxyRemoteProcess";
     private final ParcelFileDescriptor pfd;
     private final int exitValue;
 
@@ -44,7 +46,9 @@ public class ProxyRemoteProcess extends IRemoteProcess.Stub {
     public void destroy() {
         try {
             if (pfd != null) pfd.close();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            Log.w(TAG, "Failed to close ParcelFileDescriptor in destroy()", e);
+        }
     }
 
     @Override

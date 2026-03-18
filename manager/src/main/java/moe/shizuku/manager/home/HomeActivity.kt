@@ -11,6 +11,9 @@ import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.widget.Toast
+import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -48,6 +51,7 @@ abstract class HomeActivity : AppBarActivity() {
     private val homeModel: HomeViewModel by viewModels()
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
+    private var versionClickCount = 0
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
         if (ShizukuStateMachine.isRunning()) {
@@ -63,6 +67,16 @@ abstract class HomeActivity : AppBarActivity() {
         super.onCreate(savedInstanceState)
 
         val binding = HomeActivityBinding.inflate(layoutInflater, rootView, true)
+
+        // Empty state view for when all cards are hidden
+        val emptyStateView = binding.emptyStateView
+        emptyStateView.setIcon(R.drawable.ic_empty_home_24)
+        emptyStateView.setTitle(R.string.empty_state_title_no_home_cards)
+        emptyStateView.setDescription(R.string.empty_state_description_no_home_cards)
+        emptyStateView.setActionText(R.string.empty_state_action_restore_home_cards)
+        emptyStateView.setActionClickListener {
+            startActivity(android.content.Intent(this, moe.shizuku.manager.settings.SettingsActivity::class.java))
+        }
 
         homeModel.serviceStatus.observe(this) {
             if (it.status == Status.SUCCESS) {
@@ -96,6 +110,12 @@ abstract class HomeActivity : AppBarActivity() {
         recyclerView.adapter = adapter
         (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
+
+        // Listen for empty state changes
+        adapter.onEmptyStateChanged = { isEmpty ->
+            emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
+            recyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        }
 
         val cardSpacing = resources.getDimension(R.dimen.card_spacing)
         val marginHorizontal = resources.getDimension(R.dimen.margin_horizontal)
@@ -152,7 +172,7 @@ abstract class HomeActivity : AppBarActivity() {
         HomeEditMode.exit()
 
         // Predictive back support for edit mode
-        val backCallback = object : androidx.activity.OnBackPressedCallback(false) {
+        val backCallback = object : androidx.activity.OnBackPressedCallback(HomeEditMode.isActive) {
             override fun handleOnBackPressed() {
                 if (HomeEditMode.isActive) {
                     HomeEditMode.exit()
@@ -160,18 +180,17 @@ abstract class HomeActivity : AppBarActivity() {
             }
         }
         onBackPressedDispatcher.addCallback(this, backCallback)
-        
-        HomeEditMode.onChanged = { 
+
+        HomeEditMode.onChanged = {
             lifecycleScope.launch {
                 delay(150)
-                adapter.updateData() 
+                adapter.updateData()
                 invalidateOptionsMenu()
+                backCallback.isEnabled = HomeEditMode.isActive
                 if (HomeEditMode.isActive) {
                     supportActionBar?.setTitle(R.string.home_edit_mode_hint)
-                    backCallback.isEnabled = true
                 } else {
                     supportActionBar?.setTitle(R.string.app_name)
-                    backCallback.isEnabled = false
                 }
             }
         }
@@ -248,7 +267,25 @@ abstract class HomeActivity : AppBarActivity() {
                         resources.getDimensionPixelOffset(R.dimen.default_app_icon_size)
                     )
                 )
-                binding.versionName.text = packageManager.getPackageInfo(packageName, 0).versionName
+                val versionName = packageManager.getPackageInfo(packageName, 0).versionName
+                binding.versionName.text = versionName
+
+                // Add click listener to version name for developer options
+                binding.versionName.setOnClickListener {
+                    if (ShizukuSettings.isVectorEnabled()) {
+                        Toast.makeText(this, R.string.settings_developer_options_revealed, Toast.LENGTH_SHORT).show()
+                        return@setOnClickListener
+                    }
+
+                    versionClickCount++
+                    if (versionClickCount >= 7) {
+                        ShizukuSettings.setVectorEnabled(true)
+                        Toast.makeText(this, R.string.settings_developer_options_revealed, Toast.LENGTH_SHORT).show()
+                        versionClickCount = 0
+                    } else if (versionClickCount > 2) {
+                        Toast.makeText(this, getString(R.string.settings_developer_options_click_more, 7 - versionClickCount), Toast.LENGTH_SHORT).show()
+                    }
+                }
 
                 val dialog = MaterialAlertDialogBuilder(this)
                     .setView(binding.root)
@@ -257,7 +294,7 @@ abstract class HomeActivity : AppBarActivity() {
                 binding.btnClose.setOnClickListener {
                     dialog.dismiss()
                 }
-                
+
                 dialog.show()
                 true
             }

@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.recyclerview.widget.RecyclerView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@android:id/list"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:clipToPadding="false"
-    app:fitsSystemWindowsInsets="bottom|start|end"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    app:layoutManager="@string/main_layout_manager"
-    app:spanCount="2" />
+    android:layout_height="match_parent">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@android:id/list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        app:fitsSystemWindowsInsets="bottom|start|end"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        app:layoutManager="@string/main_layout_manager"
+        app:spanCount="2" />
+
+    <moe.shizuku.manager.utils.EmptyStateView
+        android:id="@+id/empty_state_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone" />
+
+</FrameLayout>

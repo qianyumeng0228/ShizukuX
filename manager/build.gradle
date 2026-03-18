@@ -175,6 +175,7 @@ dependencies {
     implementation project(":starter")
     implementation project(":api")
     implementation project(":provider")
+    implementation project(":database")
 
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub

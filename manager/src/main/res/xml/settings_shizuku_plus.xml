@@ -19,6 +19,13 @@
             android:icon="@drawable/ic_code_24dp"
             android:defaultValue="true" />
 
+        <SwitchPreferenceCompat
+            android:key="hide_disabled_plus_features"
+            android:title="@string/settings_hide_disabled_plus_features"
+            android:summary="@string/settings_hide_disabled_plus_features_summary"
+            android:icon="@drawable/ic_visibility_24"
+            android:defaultValue="false" />
+
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Performance: shell-level acceleration and process control -->
@@ -31,16 +38,14 @@
             android:title="@string/settings_shell_interceptor"
             android:summary="@string/settings_shell_interceptor_summary"
             android:icon="@drawable/ic_terminal_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="activity_manager_plus_enabled"
             android:title="@string/settings_activity_manager_plus"
             android:summary="@string/settings_activity_manager_plus_summary"
             android:icon="@drawable/ic_server_restart"
-            android:defaultValue="true"
-            android:dependency="shell_interceptor_enabled" />
+            android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -53,17 +58,15 @@
             android:key="storage_proxy_enabled"
             android:title="@string/settings_storage_proxy"
             android:summary="@string/settings_storage_proxy_summary"
-            android:icon="@drawable/ic_baseline_link_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="avf_manager_enabled"
             android:title="@string/settings_avf_manager"
             android:summary="@string/settings_avf_manager_summary"
-            android:icon="@drawable/ic_numeric_1_circle_outline_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:icon="@drawable/ic_server_24"
+            android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -76,17 +79,15 @@
             android:key="window_manager_plus_enabled"
             android:title="@string/settings_window_manager_plus"
             android:summary="@string/settings_window_manager_plus_summary"
-            android:icon="@drawable/ic_monochrome"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:icon="@drawable/ic_window_24"
+            android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="overlay_manager_plus_enabled"
             android:title="@string/settings_overlay_manager_plus"
             android:summary="@string/settings_overlay_manager_plus_summary"
-            android:icon="@drawable/ic_outline_notifications_active_24"
-            android:defaultValue="true"
-            android:dependency="window_manager_plus_enabled" />
+            android:icon="@drawable/ic_palette_24"
+            android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -100,8 +101,7 @@
             android:title="@string/settings_network_governor_plus"
             android:summary="@string/settings_network_governor_plus_summary"
             android:icon="@drawable/ic_wadb_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -115,16 +115,14 @@
             android:title="@string/settings_ai_core_plus"
             android:summary="@string/settings_ai_core_plus_summary"
             android:icon="@drawable/ic_integration_instructions_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="continuity_bridge_enabled"
             android:title="@string/settings_continuity_bridge"
             android:summary="@string/settings_continuity_bridge_summary"
-            android:icon="@drawable/ic_baseline_link_24"
-            android:defaultValue="true"
-            android:dependency="custom_api_enabled" />
+            android:icon="@drawable/ic_devices_24"
+            android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -139,24 +137,21 @@
             android:title="@string/settings_vector"
             android:summary="@string/settings_vector_summary"
             android:icon="@drawable/ic_code_24dp"
-            android:defaultValue="false"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="false" />
 
         <SwitchPreferenceCompat
             android:key="experimental_root_compat"
             android:title="@string/settings_experimental_root"
             android:summary="@string/settings_experimental_root_summary"
             android:icon="@drawable/ic_server_ok_24dp"
-            android:defaultValue="false"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="false" />
 
         <SwitchPreferenceCompat
             android:key="spoof_device_enabled"
             android:title="@string/settings_spoof_device"
             android:summary="@string/settings_spoof_device_summary"
             android:icon="@drawable/ic_outline_notifications_active_24"
-            android:defaultValue="false"
-            android:dependency="custom_api_enabled" />
+            android:defaultValue="false" />
 
         <rikka.preference.SimpleMenuPreference
             android:key="spoof_target"
@@ -165,8 +160,7 @@
             android:entryValues="@array/spoof_targets_values"
             android:defaultValue="pixel_8_pro"
             android:summary="%s"
-            android:icon="@drawable/ic_system_icon"
-            android:dependency="spoof_device_enabled" />
+            android:icon="@drawable/ic_system_icon" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

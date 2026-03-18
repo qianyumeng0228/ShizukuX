@@ -15,7 +15,8 @@
             android:id="@android:id/icon"
             style="@style/CardIcon"
             android:duplicateParentState="true"
-            android:importantForAccessibility="no"
+            android:importantForAccessibility="yes"
+            android:contentDescription="@string/accessibility_icon_adb"
             android:src="@drawable/ic_adb_24dp" />
 
         <TextView
@@ -41,6 +42,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/home_adb_button_view_command"
+        android:contentDescription="@string/accessibility_button_view_command"
         app:icon="@drawable/ic_code_24dp" />
 
 </LinearLayout>

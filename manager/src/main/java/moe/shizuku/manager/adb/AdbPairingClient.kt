@@ -180,24 +180,32 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
     private var state: State = State.Ready
 
     fun start(): Boolean {
-        setupTlsConnection()
+        try {
+            setupTlsConnection()
 
-        state = State.ExchangingMsgs
+            state = State.ExchangingMsgs
 
-        if (!doExchangeMsgs()) {
+            if (!doExchangeMsgs()) {
+                state = State.Stopped
+                return false
+            }
+
+            state = State.ExchangingPeerInfo
+
+            if (!doExchangePeerInfo()) {
+                state = State.Stopped
+                return false
+            }
+
             state = State.Stopped
+            return true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error during pairing process", e)
+            state = State.Stopped
+            // Ensure resources are cleaned up on exception
+            cleanupResources()
             return false
         }
-
-        state = State.ExchangingPeerInfo
-
-        if (!doExchangePeerInfo()) {
-            state = State.Stopped
-            return false
-        }
-
-        state = State.Stopped
-        return true
     }
 
     private fun setupTlsConnection() {
@@ -285,23 +293,30 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         return true
     }
 
-    override fun close() {
+    private fun cleanupResources() {
         try {
             inputStream.close()
         } catch (e: Throwable) {
+            Log.e(TAG, "Failed to close inputStream", e)
         }
         try {
             outputStream.close()
         } catch (e: Throwable) {
+            Log.e(TAG, "Failed to close outputStream", e)
         }
         try {
             socket.close()
         } catch (e: Exception) {
+            Log.e(TAG, "Failed to close socket", e)
         }
 
         if (state != State.Ready) {
             pairingContext.destroy()
         }
+    }
+
+    override fun close() {
+        cleanupResources()
     }
 
     companion object {

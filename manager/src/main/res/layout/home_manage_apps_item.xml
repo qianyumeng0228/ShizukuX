@@ -7,7 +7,8 @@
         android:id="@android:id/icon"
         style="@style/CardIcon"
         android:duplicateParentState="true"
-        android:importantForAccessibility="no"
+        android:importantForAccessibility="yes"
+        android:contentDescription="@string/accessibility_icon_app_management"
         android:src="@drawable/ic_settings_outline_24dp" />
 
     <LinearLayout

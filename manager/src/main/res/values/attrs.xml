@@ -3,4 +3,18 @@
     <attr name="appColorPrimary" format="reference" />
     <attr name="textColorOnSurfaceHighEmphasis" format="color|reference" />
     <attr name="textColorOnSurfaceMediumEmphasis" format="color|reference" />
+
+    <!-- EmptyStateView custom attributes -->
+    <attr name="emptyIcon" format="reference" />
+    <attr name="emptyTitle" format="reference" />
+    <attr name="emptyDescription" format="reference" />
+    <attr name="emptyActionText" format="reference" />
+
+    <declare-styleable name="EmptyStateView">
+        <attr name="emptyIcon" />
+        <attr name="emptyTitle" />
+        <attr name="emptyDescription" />
+        <attr name="emptyActionText" />
+    </declare-styleable>
 </resources>
+

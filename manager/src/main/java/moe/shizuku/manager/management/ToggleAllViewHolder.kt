@@ -1,6 +1,7 @@
 package moe.shizuku.manager.management
 
 import android.content.pm.PackageInfo
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
     companion object {
         @JvmField
         val CREATOR = Creator<HeaderMarker> { inflater: LayoutInflater, parent: ViewGroup? -> ToggleAllViewHolder(AppListToggleAllBinding.inflate(inflater, parent, false)) }
+        private const val TAG = "ToggleAllViewHolder"
     }
 
     private val switchWidget get() = binding.switchWidget
@@ -53,7 +55,9 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
                     } else {
                         AuthorizationManager.revoke(pi.packageName, appInfo.uid)
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to ${if (enabled) "grant" else "revoke"} permission for ${pi.packageName}", e)
+                }
             }
         }
         adapter.notifyDataSetChanged()

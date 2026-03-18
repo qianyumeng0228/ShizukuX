@@ -51,6 +51,12 @@ class HomeAdapter(
     var isDragging = false
     private var isUpdating = false
     private var lastUpdateDataTime = 0L
+    
+    /**
+     * Callback to notify when the empty state should be shown/hidden.
+     * @param isEmpty true if there are no visible cards (excluding fixed status card)
+     */
+    var onEmptyStateChanged: ((Boolean) -> Unit)? = null
 
     init {
         setHasStableIds(true)
@@ -118,6 +124,11 @@ class HomeAdapter(
                 }
 
                 notifyDataSetChanged()
+                
+                // Notify about empty state (only count draggable cards, not fixed status/apps cards)
+                val hasVisibleCards = itemCount > 2 // Status card + Apps card (if permission granted)
+                onEmptyStateChanged?.invoke(!hasVisibleCards)
+                
                 isUpdating = false
             }
         }

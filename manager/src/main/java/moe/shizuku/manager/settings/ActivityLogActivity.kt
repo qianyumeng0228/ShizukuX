@@ -1,14 +1,11 @@
 package moe.shizuku.manager.settings
 
 import android.os.Bundle
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.TextView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +15,7 @@ import moe.shizuku.manager.databinding.ActivityLogItemBinding
 import moe.shizuku.manager.databinding.AppsActivityBinding
 import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ActivityLogRecord
+import moe.shizuku.manager.utils.EmptyStateView
 import rikka.recyclerview.BaseViewHolder
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -26,22 +24,29 @@ import java.util.Locale
 class ActivityLogActivity : AppBarActivity() {
 
     private val adapter = LogAdapter()
-    private var emptyView: TextView? = null
+    private lateinit var emptyStateView: EmptyStateView
 
     override fun getLayoutId() = R.layout.apps_appbar_activity
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)
-        
+
         // Hide search/filter
         findViewById<View>(R.id.search_layout).visibility = View.GONE
-        findViewById<View>(R.id.filter_chip_group).parent.let { 
-            if (it is View) it.visibility = View.GONE 
+        findViewById<View>(R.id.filter_chip_group).parent.let {
+            if (it is View) it.visibility = View.GONE
         }
+
+        // Setup empty state view
+        emptyStateView = binding.emptyStateView
+        emptyStateView.setIcon(R.drawable.ic_empty_log_24)
+        emptyStateView.setTitle(R.string.empty_state_title_activity_log_empty)
+        emptyStateView.setDescription(R.string.empty_state_description_activity_log_empty)
+        emptyStateView.hideActionButton()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.list) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -50,26 +55,20 @@ class ActivityLogActivity : AppBarActivity() {
         }
 
         binding.list.adapter = adapter
+        updateEmptyState()
+    }
+
+    private fun updateEmptyState() {
         val records = ActivityLogManager.getRecords()
         adapter.update(records)
-
-        if (records.isEmpty()) {
-            emptyView = TextView(this).apply {
-                text = getString(R.string.settings_activity_log_empty)
-                gravity = Gravity.CENTER
-                androidx.core.widget.TextViewCompat.setTextAppearance(this, com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
-                layoutParams = FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-            (binding.list.parent as? ViewGroup)?.addView(emptyView)
-        }
+        val isEmpty = records.isEmpty()
+        emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        binding.list.visibility = if (isEmpty) View.GONE else View.VISIBLE
     }
 
     override fun onResume() {
         super.onResume()
-        adapter.update(ActivityLogManager.getRecords())
+        updateEmptyState()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

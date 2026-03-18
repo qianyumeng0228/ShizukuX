@@ -2,6 +2,7 @@ package moe.shizuku.manager.settings
 
 import android.os.Bundle
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
 import androidx.preference.TwoStatePreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,21 +39,32 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                     ShizukuSettings.setCustomApiEnabled(newValue)
                     customApiPref.isChecked = newValue
                     ShizukuSettings.syncAllPlusFeaturesToServer()
+                    updateDeveloperCategoryVisibility()
+                    updateAllPlusFeatureDependencies()
                 }
             }
             false
         }
-        
+
+        val hideDisabledPref = findPreference<TwoStatePreference>("hide_disabled_plus_features")
+        hideDisabledPref?.isChecked = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
+        hideDisabledPref?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is Boolean) {
+                ShizukuSettings.setHideDisabledPlusFeaturesEnabled(newValue)
+                updateAllPlusFeatureDependencies()
+            }
+            true
+        }
+
         // Experimental: Reveal Developer Options on long-press
         customApiPref.setOnPreferenceClickListener {
             // Not a long press but we can use this to reveal if it was already checked
+            updateDeveloperCategoryVisibility()
             false
         }
 
         val devCategory = findPreference<androidx.preference.PreferenceCategory>("category_developer")
-        if (ShizukuSettings.isVectorEnabled()) {
-            devCategory?.isVisible = true
-        }
+        updateDeveloperCategoryVisibility()
 
         val vectorPref = findPreference<TwoStatePreference>(KEY_VECTOR_ENABLED)
         vectorPref?.isChecked = ShizukuSettings.isVectorEnabled()
@@ -60,6 +72,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             if (newValue is Boolean) {
                 ShizukuSettings.setVectorEnabled(newValue)
                 ShizukuSettings.syncAllPlusFeaturesToServer()
+                updateDeveloperCategoryVisibility()
             }
             true
         }
@@ -100,10 +113,57 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "network_governor_plus_enabled" to "network_governor_plus",
             "activity_manager_plus_enabled" to "activity_manager_plus"
         )
-        plusKeys.forEach { (prefKey, _) ->
-            findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, _ ->
+        plusKeys.forEach { (prefKey, featureName) ->
+            findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
                 ShizukuSettings.syncAllPlusFeaturesToServer()
+                updatePlusFeatureDependency(prefKey, newValue as? Boolean ?: false)
                 true
+            }
+        }
+
+        // Initialize all preference dependencies
+        updateAllPlusFeatureDependencies()
+    }
+
+    private fun updateDeveloperCategoryVisibility() {
+        val devCategory = findPreference<androidx.preference.PreferenceCategory>("category_developer")
+        devCategory?.isVisible = ShizukuSettings.isVectorEnabled()
+    }
+
+    private fun updateAllPlusFeatureDependencies() {
+        val customApiEnabled = ShizukuSettings.isCustomApiEnabled()
+        val hideDisabled = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
+        
+        // Update all preferences that depend on custom_api_enabled
+        updatePreferenceDependency("shell_interceptor_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("avf_manager_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("storage_proxy_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("continuity_bridge_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
+        
+        // These also depend on window_manager_plus_enabled
+        val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
+        updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerPlusEnabled, hideDisabled)
+    }
+
+    private fun updatePreferenceDependency(prefKey: String, parentEnabled: Boolean, hideIfDisabled: Boolean = false) {
+        findPreference<TwoStatePreference>(prefKey)?.apply {
+            isEnabled = parentEnabled
+            if (!parentEnabled) {
+                isChecked = false
+            }
+            isVisible = if (hideIfDisabled) parentEnabled else true
+        }
+    }
+
+    private fun updatePlusFeatureDependency(prefKey: String, newValue: Boolean) {
+        val hideDisabled = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
+        when (prefKey) {
+            "window_manager_plus_enabled" -> {
+                // overlay_manager_plus_enabled depends on window_manager_plus_enabled
+                updatePreferenceDependency("overlay_manager_plus_enabled", newValue && ShizukuSettings.isCustomApiEnabled(), hideDisabled)
             }
         }
     }
