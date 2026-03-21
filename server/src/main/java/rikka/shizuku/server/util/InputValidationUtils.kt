@@ -17,6 +17,39 @@ object InputValidationUtils {
         "hostname"
     )
 
+    // Valid spoof target device identifiers
+    private val VALID_SPOOF_TARGETS = listOf(
+        "pixel_9_pro",
+        "pixel_8_pro",
+        "pixel_7_pro",
+        "galaxy_s24_ultra",
+        "galaxy_s23_ultra",
+        "oneplus_12",
+        "nothing_phone_2",
+        "pixel_tablet",
+        "pixel_fold"
+    )
+
+    /**
+     * Checks if a spoof target is valid.
+     *
+     * @param target the target to validate
+     * @return true if target is in the whitelist, false otherwise
+     */
+    @JvmStatic
+    fun isValidSpoofTarget(target: String?): Boolean {
+        if (target.isNullOrEmpty()) return false
+        return VALID_SPOOF_TARGETS.contains(target.lowercase())
+    }
+
+    /**
+     * Gets all valid spoof targets as a comma-separated string.
+     */
+    @JvmStatic
+    fun getValidSpoofTargets(): String {
+        return VALID_SPOOF_TARGETS.joinToString(", ")
+    }
+
     // Pattern for validating hostname format
     // Hostname: 1-253 chars, alphanumeric and hyphens, segments separated by dots
     // Each segment: 1-63 chars, cannot start or end with hyphen

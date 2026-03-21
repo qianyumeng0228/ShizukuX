@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
+import android.util.Log
 import moe.shizuku.server.INetworkGovernorPlus
 import rikka.hidden.compat.ActivityManagerApis
 import rikka.hidden.compat.PackageManagerApis
@@ -12,6 +13,10 @@ import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.UserHandleCompat
 
 class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
+
+    companion object {
+        private const val TAG = "NetworkGovernorPlus"
+    }
 
     override fun setPrivateDns(mode: String?, hostname: String?): Boolean {
         // mode: "off", "opportunistic", "hostname"
@@ -49,7 +54,7 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
                 return true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "setPrivateDns failed", e)
         }
         return false
     }

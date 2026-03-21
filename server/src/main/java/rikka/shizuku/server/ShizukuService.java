@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 
 import kotlin.collections.ArraysKt;
 import moe.shizuku.api.BinderContainer;
-import moe.shizuku.common.util.BuildUtils;
+import rikka.core.util.BuildUtils;
 import moe.shizuku.common.util.OsUtils;
 import moe.shizuku.server.IRemoteProcess;
 import moe.shizuku.server.IShizukuApplication;
@@ -834,9 +834,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     PermissionManagerApis.grantRuntimePermission(packageName, PERMISSION, userId);
                 } else {
                     PermissionManagerApis.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    onPermissionRevoked(packageName);
                 }
-
-                // TODO kill user service using
             }
         }
 

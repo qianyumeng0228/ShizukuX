@@ -63,6 +63,7 @@ object AdbStarter {
                     connectWithRetry(client)
                     log?.invoke("Successfully connected on port $activePort...\n")
                     client.runCommand("shell:${Starter.internalCommand}")
+                    ShizukuStateMachine.update()
                 }
             }
         } finally {

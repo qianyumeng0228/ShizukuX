@@ -29,6 +29,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.*
 import moe.shizuku.manager.databinding.AdbPairDialogBinding
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 import java.net.ConnectException
@@ -182,7 +183,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             val key = try {
                 AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
             } catch (e: Throwable) {
-                e.printStackTrace()
+                loge("failed to load or create AdbKey", e)
                 _result.postValue(AdbKeyException(e))
                 return@launch
             }
@@ -191,7 +192,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 start()
             }.onFailure {
                 _result.postValue(it)
-                it.printStackTrace()
+                loge("adb pairing failed", it)
             }.onSuccess {
                 if (it) {
                     _result.postValue(null)

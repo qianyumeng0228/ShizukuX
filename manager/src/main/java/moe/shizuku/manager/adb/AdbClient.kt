@@ -14,7 +14,6 @@ import moe.shizuku.manager.adb.AdbProtocol.A_STLS
 import moe.shizuku.manager.adb.AdbProtocol.A_STLS_VERSION
 import moe.shizuku.manager.adb.AdbProtocol.A_VERSION
 import moe.shizuku.manager.adb.AdbProtocol.A_WRTE
-import moe.shizuku.manager.ktx.logd
 import rikka.core.util.BuildUtils
 import java.io.Closeable
 import java.io.DataInputStream
@@ -29,59 +28,69 @@ private const val TAG = "AdbClient"
 
 class AdbClient(private val host: String, private val port: Int, private val key: AdbKey) : Closeable {
 
-    private lateinit var socket: Socket
-    private lateinit var plainInputStream: DataInputStream
-    private lateinit var plainOutputStream: DataOutputStream
+    private var socket: Socket? = null
+    private var plainInputStream: DataInputStream? = null
+    private var plainOutputStream: DataOutputStream? = null
 
     private var useTls = false
 
-    private lateinit var tlsSocket: SSLSocket
-    private lateinit var tlsInputStream: DataInputStream
-    private lateinit var tlsOutputStream: DataOutputStream
+    private var tlsSocket: SSLSocket? = null
+    private var tlsInputStream: DataInputStream? = null
+    private var tlsOutputStream: DataOutputStream? = null
 
-    private val inputStream get() = if (useTls) tlsInputStream else plainInputStream
-    private val outputStream get() = if (useTls) tlsOutputStream else plainOutputStream
+    private val inputStream get() = if (useTls) tlsInputStream!! else plainInputStream!!
+    private val outputStream get() = if (useTls) tlsOutputStream!! else plainOutputStream!!
 
     fun connect() {
-        val socket = Socket()
+        val s = Socket()
+        socket = s
         val address = InetSocketAddress(host, port)
-        socket.connect(address, 5000)
+        
+        try {
+            s.connect(address, 5000)
+            s.tcpNoDelay = true
+            
+            val pin = DataInputStream(s.getInputStream())
+            plainInputStream = pin
+            val pout = DataOutputStream(s.getOutputStream())
+            plainOutputStream = pout
 
-        socket.tcpNoDelay = true
-        plainInputStream = DataInputStream(socket.getInputStream())
-        plainOutputStream = DataOutputStream(socket.getOutputStream())
+            write(A_CNXN, A_VERSION, A_MAXDATA, "host::")
 
-        write(A_CNXN, A_VERSION, A_MAXDATA, "host::")
+            var message = read()
+            if (message.command == A_STLS) {
+                if (!BuildUtils.atLeast29) {
+                    error("Connect to adb with TLS is not supported before Android 9")
+                }
+                write(A_STLS, A_STLS_VERSION, 0)
 
-        var message = read()
-        if (message.command == A_STLS) {
-            if (!BuildUtils.atLeast29) {
-                error("Connect to adb with TLS is not supported before Android 9")
-            }
-            write(A_STLS, A_STLS_VERSION, 0)
+                val sslContext = key.sslContext
+                val ts = sslContext.socketFactory.createSocket(s, host, port, true) as SSLSocket
+                tlsSocket = ts
+                ts.startHandshake()
+                Log.d(TAG, "Handshake succeeded.")
 
-            val sslContext = key.sslContext
-            tlsSocket = sslContext.socketFactory.createSocket(socket, host, port, true) as SSLSocket
-            tlsSocket.startHandshake()
-            Log.d(TAG, "Handshake succeeded.")
+                tlsInputStream = DataInputStream(ts.inputStream)
+                tlsOutputStream = DataOutputStream(ts.outputStream)
+                useTls = true
 
-            tlsInputStream = DataInputStream(tlsSocket.inputStream)
-            tlsOutputStream = DataOutputStream(tlsSocket.outputStream)
-            useTls = true
-
-            message = read()
-        } else if (message.command == A_AUTH) {
-            if (message.command != A_AUTH && message.arg0 != ADB_AUTH_TOKEN) error("not A_AUTH ADB_AUTH_TOKEN")
-            write(A_AUTH, ADB_AUTH_SIGNATURE, 0, key.sign(message.data))
-
-            message = read()
-            if (message.command != A_CNXN) {
-                write(A_AUTH, ADB_AUTH_RSAPUBLICKEY, 0, key.adbPublicKey)
                 message = read()
-            }
-        }
+            } else if (message.command == A_AUTH) {
+                if (message.command != A_AUTH && message.arg0 != ADB_AUTH_TOKEN) error("not A_AUTH ADB_AUTH_TOKEN")
+                write(A_AUTH, ADB_AUTH_SIGNATURE, 0, key.sign(message.data))
 
-        if (message.command != A_CNXN) error("not A_CNXN")
+                message = read()
+                if (message.command != A_CNXN) {
+                    write(A_AUTH, ADB_AUTH_RSAPUBLICKEY, 0, key.adbPublicKey)
+                    message = read()
+                }
+            }
+
+            if (message.command != A_CNXN) error("not A_CNXN")
+        } catch (e: Exception) {
+            close()
+            throw e
+        }
     }
 
     fun command(cmd: String, listener: ((ByteArray) -> Unit)? = null) {
@@ -151,30 +160,42 @@ class AdbClient(private val host: String, private val port: Int, private val key
 
     override fun close() {
         try {
-            plainInputStream.close()
+            plainInputStream?.close()
         } catch (e: Throwable) {
+        } finally {
+            plainInputStream = null
         }
         try {
-            plainOutputStream.close()
+            plainOutputStream?.close()
         } catch (e: Throwable) {
+        } finally {
+            plainOutputStream = null
         }
         try {
-            socket.close()
+            socket?.close()
         } catch (e: Exception) {
+        } finally {
+            socket = null
         }
 
         if (useTls) {
             try {
-                tlsInputStream.close()
+                tlsInputStream?.close()
             } catch (e: Throwable) {
+            } finally {
+                tlsInputStream = null
             }
             try {
-                tlsOutputStream.close()
+                tlsOutputStream?.close()
             } catch (e: Throwable) {
+            } finally {
+                tlsOutputStream = null
             }
             try {
-                tlsSocket.close()
+                tlsSocket?.close()
             } catch (e: Exception) {
+            } finally {
+                tlsSocket = null
             }
         }
     }

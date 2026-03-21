@@ -15,6 +15,7 @@ import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.home.HomeActivity
+import moe.shizuku.manager.ktx.loge
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
 
@@ -159,7 +160,7 @@ class AdbPairingService : Service() {
             val key = try {
                 AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
             } catch (e: Throwable) {
-                e.printStackTrace()
+                loge("failed to load or create AdbKey", e)
                 return@launch
             }
 

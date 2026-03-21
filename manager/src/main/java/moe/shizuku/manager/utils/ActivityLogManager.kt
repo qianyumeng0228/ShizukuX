@@ -72,8 +72,8 @@ object ActivityLogManager {
     private val isCleaningUp = AtomicBoolean(false)
     
     // State flow for observing log changes
-    private val _logCount = MutableStateFlow(0)
-    val logCount: StateFlow<Int> = _logCount.asStateFlow()
+    private val _logs = MutableStateFlow<List<ActivityLogRecord>>(emptyList())
+    val logs: StateFlow<List<ActivityLogRecord>> = _logs.asStateFlow()
     
     // Default retention count
     private var retentionCount = 100
@@ -135,8 +135,8 @@ object ActivityLogManager {
                                 )
                             )
                         }
+                        _logs.value = records.toList()
                     }
-                    _logCount.value = records.size
                     Log.d(TAG, "Loaded ${records.size} logs from database")
                 } finally {
                     dbLock.release()
@@ -175,7 +175,7 @@ object ActivityLogManager {
                 records.removeLast()
             }
             records.addFirst(record)
-            _logCount.value = records.size
+            _logs.value = records.toList()
         }
         
         // Save to database asynchronously
@@ -299,7 +299,7 @@ object ActivityLogManager {
     fun clear() {
         synchronized(records) {
             records.clear()
-            _logCount.value = 0
+            _logs.value = emptyList()
         }
         
         scope.launch {

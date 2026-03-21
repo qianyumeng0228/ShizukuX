@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import com.google.android.material.appbar.AppBarLayout
+import moe.shizuku.manager.R
 import moe.shizuku.manager.databinding.AppbarActivityBinding
 import rikka.core.ktx.unsafeLazy
 
@@ -22,9 +23,9 @@ abstract class AppBarActivity : AppActivity() {
 
     protected val rootView: ViewGroup get() = binding.root
 
-    private val toolbarContainer: AppBarLayout get() = binding.toolbarContainer
+    protected val toolbarContainer: AppBarLayout get() = binding.toolbarContainer
 
-    private val toolbar: Toolbar get() = binding.toolbar
+    protected val toolbar: Toolbar get() = binding.toolbar
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

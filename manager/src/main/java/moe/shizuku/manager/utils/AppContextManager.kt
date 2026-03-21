@@ -1,5 +1,6 @@
 package moe.shizuku.manager.utils
 
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.ShizukuSettings
 import org.json.JSONObject
 
@@ -192,7 +193,7 @@ object AppContextManager {
                 )
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            loge("load app database from cache failed", e)
         }
     }
 

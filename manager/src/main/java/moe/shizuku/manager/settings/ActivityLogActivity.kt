@@ -8,7 +8,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.databinding.ActivityLogItemBinding
@@ -17,7 +22,6 @@ import moe.shizuku.manager.databinding.AppsAppbarActivityBinding
 import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ActivityLogRecord
 import moe.shizuku.manager.utils.EmptyStateView
-import rikka.recyclerview.BaseViewHolder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -32,7 +36,7 @@ class ActivityLogActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
+        val appsBinding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
         val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)
@@ -44,33 +48,30 @@ class ActivityLogActivity : AppBarActivity() {
         }
 
         // Setup empty state view
-        emptyStateView = binding.emptyStateView
+        emptyStateView = appsBinding.emptyStateView
         emptyStateView.setIcon(R.drawable.ic_empty_log_24)
         emptyStateView.setTitle(R.string.empty_state_title_activity_log_empty)
         emptyStateView.setDescription(R.string.empty_state_description_activity_log_empty)
         emptyStateView.hideActionButton()
 
-        ViewCompat.setOnApplyWindowInsetsListener(binding.list) { view, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(appsBinding.list) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
             insets
         }
 
-        binding.list.adapter = adapter
-        updateEmptyState()
-    }
-
-    private fun updateEmptyState() {
-        val records = ActivityLogManager.getRecords()
-        adapter.update(records)
-        val isEmpty = records.isEmpty()
-        emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
-        binding.list.visibility = if (isEmpty) View.GONE else View.VISIBLE
-    }
-
-    override fun onResume() {
-        super.onResume()
-        updateEmptyState()
+        appsBinding.list.adapter = adapter
+        
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                ActivityLogManager.logs.collectLatest { records ->
+                    adapter.update(records)
+                    val isEmpty = records.isEmpty()
+                    emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
+                    appsBinding.list.visibility = if (isEmpty) View.GONE else View.VISIBLE
+                }
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -87,7 +88,6 @@ class ActivityLogActivity : AppBarActivity() {
             return true
         } else if (item.itemId == 1) {
             ActivityLogManager.clear()
-            adapter.update(emptyList())
             return true
         }
         return super.onOptionsItemSelected(item)

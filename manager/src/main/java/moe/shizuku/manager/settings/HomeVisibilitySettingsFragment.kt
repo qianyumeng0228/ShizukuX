@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.utils.AppContextManager
 
 @Keep
@@ -30,7 +31,7 @@ class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
                         Toast.makeText(context, R.string.settings_update_app_database_success, Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    loge("update app database failed", e)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, R.string.settings_update_app_database_error, Toast.LENGTH_SHORT).show()
                     }

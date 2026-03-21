@@ -13,7 +13,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
-import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
@@ -282,7 +281,11 @@ abstract class HomeActivity : AppBarActivity() {
                         resources.getDimensionPixelOffset(R.dimen.default_app_icon_size)
                     )
                 )
-                val versionName = packageManager.getPackageInfo(packageName, 0).versionName
+                val versionName = try {
+                    packageManager.getPackageInfo(packageName, 0)?.versionName ?: "unknown"
+                } catch (e: Exception) {
+                    "unknown"
+                }
                 binding.versionName.text = versionName
 
                 // Add click listener to version name for developer options

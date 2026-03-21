@@ -3,10 +3,15 @@ package rikka.shizuku.server
 import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
+import android.util.Log
 import moe.shizuku.server.IOverlayManagerPlus
 import rikka.shizuku.server.util.UserHandleCompat
 
 class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
+
+    companion object {
+        private const val TAG = "OverlayManagerPlus"
+    }
 
     private fun getService(): IBinder? = ServiceManager.getService("overlay")
 
@@ -99,7 +104,7 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             
             return true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "injectResourceOverlay failed", e)
             return false
         }
     }

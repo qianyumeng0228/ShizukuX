@@ -160,6 +160,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                     })
                     .submit {
                         if (it.isSuccess) {
+                            ShizukuStateMachine.update()
                             cont.resume(Unit)
                         } else {
                             cont.resumeWithException(Exception("Failed to start with root"))

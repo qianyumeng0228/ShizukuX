@@ -33,6 +33,7 @@ import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.databinding.ActivityRootCompatibilityBinding
 import moe.shizuku.manager.databinding.AppListItemBinding
 import moe.shizuku.manager.databinding.ListSectionHeaderBinding
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.utils.AppContextManager
 import moe.shizuku.manager.utils.RootCompatHelper
 import moe.shizuku.manager.utils.RootSupportLevel
@@ -364,7 +365,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                             try {
                                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
                             } catch (e: Exception) {
-                                e.printStackTrace()
+                                loge("start application details settings failed", e)
                             }
                         }
                     }
@@ -397,7 +398,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                             try {
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")))
                             } catch (e2: Exception) {
-                                e2.printStackTrace()
+                                loge("start view intent failed", e2)
                             }
                         }
                     }

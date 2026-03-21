@@ -445,6 +445,8 @@
     <string name="starter">Starter</string>
     <string name="starting_root_shell" translatable="false">Starting root shell…</string>
     <string name="start_with_root_failed">Can\'t start service because root permission is not granted or this device is not rooted.</string>
+    <string name="starter_waiting">Waiting for service…</string>
+    <string name="starter_waiting_description">This may take up to 30 seconds.</string>
 
     <!-- WADB Starter -->
     <string name="wadb_notification_title">Starting Shizuku…</string>

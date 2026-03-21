@@ -106,7 +106,10 @@ public class ShizukuShellLoader {
 
         try {
             var classLoader = new BaseDexClassLoader(sourceDir, null, librarySearchPath, ClassLoader.getSystemClassLoader());
-            Class<?> cls = classLoader.loadClass("moe.shizuku.manager.shell.Shell");
+            String className = "plus".equals(System.getProperty("shizuku.cmd")) 
+                ? "moe.shizuku.manager.shell.PlusShell" 
+                : "moe.shizuku.manager.shell.Shell";
+            Class<?> cls = classLoader.loadClass(className);
             cls.getDeclaredMethod("main", String[].class, String.class, IBinder.class, Handler.class)
                     .invoke(null, args, callingPackage, binder, handler);
         } catch (ClassNotFoundException tr) {

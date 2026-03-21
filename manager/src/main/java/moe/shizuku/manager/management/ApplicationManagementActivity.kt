@@ -35,6 +35,8 @@ import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.databinding.AppsActivityBinding
 import moe.shizuku.manager.databinding.AppsAppbarActivityBinding
 import moe.shizuku.manager.databinding.SwipeHintOverlayBinding
+import moe.shizuku.manager.ktx.loge
+import moe.shizuku.manager.management.AppViewHolder.Callbacks
 import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.lifecycle.Status
@@ -129,7 +131,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 Status.ERROR -> {
                     finish()
                     Toast.makeText(this, Objects.toString(it.error, "unknown"), Toast.LENGTH_SHORT).show()
-                    it.error?.printStackTrace()
+                    loge("load apps failed", it.error)
                 }
                 Status.LOADING -> {}
             }

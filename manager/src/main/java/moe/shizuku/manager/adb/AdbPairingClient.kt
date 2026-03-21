@@ -171,12 +171,12 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         Stopped
     }
 
-    private lateinit var socket: Socket
-    private lateinit var inputStream: DataInputStream
-    private lateinit var outputStream: DataOutputStream
+    private var socket: Socket? = null
+    private var inputStream: DataInputStream? = null
+    private var outputStream: DataOutputStream? = null
 
     private val peerInfo: PeerInfo = PeerInfo(PeerInfo.Type.ADB_RSA_PUB_KEY.value, key.adbPublicKey)
-    private lateinit var pairingContext: PairingContext
+    private var pairingContext: PairingContext? = null
     private var state: State = State.Ready
 
     fun start(): Boolean {
@@ -202,18 +202,19 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         } catch (e: Exception) {
             Log.e(TAG, "Error during pairing process", e)
             state = State.Stopped
-            // Ensure resources are cleaned up on exception
-            cleanupResources()
             return false
+        } finally {
+            cleanupResources()
         }
     }
 
     private fun setupTlsConnection() {
-        socket = Socket(host, port)
-        socket.tcpNoDelay = true
+        val s = Socket(host, port)
+        socket = s
+        s.tcpNoDelay = true
 
         val sslContext = key.sslContext
-        val sslSocket = sslContext.socketFactory.createSocket(socket, host, port, true) as SSLSocket
+        val sslSocket = sslContext.socketFactory.createSocket(s, host, port, true) as SSLSocket
         sslSocket.startHandshake()
         Log.d(TAG, "Handshake succeeded.")
 
@@ -226,9 +227,9 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         pairCodeBytes.copyInto(passwordBytes)
         keyMaterial.copyInto(passwordBytes, pairCodeBytes.size)
 
-        val pairingContext = PairingContext.create(passwordBytes)
-        checkNotNull(pairingContext) { "Unable to create PairingContext." }
-        this.pairingContext = pairingContext
+        val context = PairingContext.create(passwordBytes)
+        checkNotNull(context) { "Unable to create PairingContext." }
+        this.pairingContext = context
     }
 
     private fun createHeader(type: PairingPacketHeader.Type, payloadSize: Int): PairingPacketHeader {
@@ -237,7 +238,8 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
 
     private fun readHeader(): PairingPacketHeader? {
         val bytes = ByteArray(kPairingPacketHeaderSize)
-        inputStream.readFully(bytes)
+        val input = inputStream ?: return null
+        input.readFully(bytes)
         val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN)
         return PairingPacketHeader.readFrom(buffer)
     }
@@ -246,13 +248,15 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         val buffer = ByteBuffer.allocate(kPairingPacketHeaderSize).order(ByteOrder.BIG_ENDIAN)
         header.writeTo(buffer)
 
-        outputStream.write(buffer.array())
-        outputStream.write(payload)
+        val output = outputStream ?: return
+        output.write(buffer.array())
+        output.write(payload)
         Log.d(TAG, "write payload, size=${payload.size}")
     }
 
     private fun doExchangeMsgs(): Boolean {
-        val msg = pairingContext.msg
+        val context = pairingContext ?: return false
+        val msg = context.msg
         val size = msg.size
 
         val ourHeader = createHeader(PairingPacketHeader.Type.SPAKE2_MSG, size)
@@ -262,17 +266,18 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         if (theirHeader.type != PairingPacketHeader.Type.SPAKE2_MSG.value) return false
 
         val theirMessage = ByteArray(theirHeader.payload)
-        inputStream.readFully(theirMessage)
+        inputStream?.readFully(theirMessage)
 
-        if (!pairingContext.initCipher(theirMessage)) return false
+        if (!context.initCipher(theirMessage)) return false
         return true
     }
 
     private fun doExchangePeerInfo(): Boolean {
+        val context = pairingContext ?: return false
         val buf = ByteBuffer.allocate(kMaxPeerInfoSize).order(ByteOrder.BIG_ENDIAN)
         peerInfo.writeTo(buf)
 
-        val outbuf = pairingContext.encrypt(buf.array()) ?: return false
+        val outbuf = context.encrypt(buf.array()) ?: return false
 
         val ourHeader = createHeader(PairingPacketHeader.Type.PEER_INFO, outbuf.size)
         writeHeader(ourHeader, outbuf)
@@ -281,9 +286,9 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
         if (theirHeader.type != PairingPacketHeader.Type.PEER_INFO.value) return false
 
         val theirMessage = ByteArray(theirHeader.payload)
-        inputStream.readFully(theirMessage)
+        inputStream?.readFully(theirMessage)
 
-        val decrypted = pairingContext.decrypt(theirMessage) ?: throw AdbInvalidPairingCodeException()
+        val decrypted = context.decrypt(theirMessage) ?: throw AdbInvalidPairingCodeException()
         if (decrypted.size != kMaxPeerInfoSize) {
             Log.e(TAG, "Got size=${decrypted.size} PeerInfo.size=$kMaxPeerInfoSize")
             return false
@@ -295,23 +300,30 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
 
     private fun cleanupResources() {
         try {
-            inputStream.close()
+            inputStream?.close()
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to close inputStream", e)
+        } finally {
+            inputStream = null
         }
         try {
-            outputStream.close()
+            outputStream?.close()
         } catch (e: Throwable) {
             Log.e(TAG, "Failed to close outputStream", e)
+        } finally {
+            outputStream = null
         }
         try {
-            socket.close()
+            socket?.close()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to close socket", e)
+        } finally {
+            socket = null
         }
 
-        if (state != State.Ready) {
-            pairingContext.destroy()
+        pairingContext?.let {
+            it.destroy()
+            pairingContext = null
         }
     }
 

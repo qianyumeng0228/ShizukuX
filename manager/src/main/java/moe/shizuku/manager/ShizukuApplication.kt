@@ -86,6 +86,7 @@ class ShizukuApplication : Application() {
             }
         }
         init(this)
+        ShizukuStateMachine.update()
     }
 
 }

@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.R
 import rikka.shizuku.Shizuku
 
@@ -87,7 +88,7 @@ object RootCompatHelper {
             val process = Shizuku.newProcess(cmd, null, null)
             process.waitFor()
         } catch (e: Exception) {
-            e.printStackTrace()
+            loge("execute privileged command failed", e)
         }
     }
 }

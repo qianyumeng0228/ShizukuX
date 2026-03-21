@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.Parcel
+import moe.shizuku.manager.ktx.loge
 import moe.shizuku.manager.utils.Logger.LOGGER
 import rikka.shizuku.Shizuku
 
@@ -27,7 +28,7 @@ object ShellBinderRequestHandler {
             binder.transact(1, data, null, IBinder.FLAG_ONEWAY)
             true
         } catch (e: Throwable) {
-            e.printStackTrace()
+            loge("transact binder failed", e)
             false
         } finally {
             data.recycle()
