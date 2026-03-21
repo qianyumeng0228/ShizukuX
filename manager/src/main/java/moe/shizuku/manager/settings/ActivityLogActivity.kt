@@ -13,6 +13,7 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.databinding.ActivityLogItemBinding
 import moe.shizuku.manager.databinding.AppsActivityBinding
+import moe.shizuku.manager.databinding.AppsAppbarActivityBinding
 import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ActivityLogRecord
 import moe.shizuku.manager.utils.EmptyStateView
@@ -32,12 +33,13 @@ class ActivityLogActivity : AppBarActivity() {
         super.onCreate(savedInstanceState)
 
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
+        val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)
 
         // Hide search/filter
-        findViewById<View>(R.id.search_layout).visibility = View.GONE
-        findViewById<View>(R.id.filter_chip_group).parent.let {
+        appbarBinding.searchLayout.visibility = View.GONE
+        appbarBinding.filterChipGroup.parent.let {
             if (it is View) it.visibility = View.GONE
         }
 

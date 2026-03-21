@@ -12,6 +12,8 @@ import androidx.annotation.StringRes
 import com.google.android.material.button.MaterialButton
 import moe.shizuku.manager.R
 
+import moe.shizuku.manager.databinding.EmptyStateViewBinding
+
 /**
  * A reusable empty state view that displays an icon, title, description, and optional action button.
  * Theme-aware: works in both light and dark modes.
@@ -22,19 +24,10 @@ class EmptyStateView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private val iconView: ImageView
-    private val titleView: TextView
-    private val descriptionView: TextView
-    private val actionButton: MaterialButton
+    private val binding: EmptyStateViewBinding
 
     init {
-        val inflater = LayoutInflater.from(context)
-        val view = inflater.inflate(R.layout.empty_state_view, this, true)
-
-        iconView = view.findViewById(R.id.empty_state_icon)
-        titleView = view.findViewById(R.id.empty_state_title)
-        descriptionView = view.findViewById(R.id.empty_state_description)
-        actionButton = view.findViewById(R.id.empty_state_action_button)
+        binding = EmptyStateViewBinding.inflate(LayoutInflater.from(context), this, true)
 
         context.theme.obtainStyledAttributes(
             attrs,
@@ -64,7 +57,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param iconRes Drawable resource ID for the icon
      */
     fun setIcon(@DrawableRes iconRes: Int) {
-        iconView.setImageResource(iconRes)
+        binding.emptyStateIcon.setImageResource(iconRes)
     }
 
     /**
@@ -72,7 +65,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param titleRes String resource ID for the title
      */
     fun setTitle(@StringRes titleRes: Int) {
-        titleView.setText(titleRes)
+        binding.emptyStateTitle.setText(titleRes)
     }
 
     /**
@@ -80,7 +73,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param title Title string
      */
     fun setTitle(title: CharSequence) {
-        titleView.text = title
+        binding.emptyStateTitle.text = title
     }
 
     /**
@@ -88,7 +81,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param descriptionRes String resource ID for the description
      */
     fun setDescription(@StringRes descriptionRes: Int) {
-        descriptionView.setText(descriptionRes)
+        binding.emptyStateDescription.setText(descriptionRes)
     }
 
     /**
@@ -96,7 +89,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param description Description string
      */
     fun setDescription(description: CharSequence) {
-        descriptionView.text = description
+        binding.emptyStateDescription.text = description
     }
 
     /**
@@ -104,8 +97,8 @@ class EmptyStateView @JvmOverloads constructor(
      * @param actionTextRes String resource ID for the action button text
      */
     fun setActionText(@StringRes actionTextRes: Int) {
-        actionButton.setText(actionTextRes)
-        actionButton.visibility = View.VISIBLE
+        binding.emptyStateActionButton.setText(actionTextRes)
+        binding.emptyStateActionButton.visibility = View.VISIBLE
     }
 
     /**
@@ -113,23 +106,23 @@ class EmptyStateView @JvmOverloads constructor(
      * @param actionText Action button text
      */
     fun setActionText(actionText: CharSequence) {
-        actionButton.text = actionText
-        actionButton.visibility = View.VISIBLE
+        binding.emptyStateActionButton.text = actionText
+        binding.emptyStateActionButton.visibility = View.VISIBLE
     }
 
     /**
      * Hide the action button.
      */
     fun hideActionButton() {
-        actionButton.visibility = View.GONE
+        binding.emptyStateActionButton.visibility = View.GONE
     }
 
     /**
      * Show the action button.
      */
     fun showActionButton() {
-        if (actionButton.text.isNotEmpty()) {
-            actionButton.visibility = View.VISIBLE
+        if (binding.emptyStateActionButton.text.isNotEmpty()) {
+            binding.emptyStateActionButton.visibility = View.VISIBLE
         }
     }
 
@@ -138,7 +131,7 @@ class EmptyStateView @JvmOverloads constructor(
      * @param listener Click listener
      */
     fun setActionClickListener(listener: OnClickListener?) {
-        actionButton.setOnClickListener(listener)
+        binding.emptyStateActionButton.setOnClickListener(listener)
     }
 
     /**
@@ -146,6 +139,6 @@ class EmptyStateView @JvmOverloads constructor(
      * @param listener Click listener
      */
     fun setActionClickListener(listener: () -> Unit) {
-        actionButton.setOnClickListener { listener() }
+        binding.emptyStateActionButton.setOnClickListener { listener() }
     }
 }

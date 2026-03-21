@@ -33,6 +33,8 @@ import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.authorization.AuthorizationManager
 import moe.shizuku.manager.databinding.AppsActivityBinding
+import moe.shizuku.manager.databinding.AppsAppbarActivityBinding
+import moe.shizuku.manager.databinding.SwipeHintOverlayBinding
 import moe.shizuku.manager.utils.ActivityLogManager
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.lifecycle.Status
@@ -63,6 +65,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         }
 
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
+        val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Empty state view
@@ -88,22 +91,21 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         }
 
         // Search bar
-        findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.search_edit_text)
-            .doOnTextChanged { text, _, _, _ ->
-                viewModel.setSearch(text?.toString() ?: "")
-            }
+        appbarBinding.searchEditText.doOnTextChanged { text, _, _, _ ->
+            viewModel.setSearch(text?.toString() ?: "")
+        }
 
         // Filter chips
-        findViewById<Chip>(R.id.chip_all).setOnCheckedChangeListener { _, checked ->
+        appbarBinding.chipAll.setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.ALL)
         }
-        findViewById<Chip>(R.id.chip_granted).setOnCheckedChangeListener { _, checked ->
+        appbarBinding.chipGranted.setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.GRANTED)
         }
-        findViewById<Chip>(R.id.chip_denied).setOnCheckedChangeListener { _, checked ->
+        appbarBinding.chipDenied.setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.DENIED)
         }
-        findViewById<Chip>(R.id.chip_hidden)?.setOnCheckedChangeListener { _, checked ->
+        appbarBinding.chipHidden.setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.HIDDEN)
         }
 
@@ -383,7 +385,8 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
     }
 
     private fun showSwipeHint() {
-        val hint = layoutInflater.inflate(R.layout.swipe_hint_overlay, rootView as ViewGroup, false)
+        val hintBinding = SwipeHintOverlayBinding.inflate(layoutInflater, rootView as ViewGroup, false)
+        val hint = hintBinding.root
         (rootView as ViewGroup).addView(hint)
 
         hint.doOnLayout { v ->
@@ -396,7 +399,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 .start()
 
             // Bounce the right-swipe icon right to hint the gesture
-            val iconRight = v.findViewById<android.view.View>(R.id.hint_icon_right)
+            val iconRight = hintBinding.hintIconRight
             iconRight.postDelayed({
                 iconRight.animate()
                     .translationX(dpToPx(18f))
@@ -412,7 +415,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             }, 500)
 
             // Bounce the left-swipe icon left
-            val iconLeft = v.findViewById<android.view.View>(R.id.hint_icon_left)
+            val iconLeft = hintBinding.hintIconLeft
             iconLeft.postDelayed({
                 iconLeft.animate()
                     .translationX(-dpToPx(18f))

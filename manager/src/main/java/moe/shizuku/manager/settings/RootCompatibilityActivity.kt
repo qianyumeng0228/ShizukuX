@@ -17,27 +17,25 @@ import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import com.google.android.material.color.MaterialColors
-import moe.shizuku.manager.utils.RootSupportLevel
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.card.MaterialCardView
+import com.google.android.material.color.MaterialColors
+import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.app.AppBarActivity
+import moe.shizuku.manager.databinding.ActivityRootCompatibilityBinding
+import moe.shizuku.manager.databinding.AppListItemBinding
+import moe.shizuku.manager.databinding.ListSectionHeaderBinding
 import moe.shizuku.manager.utils.AppContextManager
-
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 import moe.shizuku.manager.utils.RootCompatHelper
+import moe.shizuku.manager.utils.RootSupportLevel
 
 class RootCompatibilityActivity : AppBarActivity() {
 
@@ -60,21 +58,17 @@ class RootCompatibilityActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val binding = ActivityRootCompatibilityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         resolvedSuPath = resolveSuPath()
 
-        val globalSetupCard = findViewById<MaterialCardView>(R.id.global_setup_card)
-        val globalSuPath = findViewById<TextView>(R.id.global_su_path)
-        val btnCopyGlobal = findViewById<MaterialButton>(R.id.btn_copy_global)
-        val btnSetupAll = findViewById<MaterialButton>(R.id.btn_setup_all)
-
         resolvedSuPath?.let { path ->
-            globalSetupCard.isVisible = true
-            globalSuPath.text = path
-            btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
+            binding.globalSetupCard.isVisible = true
+            binding.globalSuPath.text = path
+            binding.btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
             
-            btnSetupAll.setOnClickListener {
+            binding.btnSetupAll.setOnClickListener {
                 lifecycleScope.launch {
                     val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
                     if (count > 0) {
@@ -85,16 +79,13 @@ class RootCompatibilityActivity : AppBarActivity() {
                 }
             }
         } ?: run {
-            globalSetupCard.isVisible = false
+            binding.globalSetupCard.isVisible = false
         }
 
         // Device Identity Card
-        val realDeviceText = findViewById<TextView>(R.id.device_identity_real)
-        val spoofedDeviceText = findViewById<TextView>(R.id.device_identity_spoofed)
-        
         val realModel = android.os.Build.MODEL
         val realManufacturer = android.os.Build.MANUFACTURER
-        realDeviceText.text = getString(R.string.root_hub_device_identity_real, "$realManufacturer $realModel")
+        binding.deviceIdentityReal.text = getString(R.string.root_hub_device_identity_real, "$realManufacturer $realModel")
         
         if (ShizukuSettings.isSpoofDeviceEnabled()) {
             val target = ShizukuSettings.getSpoofTarget()
@@ -107,21 +98,21 @@ class RootCompatibilityActivity : AppBarActivity() {
                 "nothing_phone_2" -> "Nothing Phone (2)"
                 else -> target
             }
-            spoofedDeviceText.text = getString(R.string.root_hub_device_identity_spoofed, targetFriendly)
-            spoofedDeviceText.setTextColor(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLUE))
+            binding.deviceIdentitySpoofed.text = getString(R.string.root_hub_device_identity_spoofed, targetFriendly)
+            binding.deviceIdentitySpoofed.setTextColor(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLUE))
         } else {
-            spoofedDeviceText.text = getString(R.string.root_hub_device_identity_spoofed, getString(R.string.root_hub_device_identity_none))
-            spoofedDeviceText.setTextColor(MaterialColors.getColor(this, R.attr.colorOnSurfaceVariant, Color.GRAY))
+            binding.deviceIdentitySpoofed.text = getString(R.string.root_hub_device_identity_spoofed, getString(R.string.root_hub_device_identity_none))
+            binding.deviceIdentitySpoofed.setTextColor(MaterialColors.getColor(this, R.attr.colorOnSurfaceVariant, Color.GRAY))
         }
 
-        val scrollView = findViewById<View>(R.id.suggested_apps_list)?.parent?.parent as? View ?: rootView
+        val scrollView = binding.suggestedAppsList.parent?.parent as? View ?: rootView
         ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
             insets
         }
 
-        recyclerView = findViewById(R.id.suggested_apps_list)
+        recyclerView = binding.suggestedAppsList
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = CategorizedSuggestedAppsAdapter(buildItems())
         recyclerView.adapter = adapter
@@ -255,9 +246,9 @@ class RootCompatibilityActivity : AppBarActivity() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             val inflater = LayoutInflater.from(parent.context)
             return if (viewType == TYPE_HEADER) {
-                HeaderViewHolder(inflater.inflate(R.layout.list_section_header, parent, false))
+                HeaderViewHolder(ListSectionHeaderBinding.inflate(inflater, parent, false))
             } else {
-                AppViewHolder(inflater.inflate(R.layout.app_list_item, parent, false))
+                AppViewHolder(AppListItemBinding.inflate(inflater, parent, false))
             }
         }
 
@@ -277,44 +268,44 @@ class RootCompatibilityActivity : AppBarActivity() {
                 .start()
 
             if (holder is HeaderViewHolder) {
-                holder.title.text = item as String
+                holder.binding.title.text = item as String
             } else if (holder is AppViewHolder) {
                 val pkg = item as String
                 val pm = packageManager
                 val metadata = AppContextManager.getMetadata(pkg)
 
-                holder.packageName.text = pkg
-                holder.description.text = metadata?.description ?: ""
-                holder.description.visibility = if (holder.description.text.isNullOrEmpty()) View.GONE else View.VISIBLE
+                holder.binding.summary.text = pkg
+                holder.binding.appContext.text = metadata?.description ?: ""
+                holder.binding.appContext.visibility = if (holder.binding.appContext.text.isNullOrEmpty()) View.GONE else View.VISIBLE
                 
                 // Root support badge: color and text vary by support level
                 when (metadata?.rootSupportLevel) {
                     RootSupportLevel.ROOT_REQUIRED -> {
-                        holder.requiresRoot.visibility = View.VISIBLE
-                        holder.requiresRoot.setText(R.string.app_management_item_summary_requires_root)
-                        holder.requiresRoot.setTextColor(
+                        holder.binding.requiresRoot.visibility = View.VISIBLE
+                        holder.binding.requiresRoot.setText(R.string.app_management_item_summary_requires_root)
+                        holder.binding.requiresRoot.setTextColor(
                             MaterialColors.getColor(holder.itemView, R.attr.colorError))
                     }
                     RootSupportLevel.PARTIAL -> {
-                        holder.requiresRoot.visibility = View.VISIBLE
-                        holder.requiresRoot.setText(R.string.app_management_item_summary_partial_root)
-                        holder.requiresRoot.setTextColor(
+                        holder.binding.requiresRoot.visibility = View.VISIBLE
+                        holder.binding.requiresRoot.setText(R.string.app_management_item_summary_partial_root)
+                        holder.binding.requiresRoot.setTextColor(
                             MaterialColors.getColor(holder.itemView, R.attr.colorTertiary))
                     }
-                    else -> holder.requiresRoot.visibility = View.GONE
+                    else -> holder.binding.requiresRoot.visibility = View.GONE
                 }
                 // "Requires Plus" badge: shown when app has Plus enhancements that benefit it
-                holder.requiresPlus.visibility = if (metadata != null && metadata.potentialEnhancements.isNotEmpty()) View.VISIBLE else View.GONE
+                holder.binding.requiresPlus.visibility = if (metadata != null && metadata.potentialEnhancements.isNotEmpty()) View.VISIBLE else View.GONE
 
-                holder.itemView.findViewById<View>(R.id.switch_widget).visibility = View.GONE
-                holder.itemView.findViewById<View>(R.id.checkbox).visibility = View.GONE
+                holder.binding.switchWidget.visibility = View.GONE
+                holder.binding.checkbox.visibility = View.GONE
 
                 val navHint = metadata?.suPathSettingNav ?: this@RootCompatibilityActivity.getString(R.string.root_hub_default_nav_hint)
-                holder.suPathNav.text = navHint
-                holder.suPathNav.visibility = View.VISIBLE
+                holder.binding.suPathNav.text = navHint
+                holder.binding.suPathNav.visibility = View.VISIBLE
                 
-                holder.suCopyOpen.visibility = View.VISIBLE
-                holder.suCopyOpen.setOnClickListener {
+                holder.binding.suCopyOpen.visibility = View.VISIBLE
+                holder.binding.suCopyOpen.setOnClickListener {
                     val path = resolvedSuPath
                     if (path != null) {
                         copyToClipboard(path)
@@ -333,9 +324,9 @@ class RootCompatibilityActivity : AppBarActivity() {
                     Log.w(TAG, "Failed to check if package $pkg is installed", e)
                 }
 
-                holder.suMagicSetup.isVisible = isInstalled
+                holder.binding.suMagicSetup.isVisible = isInstalled
                 if (isInstalled) {
-                    holder.suMagicSetup.setOnClickListener {
+                    holder.binding.suMagicSetup.setOnClickListener {
                         val path = resolvedSuPath
                         if (path == null) {
                             Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_no_export, Toast.LENGTH_SHORT).show()
@@ -344,7 +335,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                         lifecycleScope.launch {
                             val success = RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, path)
                             if (success) {
-                                Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.root_hub_magic_setup_success, holder.appName.text), Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.root_hub_magic_setup_success, holder.binding.title.text), Toast.LENGTH_LONG).show()
                                 launchOrStore(pkg)
                             } else {
                                 Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_magic_setup_fail, Toast.LENGTH_SHORT).show()
@@ -356,13 +347,13 @@ class RootCompatibilityActivity : AppBarActivity() {
                 // Load App Info
                 try {
                     val info = pm.getApplicationInfo(pkg, 0)
-                    holder.appName.text = info.loadLabel(pm)
-                    holder.icon.setImageDrawable(info.loadIcon(pm))
+                    holder.binding.title.text = info.loadLabel(pm)
+                    holder.binding.icon.setImageDrawable(info.loadIcon(pm))
                     holder.itemView.alpha = 1.0f
                     
                     if (metadata == null) {
-                        holder.description.text = "Installed Root App"
-                        holder.description.visibility = View.VISIBLE
+                        holder.binding.appContext.text = "Installed Root App"
+                        holder.binding.appContext.visibility = View.VISIBLE
                     }
 
                     holder.itemView.setOnClickListener {
@@ -378,13 +369,13 @@ class RootCompatibilityActivity : AppBarActivity() {
                         }
                     }
                 } catch (e: PackageManager.NameNotFoundException) {
-                    holder.appName.text = pkg.split(".").last().replaceFirstChar { it.uppercase() }
-                    holder.icon.setImageResource(R.drawable.ic_system_icon)
+                    holder.binding.title.text = pkg.split(".").last().replaceFirstChar { it.uppercase() }
+                    holder.binding.icon.setImageResource(R.drawable.ic_system_icon)
                     holder.itemView.alpha = 0.5f
                     
                     if (metadata == null) {
-                        holder.description.text = "Suggested Root App"
-                        holder.description.visibility = View.VISIBLE
+                        holder.binding.appContext.text = "Suggested Root App"
+                        holder.binding.appContext.visibility = View.VISIBLE
                     }
 
                     holder.itemView.setOnClickListener {
@@ -417,19 +408,7 @@ class RootCompatibilityActivity : AppBarActivity() {
         override fun getItemCount() = items.size
     }
 
-    private class HeaderViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val title: TextView = view.findViewById(android.R.id.title)
-    }
+    private class HeaderViewHolder(val binding: ListSectionHeaderBinding) : RecyclerView.ViewHolder(binding.root)
 
-    private class AppViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val icon: ImageView = view.findViewById(android.R.id.icon)
-        val appName: TextView = view.findViewById(android.R.id.title)
-        val packageName: TextView = view.findViewById(android.R.id.summary)
-        val description: TextView = view.findViewById(R.id.app_context)
-        val requiresRoot: TextView = view.findViewById(R.id.requires_root)
-        val requiresPlus: TextView = view.findViewById(R.id.requires_plus)
-        val suPathNav: TextView = view.findViewById(R.id.su_path_nav)
-        val suCopyOpen: MaterialButton = view.findViewById(R.id.su_copy_open)
-        val suMagicSetup: MaterialButton = view.findViewById(R.id.su_magic_setup)
-    }
+    private class AppViewHolder(val binding: AppListItemBinding) : RecyclerView.ViewHolder(binding.root)
 }

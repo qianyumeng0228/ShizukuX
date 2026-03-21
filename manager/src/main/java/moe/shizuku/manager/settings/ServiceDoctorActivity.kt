@@ -17,6 +17,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
+import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
+import moe.shizuku.manager.databinding.ItemDoctorCheckBinding
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.ShizukuStateMachine
@@ -35,21 +37,21 @@ class ServiceDoctorActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val binding = ActivityServiceDoctorBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        val recyclerView = findViewById<RecyclerView>(R.id.check_list)
-        tipsTextView = findViewById(R.id.tips_text)
+        tipsTextView = binding.tipsText
 
-        val scrollView = recyclerView.parent?.parent as? View ?: rootView
+        val scrollView = binding.checkList.parent?.parent as? View ?: rootView
         ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
             insets
         }
 
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        binding.checkList.layoutManager = LinearLayoutManager(this)
         checkListAdapter = CheckListAdapter()
-        recyclerView.adapter = checkListAdapter
+        binding.checkList.adapter = checkListAdapter
 
         runDiagnostics()
     }
@@ -155,33 +157,28 @@ class ServiceDoctorActivity : AppBarActivity() {
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CheckViewHolder {
-            return CheckViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_doctor_check, parent, false))
+            return CheckViewHolder(ItemDoctorCheckBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
 
         override fun onBindViewHolder(holder: CheckViewHolder, position: Int) {
             val check = items[position]
-            holder.title.text = check.title
-            holder.status.text = check.status
-            holder.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24dp else R.drawable.ic_server_error_24dp)
-            holder.icon.imageTintList = android.content.res.ColorStateList.valueOf(
+            holder.binding.title.text = check.title
+            holder.binding.status.text = check.status
+            holder.binding.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24dp else R.drawable.ic_server_error_24dp)
+            holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(
                 if (check.ok) getColor(R.color.status_ok) else getColor(R.color.status_error)
             )
             
             if (check.onFix != null) {
-                holder.btnFix.visibility = View.VISIBLE
-                holder.btnFix.setOnClickListener { check.onFix.invoke() }
+                holder.binding.btnFix.visibility = View.VISIBLE
+                holder.binding.btnFix.setOnClickListener { check.onFix.invoke() }
             } else {
-                holder.btnFix.visibility = View.GONE
+                holder.binding.btnFix.visibility = View.GONE
             }
         }
 
         override fun getItemCount() = items.size
     }
 
-    private class CheckViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val icon: ImageView = view.findViewById(R.id.icon)
-        val title: TextView = view.findViewById(R.id.title)
-        val status: TextView = view.findViewById(R.id.status)
-        val btnFix: Button = view.findViewById(R.id.btn_fix)
-    }
+    private class CheckViewHolder(val binding: ItemDoctorCheckBinding) : RecyclerView.ViewHolder(binding.root)
 }

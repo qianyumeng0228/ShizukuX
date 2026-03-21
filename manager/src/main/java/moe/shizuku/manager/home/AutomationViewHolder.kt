@@ -27,14 +27,14 @@ import rikka.recyclerview.BaseViewHolder.Creator
 
 class AutomationViewHolder(
     binding: HomeAutomationBinding,
-    root: View,
-) : BaseViewHolder<Any?>(root) {
+    private val containerBinding: HomeItemContainerBinding,
+) : BaseViewHolder<Any?>(containerBinding.root) {
     companion object {
         val CREATOR =
             Creator<Any> { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
                 val inner = HomeAutomationBinding.inflate(inflater, outer.cardContent, true)
-                AutomationViewHolder(inner, outer.root)
+                AutomationViewHolder(inner, outer)
             }
     }
 
@@ -45,7 +45,7 @@ class AutomationViewHolder(
     )
 
     init {
-        itemView.findViewById<View>(R.id.drag_handle).apply {
+        containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@AutomationViewHolder)
@@ -53,7 +53,7 @@ class AutomationViewHolder(
             }
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
-        itemView.findViewById<View>(R.id.remove_btn).setOnClickListener {
+        containerBinding.removeBtn.setOnClickListener {
             HomeEditMode.removeCardCallback?.invoke(HomeAdapter.ID_AUTOMATION)
         }
         binding.button1.setOnClickListener { v ->
@@ -131,8 +131,8 @@ class AutomationViewHolder(
     }
 
     override fun onBind() {
-        itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
+        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
+        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
     }
 
     private fun getIntentAction(buttonId: Int): String =

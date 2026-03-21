@@ -13,19 +13,22 @@ import moe.shizuku.manager.utils.CustomTabsHelper
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
-class LearnMoreViewHolder(binding: HomeLearnMoreBinding, root: View) : BaseViewHolder<Any?>(root) {
+class LearnMoreViewHolder(
+    binding: HomeLearnMoreBinding,
+    private val containerBinding: HomeItemContainerBinding,
+) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
         val CREATOR = Creator<Any> { inflater: LayoutInflater, parent: ViewGroup? ->
             val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
             val inner = HomeLearnMoreBinding.inflate(inflater, outer.cardContent, true)
-            LearnMoreViewHolder(inner, outer.root)
+            LearnMoreViewHolder(inner, outer)
         }
     }
 
     init {
-        root.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.HOME.get()) }
-        itemView.findViewById<View>(R.id.drag_handle).apply {
+        containerBinding.root.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.HOME.get()) }
+        containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@LearnMoreViewHolder)
@@ -33,13 +36,13 @@ class LearnMoreViewHolder(binding: HomeLearnMoreBinding, root: View) : BaseViewH
             }
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
-        itemView.findViewById<View>(R.id.remove_btn).setOnClickListener {
+        containerBinding.removeBtn.setOnClickListener {
             HomeEditMode.removeCardCallback?.invoke(HomeAdapter.ID_LEARN_MORE)
         }
     }
 
     override fun onBind() {
-        itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
+        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
+        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
     }
 }

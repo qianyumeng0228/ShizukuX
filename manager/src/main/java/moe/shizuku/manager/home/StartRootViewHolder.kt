@@ -18,14 +18,16 @@ import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
-class StartRootViewHolder(private val binding: HomeStartRootBinding, root: View) :
-    BaseViewHolder<Boolean>(root) {
+class StartRootViewHolder(
+    private val binding: HomeStartRootBinding,
+    private val containerBinding: HomeItemContainerBinding,
+) : BaseViewHolder<Boolean>(containerBinding.root) {
 
     companion object {
         val CREATOR = Creator<Boolean> { inflater: LayoutInflater, parent: ViewGroup? ->
             val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
             val inner = HomeStartRootBinding.inflate(inflater, outer.cardContent, true)
-            StartRootViewHolder(inner, outer.root)
+            StartRootViewHolder(inner, outer)
         }
     }
 
@@ -39,7 +41,7 @@ class StartRootViewHolder(private val binding: HomeStartRootBinding, root: View)
         start.setOnClickListener(listener)
         restart.setOnClickListener(listener)
         binding.text1.movementMethod = LinkMovementMethod.getInstance()
-        itemView.findViewById<View>(R.id.drag_handle).apply {
+        containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@StartRootViewHolder)
@@ -47,7 +49,7 @@ class StartRootViewHolder(private val binding: HomeStartRootBinding, root: View)
             }
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
-        itemView.findViewById<View>(R.id.remove_btn).setOnClickListener {
+        containerBinding.removeBtn.setOnClickListener {
             HomeEditMode.removeCardCallback?.invoke(HomeAdapter.ID_START_ROOT)
         }
     }
@@ -61,8 +63,8 @@ class StartRootViewHolder(private val binding: HomeStartRootBinding, root: View)
     }
 
     override fun onBind() {
-        itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
+        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
+        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
         start.isEnabled = true
         restart.isEnabled = true
         val isRunning = data == true

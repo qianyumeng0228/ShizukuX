@@ -25,6 +25,12 @@ import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.adb.AdbPairingTutorialActivity
 import moe.shizuku.manager.app.AppActivity
+import moe.shizuku.manager.databinding.ActivityOnboardingBinding
+import moe.shizuku.manager.databinding.PageOnboardingWelcomeBinding
+import moe.shizuku.manager.databinding.PageOnboardingSetupBinding
+import moe.shizuku.manager.databinding.PageOnboardingSwipeBinding
+import moe.shizuku.manager.databinding.PageOnboardingGesturesBinding
+import moe.shizuku.manager.databinding.PageOnboardingLongpressBinding
 import moe.shizuku.manager.home.AdbDialogFragment
 import moe.shizuku.manager.home.AdbPairDialogFragment
 import moe.shizuku.manager.home.WadbEnableUsbDebuggingDialogFragment
@@ -40,11 +46,7 @@ import rikka.core.util.ClipboardUtils
 
 class OnboardingActivity : AppActivity() {
 
-    private lateinit var pager: ViewPager2
-    private lateinit var dotsContainer: LinearLayout
-    private lateinit var btnNext: MaterialButton
-    private lateinit var btnSkip: MaterialButton
-
+    private lateinit var binding: ActivityOnboardingBinding
     private val pageCount = 5
     private val dots = mutableListOf<View>()
     private val onboardingAdapter = OnboardingPagerAdapter()
@@ -62,38 +64,34 @@ class OnboardingActivity : AppActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_onboarding)
+        binding = ActivityOnboardingBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        pager = findViewById(R.id.pager)
-        dotsContainer = findViewById(R.id.dots_container)
-        btnNext = findViewById(R.id.btn_next)
-        btnSkip = findViewById(R.id.btn_skip)
-
-        pager.adapter = onboardingAdapter
-        pager.offscreenPageLimit = 4 // keep all pages in memory
+        binding.pager.adapter = onboardingAdapter
+        binding.pager.offscreenPageLimit = 4 // keep all pages in memory
 
         setupDots()
 
-        pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        binding.pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 updateDots(position)
                 updateButtons(position)
                 if (position == 2) {
-                    pager.postDelayed({ animateSwipeIcons() }, 300)
+                    binding.pager.postDelayed({ animateSwipeIcons() }, 300)
                 }
             }
         })
 
-        btnNext.setOnClickListener {
-            val current = pager.currentItem
+        binding.btnNext.setOnClickListener {
+            val current = binding.pager.currentItem
             if (current < pageCount - 1) {
-                pager.currentItem = current + 1
+                binding.pager.currentItem = current + 1
             } else {
                 completeOnboarding()
             }
         }
 
-        btnSkip.setOnClickListener { completeOnboarding() }
+        binding.btnSkip.setOnClickListener { completeOnboarding() }
 
         updateDots(0)
         updateButtons(0)
@@ -109,9 +107,9 @@ class OnboardingActivity : AppActivity() {
     private fun updateSetupPageState(state: ShizukuStateMachine.State) {
         val isRunning = state == ShizukuStateMachine.State.RUNNING
         setupStatusRunning?.visibility = if (isRunning) View.VISIBLE else View.GONE
-        if (isRunning && pager.currentItem == 1 && !isFinishing) {
-            pager.postDelayed({
-                if (!isFinishing && pager.currentItem == 1) pager.currentItem = 2
+        if (isRunning && binding.pager.currentItem == 1 && !isFinishing) {
+            binding.pager.postDelayed({
+                if (!isFinishing && binding.pager.currentItem == 1) binding.pager.currentItem = 2
             }, 1800)
         }
     }
@@ -127,7 +125,7 @@ class OnboardingActivity : AppActivity() {
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL }
             }
             dots.add(dot)
-            dotsContainer.addView(dot)
+            binding.dotsContainer.addView(dot)
         }
         updateDots(0)
     }
@@ -146,8 +144,8 @@ class OnboardingActivity : AppActivity() {
     }
 
     private fun updateButtons(position: Int) {
-        btnSkip.visibility = if (position < pageCount - 1) View.VISIBLE else View.INVISIBLE
-        btnNext.text = if (position < pageCount - 1)
+        binding.btnSkip.visibility = if (position < pageCount - 1) View.VISIBLE else View.INVISIBLE
+        binding.btnNext.text = if (position < pageCount - 1)
             getString(R.string.onboarding_next)
         else
             getString(R.string.onboarding_get_started)
@@ -203,36 +201,36 @@ class OnboardingActivity : AppActivity() {
 
     // ---- Adapter ----
 
-    inner class OnboardingPagerAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    inner class OnboardingPagerAdapter : RecyclerView.Adapter<OnboardingPageViewHolder>() {
 
         override fun getItemCount() = pageCount
         override fun getItemViewType(position: Int) = position
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OnboardingPageViewHolder {
             val inflater = LayoutInflater.from(parent.context)
-            val view = when (viewType) {
-                0 -> inflater.inflate(R.layout.page_onboarding_welcome, parent, false)
-                1 -> inflater.inflate(R.layout.page_onboarding_setup, parent, false)
-                2 -> inflater.inflate(R.layout.page_onboarding_swipe, parent, false)
-                3 -> inflater.inflate(R.layout.page_onboarding_gestures, parent, false)
-                else -> inflater.inflate(R.layout.page_onboarding_longpress, parent, false)
+            return when (viewType) {
+                0 -> OnboardingPageViewHolder.Welcome(PageOnboardingWelcomeBinding.inflate(inflater, parent, false))
+                1 -> OnboardingPageViewHolder.Setup(PageOnboardingSetupBinding.inflate(inflater, parent, false))
+                2 -> OnboardingPageViewHolder.Swipe(PageOnboardingSwipeBinding.inflate(inflater, parent, false))
+                3 -> OnboardingPageViewHolder.Gestures(PageOnboardingGesturesBinding.inflate(inflater, parent, false))
+                else -> OnboardingPageViewHolder.LongPress(PageOnboardingLongpressBinding.inflate(inflater, parent, false))
             }
-            return object : RecyclerView.ViewHolder(view) {}
         }
 
-        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            when (position) {
-                1 -> bindSetupPage(holder.itemView)
-                2 -> {
-                    swipeIconRight = holder.itemView.findViewById(R.id.hint_icon_right)
-                    swipeIconLeft = holder.itemView.findViewById(R.id.hint_icon_left)
+        override fun onBindViewHolder(holder: OnboardingPageViewHolder, position: Int) {
+            when (holder) {
+                is OnboardingPageViewHolder.Setup -> bindSetupPage(holder.binding)
+                is OnboardingPageViewHolder.Swipe -> {
+                    swipeIconRight = holder.binding.hintIconRight
+                    swipeIconLeft = holder.binding.hintIconLeft
                 }
-                4 -> bindLongPressPage(holder.itemView)
+                is OnboardingPageViewHolder.LongPress -> bindLongPressPage(holder.binding)
+                else -> {}
             }
         }
 
-        private fun bindSetupPage(view: View) {
-            setupStatusRunning = view.findViewById(R.id.status_running)
+        private fun bindSetupPage(binding: PageOnboardingSetupBinding) {
+            setupStatusRunning = binding.statusRunning
 
             // Show/hide method cards based on device
             val showWadb = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
@@ -240,34 +238,27 @@ class OnboardingActivity : AppActivity() {
                     || EnvironmentUtils.getAdbTcpPort() > 0
             val showRoot = EnvironmentUtils.isRooted()
 
-            val cardWadb = view.findViewById<View>(R.id.card_wadb)
-            val cardRoot = view.findViewById<View>(R.id.card_root)
-
-            cardWadb.visibility = if (showWadb) View.VISIBLE else View.GONE
-            cardRoot.visibility = if (showRoot) View.VISIBLE else View.GONE
+            binding.cardWadb.visibility = if (showWadb) View.VISIBLE else View.GONE
+            binding.cardRoot.visibility = if (showRoot) View.VISIBLE else View.GONE
 
             // Wireless ADB buttons
             if (showWadb) {
-                val btnGuide = view.findViewById<MaterialButton>(R.id.btn_wadb_guide)
-                val btnPair = view.findViewById<MaterialButton>(R.id.btn_wadb_pair)
-                val btnStart = view.findViewById<MaterialButton>(R.id.btn_wadb_start)
-
                 if (EnvironmentUtils.isTlsSupported()) {
-                    btnPair.visibility = View.VISIBLE
-                    btnPair.setOnClickListener { onPairClicked() }
+                    binding.btnWadbPair.visibility = View.VISIBLE
+                    binding.btnWadbPair.setOnClickListener { onPairClicked() }
                 }
 
-                btnGuide.setOnClickListener {
+                binding.btnWadbGuide.setOnClickListener {
                     CustomTabsHelper.launchUrlOrCopy(this@OnboardingActivity, Helps.ADB_ANDROID11.get())
                 }
-                btnStart.setOnClickListener {
+                binding.btnWadbStart.setOnClickListener {
                     StartWirelessAdbViewHolder.start(this@OnboardingActivity, lifecycleScope)
                 }
             }
 
             // Root button
             if (showRoot) {
-                view.findViewById<MaterialButton>(R.id.btn_root_start).setOnClickListener {
+                binding.btnRootStart.setOnClickListener {
                     startActivity(Intent(this@OnboardingActivity, StarterActivity::class.java).apply {
                         putExtra(StarterActivity.EXTRA_IS_ROOT, true)
                     })
@@ -275,61 +266,69 @@ class OnboardingActivity : AppActivity() {
             }
 
             // PC/ADB button
-            view.findViewById<MaterialButton>(R.id.btn_adb_command).setOnClickListener {
+            binding.btnAdbCommand.setOnClickListener {
                 showAdbCommandDialog()
             }
 
             // Skip
-            view.findViewById<MaterialButton>(R.id.btn_setup_later).setOnClickListener {
-                pager.currentItem = 2
+            binding.btnSetupLater.setOnClickListener {
+                this@OnboardingActivity.binding.pager.currentItem = 2
             }
 
             // Apply current state immediately
             updateSetupPageState(ShizukuStateMachine.get())
         }
 
-        private fun bindLongPressPage(view: View) {
-            view.findViewById<MaterialSwitch>(R.id.switch_open_app).apply {
+        private fun bindLongPressPage(binding: PageOnboardingLongpressBinding) {
+            binding.switchOpenApp.apply {
                 isChecked = ShizukuSettings.getLongPressOpenApp()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.getPreferences()
                         ?.edit()?.putBoolean(ShizukuSettings.Keys.KEY_LP_OPEN_APP, checked)?.apply()
                 }
             }
-            view.findViewById<MaterialSwitch>(R.id.switch_app_info).apply {
+            binding.switchAppInfo.apply {
                 isChecked = ShizukuSettings.getLongPressAppInfo()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.getPreferences()
                         ?.edit()?.putBoolean(ShizukuSettings.Keys.KEY_LP_APP_INFO, checked)?.apply()
                 }
             }
-            view.findViewById<MaterialSwitch>(R.id.switch_toggle_permission).apply {
+            binding.switchTogglePermission.apply {
                 isChecked = ShizukuSettings.getLongPressTogglePermission()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.getPreferences()
                         ?.edit()?.putBoolean(ShizukuSettings.Keys.KEY_LP_TOGGLE_PERMISSION, checked)?.apply()
                 }
             }
-            view.findViewById<MaterialSwitch>(R.id.switch_hide_from_list).apply {
+            binding.switchHideFromList.apply {
                 isChecked = ShizukuSettings.getLongPressHideFromList()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.getPreferences()
                         ?.edit()?.putBoolean(ShizukuSettings.Keys.KEY_LP_HIDE_FROM_LIST, checked)?.apply()
                 }
             }
-            view.findViewById<MaterialSwitch>(R.id.switch_dhizuku).apply {
+            binding.switchDhizuku.apply {
                 isChecked = ShizukuSettings.isDhizukuModeEnabled()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.setDhizukuModeEnabled(checked)
                 }
             }
-            view.findViewById<MaterialSwitch>(R.id.switch_enhanced_api).apply {
+            binding.switchEnhancedApi.apply {
                 isChecked = ShizukuSettings.isCustomApiEnabled()
                 setOnCheckedChangeListener { _, checked ->
                     ShizukuSettings.setCustomApiEnabled(checked)
                 }
             }
         }
+    }
+
+    sealed class OnboardingPageViewHolder(root: View) : RecyclerView.ViewHolder(root) {
+        class Welcome(val binding: PageOnboardingWelcomeBinding) : OnboardingPageViewHolder(binding.root)
+        class Setup(val binding: PageOnboardingSetupBinding) : OnboardingPageViewHolder(binding.root)
+        class Swipe(val binding: PageOnboardingSwipeBinding) : OnboardingPageViewHolder(binding.root)
+        class Gestures(val binding: PageOnboardingGesturesBinding) : OnboardingPageViewHolder(binding.root)
+        class LongPress(val binding: PageOnboardingLongpressBinding) : OnboardingPageViewHolder(binding.root)
     }
 
     private fun onPairClicked() {

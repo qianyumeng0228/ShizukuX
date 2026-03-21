@@ -14,21 +14,23 @@ import moe.shizuku.manager.shell.ShellTutorialActivity
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
-class TerminalViewHolder(private val binding: HomeTerminalBinding, private val root: View) :
-    BaseViewHolder<ServiceStatus>(root),
+class TerminalViewHolder(
+    private val binding: HomeTerminalBinding,
+    private val containerBinding: HomeItemContainerBinding
+) : BaseViewHolder<ServiceStatus>(containerBinding.root),
     View.OnClickListener {
 
     companion object {
         val CREATOR = Creator<ServiceStatus> { inflater: LayoutInflater, parent: ViewGroup? ->
             val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
             val inner = HomeTerminalBinding.inflate(inflater, outer.cardContent, true)
-            TerminalViewHolder(inner, outer.root)
+            TerminalViewHolder(inner, outer)
         }
     }
 
     init {
-        root.setOnClickListener(this)
-        itemView.findViewById<View>(R.id.drag_handle).apply {
+        containerBinding.root.setOnClickListener(this)
+        containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) {
@@ -38,7 +40,7 @@ class TerminalViewHolder(private val binding: HomeTerminalBinding, private val r
             }
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
-        itemView.findViewById<View>(R.id.remove_btn).setOnClickListener {
+        containerBinding.removeBtn.setOnClickListener {
             HomeEditMode.removeCardCallback?.invoke(HomeAdapter.ID_TERMINAL)
         }
     }
@@ -47,14 +49,14 @@ class TerminalViewHolder(private val binding: HomeTerminalBinding, private val r
 
     override fun onBind() {
         val context = itemView.context
-        itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
+        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
+        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
         if (!data.isRunning) {
-            root.isEnabled = false
+            containerBinding.root.isEnabled = false
             summary.text =
                 context.getString(R.string.home_status_service_not_running, context.getString(R.string.app_name))
         } else {
-            root.isEnabled = true
+            containerBinding.root.isEnabled = true
             summary.text = context.getString(R.string.home_terminal_description)
         }
     }

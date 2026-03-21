@@ -38,15 +38,18 @@ import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
-class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: View, private val scope: CoroutineScope) :
-    BaseViewHolder<Any?>(root) {
+class StartWirelessAdbViewHolder(
+    binding: HomeStartWirelessAdbBinding,
+    private val containerBinding: HomeItemContainerBinding,
+    private val scope: CoroutineScope
+) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
         fun creator (scope: CoroutineScope): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
                 val inner = HomeStartWirelessAdbBinding.inflate(inflater, outer.cardContent, true)
-                StartWirelessAdbViewHolder(inner, outer.root, scope)
+                StartWirelessAdbViewHolder(inner, outer, scope)
             }
         }
 
@@ -99,7 +102,7 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
         binding.button1.setOnClickListener { v: View ->
             start(v.context, scope)
         }
-        itemView.findViewById<View>(R.id.drag_handle).apply {
+        containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@StartWirelessAdbViewHolder)
@@ -107,7 +110,7 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
             }
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
-        itemView.findViewById<View>(R.id.remove_btn).setOnClickListener {
+        containerBinding.removeBtn.setOnClickListener {
             HomeEditMode.removeCardCallback?.invoke(HomeAdapter.ID_START_WADB)
         }
 
@@ -130,8 +133,8 @@ class StartWirelessAdbViewHolder(binding: HomeStartWirelessAdbBinding, root: Vie
     }
 
     override fun onBind() {
-        itemView.findViewById<View>(R.id.remove_btn).isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(R.id.drag_handle).isVisible = HomeEditMode.isActive
+        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
+        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
