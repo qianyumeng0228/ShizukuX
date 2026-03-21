@@ -45,6 +45,13 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 0
 
+      - name: Pre-Push Guard
+        run: |
+          # Make script executable
+          chmod +x pre-push-guard/scripts/pre_push_check.sh
+          # Run the validation suite
+          bash pre-push-guard/scripts/pre_push_check.sh
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
