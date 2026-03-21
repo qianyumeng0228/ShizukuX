@@ -6,6 +6,7 @@ import android.content.ContextWrapper;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.util.Log;
 import android.text.TextUtils;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
