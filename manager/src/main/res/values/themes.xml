@@ -24,7 +24,6 @@
         <item name="android:windowAllowEnterTransitionOverlap">true</item>
         <item name="android:windowAllowReturnTransitionOverlap">true</item>
         <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <style name="Theme.Light" parent="Base.AppTheme.Light" />
@@ -52,7 +51,6 @@
         <item name="android:windowAllowEnterTransitionOverlap">true</item>
         <item name="android:windowAllowReturnTransitionOverlap">true</item>
         <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 
     <style name="Theme" parent="Base.AppTheme" />

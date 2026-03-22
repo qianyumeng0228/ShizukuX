@@ -9,6 +9,7 @@ import android.widget.FrameLayout
 import androidx.annotation.LayoutRes
 import androidx.annotation.RequiresApi
 import androidx.appcompat.widget.Toolbar
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.appbar.AppBarLayout
 import moe.shizuku.manager.R
@@ -16,7 +17,7 @@ import rikka.core.ktx.unsafeLazy
 
 abstract class AppBarActivity : AppActivity() {
 
-    protected val rootView: ViewGroup by unsafeLazy { findViewById(R.id.root) }
+    protected val rootView: ViewGroup by unsafeLazy { findViewById(R.id.coordinator_root) }
 
     protected val toolbarContainer: AppBarLayout by unsafeLazy { findViewById(R.id.toolbar_container) }
 
@@ -27,6 +28,12 @@ abstract class AppBarActivity : AppActivity() {
         super.setContentView(getLayoutId())
 
         setSupportActionBar(toolbar)
+        
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(toolbarContainer) { v, insets ->
+            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, systemBars.top, 0, 0)
+            insets
+        }
     }
 
     @LayoutRes
@@ -35,16 +42,27 @@ abstract class AppBarActivity : AppActivity() {
     }
 
     override fun setContentView(layoutResID: Int) {
-        layoutInflater.inflate(layoutResID, rootView, true)
-        rootView.bringChildToFront(toolbarContainer)
+        val view = layoutInflater.inflate(layoutResID, rootView, false)
+        setContentView(view)
     }
 
     override fun setContentView(view: View?) {
-        setContentView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        setContentView(view, CoordinatorLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
     }
 
     override fun setContentView(view: View?, params: ViewGroup.LayoutParams?) {
-        rootView.addView(view, 0, params)
+        val p = if (params is CoordinatorLayout.LayoutParams) {
+            params
+        } else {
+            CoordinatorLayout.LayoutParams(params ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        }
+        
+        // Ensure scrolling behavior is applied so content is placed below the AppBar
+        if (p.behavior == null) {
+            p.behavior = AppBarLayout.ScrollingViewBehavior()
+        }
+        
+        rootView.addView(view, 0, p)
     }
 
 }

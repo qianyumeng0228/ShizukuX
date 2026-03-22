@@ -36,7 +36,9 @@ class ActivityLogActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val appsBinding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
+        val appsBinding = AppsActivityBinding.inflate(layoutInflater, rootView, false)
+        setContentView(appsBinding.root)
+        
         val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)

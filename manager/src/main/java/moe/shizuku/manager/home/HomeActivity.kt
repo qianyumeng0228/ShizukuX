@@ -75,7 +75,8 @@ abstract class HomeActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = HomeActivityBinding.inflate(layoutInflater, rootView, true)
+        val binding = HomeActivityBinding.inflate(layoutInflater, rootView, false)
+        setContentView(binding.root)
 
         // Empty state view for when all cards are hidden
         val emptyStateView = binding.emptyStateView
@@ -122,6 +123,12 @@ abstract class HomeActivity : AppBarActivity() {
         recyclerView.adapter = adapter
         (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
+            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, systemBars.bottom)
+            insets
+        }
 
         // Listen for empty state changes
         adapter.onEmptyStateChanged = { isEmpty ->

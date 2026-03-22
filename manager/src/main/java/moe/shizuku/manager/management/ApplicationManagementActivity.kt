@@ -66,7 +66,9 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             return
         }
 
-        val binding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
+        val binding = AppsActivityBinding.inflate(layoutInflater, rootView, false)
+        setContentView(binding.root)
+        
         val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -140,6 +142,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 
         recyclerView = binding.list
         recyclerView.adapter = adapter
+        
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
+            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, systemBars.bottom)
+            insets
+        }
         
         // M3E 2026 Layout Animation for fluid motion on entry
         recyclerView.layoutAnimation = AnimationUtils.loadLayoutAnimation(

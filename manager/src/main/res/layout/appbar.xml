@@ -6,22 +6,16 @@
     android:id="@+id/toolbar_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:focusable="true"
-    android:descendantFocusability="afterDescendants"
+    android:background="?android:attr/colorBackground"
+    app:elevation="0dp"
     app:liftOnScroll="true">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
-        android:layout_gravity="bottom"
-        android:elevation="0dp"
-        android:theme="@style/ThemeOverlay.Material3.ActionBar"
-        android:focusable="true"
-        android:descendantFocusability="afterDescendants"
-        app:layout_fitsSystemWindowsInsets="top|start|end"
-        app:layout_collapseMode="pin"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_scrollFlags="scroll|enterAlways|snap"
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge"
         tools:title="Title" />
 
 </com.google.android.material.appbar.AppBarLayout>
