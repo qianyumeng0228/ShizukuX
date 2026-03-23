@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.ShizukuSettings
@@ -151,12 +152,12 @@ class AdbProxyService : Service() {
                 socket.soTimeout = 0 // Block indefinitely waiting for connections
                 serverSocket = socket
                 Log.i(TAG, "Proxy listening on 127.0.0.1:$PROXY_PORT")
-                while (this.isActive) {
+                while (isActive) {
                     try {
                         val client = socket.accept()
                         launch { handleClient(client) }
                     } catch (e: SocketException) {
-                        if (this.isActive) Log.e(TAG, "Server socket error", e)
+                        if (isActive) Log.e(TAG, "Server socket error", e)
                         break
                     }
                 }
@@ -168,18 +169,19 @@ class AdbProxyService : Service() {
     }
 
     private suspend fun handleClient(socket: Socket) {
+        val coroutineContext = currentCoroutineContext()
         socket.use {
             socket.soTimeout = TIMEOUT_MS
             val reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
             val writer = PrintWriter(socket.getOutputStream(), true, Charsets.UTF_8)
             writer.println("SHIZUKU_PROXY/1.0 READY")
             try {
-                while (this.isActive) {
+                while (coroutineContext.isActive) {
                     // Check if ready to read to allow cancellation to interrupt the blocking read
-                    while (this.isActive && !reader.ready()) {
+                    while (coroutineContext.isActive && !reader.ready()) {
                         kotlinx.coroutines.delay(50)
                     }
-                    if (!this.isActive) break
+                    if (!coroutineContext.isActive) break
                     
                     val currentLine = reader.readLine() ?: break
                     val cmd = currentLine.trim()
@@ -200,6 +202,7 @@ class AdbProxyService : Service() {
     }
 
     private suspend fun runCommand(cmd: String, writer: PrintWriter) {
+        val coroutineContext = currentCoroutineContext()
         var process: java.lang.Process? = null
         try {
             process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
@@ -209,15 +212,15 @@ class AdbProxyService : Service() {
             // Launch concurrent readers so we don't block on just stdout
             kotlinx.coroutines.coroutineScope {
                 launch {
-                    stdout.forEachLine { if (this.isActive) writer.println(it) }
+                    stdout.forEachLine { if (isActive) writer.println(it) }
                 }
                 launch {
-                    stderr.forEachLine { if (this.isActive) writer.println("ERR: $it") }
+                    stderr.forEachLine { if (isActive) writer.println("ERR: $it") }
                 }
             }
             
             val exit = process.waitFor()
-            if (this.isActive) writer.println("EXIT:$exit")
+            if (coroutineContext.isActive) writer.println("EXIT:$exit")
         } catch (e: Exception) {
             if (e !is kotlinx.coroutines.CancellationException) {
                 Log.e(TAG, "Command failed: $cmd", e)
