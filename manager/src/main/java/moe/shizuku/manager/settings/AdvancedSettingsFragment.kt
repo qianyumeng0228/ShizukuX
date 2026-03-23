@@ -9,6 +9,7 @@ import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.ShizukuSettings
 import android.widget.Toast
+import android.util.Log
 import moe.shizuku.manager.BuildConfig
 
 class AdvancedSettingsFragment : BaseSettingsFragment() {

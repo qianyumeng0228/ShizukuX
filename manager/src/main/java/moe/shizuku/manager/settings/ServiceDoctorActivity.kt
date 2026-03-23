@@ -19,18 +19,25 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
 import moe.shizuku.manager.databinding.ItemDoctorCheckBinding
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
+import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import rikka.shizuku.Shizuku
 
 class ServiceDoctorActivity : AppBarActivity() {
 
     private lateinit var checkListAdapter: CheckListAdapter
     private lateinit var tipsTextView: TextView
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val batteryOptimizationListener = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         runDiagnostics()
@@ -66,6 +73,11 @@ class ServiceDoctorActivity : AppBarActivity() {
             return true
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
     }
 
     private fun runDiagnostics() {

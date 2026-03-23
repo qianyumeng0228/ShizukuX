@@ -12,6 +12,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.utils.EnvironmentUtils
 import rikka.shizuku.Shizuku
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -150,12 +151,12 @@ class AdbProxyService : Service() {
                 socket.soTimeout = 0 // Block indefinitely waiting for connections
                 serverSocket = socket
                 Log.i(TAG, "Proxy listening on 127.0.0.1:$PROXY_PORT")
-                while (isActive) {
+                while (this.isActive) {
                     try {
                         val client = socket.accept()
                         launch { handleClient(client) }
                     } catch (e: SocketException) {
-                        if (isActive) Log.e(TAG, "Server socket error", e)
+                        if (this.isActive) Log.e(TAG, "Server socket error", e)
                         break
                     }
                 }
@@ -173,12 +174,12 @@ class AdbProxyService : Service() {
             val writer = PrintWriter(socket.getOutputStream(), true, Charsets.UTF_8)
             writer.println("SHIZUKU_PROXY/1.0 READY")
             try {
-                while (isActive) {
+                while (this.isActive) {
                     // Check if ready to read to allow cancellation to interrupt the blocking read
-                    while (isActive && !reader.ready()) {
+                    while (this.isActive && !reader.ready()) {
                         kotlinx.coroutines.delay(50)
                     }
-                    if (!isActive) break
+                    if (!this.isActive) break
                     
                     val currentLine = reader.readLine() ?: break
                     val cmd = currentLine.trim()
@@ -208,15 +209,15 @@ class AdbProxyService : Service() {
             // Launch concurrent readers so we don't block on just stdout
             kotlinx.coroutines.coroutineScope {
                 launch {
-                    stdout.forEachLine { if (isActive) writer.println(it) }
+                    stdout.forEachLine { if (this.isActive) writer.println(it) }
                 }
                 launch {
-                    stderr.forEachLine { if (isActive) writer.println("ERR: $it") }
+                    stderr.forEachLine { if (this.isActive) writer.println("ERR: $it") }
                 }
             }
             
             val exit = process.waitFor()
-            if (isActive) writer.println("EXIT:$exit")
+            if (this.isActive) writer.println("EXIT:$exit")
         } catch (e: Exception) {
             if (e !is kotlinx.coroutines.CancellationException) {
                 Log.e(TAG, "Command failed: $cmd", e)

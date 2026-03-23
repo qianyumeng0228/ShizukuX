@@ -93,9 +93,7 @@ class StartAdbViewHolder(
             val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
             val bgRes = when (shapeStyle) {
                 "zen" -> R.drawable.shape_expressive_leaf_background
-                "classic" -> rikka.material.R.drawable.rikka_rect_8
-                "squircle" -> rikka.material.R.drawable.rikka_rect_24
-                else -> rikka.material.R.drawable.rikka_rect_36
+                else -> R.drawable.shape_circle_icon_background
             }
             itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(bgRes)
         } else {

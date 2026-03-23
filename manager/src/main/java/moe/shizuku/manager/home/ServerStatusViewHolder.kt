@@ -62,17 +62,15 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         }
 
         // Expressive M3 status-based styling
-        val colorAttr = if (ok) rikka.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
-        val onColorAttr = if (ok) rikka.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
+        val colorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
+        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
         
         // Handle Expressive Shapes
         if (moe.shizuku.manager.ShizukuSettings.isExpressiveShapesEnabled()) {
             val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
             val bgRes = when (shapeStyle) {
                 "zen" -> R.drawable.shape_droplet_background
-                "classic" -> rikka.material.R.drawable.rikka_rect_8
-                "squircle" -> rikka.material.R.drawable.rikka_rect_24 // Close to squircle
-                else -> rikka.material.R.drawable.rikka_rect_36 // Modern M3
+                else -> R.drawable.shape_circle_icon_background // Use circle as default if rikka_rect is missing
             }
             iconView.setBackgroundResource(bgRes)
         } else {
@@ -89,7 +87,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         summaryView.setTextColor(onColor)
         iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(onColor)
         
-        val iconColorAttr = if (ok) rikka.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
+        val iconColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
         context.theme.resolveAttribute(iconColorAttr, typedValue, true)
         iconView.imageTintList = android.content.res.ColorStateList.valueOf(typedValue.data)
 

@@ -80,7 +80,7 @@ sealed class SettingsPage(
     object InternetPanel : SettingsPage(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
     object Accessibility : SettingsPage(Settings.ACTION_ACCESSIBILITY_SETTINGS)
 
-    sealed class Samsung {
+    object Samsung {
         object AutoBlocker : SettingsPage("android.settings.SECURITY_ADVANCED_SETTINGS")
         object DeviceCareBattery : SettingsPage("com.samsung.android.sm.ACTION_BATTERY") {
             override fun launch(context: Context) {

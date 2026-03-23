@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import android.text.method.LinkMovementMethod
@@ -36,6 +37,7 @@ import moe.shizuku.manager.settings.SettingsActivity
 import moe.shizuku.manager.utils.AppIconCache
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
+import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.content.asActivity
 import rikka.core.ktx.unsafeLazy
@@ -100,8 +102,9 @@ abstract class HomeActivity : AppBarActivity() {
 
         homeModel.serviceStatus.observe(this) {
             if (it.status == Status.SUCCESS) {
-                val status = homeModel.serviceStatus.value?.data ?: return@observe
-                val wasRunning = adapter.data?.getOrNull(0) is moe.shizuku.manager.model.ServiceStatus && (adapter.data?.get(0) as moe.shizuku.manager.model.ServiceStatus).isRunning
+                val status = it.data ?: return@observe
+                val wasRunning = adapter.itemCount > 0 && (adapter.getItemId(0) == HomeAdapter.ID_STATUS) && 
+                                (homeModel.serviceStatus.value?.data?.isRunning == true)
                 
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
