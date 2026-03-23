@@ -10,7 +10,7 @@
             android:key="dhizuku_mode"
             android:title="@string/settings_dhizuku_mode"
             android:summary="@string/settings_dhizuku_mode_summary"
-            android:icon="@drawable/ic_system_icon" />
+            android:icon="@drawable/ic_admin_panel_settings_24dp" />
 
         <SwitchPreferenceCompat
             android:key="custom_api_enabled"
@@ -44,7 +44,7 @@
             android:key="activity_manager_plus_enabled"
             android:title="@string/settings_activity_manager_plus"
             android:summary="@string/settings_activity_manager_plus_summary"
-            android:icon="@drawable/ic_server_restart"
+            android:icon="@drawable/ic_bolt_24dp"
             android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
@@ -100,7 +100,7 @@
             android:key="network_governor_plus_enabled"
             android:title="@string/settings_network_governor_plus"
             android:summary="@string/settings_network_governor_plus_summary"
-            android:icon="@drawable/ic_wadb_24"
+            android:icon="@drawable/ic_lan_24dp"
             android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
@@ -143,14 +143,14 @@
             android:key="experimental_root_compat"
             android:title="@string/settings_experimental_root"
             android:summary="@string/settings_experimental_root_summary"
-            android:icon="@drawable/ic_server_ok_24dp"
+            android:icon="@drawable/ic_science_24dp"
             android:defaultValue="false" />
 
         <SwitchPreferenceCompat
             android:key="spoof_device_enabled"
             android:title="@string/settings_spoof_device"
             android:summary="@string/settings_spoof_device_summary"
-            android:icon="@drawable/ic_outline_notifications_active_24"
+            android:icon="@drawable/ic_smartphone_24dp"
             android:defaultValue="false" />
 
         <rikka.preference.SimpleMenuPreference
@@ -160,7 +160,7 @@
             android:entryValues="@array/spoof_targets_values"
             android:defaultValue="pixel_8_pro"
             android:summary="%s"
-            android:icon="@drawable/ic_system_icon" />
+            android:icon="@drawable/ic_smartphone_24dp" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

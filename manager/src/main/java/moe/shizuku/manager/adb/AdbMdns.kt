@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import kotlinx.coroutines.*
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.Observer
 import java.io.IOException
@@ -25,7 +26,8 @@ class AdbMdns(
     private var serviceName: String? = null
     private val listener = DiscoveryListener(this)
     private val nsdManager: NsdManager = context.getSystemService(NsdManager::class.java)
-    private val handler = Handler(Looper.getMainLooper())
+    private val mdnsScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var restartJob: Job? = null
     private var restartScheduled = false
     private var attempts = 0
 
@@ -40,7 +42,8 @@ class AdbMdns(
     fun stop() {
         if (!running) return
         running = false
-        handler.removeCallbacksAndMessages(null)
+        restartJob?.cancel()
+        mdnsScope.cancel()
         if (registered) {
             nsdManager.stopServiceDiscovery(listener)
         }
@@ -63,13 +66,16 @@ class AdbMdns(
     }
 
     private fun onServiceResolved(resolvedService: NsdServiceInfo) {
-        if (running && NetworkInterface.getNetworkInterfaces()
+        val hostAddress = resolvedService.host.hostAddress
+        val isLocal = hostAddress == "127.0.0.1" || hostAddress == "::1" || resolvedService.host.isLoopbackAddress
+        
+        if (running && (isLocal || NetworkInterface.getNetworkInterfaces()
                 .asSequence()
                 .any { networkInterface ->
                     networkInterface.inetAddresses
                         .asSequence()
-                        .any { resolvedService.host.hostAddress == it.hostAddress }
-                }
+                        .any { hostAddress == it.hostAddress }
+                })
             && isPortAvailable(resolvedService.port)
         ) {
             serviceName = resolvedService.serviceName
@@ -77,14 +83,14 @@ class AdbMdns(
         } else if (running && attempts < 5 && !restartScheduled) {
             attempts++
             restartScheduled = true
-            val delay = attempts * 1000L
-            handler.postDelayed({
+            val delayMs = attempts * 1000L
+            restartJob = mdnsScope.launch {
+                delay(delayMs)
                 if (registered) nsdManager.stopServiceDiscovery(listener)
-                handler.postDelayed({
-                    if (!registered) nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
-                    restartScheduled = false
-                }, 100L)
-            }, delay)
+                delay(100L)
+                if (!registered) nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+                restartScheduled = false
+            }
         }
     }
 

@@ -10,11 +10,11 @@
 
     <ImageView
         android:id="@+id/empty_state_icon"
-        android:layout_width="72dp"
-        android:layout_height="72dp"
+        android:layout_width="96dp"
+        android:layout_height="96dp"
         android:importantForAccessibility="no"
         android:src="@drawable/ic_help_outline_24dp"
-        android:tint="?attr/colorOnSurfaceVariant"
+        android:tint="?attr/colorTertiary"
         android:tintMode="src_in"
         android:contentDescription="@null" />
 
@@ -22,9 +22,9 @@
         android:id="@+id/empty_state_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/m3e_spacing_medium"
+        android:layout_marginTop="@dimen/m3e_spacing_large"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall"
+        android:textAppearance="?attr/textAppearanceHeadlineMedium"
         android:textColor="?attr/colorOnSurface"
         tools:text="No items" />
 
@@ -34,16 +34,17 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/m3e_spacing_small"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBodyMedium"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurfaceVariant"
+        android:lineSpacingMultiplier="1.2"
         tools:text="There are no items to display" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/empty_state_action_button"
-        style="@style/Widget.Material3.Button.TextButton"
+        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/m3e_spacing_medium"
+        android:layout_marginTop="@dimen/m3e_spacing_large"
         android:visibility="gone"
         tools:text="Action"
         tools:visibility="visible" />

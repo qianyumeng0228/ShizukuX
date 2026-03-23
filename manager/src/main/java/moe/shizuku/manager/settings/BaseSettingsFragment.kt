@@ -65,7 +65,11 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         val contentPaddingPx = (8 * context.resources.displayMetrics.density).toInt()
 
         // Fix Sentry: IllegalArgumentException Providing a LayoutTransition into RecyclerView is not supported
-        recyclerView.layoutTransition = null
+        try {
+            recyclerView.layoutTransition = null
+        } catch (e: Exception) {
+            io.sentry.Sentry.captureException(e)
+        }
         recyclerView.itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator()
 
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)

@@ -20,25 +20,25 @@
         <item name="android:divider">@drawable/spacing_list_item_vertical</item>
     </style>
 
-    <style name="CardButton" parent="Widget.Material3.Button">
+    <style name="CardButton" parent="Widget.Material3.Button.TonalButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:backgroundTint">@color/button_background_color</item>
-        <item name="android:textColor">@color/button_text_color</item>
-        <item name="iconTint">@color/button_text_color</item>
+        <item name="android:backgroundTint">?colorSecondaryContainer</item>
+        <item name="android:textColor">?colorOnSecondaryContainer</item>
+        <item name="iconTint">?colorOnSecondaryContainer</item>
         <item name="iconPadding">12dp</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Material3.Corner.Full</item>
     </style>
 
     <style name="CardTitle">
-        <item name="android:textAppearance">?textAppearanceBodyLarge</item>
-        <item name="android:textColor">?android:textColorPrimary</item>
-        <item name="android:textSize">18sp</item>
+        <item name="android:textAppearance">?textAppearanceHeadlineSmall</item>
+        <item name="android:textColor">?colorOnSurface</item>
         <item name="android:lineSpacingExtra">1sp</item>
     </style>
 
     <style name="CardSummary">
-        <item name="android:textAppearance">?textAppearanceBodyMedium</item>
-        <item name="android:textColor">?android:textColorSecondary</item>
+        <item name="android:textAppearance">?textAppearanceLabelLarge</item>
+        <item name="android:textColor">?colorOnSurfaceVariant</item>
         <item name="android:lineSpacingExtra">1sp</item>
     </style>
 
@@ -47,16 +47,22 @@
     </style>
 
     <style name="CardIcon">
-        <item name="android:layout_width">wrap_content</item>
-        <item name="android:layout_height">wrap_content</item>
-        <item name="android:background">@drawable/shape_circle_icon_background</item>
-        <item name="android:tint">?colorOnPrimaryContainer</item>
-        <item name="android:tintMode">src_in</item>
-        <item name="android:backgroundTint">?colorPrimaryContainer</item>
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:background">@drawable/shape_expressive_leaf_background</item>
+        <item name="android:tint">?colorOnTertiaryContainer</item>
+        <item name="android:tintMode:src_in</item>
+        <item name="android:backgroundTint">?colorTertiaryContainer</item>
         <item name="android:backgroundTintMode">src_in</item>
     </style>
 
-    <style name="GrantPermissions" parent="@style/AppTheme">
+    <style name="CardIcon.Droplet">
+        <item name="android:background">@drawable/shape_droplet_background</item>
+    </style>
+
+    <style name="GrantPermissions" parent="Theme.Material3Expressive.Dark.Shizuku">
+        <item name="android:windowIsTranslucent">true</item>
         <item name="android:colorBackground">?colorBackgroundFloating</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
 
@@ -80,12 +86,13 @@
         <item name="android:focusable">true</item>
         <item name="android:clipChildren">false</item>
         <item name="android:clipToPadding">false</item>
-        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardCornerRadius">28dp</item>
         <item name="contentPadding">@dimen/card_content_padding</item>
-        <item name="cardBackgroundColor">?colorSecondaryContainer</item>
+        <item name="cardBackgroundColor">?colorSurfaceContainerLow</item>
+        <item name="cardElevation">0dp</item>
     </style>
 
-    <style name="StaticCopyTextInput" parent="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+    <style name="StaticCopyTextInput" parent="@style/Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="android:textColorHint">?colorOnSurfaceVariant</item>
         <item name="boxStrokeColor">@color/text_input_static_box_stroke_color</item>
         <item name="boxStrokeWidthFocused">1dp</item>
@@ -93,6 +100,7 @@
         <item name="endIconDrawable">@drawable/ic_copy</item>
         <item name="hintTextColor">?colorOnSurfaceVariant</item>
         <item name="prefixTextColor">?colorOnSurfaceVariant</item>
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Material3.Corner.Medium</item>
     </style>
 
     <style name="GrantPermissionsButtons">
@@ -118,7 +126,7 @@
         <item name="android:layout_marginTop">2dp</item>
     </style>
 
-    <style name="Theme.App.DialogHost" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.App.DialogHost" parent="Theme.Material3Expressive.Dark.Shizuku">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>

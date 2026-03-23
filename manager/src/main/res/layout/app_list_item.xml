@@ -34,7 +34,7 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="@dimen/m3e_spacing_large"
         android:layout_weight="1"
         android:gravity="center_vertical"
         android:orientation="vertical">
@@ -43,15 +43,16 @@
             android:id="@android:id/title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?textAppearanceBodyLarge"
+            android:textAppearance="?textAppearanceTitleMedium"
+            android:textColor="?colorOnSurface"
             tools:text="Shizuku" />
 
         <TextView
             android:id="@android:id/summary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?textAppearanceBodyMedium"
-            android:textColor="?textColorOnSurfaceHighEmphasis"
+            android:textAppearance="?textAppearanceBodySmall"
+            android:textColor="?colorOnSurfaceVariant"
             tools:text="moe.shizuku.manager" />
 
         <LinearLayout

@@ -5,25 +5,31 @@
         android:key="service_doctor"
         android:title="@string/home_service_doctor_title"
         android:summary="@string/home_service_doctor_summary"
-        android:icon="@drawable/ic_outline_info_24" />
+        android:icon="@drawable/ic_medical_services_24dp" />
 
     <SwitchPreferenceCompat
         android:key="enable_activity_log"
         android:title="@string/settings_enable_activity_log"
-        android:icon="@drawable/ic_terminal_24"
+        android:icon="@drawable/ic_article_24dp"
         android:defaultValue="true" />
 
     <Preference
         android:key="activity_log"
         android:title="@string/settings_activity_log"
-        android:icon="@drawable/ic_terminal_24"
+        android:icon="@drawable/ic_article_24dp"
         android:dependency="enable_activity_log" />
 
     <SwitchPreferenceCompat
         android:key="legacy_pairing"
         android:summary="@string/settings_legacy_pairing_summary"
         android:title="@string/settings_legacy_pairing"
-        android:icon="@drawable/ic_numeric_2_circle_outline_24" />
+        android:icon="@drawable/ic_history_24dp" />
+
+    <Preference
+        android:key="reset_adb_keys"
+        android:title="Reset ADB Keys"
+        android:summary="Delete existing ADB keys and certificates. Useful if pairing is stuck or KeyStore is corrupted."
+        android:icon="@drawable/ic_history_24dp" />
 
     <Preference
         android:key="help"
@@ -38,6 +44,6 @@
     <Preference
         android:key="version"
         android:title="@string/settings_version"
-        android:icon="@drawable/ic_default_app_icon_background" />
+        android:icon="@drawable/ic_system_icon" />
 
 </PreferenceScreen>

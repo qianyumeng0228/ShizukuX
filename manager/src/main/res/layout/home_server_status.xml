@@ -7,7 +7,7 @@
 
     <ImageView
         android:id="@android:id/icon"
-        style="@style/CardIcon"
+        style="@style/CardIcon.Droplet"
         android:duplicateParentState="true"
         android:importantForAccessibility="yes"
         android:contentDescription="@string/accessibility_icon_server_status"
@@ -20,7 +20,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/m3e_spacing_medium"
+        android:layout_marginStart="@dimen/m3e_spacing_large"
         android:duplicateParentState="true"
         app:layout_constraintStart_toEndOf="@android:id/icon"
         app:layout_constraintEnd_toEndOf="parent"

@@ -39,6 +39,12 @@ object ShizukuStateMachine {
         if(oldState != newState) {
             listeners.forEach { it(newState) }
             Log.d("ShizukuStateMachine", newState.toString())
+
+            // Broadcast state change for widgets and other receivers
+            val intent = android.content.Intent("moe.shizuku.manager.action.STATE_CHANGED").apply {
+                setPackage(appContext.packageName)
+            }
+            appContext.sendBroadcast(intent)
         }
     }
 

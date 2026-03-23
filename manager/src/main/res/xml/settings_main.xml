@@ -11,7 +11,7 @@
             android:key="nav_behavior"
             android:title="@string/settings_behavior"
             android:summary="@string/settings_nav_behavior_summary"
-            android:icon="@drawable/ic_server_restart"
+            android:icon="@drawable/ic_settings_suggest_24dp"
             android:fragment="moe.shizuku.manager.settings.BehaviorSettingsFragment" />
 
         <Preference
@@ -32,21 +32,21 @@
             android:key="nav_ui"
             android:title="@string/settings_user_interface"
             android:summary="@string/settings_nav_ui_summary"
-            android:icon="@drawable/ic_outline_dark_mode_24"
+            android:icon="@drawable/ic_palette_24"
             android:fragment="moe.shizuku.manager.settings.UISettingsFragment" />
 
         <Preference
             android:key="nav_app_management"
             android:title="@string/settings_app_management"
             android:summary="@string/settings_nav_app_management_summary"
-            android:icon="@drawable/ic_learn_more_24dp"
+            android:icon="@drawable/ic_settings_outline_24dp"
             android:fragment="moe.shizuku.manager.settings.AppManagementSettingsFragment" />
 
         <Preference
             android:key="nav_home_visibility"
             android:title="@string/settings_home_visibility"
             android:summary="@string/settings_nav_home_summary"
-            android:icon="@drawable/ic_action_settings_24dp"
+            android:icon="@drawable/ic_window_24"
             android:fragment="moe.shizuku.manager.settings.HomeVisibilitySettingsFragment" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
@@ -60,7 +60,7 @@
             android:key="nav_legacy_compat"
             android:title="@string/settings_category_legacy_compatibility"
             android:summary="@string/settings_nav_legacy_summary"
-            android:icon="@drawable/ic_wadb_24"
+            android:icon="@drawable/ic_history_24dp"
             android:fragment="moe.shizuku.manager.settings.LegacyCompatSettingsFragment" />
 
         <Preference

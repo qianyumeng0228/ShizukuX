@@ -94,9 +94,35 @@ public class ShizukuSettings {
         // Swipe action preferences (ShizukuX additions)
         public static final String KEY_SWIPE_RIGHT_ACTION = "swipe_right_action";
         public static final String KEY_SWIPE_LEFT_ACTION = "swipe_left_action";
+
+        public static final String KEY_EXPRESSIVE_SHAPES = "expressive_shapes";
+        public static final String KEY_EXPRESSIVE_ANIMATIONS = "expressive_animations";
+        public static final String KEY_ICON_STYLE = "icon_style";
+        public static final String KEY_SHAPE_STYLE = "shape_style";
+        public static final String KEY_ANIMATION_INTENSITY = "animation_intensity";
     }
 
     private static SharedPreferences sPreferences;
+
+    public static boolean isExpressiveShapesEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_EXPRESSIVE_SHAPES, true);
+    }
+
+    public static boolean isExpressiveAnimationsEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_EXPRESSIVE_ANIMATIONS, true);
+    }
+
+    public static String getIconStyle() {
+        return getPreferences().getString(Keys.KEY_ICON_STYLE, "standard");
+    }
+
+    public static String getShapeStyle() {
+        return getPreferences().getString(Keys.KEY_SHAPE_STYLE, "zen");
+    }
+
+    public static int getAnimationIntensity() {
+        return Integer.parseInt(getPreferences().getString(Keys.KEY_ANIMATION_INTENSITY, "2"));
+    }
 
     public static SharedPreferences getPreferences() {
         return sPreferences;

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialLayout="@layout/widget_shizuku"
+    android:minWidth="180dp"
+    android:minHeight="80dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="70dp"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:previewLayout="@layout/widget_shizuku"
+    android:targetCellWidth="3"
+    android:targetCellHeight="1" />

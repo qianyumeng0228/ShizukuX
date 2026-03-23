@@ -87,5 +87,19 @@ class StartAdbViewHolder(
     override fun onBind() {
         containerBinding.removeBtn.isVisible = HomeEditMode.isActive
         containerBinding.dragHandle.isVisible = HomeEditMode.isActive
+
+        // Handle Expressive Shapes
+        if (moe.shizuku.manager.ShizukuSettings.isExpressiveShapesEnabled()) {
+            val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
+            val bgRes = when (shapeStyle) {
+                "zen" -> R.drawable.shape_expressive_leaf_background
+                "classic" -> rikka.material.R.drawable.rikka_rect_8
+                "squircle" -> rikka.material.R.drawable.rikka_rect_24
+                else -> rikka.material.R.drawable.rikka_rect_36
+            }
+            itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(bgRes)
+        } else {
+            itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        }
     }
 }

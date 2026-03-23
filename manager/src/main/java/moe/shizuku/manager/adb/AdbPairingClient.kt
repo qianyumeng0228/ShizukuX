@@ -209,9 +209,12 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
     }
 
     private fun setupTlsConnection() {
-        val s = Socket(host, port)
+        val s = Socket()
         socket = s
+        s.connect(java.net.InetSocketAddress(host, port), 5000)
         s.tcpNoDelay = true
+        s.soTimeout = 15000 // 15 seconds read timeout to prevent infinite hangs during pairing
+        s.keepAlive = true
 
         val sslContext = key.sslContext
         val sslSocket = sslContext.socketFactory.createSocket(s, host, port, true) as SSLSocket

@@ -14,7 +14,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/m3e_spacing_medium"
+        android:layout_marginStart="@dimen/m3e_spacing_large"
         android:duplicateParentState="true"
         android:orientation="vertical">
 

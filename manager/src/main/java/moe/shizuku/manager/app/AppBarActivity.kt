@@ -62,7 +62,7 @@ abstract class AppBarActivity : AppActivity() {
             p.behavior = AppBarLayout.ScrollingViewBehavior()
         }
         
-        rootView.addView(view, 0, p)
+        rootView.addView(view, p)
     }
 
 }

@@ -8,8 +8,11 @@ import android.os.Looper
 import android.widget.Toast
 import android.provider.Settings
 import android.content.ActivityNotFoundException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
@@ -27,51 +30,79 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     var port: Int? = null
     var password: String? = null
 
-    private val handler = Handler(Looper.getMainLooper())
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         
-        if (!(EnvironmentUtils.isTelevision() && EnvironmentUtils.isTlsSupported())) {
+        val isSamsung = EnvironmentUtils.isSamsung()
+        val isTv = EnvironmentUtils.isTelevision()
+        
+        if (!(isTv || isSamsung) || !EnvironmentUtils.isTlsSupported()) {
             Toast.makeText(this, getString(R.string.toast_accessibility_tv_only), Toast.LENGTH_SHORT).show()
             disableSelf()
             return
         }
 
-        val intent = Intent(this, MainActivity::class.java).apply {
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or 
-                Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                Intent.FLAG_ACTIVITY_SINGLE_TOP
-            )
-            putExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, true)
+        // On Samsung, we don't necessarily want to jump to MainActivity immediately
+        // as the user might be manually navigating Developer Options.
+        if (isTv) {
+            val intent = Intent(this, MainActivity::class.java).apply {
+                addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or 
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                )
+                putExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, true)
+            }
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, "ShizukuX Accessibility active: Monitoring for Pairing Code...", Toast.LENGTH_SHORT).show()
         }
-        startActivity(intent)
 
-        handler.postDelayed({
-            Toast.makeText(this, getString(R.string.toast_pairing_timeout), Toast.LENGTH_LONG).show()
-            disableSelf()
-        }, 60_000)
+        // Auto-disable after 60 seconds to prevent lingering background usage
+        serviceScope.launch(Dispatchers.Main) {
+            delay(60_000)
+            if (port == null || password == null) {
+                Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.toast_pairing_timeout), Toast.LENGTH_LONG).show()
+                disableSelf()
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         if (port != null && password != null) return
 
-        if ((event.contentChangeTypes and AccessibilityEvent.CONTENT_CHANGE_TYPE_TEXT) == 0) return
-        val text = event.source?.text ?: return
+        val source = event.source ?: return
+        val text = source.text ?: ""
+        
+        // Debug Samsung-specific dialog titles
+        if (EnvironmentUtils.isSamsung() && event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            val className = event.className?.toString() ?: ""
+            if (className.contains("AlertDialog") || className.contains("Dialog")) {
+                Log.d("AdbAccessibility", "Samsung Dialog detected: $text")
+            }
+        }
 
         val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
         val passwordRegex = Regex("""\d{6}""")
 
-        ipPortRegex.matchEntire(text)
-            ?.groupValues
-            ?.get(1)
-            ?.toIntOrNull()
-            ?.let { port = it }
-        passwordRegex.matchEntire(text)
-            ?.value
-            ?.let { password = it }
+        // Standard IP:Port check
+        ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let { port = it }
+        
+        // Samsung specific: sometimes the port is in a different view or has specific labels
+        if (port == null && text.contains("Port", ignoreCase = true)) {
+            val portMatch = Regex("""\d{5}""").find(text)
+            portMatch?.value?.toIntOrNull()?.let { port = it }
+        }
+
+        passwordRegex.find(text)?.value?.let { password = it }
+
+        // Recursive search for children if text is empty on parent (Samsung UI optimization)
+        if (port == null || password == null) {
+            findPortAndPasswordInNode(source)
+        }
 
         val currentPort = port
         val currentPassword = password
@@ -80,8 +111,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             val passwordValue = currentPassword
 
             var toastMsg = getString(R.string.notification_adb_pairing_failed_title)
-            // Use service-specific scope or CoroutineScope(Dispatchers.IO)
-            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            
+            serviceScope.launch {
                 val host = "127.0.0.1"
 
                 val key = try {
@@ -117,10 +148,32 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun findPortAndPasswordInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
+        if (node == null || depth > 10) return // Prevent excessive recursion causing ANRs on complex Samsung UIs
+        if (port != null && password != null) return
+
+        val text = node.text?.toString() ?: ""
+        if (text.isNotEmpty()) {
+            val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
+            val passwordRegex = Regex("""\d{6}""")
+
+            if (port == null) {
+                ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let { port = it }
+            }
+            if (password == null) {
+                passwordRegex.find(text)?.value?.let { password = it }
+            }
+        }
+
+        for (i in 0 until node.childCount) {
+            findPortAndPasswordInNode(node.getChild(i), depth + 1)
+        }
+    }
+
     override fun onInterrupt() {}
 
     override fun onUnbind(intent: Intent?): Boolean {
-        handler.removeCallbacksAndMessages(null)
+        serviceScope.cancel()
         return super.onUnbind(intent)
     }
 

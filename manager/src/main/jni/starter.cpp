@@ -11,6 +11,7 @@
 #include <cerrno>
 #include <string>
 #include <termios.h>
+#include <poll.h>
 #include "android.h"
 #include "misc.h"
 #include "selinux.h"
@@ -147,13 +148,31 @@ static void start_server(const char *path, const char *main_class, const char *p
         }
         default: {
             close(fds[1]);
-            char ready;
-            read(fds[0], &ready, 1);
+            char ready = 0;
+            
+            struct pollfd pfd;
+            pfd.fd = fds[0];
+            pfd.events = POLLIN;
+            
+            int ret = poll(&pfd, 1, 5000); // 5 second timeout
+            if (ret > 0) {
+                read(fds[0], &ready, 1);
+            } else if (ret == 0) {
+                perrorf("warn: starter timeout, server might not have started correctly\n");
+            } else {
+                perrorf("warn: poll failed: %s\n", strerror(errno));
+            }
+            
             close(fds[0]);
 
-            printf("info: shizuku_server pid is %d\n", pid);
-            printf("info: shizuku_starter exit with 0\n");
-            exit(EXIT_SUCCESS);
+            if (ready == 1) {
+                printf("info: shizuku_server pid is %d\n", pid);
+                printf("info: shizuku_starter exit with 0\n");
+                exit(EXIT_SUCCESS);
+            } else {
+                perrorf("fatal: shizuku_server failed to start\n");
+                exit(EXIT_FATAL_APP_PROCESS);
+            }
         }
     }
 }

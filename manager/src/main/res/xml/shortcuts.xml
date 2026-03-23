@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="start_wireless_adb"
+        android:enabled="true"
+        android:icon="@drawable/ic_wadb_24"
+        android:shortcutShortLabel="@string/home_wireless_adb_title"
+        android:shortcutLongLabel="@string/home_wireless_adb_title">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="moe.shizuku.privileged.api"
+            android:targetClass="moe.shizuku.manager.MainActivity">
+            <extra android:name="shortcut_action" android:value="start_wireless_adb" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="manage_apps"
+        android:enabled="true"
+        android:icon="@drawable/ic_settings_outline_24dp"
+        android:shortcutShortLabel="@string/home_app_management_title"
+        android:shortcutLongLabel="@string/home_app_management_title">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="moe.shizuku.privileged.api"
+            android:targetClass="moe.shizuku.manager.management.ApplicationManagementActivity" />
+    </shortcut>
+</shortcuts>

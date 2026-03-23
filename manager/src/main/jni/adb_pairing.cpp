@@ -60,8 +60,19 @@ static jlong PairingContext_Constructor(JNIEnv *env, jclass clazz, jboolean isCl
         return 0;
     }
 
+    if (jPassword == nullptr) {
+        LOGE("Password array is null.");
+        SPAKE2_CTX_free(spake2_ctx);
+        return 0;
+    }
+
     auto pswd_size = env->GetArrayLength(jPassword);
     auto pswd = env->GetByteArrayElements(jPassword, nullptr);
+    if (pswd == nullptr) {
+        LOGE("Unable to get byte array elements.");
+        SPAKE2_CTX_free(spake2_ctx);
+        return 0;
+    }
 
     size_t key_size = 0;
     uint8_t key[SPAKE2_MAX_MSG_SIZE];
@@ -69,13 +80,18 @@ static jlong PairingContext_Constructor(JNIEnv *env, jclass clazz, jboolean isCl
     if (status != 1 || key_size == 0) {
         LOGE("Unable to generate the SPAKE2 public key.");
 
-        env->ReleaseByteArrayElements(jPassword, pswd, 0);
+        env->ReleaseByteArrayElements(jPassword, pswd, JNI_ABORT);
         SPAKE2_CTX_free(spake2_ctx);
         return 0;
     }
-    env->ReleaseByteArrayElements(jPassword, pswd, 0);
+    env->ReleaseByteArrayElements(jPassword, pswd, JNI_ABORT);
 
     auto ctx = (PairingContextNative *) malloc(sizeof(PairingContextNative));
+    if (ctx == nullptr) {
+        LOGE("Unable to allocate memory for PairingContextNative.");
+        SPAKE2_CTX_free(spake2_ctx);
+        return 0;
+    }
     memset(ctx, 0, sizeof(PairingContextNative));
     ctx->spake2_ctx = spake2_ctx;
     memcpy(ctx->key, key, SPAKE2_MAX_MSG_SIZE);
@@ -85,7 +101,11 @@ static jlong PairingContext_Constructor(JNIEnv *env, jclass clazz, jboolean isCl
 
 static jbyteArray PairingContext_Msg(JNIEnv *env, jobject obj, jlong ptr) {
     auto ctx = (PairingContextNative *) ptr;
+    if (ctx == nullptr) return nullptr;
+
     jbyteArray our_msg = env->NewByteArray(ctx->key_size);
+    if (our_msg == nullptr) return nullptr;
+
     env->SetByteArrayRegion(our_msg, 0, ctx->key_size, (jbyte *) ctx->key);
     return our_msg;
 }
@@ -94,6 +114,10 @@ static jboolean PairingContext_InitCipher(JNIEnv *env, jobject obj, jlong ptr, j
     auto res = JNI_TRUE;
 
     auto ctx = (PairingContextNative *) ptr;
+    if (ctx == nullptr) return JNI_FALSE;
+
+    if (jTheirMsg == nullptr) return JNI_FALSE;
+
     auto spake2_ctx = ctx->spake2_ctx;
     auto their_msg_size = env->GetArrayLength(jTheirMsg);
 
@@ -103,13 +127,14 @@ static jboolean PairingContext_InitCipher(JNIEnv *env, jobject obj, jlong ptr, j
     }
 
     auto their_msg = env->GetByteArrayElements(jTheirMsg, nullptr);
+    if (their_msg == nullptr) return JNI_FALSE;
 
     size_t key_material_len = 0;
     uint8_t key_material[SPAKE2_MAX_KEY_SIZE];
     int status = SPAKE2_process_msg(spake2_ctx, key_material, &key_material_len,
                                     sizeof(key_material), (uint8_t *) their_msg, their_msg_size);
 
-    env->ReleaseByteArrayElements(jTheirMsg, their_msg, 0);
+    env->ReleaseByteArrayElements(jTheirMsg, their_msg, JNI_ABORT);
 
     if (status != 1) {
         LOGE("Unable to process their public key");
@@ -139,9 +164,15 @@ static jboolean PairingContext_InitCipher(JNIEnv *env, jobject obj, jlong ptr, j
 
 static jbyteArray PairingContext_Encrypt(JNIEnv *env, jobject obj, jlong ptr, jbyteArray jIn) {
     auto ctx = (PairingContextNative *) ptr;
+    if (ctx == nullptr || ctx->aes_ctx == nullptr) return nullptr;
+
+    if (jIn == nullptr) return nullptr;
+
     auto aes_ctx = ctx->aes_ctx;
 
     auto in = env->GetByteArrayElements(jIn, nullptr);
+    if (in == nullptr) return nullptr;
+
     auto in_size = env->GetArrayLength(jIn);
 
     auto out_size = (size_t) in_size + EVP_AEAD_max_overhead(EVP_AEAD_CTX_aead(ctx->aes_ctx));
@@ -155,7 +186,7 @@ static jbyteArray PairingContext_Encrypt(JNIEnv *env, jobject obj, jlong ptr, jb
     size_t written_sz;
     int status = EVP_AEAD_CTX_seal(aes_ctx, out, &written_sz, out_size, nonce, nonce_size, (uint8_t *) in, in_size, nullptr, 0);
 
-    env->ReleaseByteArrayElements(jIn, in, 0);
+    env->ReleaseByteArrayElements(jIn, in, JNI_ABORT);
 
     if (!status) {
         LOGE("Failed to encrypt (in_len=%d, out_len=%" PRIuPTR", out_len_needed=%d)", in_size, out_size, in_size);
@@ -164,15 +195,23 @@ static jbyteArray PairingContext_Encrypt(JNIEnv *env, jobject obj, jlong ptr, jb
     ++ctx->enc_sequence;
 
     jbyteArray jOut = env->NewByteArray(written_sz);
+    if (jOut == nullptr) return nullptr;
+
     env->SetByteArrayRegion(jOut, 0, written_sz, (jbyte *) out);
     return jOut;
 }
 
 static jbyteArray PairingContext_Decrypt(JNIEnv *env, jobject obj, jlong ptr, jbyteArray jIn) {
     auto ctx = (PairingContextNative *) ptr;
+    if (ctx == nullptr || ctx->aes_ctx == nullptr) return nullptr;
+
+    if (jIn == nullptr) return nullptr;
+
     auto aes_ctx = ctx->aes_ctx;
 
     auto in = env->GetByteArrayElements(jIn, nullptr);
+    if (in == nullptr) return nullptr;
+
     auto in_size = env->GetArrayLength(jIn);
 
     auto out_size = (size_t) in_size;
@@ -186,7 +225,7 @@ static jbyteArray PairingContext_Decrypt(JNIEnv *env, jobject obj, jlong ptr, jb
     size_t written_sz;
     int status = EVP_AEAD_CTX_open(aes_ctx, out, &written_sz, out_size, nonce, nonce_size, (uint8_t *) in, in_size, nullptr, 0);
 
-    env->ReleaseByteArrayElements(jIn, in, 0);
+    env->ReleaseByteArrayElements(jIn, in, JNI_ABORT);
 
     if (!status) {
         LOGE("Failed to decrypt (in_len=%d, out_len=%" PRIuPTR", out_len_needed=%d)", in_size, out_size, in_size);
@@ -195,13 +234,17 @@ static jbyteArray PairingContext_Decrypt(JNIEnv *env, jobject obj, jlong ptr, jb
     ++ctx->dec_sequence;
 
     jbyteArray jOut = env->NewByteArray(written_sz);
+    if (jOut == nullptr) return nullptr;
+
     env->SetByteArrayRegion(jOut, 0, written_sz, (jbyte *) out);
     return jOut;
 }
 
 static void PairingContext_Destroy(JNIEnv *env, jobject obj, jlong ptr) {
     auto ctx = (PairingContextNative *) ptr;
-    SPAKE2_CTX_free(ctx->spake2_ctx);
+    if (ctx == nullptr) return;
+
+    if (ctx->spake2_ctx) SPAKE2_CTX_free(ctx->spake2_ctx);
     if (ctx->aes_ctx) EVP_AEAD_CTX_free(ctx->aes_ctx);
     free(ctx);
 }

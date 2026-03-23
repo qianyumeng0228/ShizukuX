@@ -33,6 +33,56 @@
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_expressive_title"
+        android:key="category_expressive"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="expressive_shapes"
+            android:title="@string/settings_expressive_shapes"
+            android:summary="@string/settings_expressive_shapes_summary"
+            android:defaultValue="true"
+            android:icon="@drawable/ic_palette_24" />
+
+        <rikka.preference.SimpleMenuPreference
+            android:key="shape_style"
+            android:title="@string/settings_shape_style"
+            android:summary="@string/settings_shape_style_summary"
+            android:defaultValue="zen"
+            android:entries="@array/shape_styles"
+            android:entryValues="@array/shape_styles_value"
+            android:dependency="expressive_shapes"
+            android:icon="@drawable/ic_window_24" />
+
+        <rikka.preference.SimpleMenuPreference
+            android:key="icon_style"
+            android:title="@string/settings_icon_style"
+            android:summary="@string/settings_icon_style_summary"
+            android:defaultValue="standard"
+            android:entries="@array/icon_styles"
+            android:entryValues="@array/icon_styles_value"
+            android:icon="@drawable/ic_monochrome" />
+
+        <SwitchPreferenceCompat
+            android:key="expressive_animations"
+            android:title="@string/settings_expressive_animations"
+            android:summary="@string/settings_expressive_animations_summary"
+            android:defaultValue="true"
+            android:icon="@drawable/ic_outline_play_arrow_24" />
+
+        <rikka.preference.SimpleMenuPreference
+            android:key="animation_intensity"
+            android:title="@string/settings_animation_intensity"
+            android:summary="@string/settings_animation_intensity_summary"
+            android:defaultValue="2"
+            android:entries="@array/animation_intensities"
+            android:entryValues="@array/animation_intensities_value"
+            android:dependency="expressive_animations"
+            android:icon="@drawable/ic_autorenew" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:title="@string/settings_category_language"
         android:defaultValue="true">
 

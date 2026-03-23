@@ -59,10 +59,16 @@ class ShizukuTileService : TileService() {
         if (state == ShizukuStateMachine.State.RUNNING) {
             tile.state = Tile.STATE_ACTIVE
             tile.label = getString(R.string.app_name)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                tile.subtitle = getString(R.string.home_status_service_running_tile_sublabel)
+            }
             tile.icon = Icon.createWithResource(this, R.drawable.ic_server_ok_24dp)
         } else {
             tile.state = Tile.STATE_INACTIVE
             tile.label = getString(R.string.app_name)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                tile.subtitle = getString(R.string.home_status_service_stopped_tile_sublabel)
+            }
             tile.icon = Icon.createWithResource(this, R.drawable.ic_server_error_24dp)
         }
         

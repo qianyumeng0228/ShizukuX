@@ -76,7 +76,14 @@ abstract class HomeActivity : AppBarActivity() {
         super.onCreate(savedInstanceState)
 
         val binding = HomeActivityBinding.inflate(layoutInflater, rootView, false)
-        setContentView(binding.root)
+        super.setContentView(binding.root)
+
+        // Handle Shortcut Intent
+        if (intent?.getStringExtra("shortcut_action") == "start_wireless_adb") {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                AdbDialogFragment().show(supportFragmentManager)
+            }
+        }
 
         // Empty state view for when all cards are hidden
         val emptyStateView = binding.emptyStateView
@@ -94,8 +101,26 @@ abstract class HomeActivity : AppBarActivity() {
         homeModel.serviceStatus.observe(this) {
             if (it.status == Status.SUCCESS) {
                 val status = homeModel.serviceStatus.value?.data ?: return@observe
+                val wasRunning = adapter.data?.getOrNull(0) is moe.shizuku.manager.model.ServiceStatus && (adapter.data?.get(0) as moe.shizuku.manager.model.ServiceStatus).isRunning
+                
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
+
+                // Expressive Ripple: If service just started, perform a circular reveal
+                if (status.isRunning && !wasRunning && ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                    binding.list.post {
+                        val view = binding.list
+                        val cx = view.width / 2
+                        val cy = 100 // Approximate position of the status card
+                        val finalRadius = Math.hypot(cx.toDouble(), view.height.toDouble()).toFloat()
+                        
+                        android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
+                            duration = 800
+                            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+                            start()
+                        }
+                    }
+                }
             }
         }
 
@@ -107,11 +132,39 @@ abstract class HomeActivity : AppBarActivity() {
                     msg = getString(R.string.snackbar_battery_optimization_home),
                     duration = Snackbar.LENGTH_INDEFINITE,
                     actionText = getString(R.string.snackbar_action_fix),
-                    action = { SettingsHelper.requestIgnoreBatteryOptimizations(this, null) }
+                    action = { 
+                        if (EnvironmentUtils.isSamsung()) {
+                            SettingsPage.Samsung.DeviceCareBattery.launch(this)
+                        } else {
+                            SettingsHelper.requestIgnoreBatteryOptimizations(this, null) 
+                        }
+                    }
                 )
             }
         }
         homeModel.checkBatteryOptimization()
+
+        // Samsung Auto Blocker check for One UI 7/8+
+        if (EnvironmentUtils.isSamsung() && EnvironmentUtils.getOneUiVersion() >= 6) {
+            homeModel.serviceStatus.observe(this) {
+                if (it.status == Status.SUCCESS && it.data?.isRunning == false) {
+                    SnackbarHelper.show(
+                        this,
+                        binding.root,
+                        msg = "Samsung Auto Blocker may block ADB on One UI 7/8. Check Security settings.",
+                        duration = Snackbar.LENGTH_LONG,
+                        actionText = "Check",
+                        action = {
+                            try {
+                                startActivity(Intent("android.settings.SECURITY_ADVANCED_SETTINGS"))
+                            } catch (e: Exception) {
+                                startActivity(Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
+                            }
+                        }
+                    )
+                }
+            }
+        }
 
         appsModel.grantedCount.observe(this) {
             if (it.status == Status.SUCCESS) {
@@ -120,13 +173,34 @@ abstract class HomeActivity : AppBarActivity() {
         }
 
         val recyclerView = binding.list
+        
+        // Responsive Grid for Large Screens and DeX
+        val spanCount = if (resources.configuration.screenWidthDp >= 600 || resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 2 else 1
+        val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
+        layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                // The status card (position 0) always takes full width for visibility
+                return if (position == 0) spanCount else 1
+            }
+        }
+        recyclerView.layoutManager = layoutManager
+
+        // Samsung DeX Specific: add 'sidebar' feel with larger horizontal margins
+        val isDeX = EnvironmentUtils.isSamsung() && EnvironmentUtils.isDeX(this)
+        val dexPadding = if (isDeX) (48 * resources.displayMetrics.density).toInt() else 0
+        
         recyclerView.adapter = adapter
         (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
 
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
-            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, systemBars.bottom)
+            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            v.setPadding(
+                systemBars.left + dexPadding,
+                v.paddingTop,
+                systemBars.right + dexPadding,
+                systemBars.bottom
+            )
             insets
         }
 
@@ -163,6 +237,9 @@ abstract class HomeActivity : AppBarActivity() {
             override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
                 if (!adapter.isDraggable(target.adapterPosition)) return false
                 adapter.moveItem(src.adapterPosition, target.adapterPosition)
+                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                    target.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                }
                 return true
             }
 
@@ -170,6 +247,12 @@ abstract class HomeActivity : AppBarActivity() {
                 super.onSelectedChanged(viewHolder, actionState)
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     adapter.isDragging = true
+                    if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                        // Samsung S22U specific: Use high-end GESTURE_START if on newer SDK
+                        val haptic = if (Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.GESTURE_START else android.view.HapticFeedbackConstants.LONG_PRESS
+                        viewHolder?.itemView?.performHapticFeedback(haptic)
+                        viewHolder?.itemView?.animate()?.scaleX(1.05f)?.scaleY(1.05f)?.setDuration(150)?.start()
+                    }
                 } else if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     adapter.isDragging = false
                 }
@@ -180,6 +263,9 @@ abstract class HomeActivity : AppBarActivity() {
             override fun clearView(rv: RecyclerView, vh: RecyclerView.ViewHolder) {
                 super.clearView(rv, vh)
                 adapter.isDragging = false
+                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                    vh.itemView.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                }
                 adapter.persistCardOrder()
                 adapter.updateData()
             }
@@ -190,11 +276,29 @@ abstract class HomeActivity : AppBarActivity() {
         HomeEditMode.startDragCallback = { vh -> itemTouchHelper.startDrag(vh) }
         HomeEditMode.exit()
 
-        // Predictive back support for edit mode
+        // Predictive back support for edit mode with expressive M3 scaling
         val backCallback = object : androidx.activity.OnBackPressedCallback(HomeEditMode.isActive) {
+            override fun handleOnBackProgressed(backEvent: androidx.activity.BackEventCompat) {
+                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                    val progress = backEvent.progress
+                    val scale = 1f - (0.1f * progress)
+                    recyclerView.scaleX = scale
+                    recyclerView.scaleY = scale
+                }
+            }
+            
             override fun handleOnBackPressed() {
                 if (HomeEditMode.isActive) {
                     HomeEditMode.exit()
+                    if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                        recyclerView.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(android.view.animation.OvershootInterpolator()).start()
+                    }
+                }
+            }
+            
+            override fun handleOnBackCancelled() {
+                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                    recyclerView.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(android.view.animation.OvershootInterpolator()).start()
                 }
             }
         }

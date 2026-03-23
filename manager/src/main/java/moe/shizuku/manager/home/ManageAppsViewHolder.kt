@@ -33,9 +33,25 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
 
     private inline val title get() = binding.text1
     private inline val summary get() = binding.text2
+    private inline val iconView get() = binding.icon
 
     override fun onBind() {
         val context = itemView.context
+
+        // Handle Expressive Shapes
+        if (moe.shizuku.manager.ShizukuSettings.isExpressiveShapesEnabled()) {
+            val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
+            val bgRes = when (shapeStyle) {
+                "zen" -> R.drawable.shape_expressive_leaf_background
+                "classic" -> rikka.material.R.drawable.rikka_rect_8
+                "squircle" -> rikka.material.R.drawable.rikka_rect_24
+                else -> rikka.material.R.drawable.rikka_rect_36
+            }
+            iconView.setBackgroundResource(bgRes)
+        } else {
+            iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        }
+
         if (!data.first.isRunning) {
             itemView.isEnabled = false
             title.setText(R.string.home_app_management_title)

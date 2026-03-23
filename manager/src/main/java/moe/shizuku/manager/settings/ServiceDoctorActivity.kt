@@ -124,13 +124,86 @@ class ServiceDoctorActivity : AppBarActivity() {
             tips.add("• " + getString(R.string.doctor_tip_xiaomi))
         }
 
-        // 6. Background Limits (Android 14+)
+        // 7. Samsung Auto Blocker (One UI 6.1+)
+        if (EnvironmentUtils.isSamsung()) {
+            val oneUi = EnvironmentUtils.getOneUiVersion()
+            checks.add(DoctorCheck(
+                "Samsung Auto Blocker",
+                if (oneUi >= 6) "Needs Manual Check" else getString(R.string.doctor_status_ok),
+                oneUi < 6,
+                onFix = if (oneUi >= 6) { { SettingsPage.Samsung.AutoBlocker.launch(this) } } else null
+            ))
+
+            // Samsung Device Care / Always sleeping apps
+            checks.add(DoctorCheck(
+                "Samsung Battery Protection",
+                "Review",
+                true,
+                onFix = { SettingsPage.Samsung.DeviceCareBattery.launch(this) }
+            ))
+
+            if (oneUi >= 6) {
+                tips.add("• **Samsung Auto Blocker**: Ensure it is turned **OFF** or that 'Maximum Restrictions' is disabled. It silently blocks ADB commands on One UI 7/8+.")
+                tips.add("• **One UI 7/8 Connectivity**: If Wireless Pairing fails, try using **Split Screen mode** with Shizuku and Developer Options open simultaneously.")
+                tips.add("• **S22 Ultra Tip**: For consistent ADB, dial `*#0808#` and select `MTP + ADB` if you encounter connection drops.")
+            }
+        }
+
+        // 8. Secure Folder / Secondary User detection
+        if (EnvironmentUtils.isSecondaryUser()) {
+            checks.add(DoctorCheck(
+                "Secondary User / Secure Folder",
+                "Detected",
+                false
+            ))
+            tips.add("• **Secure Folder Detected**: Shizuku works best in the Main User (Owner). Running inside Secure Folder or a Work Profile may require starting the server from the Main User first.")
+        }
+
+        // 9. Background Limits (Android 14+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_background, ""),
                 getString(R.string.doctor_status_ok),
                 true
             ))
+        }
+
+        // 10. Phantom Process Killer (Android 12+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            checks.add(DoctorCheck(
+                "Phantom Process Killer",
+                "Needs Manual Check",
+                true,
+                onFix = {
+                    serviceScope.launch {
+                        try {
+                            // Try to disable it via Shizuku if running
+                            if (ShizukuStateMachine.isRunning()) {
+                                Shizuku.newProcess(arrayOf("device_config", "put", "activity_manager", "max_phantom_processes", "2147483647"), null, null).waitFor()
+                                withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, "Attempted to disable Phantom Killer", Toast.LENGTH_SHORT).show() }
+                            } else {
+                                withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, "Service must be running to auto-fix", Toast.LENGTH_SHORT).show() }
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, "Fix failed: ${e.message}", Toast.LENGTH_LONG).show() }
+                        }
+                    }
+                }
+            ))
+            tips.add("• **Phantom Process Killer**: Android 12-15+ may kill Shizuku if too many commands are run. The 'Fix' button attempts to disable this limit.")
+        }
+
+        // 11. Samsung Auto Restart & Sleeping Apps
+        if (EnvironmentUtils.isSamsung()) {
+            tips.add("• **Samsung Auto-Optimization**: Disable 'Auto Restart' in Device Care to prevent Shizuku from being killed at night.")
+            tips.add("• **Samsung Sleeping Apps**: Ensure ShizukuX is added to the **'Never sleeping apps'** list in *Device Care > Battery > Background usage limits* to prevent background service termination.")
+            
+            val board = Build.HARDWARE.lowercase()
+            if (board.contains("exynos")) {
+                tips.add("• **S22 Ultra (Exynos)**: If service response is sluggish, try disabling **'RAM Plus'** in Device Care > Memory.")
+            } else if (board.contains("qcom") || board.contains("snapdragon")) {
+                tips.add("• **S22 Ultra (Snapdragon)**: Ensure 'Enhanced Processing' is enabled in Quick Settings for maximum command throughput.")
+            }
         }
 
         checkListAdapter.submitList(checks)

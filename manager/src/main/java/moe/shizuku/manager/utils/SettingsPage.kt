@@ -80,6 +80,23 @@ sealed class SettingsPage(
     object InternetPanel : SettingsPage(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
     object Accessibility : SettingsPage(Settings.ACTION_ACCESSIBILITY_SETTINGS)
 
+    sealed class Samsung {
+        object AutoBlocker : SettingsPage("android.settings.SECURITY_ADVANCED_SETTINGS")
+        object DeviceCareBattery : SettingsPage("com.samsung.android.sm.ACTION_BATTERY") {
+            override fun launch(context: Context) {
+                runCatching {
+                    val intent = Intent("com.samsung.android.sm.ACTION_BATTERY").apply {
+                        setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity"))
+                        flags = defaultFlags
+                    }
+                    context.startActivity(intent)
+                }.onFailure {
+                    super.launch(context)
+                }
+            }
+        }
+    }
+
     protected val defaultFlags =
         Intent.FLAG_ACTIVITY_NEW_TASK or
         Intent.FLAG_ACTIVITY_NO_HISTORY or

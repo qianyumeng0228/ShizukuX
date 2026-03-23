@@ -20,7 +20,7 @@ rikkax-layoutinflater = "1.3.0"
 rikkax-preference = "1.0.3"
 rikkax-recyclerview = "1.3.2"
 rikkax-lifecycle = "1.0.1"
-sentry = "8.14.0"
+sentry = "8.36.0"
 libsu = "6.0.0"
 hiddenapibypass = "6.1"
 bouncycastle = "1.81"
@@ -87,4 +87,4 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 autoresconfig = { id = "dev.rikka.tools.autoresconfig", version = "1.2.2" }
 materialthemebuilder = { id = "dev.rikka.tools.materialthemebuilder", version = "1.5.1" }
 refine = { id = "dev.rikka.tools.refine", version = "4.4.0" }
-sentry = { id = "io.sentry.android.gradle", version = "5.4.0" }
+sentry = { id = "io.sentry.android.gradle", version = "6.2.0" }

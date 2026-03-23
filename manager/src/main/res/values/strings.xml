@@ -5,6 +5,59 @@
     <string name="translation_contributors">thejaustin</string>
     <string name="translation_url">https://github.com/thejaustin/ShizukuPlus</string>
 
+    <!-- UI Settings - Expressive -->
+    <string name="settings_expressive_title">Expressive Design (M3E)</string>
+    <string name="settings_expressive_shapes">Expressive Icon Shapes</string>
+    <string name="settings_expressive_shapes_summary">Use asymmetrical leaf and droplet shapes for icons</string>
+    <string name="settings_expressive_animations">Elastic Animations</string>
+    <string name="settings_expressive_animations_summary">Enable M3 elastic predictive back and drag scaling</string>
+    <string name="settings_icon_style">Icon Style</string>
+    <string name="settings_icon_style_summary">Choose the visual style for system icons</string>
+    <string name="settings_shape_style">Container Shape Style</string>
+    <string name="settings_shape_style_summary">Customize the corner rounding of cards and dialogs</string>
+    <string name="settings_animation_intensity">Animation Intensity</string>
+    <string name="settings_animation_intensity_summary">Adjust the speed and "bounciness" of UI transitions</string>
+
+    <string-array name="icon_styles">
+        <item>Standard (Filled)</item>
+        <item>Outlined</item>
+        <item>Two-Tone</item>
+    </string-array>
+    <string-array name="icon_styles_value">
+        <item>standard</item>
+        <item>outlined</item>
+        <item>twotone</item>
+    </string-array>
+
+    <string-array name="shape_styles">
+        <item>Zen (Artistic)</item>
+        <item>Modern (Material 3)</item>
+        <item>Classic (Material 2)</item>
+        <item>Organic (Squircle)</item>
+    </string-array>
+    <string-array name="shape_styles_value">
+        <item>zen</item>
+        <item>modern</item>
+        <item>classic</item>
+        <item>squircle</item>
+    </string-array>
+
+    <string-array name="animation_intensities">
+        <item>None</item>
+        <item>Subtle</item>
+        <item>Standard</item>
+        <item>Expressive</item>
+    </string-array>
+    <string-array name="animation_intensities_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
+
+    <string name="home_status_service_running_tile_sublabel">Running</string>
+    <string name="home_status_service_stopped_tile_sublabel">Stopped</string>
+
     <!-- Home - Status -->
     <string name="home_status_service_is_running">%1$s is running</string>
     <string name="home_status_service_not_running">%1$s is not running</string>
@@ -391,7 +444,7 @@
     <!-- Toast -->
     <string name="toast_no_email_app">No email app found</string>
     <string name="toast_shizuku_already_starting">Shizuku is already starting in the background</string>
-    <string name="toast_accessibility_tv_only">This service is only supported on TV devices</string>
+    <string name="toast_accessibility_tv_only">This automation is for TV or Samsung One UI devices with TLS support.</string>
     <string name="toast_pairing_timeout">Shizuku pairing service timed out</string>
 
     <!-- Dark Mode Setting Override -->
@@ -468,7 +521,7 @@
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Can\'t start browser</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
-    <string name="accessibility_service_description">Provides pairing support for devices (e.g., TVs running Android 14+) where notifications or split screen cannot be used.\n\nEnables Shizuku to extract the pairing code from the wireless debugging pairing screen. It will disable itself once the pairing code is found.</string>
+    <string name="accessibility_service_description">Provides pairing support for devices (e.g., TVs and Samsung One UI phones) where notifications or split screen cannot be used easily.\n\nEnables ShizukuX to extract the pairing code from the wireless debugging pairing screen. It will disable itself once the pairing code is found.</string>
 
     <!-- Messages for legacy -->
     <string name="dialog_legacy_not_support_title">%1$s does not support modern Shizuku</string>

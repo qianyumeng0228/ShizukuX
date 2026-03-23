@@ -63,7 +63,12 @@ class AdbProxyService : Service() {
                     ).waitFor()
                 }.isSuccess
 
-                if (!restartViaCtl) {
+                if (!restartViaCtl || EnvironmentUtils.isSamsung()) {
+                    // Samsung specific: sometimes ctl.restart is ignored, toggling the property forces a restart
+                    runCatching {
+                        Shizuku.newProcess(arrayOf("setprop", "adb.network.port", port.toString()), null, null).waitFor()
+                    }
+                    
                     // Fallback A: explicit stop/start (AOSP init services)
                     val stopped = runCatching {
                         Shizuku.newProcess(arrayOf("stop", "adbd"), null, null).waitFor()
@@ -168,7 +173,13 @@ class AdbProxyService : Service() {
             val writer = PrintWriter(socket.getOutputStream(), true, Charsets.UTF_8)
             writer.println("SHIZUKU_PROXY/1.0 READY")
             try {
-                while (true) {
+                while (isActive) {
+                    // Check if ready to read to allow cancellation to interrupt the blocking read
+                    while (isActive && !reader.ready()) {
+                        kotlinx.coroutines.delay(50)
+                    }
+                    if (!isActive) break
+                    
                     val currentLine = reader.readLine() ?: break
                     val cmd = currentLine.trim()
                     if (cmd.isEmpty()) continue
@@ -187,20 +198,35 @@ class AdbProxyService : Service() {
         }
     }
 
-    private fun runCommand(cmd: String, writer: PrintWriter) {
+    private suspend fun runCommand(cmd: String, writer: PrintWriter) {
+        var process: java.lang.Process? = null
         try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            // Stream stdout
+            process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
             val stdout = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8))
             val stderr = BufferedReader(InputStreamReader(process.errorStream, Charsets.UTF_8))
-            stdout.forEachLine { writer.println(it) }
-            stderr.forEachLine { writer.println("ERR: $it") }
+            
+            // Launch concurrent readers so we don't block on just stdout
+            kotlinx.coroutines.coroutineScope {
+                launch {
+                    stdout.forEachLine { if (isActive) writer.println(it) }
+                }
+                launch {
+                    stderr.forEachLine { if (isActive) writer.println("ERR: $it") }
+                }
+            }
+            
             val exit = process.waitFor()
-            writer.println("EXIT:$exit")
+            if (isActive) writer.println("EXIT:$exit")
         } catch (e: Exception) {
-            Log.e(TAG, "Command failed: $cmd", e)
-            writer.println("ERROR: ${e.message}")
-            writer.println("EXIT:1")
+            if (e !is kotlinx.coroutines.CancellationException) {
+                Log.e(TAG, "Command failed: $cmd", e)
+                writer.println("ERROR: ${e.message}")
+                writer.println("EXIT:1")
+            } else {
+                throw e
+            }
+        } finally {
+            process?.destroy()
         }
     }
 

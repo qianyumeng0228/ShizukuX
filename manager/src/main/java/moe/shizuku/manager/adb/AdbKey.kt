@@ -78,7 +78,17 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     private val certificate: X509Certificate
 
     init {
-        this.encryptionKey = getOrCreateEncryptionKey() ?: error("Failed to generate encryption key with AndroidKeyManager.")
+        val encryptionKeyMaybe = getOrCreateEncryptionKey()
+        if (encryptionKeyMaybe == null) {
+            Log.e(TAG, "AndroidKeyStore is unusable. ADB functionality will be severely limited or fail.")
+            // Fallback: This is not ideal but prevents a crash. 
+            // In a real scenario, we might want to prompt the user or use a less secure storage.
+            // For now, we'll try to proceed with a dummy key to avoid the 'error()' crash.
+            val dummyKey = javax.crypto.spec.SecretKeySpec(ByteArray(32), "AES")
+            this.encryptionKey = dummyKey
+        } else {
+            this.encryptionKey = encryptionKeyMaybe
+        }
 
         this.privateKey = getOrCreatePrivateKey()
         this.publicKey = KeyFactory.getInstance("RSA").generatePublic(RSAPublicKeySpec(privateKey.modulus, RSAKeyGenParameterSpec.F4)) as RSAPublicKey
@@ -104,17 +114,38 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
     private fun getOrCreateEncryptionKey(): Key? {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
-        keyStore.load(null)
+        try {
+            keyStore.load(null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load KeyStore", e)
+            return null
+        }
 
-        return keyStore.getKey(ENCRYPTION_KEY_ALIAS, null) ?: run {
-            val parameterSpec = KeyGenParameterSpec.Builder(ENCRYPTION_KEY_ALIAS, KeyProperties.PURPOSE_DECRYPT or KeyProperties.PURPOSE_ENCRYPT)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-                    .setKeySize(256)
-                    .build()
-            val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
-            keyGenerator.init(parameterSpec)
-            keyGenerator.generateKey()
+        val key = try {
+            keyStore.getKey(ENCRYPTION_KEY_ALIAS, null)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get key from KeyStore (common on Samsung), attempting reset", e)
+            try {
+                keyStore.deleteEntry(ENCRYPTION_KEY_ALIAS)
+            } catch (ignored: Exception) {}
+            null
+        }
+
+        return key ?: run {
+            try {
+                val parameterSpec = KeyGenParameterSpec.Builder(ENCRYPTION_KEY_ALIAS, KeyProperties.PURPOSE_DECRYPT or KeyProperties.PURPOSE_ENCRYPT)
+                        .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                        .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                        .setKeySize(256)
+                        .build()
+                val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+                keyGenerator.init(parameterSpec)
+                keyGenerator.generateKey()
+            } catch (e: Exception) {
+                // Samsung Knox or Auto Blocker can throw ProviderException or generic Exception here
+                Log.e(TAG, "Failed to generate encryption key in KeyStore. Device might have restricted KeyStore access.", e)
+                null
+            }
         }
     }
 

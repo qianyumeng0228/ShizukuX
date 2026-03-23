@@ -102,8 +102,14 @@ class AdbPairingTutorialActivity : AppBarActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 && e is ForegroundServiceStartNotAllowedException
             ) {
-                val mode = getSystemService(AppOpsManager::class.java)
-                    .noteOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName, null, null)
+                val appOps = getSystemService(AppOpsManager::class.java)
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    appOps.unsafeCheckOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName)
+                } else {
+                    @Suppress("DEPRECATION")
+                    appOps.noteOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName, null, null)
+                }
+                
                 if (mode == AppOpsManager.MODE_ERRORED) {
                     Toast.makeText(this, "OP_START_FOREGROUND is denied. What are you doing?", Toast.LENGTH_LONG).show()
                 }

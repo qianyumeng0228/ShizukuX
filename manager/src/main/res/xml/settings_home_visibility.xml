@@ -14,13 +14,13 @@
         <SwitchPreferenceCompat
             android:key="show_automation_home"
             android:title="@string/settings_show_automation_home"
-            android:icon="@drawable/ic_autorenew"
+            android:icon="@drawable/ic_integration_instructions_24"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="show_learn_more_home"
             android:title="@string/settings_show_learn_more_home"
-            android:icon="@drawable/ic_learn_more_24dp"
+            android:icon="@drawable/ic_outline_info_24"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
@@ -38,14 +38,14 @@
         <SwitchPreferenceCompat
             android:key="show_activity_log_home"
             android:title="@string/settings_show_activity_log_home"
-            android:icon="@drawable/ic_terminal_24"
+            android:icon="@drawable/ic_article_24dp"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
             android:key="enable_activity_log"
             android:title="@string/settings_enable_activity_log"
             android:summary="@string/settings_enable_activity_log_summary"
-            android:icon="@drawable/ic_server_ok_24dp"
+            android:icon="@drawable/ic_article_24dp"
             android:defaultValue="true" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>

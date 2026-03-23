@@ -90,6 +90,10 @@
                 <!-- and possibly additional review steps. To avoid problems, remove it temporarily. -->
                 <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
         <activity
             android:name=".onboarding.OnboardingActivity"
@@ -123,7 +127,12 @@
         </activity>
         <activity
             android:name=".starter.StarterActivity"
-            android:label="@string/starter" />
+            android:label="@string/starter">
+            <intent-filter>
+                <action android:name="moe.shizuku.manager.action.START_SERVICE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".settings.BugReportDialogActivity"
             android:theme="@style/Theme.App.DialogHost"
@@ -200,6 +209,19 @@
                     The watchdog service uses minimal resources and battery. There is no constant polling; it only reacts when the API service stops unexpectedly.
                     The watchdog service is opt-in and toggleable via settings, so users can choose to disable it at any time if not desired." />
         </service>
+
+        <receiver
+            android:name=".widget.ShizukuWidgetProvider"
+            android:exported="true"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="moe.shizuku.manager.action.STATE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info" />
+        </receiver>
 
         <service
             android:name=".service.ShizukuTileService"

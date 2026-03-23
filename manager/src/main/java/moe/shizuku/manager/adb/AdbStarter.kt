@@ -20,6 +20,7 @@ import moe.shizuku.manager.adb.PreferenceAdbKeyStore
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import io.sentry.Sentry
 
 object AdbStarter {
     suspend fun startAdb(context: Context, port: Int, log: ((String) -> Unit)? = null) {
@@ -66,6 +67,11 @@ object AdbStarter {
                     ShizukuStateMachine.update()
                 }
             }
+        } catch (e: Exception) {
+            if (e !is CancellationException) {
+                Sentry.captureException(e)
+            }
+            throw e
         } finally {
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
                 Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
@@ -92,6 +98,9 @@ object AdbStarter {
                 }
             }
         }.onFailure {
+            if (it !is CancellationException) {
+                Sentry.captureException(it)
+            }
             if (EnvironmentUtils.getAdbTcpPort() > 0) {
                 ShizukuStateMachine.update()
                 withContext(Dispatchers.Main) {
@@ -107,20 +116,21 @@ object AdbStarter {
     }
 
     private suspend fun connectWithRetry(client: AdbClient) {
-        var delayTime = 0L
-        val maxAttempts = 5
+        var delayTime = 200L
+        val maxAttempts = 8
         for (attempt in 1..maxAttempts) {
             try {
-                delay(delayTime)
+                if (attempt > 1) {
+                    delay(delayTime)
+                    delayTime = (delayTime * 1.5).toLong().coerceAtMost(3000L) // Exponential backoff up to 3s
+                }
                 client.connect()
                 break
             } catch (e: Exception) {
                 if (
                     attempt == maxAttempts ||
-                    e is CancellationException ||
-                    e is SocketTimeoutException
+                    e is CancellationException
                 ) throw e
-                delayTime += 1000
             }
         }
     }

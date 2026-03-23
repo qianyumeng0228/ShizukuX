@@ -25,6 +25,11 @@ class UISettingsFragment : BaseSettingsFragment() {
     private lateinit var useSystemColorPreference: TwoStatePreference
     private lateinit var languagePreference: ListPreference
     private lateinit var translationPreference: Preference
+    private lateinit var expressiveShapesPreference: TwoStatePreference
+    private lateinit var expressiveAnimationsPreference: TwoStatePreference
+    private lateinit var iconStylePreference: ListPreference
+    private lateinit var shapeStylePreference: ListPreference
+    private lateinit var animationIntensityPreference: ListPreference
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_ui, rootKey)
@@ -35,6 +40,36 @@ class UISettingsFragment : BaseSettingsFragment() {
         useSystemColorPreference = requireNotNull(findPreference(KEY_USE_SYSTEM_COLOR))
         languagePreference = requireNotNull(findPreference(KEY_LANGUAGE))
         translationPreference = requireNotNull(findPreference(KEY_TRANSLATION))
+        expressiveShapesPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_SHAPES))
+        expressiveAnimationsPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_ANIMATIONS))
+        iconStylePreference = requireNotNull(findPreference(KEY_ICON_STYLE))
+        shapeStylePreference = requireNotNull(findPreference(KEY_SHAPE_STYLE))
+        animationIntensityPreference = requireNotNull(findPreference(KEY_ANIMATION_INTENSITY))
+
+        expressiveShapesPreference.setOnPreferenceChangeListener { _, _ ->
+            activity?.recreate()
+            true
+        }
+
+        shapeStylePreference.setOnPreferenceChangeListener { _, _ ->
+            activity?.recreate()
+            true
+        }
+
+        iconStylePreference.setOnPreferenceChangeListener { _, _ ->
+            activity?.recreate()
+            true
+        }
+
+        expressiveAnimationsPreference.setOnPreferenceChangeListener { _, _ ->
+            activity?.recreate()
+            true
+        }
+
+        animationIntensityPreference.setOnPreferenceChangeListener { _, _ ->
+            activity?.recreate()
+            true
+        }
 
         nightModePreference.apply {
             value = ShizukuSettings.getNightMode()

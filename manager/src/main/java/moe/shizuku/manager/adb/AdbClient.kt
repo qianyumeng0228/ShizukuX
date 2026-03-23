@@ -49,6 +49,8 @@ class AdbClient(private val host: String, private val port: Int, private val key
         try {
             s.connect(address, 5000)
             s.tcpNoDelay = true
+            s.soTimeout = 15000 // 15 seconds read timeout to prevent infinite hangs
+            s.keepAlive = true
             
             val pin = DataInputStream(s.getInputStream())
             plainInputStream = pin
