@@ -52,7 +52,7 @@
         <item name="android:padding">12dp</item>
         <item name="android:background">@drawable/shape_expressive_leaf_background</item>
         <item name="android:tint">?colorOnTertiaryContainer</item>
-        <item name="android:tintMode:src_in</item>
+        <item name="android:tintMode">src_in</item>
         <item name="android:backgroundTint">?colorTertiaryContainer</item>
         <item name="android:backgroundTintMode">src_in</item>
     </style>
