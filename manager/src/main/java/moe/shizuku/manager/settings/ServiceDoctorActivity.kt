@@ -1,5 +1,5 @@
 package moe.shizuku.manager.settings
-
+import moe.shizuku.manager.app.AppBarActivity
 
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
@@ -31,7 +31,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-
 import moe.shizuku.manager.R
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -274,4 +273,3 @@ class ServiceDoctorActivity : AppBarActivity() {
 
     private class CheckViewHolder(val binding: ItemDoctorCheckBinding) : RecyclerView.ViewHolder(binding.root)
 }
-import moe.shizuku.manager.app.AppBarActivity
