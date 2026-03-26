@@ -1,10 +1,8 @@
 package moe.shizuku.manager.settings
 import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.R
 
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.R
 import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
 import moe.shizuku.manager.databinding.ItemDoctorCheckBinding
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -29,7 +27,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
