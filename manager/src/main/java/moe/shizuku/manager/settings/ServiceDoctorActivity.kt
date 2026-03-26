@@ -1,11 +1,5 @@
 package moe.shizuku.manager.settings
-import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
-import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.SettingsHelper
-import moe.shizuku.manager.utils.SettingsPage
-import moe.shizuku.manager.utils.ShizukuStateMachine
-import rikka.shizuku.Shizuku
+
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -26,26 +20,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import moe.shizuku.manager.R
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppBarActivity
-import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
-import moe.shizuku.manager.utils.EnvironmentUtils
-import moe.shizuku.manager.utils.SettingsHelper
-import moe.shizuku.manager.utils.SettingsPage
-import moe.shizuku.manager.utils.ShizukuStateMachine
-import rikka.shizuku.Shizuku
-import android.app.ActivityOptions
-import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-
-import moe.shizuku.manager.R
-
-import moe.shizuku.manager.R
-import moe.shizuku.manager.R
 import moe.shizuku.manager.databinding.ActivityServiceDoctorBinding
 import moe.shizuku.manager.databinding.ItemDoctorCheckBinding
 import moe.shizuku.manager.utils.EnvironmentUtils
@@ -53,30 +31,6 @@ import moe.shizuku.manager.utils.SettingsHelper
 import moe.shizuku.manager.utils.SettingsPage
 import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
-import android.content.Intent
-import android.os.Build
-import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import moe.shizuku.manager.R
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import moe.shizuku.manager.R
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ServiceDoctorActivity : AppBarActivity() {
 
@@ -271,7 +225,9 @@ class ServiceDoctorActivity : AppBarActivity() {
         tipsTextView.text = if (tips.isEmpty()) {
             "Your system seems well-configured for ShizukuX."
         } else {
-            tips.joinToString("\n\n")
+            tips.joinToString("
+
+")
         }
     }
 
