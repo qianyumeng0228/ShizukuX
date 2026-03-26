@@ -28,6 +28,7 @@ jobs:
       artifact-metadata: write
 
     env:
+  ANDROID_HOME: "/usr/local/lib/android/sdk"
       KEYSTORE: ${{ secrets.KEYSTORE }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
@@ -145,6 +146,7 @@ jobs:
       contents: write
 
     env:
+  ANDROID_HOME: "/usr/local/lib/android/sdk"
       IS_PRERELEASE: ${{ (github.event_name == 'push' && github.ref_name == 'master') || (github.event_name == 'workflow_dispatch' && inputs.prerelease) }}
 
     steps:
@@ -189,6 +191,7 @@ jobs:
 
       - name: Create Release
         env:
+  ANDROID_HOME: "/usr/local/lib/android/sdk"
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG_NAME="v${VERSION}"
