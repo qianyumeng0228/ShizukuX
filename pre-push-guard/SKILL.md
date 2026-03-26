@@ -27,7 +27,7 @@ The `scripts/pre_push_check.sh` script performs the following:
 -   **Submodule Sync**: Ensures the local `api` submodule commit actually exists on the remote before allowing a push.
 -   **AAPT Errors**: Prevents `Android resource linking failed` by scanning for hardcoded package names (e.g., `moe.shizuku.privileged.api:`) in XML.
 -   **Theme References**: Warns if `colorPrimary` is used directly in Kotlin without the `R.attr.` prefix.
--   **Diagnostic Quality**: Flags remaining `printStackTrace()` calls.
+-   **Diagnostic Quality**: Flags remaining `` calls.
 
 ## Usage
 
