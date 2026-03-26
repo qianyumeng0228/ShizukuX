@@ -174,7 +174,7 @@ object ActivityLogManager {
             if (records.size >= retentionCount) {
                 records.removeLast()
             }
-            records.addFirst(record)
+            records.add(0, record)
             _logs.value = records.toList()
         }
         

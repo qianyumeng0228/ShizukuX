@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.work.Configuration
 import com.topjohnwu.superuser.Shell
 import io.sentry.android.core.SentryAndroid
 import moe.shizuku.manager.ktx.logd
@@ -18,7 +19,13 @@ import rikka.shizuku.Shizuku
 
 lateinit var application: ShizukuApplication
 
-class ShizukuApplication : Application() {
+class ShizukuApplication : Application(), Configuration.Provider {
+
+    override fun getWorkManagerConfiguration(): Configuration {
+        return Configuration.Builder()
+            .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
+            .build()
+    }
 
     companion object {
 

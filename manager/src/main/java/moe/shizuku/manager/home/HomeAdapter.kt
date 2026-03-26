@@ -150,6 +150,9 @@ class HomeAdapter(
         ShizukuSettings.setCardOrder(cardOrder.joinToString(","))
     }
 
-    fun isDraggable(position: Int): Boolean = getItemId(position) in DEFAULT_ORDER
+    fun isDraggable(position: Int): Boolean {
+        if (position < 0 || position >= itemCount) return false
+        return getItemId(position) in DEFAULT_ORDER
+    }
     private fun Long.str() = this.toString()
 }

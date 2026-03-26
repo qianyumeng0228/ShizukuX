@@ -1,5 +1,6 @@
 package moe.shizuku.manager.service
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.drawable.Icon
 import android.os.Build
@@ -31,23 +32,21 @@ class ShizukuTileService : TileService() {
 
     override fun onClick() {
         val state = ShizukuStateMachine.get()
-        if (state == ShizukuStateMachine.State.RUNNING) {
-            // If running, open the app to allow manual stop or management
-            val intent = Intent(this, MainActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                // Android 14+ requires pending intent for starting activity from tile
-                // But TileService.startActivityAndCollapse is usually enough if it's a UI action
-                startActivityAndCollapse(intent)
-            } else {
-                startActivityAndCollapse(intent)
-            }
+        val intent = if (state == ShizukuStateMachine.State.RUNNING) {
+            Intent(this, MainActivity::class.java)
         } else {
-            // If not running, attempt to start
-            val intent = Intent(this, StarterActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
+            Intent(this, StarterActivity::class.java)
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            startActivityAndCollapse(pendingIntent)
+        } else {
+            @Suppress("DEPRECATION")
             startActivityAndCollapse(intent)
         }
     }

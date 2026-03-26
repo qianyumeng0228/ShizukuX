@@ -9,11 +9,12 @@ import moe.shizuku.manager.onboarding.OnboardingActivity
 class MainActivity : HomeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+        super.onCreate(savedInstanceState)
+
         if (!ShizukuSettings.hasSeenOnboarding()) {
             startActivity(Intent(this, OnboardingActivity::class.java))
             finish()
             return
         }
-        super.onCreate(savedInstanceState)
     }
 }

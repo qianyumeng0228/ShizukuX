@@ -70,10 +70,16 @@ object AuthorizationManager {
     }
 
     fun granted(packageName: String, uid: Int): Boolean {
+        if (!Shizuku.pingBinder()) return false
+        
         return if (Shizuku.isPreV11()) {
             ShizukuSystemApis.checkPermission(Manifest.permission.API_V23, packageName, uid / 100000) == PackageManager.PERMISSION_GRANTED
         } else {
-            (Shizuku.getFlagsForUid(uid, MASK_PERMISSION) and FLAG_ALLOWED) == FLAG_ALLOWED
+            try {
+                (Shizuku.getFlagsForUid(uid, MASK_PERMISSION) and FLAG_ALLOWED) == FLAG_ALLOWED
+            } catch (e: IllegalStateException) {
+                false
+            }
         }
     }
 
