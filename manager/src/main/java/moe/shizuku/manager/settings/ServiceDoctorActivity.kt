@@ -1,5 +1,6 @@
 package moe.shizuku.manager.settings
 import moe.shizuku.manager.app.AppBarActivity
+import moe.shizuku.manager.app.AppBarActivity
 import moe.shizuku.manager.R
 
 import moe.shizuku.manager.R
