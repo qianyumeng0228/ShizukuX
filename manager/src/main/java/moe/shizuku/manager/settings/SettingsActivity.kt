@@ -26,36 +26,12 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
         val fragment = supportFragmentManager.fragmentFactory.instantiate(classLoader, fragmentName)
         fragment.arguments = pref.extras
 
-        // MaterialSharedAxis transition for M3E 2026 feel
-        val enterTransition = com.google.android.material.transition.MaterialSharedAxis(
-            com.google.android.material.transition.MaterialSharedAxis.X, true
-        )
-        val exitTransition = com.google.android.material.transition.MaterialSharedAxis(
-            com.google.android.material.transition.MaterialSharedAxis.X, true
-        )
-        val reenterTransition = com.google.android.material.transition.MaterialSharedAxis(
-            com.google.android.material.transition.MaterialSharedAxis.X, false
-        )
-        val returnTransition = com.google.android.material.transition.MaterialSharedAxis(
-            com.google.android.material.transition.MaterialSharedAxis.X, false
-        )
-
-        fragment.enterTransition = enterTransition
-        fragment.returnTransition = returnTransition
-        
-        // Find existing fragment to set its exit transition
-        supportFragmentManager.findFragmentById(R.id.fragment_container)?.apply {
-            this.exitTransition = exitTransition
-            this.reenterTransition = reenterTransition
-        }
-
         supportFragmentManager.beginTransaction()
             .setReorderingAllowed(true)
             .replace(R.id.fragment_container, fragment)
             .addToBackStack(null)
             .commit()
-        
-        // Update title manually for immediate visual feedback
+
         supportActionBar?.title = pref.title
         return true
     }

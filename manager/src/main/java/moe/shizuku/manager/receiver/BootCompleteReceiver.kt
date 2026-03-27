@@ -21,7 +21,11 @@ class BootCompleteReceiver : BroadcastReceiver() {
         if (!handled) return
 
         Log.i("BootCompleteReceiver", "Triggered by: $action")
-        ShizukuReceiverStarter.start(context)
+        try {
+            ShizukuReceiverStarter.start(context)
+        } catch (e: IllegalStateException) {
+            Log.e("BootCompleteReceiver", "WorkManager not ready, skipping auto-start", e)
+        }
         if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
     }
 }
