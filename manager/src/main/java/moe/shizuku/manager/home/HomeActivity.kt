@@ -13,6 +13,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
@@ -34,6 +35,8 @@ import moe.shizuku.manager.home.showAccessibilityDialog
 import moe.shizuku.manager.ktx.toHtml
 import moe.shizuku.manager.management.AppsViewModel
 import moe.shizuku.manager.settings.SettingsActivity
+import moe.shizuku.manager.update.UpdateChecker
+import moe.shizuku.manager.update.UpdateManager
 import moe.shizuku.manager.utils.AppIconCache
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.SettingsHelper
@@ -178,6 +181,9 @@ abstract class HomeActivity : AppBarActivity() {
                 adapter.updateData()
             }
         }
+
+        // Check for updates on app startup (if enabled)
+        checkForUpdates()
 
         val recyclerView = binding.list
         
@@ -453,6 +459,86 @@ abstract class HomeActivity : AppBarActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    /**
+     * Check for updates on app startup and show popup dialog
+     */
+    private fun checkForUpdates() {
+        if (!ShizukuSettings.isAutoUpdateEnabled()) {
+            return
+        }
+
+        // Check if we've already checked today
+        val lastCheckTime = ShizukuSettings.getLastUpdateCheckTime()
+        val now = System.currentTimeMillis()
+        val oneDayInMillis = 24 * 60 * 60 * 1000L
+
+        if (now - lastCheckTime < oneDayInMillis) {
+            return
+        }
+
+        // Show checking dialog briefly
+        val checkingDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.update_checking)
+            .setCancelable(false)
+            .show()
+
+        // Check for updates in background
+        lifecycleScope.launch {
+            try {
+                val updateInfo = UpdateChecker.checkForUpdate()
+                
+                // Dismiss checking dialog
+                if (checkingDialog.isShowing) {
+                    checkingDialog.dismiss()
+                }
+
+                if (updateInfo != null) {
+                    // Update available - show popup dialog immediately
+                    ShizukuSettings.setLastUpdateCheckTime(now)
+                    showUpdateAvailableDialog(updateInfo)
+                }
+            } catch (e: Exception) {
+                Log.e("HomeActivity", "Error checking for update", e)
+                // Dismiss checking dialog on error
+                if (checkingDialog.isShowing) {
+                    checkingDialog.dismiss()
+                }
+            }
+        }
+    }
+
+    /**
+     * Show update available popup dialog
+     */
+    private fun showUpdateAvailableDialog(updateInfo: UpdateChecker.UpdateInfo) {
+        // Inflate custom layout with release notes
+        val dialogView = layoutInflater.inflate(R.layout.dialog_update_available, null)
+        val versionNameText = dialogView.findViewById<TextView>(R.id.update_version_name)
+        val publishedDateText = dialogView.findViewById<TextView>(R.id.update_published_date)
+        val releaseNotesText = dialogView.findViewById<TextView>(R.id.update_release_notes)
+
+        // Set update info
+        versionNameText.text = "Version ${updateInfo.versionName}"
+        publishedDateText.text = "Published: ${UpdateChecker.formatPublishedDate(updateInfo.publishedAt)}"
+        releaseNotesText.text = updateInfo.releaseNotes
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.update_available_title)
+            .setView(dialogView)
+            .setPositiveButton(R.string.update_download) { _, _ ->
+                val updateManager = UpdateManager(this)
+                updateManager.downloadUpdate(updateInfo.downloadUrl, updateInfo.versionName)
+            }
+            .setNegativeButton(R.string.update_later, null)
+            .setNeutralButton(R.string.update_release_notes) { _, _ ->
+                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse("https://github.com/thejaustin/ShizukuPlus/releases"))
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+            }
+            .show()
     }
 
     companion object {

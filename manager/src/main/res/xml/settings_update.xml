@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Auto Update Settings -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_update_category"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="auto_update_enabled"
+            android:title="@string/settings_auto_update_title"
+            android:summary="@string/settings_auto_update_summary"
+            android:icon="@drawable/ic_update_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="auto_install_enabled"
+            android:title="@string/settings_auto_install_title"
+            android:summary="@string/settings_auto_install_summary"
+            android:icon="@drawable/ic_install_24"
+            android:defaultValue="false"
+            android:dependency="auto_update_enabled" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <!-- Manual Check -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_update_manual_category"
+        android:defaultValue="true">
+
+        <Preference
+            android:key="check_for_update"
+            android:title="@string/settings_check_for_update_title"
+            android:summary="@string/settings_check_for_update_summary"
+            android:icon="@drawable/ic_refresh_24" />
+
+        <Preference
+            android:key="current_version"
+            android:title="@string/settings_current_version_title"
+            android:summary=""
+            android:icon="@drawable/ic_info_24"
+            android:enabled="false" />
+
+        <Preference
+            android:key="last_check_time"
+            android:title="@string/settings_last_check_title"
+            android:summary=""
+            android:icon="@drawable/ic_history_24" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+</PreferenceScreen>

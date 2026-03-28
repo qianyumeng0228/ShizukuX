@@ -100,6 +100,11 @@ public class ShizukuSettings {
         public static final String KEY_ICON_STYLE = "icon_style";
         public static final String KEY_SHAPE_STYLE = "shape_style";
         public static final String KEY_ANIMATION_INTENSITY = "animation_intensity";
+
+        // Auto Update (ShizukuX additions)
+        public static final String KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled";
+        public static final String KEY_AUTO_INSTALL_ENABLED = "auto_install_enabled";
+        public static final String KEY_LAST_UPDATE_CHECK = "last_update_check_time";
     }
 
     private static SharedPreferences sPreferences;
@@ -646,5 +651,30 @@ public class ShizukuSettings {
                 Log.e("ShizukuSettings", "failed to process document result", e);
             }
         }).start();
+    }
+
+    // Auto Update Settings (ShizukuX additions)
+    public static boolean isAutoUpdateEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_AUTO_UPDATE_ENABLED, true);
+    }
+
+    public static void setAutoUpdateEnabled(boolean enabled) {
+        getPreferences().edit().putBoolean(Keys.KEY_AUTO_UPDATE_ENABLED, enabled).apply();
+    }
+
+    public static boolean isAutoInstallEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_AUTO_INSTALL_ENABLED, false);
+    }
+
+    public static void setAutoInstallEnabled(boolean enabled) {
+        getPreferences().edit().putBoolean(Keys.KEY_AUTO_INSTALL_ENABLED, enabled).apply();
+    }
+
+    public static long getLastUpdateCheckTime() {
+        return getPreferences().getLong(Keys.KEY_LAST_UPDATE_CHECK, 0);
+    }
+
+    public static void setLastUpdateCheckTime(long time) {
+        getPreferences().edit().putLong(Keys.KEY_LAST_UPDATE_CHECK, time).apply();
     }
 }

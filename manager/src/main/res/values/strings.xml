@@ -621,4 +621,45 @@
     <string name="empty_state_title_hidden_apps">No hidden apps</string>
     <string name="empty_state_description_hidden_apps">Apps you hide from the management list will appear here.</string>
 
+    <!-- Update Settings -->
+    <string name="settings_update_category">Auto Update</string>
+    <string name="settings_update_title">Updates</string>
+    <string name="settings_update_summary">Check for app updates and configure auto-update</string>
+    <string name="settings_auto_update_title">Auto-check for updates</string>
+    <string name="settings_auto_update_summary">Automatically check for new versions on app startup</string>
+    <string name="settings_auto_install_title">Auto-install updates</string>
+    <string name="settings_auto_install_summary">Automatically download and prompt to install updates (requires permission)</string>
+    <string name="settings_update_manual_category">Manual Update</string>
+    <string name="settings_check_for_update_title">Check for update</string>
+    <string name="settings_check_for_update_summary">Manually check if a new version is available</string>
+    <string name="settings_current_version_title">Current version</string>
+    <string name="settings_last_check_title">Last checked</string>
+    <string name="update_never_checked">Never</string>
+
+    <!-- Update Notifications -->
+    <string name="update_notification_channel">Update Notifications</string>
+    <string name="update_notification_channel_description">Notifications for app update downloads and installations</string>
+    <string name="update_downloading_title">Downloading update</string>
+    <string name="update_downloading_description">Downloading ShizukuX %1$s…</string>
+    <string name="update_downloading_progress">Downloading %1$s - %2$d%%</string>
+    <string name="update_ready_title">Update ready to install</string>
+    <string name="update_ready_description">ShizukuX %1$s is ready to install</string>
+    <string name="update_install_now">Install now</string>
+    <string name="update_download_failed_title">Download failed</string>
+    <string name="update_download_failed_message">Failed to download the update. Please try again.</string>
+
+    <!-- Update Dialogs -->
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_message">A new version %1$s is available for download.</string>
+    <string name="update_download">Download</string>
+    <string name="update_later">Later</string>
+    <string name="update_release_notes">Release Notes</string>
+    <string name="update_up_to_date_title">Up to Date</string>
+    <string name="update_up_to_date_message">You\'re already using the latest version (%1$s).</string>
+    <string name="update_error_title">Check Failed</string>
+    <string name="update_error_message">Unable to check for updates. Please check your internet connection and try again.</string>
+    <string name="update_permission_required_title">Permission Required</string>
+    <string name="update_permission_required_message">To enable auto-install, please grant \"Install unknown apps\" permission in system settings.</string>
+    <string name="update_checking">Checking for updates…</string>
+
 </resources>
