@@ -11,10 +11,9 @@ import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.*
-import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import moe.shizuku.manager.home.HomeActivity
+import moe.shizuku.manager.ui.compose.activity.ComposeHomeActivity
 import moe.shizuku.manager.ktx.loge
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
@@ -236,7 +235,7 @@ class AdbPairingService : Service() {
     }
 
     private val launchIntent by unsafeLazy {
-        Intent(this, MainActivity::class.java).apply {
+        Intent(this, ComposeHomeActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK or 
                 Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -253,7 +252,7 @@ class AdbPairingService : Service() {
 
     private val startNotificationAction by unsafeLazy {
         val startIntent = Intent(launchIntent)
-            .putExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, true)
+            .putExtra(ComposeHomeActivity.EXTRA_START_SERVICE_VIA_WADB, true)
 
         val pendingIntent = PendingIntent.getActivity(
             this, startRequestId, startIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
