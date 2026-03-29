@@ -39,7 +39,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                     ShizukuSettings.setCustomApiEnabled(newValue)
                     customApiPref.isChecked = newValue
                     ShizukuSettings.syncAllPlusFeaturesToServer()
-                    updateDeveloperCategoryVisibility()
                     updateAllPlusFeatureDependencies()
                 }
             }
