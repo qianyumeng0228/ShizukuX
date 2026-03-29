@@ -141,6 +141,14 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:exported="false" />
+        
+        <!-- Compose-based Settings Activity (M3 Demo) -->
+        <activity
+            android:name=".ui.compose.activity.ComposeSettingsActivity"
+            android:exported="false"
+            android:label="@string/settings_title"
+            android:theme="@style/Theme.App" />
+        
         <activity
             android:name=".authorization.RequestPermissionActivity"
             android:directBootAware="true"
