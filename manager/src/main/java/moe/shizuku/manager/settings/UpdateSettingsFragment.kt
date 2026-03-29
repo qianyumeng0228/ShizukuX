@@ -10,6 +10,7 @@ import androidx.preference.TwoStatePreference
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.sentry.Sentry
 import kotlinx.coroutines.launch
+import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.update.UpdateChecker
@@ -108,13 +109,13 @@ class UpdateSettingsFragment : BaseSettingsFragment() {
      */
     private fun checkForUpdate(showProgress: Boolean) {
         if (showProgress) {
-            showLoadingDialog(getString(R.string.update_checking))
+            // Show a simple toast to indicate check is starting
+            android.widget.Toast.makeText(requireContext(), R.string.update_checking, android.widget.Toast.LENGTH_SHORT).show()
         }
 
         lifecycleScope.launch {
             try {
                 val updateInfo = UpdateChecker.checkForUpdate()
-                hideLoadingDialog()
 
                 if (updateInfo != null) {
                     showUpdateAvailableDialog(updateInfo)
@@ -127,7 +128,6 @@ class UpdateSettingsFragment : BaseSettingsFragment() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking for update", e)
                 Sentry.captureException(e)
-                hideLoadingDialog()
                 showErrorDialog()
             }
         }
