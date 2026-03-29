@@ -64,13 +64,12 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         val cardMarginPx = (16 * context.resources.displayMetrics.density).toInt()
         val contentPaddingPx = (8 * context.resources.displayMetrics.density).toInt()
 
-        // Fix Sentry: IllegalArgumentException Providing a LayoutTransition into RecyclerView is not supported
-        try {
-            recyclerView.layoutTransition = null
-        } catch (e: Exception) {
-            io.sentry.Sentry.captureException(e)
+        // Fix: Disable LayoutTransition to prevent IllegalArgumentException
+        // "Providing a LayoutTransition into RecyclerView is not supported"
+        recyclerView.layoutTransition = null
+        recyclerView.itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator().apply {
+            supportsChangeAnimations = false
         }
-        recyclerView.itemAnimator = androidx.recyclerview.widget.DefaultItemAnimator()
 
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)
