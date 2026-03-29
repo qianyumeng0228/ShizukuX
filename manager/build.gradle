@@ -29,7 +29,7 @@ android {
     }
     buildFeatures {
         buildConfig = true
-        viewBinding = false
+        viewBinding = true
         compose = true
         prefab = true
         aidl = true
