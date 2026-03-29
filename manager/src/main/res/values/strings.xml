@@ -621,6 +621,12 @@
     <string name="settings_update_category">Auto Update</string>
     <string name="settings_update_title">Updates</string>
     <string name="settings_update_summary">Check for app updates and configure auto-update</string>
+    
+    <!-- Developer Options -->
+    <string name="settings_developer_options">Developer Options</string>
+    <string name="settings_developer_options_summary">Virtualization, device spoofing, and experimental features</string>
+    <string name="settings_developer_category_virtualization">Virtualization</string>
+    <string name="settings_developer_category_experimental">Experimental</string>
     <string name="settings_auto_update_title">Auto-check for updates</string>
     <string name="settings_auto_update_summary">Automatically check for new versions on app startup</string>
     <string name="settings_auto_install_title">Auto-install updates</string>

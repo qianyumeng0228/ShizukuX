@@ -64,6 +64,13 @@
             android:fragment="moe.shizuku.manager.settings.RootIntegrationSettingsFragment" />
 
         <Preference
+            android:key="nav_developer"
+            android:title="@string/settings_developer_options"
+            android:summary="@string/settings_developer_options_summary"
+            android:icon="@drawable/ic_code_24dp"
+            android:fragment="moe.shizuku.manager.settings.DeveloperOptionsFragment" />
+
+        <Preference
             android:key="nav_advanced"
             android:title="@string/settings_advanced"
             android:summary="@string/settings_nav_advanced_summary"

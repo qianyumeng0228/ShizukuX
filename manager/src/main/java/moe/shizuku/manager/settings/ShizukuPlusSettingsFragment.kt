@@ -56,52 +56,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Experimental: Reveal Developer Options on long-press
-        customApiPref.setOnPreferenceClickListener {
-            // Not a long press but we can use this to reveal if it was already checked
-            updateDeveloperCategoryVisibility()
-            false
-        }
-
-        val devCategory = findPreference<androidx.preference.PreferenceCategory>("category_developer")
-        updateDeveloperCategoryVisibility()
-
-        val vectorPref = findPreference<TwoStatePreference>(KEY_VECTOR_ENABLED)
-        vectorPref?.isChecked = ShizukuSettings.isVectorEnabled()
-        vectorPref?.setOnPreferenceChangeListener { _, newValue ->
-            if (newValue is Boolean) {
-                ShizukuSettings.setVectorEnabled(newValue)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
-                updateDeveloperCategoryVisibility()
-            }
-            true
-        }
-
-        val experimentalRootPref = findPreference<TwoStatePreference>(KEY_EXPERIMENTAL_ROOT_COMPAT)
-        experimentalRootPref?.isChecked = ShizukuSettings.isExperimentalRootCompatEnabled()
-        experimentalRootPref?.setOnPreferenceChangeListener { _, newValue ->
-            if (newValue is Boolean) {
-                ShizukuSettings.setExperimentalRootCompatEnabled(newValue)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
-            }
-            true
-        }
-
-        val spoofDevicePref = findPreference<TwoStatePreference>(KEY_SPOOF_DEVICE_ENABLED)
-        spoofDevicePref?.isChecked = ShizukuSettings.isSpoofDeviceEnabled()
-        spoofDevicePref?.setOnPreferenceChangeListener { _, newValue ->
-            if (newValue is Boolean) {
-                ShizukuSettings.setSpoofDeviceEnabled(newValue)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
-            }
-            true
-        }
-
-        findPreference<androidx.preference.Preference>(KEY_SPOOF_TARGET)?.setOnPreferenceChangeListener { _, _ ->
-            ShizukuSettings.syncAllPlusFeaturesToServer()
-            true
-        }
-
         val plusKeys = listOf(
             "shell_interceptor_enabled" to "shell_interceptor",
             "avf_manager_enabled" to "avf_manager",
@@ -123,11 +77,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         // Initialize all preference dependencies
         updateAllPlusFeatureDependencies()
-    }
-
-    private fun updateDeveloperCategoryVisibility() {
-        val devCategory = findPreference<androidx.preference.PreferenceCategory>("category_developer")
-        devCategory?.isVisible = ShizukuSettings.isVectorEnabled()
     }
 
     private fun updateAllPlusFeatureDependencies() {

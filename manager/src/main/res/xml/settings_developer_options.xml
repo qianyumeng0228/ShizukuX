@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Virtual Machine Support -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_developer_category_virtualization"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="vector_enabled"
+            android:title="@string/settings_vector_title"
+            android:summary="@string/settings_vector_summary"
+            android:icon="@drawable/ic_server_24"
+            android:defaultValue="false" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <!-- Experimental Features -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_developer_category_experimental"
+        android:defaultValue="false">
+
+        <SwitchPreferenceCompat
+            android:key="experimental_root_compat"
+            android:title="@string/settings_experimental_root_title"
+            android:summary="@string/settings_experimental_root_summary"
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
+            android:key="spoof_device_enabled"
+            android:title="@string/settings_spoof_device"
+            android:summary="@string/settings_spoof_device_summary"
+            android:icon="@drawable/ic_devices_24"
+            android:defaultValue="false" />
+
+        <Preference
+            android:key="spoof_target"
+            android:title="@string/settings_spoof_target"
+            android:icon="@drawable/ic_info_24" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+</PreferenceScreen>
