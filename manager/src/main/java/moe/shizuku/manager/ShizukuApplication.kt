@@ -46,9 +46,6 @@ class ShizukuApplication : Application(), Configuration.Provider {
                         options.environment = if (BuildConfig.DEBUG) "development" else "production"
                         options.isEnableAutoSessionTracking = true
                         options.sessionTrackingIntervalMillis = 30000L
-                        
-                        // Enable beforeInit to catch earliest crashes
-                        options.isEnableBeforeSend = true
                     }
                     Log.d(TAG, "Sentry initialized early")
                 } else {
