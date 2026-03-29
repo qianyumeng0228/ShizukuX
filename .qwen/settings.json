@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit *)",
+      "Bash(python3 *)"
+    ]
+  },
+  "$version": 3
+}

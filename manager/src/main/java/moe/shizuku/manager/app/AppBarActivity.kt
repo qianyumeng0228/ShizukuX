@@ -17,19 +17,19 @@ import rikka.core.ktx.unsafeLazy
 
 abstract class AppBarActivity : AppActivity() {
 
-    protected val rootView: ViewGroup by unsafeLazy { 
-        findViewById<View>(R.id.coordinator_root) as? ViewGroup 
+    protected val rootView: ViewGroup by unsafeLazy {
+        findViewById<View>(R.id.coordinator_root) as? ViewGroup
             ?: throw IllegalStateException("rootView not found - make sure layout contains coordinator_root")
     }
 
-    protected val toolbarContainer: AppBarLayout by unsafeLazy { 
-        findViewById<View>(R.id.toolbar_container) as? AppBarLayout 
-            ?: throw IllegalStateException("toolbarContainer not found - make sure layout contains toolbar_container")
+    protected val toolbarContainer: AppBarLayout by unsafeLazy {
+        findViewById<View>(R.id.toolbar_container) as? AppBarLayout
+            ?: throw IllegalStateException("toolbarContainer not found - make sure layout contains toolbar_container. Check that your activity layout includes @layout/appbar or has an AppBarLayout with id toolbar_container")
     }
 
-    protected val toolbar: Toolbar by unsafeLazy { 
-        findViewById<View>(R.id.toolbar) as? Toolbar 
-            ?: throw IllegalStateException("toolbar not found - make sure layout contains toolbar")
+    protected val toolbar: Toolbar by unsafeLazy {
+        findViewById<View>(R.id.toolbar) as? Toolbar
+            ?: throw IllegalStateException("toolbar not found - make sure layout contains toolbar. Check that your activity layout includes @layout/appbar or has a Toolbar with id toolbar")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,6 +38,10 @@ abstract class AppBarActivity : AppActivity() {
 
         // Ensure views are available before proceeding
         try {
+            // Force lazy initialization to catch missing views early
+            toolbarContainer
+            toolbar
+            
             setSupportActionBar(toolbar)
 
             androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(toolbarContainer) { v, insets ->
@@ -45,6 +49,9 @@ abstract class AppBarActivity : AppActivity() {
                 v.setPadding(0, systemBars.top, 0, 0)
                 insets
             }
+        } catch (e: IllegalStateException) {
+            android.util.Log.e("AppBarActivity", "Layout configuration error: ${e.message}", e)
+            throw e
         } catch (e: Exception) {
             android.util.Log.e("AppBarActivity", "Failed to initialize toolbar", e)
             throw e
