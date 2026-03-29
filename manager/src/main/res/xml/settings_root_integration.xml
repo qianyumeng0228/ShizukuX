@@ -31,8 +31,8 @@
 
     <Preference
         android:key="root_compatibility_hub"
-        android:title="@string/settings_root_compatibility_hub"
-        android:summary="@string/settings_root_compatibility_hub_summary"
+        android:title="@string/settings_root_integration_hub"
+        android:summary="@string/settings_root_integration_hub_summary"
         android:icon="@drawable/ic_root_24dp" />
 
 </PreferenceScreen>
