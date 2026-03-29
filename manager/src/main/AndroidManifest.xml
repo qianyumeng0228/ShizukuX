@@ -128,10 +128,6 @@
             android:exported="false"
             android:label="@string/home_terminal_title" />
         <activity
-            android:name=".settings.SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title" />
-        <activity
             android:name=".starter.StarterActivity"
             android:exported="true"
             android:label="@string/starter">
