@@ -203,6 +203,6 @@ fun m3eColorScheme(): androidx.compose.material3.ColorScheme {
  * Get the current M3E shape for medium containers (cards, list items)
  */
 @Composable
-fun m3eMediumShape(): androidx.compose.foundation.shape.RoundedCornerShape {
+fun m3eMediumShape(): androidx.compose.foundation.shape.CornerBasedShape {
     return MaterialTheme.shapes.medium
 }

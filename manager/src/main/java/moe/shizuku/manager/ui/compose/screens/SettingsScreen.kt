@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Verified
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -38,16 +39,17 @@ import moe.shizuku.manager.ui.compose.components.SettingsSpacer
 
 /**
  * M3-compliant Settings Screen
- * 
+ *
  * Architectural decisions:
  * - LazyColumn for efficient rendering of long lists
  * - M3 Shape Tokens: shapes.medium (12dp) for cards
  * - M3 Iconography: Icons.Outlined from material-icons-extended
  * - M3 Grid: 16dp horizontal padding, 8dp vertical spacing between items
  * - M3 Colors: surfaceVariant for cards, onSurfaceVariant for icons
- * 
+ *
  * Sections follow M3 grouping guidelines with clear visual hierarchy
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onNavigateToBehavior: () -> Unit,
