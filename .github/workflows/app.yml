@@ -210,7 +210,8 @@ jobs:
           path: files
 
       - name: Create Sentry Release with Commits
-        if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
+        if: ${{ github.event_name == 'push' && secrets.SENTRY_AUTH_TOKEN != '' }}
+        continue-on-error: true
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: af-developments
