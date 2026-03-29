@@ -120,7 +120,7 @@
         <activity
             android:name=".settings.RootCompatibilityActivity"
             android:exported="false"
-            android:label="@string/root_hub_title" />
+            android:label="@string/su_bridge_title" />
         <activity
             android:name=".settings.ServiceDoctorActivity"
             android:exported="false"
