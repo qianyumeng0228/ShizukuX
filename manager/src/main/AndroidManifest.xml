@@ -75,8 +75,9 @@
         <meta-data android:name="io.sentry.attach-screenshot" android:value="true" />
         <meta-data android:name="io.sentry.attach-view-hierarchy" android:value="true" />
 
+        <!-- Main launcher activity - Compose with M3E -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.compose.activity.ComposeHomeActivity"
             android:banner="@mipmap/banner"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
@@ -95,6 +96,12 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+        
+        <!-- Legacy MainActivity - kept for compatibility -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.App" />
         <activity
             android:name=".onboarding.OnboardingActivity"
             android:exported="false"
