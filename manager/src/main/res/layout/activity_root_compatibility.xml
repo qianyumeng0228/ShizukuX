@@ -16,7 +16,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="@string/root_hub_title" />
+            app:title="@string/su_bridge_title" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -50,7 +50,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/root_hub_global_config_title"
+                        android:text="@string/su_bridge_global_config_title"
                         android:textAppearance="?textAppearanceTitleMedium"
                         android:textColor="?attr/colorPrimary" />
 
@@ -58,7 +58,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="@string/root_hub_global_config_desc"
+                        android:text="@string/su_bridge_global_config_desc"
                         android:textAppearance="?textAppearanceBodySmall" />
 
                     <TextView
@@ -85,7 +85,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:layout_marginEnd="8dp"
-                            android:text="@string/root_hub_copy_path" />
+                            android:text="@string/su_bridge_copy_path" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_setup_all"
@@ -93,7 +93,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/root_hub_setup_all" />
+                            android:text="@string/su_bridge_setup_all" />
 
                     </LinearLayout>
 
@@ -120,7 +120,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/root_hub_device_identity_title"
+                        android:text="@string/su_bridge_device_identity_title"
                         android:textAppearance="?textAppearanceTitleMedium"
                         android:textColor="?attr/colorPrimary" />
 
@@ -160,14 +160,14 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/root_hub_description"
+                        android:text="@string/su_bridge_description"
                         android:textAppearance="?textAppearanceBodyMedium" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="@string/root_hub_how_to_use"
+                        android:text="@string/su_bridge_how_to_use"
                         android:textAppearance="?textAppearanceTitleSmall"
                         android:textColor="?attr/colorPrimary" />
 
@@ -175,28 +175,28 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="@string/root_hub_step_1"
+                        android:text="@string/su_bridge_step_1"
                         android:textAppearance="?textAppearanceBodySmall" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/root_hub_step_2"
+                        android:text="@string/su_bridge_step_2"
                         android:textAppearance="?textAppearanceBodySmall" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/root_hub_step_3"
+                        android:text="@string/su_bridge_step_3"
                         android:textAppearance="?textAppearanceBodySmall" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="@string/root_hub_step_4"
+                        android:text="@string/su_bridge_step_4"
                         android:textAppearance="?textAppearanceBodySmall" />
 
                 </LinearLayout>
@@ -221,7 +221,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/root_hub_su_path_label"
+                        android:text="@string/su_bridge_su_path_label"
                         android:textAppearance="?textAppearanceLabelMedium"
                         android:textColor="?attr/colorOnSecondaryContainer" />
 
@@ -245,7 +245,7 @@
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/root_hub_copy_path" />
+                            android:text="@string/su_bridge_copy_path" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/magic_setup_all_button"
@@ -253,7 +253,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:text="@string/root_hub_magic_setup_all"
+                            android:text="@string/su_bridge_magic_setup_all"
                             app:icon="@drawable/ic_server_ok_24dp"
                             app:iconPadding="8dp" />
 
@@ -266,14 +266,14 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/root_hub_suggested_apps"
+                android:text="@string/su_bridge_suggested_apps"
                 android:textAppearance="?textAppearanceTitleMedium"
                 android:layout_marginBottom="4dp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/root_hub_suggested_apps_desc"
+                android:text="@string/su_bridge_suggested_apps_desc"
                 android:textAppearance="?textAppearanceBodySmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:layout_marginBottom="12dp" />
@@ -289,7 +289,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="@string/root_hub_active_sessions"
+                android:text="@string/su_bridge_active_sessions"
                 android:textAppearance="?textAppearanceTitleMedium"
                 android:layout_marginBottom="8dp" />
 
@@ -297,7 +297,7 @@
                 android:id="@+id/active_sessions_empty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/root_hub_active_sessions_empty"
+                android:text="@string/su_bridge_active_sessions_empty"
                 android:textAppearance="?textAppearanceBodyMedium"
                 android:gravity="center"
                 android:padding="32dp"

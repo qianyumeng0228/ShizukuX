@@ -113,7 +113,7 @@
                     android:insetBottom="0dp"
                     android:paddingHorizontal="12dp"
                     android:textSize="12sp"
-                    android:text="@string/root_hub_copy_open"
+                    android:text="@string/su_bridge_copy_open"
                     android:visibility="gone"
                     tools:visibility="visible" />
 
@@ -127,7 +127,7 @@
                     android:insetBottom="0dp"
                     android:paddingHorizontal="12dp"
                     android:textSize="12sp"
-                    android:text="@string/root_hub_magic_setup"
+                    android:text="@string/su_bridge_magic_setup"
                     android:visibility="gone"
                     app:icon="@drawable/ic_server_ok_24dp"
                     app:iconPadding="4dp"

@@ -73,9 +73,9 @@ class RootCompatibilityActivity : AppBarActivity() {
                 lifecycleScope.launch {
                     val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
                     if (count > 0) {
-                        Toast.makeText(this@RootCompatibilityActivity, getString(R.string.root_hub_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@RootCompatibilityActivity, getString(R.string.su_bridge_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
                     } else {
-                        Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -86,7 +86,7 @@ class RootCompatibilityActivity : AppBarActivity() {
         // Device Identity Card
         val realModel = android.os.Build.MODEL
         val realManufacturer = android.os.Build.MANUFACTURER
-        binding.deviceIdentityReal.text = getString(R.string.root_hub_device_identity_real, "$realManufacturer $realModel")
+        binding.deviceIdentityReal.text = getString(R.string.su_bridge_device_identity_real, "$realManufacturer $realModel")
         
         if (ShizukuSettings.isSpoofDeviceEnabled()) {
             val target = ShizukuSettings.getSpoofTarget()
@@ -99,10 +99,10 @@ class RootCompatibilityActivity : AppBarActivity() {
                 "nothing_phone_2" -> "Nothing Phone (2)"
                 else -> target
             }
-            binding.deviceIdentitySpoofed.text = getString(R.string.root_hub_device_identity_spoofed, targetFriendly)
+            binding.deviceIdentitySpoofed.text = getString(R.string.su_bridge_device_identity_spoofed, targetFriendly)
             binding.deviceIdentitySpoofed.setTextColor(MaterialColors.getColor(this, R.attr.colorPrimary, Color.BLUE))
         } else {
-            binding.deviceIdentitySpoofed.text = getString(R.string.root_hub_device_identity_spoofed, getString(R.string.root_hub_device_identity_none))
+            binding.deviceIdentitySpoofed.text = getString(R.string.su_bridge_device_identity_spoofed, getString(R.string.su_bridge_device_identity_none))
             binding.deviceIdentitySpoofed.setTextColor(MaterialColors.getColor(this, R.attr.colorOnSurfaceVariant, Color.GRAY))
         }
 
@@ -210,7 +210,7 @@ class RootCompatibilityActivity : AppBarActivity() {
     private fun copyToClipboard(text: String) {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         cm.setPrimaryClip(ClipData.newPlainText("su path", text))
-        Toast.makeText(this, R.string.root_hub_path_copied, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.su_bridge_path_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun launchOrStore(pkg: String) {
@@ -301,7 +301,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 holder.binding.switchWidget.visibility = View.GONE
                 holder.binding.checkbox.visibility = View.GONE
 
-                val navHint = metadata?.suPathSettingNav ?: this@RootCompatibilityActivity.getString(R.string.root_hub_default_nav_hint)
+                val navHint = metadata?.suPathSettingNav ?: this@RootCompatibilityActivity.getString(R.string.su_bridge_default_nav_hint)
                 holder.binding.suPathNav.text = navHint
                 holder.binding.suPathNav.visibility = View.VISIBLE
                 
@@ -312,7 +312,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                         copyToClipboard(path)
                         launchOrStore(pkg)
                     } else {
-                        Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_no_export, Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -330,16 +330,16 @@ class RootCompatibilityActivity : AppBarActivity() {
                     holder.binding.suMagicSetup.setOnClickListener {
                         val path = resolvedSuPath
                         if (path == null) {
-                            Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_no_export, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
                             return@setOnClickListener
                         }
                         lifecycleScope.launch {
                             val success = RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, path)
                             if (success) {
-                                Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.root_hub_magic_setup_success, holder.binding.title.text), Toast.LENGTH_LONG).show()
+                                Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.su_bridge_magic_setup_success, holder.binding.title.text), Toast.LENGTH_LONG).show()
                                 launchOrStore(pkg)
                             } else {
-                                Toast.makeText(this@RootCompatibilityActivity, R.string.root_hub_magic_setup_fail, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_fail, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
