@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import moe.shizuku.manager.Helps
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.management.AppsViewModel
 import moe.shizuku.manager.settings.SettingsActivity
@@ -66,14 +67,8 @@ class ComposeHomeActivity : ComponentActivity() {
                         startActivity(Intent(this, moe.shizuku.manager.management.ApplicationManagementActivity::class.java))
                     },
                     onAdbClick = {
-                        // Show ADB dialog - using legacy fragment for now
-                        try {
-                            val dialog = moe.shizuku.manager.home.AdbDialogFragment()
-                            dialog.show(supportFragmentManager, "adb")
-                        } catch (e: Exception) {
-                            // Fallback: start ADB activity
-                            startActivity(Intent(this, moe.shizuku.manager.starter.StarterActivity::class.java))
-                        }
+                        // Start ADB activity directly
+                        startActivity(Intent(this, moe.shizuku.manager.starter.StarterActivity::class.java))
                     },
                     onTerminalClick = {
                         startActivity(Intent(this, moe.shizuku.manager.shell.ShellTutorialActivity::class.java))
@@ -82,7 +77,7 @@ class ComposeHomeActivity : ComponentActivity() {
                         // Navigate to automation
                     },
                     onLearnMoreClick = {
-                        moe.shizuku.manager.Helps.openHelp(this, null)
+                        Helps.openUrl(this, Helps.getHelpUrl(null))
                     },
                     onActivityLogClick = {
                         startActivity(Intent(this, moe.shizuku.manager.settings.ActivityLogActivity::class.java))
@@ -143,11 +138,17 @@ class HomeViewModel : ViewModel() {
                     null
                 }
                 val mode = if (isRunning) {
-                    if (Shizuku.getServerState().uid == 0) "Root" else "ADB"
+                    // Check if running as root (uid 0) or ADB (uid 2000)
+                    try {
+                        val uid = Shizuku.getUid()
+                        if (uid == 0) "Root" else "ADB"
+                    } catch (e: Exception) {
+                        "Unknown"
+                    }
                 } else {
                     null
                 }
-                
+
                 _uiState.value = HomeUiState(
                     isServiceRunning = isRunning,
                     serviceVersion = version,

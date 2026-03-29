@@ -56,7 +56,7 @@ class ComposeSettingsActivity : ComponentActivity() {
                     // Feature toggles - connected to ShizukuSettings
                     isWatchdogEnabled = ShizukuSettings.getWatchdog(),
                     onWatchdogToggle = { enabled ->
-                        ShizukuSettings.setWatchdog(enabled)
+                        ShizukuSettings.setWatchdog(this, enabled)
                     },
                     isAutoStartEnabled = ShizukuSettings.getPreferences()
                         .getBoolean("start_on_boot", true),

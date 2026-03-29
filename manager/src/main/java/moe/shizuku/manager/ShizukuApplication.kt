@@ -95,6 +95,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
         ActivityLogManager.initialize(this)
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
+        
+        // Initialize Starter with context
+        moe.shizuku.manager.starter.Starter.initialize(this)
 
         if (ShizukuSettings.getWatchdog()) {
             WatchdogService.start(this)
