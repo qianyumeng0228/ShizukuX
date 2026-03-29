@@ -209,6 +209,42 @@ jobs:
           name: ${{ needs.build.outputs.artifactName }}
           path: files
 
+      - name: Create Sentry Release with Commits
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: af-developments
+          SENTRY_PROJECT: shizukuplus
+          VERSION: ${{ env.VERSION }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # Install sentry-cli
+          curl -sL https://sentry.io/get-cli/ | bash
+          
+          # Get the last release tag (or use HEAD~1 if no tags exist)
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "HEAD~1")
+          
+          # Create Sentry release with commit data
+          echo "Creating Sentry release $VERSION (from $LAST_TAG)..."
+          sentry-cli releases new "$VERSION" \
+            --org "$SENTRY_ORG" \
+            --project "$SENTRY_PROJECT" \
+            --url "https://github.com/${{ github.repository }}"
+          
+          # Associate commits with the release
+          sentry-cli releases set-commits "$VERSION" \
+            --org "$SENTRY_ORG" \
+            --project "$SENTRY_PROJECT" \
+            --auto \
+            --ignore-missing \
+            --local
+          
+          # Add deploy information
+          sentry-cli releases deploys "$VERSION" new \
+            --org "$SENTRY_ORG" \
+            --project "$SENTRY_PROJECT" \
+            --env production
+
       - name: Create Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -227,4 +263,21 @@ jobs:
             gh release delete "$TAG_NAME" --yes
           fi
 
-          gh release create "$TAG_NAME" files/*.apk $FLAGS --title "Release $VERSION" --notes "Automated release for version $VERSION"
+          # Get commit count since last release for release notes
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" $LAST_TAG..HEAD 2>/dev/null | head -20)
+          else
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" -20 2>/dev/null)
+          fi
+          
+          # Create release with changelog
+          gh release create "$TAG_NAME" files/*.apk $FLAGS --title "Release $VERSION" --notes "## Changes in $VERSION
+
+$CHANGELOG
+
+## Installation
+Download and install the APK from the assets below.
+
+## Sentry Integration
+This release is tracked in Sentry at: https://af-developments.sentry.io/projects/shizukuplus/releases/$VERSION/"

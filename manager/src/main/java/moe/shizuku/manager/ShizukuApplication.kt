@@ -49,20 +49,56 @@ class ShizukuApplication : Application(), Configuration.Provider {
             Log.w(TAG, "Sentry DSN is empty, skipping initialization")
             return
         }
-        
+
         try {
             SentryAndroid.init(this) { options ->
                 options.dsn = BuildConfig.SENTRY_DSN
+                
+                // Attach visual context for better debugging
                 options.isAttachScreenshot = true
                 options.isAttachViewHierarchy = true
+                
+                // ANR detection
                 options.isAnrEnabled = true
-                options.tracesSampleRate = 1.0
+                options.anrTimeoutIntervalMillis = 5000L
+                
+                // Performance monitoring (sampled)
+                options.tracesSampleRate = 0.2 // 20% sampling for production
+                options.profilesSampleRate = 0.1 // 10% profiling
+                
+                // Release tracking with GitHub integration
                 options.release = "shizuku-plus@${BuildConfig.VERSION_NAME}"
                 options.environment = if (BuildConfig.DEBUG) "development" else "production"
+                options.dist = "${BuildConfig.VERSION_CODE}"
+                
+                // Session tracking for crash-free rate
                 options.isEnableAutoSessionTracking = true
                 options.sessionTrackingIntervalMillis = 30000L
+                
+                // Include breadcrumbs for navigation tracking
+                options.maxBreadcrumbs = 100
+                
+                // Send default PII (for device info, not user data)
+                options.sendDefaultPii = false
+                
+                // Enable NDK crash reporting
+                options.isEnableNdk = true
+                
+                // Add context about the app
+                options.setBeforeSend { event, hint ->
+                    // Add build config info to events
+                    event.setTag("version_name", BuildConfig.VERSION_NAME)
+                    event.setTag("version_code", BuildConfig.VERSION_CODE.toString())
+                    event.setTag("build_type", if (BuildConfig.DEBUG) "debug" else "release")
+                    event
+                }
             }
-            Log.d(TAG, "Sentry initialized early")
+            
+            // Set user context (anonymous, for crash grouping)
+            Sentry.setUser(null) // Anonymous user
+            Sentry.setTag("app_variant", BuildConfig.VERSION_NAME)
+            
+            Log.d(TAG, "Sentry initialized with release tracking")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize Sentry early", e)
             // Don't throw - allow app to continue even if Sentry fails
