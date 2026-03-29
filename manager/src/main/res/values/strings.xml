@@ -353,8 +353,9 @@
     <string name="settings_spoof_device_summary">Return a generic device identity for system property queries. Unstable.</string>
     <string name="settings_spoof_target">Target Device</string>
 
-    <!-- Legacy Compatibility -->
-    <string name="settings_category_legacy_compatibility">Legacy App Compatibility</string>
+    <!-- Root Integration (renamed from Legacy Compatibility) -->
+    <string name="settings_category_root_integration">Root Integration</string>
+    <string name="settings_nav_root_integration_summary">SU bridge, ADB proxy, and root session management</string>
     <string name="settings_adb_proxy">Local ADB Proxy Server</string>
     <string name="settings_adb_proxy_summary">Emulate an ADB server on port 15555 to support apps requiring Wireless ADB without keeping the system feature active.</string>
     <string name="settings_on_device_adb_tcp">On-device ADB over TCP</string>
@@ -363,41 +364,36 @@
     <string name="settings_force_start_wadb_summary">Attempt to start Shizuku via ADB TCP even if Wi-Fi is disconnected. Useful for local loopback or mobile data ADB.</string>
     <string name="settings_fake_su">SU Bridge (su wrapper)</string>
     <string name="settings_fake_su_summary">Provide a Shizuku-backed \'su\' binary for legacy root apps that support custom paths.</string>
-    <string name="settings_root_compatibility_hub">Root Compatibility Hub</string>
-    <string name="settings_root_compatibility_hub_summary">Configure and manage legacy root apps to work with ShizukuX privileges.</string>
-    <string name="root_hub_title">Root Compatibility</string>
-    <string name="root_hub_description">Many legacy apps are built strictly for root access. ShizukuX can "trick" these apps into using its privileges by providing a su bridge binary.</string>
-    <string name="root_hub_suggested_apps">Suggested Apps</string>
-    <string name="root_hub_suggested_apps_desc">These apps are known to allow custom SU paths. Point them to your exported \'su\' script.</string>
-    <string name="root_hub_active_sessions">Active Root Sessions</string>
-    <string name="root_hub_active_sessions_empty">No active legacy root sessions detected.</string>
-    <string name="root_hub_global_config_title">Global SU Setup</string>
-    <string name="root_hub_global_config_desc">Use this path for all apps. Automatic setup will try to configure supported apps for you.</string>
-    <string name="root_hub_setup_all">Setup All</string>
-    <string name="root_hub_setup_all_success">Automatic setup attempted for all compatible apps.</string>
-    <string name="root_hub_device_identity_title">Device Identity</string>
-    <string name="root_hub_device_identity_real">Real: %s</string>
-    <string name="root_hub_device_identity_spoofed">Spoofed: %s</string>
-    <string name="root_hub_device_identity_none">None (Real device shown)</string>
-    <string name="root_hub_how_to_use">How to use:</string>
-    <string name="root_hub_step_1">1. Export Shizuku files from the Home screen.</string>
-    <string name="root_hub_step_2">2. In your root app, look for "SU Path" or "Binary Path" in its settings.</string>
-    <string name="root_hub_step_3">3. Change it to the path of the exported \'su\' file.</string>
-    <string name="root_hub_step_4">4. For apps without a custom path setting, enable "SU Bridge" in ShizukuX settings. This automatically redirects many legacy su calls.</string>
-    <string name="root_hub_app_instruction">Set path in Settings > %s</string>
-    <string name="root_hub_su_path_label">Exported su path</string>
-    <string name="root_hub_copy_path">Copy path</string>
-    <string name="root_hub_default_nav_hint">Set custom SU path in app settings</string>
-    <string name="root_hub_path_copied">SU path copied to clipboard</string>
-
-    <string name="root_hub_magic_setup">Magic Setup</string>
-    <string name="root_hub_magic_setup_success">Magic Setup completed! ShizukuX has configured %s for you.</string>
-    <string name="root_hub_magic_setup_fail">Magic Setup failed. Please use manual copy path instead.</string>
-    <string name="root_hub_magic_setup_all">Magic Setup All</string>
-    <string name="root_hub_magic_setup_all_summary">ShizukuX configured %d apps for you!</string>
-    <string name="root_hub_magic_setup_all_no_apps">No supported root apps found for automation.</string>
-    <string name="root_hub_copy_open">Copy path &amp; open</string>
-    <string name="root_hub_no_export">No SU path set. Export Shizuku files first from the Home screen.</string>
+    <string name="settings_root_integration_hub">Root Integration Hub</string>
+    <string name="settings_root_integration_hub_summary">Configure and manage root apps to work with ShizukuX privileges.</string>
+    <string name="su_bridge_title">SU Bridge</string>
+    <string name="su_bridge_description">Provide root access to apps that don\'t support Shizuku by creating a custom \'su\' binary.</string>
+    <string name="su_bridge_suggested_apps">Suggested Apps</string>
+    <string name="su_bridge_suggested_apps_desc">These apps support custom SU paths. Point them to your exported \'su\' script.</string>
+    <string name="su_bridge_active_sessions">Active Sessions</string>
+    <string name="su_bridge_active_sessions_empty">No active root sessions detected.</string>
+    <string name="su_bridge_global_config_title">Global Configuration</string>
+    <string name="su_bridge_global_config_desc">Set a custom path for the SU bridge script. Apps will execute this path when requesting root.</string>
+    <string name="su_bridge_setup_all">Setup All</string>
+    <string name="su_bridge_setup_all_success">Automatic setup attempted for all compatible apps.</string>
+    <string name="su_bridge_magic_setup">Magic Setup</string>
+    <string name="su_bridge_magic_setup_success">Magic Setup completed! ShizukuX has configured %s for you.</string>
+    <string name="su_bridge_magic_setup_fail">Magic Setup failed. Please use manual copy path instead.</string>
+    <string name="su_bridge_magic_setup_all">Magic Setup All</string>
+    <string name="su_bridge_magic_setup_all_summary">ShizukuX configured %d apps for you!</string>
+    <string name="su_bridge_magic_setup_all_no_apps">No supported root apps found for automation.</string>
+    <string name="su_bridge_copy_open">Copy path &amp; open</string>
+    <string name="su_bridge_no_export">No SU path set. Export Shizuku files first from the Home screen.</string>
+    <string name="su_bridge_how_to_use">How to use:</string>
+    <string name="su_bridge_step_1">1. Export Shizuku files from the Home screen.</string>
+    <string name="su_bridge_step_2">2. In your root app, look for "SU Path" or "Binary Path" in its settings.</string>
+    <string name="su_bridge_step_3">3. Change it to the path of the exported \'su\' file.</string>
+    <string name="su_bridge_step_4">4. For apps without a custom path setting, enable "SU Bridge" in ShizukuX settings. This automatically redirects many legacy su calls.</string>
+    <string name="su_bridge_app_instruction">Set path in Settings > %s</string>
+    <string name="su_bridge_path_label">Exported su path</string>
+    <string name="su_bridge_copy_path">Copy path</string>
+    <string name="su_bridge_default_nav_hint">Set custom SU path in app settings</string>
+    <string name="su_bridge_path_copied">SU path copied to clipboard</string>
 
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">First, please do the following:</string>

@@ -13,10 +13,16 @@ import moe.shizuku.manager.service.AdbProxyService
 import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
-class LegacyCompatSettingsFragment : BaseSettingsFragment() {
+/**
+ * Root Integration Settings
+ * 
+ * Provides SU Bridge and ADB proxy features to integrate root access
+ * with apps that don't natively support Shizuku.
+ */
+class RootIntegrationSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        setPreferencesFromResource(R.xml.settings_legacy_compat, rootKey)
+        setPreferencesFromResource(R.xml.settings_root_integration, rootKey)
         val context = requireContext()
 
         // Sync current su_bridge state to server on fragment open

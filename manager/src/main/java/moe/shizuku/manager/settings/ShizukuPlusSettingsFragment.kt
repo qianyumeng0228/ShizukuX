@@ -133,7 +133,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     private fun updateAllPlusFeatureDependencies() {
         val customApiEnabled = ShizukuSettings.isCustomApiEnabled()
         val hideDisabled = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
-        
+
         // Update all preferences that depend on custom_api_enabled
         updatePreferenceDependency("shell_interceptor_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("avf_manager_enabled", customApiEnabled, hideDisabled)
@@ -142,10 +142,16 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
-        
+
         // These also depend on window_manager_plus_enabled
         val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
         updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerPlusEnabled, hideDisabled)
+        
+        // Fix scrolling: Force RecyclerView to recalculate layout after hiding/showing items
+        listView?.post {
+            listView?.requestLayout()
+            listView?.invalidate()
+        }
     }
 
     private fun updatePreferenceDependency(prefKey: String, parentEnabled: Boolean, hideIfDisabled: Boolean = false) {
