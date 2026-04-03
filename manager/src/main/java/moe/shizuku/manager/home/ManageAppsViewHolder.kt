@@ -37,18 +37,7 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
 
     override fun onBind() {
         val context = itemView.context
-
-        // Handle Expressive Shapes
-        if (moe.shizuku.manager.ShizukuSettings.isExpressiveShapesEnabled()) {
-            val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
-            val bgRes = when (shapeStyle) {
-                "zen" -> R.drawable.shape_expressive_leaf_background
-                else -> R.drawable.shape_circle_icon_background
-            }
-            iconView.setBackgroundResource(bgRes)
-        } else {
-            iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
-        }
+        iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
 
         if (!data.first.isRunning) {
             itemView.isEnabled = false

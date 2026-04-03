@@ -121,13 +121,14 @@ abstract class HomeActivity : AppBarActivity() {
                 if (status.isRunning && !wasRunning && ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     binding.list.post {
                         val view = binding.list
+                        val statusCard = view.findViewHolderForAdapterPosition(0)?.itemView
                         val cx = view.width / 2
-                        val cy = 100 // Approximate position of the status card
-                        val finalRadius = Math.hypot(cx.toDouble(), view.height.toDouble()).toFloat()
+                        val cy = statusCard?.let { it.top + it.height / 2 } ?: 100
+                        val finalRadius = Math.hypot(view.width.toDouble(), view.height.toDouble()).toFloat()
                         
                         android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
-                            duration = 800
-                            interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+                            duration = 600
+                            interpolator = androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
                             start()
                         }
                     }
@@ -188,14 +189,11 @@ abstract class HomeActivity : AppBarActivity() {
 
         val recyclerView = binding.list
         
-        // Responsive Grid for Large Screens and DeX
-        val spanCount = if (resources.configuration.screenWidthDp >= 600 || resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) 2 else 1
+        // Force single column for original Shizuku look
+        val spanCount = 1
         val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
         layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                // The status card (position 0) always takes full width for visibility
-                return if (position == 0) spanCount else 1
-            }
+            override fun getSpanSize(position: Int): Int = 1
         }
         recyclerView.layoutManager = layoutManager
 
@@ -262,10 +260,15 @@ abstract class HomeActivity : AppBarActivity() {
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     adapter.isDragging = true
                     if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                        // Samsung S22U specific: Use high-end GESTURE_START if on newer SDK
                         val haptic = if (Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.GESTURE_START else android.view.HapticFeedbackConstants.LONG_PRESS
                         viewHolder?.itemView?.performHapticFeedback(haptic)
-                        viewHolder?.itemView?.animate()?.scaleX(1.05f)?.scaleY(1.05f)?.setDuration(150)?.start()
+                        viewHolder?.itemView?.animate()
+                            ?.scaleX(1.04f)
+                            ?.scaleY(1.04f)
+                            ?.translationZ(16f)
+                            ?.setDuration(200)
+                            ?.setInterpolator(android.view.animation.DecelerateInterpolator())
+                            ?.start()
                     }
                 } else if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
                     adapter.isDragging = false
@@ -278,7 +281,13 @@ abstract class HomeActivity : AppBarActivity() {
                 super.clearView(rv, vh)
                 adapter.isDragging = false
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    vh.itemView.animate().scaleX(1f).scaleY(1f).setDuration(150).start()
+                    vh.itemView.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .translationZ(0f)
+                        .setDuration(250)
+                        .setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
+                        .start()
                 }
                 adapter.persistCardOrder()
                 adapter.updateData()
@@ -295,9 +304,11 @@ abstract class HomeActivity : AppBarActivity() {
             override fun handleOnBackProgressed(backEvent: androidx.activity.BackEventCompat) {
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     val progress = backEvent.progress
-                    val scale = 1f - (0.1f * progress)
+                    // Subtle parabolic scale and alpha for more "physical" feel
+                    val scale = 1f - (0.08f * progress * progress)
                     recyclerView.scaleX = scale
                     recyclerView.scaleY = scale
+                    recyclerView.alpha = 1f - (0.15f * progress)
                 }
             }
             
@@ -305,14 +316,26 @@ abstract class HomeActivity : AppBarActivity() {
                 if (HomeEditMode.isActive) {
                     HomeEditMode.exit()
                     if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                        recyclerView.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(android.view.animation.OvershootInterpolator()).start()
+                        recyclerView.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .alpha(1f)
+                            .setDuration(400)
+                            .setInterpolator(androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f))
+                            .start()
                     }
                 }
             }
             
             override fun handleOnBackCancelled() {
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    recyclerView.animate().scaleX(1f).scaleY(1f).setDuration(300).setInterpolator(android.view.animation.OvershootInterpolator()).start()
+                    recyclerView.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .alpha(1f)
+                        .setDuration(300)
+                        .setInterpolator(android.view.animation.DecelerateInterpolator())
+                        .start()
                 }
             }
         }

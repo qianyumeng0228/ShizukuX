@@ -44,11 +44,23 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
             itemView.setOnHoverListener { v, event ->
                 when (event.action) {
                     android.view.MotionEvent.ACTION_HOVER_ENTER -> {
-                        v.animate().scaleX(1.02f).scaleY(1.02f).translationZ(8f).setDuration(200).start()
+                        v.animate()
+                            .scaleX(1.015f)
+                            .scaleY(1.015f)
+                            .translationZ(6f)
+                            .setDuration(150)
+                            .setInterpolator(android.view.animation.DecelerateInterpolator())
+                            .start()
                         true
                     }
                     android.view.MotionEvent.ACTION_HOVER_EXIT -> {
-                        v.animate().scaleX(1f).scaleY(1f).translationZ(0f).setDuration(200).start()
+                        v.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .translationZ(0f)
+                            .setDuration(150)
+                            .setInterpolator(android.view.animation.AccelerateInterpolator())
+                            .start()
                         true
                     }
                     else -> false
@@ -57,39 +69,25 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         }
 
         logButton.visibility = if (ok && moe.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
+        logButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
         logButton.setOnClickListener {
             context.startActivity(android.content.Intent(context, moe.shizuku.manager.settings.ActivityLogActivity::class.java))
         }
 
-        // Expressive M3 status-based styling
-        val colorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
-        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
+        // Simplify: Remove modern hover effect and expressive styling for original look
+        val okColor = ContextCompat.getColor(context, R.color.status_ok)
+        val errorColor = ContextCompat.getColor(context, R.color.status_error)
+        val bgColor = if (ok) okColor else errorColor
         
-        // Handle Expressive Shapes
-        if (moe.shizuku.manager.ShizukuSettings.isExpressiveShapesEnabled()) {
-            val shapeStyle = moe.shizuku.manager.ShizukuSettings.getShapeStyle()
-            val bgRes = when (shapeStyle) {
-                "zen" -> R.drawable.shape_droplet_background
-                else -> R.drawable.shape_circle_icon_background // Use circle as default if rikka_rect is missing
-            }
-            iconView.setBackgroundResource(bgRes)
-        } else {
-            iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
-        }
-
-        val typedValue = android.util.TypedValue()
-        context.theme.resolveAttribute(colorAttr, typedValue, true)
-        cardView.setCardBackgroundColor(typedValue.data)
+        cardView.setCardBackgroundColor(bgColor)
         
-        context.theme.resolveAttribute(onColorAttr, typedValue, true)
-        val onColor = typedValue.data
-        textView.setTextColor(onColor)
-        summaryView.setTextColor(onColor)
-        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(onColor)
+        val textColor = ContextCompat.getColor(context, android.R.color.white)
+        textView.setTextColor(textColor)
+        summaryView.setTextColor(textColor)
         
-        val iconColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
-        context.theme.resolveAttribute(iconColorAttr, typedValue, true)
-        iconView.imageTintList = android.content.res.ColorStateList.valueOf(typedValue.data)
+        iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(textColor)
+        iconView.imageTintList = android.content.res.ColorStateList.valueOf(bgColor)
 
         val isRoot = status.uid == 0
         val apiVersion = status.apiVersion

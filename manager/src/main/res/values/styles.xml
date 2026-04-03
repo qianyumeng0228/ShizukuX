@@ -50,15 +50,14 @@
         <item name="android:layout_width">48dp</item>
         <item name="android:layout_height">48dp</item>
         <item name="android:padding">12dp</item>
-        <item name="android:background">@drawable/shape_expressive_leaf_background</item>
-        <item name="android:tint">?colorOnTertiaryContainer</item>
+        <item name="android:background">@drawable/shape_circle_icon_background</item>
+        <item name="android:tint">?colorOnSurface</item>
         <item name="android:tintMode">src_in</item>
-        <item name="android:backgroundTint">?colorTertiaryContainer</item>
+        <item name="android:backgroundTint">?colorSurfaceContainerHigh</item>
         <item name="android:backgroundTintMode">src_in</item>
     </style>
 
-    <style name="CardIcon.Droplet">
-        <item name="android:background">@drawable/shape_droplet_background</item>
+    <style name="CardIcon.Droplet" parent="CardIcon">
     </style>
 
     <style name="GrantPermissions" parent="Theme.Material3Expressive.Dark.Shizuku">
