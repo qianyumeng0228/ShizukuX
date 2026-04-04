@@ -89,7 +89,7 @@ jobs:
           echo "$VERSION" > version.txt
 
           export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
-          eval $CMD --stacktrace --info
+          eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease
           
           FILE=$(ls "$APK_DIR"/*.apk)
           ARTIFACT_NAME="shizuku_plus.apk"
@@ -104,6 +104,12 @@ jobs:
           echo "artifactName=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
           echo "versionName=${VERSION}" >> $GITHUB_OUTPUT
           echo "filePath=${RENAMED}" >> $GITHUB_OUTPUT
+
+      - name: Upload Sentry Debug Symbols
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' && env.IS_DEBUG == 'false' }}
+        continue-on-error: true
+        run: |
+          ./gradlew :manager:uploadSentryProguardMappingsRelease :manager:uploadSentryNativeSymbolsForRelease
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
