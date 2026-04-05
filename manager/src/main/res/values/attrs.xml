@@ -16,5 +16,10 @@
         <attr name="emptyDescription" />
         <attr name="emptyActionText" />
     </declare-styleable>
+
+    <declare-styleable name="PlusFeaturePreference">
+        <attr name="infoTitle" format="reference|string" />
+        <attr name="infoDetail" format="reference|string" />
+    </declare-styleable>
 </resources>
 

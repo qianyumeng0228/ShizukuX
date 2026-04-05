@@ -408,12 +408,21 @@ abstract class HomeActivity : AppBarActivity() {
             menu.findItem(R.id.action_stop)?.isVisible = false
             menu.findItem(R.id.action_settings)?.isVisible = false
             menu.findItem(R.id.action_about)?.isVisible = false
+            menu.findItem(R.id.action_help)?.isVisible = false
         }
         return super.onPrepareOptionsMenu(menu)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_help -> {
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.settings_shizuku_plus_features)
+                    .setMessage(R.string.help_general_plus_summary)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+                true
+            }
             R.id.action_about -> {
                 val binding = AboutDialogBinding.inflate(LayoutInflater.from(this), null, false)
                 binding.sourceCode.movementMethod = LinkMovementMethod.getInstance()

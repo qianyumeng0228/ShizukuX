@@ -12,12 +12,34 @@ import moe.shizuku.manager.ShizukuSettings.Keys.*
 import rikka.shizuku.Shizuku
 import moe.shizuku.server.IShizukuService
 
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
+import androidx.core.view.MenuProvider
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
 class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_shizuku_plus, rootKey)
 
         ShizukuSettings.syncAllPlusFeaturesToServer()
+
+        // Setup menu for 'Learn more' icon
+        requireActivity().addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menu.clear()
+                menuInflater.inflate(R.menu.plus_settings_menu, menu)
+            }
+
+            override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+                if (menuItem.itemId == R.id.action_plus_help) {
+                    showGeneralHelpDialog()
+                    return true
+                }
+                return false
+            }
+        }, viewLifecycleOwner)
 
         val dhizukuPref = requireNotNull(findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE))
         dhizukuPref.isChecked = ShizukuSettings.isDhizukuModeEnabled()
@@ -79,6 +101,14 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         
         // Check for integrated apps and update summaries
         checkAppIntegrations()
+    }
+
+    private fun showGeneralHelpDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_shizuku_plus_features)
+            .setMessage(R.string.help_general_plus_summary)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 
     private fun checkAppIntegrations() {

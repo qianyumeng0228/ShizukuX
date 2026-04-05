@@ -337,6 +337,39 @@
     <string name="settings_plus_app_found">Integrated app detected: %1$s. Tap for setup.</string>
     <string name="settings_plus_app_setup_title">Setup Integration</string>
     <string name="settings_plus_app_open">Open App</string>
+    <string name="settings_plus_learn_more">Learn more</string>
+    <string name="help_general_plus_summary">ShizukuX extends the core Shizuku framework with powerful system-level bridges. These features allow third-party automation tools like MacroDroid and Tasker, as well as theming engines like Hex Installer, to perform privileged actions natively and securely. Each feature is designed to bridge the gap between root-only capabilities and the standard Android API, ensuring high performance and deep system integration for your favorite power-user apps.</string>
+
+    <!-- Detailed Help Strings -->
+    <string name="help_dhizuku_title">About Dhizuku Mode</string>
+    <string name="help_dhizuku_detail">Dhizuku allows Shizuku to share its Device Owner (DevicePolicyManager) privileges with third-party apps. This is essential for apps like Dhizuku Manager or certain kiosk-mode tools that need to manage system policies without being the sole Device Owner themselves.</string>
+
+    <string name="help_shell_interceptor_title">About Shell Accelerator</string>
+    <string name="help_shell_interceptor_detail">The Shell Accelerator intercepts standard shell commands (am, pm, settings) and translates them directly into Shizuku server API calls. This avoids the high overhead of spawning a new /system/bin/sh process for every command, making automation in MacroDroid or Tasker significantly faster and more battery-efficient.</string>
+
+    <string name="help_avf_manager_title">About AVF Manager</string>
+    <string name="help_avf_manager_detail">Android Virtualization Framework (AVF) Manager allows you to run isolated Linux or Microdroid virtual machines. On supported hardware (Snapdragon 8 Gen 1+, Tensor G2+), this enables hardware-accelerated virtualization with VirtIO-GPU support for running desktop Linux environments or isolated secure tasks.</string>
+
+    <string name="help_storage_proxy_title">About Storage Bridge</string>
+    <string name="help_storage_proxy_detail">The Storage Bridge provides authenticated, high-speed access to restricted filesystem paths like /data/data/ (app data) and /data/app/ (APK files). This allows backup tools like Neo Backup to function without full root access, while maintaining security through Shizuku\'s permission model.</string>
+
+    <string name="help_continuity_bridge_title">About Multi-Device Continuity</string>
+    <string name="help_continuity_bridge_detail">Continuity Bridge allows ShizukuPlus devices on the same network to hand off tasks and synchronize clipboard/app state. This utilizes the Android 17 Handoff APIs (backported where possible) to allow seamless transitions of automation tasks between your phone and tablet.</string>
+
+    <string name="help_ai_core_plus_title">About Intelligence Bridge</string>
+    <string name="help_ai_core_plus_detail">The Intelligence Bridge grants AI assistants privileged access to screen content and NPU scheduling. It enables features like "Circle to Search" or screen-aware context for local LLMs by providing high-performance, window-aware frame capture that bypasses standard Android screen recording restrictions.</string>
+
+    <string name="help_window_manager_plus_title">About Window Tuner</string>
+    <string name="help_window_manager_plus_detail">Window Tuner exposes advanced WindowManager flags that allow any app to be forced into free-form mode, placed in a persistent Bubble Bar, or rendered with always-on-top overlays. This is a powerful tool for multitasking and customizing the OneUI desktop experience.</string>
+
+    <string name="help_overlay_manager_plus_title">About System Theming Bridge</string>
+    <string name="help_overlay_manager_plus_detail">This bridge provides rootless access to the OverlayManagerService (OMS). It uses modern OverlayManagerTransactions to register Fabricated Overlays, allowing apps like Hex Installer to modify system colors, fonts, and dimensions on OneUI 6/7/8 without requiring a rooted device.</string>
+
+    <string name="help_network_governor_plus_title">About Network &amp; DNS Governor</string>
+    <string name="help_network_governor_plus_detail">The Network Governor provides privileged access to the INetworkPolicyManager and Private DNS settings. It can enforce POLICY_REJECT_ALL for individual apps, providing a robust, system-level firewall that works even on Wi-Fi and 5G connections without an active VPN tunnel.</string>
+
+    <string name="help_activity_manager_plus_title">About Deep Process Control</string>
+    <string name="help_activity_manager_plus_detail">Deep Process Control allows the server to bypass standard app-hibernation and standby restrictions. It can force apps into the RESTRICTED standby bucket or perform a true deepForceStop (killing all services and background jobs), which is essential for aggressive battery-saving tools.</string>
 
     <!-- Plus settings category titles -->
     <string name="settings_plus_category_framework">Framework</string>
