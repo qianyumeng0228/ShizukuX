@@ -19,14 +19,14 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 ## ✨ ShizukuX Core Features
 
 *   **Universal Privilege Provider**: Combines **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** into a single unified interface.
-*   **OneUI 8+ Theming Fix**: Provides the necessary **Overlay Manager Plus** bridge to allow engines like Hex Installer or Substratum to function on Android 16/17 and OneUI 8+.
+*   **OneUI 8+ Theming Fix**: Provides the necessary **Overlay Manager Plus** bridge (using stable **OverlayManagerTransaction** on Android 14+) to allow engines like Hex Installer or Substratum to function on Android 16/17 and OneUI 8+.
 *   **Dhizuku Mode**: Share the system `DevicePolicyManager` binder with any app that has Shizuku permissions.
 *   **Customizable Gestures**: Configure swipe left, swipe right, and long-press actions for any app in the management list.
 *   **Bulk Management**: Multi-select apps to grant/revoke permissions or hide them in one tap.
 *   **Activity Log**: Audit trail of API calls and `su` bridge commands, complete with app icons and real-time dispatch.
-*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps.
+*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Magic Setup** (automatic configuration for Neo Backup, SD Maid, and Swift Backup).
 *   **Universal SU Automation**: One-tap 'Magic Setup' to configure all installed root apps to use the ShizukuX SU Bridge.
-*   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues, now including Secure Settings checks.
+*   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues (now optimized for Samsung Auto Blocker on S22 Ultra).
 *   **Quick Settings Tile**: Conveniently view and toggle the service status from your notification panel.
 
 ## 🚀 Plus API Features

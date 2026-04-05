@@ -152,6 +152,12 @@
 - Fixed RecyclerView LayoutTransition issue (4 crashes)
 
 ### 🔧 Improvements
+- **OneUI 8 Stability**: Transitioned to `OverlayManagerTransaction` for stable resource injection on Android 14+ / OneUI 8+.
+- **Functional CLI Bridge**: `plus vm` and `plus storage` commands now correctly call their respective Binder interfaces.
+- **Magic Setup (Neo Backup/SD Maid)**: Implemented `sed`-based auto-configuration to point root apps to the ShizukuX SU Bridge.
+- **Network Governor Policy**: Upgraded to `POLICY_REJECT_ALL` (4) for complete app network blocking on Android 10+.
+- **Intelligence Bridge Capture**: Improved `SurfaceControl` capture using reflection on `WindowManagerGlobal`.
+- **S22 Ultra Identity**: Added dedicated hardware spoof target for Snapdragon and Exynos S22 Ultra models.
 - Enhanced Sentry integration with GitHub release tracking
 - Automatic commit association with crash reports
 - Performance monitoring enabled
@@ -177,6 +183,6 @@
 
 ---
 
-**Last Updated:** 2026-03-29
-**Release Version:** 13.6.0.r1511-shizukuplus
+**Last Updated:** 2026-04-04
+**Release Version:** 13.6.1.r{COUNT}-shizukuplus
 **Status:** ✅ Ready for Release

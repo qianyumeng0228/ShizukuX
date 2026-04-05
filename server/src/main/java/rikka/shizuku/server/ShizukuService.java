@@ -474,6 +474,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                     else if (prop.contains("fingerprint")) spoofValue = "samsung/eureka/eureka:14/UP1A.231005.007/S928BXXU1AXB5:user/release-keys";
                                     else spoofValue = android.os.SystemProperties.get(prop, "");
                                     break;
+                                case "s22_ultra":
+                                    if (prop.contains("model")) spoofValue = "SM-S908B";
+                                    else if (prop.contains("manufacturer")) spoofValue = "samsung";
+                                    else if (prop.contains("brand")) spoofValue = "samsung";
+                                    else if (prop.contains("device")) spoofValue = "b0s";
+                                    else if (prop.contains("product")) spoofValue = "b0s";
+                                    else if (prop.contains("fingerprint")) spoofValue = "samsung/b0s/b0s:14/UP1A.231005.007/S908BXXS7DWL1:user/release-keys";
+                                    else spoofValue = android.os.SystemProperties.get(prop, "");
+                                    break;
                                 case "s23_ultra":
                                     if (prop.contains("model")) spoofValue = "SM-S918B";
                                     else if (prop.contains("manufacturer")) spoofValue = "samsung";

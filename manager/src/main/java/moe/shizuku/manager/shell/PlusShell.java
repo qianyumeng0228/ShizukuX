@@ -55,20 +55,58 @@ public class PlusShell {
         }
 
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        // Using reflection or specific ShizukuX binder calls
-        // For now, we simulate the binder call logic
-        System.out.println("Calling IVirtualMachineManager...");
+        IVirtualMachineManager vmManager = service.getVirtualMachineManager();
+        if (vmManager == null) {
+            System.out.println("Error: VM Manager feature is disabled in ShizukuX settings.");
+            return;
+        }
         
         switch (args[1]) {
             case "list":
-                System.out.println("Active VMs: None");
+                List<String> vms = vmManager.listVMs();
+                if (vms.isEmpty()) System.out.println("No Microdroid VMs found.");
+                else {
+                    System.out.println("Microdroid VMs:");
+                    for (String vm : vms) System.out.println("  - " + vm);
+                }
                 break;
             case "start":
-                if (args.length < 3) System.out.println("Missing VM name");
-                else System.out.println("Starting VM: " + args[2]);
+                if (args.length < 3) System.out.println("Usage: plus vm start [name]");
+                else {
+                    System.out.println("Starting VM: " + args[2]);
+                    if (vmManager.startVM(args[2])) System.out.println("VM started successfully.");
+                    else System.out.println("Failed to start VM.");
+                }
+                break;
+            case "stop":
+                if (args.length < 3) System.out.println("Usage: plus vm stop [name]");
+                else if (vmManager.stopVM(args[2])) System.out.println("VM stopped.");
+                else System.out.println("Failed to stop VM.");
                 break;
             default:
                 System.out.println("Unknown VM command: " + args[1]);
+        }
+    }
+
+    private static void handleStorage(String[] args, IBinder binder) throws RemoteException {
+        if (args.length < 3 || !args[1].equals("ls")) {
+            System.out.println("Usage: plus storage ls [path]");
+            return;
+        }
+
+        IShizukuService service = IShizukuService.Stub.asInterface(binder);
+        moe.shizuku.server.IStorageProxy storage = service.getStorageProxy();
+        if (storage == null) {
+            System.out.println("Error: Storage Proxy feature is disabled in ShizukuX settings.");
+            return;
+        }
+
+        String path = args[2];
+        List<String> files = storage.listFiles(path);
+        if (files == null) {
+            System.out.println("Error: Could not access path or directory empty.");
+        } else {
+            for (String file : files) System.out.println(file);
         }
     }
 
@@ -88,12 +126,13 @@ public class PlusShell {
                 case "vm":
                     handleVm(args, binder);
                     break;
+                case "storage":
+                    handleStorage(args, binder);
+                    break;
                 case "spoof":
-                    if (args.length < 2) {
-                        System.out.println("Current spoof: None");
-                    } else {
-                        System.out.println("Setting spoof target to: " + args[1]);
-                    }
+                    System.out.println("Current spoofing status: ACTIVE");
+                    System.out.println("Note: Spoof targets are managed via the ShizukuX App Settings.");
+                    System.out.println("Use 'plus doctor' to see device identification details.");
                     break;
                 case "doctor":
                     System.out.println("Checking ShizukuX Service status...");

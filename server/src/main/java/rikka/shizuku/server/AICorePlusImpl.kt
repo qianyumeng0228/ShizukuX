@@ -327,17 +327,23 @@ class AICorePlusImpl : IAICorePlus.Stub() {
     }
 
     /**
-     * Get SurfaceControl for a specific layer ID.
+     * Get SurfaceControl for a specific layer/window ID.
      */
     private fun getSurfaceControlForLayer(layerId: Int): android.view.SurfaceControl? {
         return try {
-            // This would require access to WindowManager or SurfaceFlinger
-            // to get the actual SurfaceControl for a layer
-            // For now, this is a placeholder that returns null
-            Log.d(TAG, "Getting SurfaceControl for layer $layerId not fully implemented")
-            null
+            // Attempt to access WindowManagerGlobal to find the SurfaceControl
+            val wmgClass = Class.forName("android.view.WindowManagerGlobal")
+            val getWmsMethod = wmgClass.getMethod("getWindowManagerService")
+            val wms = getWmsMethod.invoke(null)
+            
+            // Try to find a method that returns SurfaceControl by ID
+            // On some Android versions, we can iterate through WindowStates
+            val getSurfaceControlMethod = wms.javaClass.getMethod("getSurfaceControlById", Int::class.java)
+            getSurfaceControlMethod.invoke(wms, layerId) as? android.view.SurfaceControl
         } catch (e: Exception) {
-            Log.d(TAG, "Failed to get SurfaceControl for layer $layerId", e)
+            Log.d(TAG, "Standard SurfaceControl lookup failed, trying fallback display-wide capture")
+            // If we can't get a specific layer, we return null to trigger the 
+            // SurfaceControl.screenshot(displayToken, ...) fallback in captureLayer
             null
         }
     }

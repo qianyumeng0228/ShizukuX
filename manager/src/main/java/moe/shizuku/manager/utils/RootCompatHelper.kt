@@ -27,16 +27,20 @@ object RootCompatHelper {
                     true
                 }
                 "com.machiav3lli.neo_backup" -> {
-                    // Functional Workaround: Set the custom shell path via settings or property if supported
-                    // For now, we return true if we've attempted mapping
+                    // Neo Backup stores its custom shell path in shared_prefs
+                    val script = "find /data/data/$packageName/shared_prefs -name \"*.xml\" -type f | xargs sed -i 's|<string name=\"custom_shell_path\">.*</string>|<string name=\"custom_shell_path\">$suPath</string>|g'"
+                    executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
                 "eu.darken.sdm", "eu.darken.sdmse" -> {
-                    // SD Maid / SE
+                    // SD Maid / SE - Search and replace su path in settings
+                    val script = "find /data/data/$packageName/shared_prefs -name \"*.xml\" -type f | xargs sed -i 's|/system/[^/ ]*/su|$suPath|g'"
+                    executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
                 "org.swiftapps.swiftbackup" -> {
-                    true
+                    // Swift Backup - Use universal approach
+                    universalAutoSetup(packageName, suPath)
                 }
                 else -> universalAutoSetup(packageName, suPath)
             }

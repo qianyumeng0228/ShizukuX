@@ -72,8 +72,12 @@ class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
                 ?: return false
             val uid = ai.uid
 
-            // Policy: 1 = REJECT_METERED_BACKGROUND, 0 = NONE
-            val policy = if (restricted) 1 else 0
+            // Policy 1: REJECT_METERED_BACKGROUND
+            // Policy 4: REJECT_ALL (Android 10+)
+            val policy = if (restricted) {
+                if (android.os.Build.VERSION.SDK_INT >= 29) 4 else 1
+            } else 0
+            
             val method = service.javaClass.getMethod("setUidPolicy", Int::class.java, Int::class.java)
             method.invoke(service, uid, policy)
             true

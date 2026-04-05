@@ -99,8 +99,17 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             val asInterface = stub.getMethod("asInterface", IBinder::class.java)
             val service = asInterface.invoke(null, binder) ?: return false
             
-            val registerMethod = service.javaClass.getMethod("registerFabricatedOverlay", Class.forName("android.content.om.FabricatedOverlay"))
-            registerMethod.invoke(service, overlay)
+            val transactionBuilderClass = Class.forName("android.content.om.OverlayManagerTransaction\$Builder")
+            val transactionBuilder = transactionBuilderClass.getConstructor().newInstance()
+            
+            val registerMethod = transactionBuilderClass.getMethod("registerFabricatedOverlay", Class.forName("android.content.om.FabricatedOverlay"))
+            registerMethod.invoke(transactionBuilder, overlay)
+            
+            val transactionBuildMethod = transactionBuilderClass.getMethod("build")
+            val transaction = transactionBuildMethod.invoke(transactionBuilder)
+            
+            val commitMethod = service.javaClass.getMethod("commit", Class.forName("android.content.om.OverlayManagerTransaction"))
+            commitMethod.invoke(service, transaction)
             
             return true
         } catch (e: Exception) {
