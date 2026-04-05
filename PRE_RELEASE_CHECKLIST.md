@@ -152,6 +152,7 @@
 - Fixed RecyclerView LayoutTransition issue (4 crashes)
 
 ### 🔧 Improvements
+- **Enhanced UI & App Integrations**: Intelligent detection for **MacroDroid**, **Tasker**, **Hex Installer**, and more, with feature-specific integration highlights.
 - **OneUI 8 Stability**: Transitioned to `OverlayManagerTransaction` for stable resource injection on Android 14+ / OneUI 8+.
 - **Functional CLI Bridge**: `plus vm` and `plus storage` commands now correctly call their respective Binder interfaces.
 - **Magic Setup (Neo Backup/SD Maid)**: Implemented `sed`-based auto-configuration to point root apps to the ShizukuX SU Bridge.

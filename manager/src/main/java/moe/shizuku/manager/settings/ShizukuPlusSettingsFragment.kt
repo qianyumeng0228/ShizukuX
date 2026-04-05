@@ -76,6 +76,61 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         // Initialize all preference dependencies
         updateAllPlusFeatureDependencies()
+        
+        // Check for integrated apps and update summaries
+        checkAppIntegrations()
+    }
+
+    private fun checkAppIntegrations() {
+        val integrations = mapOf(
+            "continuity_bridge_enabled" to listOf(
+                "com.arlosoft.macrodroid" to "MacroDroid"
+            ),
+            "activity_manager_plus_enabled" to listOf(
+                "com.arlosoft.macrodroid" to "MacroDroid",
+                "net.dinglisch.android.taskerm" to "Tasker"
+            ),
+            "window_manager_plus_enabled" to listOf(
+                "com.arlosoft.macrodroid" to "MacroDroid",
+                "com.isaiasmatewos.taskbar" to "Taskbar"
+            ),
+            "overlay_manager_plus_enabled" to listOf(
+                "project.vivid.hex.nx" to "Hex Installer",
+                "tk.wasdennnoch.substratumlite" to "Substratum Lite"
+            ),
+            "network_governor_plus_enabled" to listOf(
+                "org.adaway" to "AdAway",
+                "dev.ukanth.ufirewall" to "AFWall+"
+            ),
+            "storage_proxy_enabled" to listOf(
+                "com.machiav3lli.neo_backup" to "Neo Backup",
+                "eu.darken.sdm" to "SD Maid",
+                "eu.darken.sdmse" to "SD Maid SE"
+            )
+        )
+
+        val pm = requireContext().packageManager
+        integrations.forEach { (prefKey, apps) ->
+            val foundApp = apps.find { (pkg, _) ->
+                try {
+                    pm.getPackageInfo(pkg, 0)
+                    true
+                } catch (e: Exception) {
+                    false
+                }
+            }
+
+            if (foundApp != null) {
+                findPreference<Preference>(prefKey)?.apply {
+                    val originalSummary = summary
+                    summary = getString(R.string.settings_plus_app_found, foundApp.second) + "\n\n" + originalSummary
+                    
+                    // Add click listener to open the app if they tap the summary area
+                    // (Actually, since it's a SwitchPreference, we should probably add a separate button 
+                    // or just keep it as a highlighted summary for now to avoid accidental toggles)
+                }
+            }
+        }
     }
 
     private fun updateAllPlusFeatureDependencies() {
