@@ -12,6 +12,7 @@ import java.util.List;
 import moe.shizuku.manager.utils.ActivityLogManager;
 import moe.shizuku.manager.utils.ActivityLogRecord;
 import moe.shizuku.server.IAICorePlus;
+import moe.shizuku.server.IStorageProxy;
 import moe.shizuku.server.IVirtualMachineManager;
 import moe.shizuku.server.IShizukuService;
 import rikka.rish.RishConfig;
@@ -63,7 +64,7 @@ public class PlusShell {
         
         switch (args[1]) {
             case "list":
-                List<String> vms = vmManager.listVMs();
+                List<String> vms = vmManager.list();
                 if (vms.isEmpty()) System.out.println("No Microdroid VMs found.");
                 else {
                     System.out.println("Microdroid VMs:");
@@ -74,13 +75,13 @@ public class PlusShell {
                 if (args.length < 3) System.out.println("Usage: plus vm start [name]");
                 else {
                     System.out.println("Starting VM: " + args[2]);
-                    if (vmManager.startVM(args[2])) System.out.println("VM started successfully.");
+                    if (vmManager.start(args[2])) System.out.println("VM started successfully.");
                     else System.out.println("Failed to start VM.");
                 }
                 break;
             case "stop":
                 if (args.length < 3) System.out.println("Usage: plus vm stop [name]");
-                else if (vmManager.stopVM(args[2])) System.out.println("VM stopped.");
+                else if (vmManager.stop(args[2])) System.out.println("VM stopped.");
                 else System.out.println("Failed to stop VM.");
                 break;
             default:
@@ -95,7 +96,7 @@ public class PlusShell {
         }
 
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        moe.shizuku.server.IStorageProxy storage = service.getStorageProxy();
+        IStorageProxy storage = service.getStorageProxy();
         if (storage == null) {
             System.out.println("Error: Storage Proxy feature is disabled in ShizukuX settings.");
             return;
