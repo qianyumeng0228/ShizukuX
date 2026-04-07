@@ -83,6 +83,11 @@ public class ShizukuSettings {
         public static final String KEY_ON_DEVICE_ADB_TCP = "on_device_adb_tcp";
         public static final String KEY_FORCE_START_WADB = "force_start_wadb";
         public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
+        public static final String KEY_ROOT_ADAWAY_BRIDGE_ENABLED = "root_adaway_bridge_enabled";
+        public static final String KEY_ROOT_MAGISK_MOCKING_ENABLED = "root_magisk_mocking_enabled";
+        public static final String KEY_ROOT_AUTO_GRANT_ENABLED = "root_auto_grant_enabled";
+        public static final String KEY_ROOT_FILE_INTERCEPTOR_ENABLED = "root_file_interceptor_enabled";
+        public static final String KEY_ROOT_BUSYBOX_MOCKING_ENABLED = "root_busybox_mocking_enabled";
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
 
         // Long-press action toggles (ShizukuX additions)
@@ -537,7 +542,32 @@ public class ShizukuSettings {
 
     public static boolean isSuBridgeEnabled() {
         SharedPreferences p = getPreferences();
-        return p != null && p.getBoolean(Keys.KEY_SU_BRIDGE_ENABLED, false);
+        return p != null && p.getBoolean(Keys.KEY_SU_BRIDGE_ENABLED, true);
+    }
+
+    public static boolean isRootAdawayBridgeEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_ADAWAY_BRIDGE_ENABLED, false);
+    }
+
+    public static boolean isRootMagiskMockingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_MAGISK_MOCKING_ENABLED, false);
+    }
+
+    public static boolean isRootAutoGrantEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_AUTO_GRANT_ENABLED, false);
+    }
+
+    public static boolean isRootFileInterceptorEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_FILE_INTERCEPTOR_ENABLED, false);
+    }
+
+    public static boolean isRootBusyboxMockingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_BUSYBOX_MOCKING_ENABLED, false);
     }
 
     public static boolean showStartAdbHome() {
@@ -617,6 +647,11 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());
                 service.updatePlusFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
                 service.updatePlusFeatureEnabled("su_bridge", isSuBridgeEnabled());
+                service.updatePlusFeatureEnabled("root_adaway_bridge", isRootAdawayBridgeEnabled());
+                service.updatePlusFeatureEnabled("root_magisk_mocking", isRootMagiskMockingEnabled());
+                service.updatePlusFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());
+                service.updatePlusFeatureEnabled("root_file_interceptor", isRootFileInterceptorEnabled());
+                service.updatePlusFeatureEnabled("root_busybox_mocking", isRootBusyboxMockingEnabled());
                 service.updatePlusFeatureEnabled("vector", isVectorEnabled());
                 service.updatePlusFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
                 service.updatePlusFeatureEnabled("spoof_device", isSpoofDeviceEnabled());

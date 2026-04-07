@@ -86,7 +86,12 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "window_manager_plus_enabled" to "window_manager_plus",
             "overlay_manager_plus_enabled" to "overlay_manager_plus",
             "network_governor_plus_enabled" to "network_governor_plus",
-            "activity_manager_plus_enabled" to "activity_manager_plus"
+            "activity_manager_plus_enabled" to "activity_manager_plus",
+            "root_adaway_bridge_enabled" to "root_adaway_bridge",
+            "root_magisk_mocking_enabled" to "root_magisk_mocking",
+            "root_auto_grant_enabled" to "root_auto_grant",
+            "root_file_interceptor_enabled" to "root_file_interceptor",
+            "root_busybox_mocking_enabled" to "root_busybox_mocking"
         )
         plusKeys.forEach { (prefKey, featureName) ->
             findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
@@ -136,6 +141,12 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 "com.machiav3lli.neo_backup" to "Neo Backup",
                 "eu.darken.sdm" to "SD Maid",
                 "eu.darken.sdmse" to "SD Maid SE"
+            ),
+            "root_adaway_bridge_enabled" to listOf(
+                "org.adaway" to "AdAway"
+            ),
+            "root_magisk_mocking_enabled" to listOf(
+                "com.topjohnwu.magisk" to "Magisk Manager"
             )
         )
 
@@ -154,10 +165,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 findPreference<Preference>(prefKey)?.apply {
                     val originalSummary = summary
                     summary = getString(R.string.settings_plus_app_found, foundApp.second) + "\n\n" + originalSummary
-                    
-                    // Add click listener to open the app if they tap the summary area
-                    // (Actually, since it's a SwitchPreference, we should probably add a separate button 
-                    // or just keep it as a highlighted summary for now to avoid accidental toggles)
                 }
             }
         }
@@ -176,6 +183,16 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
+        
+        // Root Compat modules
+        updatePreferenceDependency("root_adaway_bridge_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("root_magisk_mocking_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("root_auto_grant_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("root_file_interceptor_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("root_busybox_mocking_enabled", customApiEnabled, hideDisabled)
+
+        // Category visibility
+        findPreference<Preference>("category_root_compat")?.isVisible = customApiEnabled || !hideDisabled
 
         // These also depend on window_manager_plus_enabled
         val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
@@ -189,9 +206,9 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     }
 
     private fun updatePreferenceDependency(prefKey: String, parentEnabled: Boolean, hideIfDisabled: Boolean = false) {
-        findPreference<TwoStatePreference>(prefKey)?.apply {
+        findPreference<Preference>(prefKey)?.apply {
             isEnabled = parentEnabled
-            if (!parentEnabled) {
+            if (this is TwoStatePreference && !parentEnabled) {
                 isChecked = false
             }
             isVisible = if (hideIfDisabled) parentEnabled else true

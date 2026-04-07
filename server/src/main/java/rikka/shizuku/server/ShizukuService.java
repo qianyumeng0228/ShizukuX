@@ -404,33 +404,37 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     LOGGER.i("SUBridge: mocking whoami command");
                     return newProcessInternal(new String[]{"echo", "root"}, env, dir);
                 } else if (baseCmd.equals("getenforce")) {
-                    LOGGER.i("SUBridge: mocking getenforce command");
-                    return newProcessInternal(new String[]{"echo", "Permissive"}, env, dir);
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking getenforce command");
+                        return newProcessInternal(new String[]{"echo", "Permissive"}, env, dir);
+                    }
                 } else if (baseCmd.equals("setenforce") || baseCmd.equals("chcon") || baseCmd.equals("restorecon")) {
-                    LOGGER.i("SUBridge: mapping SELinux modification to AppOps elevation for UID " + callingUid);
-                    // Functional Workaround: Grant common high-privilege AppOps to the caller
-                    try {
-                        IBinder binder = ServiceManager.getService("appops");
-                        if (binder != null) {
-                            Object service = Class.forName("com.android.internal.app.IAppOpsService$Stub")
-                                .getMethod("asInterface", IBinder.class).invoke(null, binder);
-                            java.lang.reflect.Method setMode = service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class);
-                            // 24 = OP_SYSTEM_ALERT_WINDOW, 43 = OP_GET_USAGE_STATS, 63 = OP_WRITE_SETTINGS, 
-                            // 65 = OP_SYSTEM_ALERT_WINDOW (fallback), 100 = OP_MANAGE_EXTERNAL_STORAGE
-                            int[] opsToElevate = {24, 43, 63, 65, 100, 103, 121};
-                            for (int op : opsToElevate) {
-                                try {
-                                    setMode.invoke(service, op, callingUid, null, 0);
-                                } catch (Exception e) {
-                                    LOGGER.w(e, "SUBridge: Failed to set AppOps mode %d for uid %d", op, callingUid);
+                    if (isFeatureEnabled("root_auto_grant")) {
+                        LOGGER.i("SUBridge: mapping SELinux modification to AppOps elevation for UID " + callingUid);
+                        // Functional Workaround: Grant common high-privilege AppOps to the caller
+                        try {
+                            IBinder binder = ServiceManager.getService("appops");
+                            if (binder != null) {
+                                Object service = Class.forName("com.android.internal.app.IAppOpsService$Stub")
+                                    .getMethod("asInterface", IBinder.class).invoke(null, binder);
+                                java.lang.reflect.Method setMode = service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class);
+                                // 24 = OP_SYSTEM_ALERT_WINDOW, 43 = OP_GET_USAGE_STATS, 63 = OP_WRITE_SETTINGS, 
+                                // 65 = OP_SYSTEM_ALERT_WINDOW (fallback), 100 = OP_MANAGE_EXTERNAL_STORAGE
+                                int[] opsToElevate = {24, 43, 63, 65, 100, 103, 121};
+                                for (int op : opsToElevate) {
+                                    try {
+                                        setMode.invoke(service, op, callingUid, null, 0);
+                                    } catch (Exception e) {
+                                        LOGGER.w(e, "SUBridge: Failed to set AppOps mode %d for uid %d", op, callingUid);
+                                    }
                                 }
                             }
+                            // Also try to grant WRITE_SECURE_SETTINGS directly via shell if enabled
+                            Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.WRITE_SECURE_SETTINGS"});
+                            Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.DUMP"});
+                        } catch (Exception e) {
+                            LOGGER.e("SUBridge: AppOps elevation failed", e);
                         }
-                        // Also try to grant WRITE_SECURE_SETTINGS directly via shell if enabled
-                        Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.WRITE_SECURE_SETTINGS"});
-                        Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.DUMP"});
-                    } catch (Exception e) {
-                        LOGGER.e("SUBridge: AppOps elevation failed", e);
                     }
                     return newProcessInternal(new String[]{"true"}, env, dir);
                 } else if (baseCmd.equals("setprop") && cmd.length > 2) {
@@ -443,8 +447,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         return newProcessInternal(new String[]{"false"}, env, dir);
                     }
                 } else if (baseCmd.equals("busybox")) {
-                    LOGGER.i("SUBridge: mocking busybox command");
-                    return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
+                    if (isFeatureEnabled("root_busybox_mocking")) {
+                        LOGGER.i("SUBridge: mocking busybox command");
+                        return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
+                    }
                 } else if (baseCmd.equals("mount") && cmd.length > 1 && String.join(" ", cmd).contains("remount")) {
                     LOGGER.i("SUBridge: intercepting mount remount. Delegating to OverlayManager Proxy.");
                     // Functional Workaround: Return success to bypass the check; real modifications use Overlays.
@@ -464,46 +470,63 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     try { Runtime.getRuntime().exec(new String[]{"mkdir", "-p", "/data/adb/shizuku"}); } catch (Exception ignored) {}
                     return newProcessInternal(cmd, env, dir);
                 } else if ((baseCmd.equals("cp") || baseCmd.equals("mv") || baseCmd.equals("tar")) && (String.join(" ", cmd).contains("/data/data") || String.join(" ", cmd).contains("/system"))) {
-                    LOGGER.i("SUBridge: injecting permission-preservation flags for sensitive file operation");
-                    java.util.List<String> newCmd = new java.util.ArrayList<>(java.util.Arrays.asList(cmd));
-                    if (baseCmd.equals("cp") || baseCmd.equals("mv")) {
-                        if (!newCmd.contains("-p")) newCmd.add(1, "-p"); // preserve permissions
-                        if (!newCmd.contains("--preserve=all")) newCmd.add(1, "--preserve=all");
+                    if (isFeatureEnabled("root_file_interceptor")) {
+                        LOGGER.i("SUBridge: injecting permission-preservation flags for sensitive file operation");
+                        java.util.List<String> newCmd = new java.util.ArrayList<>(java.util.Arrays.asList(cmd));
+                        if (baseCmd.equals("cp") || baseCmd.equals("mv")) {
+                            if (!newCmd.contains("-p")) newCmd.add(1, "-p"); // preserve permissions
+                            if (!newCmd.contains("--preserve=all")) newCmd.add(1, "--preserve=all");
+                        }
+                        return newProcessInternal(newCmd.toArray(new String[0]), env, dir);
                     }
-                    return newProcessInternal(newCmd.toArray(new String[0]), env, dir);
+                } else if (baseCmd.equals("busybox")) {
+                    if (isFeatureEnabled("root_busybox_mocking")) {
+                        LOGGER.i("SUBridge: mocking busybox command");
+                        return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
+                    }
                 } else if (baseCmd.equals("magisk") || baseCmd.endsWith("/magisk")) {
-                    LOGGER.i("SUBridge: mocking magisk command");
-                    if (cmd.length > 1 && (cmd[1].equals("-v") || cmd[1].equals("-V"))) {
-                        return newProcessInternal(new String[]{"echo", "26.4:MAGISK"}, env, dir);
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking magisk command");
+                        if (cmd.length > 1 && (cmd[1].equals("-v") || cmd[1].equals("-V"))) {
+                            return newProcessInternal(new String[]{"echo", "26.4:MAGISK"}, env, dir);
+                        }
+                        return newProcessInternal(new String[]{"echo", "Magisk v26.4 (26400) - ShizukuX Bridge Mode"}, env, dir);
                     }
-                    return newProcessInternal(new String[]{"echo", "Magisk v26.4 (26400) - ShizukuX Bridge Mode"}, env, dir);
                 } else if (baseCmd.equals("pm") && cmd.length > 2 && cmd[1].equals("grant")) {
-                    LOGGER.i("SUBridge: intercepting pm grant for " + cmd[2]);
-                    // Auto-approve common root app requests
-                    String targetPkg = cmd[2];
-                    String perm = cmd[3];
-                    if (perm.contains("WRITE_SECURE_SETTINGS") || perm.contains("DUMP") || perm.contains("PACKAGE_USAGE_STATS")) {
-                        try {
-                            Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm});
-                            return newProcessInternal(new String[]{"true"}, env, dir);
-                        } catch (Exception e) {
-                            LOGGER.e("SUBridge: pm grant failed", e);
+                    if (isFeatureEnabled("root_auto_grant")) {
+                        LOGGER.i("SUBridge: intercepting pm grant for " + cmd[2]);
+                        // Auto-approve common root app requests
+                        String targetPkg = cmd[2];
+                        String perm = cmd[3];
+                        if (perm.contains("WRITE_SECURE_SETTINGS") || perm.contains("DUMP") || perm.contains("PACKAGE_USAGE_STATS")) {
+                            try {
+                                Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm});
+                                return newProcessInternal(new String[]{"true"}, env, dir);
+                            } catch (Exception e) {
+                                LOGGER.e("SUBridge: pm grant failed", e);
+                            }
                         }
                     }
                 } else if (baseCmd.equals("cat") && cmd.length > 1 && cmd[1].equals("/proc/mounts")) {
-                    LOGGER.i("SUBridge: mocking /proc/mounts");
-                    String fakeMounts = "/dev/block/bootdevice/by-name/system /system ext4 ro,relatime 0 0\n" +
-                                       "/dev/block/bootdevice/by-name/userdata /data f2fs rw,nosuid,nodev,noatime 0 0\n" +
-                                       "tmpfs /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n" +
-                                       "/data/adb/shizuku/hosts /system/etc/hosts text rw,relatime 0 0\n" +
-                                       "magisk /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n";
-                    return newProcessInternal(new String[]{"echo", fakeMounts}, env, dir);
+                    if (isFeatureEnabled("root_adaway_bridge")) {
+                        LOGGER.i("SUBridge: mocking /proc/mounts");
+                        String fakeMounts = "/dev/block/bootdevice/by-name/system /system ext4 ro,relatime 0 0\n" +
+                                           "/dev/block/bootdevice/by-name/userdata /data f2fs rw,nosuid,nodev,noatime 0 0\n" +
+                                           "tmpfs /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n" +
+                                           "/data/adb/shizuku/hosts /system/etc/hosts text rw,relatime 0 0\n" +
+                                           "magisk /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n";
+                        return newProcessInternal(new String[]{"echo", fakeMounts}, env, dir);
+                    }
                 } else if (baseCmd.equals("test") && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
-                    LOGGER.i("SUBridge: mocking test for Magisk directory");
-                    return newProcessInternal(new String[]{"true"}, env, dir);
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking test for Magisk directory");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
                 } else if (baseCmd.equals("ls") && cmd.length > 1 && String.join(" ", cmd).contains("/su")) {
-                    LOGGER.i("SUBridge: mocking ls for su path");
-                    return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 /system/xbin/su"}, env, dir);
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking ls for su path");
+                        return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 /system/xbin/su"}, env, dir);
+                    }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
                     String realSuPath = plusSettingsMap.getOrDefault("su_path", "/system/xbin/su");
                     LOGGER.i("SUBridge: mocking which su command -> " + realSuPath);
@@ -514,15 +537,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     if (forceReal) prop = prop.substring(5);
 
                     if (!forceReal && (prop.startsWith("magisk.") || prop.equals("ro.debuggable") || prop.equals("ro.secure") || prop.equals("persist.magisk.hide"))) {
-                        LOGGER.i("SUBridge: mocking getprop " + prop);
-                        String value = "0";
-                        if (prop.equals("ro.debuggable")) value = "1";
-                        else if (prop.equals("ro.secure")) value = "0";
-                        else if (prop.equals("persist.magisk.hide")) value = "1";
-                        else if (prop.contains("version")) value = "26.4";
-                        else if (prop.contains("code")) value = "26400";
-                        else if (prop.contains("path")) value = "/data/adb/magisk";
-                        return newProcessInternal(new String[]{"echo", value}, env, dir);
+                        if (isFeatureEnabled("root_magisk_mocking")) {
+                            LOGGER.i("SUBridge: mocking getprop " + prop);
+                            String value = "0";
+                            if (prop.equals("ro.debuggable")) value = "1";
+                            else if (prop.equals("ro.secure")) value = "0";
+                            else if (prop.equals("persist.magisk.hide")) value = "1";
+                            else if (prop.contains("version")) value = "26.4";
+                            else if (prop.contains("code")) value = "26400";
+                            else if (prop.contains("path")) value = "/data/adb/magisk";
+                            return newProcessInternal(new String[]{"echo", value}, env, dir);
+                        }
                     } else if (prop.startsWith("ro.product.") || prop.startsWith("ro.build.")) {
                         if (!forceReal && isFeatureEnabled("spoof_device")) {
                             String target = plusSettingsMap.getOrDefault("spoof_target", "pixel_8_pro");

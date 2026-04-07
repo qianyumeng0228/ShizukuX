@@ -147,6 +147,59 @@
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <!-- Root Compatibility: granular modules for legacy app support -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_root_compat"
+        android:title="@string/settings_plus_category_root_compat"
+        android:defaultValue="false">
+
+        <moe.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_adaway_bridge_enabled"
+            android:title="@string/settings_root_adaway_bridge"
+            android:summary="@string/settings_root_adaway_bridge_summary"
+            android:icon="@drawable/ic_security_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_adaway_title"
+            app:infoDetail="@string/help_root_adaway_detail" />
+
+        <moe.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_magisk_mocking_enabled"
+            android:title="@string/settings_root_magisk_mocking"
+            android:summary="@string/settings_root_magisk_mocking_summary"
+            android:icon="@drawable/ic_build_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_magisk_title"
+            app:infoDetail="@string/help_root_magisk_detail" />
+
+        <moe.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_auto_grant_enabled"
+            android:title="@string/settings_root_auto_grant"
+            android:summary="@string/settings_root_auto_grant_summary"
+            android:icon="@drawable/ic_verified_user_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_auto_grant_title"
+            app:infoDetail="@string/help_root_auto_grant_detail" />
+
+        <moe.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_file_interceptor_enabled"
+            android:title="@string/settings_root_file_interceptor"
+            android:summary="@string/settings_root_file_interceptor_summary"
+            android:icon="@drawable/ic_folder_special_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_file_interceptor_title"
+            app:infoDetail="@string/help_root_file_interceptor_detail" />
+
+        <moe.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_busybox_mocking_enabled"
+            android:title="@string/settings_root_busybox_mocking"
+            android:summary="@string/settings_root_busybox_mocking_summary"
+            android:icon="@drawable/ic_terminal_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_busybox_title"
+            app:infoDetail="@string/help_root_busybox_detail" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_developer"
         android:title="@string/settings_plus_category_developer"

@@ -379,6 +379,33 @@
     <string name="settings_plus_category_network">Network &amp; Privacy</string>
     <string name="settings_plus_category_intelligence">Intelligence &amp; Continuity</string>
     <string name="settings_plus_category_developer">Developer Options (Experimental)</string>
+    <string name="settings_plus_category_root_compat">Root Compatibility Modules</string>
+    <string name="settings_root_adaway_bridge">AdAway Hosts Bridge</string>
+    <string name="settings_root_adaway_bridge_summary">Redirect /system/etc/hosts to a writable path. Allows AdAway to function without a rooted system partition.</string>
+    <string name="settings_root_magisk_mocking">Magisk Environment Mocking</string>
+    <string name="settings_root_magisk_mocking_summary">Fakes Magisk binaries, properties, and internal folders to fool root-detecting applications.</string>
+    <string name="settings_root_auto_grant">Auto-Approval Bridge</string>
+    <string name="settings_root_auto_grant_summary">Automatically approves \'pm grant\' requests for sensitive permissions like WRITE_SECURE_SETTINGS.</string>
+    <string name="settings_root_file_interceptor">Smart File Interceptor</string>
+    <string name="settings_root_file_interceptor_summary">Automatically injects permission-preservation flags into file operations targeting sensitive system paths.</string>
+    <string name="settings_root_busybox_mocking">BusyBox Simulation</string>
+    <string name="settings_root_busybox_mocking_summary">Returns a fake version string for the \'busybox\' command to satisfy legacy script requirements.</string>
+
+    <string name="help_root_adaway_title">About AdAway Bridge</string>
+    <string name="help_root_adaway_detail">Modern Android devices have read-only system partitions. This bridge intercepts AdAway\'s attempts to write to /system/etc/hosts and redirects them to a Shizuku-managed path in /data/adb, faking a successful mount operation.</string>
+
+    <string name="help_root_magisk_title">About Magisk Mocking</string>
+    <string name="help_root_magisk_detail">Many apps check for root by looking for Magisk-specific properties or the /sbin/.magisk folder. This module simulates these elements, allowing you to use root-only features in apps that refuse to start without detecting a Magisk environment.</string>
+
+    <string name="help_root_auto_grant_title">About Auto-Approval</string>
+    <string name="help_root_auto_grant_detail">Legacy root apps often try to grant themselves permissions via shell. This bridge listens for these \'pm grant\' calls and uses Shizuku\'s elevated privileges to approve them instantly, avoiding manual permission management.</string>
+
+    <string name="help_root_file_interceptor_title">About File Interceptor</string>
+    <string name="help_root_file_interceptor_detail">When apps copy files to /data/data using a standard shell, they often lose ownership and SELinux contexts. This module automatically adds flags like --preserve=all to maintain file integrity and prevent app crashes.</string>
+
+    <string name="help_root_busybox_title">About BusyBox Simulation</string>
+    <string name="help_root_busybox_detail">BusyBox is a suite of Unix utilities common on rooted devices. Some older root apps check for its existence before running their logic. This module returns a simulated successful response for the \'busybox\' command.</string>
+
     <string name="settings_hide_disabled_plus_features">Hide disabled Plus Features</string>
     <string name="settings_hide_disabled_plus_features_summary">Don\'t show Plus Features that are currently turned off</string>
     <string name="settings_vector">Vector Acceleration</string>
