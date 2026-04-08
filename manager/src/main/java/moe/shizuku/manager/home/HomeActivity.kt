@@ -524,7 +524,7 @@ abstract class HomeActivity : AppBarActivity() {
         // Check for updates in background
         lifecycleScope.launch {
             try {
-                val updateInfo = UpdateChecker.checkForUpdate()
+                val updateInfo = UpdateChecker.checkForUpdate(ShizukuSettings.getUpdateChannel())
                 
                 // Dismiss checking dialog
                 if (checkingDialog.isShowing) {

@@ -24,6 +24,23 @@
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <!-- Release Channel -->
+    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_update_channel_category"
+        android:defaultValue="true">
+
+        <ListPreference
+            android:key="update_channel"
+            android:title="@string/settings_update_channel_title"
+            android:summary="%s"
+            android:icon="@drawable/ic_code_24dp"
+            android:entries="@array/update_channel_entries"
+            android:entryValues="@array/update_channel_values"
+            android:defaultValue="stable"
+            android:dependency="auto_update_enabled" />
+
+    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
     <!-- Manual Check -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:title="@string/settings_update_manual_category"

@@ -702,6 +702,12 @@
     <string name="settings_auto_update_summary">Automatically check for new versions on app startup</string>
     <string name="settings_auto_install_title">Auto-install updates</string>
     <string name="settings_auto_install_summary">Automatically download and prompt to install updates (requires permission)</string>
+    <string name="settings_update_channel_category">Release Channel</string>
+    <string name="settings_update_channel_title">Update channel</string>
+    <string name="update_channel_stable">Stable</string>
+    <string name="update_channel_dev">Dev / Pre-release</string>
+    <string name="update_channel_dev_warning_title">Switch to Dev channel?</string>
+    <string name="update_channel_dev_warning_message">Dev releases are built from the latest commits and may contain bugs, crashes, or breaking changes. Only use this if you want to test new features early.\n\nYou can switch back to Stable at any time.</string>
     <string name="settings_update_manual_category">Manual Update</string>
     <string name="settings_check_for_update_title">Check for update</string>
     <string name="settings_check_for_update_summary">Manually check if a new version is available</string>
