@@ -65,13 +65,14 @@
         tools:targetApi="33">
 
         <meta-data android:name="io.sentry.dsn" android:value="${sentryDsn}" />
+        <meta-data android:name="io.sentry.auto-init" android:value="false" />
         <meta-data android:name="io.sentry.traces-sample-rate" android:value="0.2" />
         <meta-data android:name="io.sentry.attach-screenshot" android:value="true" />
         <meta-data android:name="io.sentry.attach-view-hierarchy" android:value="true" />
 
         <!-- Main launcher activity -->
         <activity
-            android:name=".home.HomeActivity"
+            android:name=".MainActivity"
             android:banner="@mipmap/banner"
             android:exported="true"
             android:theme="@style/Theme.App.Starting">
@@ -90,13 +91,18 @@
         <!-- Settings Activity -->
         <activity
             android:name=".settings.SettingsActivity"
-            android:exported="false"
+            android:exported="true"
             android:label="@string/settings_title"
-            android:theme="@style/Theme" />
+            android:theme="@style/Theme">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
-        <!-- Legacy activities - kept for backward compatibility -->
+        <!-- HomeActivity is abstract; MainActivity is the concrete launcher -->
         <activity
-            android:name=".MainActivity"
+            android:name=".home.HomeActivity"
             android:exported="false"
             android:theme="@style/Theme" />
         <activity

@@ -131,7 +131,11 @@ public class ShizukuSettings {
     }
 
     public static int getAnimationIntensity() {
-        return Integer.parseInt(getPreferences().getString(Keys.KEY_ANIMATION_INTENSITY, "2"));
+        try {
+            return Integer.parseInt(getPreferences().getString(Keys.KEY_ANIMATION_INTENSITY, "2"));
+        } catch (NumberFormatException e) {
+            return 2;
+        }
     }
 
     public static SharedPreferences getPreferences() {

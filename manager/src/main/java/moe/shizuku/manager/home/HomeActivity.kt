@@ -513,6 +513,8 @@ abstract class HomeActivity : AppBarActivity() {
             return
         }
 
+        if (isFinishing || isDestroyed) return
+
         // Show checking dialog briefly
         val checkingDialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_checking)
