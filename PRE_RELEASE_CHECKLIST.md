@@ -152,7 +152,10 @@
 - Fixed RecyclerView LayoutTransition issue (4 crashes)
 
 ### 🔧 Improvements
+- **Granular Root Compatibility**: Added 5 new toggleable modules for legacy root apps: **AdAway Hosts Bridge**, **Magisk Environment Mocking**, **Auto-Approval Bridge**, **Smart File Interceptor**, and **BusyBox Simulation**.
+- **Advanced AI Intelligence**: Implemented `getWindowHierarchy` for XML-based UI parsing and physical input simulation APIs (`simulateTouch`, `simulateSwipe`, `simulateText`) for AI agents.
 - **Enhanced UI & App Integrations**: Intelligent detection for **MacroDroid**, **Tasker**, **Hex Installer**, and more, with feature-specific integration highlights.
+- **Integrated Feature Guides**: Added dedicated information icons and detailed "About" guides for every ShizukuX feature.
 - **OneUI 8 Stability**: Transitioned to `OverlayManagerTransaction` for stable resource injection on Android 14+ / OneUI 8+.
 - **Functional CLI Bridge**: `plus vm` and `plus storage` commands now correctly call their respective Binder interfaces.
 - **Magic Setup (Neo Backup/SD Maid)**: Implemented `sed`-based auto-configuration to point root apps to the ShizukuX SU Bridge.

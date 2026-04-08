@@ -24,9 +24,10 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 *   **Customizable Gestures**: Configure swipe left, swipe right, and long-press actions for any app in the management list.
 *   **Bulk Management**: Multi-select apps to grant/revoke permissions or hide them in one tap.
 *   **Activity Log**: Audit trail of API calls and `su` bridge commands, complete with app icons and real-time dispatch.
-*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Magic Setup** (automatic configuration for Neo Backup, SD Maid, and Swift Backup).
+*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Granular Module Control** (AdAway, Magisk Mocking, Auto-Grant, etc.).
 *   **Universal SU Automation**: One-tap 'Magic Setup' to configure all installed root apps to use the ShizukuX SU Bridge.
 *   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues (now optimized for Samsung Auto Blocker on S22 Ultra).
+*   **Integrated Feature Guides**: Every "Plus" feature now includes a dedicated **Information Icon** and detailed technical "About" guide to help users master advanced integrations.
 *   **Quick Settings Tile**: Conveniently view and toggle the service status from your notification panel.
 
 ## 🚀 Plus API Features
