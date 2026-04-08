@@ -168,6 +168,14 @@ jobs:
           name: ${{ needs.build.outputs.artifactName }}
           path: files
 
+      - name: Extract Release Notes
+        id: release_notes
+        run: |
+          # Extract everything between '### 🔧 Improvements' and the next header starting with '#'
+          # or the end of the file. Use a temporary file to store the notes.
+          sed -n '/### 🔧 Improvements/,/^#/p' PRE_RELEASE_CHECKLIST.md | sed '$d' > release_notes.md
+          echo "NOTES_FILE=release_notes.md" >> $GITHUB_ENV
+
       - name: Create Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -180,4 +188,4 @@ jobs:
             FLAGS="--draft"
           fi
 
-          gh release create "$TAG_NAME" files/*.apk $FLAGS --title "Release $VERSION" --notes "Release $VERSION"
+          gh release create "$TAG_NAME" files/*.apk $FLAGS --title "ShizukuX $VERSION" --notes-file release_notes.md
