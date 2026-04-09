@@ -16,8 +16,11 @@ import moe.shizuku.server.IShizukuService;
 import rikka.rish.RishConfig;
 import rikka.shizuku.Shizuku;
 import rikka.shizuku.ShizukuApiConstants;
+import moe.shizuku.common.util.Logger;
 
 public class PlusShell {
+
+    private static final Logger.LOGGER LOGGER = new Logger.LOGGER("PlusShell");
 
     private static void printHelp() {
         System.out.println("ShizukuPlus CLI Helper (plus)");
@@ -361,7 +364,7 @@ public class PlusShell {
                     printHelp();
             }
         } catch (Throwable tr) {
-            tr.printStackTrace(System.err);
+            LOGGER.e(tr, "Uncaught exception in PlusShell");
         } finally {
             System.out.flush();
             System.exit(0);
