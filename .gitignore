@@ -17,3 +17,6 @@
 /.mcp.json
 /.claude/settings.local.json
 /**/build/
+CLAUDE.md
+GEMINI.md
+QWEN.md
