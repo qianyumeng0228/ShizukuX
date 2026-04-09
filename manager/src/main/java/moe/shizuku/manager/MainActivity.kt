@@ -38,15 +38,6 @@ class MainActivity : HomeActivity() {
             Log.e(TAG, "Crash in MainActivity.onCreate", e)
             Sentry.captureException(e)
             Sentry.addBreadcrumb(Breadcrumb("MainActivity crash: ${e.message}"))
-            
-            // Try to recover by starting HomeActivity directly
-            try {
-                startActivity(Intent(this, HomeActivity::class.java))
-                finish()
-            } catch (e2: Exception) {
-                Log.e(TAG, "Recovery also failed", e2)
-            }
-            
             throw e
         }
     }

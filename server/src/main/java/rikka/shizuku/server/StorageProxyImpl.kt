@@ -51,4 +51,13 @@ class StorageProxyImpl : IStorageProxy.Stub() {
         }
         return bundle
     }
+
+    override fun mkdir(path: String?): Boolean {
+        if (path == null) return false
+        return try {
+            File(path).mkdirs()
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

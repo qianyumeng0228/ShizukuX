@@ -98,6 +98,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final Handler mainHandler = new Handler(Looper.myLooper());
     //private final Context systemContext = HiddenApiBridge.getSystemContext();
     private final ShizukuClientManager clientManager;
+    private static final List<String> serverLogs = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+    private static final int MAX_SERVER_LOGS = 50;
     private final ShizukuConfigManager configManager;
     private final int managerAppId;
     private final VirtualMachineManagerImpl virtualMachineManager = new VirtualMachineManagerImpl();
@@ -295,8 +297,19 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     private void dispatchLog(String packageName, String action) {
         if (!isFeatureEnabled("enable_activity_log")) return;
-        
+
+        // Store log in internal buffer for CLI access
+        String time = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date());
+        String logEntry = String.format("[%s] %s: %s", time, packageName, action);
+        synchronized (serverLogs) {
+            if (serverLogs.size() >= MAX_SERVER_LOGS) {
+                serverLogs.remove(0);
+            }
+            serverLogs.add(logEntry);
+        }
+
         mainHandler.post(() -> {
+
             ApplicationInfo ai = getManagerApplicationInfo();
             if (ai == null) return;
 
@@ -410,31 +423,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 } else if (baseCmd.equals("setenforce") || baseCmd.equals("chcon") || baseCmd.equals("restorecon")) {
                     if (isFeatureEnabled("root_auto_grant")) {
-                        LOGGER.i("SUBridge: mapping SELinux modification to AppOps elevation for UID " + callingUid);
-                        // Functional Workaround: Grant common high-privilege AppOps to the caller
-                        try {
-                            IBinder binder = ServiceManager.getService("appops");
-                            if (binder != null) {
-                                Object service = Class.forName("com.android.internal.app.IAppOpsService$Stub")
-                                    .getMethod("asInterface", IBinder.class).invoke(null, binder);
-                                java.lang.reflect.Method setMode = service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class);
-                                // 24 = OP_SYSTEM_ALERT_WINDOW, 43 = OP_GET_USAGE_STATS, 63 = OP_WRITE_SETTINGS, 
-                                // 65 = OP_SYSTEM_ALERT_WINDOW (fallback), 100 = OP_MANAGE_EXTERNAL_STORAGE
-                                int[] opsToElevate = {24, 43, 63, 65, 100, 103, 121};
-                                for (int op : opsToElevate) {
-                                    try {
-                                        setMode.invoke(service, op, callingUid, null, 0);
-                                    } catch (Exception e) {
-                                        LOGGER.w(e, "SUBridge: Failed to set AppOps mode %d for uid %d", op, callingUid);
-                                    }
-                                }
-                            }
-                            // Also try to grant WRITE_SECURE_SETTINGS directly via shell if enabled
-                            Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.WRITE_SECURE_SETTINGS"});
-                            Runtime.getRuntime().exec(new String[]{"pm", "grant", callingPkg, "android.permission.DUMP"});
-                        } catch (Exception e) {
-                            LOGGER.e("SUBridge: AppOps elevation failed", e);
-                        }
+                        LOGGER.i("SUBridge: mapping SELinux modification to AppOps elevation for caller package " + callingPkg);
+                        performAppOpsElevation(callingPkg, callingUid);
                     }
                     return newProcessInternal(new String[]{"true"}, env, dir);
                 } else if (baseCmd.equals("setprop") && cmd.length > 2) {
@@ -478,11 +468,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             if (!newCmd.contains("--preserve=all")) newCmd.add(1, "--preserve=all");
                         }
                         return newProcessInternal(newCmd.toArray(new String[0]), env, dir);
-                    }
-                } else if (baseCmd.equals("busybox")) {
-                    if (isFeatureEnabled("root_busybox_mocking")) {
-                        LOGGER.i("SUBridge: mocking busybox command");
-                        return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
                     }
                 } else if (baseCmd.equals("magisk") || baseCmd.endsWith("/magisk")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
@@ -1204,6 +1189,68 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         enforceCallingPermission("getActivityManagerPlus");
         if (!isFeatureEnabled("activity_manager_plus")) return null;
         return activityManagerPlus;
+    }
+
+    @Override
+    public void elevateApp(String packageName) {
+        enforceCallingPermission("elevateApp");
+        if (packageName == null || packageName.isEmpty()) return;
+
+        ApplicationInfo ai = PackageManagerApis.getApplicationInfoNoThrow(packageName, 0, 0);
+        if (ai == null) {
+            LOGGER.w("elevateApp: Package not found: " + packageName);
+            return;
+        }
+
+        performAppOpsElevation(packageName, ai.uid);
+    }
+
+    private void performAppOpsElevation(String packageName, int uid) {
+        LOGGER.i("Plus: elevating AppOps and permissions for " + packageName + " (UID " + uid + ")");
+        try {
+            IBinder binder = ServiceManager.getService("appops");
+            if (binder != null) {
+                Object service = Class.forName("com.android.internal.app.IAppOpsService$Stub")
+                    .getMethod("asInterface", IBinder.class).invoke(null, binder);
+                java.lang.reflect.Method setMode = service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class);
+                // 24 = OP_SYSTEM_ALERT_WINDOW, 43 = OP_GET_USAGE_STATS, 63 = OP_WRITE_SETTINGS,
+                // 65 = OP_SYSTEM_ALERT_WINDOW (fallback), 100 = OP_MANAGE_EXTERNAL_STORAGE,
+                // 103 = OP_ACCESS_RESTRICTED_SETTINGS, 121 = OP_SCHEDULE_EXACT_ALARM (privileged)
+                int[] opsToElevate = {24, 43, 63, 65, 100, 103, 121};
+                for (int op : opsToElevate) {
+                    try {
+                        setMode.invoke(service, op, uid, null, 0);
+                    } catch (Exception e) {
+                        LOGGER.w(e, "Plus: Failed to set AppOps mode %d for uid %d", op, uid);
+                    }
+                }
+            }
+            // Also try to grant WRITE_SECURE_SETTINGS and DUMP directly via shell
+            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.WRITE_SECURE_SETTINGS"});
+            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.DUMP"});
+        } catch (Exception e) {
+            LOGGER.e(e, "Plus: AppOps elevation failed for " + packageName);
+        }
+    }
+
+    @Override
+    public List<String> getRecentLogs() {
+        enforceCallingPermission("getRecentLogs");
+        synchronized (serverLogs) {
+            return new ArrayList<>(serverLogs);
+        }
+    }
+
+    @Override
+    public String getPlusSetting(String key) {
+        enforceCallingPermission("getPlusSetting");
+        return plusSettingsMap.get(key);
+    }
+
+    @Override
+    public boolean isPlusFeatureEnabled(String key) {
+        enforceCallingPermission("isPlusFeatureEnabled");
+        return isFeatureEnabled(key);
     }
 
     @Override
