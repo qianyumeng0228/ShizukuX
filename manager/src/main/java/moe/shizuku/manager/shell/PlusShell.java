@@ -9,8 +9,6 @@ import android.os.RemoteException;
 import java.util.Arrays;
 import java.util.List;
 
-import moe.shizuku.manager.utils.ActivityLogManager;
-import moe.shizuku.manager.utils.ActivityLogRecord;
 import moe.shizuku.server.IAICorePlus;
 import moe.shizuku.server.IStorageProxy;
 import moe.shizuku.server.IVirtualMachineManager;
