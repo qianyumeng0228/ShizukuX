@@ -46,19 +46,19 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
 
         findPreference<Preference>("reset_adb_keys")?.setOnPreferenceClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
-                .setTitle("Reset ADB Keys?")
-                .setMessage("This will delete your local ADB keys and certificates. You will need to re-pair with Wireless Debugging or re-authorize USB connections.")
-                .setPositiveButton("Reset") { _, _ ->
+                .setTitle(R.string.settings_reset_adb_keys)
+                .setMessage(R.string.settings_reset_adb_keys_summary)
+                .setPositiveButton(R.string.settings_reset_adb_keys) { _, _ ->
                     try {
                         ShizukuSettings.getPreferences().edit().remove("adbkey").apply()
                         val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
                         keyStore.load(null)
                         keyStore.deleteEntry("_adbkey_encryption_key_")
-                        Toast.makeText(context, "ADB keys cleared", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, R.string.settings_reset_adb_keys_success, Toast.LENGTH_SHORT).show()
                         activity?.recreate()
                     } catch (e: Exception) {
                         Log.e("AdvancedSettings", "Failed to reset ADB keys", e)
-                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, R.string.settings_reset_adb_keys_error, Toast.LENGTH_LONG).show()
                     }
                 }
                 .setNegativeButton(android.R.string.cancel, null)

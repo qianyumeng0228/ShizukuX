@@ -2,6 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_home_cards"
         android:title="@string/settings_category_home_cards"
         android:defaultValue="true">
 
@@ -32,6 +33,7 @@
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_activity_log"
         android:title="@string/settings_category_activity_log"
         android:defaultValue="true">
 
@@ -41,16 +43,10 @@
             android:icon="@drawable/ic_article_24dp"
             android:defaultValue="true" />
 
-        <SwitchPreferenceCompat
-            android:key="enable_activity_log"
-            android:title="@string/settings_enable_activity_log"
-            android:summary="@string/settings_enable_activity_log_summary"
-            android:icon="@drawable/ic_article_24dp"
-            android:defaultValue="true" />
-
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_database"
         android:title="@string/settings_category_database"
         android:defaultValue="true">
 

@@ -25,6 +25,8 @@ class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
                     val url = java.net.URL("https://raw.githubusercontent.com/thejaustin/ShizukuPlus/master/database/apps.json")
                     val connection = url.openConnection() as java.net.HttpURLConnection
                     connection.requestMethod = "GET"
+                    connection.connectTimeout = 10_000
+                    connection.readTimeout = 10_000
                     val content = connection.inputStream.bufferedReader().readText()
                     withContext(Dispatchers.Main) {
                         AppContextManager.updateDatabase(content)

@@ -69,23 +69,26 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         }
 
         logButton.visibility = if (ok && moe.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
-        logButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+        // Text color is set later after resolving theme colors
         logButton.setOnClickListener {
             context.startActivity(android.content.Intent(context, moe.shizuku.manager.settings.ActivityLogActivity::class.java))
         }
 
-        // Simplify: Remove modern hover effect and expressive styling for original look
-        val okColor = ContextCompat.getColor(context, R.color.status_ok)
-        val errorColor = ContextCompat.getColor(context, R.color.status_error)
-        val bgColor = if (ok) okColor else errorColor
-        
+        val typedValue = android.util.TypedValue()
+        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
+        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
+        context.theme.resolveAttribute(okColorAttr, typedValue, true)
+        val bgColor = typedValue.data
+        context.theme.resolveAttribute(onColorAttr, typedValue, true)
+        val textColor = typedValue.data
+
         cardView.setCardBackgroundColor(bgColor)
-        
-        val textColor = ContextCompat.getColor(context, android.R.color.white)
+
         textView.setTextColor(textColor)
         summaryView.setTextColor(textColor)
-        
-        iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        logButton.setTextColor(textColor)
+
+        iconView.setBackgroundResource(R.drawable.shape_droplet_background)
         iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(textColor)
         iconView.imageTintList = android.content.res.ColorStateList.valueOf(bgColor)
 

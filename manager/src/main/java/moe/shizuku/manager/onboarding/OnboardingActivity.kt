@@ -59,7 +59,9 @@ class OnboardingActivity : AppActivity() {
     private var swipeIconLeft: ImageView? = null
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
-        runOnUiThread { updateSetupPageState(state) }
+        if (!isFinishing && !isDestroyed) {
+            runOnUiThread { updateSetupPageState(state) }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

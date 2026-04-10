@@ -4,6 +4,7 @@
 
     <!-- Auto Update Settings -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_auto_update"
         android:title="@string/settings_update_category"
         android:defaultValue="true">
 
@@ -26,6 +27,7 @@
 
     <!-- Release Channel -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_release_channel"
         android:title="@string/settings_update_channel_category"
         android:defaultValue="true">
 
@@ -33,7 +35,7 @@
             android:key="update_channel"
             android:title="@string/settings_update_channel_title"
             android:summary="%s"
-            android:icon="@drawable/ic_code_24dp"
+            android:icon="@drawable/ic_science_24dp"
             android:entries="@array/update_channel_entries"
             android:entryValues="@array/update_channel_values"
             android:defaultValue="stable"
@@ -43,6 +45,7 @@
 
     <!-- Manual Check -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_manual_check"
         android:title="@string/settings_update_manual_category"
         android:defaultValue="true">
 

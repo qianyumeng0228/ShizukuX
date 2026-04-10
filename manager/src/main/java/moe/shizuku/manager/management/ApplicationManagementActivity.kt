@@ -357,16 +357,21 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
     }
 
     private fun drawSwipeBackground(c: Canvas, v: android.view.View, dX: Float, action: String) {
-        val (color, iconRes) = when (action) {
-            "open_app" -> Color.parseColor("#4CAF50") to R.drawable.ic_outline_play_arrow_24
-            "app_info" -> Color.parseColor("#1976D2") to R.drawable.ic_outline_info_24
-            "toggle_permission" -> Color.parseColor("#FF9800") to R.drawable.ic_server_ok_24dp
-            "hide_from_list" -> Color.parseColor("#E53935") to R.drawable.ic_close_24
-            else -> Color.GRAY to R.drawable.ic_outline_info_24
+        val (bgAttr, onAttr, iconRes) = when (action) {
+            "open_app" -> Triple(com.google.android.material.R.attr.colorPrimary, com.google.android.material.R.attr.colorOnPrimary, R.drawable.ic_outline_play_arrow_24)
+            "app_info" -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
+            "toggle_permission" -> Triple(com.google.android.material.R.attr.colorTertiary, com.google.android.material.R.attr.colorOnTertiary, R.drawable.ic_shield_24)
+            "hide_from_list" -> Triple(com.google.android.material.R.attr.colorError, com.google.android.material.R.attr.colorOnError, R.drawable.ic_visibility_24)
+            else -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
         }
-        
-        val bg = ColorDrawable(color)
-        val icon = AppCompatResources.getDrawable(this, iconRes)?.mutate()?.also { it.setTint(Color.WHITE) }
+        val tv = TypedValue()
+        theme.resolveAttribute(bgAttr, tv, true)
+        val bgColor = tv.data
+        theme.resolveAttribute(onAttr, tv, true)
+        val iconTint = tv.data
+
+        val bg = ColorDrawable(bgColor)
+        val icon = AppCompatResources.getDrawable(this, iconRes)?.mutate()?.also { it.setTint(iconTint) }
         val margin = v.height / 4
         val intrinsicHeight = icon?.intrinsicHeight ?: 0
         val intrinsicWidth = icon?.intrinsicWidth ?: 0

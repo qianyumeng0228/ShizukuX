@@ -37,7 +37,7 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
 
     override fun onBind() {
         val context = itemView.context
-        iconView.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        iconView.setBackgroundResource(R.drawable.shape_droplet_background)
 
         if (!data.first.isRunning) {
             itemView.isEnabled = false

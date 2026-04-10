@@ -2,12 +2,14 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_automatic"
         android:title="@string/settings_category_automatic"
         android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="start_on_boot"
             android:title="@string/settings_start_on_boot"
+            android:summary="@string/settings_start_on_boot_summary"
             android:icon="@drawable/ic_power_settings_new_24dp" />
 
         <SwitchPreferenceCompat
@@ -19,6 +21,7 @@
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_network"
         android:title="@string/settings_category_network"
         android:defaultValue="true">
 
@@ -37,6 +40,7 @@
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_behavior_advanced"
         android:title="@string/settings_category_advanced"
         android:defaultValue="true">
 

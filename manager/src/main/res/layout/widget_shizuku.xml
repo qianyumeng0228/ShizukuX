@@ -14,9 +14,10 @@
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:background="@drawable/shape_droplet_background"
+        android:backgroundTint="?colorPrimaryContainer"
         android:padding="10dp"
         android:src="@drawable/ic_server_ok_24dp"
-        android:tint="@android:color/white" />
+        android:tint="?colorOnPrimaryContainer" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -32,17 +33,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="ShizukuX"
-            android:textColor="?android:attr/textColorPrimary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textAppearance="?textAppearanceTitleMedium"
+            android:textColor="?colorOnSurface" />
 
         <TextView
             android:id="@+id/widget_status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Running"
-            android:textColor="?android:attr/textColorSecondary"
-            android:textSize="14sp" />
+            android:textAppearance="?textAppearanceBodySmall"
+            android:textColor="?colorOnSurfaceVariant" />
 
     </LinearLayout>
 
@@ -52,9 +52,11 @@
         android:layout_height="48dp"
         android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        android:background="@drawable/shape_circle_icon_background"
+        android:background="@drawable/shape_droplet_background"
+        android:backgroundTint="?colorSecondaryContainer"
+        android:padding="10dp"
         android:src="@drawable/ic_server_start_24dp"
-        android:contentDescription="Start Shizuku"
-        android:tint="@android:color/white" />
+        android:contentDescription="@string/accessibility_button_start"
+        android:tint="?colorOnSecondaryContainer" />
 
 </RelativeLayout>

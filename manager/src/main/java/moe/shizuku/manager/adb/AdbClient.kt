@@ -42,6 +42,7 @@ class AdbClient(private val host: String, private val port: Int, private val key
     private val outputStream get() = if (useTls) tlsOutputStream!! else plainOutputStream!!
 
     fun connect() {
+        require(port in 1..65535) { "port out of range: $port" }
         val s = Socket()
         socket = s
         val address = InetSocketAddress(host, port)

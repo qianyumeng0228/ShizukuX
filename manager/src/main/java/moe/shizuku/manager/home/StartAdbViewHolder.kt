@@ -87,6 +87,6 @@ class StartAdbViewHolder(
     override fun onBind() {
         containerBinding.removeBtn.isVisible = HomeEditMode.isActive
         containerBinding.dragHandle.isVisible = HomeEditMode.isActive
-        itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(R.drawable.shape_circle_icon_background)
+        itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(R.drawable.shape_droplet_background)
     }
 }

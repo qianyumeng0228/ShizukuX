@@ -85,6 +85,7 @@ object AdbStarter {
     }
 
     suspend fun stopTcp(context: Context, port: Int) {
+        if (port !in 1..65535) return
         runCatching {
             val cr = context.contentResolver
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {

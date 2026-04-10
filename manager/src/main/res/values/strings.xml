@@ -309,6 +309,10 @@
     <string name="settings_advanced">Advanced</string>
     <string name="settings_legacy_pairing">Legacy pairing</string>
     <string name="settings_legacy_pairing_summary">Enter the pairing code in a dialog instead of a notification</string>
+    <string name="settings_reset_adb_keys">Reset ADB Keys</string>
+    <string name="settings_reset_adb_keys_summary">Delete existing ADB keys and certificates. Useful if pairing is stuck or KeyStore is corrupted.</string>
+    <string name="settings_reset_adb_keys_success">ADB keys cleared</string>
+    <string name="settings_reset_adb_keys_error">Failed to reset ADB keys</string>
 
     <!-- ShizukuX Features -->
     <string name="settings_shizuku_plus_features">ShizukuX Features</string>

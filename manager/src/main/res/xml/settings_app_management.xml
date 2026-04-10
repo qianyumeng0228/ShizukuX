@@ -2,6 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_swipe"
         android:title="@string/settings_category_swipe"
         android:defaultValue="true">
 
@@ -26,6 +27,7 @@
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_long_press"
         android:title="@string/settings_category_long_press"
         android:defaultValue="true">
 
@@ -50,13 +52,13 @@
             android:key="lp_toggle_permission"
             android:title="@string/settings_lp_toggle_permission"
             android:defaultValue="true"
-            android:icon="@drawable/ic_server_ok_24dp" />
+            android:icon="@drawable/ic_shield_24" />
 
         <SwitchPreferenceCompat
             android:key="lp_hide_from_list"
             android:title="@string/settings_lp_hide_from_list"
             android:defaultValue="true"
-            android:icon="@drawable/ic_close_24" />
+            android:icon="@drawable/ic_visibility_24" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

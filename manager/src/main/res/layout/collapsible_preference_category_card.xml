@@ -3,26 +3,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingTop="16dp"
-    android:paddingBottom="4dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingTop="20dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
     android:background="?android:attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Section Header (Label Outside the bubble) -->
     <TextView
         android:id="@android:id/title"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="28dp"
-        android:layout_marginEnd="28dp"
+        android:layout_weight="1"
         android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
-        android:textColor="?colorPrimary"
-        android:textAllCaps="true"
-        android:letterSpacing="0.1"
+        android:textColor="?colorOnSurfaceVariant"
         tools:text="Category Title" />
 
-    <!-- We no longer put a card here; the ItemDecoration draws the bubble around the siblings -->
+    <ImageView
+        android:id="@+id/category_arrow"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="8dp"
+        android:src="@drawable/ic_outline_arrow_upward_24"
+        android:tint="?colorOnSurfaceVariant"
+        android:rotation="180"
+        android:contentDescription="@null" />
 
 </LinearLayout>

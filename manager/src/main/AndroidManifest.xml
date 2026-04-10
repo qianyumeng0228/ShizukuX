@@ -298,15 +298,17 @@
         <receiver android:name=".receiver.NotifCancelReceiver" />
         <receiver android:name=".receiver.NotifRestoreReceiver" />
 
+        <!-- WorkManager is initialized manually via Configuration.Provider in ShizukuApplication.
+             Removing WorkManagerInitializer here prevents the "already initialized" crash (#126). -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="merge">
-            <!-- This entry enables WorkManager to be initialized on startup -->
             <meta-data
                 android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup" />
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
 
         <provider

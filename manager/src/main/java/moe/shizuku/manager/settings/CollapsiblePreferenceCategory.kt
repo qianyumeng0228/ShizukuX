@@ -2,8 +2,6 @@ package moe.shizuku.manager.settings
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.View
-import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceManager
@@ -18,31 +16,40 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
     private var expanded = false
     var onExpansionChanged: ((Boolean) -> Unit)? = null
 
+    private var defaultExpanded = false
+
     init {
         layoutResource = R.layout.collapsible_preference_category_card
         isSelectable = true
-        
+
         val a = context.obtainStyledAttributes(attrs, intArrayOf(android.R.attr.defaultValue))
-        expanded = a.getBoolean(0, false)
+        defaultExpanded = a.getBoolean(0, false)
+        expanded = defaultExpanded
         a.recycle()
     }
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
-        
-        // In M3E Expressive, we toggle by clicking the header label
-        // We've removed the arrow as per latest guidelines
-        
+
         holder.itemView.tag = "category_header"
+
+        // Sync arrow to current state without animation on first bind
+        val arrow = holder.findViewById(R.id.category_arrow)
+        arrow?.rotation = if (expanded) 0f else 180f
+
         holder.itemView.setOnClickListener {
             expanded = !expanded
+            if (shouldPersist()) persistBoolean(expanded)
             updateChildren()
             onExpansionChanged?.invoke(expanded)
             notifyChanged()
+            // Animate arrow with M3E spring-style motion
+            arrow?.animate()
+                ?.rotation(if (expanded) 0f else 180f)
+                ?.setDuration(300)
+                ?.setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
+                ?.start()
         }
-        
-        // Ensure children visibility is in sync
-        updateChildren()
     }
 
     fun isExpanded() = expanded
@@ -50,6 +57,7 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
     fun setExpanded(expanded: Boolean) {
         if (this.expanded != expanded) {
             this.expanded = expanded
+            if (shouldPersist()) persistBoolean(expanded)
             updateChildren()
             onExpansionChanged?.invoke(expanded)
             notifyChanged()
@@ -61,9 +69,13 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
             getPreference(i).isVisible = expanded
         }
     }
-    
+
     override fun onAttachedToHierarchy(preferenceManager: PreferenceManager) {
         super.onAttachedToHierarchy(preferenceManager)
+        // Restore persisted state if we have a key, otherwise use defaultValue
+        if (shouldPersist()) {
+            expanded = getPersistedBoolean(defaultExpanded)
+        }
         updateChildren()
     }
 

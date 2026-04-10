@@ -18,7 +18,7 @@
             android:key="nav_shizuku_plus"
             android:title="@string/settings_shizuku_plus_features"
             android:summary="@string/settings_nav_shizuku_plus_summary"
-            android:icon="@drawable/ic_system_icon"
+            android:icon="@drawable/ic_bolt_24dp"
             android:fragment="moe.shizuku.manager.settings.ShizukuPlusSettingsFragment" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
@@ -39,7 +39,7 @@
             android:key="nav_app_management"
             android:title="@string/settings_app_management"
             android:summary="@string/settings_nav_app_management_summary"
-            android:icon="@drawable/ic_settings_outline_24dp"
+            android:icon="@drawable/ic_devices_24"
             android:fragment="moe.shizuku.manager.settings.AppManagementSettingsFragment" />
 
         <Preference

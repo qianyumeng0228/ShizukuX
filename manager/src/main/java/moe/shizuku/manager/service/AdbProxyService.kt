@@ -173,7 +173,7 @@ class AdbProxyService : Service() {
         socket.use {
             socket.soTimeout = TIMEOUT_MS
             val reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
-            val writer = PrintWriter(socket.getOutputStream(), true, Charsets.UTF_8)
+            val writer = PrintWriter(java.io.OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8), true)
             writer.println("SHIZUKU_PROXY/1.0 READY")
             try {
                 while (coroutineContext.isActive) {

@@ -10,6 +10,7 @@
     <SwitchPreferenceCompat
         android:key="enable_activity_log"
         android:title="@string/settings_enable_activity_log"
+        android:summary="@string/settings_enable_activity_log_summary"
         android:icon="@drawable/ic_article_24dp"
         android:defaultValue="true" />
 
@@ -23,13 +24,13 @@
         android:key="legacy_pairing"
         android:summary="@string/settings_legacy_pairing_summary"
         android:title="@string/settings_legacy_pairing"
-        android:icon="@drawable/ic_history_24dp" />
+        android:icon="@drawable/ic_adb_24dp" />
 
     <Preference
         android:key="reset_adb_keys"
-        android:title="Reset ADB Keys"
-        android:summary="Delete existing ADB keys and certificates. Useful if pairing is stuck or KeyStore is corrupted."
-        android:icon="@drawable/ic_history_24dp" />
+        android:title="@string/settings_reset_adb_keys"
+        android:summary="@string/settings_reset_adb_keys_summary"
+        android:icon="@drawable/ic_delete_24dp" />
 
     <Preference
         android:key="help"
@@ -44,6 +45,6 @@
     <Preference
         android:key="version"
         android:title="@string/settings_version"
-        android:icon="@drawable/ic_system_icon" />
+        android:icon="@drawable/ic_info_24" />
 
 </PreferenceScreen>

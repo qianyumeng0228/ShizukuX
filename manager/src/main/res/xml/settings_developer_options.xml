@@ -3,6 +3,7 @@
 
     <!-- Virtual Machine Support -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_virtualization"
         android:title="@string/settings_developer_category_virtualization"
         android:defaultValue="true">
 
@@ -17,6 +18,7 @@
 
     <!-- Experimental Features -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_experimental"
         android:title="@string/settings_developer_category_experimental"
         android:defaultValue="false">
 
@@ -34,10 +36,15 @@
             android:icon="@drawable/ic_devices_24"
             android:defaultValue="false" />
 
-        <Preference
+        <rikka.preference.SimpleMenuPreference
             android:key="spoof_target"
             android:title="@string/settings_spoof_target"
-            android:icon="@drawable/ic_info_24" />
+            android:entries="@array/spoof_targets"
+            android:entryValues="@array/spoof_targets_values"
+            android:defaultValue="pixel_8_pro"
+            android:summary="%s"
+            android:icon="@drawable/ic_smartphone_24dp"
+            android:dependency="spoof_device_enabled" />
 
     </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

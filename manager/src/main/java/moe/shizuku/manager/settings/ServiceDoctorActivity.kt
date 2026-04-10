@@ -254,10 +254,10 @@ class ServiceDoctorActivity : AppBarActivity() {
             holder.binding.title.text = check.title
             holder.binding.status.text = check.status
             holder.binding.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24dp else R.drawable.ic_server_error_24dp)
-            holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(
-                if (check.ok) androidx.core.content.ContextCompat.getColor(context, R.color.status_ok) 
-                else androidx.core.content.ContextCompat.getColor(context, R.color.status_error)
-            )
+            val tv = android.util.TypedValue()
+            val colorAttr = if (check.ok) com.google.android.material.R.attr.colorTertiary else com.google.android.material.R.attr.colorError
+            context.theme.resolveAttribute(colorAttr, tv, true)
+            holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(tv.data)
             
             if (check.onFix != null) {
                 holder.binding.btnFix.visibility = View.VISIBLE

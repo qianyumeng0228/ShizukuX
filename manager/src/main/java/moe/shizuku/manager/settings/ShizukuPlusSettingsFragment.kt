@@ -41,7 +41,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 }
                 return false
             }
-        }, viewLifecycleOwner)
+        }, this)
 
         val dhizukuPref = requireNotNull(findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE))
         dhizukuPref.isChecked = ShizukuSettings.isDhizukuModeEnabled()

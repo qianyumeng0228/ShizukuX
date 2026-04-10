@@ -4,6 +4,7 @@
 
     <!-- Framework: core delegation and master Plus switch -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_framework"
         android:title="@string/settings_plus_category_framework"
         android:defaultValue="true">
 
@@ -33,6 +34,7 @@
 
     <!-- Performance: shell-level acceleration and process control -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_performance"
         android:title="@string/settings_plus_category_performance"
         android:defaultValue="true">
 
@@ -58,6 +60,7 @@
 
     <!-- Files & VMs: storage access and virtual machines -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_files"
         android:title="@string/settings_plus_category_files"
         android:defaultValue="true">
 
@@ -83,6 +86,7 @@
 
     <!-- Display & Theming: windows and overlay management -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_display"
         android:title="@string/settings_plus_category_display"
         android:defaultValue="true">
 
@@ -101,6 +105,7 @@
             android:summary="@string/settings_overlay_manager_plus_summary"
             android:icon="@drawable/ic_palette_24"
             android:defaultValue="true"
+            android:dependency="window_manager_plus_enabled"
             app:infoTitle="@string/help_overlay_manager_plus_title"
             app:infoDetail="@string/help_overlay_manager_plus_detail" />
 
@@ -108,6 +113,7 @@
 
     <!-- Network & Privacy -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_network"
         android:title="@string/settings_plus_category_network"
         android:defaultValue="true">
 
@@ -124,6 +130,7 @@
 
     <!-- Intelligence & Continuity -->
     <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_intelligence"
         android:title="@string/settings_plus_category_intelligence"
         android:defaultValue="true">
 
@@ -159,6 +166,7 @@
             android:summary="@string/settings_root_adaway_bridge_summary"
             android:icon="@drawable/ic_shield_24"
             android:defaultValue="false"
+            android:dependency="custom_api_enabled"
             app:infoTitle="@string/help_root_adaway_title"
             app:infoDetail="@string/help_root_adaway_detail" />
 
@@ -168,6 +176,7 @@
             android:summary="@string/settings_root_magisk_mocking_summary"
             android:icon="@drawable/ic_settings_suggest_24dp"
             android:defaultValue="false"
+            android:dependency="custom_api_enabled"
             app:infoTitle="@string/help_root_magisk_title"
             app:infoDetail="@string/help_root_magisk_detail" />
 
@@ -177,6 +186,7 @@
             android:summary="@string/settings_root_auto_grant_summary"
             android:icon="@drawable/ic_admin_panel_settings_24dp"
             android:defaultValue="false"
+            android:dependency="custom_api_enabled"
             app:infoTitle="@string/help_root_auto_grant_title"
             app:infoDetail="@string/help_root_auto_grant_detail" />
 
@@ -186,6 +196,7 @@
             android:summary="@string/settings_root_file_interceptor_summary"
             android:icon="@drawable/ic_folder_24"
             android:defaultValue="false"
+            android:dependency="custom_api_enabled"
             app:infoTitle="@string/help_root_file_interceptor_title"
             app:infoDetail="@string/help_root_file_interceptor_detail" />
 
@@ -195,6 +206,7 @@
             android:summary="@string/settings_root_busybox_mocking_summary"
             android:icon="@drawable/ic_terminal_24"
             android:defaultValue="false"
+            android:dependency="custom_api_enabled"
             app:infoTitle="@string/help_root_busybox_title"
             app:infoDetail="@string/help_root_busybox_detail" />
 

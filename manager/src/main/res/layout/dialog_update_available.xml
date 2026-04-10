@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceTitleMedium"
-        android:textColor="?attr/colorPrimary"
+        android:textColor="?colorOnSurface"
         tools:text="Version 13.6.0.r1489-shizukuplus" />
 
     <TextView
@@ -20,7 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:textAppearance="?attr/textAppearanceBodySmall"
-        android:textColor="?android:attr/textColorSecondary"
+        android:textColor="?colorOnSurfaceVariant"
         tools:text="Published: March 28, 2026" />
 
     <ScrollView

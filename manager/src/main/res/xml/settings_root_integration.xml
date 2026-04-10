@@ -33,6 +33,6 @@
         android:key="root_compatibility_hub"
         android:title="@string/settings_root_integration_hub"
         android:summary="@string/settings_root_integration_hub_summary"
-        android:icon="@drawable/ic_root_24dp" />
+        android:icon="@drawable/ic_admin_panel_settings_24dp" />
 
 </PreferenceScreen>
