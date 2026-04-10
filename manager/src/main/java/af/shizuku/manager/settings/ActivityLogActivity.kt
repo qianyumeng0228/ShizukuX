@@ -12,7 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
+import coil3.load
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import af.shizuku.manager.R

@@ -18,6 +18,10 @@ import rikka.core.util.BuildUtils.atLeast30
 import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
 import timber.log.Timber
+import af.shizuku.manager.di.appModule
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
 
 /**
  * ShizukuX Application class
@@ -155,6 +159,13 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // 0. Initialize Timber
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
+        }
+
+        // 0.1 Initialize Koin
+        startKoin {
+            if (BuildConfig.DEBUG) androidLogger()
+            androidContext(this@ShizukuApplication)
+            modules(appModule)
         }
 
         // 1. CRITICAL: Initialize Sentry FIRST

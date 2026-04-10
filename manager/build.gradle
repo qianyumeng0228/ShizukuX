@@ -9,6 +9,7 @@ plugins {
     id "dev.rikka.tools.autoresconfig"
     id "dev.rikka.tools.materialthemebuilder"
     id "io.sentry.android.gradle"
+    id "org.jetbrains.kotlin.plugin.serialization" version "2.2.20"
 }
 
 android {
@@ -194,6 +195,12 @@ dependencies {
 
     implementation libs.timber
     implementation libs.coil
+    implementation libs.coil.network
+
+    implementation libs.koin.android
+    implementation libs.kotlinx.serialization.json
+    implementation libs.lottie
+    debugImplementation libs.leakcanary
 
     implementation libs.material
 

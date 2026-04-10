@@ -25,7 +25,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import coil.load
+import coil3.load
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.launch
 import af.shizuku.manager.R

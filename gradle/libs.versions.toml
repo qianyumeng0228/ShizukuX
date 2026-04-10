@@ -29,9 +29,13 @@ boringssl = "20250114"
 libcxx = "27.0.12077973"
 hidden-api = "4.4.0"
 refine = "4.4.0"
-room = "2.6.1"
+room = "2.7.0-alpha13"
 timber = "5.0.1"
-coil = "2.7.0"
+coil = "3.0.0-rc01"
+koin = "4.0.2"
+serialization = "1.8.0"
+lottie = "6.6.2"
+leakcanary = "2.15"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,7 +55,13 @@ androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", ve
 androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version = "1.0.1" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
-coil = { group = "io.coil-kt", name = "coil", version.ref = "coil" }
+coil = { group = "io.coil-kt.coil3", name = "coil", version.ref = "coil" }
+coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
+
+koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+lottie = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie" }
+leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 rikkax-appcompat = { group = "dev.rikka.rikkax.appcompat", name = "appcompat", version.ref = "rikkax-appcompat" }
 rikkax-compatibility = { group = "dev.rikka.rikkax.compatibility", name = "compatibility", version = "2.0.0" }

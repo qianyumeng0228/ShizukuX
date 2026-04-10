@@ -16,6 +16,7 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
+import org.koin.android.ext.android.inject
 
 class UpdateSettingsFragment : BaseSettingsFragment() {
 
@@ -29,11 +30,10 @@ class UpdateSettingsFragment : BaseSettingsFragment() {
         private const val KEY_LAST_CHECK = "last_check_time"
     }
 
-    private lateinit var updateManager: UpdateManager
+    private val updateManager: UpdateManager by inject()
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_update, rootKey)
-        updateManager = UpdateManager(requireContext())
 
         setupAutoUpdatePreference()
         setupAutoInstallPreference()

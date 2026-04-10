@@ -2,8 +2,10 @@ package af.shizuku.manager.utils
 
 import af.shizuku.manager.ktx.loge
 import af.shizuku.manager.ShizukuSettings
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
+@Serializable
 data class AppEnhancement(
     val key: String,
     val title: String,
@@ -11,6 +13,7 @@ data class AppEnhancement(
 )
 
 /** How well ShizukuX (in ADB mode) can replace root for this app's core functionality. */
+@Serializable
 enum class RootSupportLevel {
     /** All core features work with ShizukuX — no real root needed. */
     FULL,
@@ -22,6 +25,7 @@ enum class RootSupportLevel {
 
 object AppContextManager {
 
+    @Serializable
     data class AppMetadata(
         val description: String,
         val potentialEnhancements: List<AppEnhancement> = emptyList(),
@@ -29,6 +33,24 @@ object AppContextManager {
         val suPathSettingNav: String? = null,
         val rootSupportLevel: RootSupportLevel = RootSupportLevel.FULL
     )
+
+    @Serializable
+    private data class RemoteDbApps(
+        val apps: Map<String, RemoteAppMetadata>
+    )
+
+    @Serializable
+    private data class RemoteAppMetadata(
+        val description: String,
+        val enhancements: List<String> = emptyList(),
+        val verified: Boolean = false,
+        val root_support: String = "full"
+    )
+
+    private val jsonConfig = Json { 
+        ignoreUnknownKeys = true 
+        coerceInputValues = true
+    }
 
     private val ENH_SHELL = AppEnhancement("shell_interceptor", "Shell Acceleration", "Intercepts pm/am commands for native speed.")
     private val ENH_STORAGE = AppEnhancement("storage_proxy", "Storage Bridge", "Bypasses Android 16/17 storage restrictions.")
@@ -161,34 +183,28 @@ object AppContextManager {
     private fun loadFromCache() {
         val json = ShizukuSettings.getRemoteDbJson() ?: return
         try {
-            val root = JSONObject(json)
-            val apps = root.optJSONObject("apps") ?: return
-            apps.keys().forEach { pkg ->
-                val obj = apps.getJSONObject(pkg)
-                val enhancements = mutableListOf<AppEnhancement>()
-                val enhKeys = obj.optJSONArray("enhancements")
-                if (enhKeys != null) {
-                    for (i in 0 until enhKeys.length()) {
-                        val key = enhKeys.getString(i)
-                        when(key) {
-                            "shell_interceptor" -> enhancements.add(ENH_SHELL)
-                            "storage_proxy" -> enhancements.add(ENH_STORAGE)
-                            "dpm_plus" -> enhancements.add(ENH_DPM)
-                            "npu_plus" -> enhancements.add(ENH_NPU)
-                            "vm_plus" -> enhancements.add(ENH_VM)
-                            "win_plus" -> enhancements.add(ENH_WIN)
-                        }
+            val remoteDb = jsonConfig.decodeFromString<RemoteDbApps>(json)
+            remoteDb.apps.forEach { (pkg, remoteApp) ->
+                val enhancements = remoteApp.enhancements.mapNotNull { key ->
+                    when(key) {
+                        "shell_interceptor" -> ENH_SHELL
+                        "storage_proxy" -> ENH_STORAGE
+                        "dpm_plus" -> ENH_DPM
+                        "npu_plus" -> ENH_NPU
+                        "vm_plus" -> ENH_VM
+                        "win_plus" -> ENH_WIN
+                        else -> null
                     }
                 }
-                val rootLevel = when (obj.optString("root_support", "full").lowercase()) {
+                val rootLevel = when (remoteApp.root_support.lowercase()) {
                     "partial" -> RootSupportLevel.PARTIAL
                     "required" -> RootSupportLevel.ROOT_REQUIRED
                     else -> RootSupportLevel.FULL
                 }
                 dynamicDatabase[pkg] = AppMetadata(
-                    description = obj.optString("description", ""),
+                    description = remoteApp.description,
                     potentialEnhancements = enhancements,
-                    isVerified = obj.optBoolean("verified", false),
+                    isVerified = remoteApp.verified,
                     rootSupportLevel = rootLevel
                 )
             }
