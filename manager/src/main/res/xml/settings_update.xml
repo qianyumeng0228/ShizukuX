@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- Auto Update Settings -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_auto_update"
         android:title="@string/settings_update_category"
         android:defaultValue="true">
@@ -23,10 +23,10 @@
             android:defaultValue="false"
             android:dependency="auto_update_enabled" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Release Channel -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_release_channel"
         android:title="@string/settings_update_channel_category"
         android:defaultValue="true">
@@ -41,10 +41,10 @@
             android:defaultValue="stable"
             android:dependency="auto_update_enabled" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Manual Check -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_manual_check"
         android:title="@string/settings_update_manual_category"
         android:defaultValue="true">
@@ -68,6 +68,6 @@
             android:summary=""
             android:icon="@drawable/ic_history_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

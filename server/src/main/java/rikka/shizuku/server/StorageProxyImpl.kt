@@ -3,7 +3,7 @@ package rikka.shizuku.server
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
-import moe.shizuku.server.IStorageProxy
+import af.shizuku.server.IStorageProxy
 import java.io.File
 
 class StorageProxyImpl : IStorageProxy.Stub() {

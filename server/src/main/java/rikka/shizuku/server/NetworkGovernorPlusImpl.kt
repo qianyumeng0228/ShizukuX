@@ -5,7 +5,7 @@ import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
 import android.util.Log
-import moe.shizuku.server.INetworkGovernorPlus
+import af.shizuku.server.INetworkGovernorPlus
 import rikka.hidden.compat.ActivityManagerApis
 import rikka.hidden.compat.PackageManagerApis
 import rikka.shizuku.server.api.IContentProviderUtils

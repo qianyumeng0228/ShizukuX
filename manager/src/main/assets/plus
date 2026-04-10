@@ -23,6 +23,6 @@ fi
 # We use the loader but tell it to load our PlusShell instead of the standard Shell
 # This requires ShizukuShellLoader to be able to load arbitrary classes, 
 # or we use a custom RISH_APPLICATION_ID.
-[ -z "$RISH_APPLICATION_ID" ] && export RISH_APPLICATION_ID="moe.shizuku.privileged.api"
+[ -z "$RISH_APPLICATION_ID" ] && export RISH_APPLICATION_ID="af.shizuku.plus.api"
 
 /system/bin/app_process -Djava.class.path="$DEX" -Dshizuku.cmd=plus /system/bin --nice-name=plus rikka.shizuku.shell.ShizukuShellLoader "$@"

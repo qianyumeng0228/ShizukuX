@@ -14,7 +14,7 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-    <moe.shizuku.manager.utils.EmptyStateView
+    <af.shizuku.manager.utils.EmptyStateView
         android:id="@+id/empty_state_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

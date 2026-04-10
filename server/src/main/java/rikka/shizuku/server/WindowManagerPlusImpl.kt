@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
-import moe.shizuku.server.IWindowManagerPlus
+import af.shizuku.server.IWindowManagerPlus
 
 /**
  * Implementation of WindowManagerPlus using Android's window management APIs.

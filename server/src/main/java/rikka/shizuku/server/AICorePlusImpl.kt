@@ -9,7 +9,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
-import moe.shizuku.server.IAICorePlus
+import af.shizuku.server.IAICorePlus
 
 /**
  * Implementation of AICorePlus using Android's SurfaceControl and AI framework APIs.

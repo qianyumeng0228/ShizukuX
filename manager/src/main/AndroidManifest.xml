@@ -25,25 +25,25 @@
         android:required="false" />
 
     <permission-group
-        android:name="moe.shizuku.manager.permission-group.API"
+        android:name="af.shizuku.plus.permission-group.API"
         android:description="@string/permission_group_description"
         android:icon="@drawable/ic_system_icon"
         android:label="@string/permission_group_label" />
 
     <permission
-        android:name="moe.shizuku.manager.permission.MANAGER"
+        android:name="af.shizuku.plus.permission.MANAGER"
         android:protectionLevel="signature" />
-    <uses-permission android:name="moe.shizuku.manager.permission.MANAGER" />
+    <uses-permission android:name="af.shizuku.plus.permission.MANAGER" />
 
     <permission
-        android:name="moe.shizuku.manager.permission.API_V23"
+        android:name="af.shizuku.plus.permission.API_V23"
         android:description="@string/permission_description"
         android:icon="@drawable/ic_system_icon"
         android:label="@string/permission_label"
-        android:permissionGroup="moe.shizuku.manager.permission-group.API"
+        android:permissionGroup="af.shizuku.plus.permission-group.API"
         android:protectionLevel="dangerous" />
     <uses-permission
-        android:name="moe.shizuku.manager.permission.API_V23"
+        android:name="af.shizuku.plus.permission.API_V23"
         tools:node="remove" />
 
     <application
@@ -138,7 +138,7 @@
             android:exported="true"
             android:label="@string/starter">
             <intent-filter>
-                <action android:name="moe.shizuku.manager.action.START_SERVICE" />
+                <action android:name="af.shizuku.manager.action.START_SERVICE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -179,7 +179,7 @@
             android:name=".legacy.LegacyIsNotSupportedActivity"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:permission="moe.shizuku.manager.permission.API_V23"
+            android:permission="af.shizuku.plus.permission.API_V23"
             android:theme="@style/GrantPermissions">
             <intent-filter>
                 <action android:name="${applicationId}.intent.action.REQUEST_AUTHORIZATION" />
@@ -226,7 +226,7 @@
             android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="moe.shizuku.manager.action.STATE_CHANGED" />
+                <action android:name="af.shizuku.manager.action.STATE_CHANGED" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"

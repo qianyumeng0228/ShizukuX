@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_automatic"
         android:title="@string/settings_category_automatic"
         android:defaultValue="true">
@@ -18,9 +18,9 @@
             android:title="@string/settings_watchdog"
             android:icon="@drawable/ic_visibility_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_network"
         android:title="@string/settings_category_network"
         android:defaultValue="true">
@@ -37,9 +37,9 @@
             android:icon="@drawable/ic_lan_24dp"
             android:inputType="number" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_behavior_advanced"
         android:title="@string/settings_category_advanced"
         android:defaultValue="true">
@@ -50,6 +50,6 @@
             android:summary="@string/settings_auto_disable_usb_debugging_summary"
             android:icon="@drawable/ic_warning_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

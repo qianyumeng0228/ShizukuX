@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.os.ServiceManager
 import android.util.Log
-import moe.shizuku.server.IVirtualMachineManager
+import af.shizuku.server.IVirtualMachineManager
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -253,7 +253,7 @@ class VirtualMachineManagerImpl : IVirtualMachineManager.Stub() {
     }
 
     /**
-     * List all Virtual Machines managed by ShizukuPlus.
+     * List all Virtual Machines managed by ShizukuX.
      * 
      * Returns a list of all VM names known to the VirtualMachineManager.
      * 

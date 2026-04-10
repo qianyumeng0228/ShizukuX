@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.RemoteException
 import android.util.Log
-import moe.shizuku.server.IContinuityBridge
+import af.shizuku.server.IContinuityBridge
 
 /**
  * Implementation of ContinuityBridge using Android 17+ Handoff APIs.
@@ -102,7 +102,7 @@ class ContinuityBridgeImpl : IContinuityBridge.Stub() {
      * List nearby devices that are eligible for handoff.
      * 
      * Uses Android's nearby device discovery to find devices running
-     * ShizukuPlus that can participate in continuity operations.
+     * ShizukuX that can participate in continuity operations.
      * 
      * @return List of device IDs eligible for handoff
      */
@@ -148,7 +148,7 @@ class ContinuityBridgeImpl : IContinuityBridge.Stub() {
      * 
      * Initiates a handoff request that transfers the current task state
      * to the specified target device. The target device must be eligible
-     * (returned by listEligibleDevices) and running ShizukuPlus.
+     * (returned by listEligibleDevices) and running ShizukuX.
      * 
      * @param targetDeviceId The ID of the target device
      * @param taskState Bundle containing the task state to transfer

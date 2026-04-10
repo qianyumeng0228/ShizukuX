@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Virtual Machine Support -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_virtualization"
         android:title="@string/settings_developer_category_virtualization"
         android:defaultValue="true">
@@ -14,10 +14,10 @@
             android:icon="@drawable/ic_server_24"
             android:defaultValue="false" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Experimental Features -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_experimental"
         android:title="@string/settings_developer_category_experimental"
         android:defaultValue="false">
@@ -46,6 +46,6 @@
             android:icon="@drawable/ic_smartphone_24dp"
             android:dependency="spoof_device_enabled" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

@@ -3,12 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- Framework: core delegation and master Plus switch -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_framework"
         android:title="@string/settings_plus_category_framework"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="dhizuku_mode"
             android:title="@string/settings_dhizuku_mode"
             android:summary="@string/settings_dhizuku_mode_summary"
@@ -16,7 +16,7 @@
             app:infoTitle="@string/help_dhizuku_title"
             app:infoDetail="@string/help_dhizuku_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="custom_api_enabled"
             android:title="@string/settings_enhanced_api"
             android:summary="@string/settings_enhanced_api_summary"
@@ -30,15 +30,15 @@
             android:icon="@drawable/ic_visibility_24"
             android:defaultValue="false" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Performance: shell-level acceleration and process control -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_performance"
         android:title="@string/settings_plus_category_performance"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="shell_interceptor_enabled"
             android:title="@string/settings_shell_interceptor"
             android:summary="@string/settings_shell_interceptor_summary"
@@ -47,7 +47,7 @@
             app:infoTitle="@string/help_shell_interceptor_title"
             app:infoDetail="@string/help_shell_interceptor_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="activity_manager_plus_enabled"
             android:title="@string/settings_activity_manager_plus"
             android:summary="@string/settings_activity_manager_plus_summary"
@@ -56,15 +56,15 @@
             app:infoTitle="@string/help_activity_manager_plus_title"
             app:infoDetail="@string/help_activity_manager_plus_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Files & VMs: storage access and virtual machines -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_files"
         android:title="@string/settings_plus_category_files"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="storage_proxy_enabled"
             android:title="@string/settings_storage_proxy"
             android:summary="@string/settings_storage_proxy_summary"
@@ -73,24 +73,24 @@
             app:infoTitle="@string/help_storage_proxy_title"
             app:infoDetail="@string/help_storage_proxy_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="avf_manager_enabled"
-            android:title="@string/settings_avf_manager"
+            android:title="@string/settings_avf_manager_experimental"
             android:summary="@string/settings_avf_manager_summary"
             android:icon="@drawable/ic_server_24"
             android:defaultValue="true"
             app:infoTitle="@string/help_avf_manager_title"
             app:infoDetail="@string/help_avf_manager_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Display & Theming: windows and overlay management -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_display"
         android:title="@string/settings_plus_category_display"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="window_manager_plus_enabled"
             android:title="@string/settings_window_manager_plus"
             android:summary="@string/settings_window_manager_plus_summary"
@@ -99,7 +99,7 @@
             app:infoTitle="@string/help_window_manager_plus_title"
             app:infoDetail="@string/help_window_manager_plus_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="overlay_manager_plus_enabled"
             android:title="@string/settings_overlay_manager_plus"
             android:summary="@string/settings_overlay_manager_plus_summary"
@@ -109,15 +109,15 @@
             app:infoTitle="@string/help_overlay_manager_plus_title"
             app:infoDetail="@string/help_overlay_manager_plus_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Network & Privacy -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_network"
         android:title="@string/settings_plus_category_network"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="network_governor_plus_enabled"
             android:title="@string/settings_network_governor_plus"
             android:summary="@string/settings_network_governor_plus_summary"
@@ -126,24 +126,24 @@
             app:infoTitle="@string/help_network_governor_plus_title"
             app:infoDetail="@string/help_network_governor_plus_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Intelligence & Continuity -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_intelligence"
         android:title="@string/settings_plus_category_intelligence"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="ai_core_plus_enabled"
-            android:title="@string/settings_ai_core_plus"
+            android:title="@string/settings_ai_core_plus_experimental"
             android:summary="@string/settings_ai_core_plus_summary"
             android:icon="@drawable/ic_integration_instructions_24"
             android:defaultValue="true"
             app:infoTitle="@string/help_ai_core_plus_title"
             app:infoDetail="@string/help_ai_core_plus_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="continuity_bridge_enabled"
             android:title="@string/settings_continuity_bridge"
             android:summary="@string/settings_continuity_bridge_summary"
@@ -152,15 +152,15 @@
             app:infoTitle="@string/help_continuity_bridge_title"
             app:infoDetail="@string/help_continuity_bridge_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <!-- Root Compatibility: granular modules for legacy app support -->
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_root_compat"
         android:title="@string/settings_plus_category_root_compat"
         android:defaultValue="false">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_adaway_bridge_enabled"
             android:title="@string/settings_root_adaway_bridge"
             android:summary="@string/settings_root_adaway_bridge_summary"
@@ -170,7 +170,7 @@
             app:infoTitle="@string/help_root_adaway_title"
             app:infoDetail="@string/help_root_adaway_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_magisk_mocking_enabled"
             android:title="@string/settings_root_magisk_mocking"
             android:summary="@string/settings_root_magisk_mocking_summary"
@@ -180,7 +180,7 @@
             app:infoTitle="@string/help_root_magisk_title"
             app:infoDetail="@string/help_root_magisk_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_auto_grant_enabled"
             android:title="@string/settings_root_auto_grant"
             android:summary="@string/settings_root_auto_grant_summary"
@@ -190,7 +190,7 @@
             app:infoTitle="@string/help_root_auto_grant_title"
             app:infoDetail="@string/help_root_auto_grant_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_file_interceptor_enabled"
             android:title="@string/settings_root_file_interceptor"
             android:summary="@string/settings_root_file_interceptor_summary"
@@ -200,7 +200,7 @@
             app:infoTitle="@string/help_root_file_interceptor_title"
             app:infoDetail="@string/help_root_file_interceptor_detail" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_busybox_mocking_enabled"
             android:title="@string/settings_root_busybox_mocking"
             android:summary="@string/settings_root_busybox_mocking_summary"
@@ -210,31 +210,31 @@
             app:infoTitle="@string/help_root_busybox_title"
             app:infoDetail="@string/help_root_busybox_detail" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_developer"
         android:title="@string/settings_plus_category_developer"
         android:visible="false"
         android:defaultValue="false">
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="vector_enabled"
-            android:title="@string/settings_vector"
+            android:title="@string/settings_vector_experimental"
             android:summary="@string/settings_vector_summary"
             android:icon="@drawable/ic_code_24dp"
             android:defaultValue="false" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="experimental_root_compat"
-            android:title="@string/settings_experimental_root"
+            android:title="@string/settings_experimental_root_experimental"
             android:summary="@string/settings_experimental_root_summary"
             android:icon="@drawable/ic_science_24dp"
             android:defaultValue="false" />
 
-        <moe.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="spoof_device_enabled"
-            android:title="@string/settings_spoof_device"
+            android:title="@string/settings_spoof_device_experimental"
             android:summary="@string/settings_spoof_device_summary"
             android:icon="@drawable/ic_smartphone_24dp"
             android:defaultValue="false" />
@@ -248,6 +248,6 @@
             android:summary="%s"
             android:icon="@drawable/ic_smartphone_24dp" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

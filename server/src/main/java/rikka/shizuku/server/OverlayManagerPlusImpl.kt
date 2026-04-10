@@ -4,7 +4,7 @@ import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
 import android.util.Log
-import moe.shizuku.server.IOverlayManagerPlus
+import af.shizuku.server.IOverlayManagerPlus
 import rikka.shizuku.server.util.UserHandleCompat
 
 class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
@@ -80,7 +80,7 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             val overlayName = "shizuku_plus_overlay_${System.currentTimeMillis()}"
             
             val builderConstructor = builderClass.getConstructor(String::class.java, String::class.java, String::class.java)
-            val builderInstance = builderConstructor.newInstance("moe.shizuku.manager", overlayName, targetPackage)
+            val builderInstance = builderConstructor.newInstance("af.shizuku.manager", overlayName, targetPackage)
             
             val setResourceValueMethod = builderClass.getMethod("setResourceValue", String::class.java, Int::class.java, Int::class.java)
             val setResourceValueStringMethod = builderClass.getMethod("setResourceValue", String::class.java, Int::class.java, String::class.java)

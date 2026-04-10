@@ -136,7 +136,7 @@ jobs:
                 ``,
                 `---`,
                 `> 👆 **Subscribe to this issue** to receive notifications when this crash is fixed.`,
-                `> Your crash report helps improve ShizukuX for everyone!`,
+                `> Your crash report helps improve ShizukuPlus for everyone!`,
                 ``,
                 `<!-- sentry-issue-id: ${issue.id} -->`,
                 `<!-- sentry-short-id: ${issue.shortId} -->`,

@@ -24,12 +24,11 @@
 
     <ImageView
         android:id="@+id/category_arrow"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:layout_marginStart="8dp"
-        android:src="@drawable/ic_outline_arrow_upward_24"
+        android:src="@drawable/ic_outline_expand_more_24"
         android:tint="?colorOnSurfaceVariant"
-        android:rotation="180"
         android:contentDescription="@null" />
 
 </LinearLayout>

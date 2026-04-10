@@ -12,9 +12,9 @@ plugins {
 }
 
 android {
-    namespace = "moe.shizuku.manager"
+    namespace = "af.shizuku.manager"
     defaultConfig {
-        applicationId = "moe.shizuku.privileged.api"
+        applicationId = "af.shizuku.plus.api"
         versionCode = rootProject.ext.versionCode
         versionName = rootProject.ext.versionName
         def sentryDsn = project.findProperty('SENTRY_DSN') ?: ''
@@ -191,6 +191,9 @@ dependencies {
     implementation libs.androidx.work.runtime.ktx
     implementation libs.androidx.activity.ktx
     implementation libs.androidx.core.splashscreen
+
+    implementation libs.timber
+    implementation libs.coil
 
     implementation libs.material
 

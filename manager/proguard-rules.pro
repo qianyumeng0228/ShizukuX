@@ -15,7 +15,7 @@
     ** requireNonNull(...);
 }
 
--keepnames class moe.shizuku.api.BinderContainer
+-keepnames class af.shizuku.api.BinderContainer
 
 # Missing class android.app.IProcessObserver$Stub
 # Missing class android.app.IUidObserver$Stub
@@ -33,17 +33,17 @@
 }
 
 # Entrance of user service starter
--keep class moe.shizuku.starter.ServiceStarter {
+-keep class af.shizuku.starter.ServiceStarter {
     public static void main(java.lang.String[]);
 }
 
 # Entrance of shell
--keep class moe.shizuku.manager.shell.Shell {
+-keep class af.shizuku.manager.shell.Shell {
     public static void main(java.lang.String[], java.lang.String, android.os.IBinder, android.os.Handler);
 }
 
 # Keep settings fragments instantiated by name via reflection in PreferenceFragmentCompat
--keep public class moe.shizuku.manager.settings.** extends androidx.fragment.app.Fragment {
+-keep public class af.shizuku.manager.settings.** extends androidx.fragment.app.Fragment {
     public <init>();
 }
 
@@ -51,7 +51,7 @@
     public static *** d(...);
 }
 
--assumenosideeffects class moe.shizuku.manager.utils.Logger {
+-assumenosideeffects class af.shizuku.manager.utils.Logger {
     public *** d(...);
 }
 

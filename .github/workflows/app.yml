@@ -92,8 +92,8 @@ jobs:
           eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease -x sentryUploadSourceBundleRelease
           
           FILE=$(ls "$APK_DIR"/*.apk)
-          ARTIFACT_NAME="shizuku_plus.apk"
-          [ "$IS_DEBUG" = "true" ] && ARTIFACT_NAME="shizuku_plus-debug.apk"
+          ARTIFACT_NAME="shizukuplus.apk"
+          [ "$IS_DEBUG" = "true" ] && ARTIFACT_NAME="shizukuplus-debug.apk"
 
           RENAMED="$FILE"
           if [ "$(basename "$FILE")" != "$ARTIFACT_NAME" ]; then

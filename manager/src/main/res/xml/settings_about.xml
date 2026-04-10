@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <Preference
+        android:key="version"
+        android:title="@string/settings_version"
+        android:icon="@drawable/ic_info_24" />
+
+    <Preference
+        android:key="source_code"
+        android:title="@string/about_view_source_code_title"
+        android:summary="https://github.com/thejaustin/ShizukuX"
+        android:icon="@drawable/ic_baseline_link_24" />
+
+    <Preference
+        android:key="open_source_licenses"
+        android:title="@string/settings_open_source_licenses"
+        android:summary="@string/settings_open_source_licenses_summary"
+        android:icon="@drawable/ic_article_24dp" />
+
+</PreferenceScreen>

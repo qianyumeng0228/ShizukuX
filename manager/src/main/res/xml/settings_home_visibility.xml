@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_home_cards"
         android:title="@string/settings_category_home_cards"
         android:defaultValue="true">
@@ -30,9 +30,9 @@
             android:icon="@drawable/ic_adb_24dp"
             android:defaultValue="false" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_activity_log"
         android:title="@string/settings_category_activity_log"
         android:defaultValue="true">
@@ -43,9 +43,9 @@
             android:icon="@drawable/ic_article_24dp"
             android:defaultValue="true" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_database"
         android:title="@string/settings_category_database"
         android:defaultValue="true">
@@ -56,6 +56,6 @@
             android:summary="@string/settings_update_app_database_summary"
             android:icon="@drawable/ic_autorenew" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

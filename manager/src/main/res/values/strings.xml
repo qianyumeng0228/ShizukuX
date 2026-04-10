@@ -3,7 +3,7 @@
 
     <!-- To translators: you can leave your here -->
     <string name="translation_contributors">thejaustin</string>
-    <string name="translation_url">https://github.com/thejaustin/ShizukuPlus</string>
+    <string name="translation_url">https://github.com/thejaustin/ShizukuX</string>
 
     <!-- UI Settings - Expressive -->
     <string name="settings_expressive_title">Expressive Design (M3E)</string>
@@ -358,7 +358,7 @@
     <string name="help_storage_proxy_detail">The Storage Bridge provides authenticated, high-speed access to restricted filesystem paths like /data/data/ (app data) and /data/app/ (APK files). This allows backup tools like Neo Backup to function without full root access, while maintaining security through Shizuku\'s permission model.</string>
 
     <string name="help_continuity_bridge_title">About Multi-Device Continuity</string>
-    <string name="help_continuity_bridge_detail">Continuity Bridge allows ShizukuPlus devices on the same network to hand off tasks and synchronize clipboard/app state. This utilizes the Android 17 Handoff APIs (backported where possible) to allow seamless transitions of automation tasks between your phone and tablet.</string>
+    <string name="help_continuity_bridge_detail">Continuity Bridge allows ShizukuX devices on the same network to hand off tasks and synchronize clipboard/app state. This utilizes the Android 17 Handoff APIs (backported where possible) to allow seamless transitions of automation tasks between your phone and tablet.</string>
 
     <string name="help_ai_core_plus_title">About Intelligence Bridge</string>
     <string name="help_ai_core_plus_detail">The Intelligence Bridge grants AI assistants privileged access to screen content and NPU scheduling. It enables features like "Circle to Search" or screen-aware context for local LLMs by providing high-performance, window-aware frame capture that bypasses standard Android screen recording restrictions.</string>
@@ -411,13 +411,15 @@
     <string name="help_root_busybox_detail">BusyBox is a suite of Unix utilities common on rooted devices. Some older root apps check for its existence before running their logic. This module returns a simulated successful response for the \'busybox\' command.</string>
 
     <string name="settings_hide_disabled_plus_features">Hide disabled Plus Features</string>
-    <string name="settings_hide_disabled_plus_features_summary">Don\'t show Plus Features that are currently turned off</string>
-    <string name="settings_vector">Vector Acceleration</string>
-    <string name="settings_vector_summary">Experimental native execution of vector-based system operations. Highly unstable.</string>
-    <string name="settings_experimental_root">Experimental Root Compatibility</string>
-    <string name="settings_experimental_root_summary">Functional workarounds for setprop, mount, and SELinux. Unstable.</string>
-    <string name="settings_spoof_device">Spoof Device Identity</string>
-    <string name="settings_spoof_device_summary">Return a generic device identity for system property queries. Unstable.</string>
+    <string name="settings_avf_manager_experimental">Virtual Machine Manager (AVF) (Experimental)</string>
+    <string name="settings_ai_core_plus_experimental">Intelligence Bridge (Experimental)</string>
+    <string name="settings_vector_experimental">Vector Acceleration (Experimental)</string>
+    <string name="settings_experimental_root_experimental">Experimental Root Compatibility (Experimental)</string>
+    <string name="settings_spoof_device_experimental">Spoof Device Identity (Experimental)</string>
+    <string name="settings_open_source_licenses">Open source licenses</string>
+    <string name="settings_open_source_licenses_summary">Open source libraries used by ShizukuX</string>
+    <string name="settings_experimental_warning_title">Experimental Feature</string>
+    <string name="settings_experimental_warning_message">This feature is experimental and may cause system instability or crashes. Are you sure you want to enable it?</string>
     <string name="settings_spoof_target">Target Device</string>
 
     <!-- Root Integration (renamed from Legacy Compatibility) -->
@@ -526,8 +528,10 @@
     <string name="follow_system">Follow system</string>
 
     <!-- About -->
+    <string name="settings_about">About</string>
     <string name="action_about">About</string>
     <string name="about_dialog_button_close">Close</string>
+    <string name="about_view_source_code_title">Source code</string>
     <string name="about_view_source_code"><![CDATA[View source code at %s]]></string>
 
     <!-- Start/Stop -->

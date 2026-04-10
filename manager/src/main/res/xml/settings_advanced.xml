@@ -7,30 +7,30 @@
         android:summary="@string/home_service_doctor_summary"
         android:icon="@drawable/ic_medical_services_24dp" />
 
-    <SwitchPreferenceCompat
+    <androidx.preference.TwoStatePreference
         android:key="enable_activity_log"
         android:title="@string/settings_enable_activity_log"
         android:summary="@string/settings_enable_activity_log_summary"
-        android:icon="@drawable/ic_article_24dp"
+        android:icon="@drawable/ic_history_24"
         android:defaultValue="true" />
 
     <Preference
         android:key="activity_log"
         android:title="@string/settings_activity_log"
-        android:icon="@drawable/ic_article_24dp"
+        android:icon="@drawable/ic_history_24dp"
         android:dependency="enable_activity_log" />
 
-    <SwitchPreferenceCompat
+    <androidx.preference.TwoStatePreference
         android:key="legacy_pairing"
         android:summary="@string/settings_legacy_pairing_summary"
         android:title="@string/settings_legacy_pairing"
-        android:icon="@drawable/ic_adb_24dp" />
+        android:icon="@drawable/ic_numeric_1_circle_outline_24" />
 
     <Preference
         android:key="reset_adb_keys"
         android:title="@string/settings_reset_adb_keys"
         android:summary="@string/settings_reset_adb_keys_summary"
-        android:icon="@drawable/ic_delete_24dp" />
+        android:icon="@drawable/ic_autorenew" />
 
     <Preference
         android:key="help"
@@ -41,10 +41,5 @@
         android:key="report_bug"
         android:title="@string/settings_report_bug"
         android:icon="@drawable/ic_warning_24" />
-
-    <Preference
-        android:key="version"
-        android:title="@string/settings_version"
-        android:icon="@drawable/ic_info_24" />
 
 </PreferenceScreen>

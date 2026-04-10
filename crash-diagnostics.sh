@@ -32,7 +32,7 @@ adb shell getprop ro.build.version.sdk
 echo ""
 
 # Package name
-PACKAGE="moe.shizuku.privileged.api"
+PACKAGE="af.shizuku.plus.api"
 
 # Check if app is installed
 echo -e "${YELLOW}Checking app installation...${NC}"

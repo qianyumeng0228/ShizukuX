@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_swipe"
         android:title="@string/settings_category_swipe"
         android:defaultValue="true">
@@ -24,9 +24,9 @@
             android:summary="%s"
             android:icon="@drawable/ic_swipe_24dp" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_long_press"
         android:title="@string/settings_category_long_press"
         android:defaultValue="true">
@@ -60,6 +60,6 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_visibility_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

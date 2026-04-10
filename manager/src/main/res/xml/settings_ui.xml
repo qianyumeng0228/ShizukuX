@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_dark_mode"
         android:title="@string/settings_category_dark_mode"
         android:defaultValue="true">
 
-        <moe.shizuku.manager.settings.IntegerSimpleMenuPreference
+        <af.shizuku.manager.settings.IntegerSimpleMenuPreference
             android:entries="@array/night_mode"
             android:entryValues="@array/night_mode_value"
             android:key="night_mode"
@@ -20,9 +20,9 @@
             android:title="@string/settings_black_night_theme"
             android:icon="@drawable/ic_monochrome" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_material_you"
         android:title="@string/settings_category_material_you"
         android:defaultValue="true">
@@ -32,9 +32,9 @@
             android:title="@string/settings_use_system_color"
             android:icon="@drawable/ic_palette_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:title="@string/settings_expressive_title"
         android:key="category_expressive"
         android:defaultValue="true">
@@ -82,9 +82,9 @@
             android:dependency="expressive_animations"
             android:icon="@drawable/ic_bolt_24dp" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <moe.shizuku.manager.settings.CollapsiblePreferenceCategory
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_language"
         android:title="@string/settings_category_language"
         android:defaultValue="true">
@@ -101,6 +101,6 @@
             android:title="@string/settings_translation"
             android:icon="@drawable/ic_outline_translate_24" />
 
-    </moe.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

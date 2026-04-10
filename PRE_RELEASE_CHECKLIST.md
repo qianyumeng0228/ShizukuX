@@ -1,4 +1,4 @@
-# ShizukuPlus Pre-Release Checklist
+# ShizukuX Pre-Release Checklist
 
 ## ✅ Code Quality & Stability
 
@@ -143,7 +143,7 @@
 ## 📝 Release Notes Template
 
 ```markdown
-## ShizukuPlus v{VERSION}
+## ShizukuX v{VERSION}
 
 ### 🐛 Bug Fixes
 - Fixed `plus log` not showing any activity logs due to process isolation
@@ -177,8 +177,8 @@
 ## 🔗 Quick Links
 
 - **Sentry Dashboard:** https://af-developments.sentry.io/projects/shizukuplus/
-- **GitHub Releases:** https://github.com/thejaustin/ShizukuPlus/releases
-- **GitHub Actions:** https://github.com/thejaustin/ShizukuPlus/actions
+- **GitHub Releases:** https://github.com/thejaustin/ShizukuX/releases
+- **GitHub Actions:** https://github.com/thejaustin/ShizukuX/actions
 - **Sentry Issues:** https://af-developments.sentry.io/projects/shizukuplus/issues/
 
 ---

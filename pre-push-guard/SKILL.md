@@ -1,11 +1,11 @@
 ---
 name: pre-push-guard
-description: ShizukuPlus codebase integrity checks. Use before pushing or committing to ensure no common build-breaking issues (CMake versions, missing imports, Java/Kotlin interop) exist.
+description: ShizukuX codebase integrity checks. Use before pushing or committing to ensure no common build-breaking issues (CMake versions, missing imports, Java/Kotlin interop) exist.
 ---
 
 # Pre-Push Guard
 
-This skill automates the verification of common issues that have caused GitHub Action build failures in the ShizukuPlus project.
+This skill automates the verification of common issues that have caused GitHub Action build failures in the ShizukuX project.
 
 ## Workflow
 
@@ -20,12 +20,12 @@ The `scripts/pre_push_check.sh` script performs the following:
 -   **CMake Version**: Verifies `cmake_minimum_required` is set to `3.22.1` (runner standard).
 -   **Java/Kotlin Interop**: Ensures Java files access Kotlin objects via `.INSTANCE` (e.g., `BuildUtils.INSTANCE`).
 -   **Resource Integrity**: Scans `strings.xml` for duplicate attribute names.
--   **Kotlin Imports**: Detects missing `import moe.shizuku.manager.R` when `R` is used.
+-   **Kotlin Imports**: Detects missing `import af.shizuku.manager.R` when `R` is used.
 -   **Ambiguous Imports**: Finds duplicate `android.os.Bundle` imports.
 -   **Coroutine Contexts**: Verifies that `launch` and `Dispatchers` have their required `kotlinx.coroutines` imports, and that `lifecycleScope` has its `androidx.lifecycle` import.
 -   **Syntax Integrity**: Detects Kotlin files where `import` statements are accidentally placed below the class definition.
 -   **Submodule Sync**: Ensures the local `api` submodule commit actually exists on the remote before allowing a push.
--   **AAPT Errors**: Prevents `Android resource linking failed` by scanning for hardcoded package names (e.g., `moe.shizuku.privileged.api:`) in XML.
+-   **AAPT Errors**: Prevents `Android resource linking failed` by scanning for hardcoded package names (e.g., `af.shizuku.plus.api:`) in XML.
 -   **Theme References**: Warns if `colorPrimary` is used directly in Kotlin without the `R.attr.` prefix.
 -   **Diagnostic Quality**: Flags remaining `` calls.
 

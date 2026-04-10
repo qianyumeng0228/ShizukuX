@@ -20,7 +20,7 @@
         app:layoutManager="@string/main_layout_manager"
         app:spanCount="1" />
 
-    <moe.shizuku.manager.utils.EmptyStateView
+    <af.shizuku.manager.utils.EmptyStateView
         android:id="@+id/empty_state_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

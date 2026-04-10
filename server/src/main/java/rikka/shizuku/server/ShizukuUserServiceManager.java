@@ -9,7 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import moe.shizuku.starter.ServiceStarter;
+import af.shizuku.starter.ServiceStarter;
 import rikka.hidden.compat.PackageManagerApis;
 import rikka.hidden.compat.UserManagerApis;
 import rikka.shizuku.server.util.UserHandleCompat;

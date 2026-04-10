@@ -29,8 +29,9 @@ public class BinderSender {
 
     private static final Logger LOGGER = new Logger("BinderSender");
 
-    private static final String PERMISSION_MANAGER = "moe.shizuku.manager.permission.MANAGER";
-    private static final String PERMISSION = "moe.shizuku.manager.permission.API_V23";
+    private static final String PERMISSION_MANAGER = "af.shizuku.plus.permission.MANAGER";
+    private static final String PERMISSION = "af.shizuku.plus.permission.API_V23";
+    private static final String PERMISSION_LEGACY = "af.shizuku.manager.permission.API_V23";
 
     private static ShizukuService sShizukuService;
 
@@ -162,7 +163,7 @@ public class BinderSender {
                     ShizukuService.sendBinderToManager(sShizukuService, userId);
                     return;
                 }
-            } else if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+            } else if (ArraysKt.contains(pi.requestedPermissions, PERMISSION) || ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY)) {
                 ShizukuService.sendBinderToUserApp(sShizukuService, packageName, userId);
                 return;
             }

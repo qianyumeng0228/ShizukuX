@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "moe.shizuku.manager.database"
+    namespace = "af.shizuku.manager.database"
     compileSdk = 35
 
     defaultConfig {

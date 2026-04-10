@@ -8,8 +8,8 @@
         android:shortcutLongLabel="@string/home_wireless_adb_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="moe.shizuku.privileged.api"
-            android:targetClass="moe.shizuku.manager.MainActivity">
+            android:targetPackage="af.shizuku.plus.api"
+            android:targetClass="af.shizuku.manager.MainActivity">
             <extra android:name="shortcut_action" android:value="start_wireless_adb" />
         </intent>
     </shortcut>
@@ -21,7 +21,7 @@
         android:shortcutLongLabel="@string/home_app_management_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="moe.shizuku.privileged.api"
-            android:targetClass="moe.shizuku.manager.management.ApplicationManagementActivity" />
+            android:targetPackage="af.shizuku.plus.api"
+            android:targetClass="af.shizuku.manager.management.ApplicationManagementActivity" />
     </shortcut>
 </shortcuts>

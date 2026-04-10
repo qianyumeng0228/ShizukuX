@@ -1,0 +1,108 @@
+package af.shizuku.manager.utils
+
+import android.Manifest.permission.WRITE_SECURE_SETTINGS
+import android.content.Context
+import android.content.pm.PackageManager
+import android.provider.Settings
+import timber.log.Timber
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import af.shizuku.manager.ShizukuApplication
+import af.shizuku.manager.ShizukuSettings
+import rikka.shizuku.Shizuku
+
+object ShizukuStateMachine {
+
+    enum class State { STARTING, RUNNING, STOPPING, STOPPED, CRASHED }
+
+    private var state = AtomicReference<State>(State.STOPPED)
+    private val listeners = CopyOnWriteArrayList<(State) -> Unit>()
+
+    init {
+        Shizuku.addBinderReceivedListenerSticky(
+            Shizuku.OnBinderReceivedListener { set(State.RUNNING) }
+        )
+        Shizuku.addBinderDeadListener(
+            Shizuku.OnBinderDeadListener { setDead() }
+        )
+    }
+
+    fun get(): State = state.get()
+
+    private fun transition(transform: (State) -> State) {
+        val oldState = state.getAndUpdate(transform)
+        val newState = transform(oldState)
+        if(oldState != newState) {
+            listeners.forEach { it(newState) }
+            Timber.tag("ShizukuStateMachine").d(newState.toString())
+
+            // Broadcast state change for widgets and other receivers
+            try {
+                val context = ShizukuApplication.appContext
+                val intent = android.content.Intent("af.shizuku.manager.action.STATE_CHANGED").apply {
+                    setPackage(context.packageName)
+                }
+                context.sendBroadcast(intent)
+            } catch (e: UninitializedPropertyAccessException) {
+                Timber.tag("ShizukuStateMachine").w("Skipping broadcast: appContext not initialized yet")
+            }
+        }
+    }
+
+    fun set(newState: State) = transition { newState }
+
+    fun setDead() = transition {
+        when (it) {
+            State.RUNNING -> State.CRASHED
+            State.STOPPING -> {
+                try {
+                    val context = ShizukuApplication.appContext
+                    val permissionGranted = context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
+                    val shouldDisableUsbDebugging = permissionGranted && ShizukuSettings.getAutoDisableUsbDebugging()
+                    if (shouldDisableUsbDebugging) {
+                        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+                    }
+                } catch (e: UninitializedPropertyAccessException) {
+                    Timber.tag("ShizukuStateMachine").w("Skipping USB debugging disable: appContext not initialized yet")
+                } catch (e: Exception) {
+                    Timber.tag("ShizukuStateMachine").w(e, "Failed to disable USB debugging")
+                }
+                State.STOPPED
+            }
+            else -> it
+        }
+    }
+
+    fun update(): State {
+        val state = if (Shizuku.pingBinder()) State.RUNNING else State.STOPPED
+        set(state)
+        return state
+    }
+
+    fun isRunning(): Boolean {
+        return get() == State.RUNNING
+    }
+
+    fun isDead(): Boolean {
+        return (get() == State.STOPPED || get() == State.CRASHED) 
+    }
+
+    fun addListener(listener: (State) -> Unit) {
+        listeners.add(listener)
+        listener(state.get())
+    }
+
+    fun removeListener(listener: (State) -> Unit) {
+        listeners.remove(listener)
+    }
+
+    fun asFlow(): Flow<State> = callbackFlow {
+        val listener: (State) -> Unit = { trySend(it).isSuccess }
+        addListener(listener)
+        awaitClose { removeListener(listener) }
+    }
+
+}

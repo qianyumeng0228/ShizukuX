@@ -6,15 +6,15 @@ An enhanced version of [Shizuku](https://github.com/RikkaApps/Shizuku) with qual
 
 Shizuku lets normal apps use system-level APIs directly via a privileged process started with adb or root. ShizukuX keeps full compatibility while adding features for power users and developers.
 
-[![Stars](https://img.shields.io/github/stars/thejaustin/ShizukuPlus?style=for-the-badge&color=bfb330&labelColor=807820)](https://github.com/thejaustin/ShizukuPlus/stargazers)
-[![Downloads](https://img.shields.io/github/downloads/thejaustin/ShizukuPlus/total?style=for-the-badge&color=bf7830&labelColor=805020)](https://github.com/thejaustin/ShizukuPlus/releases)
-[![Latest Release](https://img.shields.io/github/v/release/thejaustin/ShizukuPlus?style=for-the-badge&color=3060bf&labelColor=204080&label=Latest)](https://github.com/thejaustin/ShizukuPlus/releases/latest)
+[![Stars](https://img.shields.io/github/stars/thejaustin/ShizukuX?style=for-the-badge&color=bfb330&labelColor=807820)](https://github.com/thejaustin/ShizukuX/stargazers)
+[![Downloads](https://img.shields.io/github/downloads/thejaustin/ShizukuX/total?style=for-the-badge&color=bf7830&labelColor=805020)](https://github.com/thejaustin/ShizukuX/releases)
+[![Latest Release](https://img.shields.io/github/v/release/thejaustin/ShizukuX?style=for-the-badge&color=3060bf&labelColor=204080&label=Latest)](https://github.com/thejaustin/ShizukuX/releases/latest)
 
 </div>
 
 ## ⬇️ Download
 
-Get the latest release from [GitHub Releases](https://github.com/thejaustin/ShizukuPlus/releases).
+Get the latest release from [GitHub Releases](https://github.com/thejaustin/ShizukuX/releases).
 
 ## ✨ ShizukuX Core Features
 
@@ -42,7 +42,7 @@ ShizukuX provides exclusive system interfaces for advanced automation and tools:
 *   **System Theming Bridge (Overlay Manager Plus)**: Expose privileged overlay management for rootless theming (like Hex Installer).
 *   **Network & DNS Governor**: Manage Private DNS and iptables routing for rootless ad-blockers and firewalls.
 *   **Deep Process Control (Activity Manager Plus)**: Allow advanced process managers to deeply kill apps and set standby buckets.
-*   **Continuity Bridge**: Secure state and task handoff between ShizukuPlus-enabled devices.
+*   **Continuity Bridge**: Secure state and task handoff between ShizukuX-enabled devices.
 
 ## 🛠️ Backporting & Optimizations
 
@@ -73,7 +73,7 @@ Everything in ShizukuX is optional. Use the **Plus Features** category in Settin
 
 ## 📱 Developer Guide
 
-See the [ShizukuPlus-API](https://github.com/thejaustin/ShizukuPlus-API) repository for documentation on the exclusive Plus APIs.
+See the [ShizukuX-API](https://github.com/thejaustin/ShizukuX-API) repository for documentation on the exclusive Plus APIs.
 
 ## 📃 License
 

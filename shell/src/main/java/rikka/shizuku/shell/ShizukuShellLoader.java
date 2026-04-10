@@ -54,7 +54,7 @@ public class ShizukuShellLoader {
         data.putBinder("binder", receiverBinder);
 
         Intent intent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
-                .setPackage("moe.shizuku.privileged.api")
+                .setPackage("af.shizuku.plus.api")
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
                 .putExtra("data", data);
 
@@ -107,8 +107,8 @@ public class ShizukuShellLoader {
         try {
             var classLoader = new BaseDexClassLoader(sourceDir, null, librarySearchPath, ClassLoader.getSystemClassLoader());
             String className = "plus".equals(System.getProperty("shizuku.cmd")) 
-                ? "moe.shizuku.manager.shell.PlusShell" 
-                : "moe.shizuku.manager.shell.Shell";
+                ? "af.shizuku.manager.shell.PlusShell" 
+                : "af.shizuku.manager.shell.Shell";
             Class<?> cls = classLoader.loadClass(className);
             cls.getDeclaredMethod("main", String[].class, String.class, IBinder.class, Handler.class)
                     .invoke(null, args, callingPackage, binder, handler);
