@@ -255,7 +255,7 @@ class ServiceDoctorActivity : AppBarActivity() {
             holder.binding.status.text = check.status
             holder.binding.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24dp else R.drawable.ic_server_error_24dp)
             val tv = android.util.TypedValue()
-            val colorAttr = if (check.ok) com.google.android.material.R.attr.colorTertiary else com.google.android.material.R.attr.colorError
+            val colorAttr = if (check.ok) com.google.android.material.R.attr.colorTertiary else android.R.attr.colorError
             context.theme.resolveAttribute(colorAttr, tv, true)
             holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(tv.data)
             
