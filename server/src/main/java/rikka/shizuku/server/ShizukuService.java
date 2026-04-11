@@ -1234,39 +1234,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags) throws RemoteException {
-        // Support legacy interface tokens from existing Shizuku apps
-        if (data.enforceInterface("moe.shizuku.server.IShizukuService")) {
-            // We need to manually handle the transaction because enforceInterface consumes the token
-            // but we want to use the super.onTransact logic which also calls enforceInterface(DESCRIPTOR).
-            // However, super.onTransact will fail if the token is already consumed or mismatched.
-            
-            // A better way is to let AIDL handle it by rewriting the token in the parcel if it matches the legacy one.
-            // But Parcel is mostly read-only for the token part once read.
-            
-            // Re-routing: If we are here, it means moe.shizuku.server.IShizukuService was in the parcel.
-            // We can just call super.onTransact but we need to satisfy its enforceInterface(af.shizuku.server.IShizukuService).
-        }
-        
-        try {
-            return super.onTransact(code, data, reply, flags);
-        } catch (SecurityException e) {
-            // If super.onTransact failed due to interface mismatch, try again by manually matching
-            // This is complex. Let's use a simpler approach: check the token manually.
-            data.setDataPosition(0);
-            String descriptor = data.readInterfaceToken();
-            if ("moe.shizuku.server.IShizukuService".equals(descriptor) || "af.shizuku.server.IShizukuService".equals(descriptor)) {
-                // Manually handle the most common transactions if super fails, or just ensure super works.
-                // Actually, the easiest way is to modify the generated Stub if possible, but we can't easily.
-                
-                // Let's just catch the exception and log it for now, 
-                // most modern apps use the wrapper which handles this.
-            }
-            throw e;
-        }
-    }
-
-    @Override
     public List<String> getRecentLogs() {
         enforceCallingPermission("getRecentLogs");
         synchronized (serverLogs) {
