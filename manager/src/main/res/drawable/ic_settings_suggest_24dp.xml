@@ -1,1 +1,10 @@
-tmp_icons/settings_suggest.svg -> tmp_icons_settings_suggest.xml
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?attr/colorControlNormal">
+  <path
+      android:fillColor="@android:color/white"
+      android:pathData="M17,11.05V2h-2v4H9V2H7v9.05C5.23,11.5 4,13.1 4,15c0,1.9 1.23,3.5 3,3.95V22h2v-3.05C10.77,18.5 12,16.9 12,15s-1.23,-3.5 -3,-3.95zM11,15c0,1.1 -0.9,2 -2,2s-2,-0.9 -2,-2 0.9,-2 2,-2 2,0.9 2,2zM17,2v9.05C15.23,11.5 14,13.1 14,15s1.23,3.5 3,3.95V22h2v-3.05C20.77,18.5 22,16.9 22,15c0,-1.9 -1.23,-3.5 -3,-3.95V6h2V2h-4zM18,17c-1.1,0 -2,-0.9 -2,-2s0.9,-2 2,-2 2,0.9 2,2 -0.9,2 -2,2z"/>
+</vector>
