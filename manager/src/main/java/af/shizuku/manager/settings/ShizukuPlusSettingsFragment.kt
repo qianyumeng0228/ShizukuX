@@ -18,7 +18,7 @@ import android.view.MenuItem
 import androidx.core.view.MenuProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
-class ShizukuXSettingsFragment : BaseSettingsFragment() {
+class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_shizuku_plus, rootKey)
