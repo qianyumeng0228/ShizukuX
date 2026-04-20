@@ -57,9 +57,7 @@
 
     <style name="Theme" parent="Base.AppTheme" />
 
-    <style name="AppTheme.PreferenceThemeOverlay" parent="@style/PreferenceThemeOverlay.Rikka.Material3">
-        <item name="switchPreferenceCompatStyle">@style/Preference.Rikka.MaterialSwitchPreference</item>
-    </style>
+    <style name="AppTheme.PreferenceThemeOverlay" parent="@style/PreferenceThemeOverlay.Rikka.Material3" />
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>
