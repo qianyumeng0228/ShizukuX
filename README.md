@@ -79,7 +79,7 @@ See the [ShizukuX-API](https://github.com/thejaustin/ShizukuPlus-API) repository
 
 ShizukuX is a community-driven enhancement and fork of [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of the original [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku). This project is not affiliated with the original RikkaApps team.
 
-Thanks to the following upstream contributors and projects:
+Thanks to the following upstream contributors and projects whose work makes ShizukuX possible:
 
 - **[RikkaApps / Rikka](https://github.com/RikkaApps)** — For the foundational Shizuku project and its elegant API design.
 - **[thedjchi](https://github.com/thedjchi)** — For the intermediate fork and initial quality-of-life improvements.
