@@ -12,12 +12,20 @@ import timber.log.Timber
 
 object RootCompatHelper {
 
+    private fun escapeSed(s: String) = s
+        .replace("\\", "\\\\")
+        .replace("|", "\\|")
+        .replace("&", "\\&")
+
+    private fun escapeShellSingleQuote(s: String) = s.replace("'", "'\\''")
+
     /**
      * Automatically configures popular root apps to use the ShizukuX SU Bridge.
      * Uses Shizuku's privileged shell to modify target app preferences.
      */
     suspend fun autoSetup(context: Context, packageName: String, suPath: String): Boolean = withContext(Dispatchers.IO) {
         try {
+            val safeReplace = escapeSed(suPath)
             when (packageName) {
                 "org.adaway" -> {
                     executePrivileged(arrayOf("settings", "put", "global", "adaway_su_path", suPath))
@@ -28,21 +36,17 @@ object RootCompatHelper {
                     true
                 }
                 "com.machiav3lli.neo_backup" -> {
-                    // Neo Backup stores its custom shell path in shared_prefs
-                    val script = "find /data/data/$packageName/shared_prefs -name \"*.xml\" -type f | xargs sed -i 's|<string name=\"custom_shell_path\">.*</string>|<string name=\"custom_shell_path\">$suPath</string>|g'"
+                    val safePath = escapeShellSingleQuote(suPath)
+                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"custom_shell_path\">.*</string>|<string name=\"custom_shell_path\">$safeReplace</string>|g'"
                     executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
                 "eu.darken.sdm", "eu.darken.sdmse" -> {
-                    // SD Maid / SE - Search and replace su path in settings
-                    val script = "find /data/data/$packageName/shared_prefs -name \"*.xml\" -type f | xargs sed -i 's|/system/[^/ ]*/su|$suPath|g'"
+                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|/system/[^/ ]*/su|$safeReplace|g'"
                     executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
-                "org.swiftapps.swiftbackup" -> {
-                    // Swift Backup - Use universal approach
-                    universalAutoSetup(packageName, suPath)
-                }
+                "org.swiftapps.swiftbackup" -> universalAutoSetup(packageName, suPath)
                 else -> universalAutoSetup(packageName, suPath)
             }
         } catch (e: Exception) {
@@ -55,11 +59,8 @@ object RootCompatHelper {
      */
     private fun universalAutoSetup(packageName: String, suPath: String): Boolean {
         return try {
-            val prefsDir = "/data/data/$packageName/shared_prefs"
-            // Use sh -c to execute sed via Shizuku's privileged shell
-            // We search for common patterns like /system/bin/su or /system/xbin/su and replace them
-            // Use -r with xargs to avoid running sed if find returns nothing
-            val script = "find $prefsDir -name \"*.xml\" -type f 2>/dev/null | xargs -r sed -i 's|/system/[^/ ]*/su|$suPath|g'"
+            val safeReplace = escapeSed(suPath)
+            val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f 2>/dev/null | xargs -r sed -i 's|/system/[^/ ]*/su|$safeReplace|g'"
             executePrivileged(arrayOf("sh", "-c", script))
             true
         } catch (e: Exception) {

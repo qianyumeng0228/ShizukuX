@@ -21,6 +21,7 @@ sealed class SettingsPage(
         fragmentArg: String? = null
     ) : SettingsPage(action, fragmentArg) {
 
+        object Options : Developer()
         object HighlightUsbDebugging : Developer(fragmentArg = "enable_adb")
         object HighlightWirelessDebugging : Developer(fragmentArg = "toggle_adb_wireless")
 

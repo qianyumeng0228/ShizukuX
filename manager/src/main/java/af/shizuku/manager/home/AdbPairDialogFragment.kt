@@ -31,7 +31,6 @@ import af.shizuku.manager.adb.*
 import af.shizuku.manager.databinding.AdbPairDialogBinding
 import af.shizuku.manager.ktx.loge
 import af.shizuku.manager.utils.SettingsHelper
-import af.shizuku.manager.utils.SettingsPage
 import java.net.ConnectException
 
 @RequiresApi(VERSION_CODES.R)

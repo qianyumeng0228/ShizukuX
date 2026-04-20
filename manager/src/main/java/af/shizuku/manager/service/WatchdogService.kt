@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class WatchdogService : Service() {
 
     private var lastRestartMs = 0L
+    private var consecutiveCrashes = 0
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var job: Job? = null
 
@@ -40,18 +41,24 @@ class WatchdogService : Service() {
                 NotificationChannel(WATCHDOG_CHANNEL_ID, "Watchdog", NotificationManager.IMPORTANCE_LOW)
             )
         }
-        
+
         job = scope.launch {
             ShizukuStateMachine.asFlow().collectLatest { state ->
                 if (state == ShizukuStateMachine.State.CRASHED) {
                     val now = System.currentTimeMillis()
-                    if (now - lastRestartMs > RESTART_COOLDOWN_MS) {
+                    val cooldown = backoffMs(consecutiveCrashes)
+                    if (now - lastRestartMs > cooldown) {
+                        consecutiveCrashes++
                         lastRestartMs = now
                         showCrashNotification()
                         ShizukuReceiverStarter.start(applicationContext)
+                        Timber.tag(TAG).d("Watchdog: restart #$consecutiveCrashes (cooldown was ${cooldown}ms)")
                     } else {
-                        Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms since last)")
+                        Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms / ${cooldown}ms)")
                     }
+                } else if (state == ShizukuStateMachine.State.RUNNING) {
+                    // Reset backoff counter once service is confirmed stable
+                    consecutiveCrashes = 0
                 }
             }
         }
@@ -161,8 +168,12 @@ class WatchdogService : Service() {
         const val WATCHDOG_CHANNEL_ID = "shizuku_watchdog"
         const val CRASH_CHANNEL_ID = "crash_reports"
 
-        private const val RESTART_COOLDOWN_MS = 5_000L
+        private const val BASE_COOLDOWN_MS = 5_000L
+        private const val MAX_COOLDOWN_MS = 300_000L   // 5 min cap
         private val isRunning = AtomicBoolean(false)
+
+        fun backoffMs(crashes: Int): Long =
+            minOf(BASE_COOLDOWN_MS * (1L shl crashes.coerceAtMost(10)), MAX_COOLDOWN_MS)
 
         @JvmStatic
         fun start(context: Context) {
