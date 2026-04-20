@@ -78,7 +78,7 @@ object AppContextManager {
         put("com.uzumapps.wakelockdetector", AppMetadata("Wakelock Detector: Find apps draining your battery.", listOf(ENH_SHELL), true))
         put("com.asksven.betterbatterystats", AppMetadata("BetterBatteryStats: Deep dive into battery drain.", listOf(ENH_SHELL), true))
         put("com.jrummy.apps.build.prop.editor", AppMetadata("BuildProp Editor: Edit system properties. Writing /system requires Shizuku with root.", emptyList(), true, rootSupportLevel = RootSupportLevel.ROOT_REQUIRED))
-        put("org.swiftapps.swiftbackup", AppMetadata("Swift Backup: Fast and reliable backup tool.", listOf(ENH_STORAGE, ENH_SHELL), true))
+        put("org.swiftapps.swiftbackup", AppMetadata("Swift Backup: Fast and reliable backup tool.", listOf(ENH_STORAGE, ENH_SHELL), true, "Settings > Storage > Custom shell"))
 
         // --- thejaustin's Apps ---
         put("thejaustin.hexodus", AppMetadata("Hexodus: Spiritual successor to Hex Installer for OneUI 8.", listOf(ENH_SHELL, ENH_WIN), true))
@@ -136,7 +136,7 @@ object AppContextManager {
         put("com.aurora.store", AppMetadata("Aurora Store: Privacy Play Store client.", listOf(ENH_SHELL), true))
         put("com.looker.droidify", AppMetadata("Droid-ify: Material F-Droid client.", listOf(ENH_SHELL), true))
         put("eu.darken.sdmse", AppMetadata("SD Maid SE: System cleaning tool.", listOf(ENH_SHELL, ENH_STORAGE), true))
-        put("org.swiftapps.swiftbackup", AppMetadata("Swift Backup: App and data backups.", listOf(ENH_SHELL, ENH_STORAGE), true))
+        put("com.paget96.chargemonitor", AppMetadata("Battery Charge Limit: Cap charge % to preserve battery health. Needs Shizuku with root to write charge limit sysfs.", emptyList(), true, rootSupportLevel = RootSupportLevel.ROOT_REQUIRED))
         put("com.mihonapp.mihon", AppMetadata("Mihon: Manga reader and extension manager.", listOf(ENH_SHELL), true))
     }
 
