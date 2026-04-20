@@ -43,11 +43,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         }
 
         findPreference<Preference>("open_source_licenses")?.setOnPreferenceClickListener {
-            com.mikepenz.aboutlibraries.LibsBuilder()
-                .withActivityTitle(getString(R.string.settings_open_source_licenses))
-                .withEdgeToEdge(true)
-                .withSearchEnabled(true)
-                .start(requireContext())
+            CustomTabsHelper.launchUrlOrCopy(requireContext(), "https://github.com/thejaustin/ShizukuPlus/blob/main/NOTICE")
             true
         }
     }

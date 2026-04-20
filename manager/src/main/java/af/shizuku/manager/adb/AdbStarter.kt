@@ -25,7 +25,7 @@ import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import io.sentry.Sentry
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import af.shizuku.manager.utils.SettingsPage
+import android.content.Intent
 
 object AdbStarter {
     private const val TAG = "AdbStarter"
@@ -95,7 +95,7 @@ object AdbStarter {
                         .setTitle(R.string.adb_error_ssl_title)
                         .setMessage(R.string.adb_error_ssl_message)
                         .setPositiveButton(R.string.adb_error_ssl_button_reset) { _, _ ->
-                            SettingsPage.Development.launch(context)
+                            context.startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
                         }
                         .setNegativeButton(android.R.string.cancel, null)
                         .show()

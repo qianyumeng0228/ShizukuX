@@ -65,8 +65,8 @@ object HapticUtils {
      * Feedback for reaching a threshold during a gesture
      */
     fun gestureThreshold(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_THRESHOLD)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE)
         } else {
             tick(view)
         }

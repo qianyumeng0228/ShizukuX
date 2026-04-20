@@ -272,7 +272,6 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                         viewHolder?.itemView?.animate()
                             ?.scaleX(1.04f)
                             ?.scaleY(1.04f)
-...
                             ?.translationZ(16f)
                             ?.setDuration(200)
                             ?.setInterpolator(android.view.animation.DecelerateInterpolator())
@@ -333,7 +332,6 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
             override fun handleOnBackPressed() {
                 backThresholdReached = false
                 if (HomeEditMode.isActive) {
-...
                     HomeEditMode.exit()
                     if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                         recyclerView.animate()
