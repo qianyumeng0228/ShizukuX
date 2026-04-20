@@ -31,9 +31,8 @@ ShizukuX is built on the shoulders of many excellent open-source projects. Full 
 ### aShell You
 - **Author**: Muntashir Akon / Shashank
 - **Repository**: https://github.com/MuntashirAkon/aShell
-- **License**: GPL-3.0 (no code incorporated — inspiration only)
-- **Usage**: Terminal and shell automation UX patterns that influenced ShizukuX design.
-  No source code from aShell You is present in this project.
+- **License**: GPL-3.0
+- **Usage**: Terminal and shell automation UX patterns that inspired the ShizukuX shell feature design.
 
 ---
 
