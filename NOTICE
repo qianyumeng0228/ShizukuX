@@ -1,0 +1,231 @@
+ShizukuX
+Copyright 2026 thejaustin (Justin Austin)
+
+This product is an enhanced fork of Shizuku by RikkaApps and thedjchi/Shizuku.
+It includes software developed by the following projects and authors. Each
+library is used in compliance with its respective license terms.
+
+================================================================================
+UPSTREAM FORKS
+================================================================================
+
+Shizuku — https://github.com/RikkaApps/Shizuku
+Copyright (c) RikkaApps
+Licensed under the Apache License, Version 2.0
+
+Shizuku (thedjchi fork) — https://github.com/thedjchi/Shizuku
+Copyright (c) thedjchi
+Licensed under the Apache License, Version 2.0
+
+Dhizuku — https://github.com/iamr0s/Dhizuku
+Copyright (c) iamr0s
+Licensed under the Apache License, Version 2.0
+
+================================================================================
+ANDROID JETPACK (ANDROIDX)
+================================================================================
+
+Copyright (c) The Android Open Source Project
+Licensed under the Apache License, Version 2.0
+
+Includes: core-ktx, appcompat, fragment-ktx, recyclerview, preference-ktx,
+browser, work-runtime-ktx, activity-ktx, core-splashscreen, lifecycle
+(viewmodel, livedata, runtime), room (runtime, ktx).
+
+https://developer.android.com/jetpack
+
+================================================================================
+MATERIAL COMPONENTS FOR ANDROID
+================================================================================
+
+Copyright (c) Google LLC
+Licensed under the Apache License, Version 2.0
+https://github.com/material-components/material-components-android
+
+================================================================================
+GOOGLE MATERIAL SYMBOLS
+================================================================================
+
+Copyright (c) Google LLC
+Licensed under the Apache License, Version 2.0
+https://fonts.google.com/icons
+
+================================================================================
+KOTLIN & JETBRAINS LIBRARIES
+================================================================================
+
+Copyright (c) JetBrains s.r.o.
+Licensed under the Apache License, Version 2.0
+https://github.com/JetBrains/kotlin
+
+Includes: kotlinx-coroutines-core, kotlinx-coroutines-android,
+kotlinx-serialization-json.
+
+================================================================================
+RIKKAX LIBRARIES
+================================================================================
+
+Copyright (c) Rikka (RikkaApps)
+Licensed under the Apache License, Version 2.0
+https://github.com/RikkaApps
+
+Includes: rikkax-appcompat, rikkax-compatibility, rikkax-core-ktx,
+rikkax-material, rikkax-material-preference, rikkax-html-ktx, rikkax-insets,
+rikkax-layoutinflater, rikkax-simplemenu-preference, rikkax-recyclerview-adapter,
+rikkax-recyclerview-ktx, rikkax-lifecycle-resource, rikkax-parcelablelist,
+dev.rikka.hidden (compat, stub), dev.rikka.tools.refine (runtime, annotation).
+
+================================================================================
+MAVERICKS (MVRX)
+================================================================================
+
+Copyright (c) Airbnb, Inc.
+Licensed under the Apache License, Version 2.0
+https://github.com/airbnb/mavericks
+
+================================================================================
+LOTTIE FOR ANDROID
+================================================================================
+
+Copyright (c) Airbnb, Inc.
+Licensed under the Apache License, Version 2.0
+https://github.com/airbnb/lottie-android
+
+================================================================================
+LEAKCANARY
+================================================================================
+
+Copyright (c) Square, Inc.
+Licensed under the Apache License, Version 2.0
+https://github.com/square/leakcanary
+
+================================================================================
+TIMBER
+================================================================================
+
+Copyright (c) Jake Wharton
+Licensed under the Apache License, Version 2.0
+https://github.com/JakeWharton/timber
+
+================================================================================
+COIL
+================================================================================
+
+Copyright (c) Coil Contributors
+Licensed under the Apache License, Version 2.0
+https://github.com/coil-kt/coil
+
+================================================================================
+KOIN
+================================================================================
+
+Copyright (c) Koin Contributors
+Licensed under the Apache License, Version 2.0
+https://github.com/InsertKoinIO/koin
+
+================================================================================
+SENTRY ANDROID SDK
+================================================================================
+
+Copyright (c) Sentry
+Licensed under the MIT License
+https://github.com/getsentry/sentry-java
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+================================================================================
+ABOUTLIBRARIES
+================================================================================
+
+Copyright (c) Mike Penz
+Licensed under the Apache License, Version 2.0
+https://github.com/mikepenz/AboutLibraries
+
+================================================================================
+LIBSU
+================================================================================
+
+Copyright (c) topjohnwu
+Licensed under the Apache License, Version 2.0
+https://github.com/topjohnwu/libsu
+
+================================================================================
+ANDROIDHIDDENAPIBYPASS
+================================================================================
+
+Copyright (c) LSPosed Contributors
+Licensed under the Apache License, Version 2.0
+https://github.com/LSPosed/AndroidHiddenApiBypass
+
+================================================================================
+LIBCXX
+================================================================================
+
+Copyright (c) LLVM Project Contributors / LSPosed
+Licensed under the Apache License, Version 2.0 with LLVM Exception
+https://github.com/lsposed/libcxx
+
+================================================================================
+BOUNCY CASTLE (bcpkix-jdk18on)
+================================================================================
+
+Copyright (c) The Legion of the Bouncy Castle Inc.
+Licensed under the MIT License (Bouncy Castle variant)
+https://www.bouncycastle.org/
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+================================================================================
+BORINGSSL (NDK PACKAGING)
+================================================================================
+
+Copyright (c) vvb2060 and contributors
+Copyright (c) Google Inc. (BoringSSL)
+Licensed under the Apache License, Version 2.0 / ISC / OpenSSL License
+https://github.com/vvb2060/ndk-boringssl
+
+================================================================================
+APPICONLOADER
+================================================================================
+
+Copyright (c) Zhang Hai
+Licensed under the Apache License, Version 2.0
+https://github.com/zhanghai/AppIconLoader
+
+================================================================================
+GSON
+================================================================================
+
+Copyright (c) Google Inc.
+Licensed under the Apache License, Version 2.0
+https://github.com/google/gson
+
+================================================================================
+APACHE LICENSE, VERSION 2.0
+================================================================================
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

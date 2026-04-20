@@ -79,14 +79,41 @@ See the [ShizukuX-API](https://github.com/thejaustin/ShizukuPlus-API) repository
 
 ShizukuX is a community-driven enhancement and fork of [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of the original [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku). This project is not affiliated with the original RikkaApps team.
 
-We are deeply grateful to the following upstream contributors and projects whose work makes ShizukuX possible:
+### Upstream Projects
 
-- **[RikkaApps / Rikka](https://github.com/RikkaApps)** — For the foundational Shizuku project and its elegant API design.
-- **[thedjchi](https://github.com/thedjchi)** — For the intermediate fork and initial quality-of-life improvements.
-- **[Muntashir Akon](https://github.com/MuntashirAkon)** — For the aShell You codebase, which inspired our terminal and shell automation features.
-- **[iamr0s](https://github.com/iamr0s)** — For Dhizuku, enabling the unified Device Owner privilege mode.
+| Project | Author | License | Role |
+|---------|--------|---------|------|
+| [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps / Rikka | Apache 2.0 | Foundational privileged-process architecture |
+| [Shizuku (fork)](https://github.com/thedjchi/Shizuku) | thedjchi | Apache 2.0 | Intermediate fork with QoL improvements |
+| [Dhizuku](https://github.com/iamr0s/Dhizuku) | iamr0s | Apache 2.0 | Device Owner binder sharing (Dhizuku Mode) |
 
-All components are used under their respective open-source licenses (Apache 2.0 / GPL). See the [NOTICE](NOTICE) and [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) for full attribution details.
+### Open Source Libraries
+
+| Library | Author | License |
+|---------|--------|---------|
+| [AndroidX Jetpack](https://developer.android.com/jetpack) | Google / AOSP | Apache 2.0 |
+| [Material Components](https://github.com/material-components/material-components-android) | Google | Apache 2.0 |
+| [Material Symbols](https://fonts.google.com/icons) | Google | Apache 2.0 |
+| [Kotlin / Coroutines / Serialization](https://github.com/JetBrains/kotlin) | JetBrains | Apache 2.0 |
+| [RikkaX Libraries](https://github.com/RikkaApps) (appcompat, material, insets, html, recyclerview, preference, lifecycle, parcelablelist) | Rikka | Apache 2.0 |
+| [Hidden API / Refine](https://github.com/RikkaApps/HiddenApiCompat) | Rikka | Apache 2.0 |
+| [Mavericks (MvRx)](https://github.com/airbnb/mavericks) | Airbnb | Apache 2.0 |
+| [Lottie](https://github.com/airbnb/lottie-android) | Airbnb | Apache 2.0 |
+| [Coil](https://github.com/coil-kt/coil) | Coil Contributors | Apache 2.0 |
+| [Koin](https://github.com/InsertKoinIO/koin) | Koin Contributors | Apache 2.0 |
+| [Timber](https://github.com/JakeWharton/timber) | Jake Wharton | Apache 2.0 |
+| [libsu](https://github.com/topjohnwu/libsu) | topjohnwu | Apache 2.0 |
+| [AndroidHiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) | LSPosed | Apache 2.0 |
+| [libcxx](https://github.com/lsposed/libcxx) | LSPosed / LLVM | Apache 2.0 + LLVM Exception |
+| [AppIconLoader](https://github.com/zhanghai/AppIconLoader) | Zhang Hai | Apache 2.0 |
+| [BoringSSL (NDK)](https://github.com/vvb2060/ndk-boringssl) | vvb2060 / Google | Apache 2.0 / ISC |
+| [Gson](https://github.com/google/gson) | Google | Apache 2.0 |
+| [LeakCanary](https://github.com/square/leakcanary) | Square | Apache 2.0 |
+| [AboutLibraries](https://github.com/mikepenz/AboutLibraries) | Mike Penz | Apache 2.0 |
+| [Bouncy Castle](https://www.bouncycastle.org/) | Legion of Bouncy Castle | MIT |
+| [Sentry Android SDK](https://github.com/getsentry/sentry-java) | Sentry | MIT |
+
+Full license texts and per-library details: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | [NOTICE](NOTICE)
 
 ## 📃 License
 
