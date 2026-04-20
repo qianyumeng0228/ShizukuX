@@ -225,8 +225,6 @@ dependencies {
     implementation libs.libsu.core
     
     implementation libs.aboutlibraries.core
-    implementation libs.markdowntwain
-
     implementation libs.rikkax.appcompat
     implementation libs.rikkax.compatibility
     implementation libs.rikkax.core

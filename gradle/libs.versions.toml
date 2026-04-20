@@ -39,7 +39,6 @@ mavericks = "3.0.9"
 spotless = "6.25.0"
 kotestJunit5 = "5.9.1"
 aboutlibraries = "11.6.3"
-markdowntwain = "1.0.1"
 leakcanary = "2.15"
 
 [libraries]
@@ -61,7 +60,6 @@ androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscree
 
 mavericks = { group = "com.airbnb.android", name = "mavericks", version.ref = "mavericks" }
 kotestJunit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotestJunit5" }
-markdowntwain = { group = "com.github.thejaustin", name = "markdowntwain", version.ref = "markdowntwain" }
 aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
 aboutlibraries-ui = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
 

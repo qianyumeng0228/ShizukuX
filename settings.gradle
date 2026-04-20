@@ -31,7 +31,6 @@ dependencyResolutionManagement {
             url = "https://jitpack.io"
             content {
                 includeGroup("com.github.topjohnwu.libsu")
-                includeGroup("com.github.thejaustin")
             }
         }
     }

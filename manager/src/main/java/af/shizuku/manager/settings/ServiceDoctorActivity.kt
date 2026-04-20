@@ -236,7 +236,7 @@ class ServiceDoctorActivity : AppBarActivity() {
             tipsTextView.text = getString(R.string.doctor_system_well_configured)
         } else {
             val content = tips.joinToString("\n\n")
-            com.github.thejaustin.markdowntwain.MarkdownTwain.parse(content, tipsTextView)
+            tipsTextView.text = content
         }
     }
 
