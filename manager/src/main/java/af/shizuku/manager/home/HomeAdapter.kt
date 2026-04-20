@@ -1,6 +1,7 @@
 package af.shizuku.manager.home
 
 import android.os.Build
+import com.airbnb.mvrx.withState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -77,11 +78,15 @@ class HomeAdapter(
         lastUpdateDataTime = now
         isUpdating = true
         scope.launch {
-            val status = homeModel.serviceStatus.value?.data ?: run {
+            val (status, grantedCount, isEditMode) = withState(homeModel) { 
+                Triple(it.serviceStatus.invoke(), it.grantedAppCount, it.isEditMode)
+            }
+
+            if (status == null) {
                 isUpdating = false
                 return@launch
             }
-            val grantedCount = appsModel.grantedCount.value?.data ?: 0
+
             val adbPermission = status.permission
             val running = status.isRunning
             val isPrimaryUser = UserHandleCompat.myUserId() == 0

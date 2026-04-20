@@ -20,6 +20,7 @@ import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
 import timber.log.Timber
 import af.shizuku.manager.di.appModule
+import com.airbnb.mvrx.Mavericks
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -200,6 +201,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+
+        // 0.0 Initialize Mavericks for MVI state management
+        Mavericks.initialize(this)
 
         // 0.1 Initialize Koin
         startKoin {

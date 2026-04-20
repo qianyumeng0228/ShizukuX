@@ -47,7 +47,7 @@ class StarterActivity : AppBarActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_close_24)
 
-        val binding = StarterActivityBinding.bind(rootView)
+        val binding = StarterActivityBinding.bind(rootView.getChildAt(0))
 
         viewModel.output.observe(this) { result ->
             val output = result.data?.trim() ?: return@observe

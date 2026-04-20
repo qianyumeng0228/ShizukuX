@@ -1,5 +1,6 @@
 plugins {
     id "com.android.library"
+    id "org.jetbrains.kotlin.android"
     id "dev.rikka.tools.refine"
 }
 
@@ -7,6 +8,10 @@ android {
     namespace = "rikka.shizuku.starter"
     buildFeatures {
         buildConfig = false
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
     }
 }
 
@@ -19,4 +24,6 @@ dependencies {
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub
     implementation libs.refine.runtime
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.coroutines.android
 }

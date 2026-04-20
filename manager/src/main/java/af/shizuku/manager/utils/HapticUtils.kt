@@ -49,4 +49,33 @@ object HapticUtils {
             view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         }
     }
+
+    /**
+     * Feedback for the start of a gesture (e.g. drag start)
+     */
+    fun gestureStart(view: View) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+        } else {
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        }
+    }
+
+    /**
+     * Feedback for reaching a threshold during a gesture
+     */
+    fun gestureThreshold(view: View) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_THRESHOLD)
+        } else {
+            tick(view)
+        }
+    }
+
+    /**
+     * Heavy "thud" feedback for significant UI events
+     */
+    fun heavyClick(view: View) {
+        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+    }
 }

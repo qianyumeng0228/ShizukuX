@@ -17,6 +17,10 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
+import com.airbnb.mvrx.MavericksView
+import com.airbnb.mvrx.viewModel
+import com.airbnb.mvrx.withState
+import com.airbnb.mvrx.Success
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -41,6 +45,7 @@ import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
 import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
@@ -52,9 +57,9 @@ import rikka.recyclerview.addItemSpacing
 import rikka.recyclerview.fixEdgeEffect
 import rikka.shizuku.Shizuku
 
-abstract class HomeActivity : AppBarActivity() {
+abstract class HomeActivity : AppBarActivity(), MavericksView {
 
-    private val homeModel: HomeViewModel by viewModels()
+    private val homeModel: HomeViewModel by viewModel()
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
     private var versionClickCount = 0
@@ -107,14 +112,14 @@ abstract class HomeActivity : AppBarActivity() {
             startActivity(android.content.Intent(this, af.shizuku.manager.settings.SettingsActivity::class.java))
         }
 
-        // Initial status load - MUST be called before observer
-        checkServerStatus()
+        // Initial status load
+        homeModel.reload()
 
-        homeModel.serviceStatus.observe(this) {
-            if (it.status == Status.SUCCESS) {
-                val status = it.data ?: return@observe
+        homeModel.onEach(HomeState::serviceStatus) {
+            if (it is Success) {
+                val status = it.invoke()
                 val wasRunning = adapter.itemCount > 0 && (adapter.getItemId(0) == HomeAdapter.ID_STATUS) && 
-                                (homeModel.serviceStatus.value?.data?.isRunning == true)
+                                (withState(homeModel) { s -> s.serviceStatus.invoke()?.isRunning == true })
                 
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
@@ -138,7 +143,7 @@ abstract class HomeActivity : AppBarActivity() {
             }
         }
 
-        homeModel.shouldShowBatteryOptimizationSnackbar.observe(this) {
+        homeModel.onEach(HomeState::shouldShowBatteryOptimizationSnackbar) {
             if (it) {
                 SnackbarHelper.show(
                     this,
@@ -160,8 +165,8 @@ abstract class HomeActivity : AppBarActivity() {
 
         // Samsung Auto Blocker check for One UI 7/8+
         if (EnvironmentUtils.isSamsung() && EnvironmentUtils.getOneUiVersion() >= 6) {
-            homeModel.serviceStatus.observe(this) {
-                if (it.status == Status.SUCCESS && it.data?.isRunning == false) {
+            homeModel.onEach(HomeState::serviceStatus) {
+                if (it is Success && it.invoke().isRunning == false) {
                     SnackbarHelper.show(
                         this,
                         binding.root,
@@ -182,6 +187,7 @@ abstract class HomeActivity : AppBarActivity() {
 
         appsModel.grantedCount.observe(this) {
             if (it.status == Status.SUCCESS) {
+                homeModel.updateGrantedAppCount(it.data ?: 0)
                 adapter.updateData()
             }
         }
@@ -244,15 +250,15 @@ abstract class HomeActivity : AppBarActivity() {
             override fun getMovementFlags(rv: RecyclerView, vh: RecyclerView.ViewHolder): Int {
                 return if (adapter.isDraggable(vh.adapterPosition))
                     makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
-                else
+                    else
                     makeMovementFlags(0, 0)
-            }
+                    }
 
-            override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+                    override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
                 if (!adapter.isDraggable(target.adapterPosition)) return false
                 adapter.moveItem(src.adapterPosition, target.adapterPosition)
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    target.itemView.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+                    HapticUtils.tap(target.itemView)
                 }
                 return true
             }
@@ -262,11 +268,11 @@ abstract class HomeActivity : AppBarActivity() {
                 if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
                     adapter.isDragging = true
                     if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                        val haptic = if (Build.VERSION.SDK_INT >= 30) android.view.HapticFeedbackConstants.GESTURE_START else android.view.HapticFeedbackConstants.LONG_PRESS
-                        viewHolder?.itemView?.performHapticFeedback(haptic)
+                        viewHolder?.itemView?.let { HapticUtils.gestureStart(it) }
                         viewHolder?.itemView?.animate()
                             ?.scaleX(1.04f)
                             ?.scaleY(1.04f)
+...
                             ?.translationZ(16f)
                             ?.setDuration(200)
                             ?.setInterpolator(android.view.animation.DecelerateInterpolator())
@@ -303,9 +309,19 @@ abstract class HomeActivity : AppBarActivity() {
 
         // Predictive back support for edit mode with expressive M3 scaling
         val backCallback = object : androidx.activity.OnBackPressedCallback(HomeEditMode.isActive) {
+            private var backThresholdReached = false
+
             override fun handleOnBackProgressed(backEvent: androidx.activity.BackEventCompat) {
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     val progress = backEvent.progress
+                    
+                    if (progress > 0.1f && !backThresholdReached) {
+                        backThresholdReached = true
+                        HapticUtils.gestureThreshold(recyclerView)
+                    } else if (progress < 0.1f) {
+                        backThresholdReached = false
+                    }
+
                     // Subtle parabolic scale and alpha for more "physical" feel
                     val scale = 1f - (0.08f * progress * progress)
                     recyclerView.scaleX = scale
@@ -315,7 +331,9 @@ abstract class HomeActivity : AppBarActivity() {
             }
             
             override fun handleOnBackPressed() {
+                backThresholdReached = false
                 if (HomeEditMode.isActive) {
+...
                     HomeEditMode.exit()
                     if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                         recyclerView.animate()
@@ -346,6 +364,7 @@ abstract class HomeActivity : AppBarActivity() {
         HomeEditMode.onChanged = {
             lifecycleScope.launch {
                 delay(150)
+                homeModel.setEditMode(HomeEditMode.isActive)
                 adapter.updateData()
                 invalidateOptionsMenu()
                 backCallback.isEnabled = HomeEditMode.isActive
@@ -386,6 +405,10 @@ abstract class HomeActivity : AppBarActivity() {
     override fun onPause() {
         super.onPause()
         SnackbarHelper.dismiss()
+    }
+
+    override fun invalidate() {
+        // Mavericks state changed - individual property observers (onEach) handle specific updates
     }
 
     private fun checkServerStatus() {

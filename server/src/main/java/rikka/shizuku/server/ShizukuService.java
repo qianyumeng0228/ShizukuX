@@ -95,7 +95,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @SuppressWarnings({"FieldCanBeLocal"})
-    private final Handler mainHandler = new Handler(Looper.myLooper());
+    private final Handler mainHandler = rikka.shizuku.server.ktx.HandlerKt.getMainHandler();
     //private final Context systemContext = HiddenApiBridge.getSystemContext();
     private final ShizukuClientManager clientManager;
     private static final List<String> serverLogs = java.util.Collections.synchronizedList(new java.util.ArrayList<>());

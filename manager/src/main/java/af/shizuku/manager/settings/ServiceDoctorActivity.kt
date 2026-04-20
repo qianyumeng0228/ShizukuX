@@ -23,6 +23,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
+import af.shizuku.manager.adb.AdbPairingAccessibilityService
 import af.shizuku.manager.app.AppBarActivity
 import af.shizuku.manager.databinding.ActivityServiceDoctorBinding
 import af.shizuku.manager.databinding.ItemDoctorCheckBinding
@@ -47,7 +48,7 @@ class ServiceDoctorActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = ActivityServiceDoctorBinding.bind(rootView)
+        val binding = ActivityServiceDoctorBinding.bind(rootView.getChildAt(0))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         tipsTextView = binding.tipsText
@@ -231,10 +232,11 @@ class ServiceDoctorActivity : AppBarActivity() {
         }
 
         checkListAdapter.submitList(checks)
-        tipsTextView.text = if (tips.isEmpty()) {
-            getString(R.string.doctor_system_well_configured)
+        if (tips.isEmpty()) {
+            tipsTextView.text = getString(R.string.doctor_system_well_configured)
         } else {
-            tips.joinToString("\n\n")
+            val content = tips.joinToString("\n\n")
+            com.github.thejaustin.markdowntwain.MarkdownTwain.parse(content, tipsTextView)
         }
     }
 

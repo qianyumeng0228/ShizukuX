@@ -24,6 +24,8 @@ import af.shizuku.manager.starter.Starter
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import io.sentry.Sentry
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import af.shizuku.manager.utils.SettingsPage
 
 object AdbStarter {
     private const val TAG = "AdbStarter"
@@ -87,6 +89,18 @@ object AdbStarter {
                 }
             }
         } catch (e: Exception) {
+            if (e is SSLException && (e.message?.contains("protocol version") == true || e is javax.net.ssl.SSLProtocolException)) {
+                withContext(Dispatchers.Main) {
+                    MaterialAlertDialogBuilder(context)
+                        .setTitle(R.string.adb_error_ssl_title)
+                        .setMessage(R.string.adb_error_ssl_message)
+                        .setPositiveButton(R.string.adb_error_ssl_button_reset) { _, _ ->
+                            SettingsPage.Development.launch(context)
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                }
+            }
             if (e !is CancellationException && !e.isExpectedAdbError()) {
                 Sentry.captureException(e)
             }

@@ -33,23 +33,15 @@ class ActivityLogActivity : AppBarActivity() {
     private val adapter = LogAdapter()
     private lateinit var emptyStateView: EmptyStateView
 
-    override fun getLayoutId() = R.layout.apps_appbar_activity
+    override fun getLayoutId() = R.layout.apps_activity
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val appsBinding = AppsActivityBinding.inflate(layoutInflater, rootView, false)
-        setContentView(appsBinding.root)
+        val appsBinding = AppsActivityBinding.bind(rootView.getChildAt(0))
         
-        val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)
-
-        // Hide search/filter
-        appbarBinding.searchLayout.visibility = View.GONE
-        appbarBinding.filterChipGroup.parent.let {
-            if (it is View) it.visibility = View.GONE
-        }
 
         // Setup empty state view
         emptyStateView = appsBinding.emptyStateView

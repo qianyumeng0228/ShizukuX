@@ -1,14 +1,13 @@
 package af.shizuku.manager.home
 
-import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.content.pm.PermissionInfo
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
+import com.airbnb.mvrx.MavericksViewModel
+import com.airbnb.mvrx.MavericksViewModelFactory
+import com.airbnb.mvrx.ViewModelContext
+import com.airbnb.mvrx.Loading
+import com.airbnb.mvrx.Success
+import com.airbnb.mvrx.Fail
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.BuildConfig
@@ -18,83 +17,78 @@ import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.Logger.LOGGER
 import af.shizuku.manager.utils.SettingsHelper
-import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.utils.ShizukuSystemApis
-import rikka.lifecycle.Resource
 import rikka.shizuku.Shizuku
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val appContext: Context = getApplication<Application>().applicationContext
-
-    private val _serviceStatus = MutableLiveData<Resource<ServiceStatus>>()
-    val serviceStatus = _serviceStatus as LiveData<Resource<ServiceStatus>>
-
-    private val _shouldShowBatteryOptimizationSnackbar = MutableLiveData<Boolean>(false)
-    val shouldShowBatteryOptimizationSnackbar: LiveData<Boolean> = _shouldShowBatteryOptimizationSnackbar
+class HomeViewModel(
+    initialState: HomeState,
+    private val appContext: Context
+) : MavericksViewModel<HomeState>(initialState) {
 
     init {
-        // Load initial status on ViewModel creation
         reload()
     }
 
-    private fun load(): ServiceStatus {
-        try {
-            // First check if binder is available
-            if (!Shizuku.pingBinder()) {
-                LOGGER.d("Shizuku binder not available")
-                return ServiceStatus()
-            }
-
-            val uid = Shizuku.getUid()
-            val apiVersion = Shizuku.getVersion()
-            val patchVersion = Shizuku.getServerPatchVersion().let { if (it < 0) 0 else it }
-            val seContext = if (apiVersion >= 6) {
-                try {
-                    Shizuku.getSELinuxContext()
-                } catch (tr: Throwable) {
-                    LOGGER.w(tr, "getSELinuxContext")
-                    null
-                }
-            } else null
-            val permissionTest =
-                Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
-
-            // Before a526d6bb, server will not exit on uninstall, manager installed later will get not permission
-            // Run a random remote transaction here, report no permission as not running
+    fun reload() {
+        setState { copy(serviceStatus = Loading()) }
+        viewModelScope.launch(Dispatchers.IO) {
             try {
-                ShizukuSystemApis.checkPermission(Manifest.permission.API_V23, BuildConfig.APPLICATION_ID, 0)
+                val status = loadStatus()
+                setState { copy(serviceStatus = Success(status)) }
             } catch (e: Exception) {
-                LOGGER.w(e, "Permission check failed")
-                // Continue anyway - status will show but permission will be false
+                LOGGER.e(e, "Failed to load Shizuku status")
+                setState { copy(serviceStatus = Fail(e)) }
             }
-            return ServiceStatus(uid, apiVersion, patchVersion, seContext, permissionTest)
-        } catch (e: Exception) {
-            LOGGER.e(e, "Failed to load Shizuku status")
-            return ServiceStatus()
         }
     }
 
-    fun reload() {
-        _serviceStatus.postValue(Resource.loading(null))
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val status = load()
-                _serviceStatus.postValue(Resource.success(status))
-            } catch (e: CancellationException) {
-
-            } catch (e: Throwable) {
-                _serviceStatus.postValue(Resource.error(e, ServiceStatus()))
-            }
+    private fun loadStatus(): ServiceStatus {
+        if (!Shizuku.pingBinder()) {
+            LOGGER.d("Shizuku binder not available")
+            return ServiceStatus()
         }
+
+        val uid = Shizuku.getUid()
+        val apiVersion = Shizuku.getVersion()
+        val patchVersion = Shizuku.getServerPatchVersion().let { if (it < 0) 0 else it }
+        val seContext = if (apiVersion >= 6) {
+            try {
+                Shizuku.getSELinuxContext()
+            } catch (tr: Throwable) {
+                LOGGER.w(tr, "getSELinuxContext")
+                null
+            }
+        } else null
+        
+        val permissionTest = Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
+
+        try {
+            ShizukuSystemApis.checkPermission(Manifest.permission.API_V23, BuildConfig.APPLICATION_ID, 0)
+        } catch (e: Exception) {
+            LOGGER.w(e, "Permission check failed")
+        }
+        
+        return ServiceStatus(uid, apiVersion, patchVersion, seContext, permissionTest)
     }
 
     fun checkBatteryOptimization() {
         if (EnvironmentUtils.isTelevision()) return
         if (!ShizukuSettings.getStartOnBoot(appContext) && !ShizukuSettings.getWatchdog()) return
-        _shouldShowBatteryOptimizationSnackbar.postValue(
-            !SettingsHelper.isIgnoringBatteryOptimizations(appContext)
-        )
+        val isIgnoring = SettingsHelper.isIgnoringBatteryOptimizations(appContext)
+        setState { copy(shouldShowBatteryOptimizationSnackbar = !isIgnoring) }
     }
 
+    fun setEditMode(active: Boolean) {
+        setState { copy(isEditMode = active) }
+    }
+
+    fun updateGrantedAppCount(count: Int) {
+        setState { copy(grantedAppCount = count) }
+    }
+
+    companion object : MavericksViewModelFactory<HomeViewModel, HomeState> {
+        override fun create(viewModelContext: ViewModelContext, state: HomeState): HomeViewModel {
+            return HomeViewModel(state, viewModelContext.app())
+        }
+    }
 }

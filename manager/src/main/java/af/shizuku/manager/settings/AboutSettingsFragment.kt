@@ -43,62 +43,12 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         }
 
         findPreference<Preference>("open_source_licenses")?.setOnPreferenceClickListener {
-            showLicensesDialog()
+            com.mikepenz.aboutlibraries.LibsBuilder()
+                .withActivityTitle(getString(R.string.settings_open_source_licenses))
+                .withEdgeToEdge(true)
+                .withSearchEnabled(true)
+                .start(requireContext())
             true
         }
-    }
-
-    private fun showLicensesDialog() {
-        val context = context ?: return
-        val licenses = """
-            <b>Shizuku (Core)</b> - Apache 2.0
-            https://github.com/RikkaApps/Shizuku
-            
-            <b>Rikka Library</b> - Apache 2.0
-            https://github.com/RikkaApps/rikkax
-            
-            <b>Material Components for Android</b> - Apache 2.0
-            https://github.com/material-components/material-components-android
-            
-            <b>Kotlin Coroutines</b> - Apache 2.0
-            https://github.com/Kotlin/kotlinx.coroutines
-            
-            <b>AndroidX Libraries</b> - Apache 2.0
-            https://developer.android.com/jetpack/androidx
-            
-            <b>Sentry SDK</b> - MIT
-            https://github.com/getsentry/sentry-java
-            
-            <b>HiddenApiRefine</b> - MIT
-            https://github.com/RikkaApps/HiddenApiRefine
-
-            <b>Timber</b> - Apache 2.0
-            https://github.com/JakeWharton/timber
-
-            <b>Coil</b> - Apache 2.0
-            https://github.com/coil-kt/coil
-
-            <b>LibSu</b> - Apache 2.0
-            https://github.com/topjohnwu/libsu
-
-            <b>Bouncy Castle</b> - MIT
-            https://github.com/bcgit/bc-java
-
-            <b>BoringSSL</b> - ISC
-            https://boringssl.googlesource.com/boringssl
-
-            <b>HiddenApiBypass</b> - Apache 2.0
-            https://github.com/LSPosed/AndroidHiddenApiBypass
-
-            <br/><b>Credits & Special Thanks</b>
-            Community contributors and translators
-            Inspired by <b>Iconify</b>, <b>DarQ</b>, and <b>LSPosed</b>
-        """.trimIndent()
-
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.settings_open_source_licenses)
-            .setMessage(licenses.toHtml())
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
     }
 }

@@ -20,24 +20,15 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
 import java.util.concurrent.atomic.AtomicBoolean
 
 class WatchdogService : Service() {
 
     private var lastRestartMs = 0L
-
-    private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        if (it == ShizukuStateMachine.State.CRASHED) {
-            val now = System.currentTimeMillis()
-            if (now - lastRestartMs > RESTART_COOLDOWN_MS) {
-                lastRestartMs = now
-                showCrashNotification()
-                ShizukuReceiverStarter.start(applicationContext)
-            } else {
-                Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms since last)")
-            }
-        }
-    }
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var job: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -49,7 +40,21 @@ class WatchdogService : Service() {
                 NotificationChannel(WATCHDOG_CHANNEL_ID, "Watchdog", NotificationManager.IMPORTANCE_LOW)
             )
         }
-        ShizukuStateMachine.addListener(stateListener)
+        
+        job = scope.launch {
+            ShizukuStateMachine.asFlow().collectLatest { state ->
+                if (state == ShizukuStateMachine.State.CRASHED) {
+                    val now = System.currentTimeMillis()
+                    if (now - lastRestartMs > RESTART_COOLDOWN_MS) {
+                        lastRestartMs = now
+                        showCrashNotification()
+                        ShizukuReceiverStarter.start(applicationContext)
+                    } else {
+                        Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms since last)")
+                    }
+                }
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -73,7 +78,8 @@ class WatchdogService : Service() {
     }
 
     override fun onDestroy() {
-        ShizukuStateMachine.removeListener(stateListener)
+        job?.cancel()
+        scope.cancel()
         isRunning.set(false)
         ShizukuSettings.setWatchdog(applicationContext, false)
         super.onDestroy()

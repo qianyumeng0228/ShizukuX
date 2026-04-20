@@ -76,6 +76,22 @@ class StartRootViewHolder(
             restart.visibility = View.GONE
         }
 
+        // Expressive Lottie Integration
+        if (af.shizuku.manager.ShizukuSettings.isExpressiveAnimationsEnabled()) {
+            val lottieView = itemView.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.lottie_start)
+            if (lottieView != null) {
+                try {
+                    context.assets.open("lottie/button_start.json").close()
+                    lottieView.visibility = View.VISIBLE
+                    lottieView.setAnimation("lottie/button_start.json")
+                    lottieView.playAnimation()
+                    start.icon = null // Hide static icon
+                } catch (e: Exception) {
+                    lottieView.visibility = View.GONE
+                }
+            }
+        }
+
         val sb = StringBuilder()
             .append(
                 context.getString(

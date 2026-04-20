@@ -75,12 +75,18 @@ Everything in ShizukuX is optional. Use the **Plus Features** category in Settin
 
 See the [ShizukuX-API](https://github.com/thejaustin/ShizukuPlus-API) repository for documentation on the exclusive Plus APIs.
 
-## 🙏 Credits & Attribution
+## 🙏 Acknowledgements & Licenses
 
-ShizukuX is a fork of [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of the original [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku) by Rikka. Features and enhancements from thedjchi's fork are included in this project.
+ShizukuX is a community-driven enhancement and fork of [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku), which is itself a fork of the original [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku). This project is not affiliated with the original RikkaApps team.
 
-- **[thedjchi](https://github.com/thedjchi)** — Shizuku fork this project is directly based on
-- **[RikkaApps / Rikka](https://github.com/RikkaApps)** — Original Shizuku project
+We are deeply grateful to the following upstream contributors and projects whose work makes ShizukuX possible:
+
+- **[RikkaApps / Rikka](https://github.com/RikkaApps)** — For the foundational Shizuku project and its elegant API design.
+- **[thedjchi](https://github.com/thedjchi)** — For the intermediate fork and initial quality-of-life improvements.
+- **[Muntashir Akon](https://github.com/MuntashirAkon)** — For the aShell You codebase, which inspired our terminal and shell automation features.
+- **[iamr0s](https://github.com/iamr0s)** — For Dhizuku, enabling the unified Device Owner privilege mode.
+
+All components are used under their respective open-source licenses (Apache 2.0 / GPL). See the [NOTICE](NOTICE) and [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) for full attribution details.
 
 ## 📃 License
 

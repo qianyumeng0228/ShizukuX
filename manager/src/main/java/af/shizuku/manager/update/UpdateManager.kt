@@ -11,8 +11,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
-import android.os.Handler
-import android.os.Looper
 import timber.log.Timber
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -22,6 +20,7 @@ import io.sentry.Sentry
 import af.shizuku.manager.R
 import af.shizuku.manager.home.HomeActivity
 import java.io.File
+import kotlinx.coroutines.*
 
 /**
  * Manages downloading and installing updates
@@ -42,8 +41,9 @@ class UpdateManager(private val context: Context) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    private val handler = Handler(Looper.getMainLooper())
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var downloadId: Long = -1
+    private var monitorJob: Job? = null
 
     /**
      * Create notification channel for updates
@@ -112,8 +112,9 @@ class UpdateManager(private val context: Context) {
      * Monitor download progress
      */
     private fun monitorDownload(downloadId: Long, file: File, versionName: String) {
-        handler.post(object : Runnable {
-            override fun run() {
+        monitorJob?.cancel()
+        monitorJob = scope.launch {
+            while (isActive) {
                 try {
                     val query = DownloadManager.Query().setFilterById(downloadId)
                     val cursor = downloadManager.query(query)
@@ -128,13 +129,13 @@ class UpdateManager(private val context: Context) {
                                 cursor.close()
                                 Timber.tag(TAG).d("Download completed: ${file.absolutePath}")
                                 onDownloadComplete(file, versionName)
-                                return
+                                break
                             }
                             DownloadManager.STATUS_FAILED -> {
                                 cursor.close()
                                 Timber.tag(TAG).e("Download failed")
                                 showDownloadErrorNotification()
-                                return
+                                break
                             }
                             DownloadManager.STATUS_PAUSED -> {
                                 // Waiting for network
@@ -147,15 +148,13 @@ class UpdateManager(private val context: Context) {
                         }
                         cursor.close()
                     }
-
-                    // Continue monitoring
-                    handler.postDelayed(this, 500)
                 } catch (e: Exception) {
                     Timber.tag(TAG).e(e, "Error monitoring download")
                     Sentry.captureException(e)
                 }
+                delay(500)
             }
-        })
+        }
     }
 
     /**

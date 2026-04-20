@@ -66,10 +66,8 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             return
         }
 
-        val binding = AppsActivityBinding.inflate(layoutInflater, rootView, false)
-        setContentView(binding.root)
+        val binding = AppsActivityBinding.bind(rootView.getChildAt(0))
         
-        val appbarBinding = AppsAppbarActivityBinding.bind(rootView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Empty state view
@@ -95,21 +93,21 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         }
 
         // Search bar
-        appbarBinding.searchEditText.doOnTextChanged { text, _, _, _ ->
+        rootView.findViewById<android.widget.EditText>(R.id.search_edit_text).doOnTextChanged { text, _, _, _ ->
             viewModel.setSearch(text?.toString() ?: "")
         }
 
         // Filter chips
-        appbarBinding.chipAll.setOnCheckedChangeListener { _, checked ->
+        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_all).setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.ALL)
         }
-        appbarBinding.chipGranted.setOnCheckedChangeListener { _, checked ->
+        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_granted).setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.GRANTED)
         }
-        appbarBinding.chipDenied.setOnCheckedChangeListener { _, checked ->
+        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_denied).setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.DENIED)
         }
-        appbarBinding.chipHidden.setOnCheckedChangeListener { _, checked ->
+        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_hidden).setOnCheckedChangeListener { _, checked ->
             if (checked) viewModel.setFilter(FilterState.HIDDEN)
         }
 

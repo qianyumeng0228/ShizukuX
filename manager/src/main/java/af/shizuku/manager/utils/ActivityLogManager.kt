@@ -10,6 +10,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
@@ -23,8 +24,6 @@ import java.util.Collections
 import java.util.Date
 import java.util.LinkedList
 import java.util.Locale
-import java.util.concurrent.Semaphore
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -67,7 +66,6 @@ object ActivityLogManager {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     // Thread safety
-    private val dbLock = Semaphore(1)
     private val isInitialized = AtomicBoolean(false)
     private val isCleaningUp = AtomicBoolean(false)
     
@@ -126,30 +124,22 @@ object ActivityLogManager {
         }
         
         scope.launch {
-            try {
-                dbLock.acquire()
-                try {
-                    val dbLogs = dao!!.getAll()
-                    synchronized(records) {
-                        records.clear()
-                        dbLogs.reversed().forEach { log ->
-                            records.add(
-                                ActivityLogRecord(
-                                    timestamp = log.timestamp,
-                                    appName = log.appName,
-                                    packageName = log.packageName,
-                                    action = log.action
-                                )
+            dao!!.getAll().collect { dbLogs ->
+                synchronized(records) {
+                    records.clear()
+                    dbLogs.reversed().forEach { log ->
+                        records.add(
+                            ActivityLogRecord(
+                                timestamp = log.timestamp,
+                                appName = log.appName,
+                                packageName = log.packageName,
+                                action = log.action
                             )
-                        }
-                        _logs.value = records.toList()
+                        )
                     }
-                    Timber.tag(TAG).d("Loaded ${records.size} logs from database")
-                } finally {
-                    dbLock.release()
+                    _logs.value = records.toList()
                 }
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Error loading logs from database")
+                Timber.tag(TAG).d("Loaded ${records.size} logs from database")
             }
         }
     }
@@ -205,21 +195,13 @@ object ActivityLogManager {
         
         scope.launch {
             try {
-                dbLock.acquire()
-                try {
-                    val roomLog = ActivityLogRoom(
-                        timestamp = record.timestamp,
-                        appName = record.appName,
-                        packageName = record.packageName,
-                        action = record.action
-                    )
-                    dao!!.insert(roomLog)
-                    // Retention enforcement is handled by cleanupOldRecords(), called from log()
-                    // immediately after saveToDatabase(). Do not call it here — it acquires
-                    // isCleaningUp and dbLock independently, which would conflict with this scope.
-                } finally {
-                    dbLock.release()
-                }
+                val roomLog = ActivityLogRoom(
+                    timestamp = record.timestamp,
+                    appName = record.appName,
+                    packageName = record.packageName,
+                    action = record.action
+                )
+                dao!!.insert(roomLog)
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error saving log to database")
             }
@@ -234,23 +216,18 @@ object ActivityLogManager {
         
         scope.launch {
             try {
-                dbLock.acquire()
-                try {
-                    val count = dao?.getCount() ?: 0
-                    if (count > retentionCount) {
-                        val logs = dao!!.getAll()
-                        if (logs.size > retentionCount) {
-                            val cutoffTimestamp = logs[retentionCount - 1].timestamp
-                            val deleted = dao!!.deleteOlderThan(cutoffTimestamp)
-                            Timber.tag(TAG).d("Cleaned up $deleted old records")
-                        }
+                val count = dao?.getCount() ?: 0
+                if (count > retentionCount) {
+                    val logs = dao!!.getAll().first()
+                    if (logs.size > retentionCount) {
+                        val cutoffTimestamp = logs[retentionCount - 1].timestamp
+                        val deleted = dao!!.deleteOlderThan(cutoffTimestamp)
+                        Timber.tag(TAG).d("Cleaned up $deleted old records")
                     }
-                } finally {
-                    dbLock.release()
-                    isCleaningUp.set(false)
                 }
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error cleaning up old records")
+            } finally {
                 isCleaningUp.set(false)
             }
         }
@@ -286,13 +263,8 @@ object ActivityLogManager {
         
         scope.launch {
             try {
-                dbLock.acquire()
-                try {
-                    dao?.clear()
-                    Timber.tag(TAG).d("Cleared all logs from database")
-                } finally {
-                    dbLock.release()
-                }
+                dao?.clear()
+                Timber.tag(TAG).d("Cleared all logs from database")
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error clearing logs from database")
             }
@@ -336,40 +308,35 @@ object ActivityLogManager {
         }
         
         try {
-            dbLock.acquire()
-            try {
-                val logs = dao?.getAll() ?: emptyList()
-                
-                if (logs.isEmpty()) {
-                    Timber.tag(TAG).w("No logs to export")
-                    return@withContext null
-                }
-                
-                val exportFile = File(
-                    directory,
-                    filename ?: "activity_logs_${getTimestampFilename()}.json"
-                )
-                
-                FileWriter(exportFile).use { writer ->
-                    writer.appendLine("[")
-                    logs.forEachIndexed { index, log ->
-                        writer.appendLine("  {")
-                        writer.appendLine("    \"id\": ${log.id},")
-                        writer.appendLine("    \"timestamp\": ${log.timestamp},")
-                        writer.appendLine("    \"timestampFormatted\": \"${formatTimestamp(log.timestamp)}\",")
-                        writer.appendLine("    \"appName\": \"${escapeJson(log.appName)}\",")
-                        writer.appendLine("    \"packageName\": \"${escapeJson(log.packageName)}\",")
-                        writer.appendLine("    \"action\": \"${escapeJson(log.action)}\"")
-                        writer.appendLine("  }${if (index < logs.size - 1) "," else ""}")
-                    }
-                    writer.appendLine("]")
-                }
-                
-                Timber.tag(TAG).d("Exported ${logs.size} logs to JSON: ${exportFile.absolutePath}")
-                exportFile
-            } finally {
-                dbLock.release()
+            val logs = dao?.getAll()?.first() ?: emptyList()
+            
+            if (logs.isEmpty()) {
+                Timber.tag(TAG).w("No logs to export")
+                return@withContext null
             }
+            
+            val exportFile = File(
+                directory,
+                filename ?: "activity_logs_${getTimestampFilename()}.json"
+            )
+            
+            FileWriter(exportFile).use { writer ->
+                writer.appendLine("[")
+                logs.forEachIndexed { index, log ->
+                    writer.appendLine("  {")
+                    writer.appendLine("    \"id\": ${log.id},")
+                    writer.appendLine("    \"timestamp\": ${log.timestamp},")
+                    writer.appendLine("    \"timestampFormatted\": \"${formatTimestamp(log.timestamp)}\",")
+                    writer.appendLine("    \"appName\": \"${escapeJson(log.appName)}\",")
+                    writer.appendLine("    \"packageName\": \"${escapeJson(log.packageName)}\",")
+                    writer.appendLine("    \"action\": \"${escapeJson(log.action)}\"")
+                    writer.appendLine("  }${if (index < logs.size - 1) "," else ""}")
+                }
+                writer.appendLine("]")
+            }
+            
+            Timber.tag(TAG).d("Exported ${logs.size} logs to JSON: ${exportFile.absolutePath}")
+            exportFile
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error exporting logs to JSON")
             null
@@ -390,42 +357,37 @@ object ActivityLogManager {
         }
         
         try {
-            dbLock.acquire()
-            try {
-                val logs = dao?.getAll() ?: emptyList()
-                
-                if (logs.isEmpty()) {
-                    Timber.tag(TAG).w("No logs to export")
-                    return@withContext null
-                }
-                
-                val exportFile = File(
-                    directory,
-                    filename ?: "activity_logs_${getTimestampFilename()}.csv"
-                )
-                
-                FileWriter(exportFile).use { writer ->
-                    // Write header
-                    writer.appendLine("ID,Timestamp,TimestampFormatted,App Name,Package Name,Action")
-                    
-                    // Write data rows
-                    logs.forEach { log ->
-                        writer.appendLine(
-                            "${log.id}," +
-                            "${log.timestamp}," +
-                            "\"${formatTimestamp(log.timestamp)}\"," +
-                            "\"${escapeCsv(log.appName)}\"," +
-                            "\"${escapeCsv(log.packageName)}\"," +
-                            "\"${escapeCsv(log.action)}\""
-                        )
-                    }
-                }
-                
-                Timber.tag(TAG).d("Exported ${logs.size} logs to CSV: ${exportFile.absolutePath}")
-                exportFile
-            } finally {
-                dbLock.release()
+            val logs = dao?.getAll()?.first() ?: emptyList()
+            
+            if (logs.isEmpty()) {
+                Timber.tag(TAG).w("No logs to export")
+                return@withContext null
             }
+            
+            val exportFile = File(
+                directory,
+                filename ?: "activity_logs_${getTimestampFilename()}.csv"
+            )
+            
+            FileWriter(exportFile).use { writer ->
+                // Write header
+                writer.appendLine("ID,Timestamp,TimestampFormatted,App Name,Package Name,Action")
+                
+                // Write data rows
+                logs.forEach { log ->
+                    writer.appendLine(
+                        "${log.id}," +
+                        "${log.timestamp}," +
+                        "\"${formatTimestamp(log.timestamp)}\"," +
+                        "\"${escapeCsv(log.appName)}\"," +
+                        "\"${escapeCsv(log.packageName)}\"," +
+                        "\"${escapeCsv(log.action)}\""
+                    )
+                }
+            }
+            
+            Timber.tag(TAG).d("Exported ${logs.size} logs to CSV: ${exportFile.absolutePath}")
+            exportFile
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error exporting logs to CSV")
             null
@@ -446,47 +408,42 @@ object ActivityLogManager {
         }
         
         try {
-            dbLock.acquire()
-            try {
-                val logs = dao?.getAll() ?: emptyList()
-                
-                if (logs.isEmpty()) {
-                    Timber.tag(TAG).w("No logs to export")
-                    return@withContext null
-                }
-                
-                val exportFile = File(
-                    directory,
-                    filename ?: "activity_logs_${getTimestampFilename()}.txt"
-                )
-                
-                FileWriter(exportFile).use { writer ->
-                    writer.appendLine("=".repeat(60))
-                    writer.appendLine("ShizukuX Activity Log Export")
-                    writer.appendLine("Generated: ${formatTimestamp(System.currentTimeMillis())}")
-                    writer.appendLine("Total Records: ${logs.size}")
-                    writer.appendLine("=".repeat(60))
-                    writer.appendLine()
-                    
-                    logs.forEach { log ->
-                        writer.appendLine("[${formatTimestamp(log.timestamp)}]")
-                        writer.appendLine("  App: ${log.appName}")
-                        writer.appendLine("  Package: ${log.packageName}")
-                        writer.appendLine("  Action: ${log.action}")
-                        writer.appendLine("-".repeat(60))
-                    }
-                    
-                    writer.appendLine()
-                    writer.appendLine("=".repeat(60))
-                    writer.appendLine("End of Activity Log")
-                    writer.appendLine("=".repeat(60))
-                }
-                
-                Timber.tag(TAG).d("Exported ${logs.size} logs to text: ${exportFile.absolutePath}")
-                exportFile
-            } finally {
-                dbLock.release()
+            val logs = dao?.getAll()?.first() ?: emptyList()
+            
+            if (logs.isEmpty()) {
+                Timber.tag(TAG).w("No logs to export")
+                return@withContext null
             }
+            
+            val exportFile = File(
+                directory,
+                filename ?: "activity_logs_${getTimestampFilename()}.txt"
+            )
+            
+            FileWriter(exportFile).use { writer ->
+                writer.appendLine("=".repeat(60))
+                writer.appendLine("ShizukuX Activity Log Export")
+                writer.appendLine("Generated: ${formatTimestamp(System.currentTimeMillis())}")
+                writer.appendLine("Total Records: ${logs.size}")
+                writer.appendLine("=".repeat(60))
+                writer.appendLine()
+                
+                logs.forEach { log ->
+                    writer.appendLine("[${formatTimestamp(log.timestamp)}]")
+                    writer.appendLine("  App: ${log.appName}")
+                    writer.appendLine("  Package: ${log.packageName}")
+                    writer.appendLine("  Action: ${log.action}")
+                    writer.appendLine("-".repeat(60))
+                }
+                
+                writer.appendLine()
+                writer.appendLine("=".repeat(60))
+                writer.appendLine("End of Activity Log")
+                writer.appendLine("=".repeat(60))
+            }
+            
+            Timber.tag(TAG).d("Exported ${logs.size} logs to text: ${exportFile.absolutePath}")
+            exportFile
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error exporting logs to text")
             null
@@ -500,12 +457,7 @@ object ActivityLogManager {
      */
     suspend fun getDatabaseCount(): Int = withContext(Dispatchers.IO) {
         try {
-            dbLock.acquire()
-            try {
-                dao?.getCount() ?: 0
-            } finally {
-                dbLock.release()
-            }
+            dao?.getCount() ?: 0
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Error getting database count")
             0
@@ -518,16 +470,11 @@ object ActivityLogManager {
     fun shutdown() {
         scope.launch {
             try {
-                dbLock.acquire()
-                try {
-                    database?.close()
-                    database = null
-                    dao = null
-                    isInitialized.set(false)
-                    Timber.tag(TAG).d("ActivityLogManager shutdown complete")
-                } finally {
-                    dbLock.release()
-                }
+                database?.close()
+                database = null
+                dao = null
+                isInitialized.set(false)
+                Timber.tag(TAG).d("ActivityLogManager shutdown complete")
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error during shutdown")
             }

@@ -10,6 +10,8 @@ plugins {
     id "dev.rikka.tools.materialthemebuilder"
     id "io.sentry.android.gradle"
     id "org.jetbrains.kotlin.plugin.serialization" version "2.2.20"
+    id "com.diffplug.spotless"
+    id "com.mikepenz.aboutlibraries.plugin"
 }
 
 android {
@@ -77,6 +79,20 @@ android {
             aidl.srcDirs = ["src/main/aidl"]
         }
     }
+}
+
+spotless {
+    kotlin {
+        target "**/*.kt"
+        ktlint("1.3.1")
+        trimTrailingWhitespace()
+        indentWithSpaces()
+        endWithNewline()
+    }
+}
+
+aboutLibraries {
+    registerAndroidTasks = true
 }
 
 autoResConfig {
@@ -171,6 +187,7 @@ configurations.configureEach {
 dependencies {
     implementation libs.kotlinx.coroutines.core
     implementation libs.kotlinx.coroutines.android
+    implementation libs.mavericks
 
     implementation project(":server")
     implementation project(":rish")
@@ -206,6 +223,10 @@ dependencies {
     implementation libs.material
 
     implementation libs.libsu.core
+    
+    implementation libs.aboutlibraries.core
+    implementation libs.aboutlibraries.ui
+    implementation libs.markdowntwain
 
     implementation libs.rikkax.appcompat
     implementation libs.rikkax.compatibility
@@ -234,9 +255,18 @@ dependencies {
     implementation libs.sentry.android.timber
     implementation libs.sentry.android.okhttp
 
+    testImplementation libs.kotestJunit5
     androidTestImplementation "androidx.test.ext:junit:1.2.1"
     androidTestImplementation "androidx.test:runner:1.6.2"
     androidTestImplementation "androidx.test:rules:1.6.1"
+}
+
+android {
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
 }
 
 sentry {

@@ -61,7 +61,7 @@ class RootCompatibilityActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = ActivityRootCompatibilityBinding.bind(rootView)
+        val binding = ActivityRootCompatibilityBinding.bind(rootView.getChildAt(0))
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         resolvedSuPath = resolveSuPath()

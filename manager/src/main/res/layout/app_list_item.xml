@@ -100,14 +100,14 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/su_copy_open"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="36dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
                     android:paddingHorizontal="12dp"
@@ -120,7 +120,7 @@
                     android:id="@+id/su_magic_setup"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="40dp"
+                    android:layout_height="36dp"
                     android:layout_marginStart="8dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"

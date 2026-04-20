@@ -1,5 +1,6 @@
 package af.shizuku.manager.utils
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -39,6 +40,15 @@ object SettingsHelper {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    fun isAccessibilityServiceEnabled(context: Context, serviceClass: Class<*>): Boolean {
+        val expectedComponent = ComponentName(context, serviceClass).flattenToString()
+        val enabled = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        return enabled.split(':').any { it.equals(expectedComponent, ignoreCase = true) }
     }
 
     fun requestIgnoreBatteryOptimizations(context: Context, launcher: ActivityResultLauncher<Intent>? = null) {
