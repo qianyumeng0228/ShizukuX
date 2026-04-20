@@ -19,6 +19,7 @@ import af.shizuku.manager.app.AppBarActivity
 import af.shizuku.manager.databinding.AdbPairingTutorialActivityBinding
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
+import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.compatibility.DeviceCompatibility
 
 @RequiresApi(Build.VERSION_CODES.R)
@@ -77,6 +78,22 @@ class AdbPairingTutorialActivity : AppBarActivity() {
         val channel = nm.getNotificationChannel(AdbPairingService.NOTIFICATION_CHANNEL)
         return nm.areNotificationsEnabled() &&
                 (channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE)
+    }
+
+    private val runningListener: (ShizukuStateMachine.State) -> Unit = { state ->
+        if (state == ShizukuStateMachine.State.RUNNING && !isFinishing) {
+            window?.decorView?.post { if (!isFinishing) finish() }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ShizukuStateMachine.addListener(runningListener)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        ShizukuStateMachine.removeListener(runningListener)
     }
 
     override fun onResume() {

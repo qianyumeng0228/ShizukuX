@@ -54,7 +54,7 @@ class StarterActivity : AppBarActivity() {
             if (output.endsWith(Starter.serviceStartedMessage)) {
                 window?.decorView?.postDelayed({
                     if (!isFinishing) finish()
-                }, 3000)
+                }, 600)
             } else if (result.status == Status.ERROR) {
                 var message = 0
                 when (result.error) {
