@@ -76,7 +76,7 @@ rikkax-appcompat = { group = "dev.rikka.rikkax.appcompat", name = "appcompat", v
 rikkax-compatibility = { group = "dev.rikka.rikkax.compatibility", name = "compatibility", version = "2.0.0" }
 rikkax-core = { group = "dev.rikka.rikkax.core", name = "core-ktx", version.ref = "rikkax-core" }
 rikkax-material = { group = "dev.rikka.rikkax.material", name = "material", version.ref = "rikkax-material" }
-rikkax-material-preference = { group = "dev.rikka.rikkax.material", name = "material-preference", version = "2.0.0" }
+rikkax-material-preference = { group = "dev.rikka.rikkax.material", name = "material-preference", version.ref = "rikkax-material" }
 rikkax-html-ktx = { group = "dev.rikka.rikkax.html", name = "html-ktx", version.ref = "rikkax-html" }
 rikkax-insets = { group = "dev.rikka.rikkax.insets", name = "insets", version.ref = "rikkax-insets" }
 rikkax-layoutinflater = { group = "dev.rikka.rikkax.layoutinflater", name = "layoutinflater", version.ref = "rikkax-layoutinflater" }
