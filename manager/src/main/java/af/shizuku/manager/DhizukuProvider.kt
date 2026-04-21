@@ -21,12 +21,14 @@ class DhizukuProvider : ContentProvider() {
         override fun getBinder(): IBinder? {
             if (!ShizukuSettings.isDhizukuModeEnabled()) return null
             if (!ShizukuStateMachine.isRunning()) return null
-            
-            // Check if calling app has Shizuku permission
+
+            // Only the manager itself (same UID) may obtain the raw DPM binder.
+            // Client apps must go through the Shizuku permission grant flow.
             val callingUid = Binder.getCallingUid()
-            if (Shizuku.checkRemotePermission("af.shizuku.plus.permission.API_V23") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                // In a real scenario, we might want to check the internal Shizuku whitelist here
-                // but for now we rely on the standard permission check
+            val myUid = android.os.Process.myUid()
+            if (callingUid != myUid &&
+                Shizuku.checkRemotePermission("af.shizuku.plus.permission.API_V23") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                return null
             }
 
             return try {
