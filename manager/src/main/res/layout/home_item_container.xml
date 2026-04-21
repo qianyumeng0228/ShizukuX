@@ -28,7 +28,7 @@
         android:layout_gravity="center_vertical|end"
         android:padding="8dp"
         android:src="@drawable/ic_drag_handle"
-        android:contentDescription="@null"
+        android:contentDescription="@string/accessibility_icon_drag_handle"
         android:alpha="0.30"
         android:visibility="gone" />
 
@@ -41,7 +41,7 @@
         android:layout_margin="6dp"
         android:padding="4dp"
         android:src="@drawable/ic_close_24"
-        android:contentDescription="@null"
+        android:contentDescription="@string/accessibility_icon_remove"
         android:background="@android:color/transparent"
         android:tint="?attr/colorError"
         android:elevation="2dp"

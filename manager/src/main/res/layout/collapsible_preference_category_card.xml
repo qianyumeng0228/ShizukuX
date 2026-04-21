@@ -29,6 +29,7 @@
         android:layout_marginStart="8dp"
         android:src="@drawable/ic_outline_expand_more_24"
         android:tint="?colorOnSurfaceVariant"
-        android:contentDescription="@null" />
+        android:contentDescription="@null"
+        android:importantForAccessibility="no" />
 
 </LinearLayout>
