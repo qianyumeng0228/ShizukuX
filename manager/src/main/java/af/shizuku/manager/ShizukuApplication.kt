@@ -51,6 +51,14 @@ class ShizukuApplication : Application(), Configuration.Provider {
         appContext = base
         // Initialize ShizukuSettings as early as possible
         ShizukuSettings.initialize(base)
+
+        // Initialize Mavericks and Koin as early as possible
+        Mavericks.initialize(base)
+        startKoin {
+            if (BuildConfig.DEBUG) androidLogger()
+            androidContext(this@ShizukuApplication)
+            modules(appModule)
+        }
     }
 
     /**
@@ -202,17 +210,20 @@ class ShizukuApplication : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
         }
 
-        // 0.0 Initialize Mavericks for MVI state management
-        Mavericks.initialize(this)
+        // 1. Register persistent crash handler
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(af.shizuku.manager.utils.CrashHandler(this, defaultHandler))
 
-        // 0.1 Initialize Koin
-        startKoin {
-            if (BuildConfig.DEBUG) androidLogger()
-            androidContext(this@ShizukuApplication)
-            modules(appModule)
+        // Auto-enable Sentry limit flag if we're in the quota-exhausted period (April 2026)
+        val cal = java.util.Calendar.getInstance()
+        if (cal.get(java.util.Calendar.YEAR) == 2026 && cal.get(java.util.Calendar.MONTH) == java.util.Calendar.APRIL) {
+            ShizukuSettings.setSentryLimitReached(true)
+        } else if (cal.get(java.util.Calendar.YEAR) >= 2026 && cal.get(java.util.Calendar.MONTH) > java.util.Calendar.APRIL) {
+            // Auto-disable flag once we hit May 1st, 2026 or later
+            ShizukuSettings.setSentryLimitReached(false)
         }
 
-        // 1. CRITICAL: Initialize Sentry FIRST
+        // 2. CRITICAL: Initialize Sentry FIRST
         initializeSentryEarly()
         Sentry.addBreadcrumb(Breadcrumb("App started: ${BuildConfig.VERSION_NAME}"))
 

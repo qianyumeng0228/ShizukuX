@@ -43,12 +43,11 @@ class ServiceDoctorActivity : AppBarActivity() {
         runDiagnostics()
     }
 
-    override fun getLayoutId() = R.layout.activity_service_doctor
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = ActivityServiceDoctorBinding.bind(rootView.getChildAt(0))
+        val binding = ActivityServiceDoctorBinding.inflate(layoutInflater, rootView, true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         tipsTextView = binding.tipsText
@@ -66,6 +65,7 @@ class ServiceDoctorActivity : AppBarActivity() {
 
         runDiagnostics()
     }
+
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {

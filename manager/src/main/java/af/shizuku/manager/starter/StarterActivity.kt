@@ -39,15 +39,14 @@ class StarterActivity : AppBarActivity() {
 
     private val viewModel: ViewModel by viewModels()
 
-    override fun getLayoutId() = R.layout.starter_activity
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_close_24)
 
-        val binding = StarterActivityBinding.bind(rootView.getChildAt(0))
+        val binding = StarterActivityBinding.inflate(layoutInflater, rootView, true)
 
         viewModel.output.observe(this) { result ->
             val output = result.data?.trim() ?: return@observe
@@ -85,6 +84,7 @@ class StarterActivity : AppBarActivity() {
             binding.text1.text = output
         }
     }
+
 
     private var hasStarted = false
 

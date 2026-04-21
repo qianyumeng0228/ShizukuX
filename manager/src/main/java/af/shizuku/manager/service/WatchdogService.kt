@@ -148,12 +148,17 @@ class WatchdogService : Service() {
         val disableIntent = SettingsPage.Notifications.NotificationChannel.buildIntent(applicationContext)
         val disablePendingIntent = PendingIntent.getActivity(this, 0, disableIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
 
+        // Manual crash report via BugReportDialogActivity or similar
+        val reportIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/thejaustin/ShizukuPlus/issues/new"))
+        val reportPendingIntent = PendingIntent.getActivity(this, 0, reportIntent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+
         val notification = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.watchdog_shizuku_crashed_title))
             .setContentText(getString(R.string.watchdog_shizuku_crashed_text))
             .setSmallIcon(R.drawable.ic_system_icon)
             .setContentIntent(learnMorePendingIntent)
             .setAutoCancel(true)
+            .addAction(0, getString(R.string.watchdog_shizuku_crashed_action_report_manually), reportPendingIntent)
             .addAction(0, getString(R.string.watchdog_shizuku_crashed_action_turn_off_alerts), disablePendingIntent)
             .build()
 

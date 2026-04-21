@@ -7,7 +7,7 @@
 
     <ImageView
         android:id="@android:id/icon"
-        style="@style/CardIcon"
+        style="@style/CardIcon.Droplet"
         android:backgroundTint="?colorOnErrorContainer"
         android:duplicateParentState="true"
         android:importantForAccessibility="yes"

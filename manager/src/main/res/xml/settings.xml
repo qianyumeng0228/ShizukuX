@@ -274,16 +274,6 @@
             android:summary="@string/home_service_doctor_summary" />
 
         <SwitchPreferenceCompat
-            android:key="enable_activity_log"
-            android:title="@string/settings_enable_activity_log"
-            android:defaultValue="true" />
-
-        <Preference
-            android:key="activity_log"
-            android:title="@string/settings_activity_log"
-            android:dependency="enable_activity_log" />
-
-        <SwitchPreferenceCompat
             android:key="legacy_pairing"
             android:summary="@string/settings_legacy_pairing_summary"
             android:title="@string/settings_legacy_pairing" />

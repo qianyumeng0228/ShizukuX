@@ -1,0 +1,67 @@
+package af.shizuku.manager.utils
+
+import android.content.Context
+import timber.log.Timber
+import java.io.File
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.text.SimpleDateFormat
+import java.util.* 
+
+class CrashHandler(private val context: Context, private val defaultHandler: Thread.UncaughtExceptionHandler?) : Thread.UncaughtExceptionHandler {
+
+    companion object {
+        private const val CRASH_FILE_NAME = "last_crash.txt"
+
+        fun getCrashFile(context: Context): File {
+            return File(context.cacheDir, CRASH_FILE_NAME)
+        }
+
+        fun getLastCrashReport(context: Context): String? {
+            val file = getCrashFile(context)
+            if (!file.exists()) return null
+            return try {
+                file.readText()
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        fun clearLastCrash(context: Context) {
+            val file = getCrashFile(context)
+            if (file.exists()) file.delete()
+        }
+    }
+
+    override fun uncaughtException(thread: Thread, throwable: Throwable) {
+        try {
+            saveCrashReport(thread, throwable)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to save crash report")
+        }
+
+        // Call default handler (usually Sentry or Android system)
+        defaultHandler?.uncaughtException(thread, throwable)
+    }
+
+    private fun saveCrashReport(thread: Thread, throwable: Throwable) {
+        val sw = StringWriter()
+        val pw = PrintWriter(sw)
+        throwable.printStackTrace(pw)
+        val stackTrace = sw.toString()
+
+        val report = StringBuilder()
+        report.append("Timestamp: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}\n")
+        report.append("Thread: ${thread.name} (id: ${thread.id})\n")
+        report.append("Exception: ${throwable.javaClass.name}\n")
+        report.append("Message: ${throwable.message}\n\n")
+        report.append("Stacktrace:\n")
+        report.append(stackTrace)
+
+        try {
+            getCrashFile(context).writeText(report.toString())
+        } catch (e: Exception) {
+            Timber.e(e, "Error writing crash file")
+        }
+    }
+}

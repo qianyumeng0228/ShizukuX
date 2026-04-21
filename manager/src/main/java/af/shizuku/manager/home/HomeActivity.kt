@@ -59,7 +59,7 @@ import rikka.shizuku.Shizuku
 
 abstract class HomeActivity : AppBarActivity(), MavericksView {
 
-    private val homeModel: HomeViewModel by viewModel()
+    private val homeModel: HomeViewModel by mavericksViewModel()
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
     private var versionClickCount = 0

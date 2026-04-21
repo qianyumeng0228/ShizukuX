@@ -13,7 +13,7 @@
 
         <ImageView
             android:id="@android:id/icon"
-            style="@style/CardIcon"
+            style="@style/CardIcon.Droplet"
             android:duplicateParentState="true"
             android:importantForAccessibility="yes"
             android:contentDescription="@string/accessibility_icon_adb"

@@ -33,12 +33,11 @@ class ActivityLogActivity : AppBarActivity() {
     private val adapter = LogAdapter()
     private lateinit var emptyStateView: EmptyStateView
 
-    override fun getLayoutId() = R.layout.apps_activity
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val appsBinding = AppsActivityBinding.bind(rootView.getChildAt(0))
+        
+        val appsBinding = AppsActivityBinding.inflate(layoutInflater, rootView, true)
         
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.settings_activity_log)
@@ -69,6 +68,7 @@ class ActivityLogActivity : AppBarActivity() {
             }
         }
     }
+
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menu.add(0, 1, 0, R.string.settings_activity_log_clear).apply {

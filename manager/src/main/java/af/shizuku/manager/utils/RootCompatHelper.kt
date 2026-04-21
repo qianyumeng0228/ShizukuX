@@ -35,9 +35,18 @@ object RootCompatHelper {
                     executePrivileged(arrayOf("settings", "put", "global", "afwall_su_path", suPath))
                     true
                 }
-                "com.machiav3lli.neo_backup" -> {
-                    val safePath = escapeShellSingleQuote(suPath)
+                "com.machiav3lli.neo_backup", "org.swiftapps.swiftbackup" -> {
                     val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"custom_shell_path\">.*</string>|<string name=\"custom_shell_path\">$safeReplace</string>|g'"
+                    executePrivileged(arrayOf("sh", "-c", script))
+                    true
+                }
+                "com.keramidas.TitaniumBackup" -> {
+                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"ex_su_path\">.*</string>|<string name=\"ex_su_path\">$safeReplace</string>|g'"
+                    executePrivileged(arrayOf("sh", "-c", script))
+                    true
+                }
+                "com.speedsoftware.explorer" -> {
+                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"su_path\">.*</string>|<string name=\"su_path\">$safeReplace</string>|g'"
                     executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
@@ -46,7 +55,6 @@ object RootCompatHelper {
                     executePrivileged(arrayOf("sh", "-c", script))
                     true
                 }
-                "org.swiftapps.swiftbackup" -> universalAutoSetup(packageName, suPath)
                 else -> universalAutoSetup(packageName, suPath)
             }
         } catch (e: Exception) {
@@ -76,8 +84,13 @@ object RootCompatHelper {
         val knownRootPackages = setOf(
             "org.adaway", "dev.ukanth.ufirewall", "com.machiav3lli.neo_backup",
             "eu.darken.sdm", "eu.darken.sdmse", "org.swiftapps.swiftbackup",
-            "com.keramidas.TitaniumBackup", "com.noshufou.android.su",
-            "com.zacharee.tweaker", "com.franco.doze", "com.oasisfeng.greenify"
+            "com.keramidas.TitaniumBackup", "com.speedsoftware.explorer",
+            "com.jrummy.root.browserfree", "projekt.substratum.lite",
+            "com.oasisfeng.greenify", "com.franco.doze",
+            "com.uzumapps.wakelockdetector", "com.asksven.betterbatterystats",
+            "com.jrummy.apps.build.prop.editor", "com.paget96.chargemonitor",
+            "com.zacharee.tweaker", "com.samsung.android.themepark",
+            "com.samsung.android.hexinstall", "bin.mt.plus"
         )
 
         for (pkgInfo in installed) {

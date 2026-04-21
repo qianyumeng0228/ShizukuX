@@ -519,6 +519,20 @@
     <string name="su_bridge_device_identity_spoofed">Spoofed: %s</string>
     <string name="su_bridge_device_identity_none">None (Real device shown)</string>
 
+    <!-- Sentry Offline Notice -->
+    <string name="sentry_offline_notice_title">Crash Reporting Offline</string>
+    <string name="sentry_offline_notice_summary">Automatic crash reporting via Sentry is currently disabled due to quota limits (resets May 1st). Please report any crashes manually.</string>
+    <string name="sentry_offline_notice_button">Learn More</string>
+    <string name="sentry_offline_notice_learn_more">Sentry is currently offline. If the app crashes or behaves unexpectedly, please generate a report manually and post it to our GitHub Issues tracker. This helps us fix bugs even while our automated systems are paused.</string>
+
+    <string name="manual_report_title">Manual Crash Report</string>
+    <string name="manual_report_summary">Generate a detailed report with logs to help us debug issues manually.</string>
+    <string name="manual_report_button_generate">Generate &amp; Copy</string>
+    <string name="manual_report_button_github">Open GitHub Issues</string>
+    <string name="manual_report_toast_copied">Report copied to clipboard!</string>
+
+    <string name="watchdog_shizuku_crashed_action_report_manually">Report Manually</string>
+
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">First, please do the following:</string>
     <string name="bug_report_dialog_update">Check that you are using the %1$s.</string>

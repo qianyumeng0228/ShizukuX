@@ -61,6 +61,19 @@
             app:layout_constraintTop_toBottomOf="@android:id/text2"
             tools:visibility="visible" />
 
+        <Button
+            android:id="@+id/btn_sentry_offline"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/sentry_offline_notice_button"
+            android:visibility="gone"
+            android:textColor="?colorError"
+            app:layout_constraintStart_toEndOf="@+id/btn_activity_log"
+            app:layout_constraintTop_toBottomOf="@android:id/text2"
+            tools:visibility="visible" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

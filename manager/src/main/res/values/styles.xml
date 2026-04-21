@@ -57,7 +57,7 @@
         <item name="android:backgroundTintMode">src_in</item>
     </style>
 
-    <!-- Droplet variant: same shape, uses tertiary container for visual variety -->
+    <!-- Droplet variant: uses tertiary container for visual variety while maintaining shape consistency -->
     <style name="CardIcon.Droplet" parent="CardIcon">
         <item name="android:tint">?colorOnTertiaryContainer</item>
         <item name="android:backgroundTint">?colorTertiaryContainer</item>

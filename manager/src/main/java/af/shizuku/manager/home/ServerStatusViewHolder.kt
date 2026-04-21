@@ -33,11 +33,25 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
     private inline val summaryView get() = binding.text2
     private inline val iconView get() = binding.icon
     private inline val logButton get() = binding.btnActivityLog
+    private inline val sentryButton get() = binding.btn_sentry_offline
 
     override fun onBind() {
         val context = itemView.context
         val status = data
         val ok = status.isRunning
+        
+        // Show Sentry offline button only if limit is reached (flag set via remote update or manual toggle)
+        sentryButton.visibility = if (af.shizuku.manager.ShizukuSettings.isSentryLimitReached()) View.VISIBLE else View.GONE
+        sentryButton.setOnClickListener {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.sentry_offline_notice_title)
+                .setMessage(R.string.sentry_offline_notice_learn_more)
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton("View Issues") { _, _ ->
+                    af.shizuku.manager.utils.CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues")
+                }
+                .show()
+        }
         
         // S-Pen / DeX Mouse Hover Effect (Expressive Polish)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -75,12 +89,19 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         }
 
         val typedValue = android.util.TypedValue()
-        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
-        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
+        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorWarningContainer
+        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnWarningContainer
         context.theme.resolveAttribute(okColorAttr, typedValue, true)
-        val bgColor = typedValue.data
+        val bgColor = if (typedValue.type != android.util.TypedValue.TYPE_NULL) typedValue.data else {
+            // Fallback to SurfaceContainerHigh if WarningContainer is not available (older M3)
+            context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHigh, typedValue, true)
+            typedValue.data
+        }
         context.theme.resolveAttribute(onColorAttr, typedValue, true)
-        val textColor = typedValue.data
+        val textColor = if (typedValue.type != android.util.TypedValue.TYPE_NULL) typedValue.data else {
+            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
+            typedValue.data
+        }
 
         cardView.setCardBackgroundColor(bgColor)
 

@@ -43,6 +43,11 @@ class MainActivity : HomeActivity() {
                 showMigrationDialog()
             }
 
+            // Check for previous crashes
+            if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
+                showCrashReportDialog()
+            }
+
             Timber.d("MainActivity onCreate complete")
             Sentry.addBreadcrumb(Breadcrumb("MainActivity onCreate complete"))
         } catch (e: Exception) {
@@ -68,38 +73,47 @@ class MainActivity : HomeActivity() {
     private fun showMigrationDialog() {
         lifecycleScope.launch {
             val hasRoot = withContext(Dispatchers.IO) { MigrationHelper.isRootAvailable() }
-
-            if (isFinishing || isDestroyed) return@launch
-
-            val message = if (hasRoot) {
-                getString(R.string.migration_dialog_message_root)
-            } else {
-                getString(R.string.migration_dialog_message)
-            }
-
-            val builder = MaterialAlertDialogBuilder(this@MainActivity)
-                .setTitle(R.string.migration_dialog_title)
-                .setMessage(message)
-                .setCancelable(true)
-
-            if (hasRoot) {
-                builder.setPositiveButton(R.string.migration_migrate_settings) { _, _ ->
-                    performMigration()
-                }
-            }
-
-            builder.setNegativeButton(R.string.migration_uninstall_old) { _, _ ->
-                launchUninstall(MigrationHelper.OLD_PACKAGE)
-            }
-
-            builder.setNeutralButton(R.string.migration_dismiss, null)
-
+// ... (rest of the method) ...
             try {
                 builder.show()
             } catch (e: Exception) {
                 Timber.e(e, "Failed to show migration dialog")
             }
         }
+    }
+
+    private fun showCrashReportDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.manual_report_title)
+            .setMessage("ShizukuX detected a crash from your last session. Would you like to generate a report to help us fix it?")
+            .setPositiveButton(R.string.manual_report_button_generate) { _, _ ->
+                val report = af.shizuku.manager.utils.CrashReporter.generateReport(this)
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Crash Report", report))
+                android.widget.Toast.makeText(this, R.string.manual_report_toast_copied, android.widget.Toast.LENGTH_SHORT).show()
+                
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Report Copied")
+                    .setMessage("The report is copied. Open GitHub to paste it, or share the report as a file instead?")
+                    .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
+                        af.shizuku.manager.utils.CustomTabsHelper.launchUrlOrCopy(this, "https://github.com/thejaustin/ShizukuPlus/issues/new")
+                        af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
+                    }
+                    .setNeutralButton("Share File") { _, _ ->
+                        af.shizuku.manager.utils.CrashReporter.shareAsFile(this)
+                        af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
+                    }
+                    .setNegativeButton("Clear saved crash") { _, _ ->
+                        af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
+                    }
+                    .setNeutralButton(android.R.string.cancel, null)
+                    .show()
+            }
+            .setNegativeButton("Ignore") { _, _ ->
+                af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
+            }
+            .setNeutralButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun performMigration() {

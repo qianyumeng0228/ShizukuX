@@ -12,6 +12,9 @@ Shizuku lets normal apps use system-level APIs directly via a privileged process
 
 </div>
 
+> [!IMPORTANT]
+> **Sentry Status Notice**: Crash reporting via Sentry is currently disabled due to monthly quota limits. Service will resume on May 1st, 2026. In the meantime, please report any bugs manually via [GitHub Issue #190](https://github.com/thejaustin/ShizukuPlus/issues/190).
+
 ## ⬇️ Download
 
 Get the latest release from [GitHub Releases](https://github.com/thejaustin/ShizukuPlus/releases).

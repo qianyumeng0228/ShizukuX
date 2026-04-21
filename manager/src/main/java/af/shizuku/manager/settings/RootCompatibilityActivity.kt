@@ -46,22 +46,11 @@ class RootCompatibilityActivity : AppBarActivity() {
         private const val TAG = "RootCompatibilityAct"
     }
 
-    override fun getLayoutId() = R.layout.activity_root_compatibility
-
-    private lateinit var recyclerView: RecyclerView
-    private lateinit var adapter: CategorizedSuggestedAppsAdapter
-    private var resolvedSuPath: String? = null
-
-    private val packageReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            refreshList()
-        }
-    }
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = ActivityRootCompatibilityBinding.bind(rootView.getChildAt(0))
+        val binding = ActivityRootCompatibilityBinding.inflate(layoutInflater, rootView, true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         resolvedSuPath = resolveSuPath()
@@ -136,6 +125,7 @@ class RootCompatibilityActivity : AppBarActivity() {
         }
         ContextCompat.registerReceiver(this, packageReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
+
 
     override fun onDestroy() {
         unregisterReceiver(packageReceiver)

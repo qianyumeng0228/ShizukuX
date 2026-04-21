@@ -29,13 +29,12 @@ class AdbPairingTutorialActivity : AppBarActivity() {
 
     private var notificationEnabled: Boolean = false
 
-    override fun getLayoutId() = R.layout.adb_pairing_tutorial_activity
-
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val context = this
 
-        binding = AdbPairingTutorialActivityBinding.bind(rootView.getChildAt(0))
+        binding = AdbPairingTutorialActivityBinding.inflate(layoutInflater, rootView, true)
         
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
@@ -61,6 +60,7 @@ class AdbPairingTutorialActivity : AppBarActivity() {
             }
         }
     }
+
 
     private fun syncNotificationEnabled() {
         binding.apply {
