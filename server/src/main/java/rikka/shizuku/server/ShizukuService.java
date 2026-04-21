@@ -957,7 +957,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     private void onPermissionRevoked(String packageName) {
-        // TODO add runtime permission listener
         getUserServiceManager().removeUserServicesForPackage(packageName);
     }
 
