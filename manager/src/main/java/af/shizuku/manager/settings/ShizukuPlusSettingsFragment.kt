@@ -197,21 +197,21 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         )
 
         val pm = (context ?: return).packageManager
-        integrations.forEach { (prefKey, apps) ->
-            val foundApp = apps.find { (pkg, _) ->
-                try {
-                    pm.getPackageInfo(pkg, 0)
-                    true
-                } catch (e: Exception) {
-                    false
+        lifecycleScope.launch(Dispatchers.IO) {
+            val found = integrations.mapValues { (_, apps) ->
+                apps.find { (pkg, _) ->
+                    try { pm.getPackageInfo(pkg, 0); true } catch (e: Exception) { false }
                 }
             }
-
-            if (foundApp != null) {
-                findPreference<PlusFeaturePreference>(prefKey)?.apply {
-                    setIntegration(foundApp.first, foundApp.second)
-                    val originalSummary = summary
-                    summary = getString(R.string.settings_plus_app_found, foundApp.second) + "\n\n" + originalSummary
+            launch(Dispatchers.Main) {
+                found.forEach { (prefKey, foundApp) ->
+                    if (foundApp != null) {
+                        findPreference<PlusFeaturePreference>(prefKey)?.apply {
+                            setIntegration(foundApp.first, foundApp.second)
+                            val originalSummary = summary
+                            summary = getString(R.string.settings_plus_app_found, foundApp.second) + "\n\n" + originalSummary
+                        }
+                    }
                 }
             }
         }
