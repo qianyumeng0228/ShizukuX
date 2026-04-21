@@ -674,6 +674,7 @@ public class ShizukuSettings {
                 service.setPlusSetting("spoof_target", getSpoofTarget());
                 service.updatePlusFeatureEnabled("on_device_adb_tcp", isOnDeviceAdbTcpEnabled());
                 service.updatePlusFeatureEnabled("force_start_wadb", isForceStartWadbEnabled());
+                service.updatePlusFeatureEnabled("enable_activity_log", isActivityLogEnabled());
                 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {

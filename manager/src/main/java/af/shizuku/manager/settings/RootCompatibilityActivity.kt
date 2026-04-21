@@ -142,45 +142,45 @@ class RootCompatibilityActivity : AppBarActivity() {
         super.onDestroy()
     }
 
-    private fun buildItems(): List<Any> {
-        val items = mutableListOf<Any>()
-        
-        // 1. Official categories from AppContextManager
+    sealed class ListItem {
+        data class Header(val title: String) : ListItem()
+        data class App(val packageName: String) : ListItem()
+    }
+
+    private fun buildItems(): List<ListItem> {
+        val items = mutableListOf<ListItem>()
+
         AppContextManager.getRootLegacyPackages().forEach { (category, packages) ->
-            items.add(category)
-            items.addAll(packages)
+            items.add(ListItem.Header(category))
+            packages.forEach { items.add(ListItem.App(it)) }
         }
-        
-        // 2. Scan for other potential root apps installed on the device
-        val detected = mutableListOf<String>()
+
         val pm = packageManager
         val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
         val knownPkgs = AppContextManager.getRootLegacyPackages().values.flatten().toSet()
-        
-        for (pkgInfo in installed) {
-            val pkg = pkgInfo.packageName
-            if (pkg == packageName || knownPkgs.contains(pkg)) continue
-            
-            val usesRoot = pkgInfo.requestedPermissions?.any { 
-                it.contains("ROOT", true) || it.contains("SUPERUSER", true)
-            } == true
-            
-            if (usesRoot) {
-                detected.add(pkg)
+
+        val detected = installed
+            .filter { pkg ->
+                pkg.packageName != packageName &&
+                !knownPkgs.contains(pkg.packageName) &&
+                pkg.requestedPermissions?.any {
+                    it.contains("ROOT", true) || it.contains("SUPERUSER", true)
+                } == true
             }
-        }
-        
+            .map { it.packageName }
+
         if (detected.isNotEmpty()) {
-            items.add(getString(R.string.su_bridge_other_detected_apps))
-            items.addAll(detected)
+            items.add(ListItem.Header(getString(R.string.su_bridge_other_detected_apps)))
+            detected.forEach { items.add(ListItem.App(it)) }
         }
-        
+
         return items
     }
 
     private fun refreshList() {
         adapter.updateItems(buildItems())
     }
+
 
     private fun resolveSuPath(): String? {
         val uriStr = ShizukuSettings.getExportDirUri() ?: return null
@@ -238,22 +238,21 @@ class RootCompatibilityActivity : AppBarActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private inner class CategorizedSuggestedAppsAdapter(items: List<Any>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+    private inner class CategorizedSuggestedAppsAdapter(items: List<ListItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         private val items = items.toMutableList()
 
-        fun updateItems(newItems: List<Any>) {
+        fun updateItems(newItems: List<ListItem>) {
             items.clear()
             items.addAll(newItems)
             notifyDataSetChanged()
         }
-        
+
         private val TYPE_HEADER = 0
         private val TYPE_APP = 1
 
-        override fun getItemViewType(position: Int): Int {
-            return if (items[position] is String && items[position].toString().contains(".")) TYPE_APP else if (items[position] is String) TYPE_HEADER else TYPE_APP
-        }
+        override fun getItemViewType(position: Int): Int =
+            if (items[position] is ListItem.Header) TYPE_HEADER else TYPE_APP
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             val inflater = LayoutInflater.from(parent.context)
@@ -279,10 +278,10 @@ class RootCompatibilityActivity : AppBarActivity() {
                 .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .start()
 
-            if (holder is HeaderViewHolder) {
-                holder.binding.title.text = item as String
-            } else if (holder is AppViewHolder) {
-                val pkg = item as String
+            if (holder is HeaderViewHolder && item is ListItem.Header) {
+                holder.binding.title.text = item.title
+            } else if (holder is AppViewHolder && item is ListItem.App) {
+                val pkg = item.packageName
                 val pm = packageManager
                 val metadata = AppContextManager.getMetadata(pkg)
 
