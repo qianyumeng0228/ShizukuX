@@ -487,7 +487,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         }
                         return newProcessInternal(new String[]{"echo", "Magisk v26.4 (26400) - ShizukuX Bridge Mode"}, env, dir);
                     }
-                } else if (baseCmd.equals("pm") && cmd.length > 2 && cmd[1].equals("grant")) {
+                } else if (baseCmd.equals("pm") && cmd.length > 3 && cmd[1].equals("grant")) {
                     if (isFeatureEnabled("root_auto_grant")) {
                         LOGGER.i("SUBridge: intercepting pm grant for " + cmd[2]);
                         // Auto-approve common root app requests
@@ -724,7 +724,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             } else if (baseCmd.equals("pm") && cmd.length >= 2 && cmd[1].equals("install")) {
                 LOGGER.i("Plus Optimization: pm install");
                 // For now, let it fall through to sh -c pm install which is already functional
-            } else if (baseCmd.equals("appops") && cmd.length >= 4) {
+            } else if (baseCmd.equals("appops") && cmd.length >= 5) {
                 // Intercept appops set/get for native speed
                 String op = cmd[1]; // set/get
                 String pkg = cmd[2];
