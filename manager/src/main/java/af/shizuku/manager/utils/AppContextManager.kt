@@ -58,14 +58,16 @@ object AppContextManager {
     private val ENH_NPU = AppEnhancement("npu_plus", "NPU Accelerator", "Prioritized Neural Processing Unit scheduling.")
     private val ENH_VM = AppEnhancement("vm_plus", "AVF Linux VM", "Spawns an isolated Microdroid VM for this task.")
     private val ENH_WIN = AppEnhancement("win_plus", "Window Tuner", "Forces free-form and advanced window control.")
+    private val ENH_OVERLAY = AppEnhancement("overlay_manager_plus", "Overlay Bridge", "Installs and manages runtime overlays for theming.")
+    private val ENH_NETWORK = AppEnhancement("network_governor_plus", "Network Governor", "DNS-based firewall and traffic control without raw iptables.")
 
     private val dynamicDatabase = mutableMapOf<String, AppMetadata>()
 
     private val staticDatabase = mutableMapOf<String, AppMetadata>().apply {
         // --- Legacy Root Apps ---
-        put("org.adaway", AppMetadata("AdAway: Open-source ad blocker. Use 'Local DNS Proxy' in ShizukuX for rootless blocking.", listOf(ENH_SHELL), true))
-        put("dev.ukanth.ufirewall", AppMetadata("AFWall+: Firewall app. Network Governor enables DNS-based rules; raw iptables chains still need Shizuku with root.", listOf(ENH_SHELL), true, "Menu > Preferences > SU path", rootSupportLevel = RootSupportLevel.PARTIAL))
-        put("com.samsung.android.hexinstall", AppMetadata("Hex Installer: Theming engine for Samsung. ShizukuX provides the necessary Overlay Bridge for OneUI 8+.", listOf(ENH_WIN), true))
+        put("org.adaway", AppMetadata("AdAway: Open-source ad blocker. Use 'Network Governor' in ShizukuX for rootless blocking.", listOf(ENH_SHELL, ENH_NETWORK), true))
+        put("dev.ukanth.ufirewall", AppMetadata("AFWall+: Firewall app. Network Governor enables DNS-based rules; raw iptables chains still need Shizuku with root.", listOf(ENH_SHELL, ENH_NETWORK), true, "Menu > Preferences > SU path", rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("com.samsung.android.hexinstall", AppMetadata("Hex Installer: Theming engine for Samsung. ShizukuX provides the necessary Overlay Bridge for OneUI 8+.", listOf(ENH_WIN, ENH_OVERLAY), true))
         put("com.samsung.android.themepark", AppMetadata("Theme Park: Official Samsung customization. Enhanced by ShizukuX Overlay API.", listOf(ENH_WIN), true))
         put("com.keramidas.TitaniumBackup", AppMetadata("Titanium Backup: App data backup works via SU Bridge; system-level restores may still need Shizuku with root.", emptyList(), true, "Menu > More > Preferences > su executable path", rootSupportLevel = RootSupportLevel.PARTIAL))
         put("eu.darken.sdm", AppMetadata("SD Maid (Legacy): Most cleaning works via SU Bridge; deep system paths need Shizuku with root.", emptyList(), true, "Settings > Root > Binary path", rootSupportLevel = RootSupportLevel.PARTIAL))
@@ -193,6 +195,8 @@ object AppContextManager {
                         "npu_plus" -> ENH_NPU
                         "vm_plus" -> ENH_VM
                         "win_plus" -> ENH_WIN
+                        "overlay_manager_plus" -> ENH_OVERLAY
+                        "network_governor_plus" -> ENH_NETWORK
                         else -> null
                     }
                 }
