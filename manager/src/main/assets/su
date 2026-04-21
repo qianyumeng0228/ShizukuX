@@ -6,17 +6,26 @@
 
 BASEDIR=$(dirname "$0")
 
-# If no arguments are provided, or if it's just a shell request, drop into rish
+# rish needs RISH_APPLICATION_ID to be a package that has Shizuku permission.
+# Set it to ShizukuX so rish can connect to the running Shizuku server.
+export RISH_APPLICATION_ID="af.shizuku.plus.api"
+
+# If no arguments are provided drop into an interactive rish shell
 if [ "$1" = "" ]; then
     exec sh "$BASEDIR/rish"
 fi
 
-# The most common usage from legacy apps is: su -c "command"
+# Most common legacy app usage: su -c "command"
 if [ "$1" = "-c" ]; then
     shift
-    # Pass the rest of the arguments directly to rish
     exec sh "$BASEDIR/rish" -c "$*"
 fi
 
-# Fallback: Just pass all arguments to rish
+# su <user> -c "command" — ignore the user argument, pass command to rish
+if [ "$2" = "-c" ]; then
+    shift 2
+    exec sh "$BASEDIR/rish" -c "$*"
+fi
+
+# Fallback: pass all arguments to rish
 exec sh "$BASEDIR/rish" "$@"
