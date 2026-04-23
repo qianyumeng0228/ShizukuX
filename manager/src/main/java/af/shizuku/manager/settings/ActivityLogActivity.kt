@@ -11,6 +11,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil3.load
 import coil3.request.crossfade
@@ -66,7 +68,7 @@ class ActivityLogActivity : AppBarActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 ActivityLogManager.logs.collectLatest { records ->
-                    adapter.update(records)
+                    adapter.submitList(records)
                     val isEmpty = records.isEmpty()
                     emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
                     appsBinding.list.visibility = if (isEmpty) View.GONE else View.VISIBLE
@@ -95,17 +97,17 @@ class ActivityLogActivity : AppBarActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private class LogAdapter : RecyclerView.Adapter<LogViewHolder>() {
-        private var items = emptyList<ActivityLogRecord>()
-
-        fun update(newItems: List<ActivityLogRecord>) {
-            items = newItems
-            notifyDataSetChanged()
-        }
-
-        override fun getItemCount() = items.size
+    private class LogAdapter : ListAdapter<ActivityLogRecord, LogViewHolder>(DIFF) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = LogViewHolder.create(parent)
-        override fun onBindViewHolder(holder: LogViewHolder, position: Int) = holder.bind(items[position])
+        override fun onBindViewHolder(holder: LogViewHolder, position: Int) = holder.bind(getItem(position))
+
+        companion object {
+            private val DIFF = object : DiffUtil.ItemCallback<ActivityLogRecord>() {
+                override fun areItemsTheSame(a: ActivityLogRecord, b: ActivityLogRecord) =
+                    a.timestamp == b.timestamp && a.packageName == b.packageName
+                override fun areContentsTheSame(a: ActivityLogRecord, b: ActivityLogRecord) = a == b
+            }
+        }
     }
 
     private class LogViewHolder(private val binding: ActivityLogItemBinding) : RecyclerView.ViewHolder(binding.root) {
