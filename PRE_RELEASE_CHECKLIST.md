@@ -140,7 +140,21 @@
 4. [ ] Monitor GitHub issues for bug reports
 5. [ ] Check adoption rate in Sentry
 
-## 📝 Release Notes Template
+## 📝 Current Release Notes
+
+### 🔧 Improvements
+- **Crash fixes**: Resolved Mavericks `HomeViewModel` factory crash after R8 repackaging; fixed `coordinator_root IllegalStateException` in five activities (RootCompatibility, ActivityLog, AdbPairingTutorial, Starter, ShellTutorial) caused by content-only layouts being used as root frames
+- **Migration dialog**: Reconstructed `showMigrationDialog()` from placeholder; both root and no-root branches now work correctly
+- **Crash report dialog**: Removed duplicate button that was silently overriding the "Share File" action
+- **Activity Log**: Upgraded adapter from `notifyDataSetChanged()` to `ListAdapter` + `DiffUtil` for smooth incremental updates
+- **Animations**: Added Material Shared Axis X transitions to all `AppBarActivity` screens
+- **UI components**: Added `header_card.xml` reusable hero header and `MotionUtils.kt` spring-scale touch animations with haptics
+- **Accessibility**: Added `importantForAccessibility="no"` to decorative icons; added content descriptions for drag handle and remove button
+- **AppContextManager**: Added `overlay_manager_plus` and `network_governor_plus` enhancement mappings to fix silent data loss from remote DB imports
+- **Settings**: Added import/export in Developer Options
+- **Manual crash reporting**: Added crash report dialog on startup offering clipboard copy, GitHub issue link, or file share
+
+## 📝 Release Notes Archive
 
 ```markdown
 ## ShizukuX v{VERSION}

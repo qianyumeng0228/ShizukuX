@@ -22,7 +22,6 @@ import af.shizuku.manager.R
 import af.shizuku.manager.app.AppBarActivity
 import af.shizuku.manager.databinding.ActivityLogItemBinding
 import af.shizuku.manager.databinding.AppsActivityBinding
-import af.shizuku.manager.databinding.AppsAppbarActivityBinding
 import af.shizuku.manager.utils.ActivityLogManager
 import af.shizuku.manager.utils.ActivityLogRecord
 import af.shizuku.manager.utils.EmptyStateView
