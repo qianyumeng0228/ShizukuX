@@ -10,47 +10,39 @@ prevents re-introducing fixed bugs, and keeps the roadmap visible without user s
 
 Items carried forward from previous sessions that have not yet been committed.
 
-### Bugs / Correctness
+### Features
 
-- [ ] **ActivityLogDao persistence** — Activity log currently lives only in memory (`ActivityLogManager`
-  uses a `MutableStateFlow`). On app restart all records vanish. Need a Room DAO or DataStore
-  list to persist across sessions. Mid-flight work existed in Apr 17 session but was not committed.
-  Files involved: `utils/ActivityLogManager.kt`, needs new `ActivityLogDao.kt`.
-
-- [ ] **IWindowManagerPlus AIDL alignment** — Cross-module AIDL interface consistency between
-  `manager/` and `api/` was flagged but not verified. Check that method signatures in
-  `IWindowManagerPlus.aidl` match on both sides. Apr 17 session.
-
-- [ ] **Activity log toggle not synced to server** — `syncAllPlusFeaturesToServer()` does not yet
-  include the activity logging enabled/disabled state. Needs a new key added to the sync payload.
-
-- [ ] **suCopyOpen rish command display** — Root Compat Hub should surface the rish command string
-  that a Shizuku-aware app needs to invoke, so power users can configure apps manually without
-  guessing. Mar 30 session.
-
-- [ ] **Root Compat Hub "Shizuku-aware only" label** — UI currently does not communicate that the
-  Root Compat Hub only affects apps that speak the Shizuku API. Add a subtitle or info chip to
-  set correct expectations. Mar 30 session.
-
-- [ ] **ServiceDoctorActivity coordinator_root audit** — Confirm `ServiceDoctorActivity` does not
-  override `getLayoutId()` with a content-only layout (same class of bug fixed Apr 23 in 5 other
-  activities). Check `activity_service_doctor.xml` is inflated via `rootView`.
-
-### Performance / Cleanup
-
-- [ ] **Handler.kt dead code** — `serverScope` and `workerDispatcher` initialization may still be
-  unused after the Apr 20 revert (`9b4fc82c`). Quick audit + removal if confirmed dead.
-
-- [ ] **LogAdapter DiffUtil** — `ActivityLogActivity.LogAdapter.update()` calls
-  `notifyDataSetChanged()`. Should use `DiffUtil.DiffResult` or `ListAdapter` for smooth updates.
+- [ ] **Root Compat Hub "Shizuku-aware only" label** — UI does not communicate that the Root
+  Compat Hub only affects apps that use the Shizuku API. Add a subtitle or info chip to set
+  correct user expectations. `RootCompatibilityActivity`. Mar 30 session.
 
 ### CI / Infrastructure
 
-- [ ] **Sentry quota** — Quota was at 100% through end of April 2026. Check current Sentry
-  dashboard at start of May to confirm events are flowing again or decide on quota expansion.
+- [ ] **Sentry quota** — Quota was at 100% through end of April 2026. Check Sentry dashboard
+  at start of May 2026 to confirm events are flowing again or decide on expansion.
 
 - [ ] **Pre-push guard stale package names** — `.github/pre-push-check` may still reference
   `moe.shizuku.privileged.api` in some checks. Audit after next CI pass.
+
+---
+
+### Completed (previously listed as open, confirmed done on 2026-04-23 audit)
+
+- [x] **ActivityLogDao persistence** — Fully implemented in `database/` submodule with Room.
+  `ActivityLogManager` already wires DAO, loads on init, persists all writes.
+- [x] **Activity log toggle synced to server** — `enable_activity_log` already in
+  `syncAllPlusFeaturesToServer()` at `ShizukuSettings.java:686`.
+- [x] **IWindowManagerPlus AIDL** — No `IWindowManagerPlus.aidl` exists in the manager AIDL
+  dir; concern was unfounded. Only `IDhizuku.aidl` present.
+- [x] **ServiceDoctorActivity coordinator_root** — Uses `inflate(layoutInflater, rootView, true)`
+  correctly. No `getLayoutId()` override.
+- [x] **Handler.kt dead code** — `workerThread`/`workerHandler` in server ktx Handler are used.
+  No dead code.
+- [x] **suCopyOpen rish display** — `suCopyOpen` button already wired in `RootCompatibilityActivity`
+  at line 308.
+- [x] **LogAdapter DiffUtil** — Migrated to `ListAdapter` + `DiffUtil.ItemCallback`. `694eea28`.
+- [x] **Sentry April 2026 hardcode** — Removed expired calendar block from `ShizukuApplication`.
+  `694eea28`.
 
 ---
 

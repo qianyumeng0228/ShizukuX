@@ -214,6 +214,15 @@ class ShizukuApplication : Application(), Configuration.Provider {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(af.shizuku.manager.utils.CrashHandler(this, defaultHandler))
 
+        // Sentry quota was exhausted for April 2026 — suppress SDK sends until May.
+        // Remove this block on or after 2026-05-01.
+        val cal = java.util.Calendar.getInstance()
+        if (cal.get(java.util.Calendar.YEAR) == 2026 && cal.get(java.util.Calendar.MONTH) == java.util.Calendar.APRIL) {
+            ShizukuSettings.setSentryLimitReached(true)
+        } else if (cal.get(java.util.Calendar.YEAR) >= 2026 && cal.get(java.util.Calendar.MONTH) > java.util.Calendar.APRIL) {
+            ShizukuSettings.setSentryLimitReached(false)
+        }
+
         // 2. CRITICAL: Initialize Sentry FIRST
         initializeSentryEarly()
         Sentry.addBreadcrumb(Breadcrumb("App started: ${BuildConfig.VERSION_NAME}"))
