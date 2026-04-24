@@ -198,6 +198,27 @@ else
     echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
 fi
 
+# 15. XML well-formedness check on layout files
+echo -n "[15/15] Checking layout XML well-formedness... "
+if command -v xmllint >/dev/null 2>&1; then
+    XML_ERRORS=""
+    for f in manager/src/main/res/layout/*.xml; do
+        result=$(xmllint --noout "$f" 2>&1)
+        if [ $? -ne 0 ]; then
+            XML_ERRORS="${XML_ERRORS}\n  $f: $result"
+        fi
+    done
+    if [ ! -z "$XML_ERRORS" ]; then
+        echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Malformed layout XML)"
+        echo -e "$XML_ERRORS"
+        ERRORS=$((ERRORS + 1))
+    else
+        echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+    fi
+else
+    echo -e "${COLOR_YELLOW}SKIP${COLOR_RESET} (xmllint not found)"
+fi
+
 echo -e "\n${COLOR_YELLOW}----------------------------------------${COLOR_RESET}"
 if [ $ERRORS -eq 0 ]; then
     echo -e "${COLOR_GREEN}Success: Codebase looks stable for push.${COLOR_RESET}"
