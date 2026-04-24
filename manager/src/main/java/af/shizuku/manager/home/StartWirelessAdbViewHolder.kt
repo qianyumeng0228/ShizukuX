@@ -15,10 +15,8 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import androidx.work.WorkManager
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
@@ -40,26 +38,27 @@ import rikka.recyclerview.BaseViewHolder.Creator
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
 
 class StartWirelessAdbViewHolder(
-    binding: HomeStartWirelessAdbBinding,
+    private val binding: HomeStartWirelessAdbBinding,
     private val containerBinding: HomeItemContainerBinding,
     private val scope: CoroutineScope
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
-        fun creator (scope: CoroutineScope): Creator<Any> {
+        fun creator(scope: CoroutineScope): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
                 val inner = HomeStartWirelessAdbBinding.inflate(inflater, outer.cardContent, true)
                 StartWirelessAdbViewHolder(inner, outer, scope)
             }
         }
-...
+    }
+
     init {
         containerBinding.root.applySpringTouch()
         binding.button1.setOnClickListener { v: View ->
             if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
                 Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
-                return
+                return@setOnClickListener
             }
 
             context.sendBroadcast(Intent(context, NotifCancelReceiver::class.java))
@@ -69,37 +68,30 @@ class StartWirelessAdbViewHolder(
                 Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
             }
-        
+
             val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
             if (adbEnabled == 0) {
                 WadbEnableUsbDebuggingDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-                return
+                return@setOnClickListener
             }
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             val tcpMode = ShizukuSettings.getTcpMode()
-
-            // Validate port - must be in valid range (1-65535)
             val validTcpPort = if (tcpPort in 1..65535) tcpPort else -1
 
-            // If ADB is NOT listening to a TCP port and the device doesn't support TLS, inform the user
             if (validTcpPort <= 0 && !EnvironmentUtils.isTlsSupported()) {
                 WadbNotEnabledDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-            // If ADB IS NOT listening to a TCP port but the device supports TLS, start mDns discovery
             } else if (validTcpPort <= 0) {
                 AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-            // If ADB IS listening to a TCP port but the user wants to close it and use TLS instead, close the TCP port and start mDns discovery
             } else if (!tcpMode) {
                 scope.launch {
                     AdbStarter.stopTcp(context, validTcpPort)
                 }
                 AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-            // Otherwise ADB IS listening to a TCP port and the user wants to keep it open. Start Shizuku via TCP
             } else {
                 val intent = Intent(context, StarterActivity::class.java).apply {
                     putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
                 }
-                
                 val activity = context as? android.app.Activity
                 if (activity != null) {
                     val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
@@ -112,12 +104,7 @@ class StartWirelessAdbViewHolder(
                 }
             }
         }
-    }
 
-    init {
-        binding.button1.setOnClickListener { v: View ->
-            start(v.context, scope)
-        }
         containerBinding.dragHandle.apply {
             visibility = View.VISIBLE
             setOnTouchListener { _, event ->
@@ -158,9 +145,6 @@ class StartWirelessAdbViewHolder(
         if (EnvironmentUtils.isTelevision()) {
             context.showAccessibilityDialog()
         } else if ((context.display?.displayId ?: -1) > 0 || ShizukuSettings.getLegacyPairing()) {
-            // Running in a multi-display environment (e.g., Windows Subsystem for Android),
-            // pairing dialog can be displayed simultaneously with Shizuku.
-            // Input from notification is harder to use under this situation.
             AdbPairDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
         } else {
             val activity = context as? android.app.Activity ?: return
