@@ -12,9 +12,8 @@ Items carried forward from previous sessions that have not yet been committed.
 
 ### Features
 
-- [ ] **Root Compat Hub "Shizuku-aware only" label** — UI does not communicate that the Root
-  Compat Hub only affects apps that use the Shizuku API. Add a subtitle or info chip to set
-  correct user expectations. `RootCompatibilityActivity`. Mar 30 session.
+- [x] **Root Compat Hub "Shizuku-aware only" label** — Info banner added to
+  `activity_root_compatibility.xml` with string `root_hub_shizuku_aware_note`. Done 2026-04-24.
 
 ### CI / Infrastructure
 
@@ -76,6 +75,27 @@ Things discussed or sketched that we never formally decided to build.
 ---
 
 ## Session History (newest first)
+
+### 2026-04-24 — Claude (Sonnet 4.6)
+**Commits:** `c1150113`, `91fd5c25`
+
+**Done:**
+- Fixed two unclosed `<LinearLayout>` tags: `terminal_tutorial_activity.xml` and
+  `adb_pairing_tutorial_activity.xml` — both caused CI `SAXParseException` in
+  `mergeReleaseResources`. Added pre-push guard check 15/15 (xmllint) to prevent recurrence.
+- Added `root_hub_shizuku_aware_note` info banner to `activity_root_compatibility.xml` — educates
+  users that service-level modules only activate for Shizuku API apps; SU Bridge works for all.
+- Repaired `StartWirelessAdbViewHolder.kt` compilation failures: unclosed companion object (`...`
+  placeholder from prior session), bare `return` inside lambda (needs `return@setOnClickListener`),
+  duplicate `init` blocks (second called non-existent `start()`), `binding` not `private val`.
+- Removed unused `WorkManager` and `Dispatchers` imports from the same file.
+
+**Shizuku-aware label (`root_hub_shizuku_aware_note`):**
+This info banner in `RootCompatibilityActivity` explains that auto-grant, Magisk mocking, and
+AdAway bridge only activate for apps connecting via the Shizuku API. The SU Bridge path (the
+binary su wrapper) works for any root app. This closes the backlog item from Mar 30.
+
+---
 
 ### 2026-04-23 — Claude (Sonnet 4.6)
 **Commits:** `98f47424`
@@ -208,6 +228,10 @@ coordinator_root fix (carried to Apr 23).
 | Mavericks ProGuard keep rules MUST stay in `proguard-rules.pro` | `-repackageclasses rikka.shizuku` breaks companion factory reflection |
 | `AppBarActivity.rootView` is a `ViewGroup` — use `rootView.getChildAt(0)` for ViewBinding in subclasses that need it | Direct cast to binding class will fail |
 | Compose was tried and reverted — do not re-introduce without a plan | Full migration caused instability; revert was `25d796d4` |
+| Layout XML must be well-formed — validate with xmllint before pushing | Unclosed `<LinearLayout>` in two tutorial layouts caused `SAXParseException` in CI; pre-push guard check 15/15 now enforces this |
+| Companion object `}` must be closed before any `init` block | Missing close brace (or `...` placeholder) causes `Expecting member declaration` compile error |
+| `return` inside a `setOnClickListener` lambda must be `return@setOnClickListener` | Bare `return` is illegal in a non-inline lambda — causes compile error |
+| ViewHolder `binding` param must be `private val` if used in member functions | Constructor params without `val`/`var` are inaccessible outside `init` — causes compile error |
 
 ---
 
