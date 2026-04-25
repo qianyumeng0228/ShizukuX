@@ -66,7 +66,7 @@ object CrashReporter {
 
         // 5. Shizuku State
         sb.append("### Shizuku State\n")
-        sb.append("- **State:** ${ShizukuStateMachine.getState()}\n")
+        sb.append("- **State:** ${ShizukuStateMachine.get()}\n")
         sb.append("- **Watchdog Enabled:** ${ShizukuSettings.getWatchdog()}\n\n")
 
         // 6. Logs (Logcat tail)

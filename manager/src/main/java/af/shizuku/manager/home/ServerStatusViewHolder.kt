@@ -39,7 +39,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
     private inline val summaryView get() = binding.text2
     private inline val iconView get() = binding.icon
     private inline val logButton get() = binding.btnActivityLog
-    private inline val sentryButton get() = binding.btn_sentry_offline
+    private inline val sentryButton get() = binding.btnSentryOffline
 
     override fun onBind() {
         val context = itemView.context
@@ -100,11 +100,10 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         }
 
         val typedValue = android.util.TypedValue()
-        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorWarningContainer
-        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnWarningContainer
+        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorTertiaryContainer
+        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnTertiaryContainer
         context.theme.resolveAttribute(okColorAttr, typedValue, true)
         val bgColor = if (typedValue.type != android.util.TypedValue.TYPE_NULL) typedValue.data else {
-            // Fallback to SurfaceContainerHigh if WarningContainer is not available (older M3)
             context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHigh, typedValue, true)
             typedValue.data
         }

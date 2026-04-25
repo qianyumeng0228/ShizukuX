@@ -10,6 +10,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.management.AppsViewModel
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.UserHandleCompat
+import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.IdBasedRecyclerViewAdapter
 import rikka.recyclerview.IndexCreatorPool
 

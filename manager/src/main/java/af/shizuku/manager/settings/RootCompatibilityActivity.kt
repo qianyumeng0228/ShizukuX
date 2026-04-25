@@ -46,7 +46,15 @@ class RootCompatibilityActivity : AppBarActivity() {
         private const val TAG = "RootCompatibilityAct"
     }
 
-    
+    private var resolvedSuPath: String? = null
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var adapter: CategorizedSuggestedAppsAdapter
+    private val packageReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            refreshList()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 

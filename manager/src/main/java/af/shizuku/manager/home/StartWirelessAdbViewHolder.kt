@@ -51,6 +51,21 @@ class StartWirelessAdbViewHolder(
                 StartWirelessAdbViewHolder(inner, outer, scope)
             }
         }
+
+        fun start(context: android.content.Context, scope: CoroutineScope) {
+            val tcpPort = EnvironmentUtils.getAdbTcpPort()
+            val validTcpPort = if (tcpPort in 1..65535) tcpPort else -1
+            if (validTcpPort > 0 && ShizukuSettings.getTcpMode()) {
+                val intent = android.content.Intent(context, StarterActivity::class.java).apply {
+                    putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
+                }
+                context.startActivity(intent)
+            } else {
+                (context as? androidx.fragment.app.FragmentActivity)?.supportFragmentManager?.let { fm ->
+                    AdbDialogFragment().show(fm)
+                }
+            }
+        }
     }
 
     init {

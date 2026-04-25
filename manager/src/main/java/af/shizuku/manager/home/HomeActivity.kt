@@ -18,7 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import com.airbnb.mvrx.MavericksView
-import com.airbnb.mvrx.viewModel
+import com.airbnb.mvrx.mavericksViewModel
 import com.airbnb.mvrx.withState
 import com.airbnb.mvrx.Success
 import androidx.fragment.app.FragmentActivity

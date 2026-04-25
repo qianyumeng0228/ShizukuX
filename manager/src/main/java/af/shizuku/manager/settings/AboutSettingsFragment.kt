@@ -30,7 +30,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
 
             setOnPreferenceClickListener {
                 MaterialAlertDialogBuilder(context)
-                    .setTitle(if (hasLastCrash) "Report Last Crash" else R.string.manual_report_title)
+                    .setTitle(if (hasLastCrash) "Report Last Crash" else context.getString(R.string.manual_report_title))
                     .setMessage(R.string.sentry_offline_notice_learn_more)
                     .setPositiveButton(R.string.manual_report_button_generate) { _, _ ->
                         val report = CrashReporter.generateReport(context)
@@ -45,7 +45,6 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                                 .setMessage("Now that the report is copied, would you like to clear the saved crash data?")
                                 .setPositiveButton("Clear") { _, _ ->
                                     af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
-                                    updateData() // Refresh UI
                                 }
                                 .setNegativeButton("Keep", null)
                                 .show()
