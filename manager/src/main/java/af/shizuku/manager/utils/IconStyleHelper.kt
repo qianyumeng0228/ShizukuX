@@ -8,8 +8,8 @@ import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import android.util.TypedValue
 import androidx.preference.PreferenceGroup
+import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import com.google.android.material.R as MaterialR
 
 object IconStyleHelper {
 
@@ -40,14 +40,14 @@ object IconStyleHelper {
     fun stylize(context: Context, original: Drawable, style: Style = current()): Drawable {
         val mutable = original.mutate()
         return when (style) {
-            Style.STANDARD -> tinted(mutable, resolveColor(context, MaterialR.attr.colorPrimary))
-            Style.OUTLINED -> tinted(mutable, resolveColor(context, MaterialR.attr.colorOnSurfaceVariant))
+            Style.STANDARD -> tinted(mutable, resolveColor(context, R.attr.colorPrimary))
+            Style.OUTLINED -> tinted(mutable, resolveColor(context, R.attr.colorOnSurfaceVariant))
             Style.TWO_TONE -> {
                 val bg = GradientDrawable().apply {
                     shape = GradientDrawable.OVAL
-                    setColor(resolveColor(context, MaterialR.attr.colorPrimaryContainer))
+                    setColor(resolveColor(context, R.attr.colorPrimaryContainer))
                 }
-                val fg = tinted(mutable, resolveColor(context, MaterialR.attr.colorOnPrimaryContainer))
+                val fg = tinted(mutable, resolveColor(context, R.attr.colorOnPrimaryContainer))
                 val padding = (4 * context.resources.displayMetrics.density).toInt()
                 LayerDrawable(arrayOf(bg, InsetDrawable(fg, padding)))
             }
