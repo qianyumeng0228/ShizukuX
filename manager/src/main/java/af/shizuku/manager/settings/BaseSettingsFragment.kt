@@ -30,6 +30,7 @@ import af.shizuku.manager.receiver.NotifCancelReceiver
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.HapticUtils
+import af.shizuku.manager.utils.IconStyleHelper
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.html.text.HtmlCompat
@@ -51,6 +52,8 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         }
 
         onCreateSettingsPreferences(savedInstanceState, rootKey)
+
+        preferenceScreen?.let { IconStyleHelper.applyToTree(requireContext(), it) }
     }
 
     abstract fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?)
