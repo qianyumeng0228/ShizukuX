@@ -237,13 +237,28 @@ jobs:
           name: ${{ needs.build.outputs.artifactName }}
           path: files
 
-      - name: Extract Release Notes
+      - name: Generate Release Notes
         id: release_notes
         run: |
-          # Extract everything between '### 🔧 Improvements' and the next header starting with '#'
-          # or the end of the file. Use a temporary file to store the notes.
-          sed -n '/### 🔧 Improvements/,/^#/p' PRE_RELEASE_CHECKLIST.md | sed '$d' > release_notes.md
+          TAG_NAME="v${VERSION}"
+          # Find the most recent prior tag matching our scheme, excluding the one we just created.
+          PREV_TAG=$(git tag --list 'v*-shizukuplus' --sort=-creatordate | grep -v "^${TAG_NAME}$" | head -1)
+          {
+            if [ -n "$PREV_TAG" ]; then
+              echo "## Changes since ${PREV_TAG}"
+              echo
+              git log "${PREV_TAG}..${TAG_NAME}" --no-merges --pretty=format:"- %s (%h)"
+              echo
+            else
+              echo "## Initial release"
+              echo
+              git log -20 --no-merges --pretty=format:"- %s (%h)"
+              echo
+            fi
+          } > release_notes.md
           echo "NOTES_FILE=release_notes.md" >> $GITHUB_ENV
+          echo "----- generated notes -----"
+          cat release_notes.md
 
       - name: Create Release
         env:
