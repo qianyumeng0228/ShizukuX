@@ -99,28 +99,29 @@ class MainActivity : HomeActivity() {
     private fun showCrashReportDialog() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.manual_report_title)
-            .setMessage("ShizukuX detected a crash from your last session. Would you like to generate a report to help us fix it?")
+            .setMessage(R.string.crash_detected_dialog_message)
             .setPositiveButton(R.string.manual_report_button_generate) { _, _ ->
                 val report = af.shizuku.manager.utils.CrashReporter.generateReport(this)
                 val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Crash Report", report))
+                clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                    getString(R.string.manual_report_clipboard_label), report))
                 android.widget.Toast.makeText(this, R.string.manual_report_toast_copied, android.widget.Toast.LENGTH_SHORT).show()
-                
+
                 MaterialAlertDialogBuilder(this)
-                    .setTitle("Report Copied")
-                    .setMessage("The report is copied. Open GitHub to paste it, or share the report as a file instead?")
+                    .setTitle(R.string.manual_report_copied_dialog_title)
+                    .setMessage(R.string.crash_detected_dialog_short_message)
                     .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
                         af.shizuku.manager.utils.CustomTabsHelper.launchUrlOrCopy(this, "https://github.com/thejaustin/ShizukuPlus/issues/new")
                         af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
                     }
-                    .setNeutralButton("Share File") { _, _ ->
+                    .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
                         af.shizuku.manager.utils.CrashReporter.shareAsFile(this)
                         af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
             }
-            .setNegativeButton("Ignore") { _, _ ->
+            .setNegativeButton(R.string.crash_detected_dialog_ignore) { _, _ ->
                 af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
             }
             .setNeutralButton(android.R.string.cancel, null)

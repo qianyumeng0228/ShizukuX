@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +22,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat.Type
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.app.SnackbarHelper
@@ -122,9 +122,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
     }
 
     protected fun tint(icon: Drawable?): Drawable? {
-        val tintColor = TypedValue()
-        requireContext().theme.resolveAttribute(R.attr.colorOnSurfaceVariant, tintColor, true)
-        icon?.mutate()?.setTint(tintColor.data)
+        icon?.mutate()?.setTint(requireContext().themeColor(R.attr.colorOnSurfaceVariant))
         return icon
     }
 
@@ -213,11 +211,8 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         private val cardMargin = 16f * context.resources.displayMetrics.density
 
         init {
-            val typedValue = TypedValue()
-            context.theme.resolveAttribute(R.attr.colorSurfaceContainerLow, typedValue, true)
-            cardPaint.color = typedValue.data
-            context.theme.resolveAttribute(R.attr.colorOutlineVariant, typedValue, true)
-            dividerPaint.color = typedValue.data
+            cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerLow)
+            dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
             dividerPaint.strokeWidth = 1f * context.resources.displayMetrics.density
         }
 

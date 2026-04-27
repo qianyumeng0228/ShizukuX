@@ -23,6 +23,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
+import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.adb.AdbPairingAccessibilityService
 import af.shizuku.manager.app.AppBarActivity
 import af.shizuku.manager.databinding.ActivityServiceDoctorBinding
@@ -265,10 +266,8 @@ class ServiceDoctorActivity : AppBarActivity() {
             holder.binding.title.text = check.title
             holder.binding.status.text = check.status
             holder.binding.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24dp else R.drawable.ic_server_error_24dp)
-            val tv = android.util.TypedValue()
             val colorAttr = if (check.ok) com.google.android.material.R.attr.colorTertiary else android.R.attr.colorError
-            context.theme.resolveAttribute(colorAttr, tv, true)
-            holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(tv.data)
+            holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(context.themeColor(colorAttr))
             
             if (check.onFix != null) {
                 holder.binding.btnFix.visibility = View.VISIBLE

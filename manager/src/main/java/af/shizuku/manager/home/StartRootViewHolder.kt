@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -44,7 +45,6 @@ class StartRootViewHolder(
         restart.setOnClickListener(listener)
         binding.text1.movementMethod = LinkMovementMethod.getInstance()
         containerBinding.dragHandle.apply {
-            visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@StartRootViewHolder)
                 false
@@ -69,13 +69,8 @@ class StartRootViewHolder(
         start.isEnabled = true
         restart.isEnabled = true
         val isRunning = data == true
-        if (isRunning) {
-            start.visibility = View.GONE
-            restart.visibility = View.VISIBLE
-        } else {
-            start.visibility = View.VISIBLE
-            restart.visibility = View.GONE
-        }
+        start.isVisible = !isRunning
+        restart.isVisible = isRunning
 
         // Expressive Lottie Integration — probe asset once and cache result.
         if (af.shizuku.manager.ShizukuSettings.isExpressiveAnimationsEnabled()) {
@@ -84,13 +79,11 @@ class StartRootViewHolder(
                 val available = lottieAvailable ?: runCatching {
                     context.assets.open("lottie/button_start.json").close(); true
                 }.getOrDefault(false).also { lottieAvailable = it }
+                lottieView.isVisible = available
                 if (available) {
-                    lottieView.visibility = View.VISIBLE
                     lottieView.setAnimation("lottie/button_start.json")
                     lottieView.playAnimation()
                     start.icon = null
-                } else {
-                    lottieView.visibility = View.GONE
                 }
             }
         }

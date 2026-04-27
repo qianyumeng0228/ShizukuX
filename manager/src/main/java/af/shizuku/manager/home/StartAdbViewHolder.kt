@@ -75,7 +75,6 @@ class StartAdbViewHolder(
         binding.text1.text = context.getString(R.string.home_adb_description, Helps.ADB.get())
             .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
         containerBinding.dragHandle.apply {
-            visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@StartAdbViewHolder)
                 false

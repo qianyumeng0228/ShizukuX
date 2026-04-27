@@ -118,7 +118,6 @@ class StartWirelessAdbViewHolder(
         }
 
         containerBinding.dragHandle.apply {
-            visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@StartWirelessAdbViewHolder)
                 false

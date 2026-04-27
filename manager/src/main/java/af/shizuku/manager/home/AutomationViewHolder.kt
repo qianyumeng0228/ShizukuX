@@ -46,7 +46,6 @@ class AutomationViewHolder(
 
     init {
         containerBinding.dragHandle.apply {
-            visibility = View.VISIBLE
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@AutomationViewHolder)
                 false
@@ -123,7 +122,7 @@ class AutomationViewHolder(
             !EnvironmentUtils.isRooted()
         ) {
             binding.text2.apply {
-                visibility = View.VISIBLE
+                isVisible = true
                 text = context.getString(R.string.home_automation_description_device_restriction, "adb tcpip 5555")
                     .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
             }

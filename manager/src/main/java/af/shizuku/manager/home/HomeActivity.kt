@@ -89,17 +89,27 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splash = installSplashScreen()
+        splash.setOnExitAnimationListener { provider ->
+            provider.iconView.animate()
+                .alpha(0f)
+                .scaleX(0.8f)
+                .scaleY(0.8f)
+                .setDuration(220)
+                .setInterpolator(android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f))
+                .withEndAction { provider.remove() }
+                .start()
+        }
         super.onCreate(savedInstanceState)
 
         // Bind to the rootView that was created by AppBarActivity.setContentView(getLayoutId())
         val binding = HomeActivityBinding.bind(rootView)
 
-        // Handle Shortcut Intent
-        if (intent?.getStringExtra("shortcut_action") == "start_wireless_adb") {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        when (intent?.getStringExtra("shortcut_action")) {
+            "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 AdbDialogFragment().show(supportFragmentManager)
             }
+            "open_terminal" -> startActivity(android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java))
         }
 
         // Empty state view for when all cards are hidden

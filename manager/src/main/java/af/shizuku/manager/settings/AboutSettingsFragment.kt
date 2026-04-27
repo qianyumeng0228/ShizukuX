@@ -24,40 +24,40 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         findPreference<Preference>("manual_report")?.apply {
             val hasLastCrash = af.shizuku.manager.utils.CrashHandler.getLastCrashReport(context) != null
             if (hasLastCrash) {
-                setTitle("Report Last Crash")
-                setSummary("A persistent crash was detected. Tap to generate a report with the saved stacktrace.")
+                setTitle(R.string.manual_report_last_crash_title)
+                setSummary(R.string.manual_report_last_crash_summary)
             }
 
             setOnPreferenceClickListener {
+                val titleRes = if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title
                 MaterialAlertDialogBuilder(context)
-                    .setTitle(if (hasLastCrash) "Report Last Crash" else context.getString(R.string.manual_report_title))
+                    .setTitle(titleRes)
                     .setMessage(R.string.sentry_offline_notice_learn_more)
                     .setPositiveButton(R.string.manual_report_button_generate) { _, _ ->
                         val report = CrashReporter.generateReport(context)
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Crash Report", report))
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                            context.getString(R.string.manual_report_clipboard_label), report))
                         Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_SHORT).show()
-                        
-                        // Offer to clear
+
                         if (hasLastCrash) {
                             MaterialAlertDialogBuilder(context)
-                                .setTitle("Clear Saved Crash?")
-                                .setMessage("Now that the report is copied, would you like to clear the saved crash data?")
-                                .setPositiveButton("Clear") { _, _ ->
+                                .setTitle(R.string.manual_report_clear_dialog_title)
+                                .setMessage(R.string.manual_report_clear_dialog_message)
+                                .setPositiveButton(R.string.manual_report_clear_dialog_clear) { _, _ ->
                                     af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
                                 }
-                                .setNegativeButton("Keep", null)
+                                .setNegativeButton(R.string.manual_report_clear_dialog_keep, null)
                                 .show()
                         }
-                        
-                        // Offer to open GitHub or Share as File
+
                         MaterialAlertDialogBuilder(context)
-                            .setTitle("Report Copied")
-                            .setMessage("The report has been copied to your clipboard. Would you like to open GitHub Issues now, or share the report as a file instead?")
+                            .setTitle(R.string.manual_report_copied_dialog_title)
+                            .setMessage(R.string.manual_report_copied_dialog_message)
                             .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
                                 CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
                             }
-                            .setNeutralButton("Share File") { _, _ ->
+                            .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
                                 af.shizuku.manager.utils.CrashReporter.shareAsFile(context)
                             }
                             .setNegativeButton(android.R.string.cancel, null)

@@ -6,10 +6,10 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
-import android.util.TypedValue
 import androidx.preference.PreferenceGroup
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.ktx.themeColor
 
 object IconStyleHelper {
 
@@ -59,9 +59,5 @@ object IconStyleHelper {
         return drawable
     }
 
-    private fun resolveColor(context: Context, attr: Int): Int {
-        val tv = TypedValue()
-        context.theme.resolveAttribute(attr, tv, true)
-        return tv.data
-    }
+    private fun resolveColor(context: Context, attr: Int): Int = context.themeColor(attr)
 }

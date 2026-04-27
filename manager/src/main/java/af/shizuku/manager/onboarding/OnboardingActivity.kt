@@ -4,7 +4,6 @@ import android.content.Intent
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
-import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -26,6 +25,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbPairingTutorialActivity
 import af.shizuku.manager.app.AppActivity
 import af.shizuku.manager.databinding.ActivityOnboardingBinding
+import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.databinding.PageOnboardingWelcomeBinding
 import af.shizuku.manager.databinding.PageOnboardingSetupBinding
 import af.shizuku.manager.databinding.PageOnboardingSwipeBinding
@@ -193,11 +193,7 @@ class OnboardingActivity : AppActivity() {
         finish()
     }
 
-    private fun resolveThemeColor(attr: Int): Int {
-        val tv = TypedValue()
-        theme.resolveAttribute(attr, tv, true)
-        return tv.data
-    }
+    private fun resolveThemeColor(attr: Int): Int = themeColor(attr)
 
     private fun dpToPx(dp: Int) = (dp * resources.displayMetrics.density).toInt()
 

@@ -36,6 +36,7 @@ import af.shizuku.manager.databinding.AppsActivityBinding
 import af.shizuku.manager.databinding.AppsAppbarActivityBinding
 import af.shizuku.manager.databinding.SwipeHintOverlayBinding
 import af.shizuku.manager.ktx.loge
+import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.management.AppViewHolder.Callbacks
 import af.shizuku.manager.utils.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
@@ -362,11 +363,8 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             "hide_from_list" -> Triple(android.R.attr.colorError, com.google.android.material.R.attr.colorOnError, R.drawable.ic_visibility_24)
             else -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
         }
-        val tv = TypedValue()
-        theme.resolveAttribute(bgAttr, tv, true)
-        val bgColor = tv.data
-        theme.resolveAttribute(onAttr, tv, true)
-        val iconTint = tv.data
+        val bgColor = themeColor(bgAttr)
+        val iconTint = themeColor(onAttr)
 
         val bg = ColorDrawable(bgColor)
         val icon = AppCompatResources.getDrawable(this, iconRes)?.mutate()?.also { it.setTint(iconTint) }
@@ -481,11 +479,8 @@ class AppListItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
     private val cardMargin = context.resources.getDimension(R.dimen.m3e_spacing_medium)
 
     init {
-        val typedValue = TypedValue()
-        context.theme.resolveAttribute(R.attr.colorSurfaceContainerLow, typedValue, true)
-        cardPaint.color = typedValue.data
-        context.theme.resolveAttribute(R.attr.colorOutlineVariant, typedValue, true)
-        dividerPaint.color = typedValue.data
+        cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerLow)
+        dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
         dividerPaint.strokeWidth = 1f * context.resources.displayMetrics.density
     }
 

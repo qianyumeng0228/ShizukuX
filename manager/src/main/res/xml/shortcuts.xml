@@ -24,4 +24,17 @@
             android:targetPackage="af.shizuku.plus.api"
             android:targetClass="af.shizuku.manager.management.ApplicationManagementActivity" />
     </shortcut>
+    <shortcut
+        android:shortcutId="open_terminal"
+        android:enabled="true"
+        android:icon="@drawable/ic_terminal_24"
+        android:shortcutShortLabel="@string/shortcut_open_terminal"
+        android:shortcutLongLabel="@string/home_terminal_title">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="af.shizuku.plus.api"
+            android:targetClass="af.shizuku.manager.MainActivity">
+            <extra android:name="shortcut_action" android:value="open_terminal" />
+        </intent>
+    </shortcut>
 </shortcuts>

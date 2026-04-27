@@ -531,6 +531,20 @@
     <string name="manual_report_button_generate">Generate &amp; Copy</string>
     <string name="manual_report_button_github">Open GitHub Issues</string>
     <string name="manual_report_toast_copied">Report copied to clipboard!</string>
+    <string name="manual_report_last_crash_title">Report Last Crash</string>
+    <string name="manual_report_last_crash_summary">A persistent crash was detected. Tap to generate a report with the saved stacktrace.</string>
+    <string name="manual_report_clipboard_label">Crash Report</string>
+    <string name="manual_report_clear_dialog_title">Clear Saved Crash?</string>
+    <string name="manual_report_clear_dialog_message">Now that the report is copied, would you like to clear the saved crash data?</string>
+    <string name="manual_report_clear_dialog_clear">Clear</string>
+    <string name="manual_report_clear_dialog_keep">Keep</string>
+    <string name="manual_report_copied_dialog_title">Report Copied</string>
+    <string name="manual_report_copied_dialog_message">The report has been copied to your clipboard. Would you like to open GitHub Issues now, or share the report as a file instead?</string>
+    <string name="manual_report_copied_dialog_share">Share File</string>
+    <string name="crash_detected_dialog_message">ShizukuX detected a crash from your last session. Would you like to generate a report to help us fix it?</string>
+    <string name="crash_detected_dialog_short_message">The report is copied. Open GitHub to paste it, or share the report as a file instead?</string>
+    <string name="crash_detected_dialog_ignore">Ignore</string>
+    <string name="shortcut_open_terminal">Open Terminal</string>
 
     <string name="watchdog_shizuku_crashed_action_report_manually">Report Manually</string>
 
