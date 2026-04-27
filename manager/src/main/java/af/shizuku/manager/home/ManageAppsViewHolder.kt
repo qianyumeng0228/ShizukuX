@@ -9,6 +9,7 @@ import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeManageAppsItemBinding
+import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.management.ApplicationManagementActivity
 import af.shizuku.manager.model.ServiceStatus
@@ -62,11 +63,9 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
 
     override fun onClick(v: View) {
         val activity = v.context as? android.app.Activity ?: return
-        val intent = Intent(v.context, ApplicationManagementActivity::class.java)
-        val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-            activity,
-            android.util.Pair.create(iconView, "icon_manage_apps")
+        activity.startWithSceneTransition(
+            Intent(activity, ApplicationManagementActivity::class.java),
+            iconView, "icon_manage_apps"
         )
-        activity.startActivity(intent, options.toBundle())
     }
 }

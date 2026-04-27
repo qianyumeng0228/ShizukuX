@@ -1,9 +1,19 @@
 package af.shizuku.manager.ktx
 
+import android.app.Activity
+import android.app.ActivityOptions
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.UserManager
+import android.util.Pair
+import android.view.View
 import af.shizuku.manager.ShizukuApplication
+
+fun Activity.startWithSceneTransition(intent: Intent, sharedView: View, transitionName: String) {
+    val options = ActivityOptions.makeSceneTransitionAnimation(this, Pair.create(sharedView, transitionName))
+    startActivity(intent, options.toBundle())
+}
 
 val Context.application: ShizukuApplication
     get() {

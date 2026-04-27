@@ -6,12 +6,11 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
-import androidx.core.view.isVisible
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartRootBinding
+import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.starter.StarterActivity
 import rikka.html.text.HtmlCompat
@@ -36,7 +35,7 @@ class StartRootViewHolder(
     private inline val start get() = binding.button1
     private inline val restart get() = binding.button2
 
-    private var alertDialog: AlertDialog? = null
+    private var lottieAvailable: Boolean? = null
 
     init {
         containerBinding.root.applySpringTouch()
@@ -58,16 +57,11 @@ class StartRootViewHolder(
     }
 
     private fun onStartClicked(v: View) {
-        val context = v.context
-        val activity = context as? android.app.Activity ?: return
-        val intent = Intent(context, StarterActivity::class.java).apply {
+        val activity = v.context as? android.app.Activity ?: return
+        val intent = Intent(activity, StarterActivity::class.java).apply {
             putExtra(StarterActivity.EXTRA_IS_ROOT, true)
         }
-        val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-            activity,
-            android.util.Pair.create(binding.icon, "icon_root")
-        )
-        activity.startActivity(intent, options.toBundle())
+        activity.startWithSceneTransition(intent, binding.icon, "icon_root")
     }
 
     override fun onBind() {
@@ -83,17 +77,19 @@ class StartRootViewHolder(
             restart.visibility = View.GONE
         }
 
-        // Expressive Lottie Integration
+        // Expressive Lottie Integration — probe asset once and cache result.
         if (af.shizuku.manager.ShizukuSettings.isExpressiveAnimationsEnabled()) {
             val lottieView = itemView.findViewById<com.airbnb.lottie.LottieAnimationView>(R.id.lottie_start)
             if (lottieView != null) {
-                try {
-                    context.assets.open("lottie/button_start.json").close()
+                val available = lottieAvailable ?: runCatching {
+                    context.assets.open("lottie/button_start.json").close(); true
+                }.getOrDefault(false).also { lottieAvailable = it }
+                if (available) {
                     lottieView.visibility = View.VISIBLE
                     lottieView.setAnimation("lottie/button_start.json")
                     lottieView.playAnimation()
-                    start.icon = null // Hide static icon
-                } catch (e: Exception) {
+                    start.icon = null
+                } else {
                     lottieView.visibility = View.GONE
                 }
             }
@@ -109,10 +105,5 @@ class StartRootViewHolder(
             )
 
         binding.text1.text = sb.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-    }
-
-    override fun onRecycle() {
-        super.onRecycle()
-        alertDialog = null
     }
 }

@@ -67,7 +67,6 @@ androidx-interpolator = { group = "androidx.interpolator", name = "interpolator"
 mavericks = { group = "com.airbnb.android", name = "mavericks", version.ref = "mavericks" }
 kotestJunit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotestJunit5" }
 aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
-aboutlibraries-ui = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 coil = { group = "io.coil-kt.coil3", name = "coil", version.ref = "coil" }

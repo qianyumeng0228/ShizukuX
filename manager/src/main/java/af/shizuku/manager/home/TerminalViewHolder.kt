@@ -9,6 +9,7 @@ import androidx.core.view.isVisible
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeTerminalBinding
+import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.shell.ShellTutorialActivity
 import rikka.recyclerview.BaseViewHolder
@@ -65,11 +66,9 @@ class TerminalViewHolder(
 
     override fun onClick(v: View) {
         val activity = v.context as? android.app.Activity ?: return
-        val intent = Intent(v.context, ShellTutorialActivity::class.java)
-        val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-            activity,
-            android.util.Pair.create(binding.icon, "icon_terminal")
+        activity.startWithSceneTransition(
+            Intent(activity, ShellTutorialActivity::class.java),
+            binding.icon, "icon_terminal"
         )
-        activity.startActivity(intent, options.toBundle())
     }
 }

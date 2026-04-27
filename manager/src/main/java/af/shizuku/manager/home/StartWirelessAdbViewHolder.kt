@@ -24,6 +24,7 @@ import af.shizuku.manager.adb.AdbPairingTutorialActivity
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartWirelessAdbBinding
+import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.home.showAccessibilityDialog
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.receiver.NotifCancelReceiver
@@ -109,11 +110,7 @@ class StartWirelessAdbViewHolder(
                 }
                 val activity = context as? android.app.Activity
                 if (activity != null) {
-                    val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-                        activity,
-                        android.util.Pair.create(binding.icon, "icon_wireless_adb")
-                    )
-                    activity.startActivity(intent, options.toBundle())
+                    activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
                 } else {
                     context.startActivity(intent)
                 }
@@ -162,12 +159,10 @@ class StartWirelessAdbViewHolder(
             AdbPairDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
         } else {
             val activity = context as? android.app.Activity ?: return
-            val intent = Intent(context, AdbPairingTutorialActivity::class.java)
-            val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-                activity,
-                android.util.Pair.create(binding.icon, "icon_wireless_adb")
+            activity.startWithSceneTransition(
+                Intent(activity, AdbPairingTutorialActivity::class.java),
+                binding.icon, "icon_wireless_adb"
             )
-            activity.startActivity(intent, options.toBundle())
         }
     }
 }

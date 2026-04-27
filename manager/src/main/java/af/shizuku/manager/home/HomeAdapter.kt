@@ -53,6 +53,7 @@ class HomeAdapter(
     var isDragging = false
     private var isUpdating = false
     private var lastUpdateDataTime = 0L
+    private val animatedIds = HashSet<Long>()
     
     /**
      * Callback to notify when the empty state should be shown/hidden.
@@ -142,8 +143,10 @@ class HomeAdapter(
 
     override fun onBindViewHolder(holder: BaseViewHolder<*>, position: Int) {
         super.onBindViewHolder(holder, position)
-        
-        // M3E Entrance Animation: Subtle slide and fade
+
+        // M3E entrance animation — only on first appearance per card id, not every recycle.
+        val id = getItemId(position)
+        if (!animatedIds.add(id)) return
         val view = holder.itemView
         view.alpha = 0f
         view.translationY = 24f

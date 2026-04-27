@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeServerStatusBinding
+import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.model.ServiceStatus
 import rikka.html.text.HtmlCompat
 import rikka.html.text.toHtml
@@ -91,12 +92,10 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         logButton.visibility = if (ok && af.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
         logButton.setOnClickListener {
             val activity = context as? android.app.Activity ?: return@setOnClickListener
-            val intent = android.content.Intent(context, af.shizuku.manager.settings.ActivityLogActivity::class.java)
-            val options = android.app.ActivityOptions.makeSceneTransitionAnimation(
-                activity,
-                android.util.Pair.create(iconView, "icon_server_status")
+            activity.startWithSceneTransition(
+                android.content.Intent(activity, af.shizuku.manager.settings.ActivityLogActivity::class.java),
+                iconView, "icon_server_status"
             )
-            activity.startActivity(intent, options.toBundle())
         }
 
         val typedValue = android.util.TypedValue()
