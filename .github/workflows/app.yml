@@ -71,8 +71,8 @@ jobs:
         id: buildWithGradle
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          echo 'org.gradle.caching=true' >> gradle.properties
-          echo 'org.gradle.parallel=true' >> gradle.properties
+          # caching/parallel now baked into gradle.properties at rest, so the
+          # version-extract gradlew invocation also benefits.
           [ -n "$SENTRY_DSN" ] && echo "SENTRY_DSN=${SENTRY_DSN}" >> gradle.properties || true
 
           if [ "$IS_DEBUG" = "true" ]; then
