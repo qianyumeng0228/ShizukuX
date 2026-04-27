@@ -46,6 +46,8 @@
 
     </LinearLayout>
 
+    <!-- ImageButton (not MaterialButton): RemoteViews rejects custom views,
+         so this stays a framework Button styled with M3 color tokens. -->
     <ImageButton
         android:id="@+id/widget_button"
         android:layout_width="48dp"
