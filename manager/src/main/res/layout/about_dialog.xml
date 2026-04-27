@@ -48,15 +48,14 @@
         tools:text="@string/about_view_source_code" />
 
     <!-- Close button -->
-    <ImageButton
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnClose"
+        style="@style/Widget.Material3.Button.IconButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="12dp"
         android:layout_marginTop="-12dp"
         android:layout_marginEnd="-12dp"
-        android:src="@drawable/ic_close_24"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        app:icon="@drawable/ic_close_24"
         android:contentDescription="@string/about_dialog_button_close"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
