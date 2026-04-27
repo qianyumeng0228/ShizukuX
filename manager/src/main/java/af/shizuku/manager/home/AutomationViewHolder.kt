@@ -131,8 +131,7 @@ class AutomationViewHolder(
     }
 
     override fun onBind() {
-        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
-        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
+        HomeEditMode.applyOverlay(containerBinding)
     }
 
     private fun getIntentAction(buttonId: Int): String =

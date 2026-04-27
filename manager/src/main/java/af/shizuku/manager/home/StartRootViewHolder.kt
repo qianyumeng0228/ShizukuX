@@ -71,8 +71,7 @@ class StartRootViewHolder(
     }
 
     override fun onBind() {
-        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
-        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
+        HomeEditMode.applyOverlay(containerBinding)
         start.isEnabled = true
         restart.isEnabled = true
         val isRunning = data == true

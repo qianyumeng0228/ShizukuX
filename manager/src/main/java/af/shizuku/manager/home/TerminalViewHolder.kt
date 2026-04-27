@@ -52,8 +52,7 @@ class TerminalViewHolder(
 
     override fun onBind() {
         val context = itemView.context
-        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
-        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
+        HomeEditMode.applyOverlay(containerBinding)
         if (!data.isRunning) {
             containerBinding.root.isEnabled = false
             summary.text =

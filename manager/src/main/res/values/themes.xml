@@ -57,7 +57,14 @@
 
     <style name="Theme" parent="Base.AppTheme" />
 
-    <style name="AppTheme.PreferenceThemeOverlay" parent="@style/PreferenceThemeOverlay.Rikka.Material3" />
+    <style name="AppTheme.PreferenceThemeOverlay" parent="@style/PreferenceThemeOverlay.Rikka.Material3">
+        <item name="switchPreferenceCompatStyle">@style/Preference.SwitchPreferenceCompat.M3Expressive</item>
+        <item name="switchPreferenceStyle">@style/Preference.SwitchPreferenceCompat.M3Expressive</item>
+    </style>
+
+    <style name="Preference.SwitchPreferenceCompat.M3Expressive" parent="@style/Preference.SwitchPreferenceCompat.Material">
+        <item name="android:widgetLayout">@layout/preference_widget_material_switch</item>
+    </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">?android:attr/colorBackground</item>

@@ -42,7 +42,6 @@ class LearnMoreViewHolder(
     }
 
     override fun onBind() {
-        containerBinding.removeBtn.isVisible = HomeEditMode.isActive
-        containerBinding.dragHandle.isVisible = HomeEditMode.isActive
+        HomeEditMode.applyOverlay(containerBinding)
     }
 }
