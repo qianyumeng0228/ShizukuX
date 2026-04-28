@@ -39,31 +39,43 @@ object MigrationHelper {
     }
 
     /**
-     * Reads the old app's `settings.xml` via root shell and applies every key-value entry to
-     * [currentPrefs]. Keys that already exist in [currentPrefs] are skipped so that settings
-     * already restored by Android Auto-Backup are never overwritten with stale data.
+     * Reads the old app's settings via root shell and applies every key-value entry to
+     * current preferences. Keys that already exist are skipped.
      *
      * @return true if at least one setting was migrated successfully, false otherwise.
      */
     fun migrateSettings(context: Context): Boolean {
-        val currentPrefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        var anyMigrated = false
+        
+        // Migrate main settings
+        if (migrateFile(context, "settings", "/data/data/$OLD_PACKAGE/shared_prefs/settings.xml")) {
+            anyMigrated = true
+        }
+        
+        // Migrate app management preferences
+        if (migrateFile(context, "app_management_prefs", "/data/data/$OLD_PACKAGE/shared_prefs/app_management_prefs.xml")) {
+            anyMigrated = true
+        }
+        
+        return anyMigrated
+    }
 
-        // Read the raw XML from the old package's data dir
-        val result = Shell.cmd("cat '$OLD_PREFS_PATH'").exec()
+    private fun migrateFile(context: Context, prefsName: String, oldPath: String): Boolean {
+        val currentPrefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+
+        // Read the raw XML from the old package's data dir via root shell
+        val result = Shell.cmd("cat '$oldPath'").exec()
         if (!result.isSuccess || result.out.isEmpty()) {
-            Timber.tag(TAG).w("Could not read old prefs (path=$OLD_PREFS_PATH, code=${result.code})")
+            Timber.tag(TAG).w("Could not read old prefs (path=$oldPath, code=${result.code})")
             return false
         }
 
         val xmlContent = result.out.joinToString("\n")
-        Timber.tag(TAG).d("Old prefs XML length=${xmlContent.length}")
-
         val editor = currentPrefs.edit()
         var count = 0
 
         // Parse <string name="key">value</string>
-        val stringPattern = Regex("""<string name="([^"]+)">([^<]*)</string>""")
-        for (match in stringPattern.findAll(xmlContent)) {
+        Regex("""<string name="([^"]+)">([^<]*)</string>""").findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
             val value = match.groupValues[2].unescapeXml()
             if (!currentPrefs.contains(key)) {
@@ -73,8 +85,7 @@ object MigrationHelper {
         }
 
         // Parse <boolean name="key" value="true|false" />
-        val boolPattern = Regex("""<boolean name="([^"]+)"\s+value="(true|false)"\s*/>""")
-        for (match in boolPattern.findAll(xmlContent)) {
+        Regex("""<boolean name="([^"]+)"\s+value="(true|false)"\s*/>""").findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
             val value = match.groupValues[2].toBoolean()
             if (!currentPrefs.contains(key)) {
@@ -84,10 +95,9 @@ object MigrationHelper {
         }
 
         // Parse <int name="key" value="N" />
-        val intPattern = Regex("""<int name="([^"]+)"\s+value="(-?\d+)"\s*/>""")
-        for (match in intPattern.findAll(xmlContent)) {
+        Regex("""<int name="([^"]+)"\s+value="(-?\d+)"\s*/>""").findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
-            val value = match.groupValues[2].toIntOrNull() ?: continue
+            val value = match.groupValues[2].toIntOrNull() ?: return@forEach
             if (!currentPrefs.contains(key)) {
                 editor.putInt(key, value)
                 count++
@@ -95,10 +105,9 @@ object MigrationHelper {
         }
 
         // Parse <long name="key" value="N" />
-        val longPattern = Regex("""<long name="([^"]+)"\s+value="(-?\d+)"\s*/>""")
-        for (match in longPattern.findAll(xmlContent)) {
+        Regex("""<long name="([^"]+)"\s+value="(-?\d+)"\s*/>""").findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
-            val value = match.groupValues[2].toLongOrNull() ?: continue
+            val value = match.groupValues[2].toLongOrNull() ?: return@forEach
             if (!currentPrefs.contains(key)) {
                 editor.putLong(key, value)
                 count++
@@ -106,18 +115,33 @@ object MigrationHelper {
         }
 
         // Parse <float name="key" value="N" />
-        val floatPattern = Regex("""<float name="([^"]+)"\s+value="([^"]+)"\s*/>""")
-        for (match in floatPattern.findAll(xmlContent)) {
+        Regex("""<float name="([^"]+)"\s+value="([^"]+)"\s*/>""").findAll(xmlContent).forEach { match ->
             val key = match.groupValues[1]
-            val value = match.groupValues[2].toFloatOrNull() ?: continue
+            val value = match.groupValues[2].toFloatOrNull() ?: return@forEach
             if (!currentPrefs.contains(key)) {
                 editor.putFloat(key, value)
                 count++
             }
         }
 
+        // Parse <set name="key"><string>v1</string>...</set>
+        Regex("""<set name="([^"]+)">([\s\S]*?)</set>""").findAll(xmlContent).forEach { match ->
+            val key = match.groupValues[1]
+            if (!currentPrefs.contains(key)) {
+                val setContent = match.groupValues[2]
+                val set = mutableSetOf<String>()
+                Regex("""<string>([^<]*)</string>""").findAll(setContent).forEach { sMatch ->
+                    set.add(sMatch.groupValues[1].unescapeXml())
+                }
+                editor.putStringSet(key, set)
+                count++
+            }
+        }
+
         editor.apply()
-        Timber.tag(TAG).i("Migrated $count settings from $OLD_PACKAGE")
+        if (count > 0) {
+            Timber.tag(TAG).i("Migrated $count settings from $oldPath to $prefsName")
+        }
         return count > 0
     }
 

@@ -1,4 +1,4 @@
-# Agent Guidelines (Claude / Gemini / Qwen / Cursor / Aider / et al.)
+# Agent Guidelines (Claude / Gemini / Cursor / Aider / et al.)
 
 This file is the canonical entry point for AI coding agents. It points to
 the per-agent guides that already exist in this repo and lists the rules
@@ -10,7 +10,6 @@ that apply to every agent regardless of vendor.
 |-------|------|
 | Claude Code | [`CLAUDE.md`](CLAUDE.md) |
 | Gemini | [`GEMINI.md`](GEMINI.md) |
-| Qwen | [`QWEN.md`](QWEN.md) |
 
 Read the guide for the agent you are. They share most rules but the
 Claude file is the most fleshed-out — start there if your guide is sparse.

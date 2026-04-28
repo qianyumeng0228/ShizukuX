@@ -15,13 +15,21 @@ public class InputValidationUtils {
     // Whitelist of valid spoof target device identifiers
     private static final List<String> VALID_SPOOF_TARGETS = Arrays.asList(
         "auto",
+        "pixel_10_pro_xl",
         "pixel_9_pro_xl",
         "pixel_8_pro",
+        "s25_ultra",
         "s24_ultra",
         "s23_ultra",
         "s22_ultra",
+        "oneplus_13",
         "oneplus_12",
-        "nothing_phone_2"
+        "nothing_phone_3",
+        "nothing_phone_2",
+        "xiaomi_15_pro",
+        "xiaomi_14_ultra",
+        "oppo_find_x8_ultra",
+        "tcl_50_pro"
     );
 
     // Valid DNS mode values

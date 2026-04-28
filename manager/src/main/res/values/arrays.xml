@@ -31,24 +31,40 @@
 
     <string-array name="spoof_targets">
         <item>Auto-detect (System Default)</item>
+        <item>Pixel 10 Pro XL</item>
         <item>Pixel 9 Pro XL</item>
         <item>Pixel 8 Pro</item>
+        <item>Galaxy S25 Ultra</item>
         <item>Galaxy S24 Ultra</item>
         <item>Galaxy S23 Ultra</item>
         <item>Galaxy S22 Ultra</item>
+        <item>OnePlus 13</item>
         <item>OnePlus 12</item>
+        <item>Nothing Phone (3)</item>
         <item>Nothing Phone (2)</item>
+        <item>Xiaomi 15 Pro</item>
+        <item>Xiaomi 14 Ultra</item>
+        <item>Oppo Find X8 Ultra</item>
+        <item>TCL 50 Pro</item>
     </string-array>
 
     <string-array name="spoof_targets_values">
         <item>auto</item>
+        <item>pixel_10_pro_xl</item>
         <item>pixel_9_pro_xl</item>
         <item>pixel_8_pro</item>
+        <item>s25_ultra</item>
         <item>s24_ultra</item>
         <item>s23_ultra</item>
         <item>s22_ultra</item>
+        <item>oneplus_13</item>
         <item>oneplus_12</item>
+        <item>nothing_phone_3</item>
         <item>nothing_phone_2</item>
+        <item>xiaomi_15_pro</item>
+        <item>xiaomi_14_ultra</item>
+        <item>oppo_find_x8_ultra</item>
+        <item>tcl_50_pro</item>
     </string-array>
 
 

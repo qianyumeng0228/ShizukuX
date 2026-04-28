@@ -36,7 +36,6 @@ import af.shizuku.manager.databinding.AppsActivityBinding
 import af.shizuku.manager.databinding.AppsAppbarActivityBinding
 import af.shizuku.manager.databinding.SwipeHintOverlayBinding
 import af.shizuku.manager.ktx.loge
-import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.management.AppViewHolder.Callbacks
 import af.shizuku.manager.utils.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
@@ -363,8 +362,11 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             "hide_from_list" -> Triple(android.R.attr.colorError, com.google.android.material.R.attr.colorOnError, R.drawable.ic_visibility_24)
             else -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
         }
-        val bgColor = themeColor(bgAttr)
-        val iconTint = themeColor(onAttr)
+        val tv = TypedValue()
+        theme.resolveAttribute(bgAttr, tv, true)
+        val bgColor = tv.data
+        theme.resolveAttribute(onAttr, tv, true)
+        val iconTint = tv.data
 
         val bg = ColorDrawable(bgColor)
         val icon = AppCompatResources.getDrawable(this, iconRes)?.mutate()?.also { it.setTint(iconTint) }
@@ -471,42 +473,9 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
     }
 }
 
-class AppListItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
-    private val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-    private val dividerPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-    private val cornerRadius = context.resources.getDimension(R.dimen.card_corner_radius)
-    private val dividerInset = 72f * context.resources.displayMetrics.density // icon width + margins
-    private val cardMargin = context.resources.getDimension(R.dimen.m3e_spacing_medium)
+class AppListItemDecoration(context: Context) : af.shizuku.manager.widget.M3ECardItemDecoration(context) {
+    private val dividerInset = 72f * density // icon width + margins
 
-    init {
-        cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerLow)
-        dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
-        dividerPaint.strokeWidth = 1f * context.resources.displayMetrics.density
-    }
-
-    override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
-        val count = parent.childCount
-        if (count == 0) return
-
-        var top = -1f
-        var bottom = -1f
-
-        for (i in 0 until count) {
-            val child = parent.getChildAt(i)
-            if (child.visibility != android.view.View.VISIBLE) continue
-            
-            if (top == -1f) top = child.top.toFloat()
-            bottom = child.bottom.toFloat()
-
-            if (i < count - 1) {
-                c.drawLine(child.left + dividerInset, child.bottom.toFloat(), child.right - cardMargin, child.bottom.toFloat(), dividerPaint)
-            }
-        }
-        
-        if (top != -1f && bottom != -1f) {
-            val left = cardMargin
-            val right = parent.width - cardMargin
-            c.drawRoundRect(left, top, right, bottom, cornerRadius, cornerRadius, cardPaint)
-        }
-    }
+    override fun getDividerInset(view: View): Float = dividerInset
+    override fun getDividerEndInset(view: View): Float = cardMargin
 }

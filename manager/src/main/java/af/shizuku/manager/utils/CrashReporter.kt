@@ -36,6 +36,15 @@ object CrashReporter {
         if (EnvironmentUtils.isSamsung()) {
             sb.append("- **One UI Version:** ${EnvironmentUtils.getOneUiVersion()}\n")
         }
+        if (EnvironmentUtils.isOppo() || EnvironmentUtils.isOnePlus()) {
+            sb.append("- **ColorOS/OxygenOS Version:** ${EnvironmentUtils.getColorOsVersion()}\n")
+        }
+        if (EnvironmentUtils.isXiaomi()) {
+            sb.append("- **HyperOS/MIUI Version:** ${EnvironmentUtils.getHyperOsVersion()}\n")
+        }
+        if (EnvironmentUtils.isTCL()) {
+            sb.append("- **TCL Device Detected**\n")
+        }
         sb.append("- **ShizukuX Version:** ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})\n")
         sb.append("- **Rooted:** ${Shell.isAppGrantedRoot()}\n")
         
@@ -43,10 +52,6 @@ object CrashReporter {
         sb.append("- **Battery Optimization:** ${SettingsHelper.isIgnoringBatteryOptimizations(context)}\n")
         sb.append("- **Wireless ADB Port:** ${EnvironmentUtils.getAdbTcpPort()}\n")
         sb.append("- **Write Secure Settings:** ${SettingsHelper.hasWriteSecureSettings(context)}\n")
-        
-        if (Build.MANUFACTURER.equals("xiaomi", true)) {
-            sb.append("- **Xiaomi/HyperOS Device Detected**\n")
-        }
         
         sb.append("- **Timestamp:** ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}\n\n")
 

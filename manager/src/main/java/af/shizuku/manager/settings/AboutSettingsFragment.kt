@@ -29,42 +29,28 @@ class AboutSettingsFragment : BaseSettingsFragment() {
             }
 
             setOnPreferenceClickListener {
-                val titleRes = if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title
                 MaterialAlertDialogBuilder(context)
-                    .setTitle(titleRes)
+                    .setTitle(if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title)
                     .setMessage(R.string.sentry_offline_notice_learn_more)
-                    .setPositiveButton(R.string.manual_report_button_generate) { _, _ ->
+                    .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
                         val report = CrashReporter.generateReport(context)
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
                             context.getString(R.string.manual_report_clipboard_label), report))
-                        Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_SHORT).show()
-
-                        if (hasLastCrash) {
-                            MaterialAlertDialogBuilder(context)
-                                .setTitle(R.string.manual_report_clear_dialog_title)
-                                .setMessage(R.string.manual_report_clear_dialog_message)
-                                .setPositiveButton(R.string.manual_report_clear_dialog_clear) { _, _ ->
-                                    af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
-                                }
-                                .setNegativeButton(R.string.manual_report_clear_dialog_keep, null)
-                                .show()
-                        }
-
-                        MaterialAlertDialogBuilder(context)
-                            .setTitle(R.string.manual_report_copied_dialog_title)
-                            .setMessage(R.string.manual_report_copied_dialog_message)
-                            .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
-                                CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
-                            }
-                            .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
-                                af.shizuku.manager.utils.CrashReporter.shareAsFile(context)
-                            }
-                            .setNegativeButton(android.R.string.cancel, null)
-                            .show()
-                    }
-                    .setNeutralButton(R.string.manual_report_button_github) { _, _ ->
+                        
+                        Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
+                        
                         CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
+                        
+                        if (hasLastCrash) {
+                            af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                        }
+                    }
+                    .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
+                        af.shizuku.manager.utils.CrashReporter.shareAsFile(context)
+                        if (hasLastCrash) {
+                            af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                        }
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
@@ -73,7 +59,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         }
 
         findPreference<Preference>("version")?.apply {
-            summary = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+            summary = BuildConfig.VERSION_NAME
             setOnPreferenceClickListener {
                 if (ShizukuSettings.isVectorEnabled()) {
                     Toast.makeText(context, R.string.settings_developer_options_revealed, Toast.LENGTH_SHORT).show()

@@ -74,10 +74,31 @@ object EnvironmentUtils {
             val field = Build.VERSION::class.java.getDeclaredField("SEM_PLATFORM_INT")
             return (field.get(null) as Int - 90000) / 10000
         } catch (e: Exception) {
-            // Fallback for older/newer versions if the hidden field is missing
             return -1
         }
     }
+
+    @JvmStatic
+    fun isOppo(): Boolean = Build.MANUFACTURER.equals("oppo", true) || Build.MANUFACTURER.equals("realme", true)
+
+    @JvmStatic
+    fun isOnePlus(): Boolean = Build.MANUFACTURER.equals("oneplus", true)
+
+    @JvmStatic
+    fun getColorOsVersion(): String {
+        return SystemProperties.get("ro.build.version.opporom", "unknown")
+    }
+
+    @JvmStatic
+    fun isXiaomi(): Boolean = Build.MANUFACTURER.equals("xiaomi", true) || Build.MANUFACTURER.equals("redmi", true) || Build.MANUFACTURER.equals("poco", true)
+
+    @JvmStatic
+    fun getHyperOsVersion(): String {
+        return SystemProperties.get("ro.miui.ui.version.name", "unknown")
+    }
+
+    @JvmStatic
+    fun isTCL(): Boolean = Build.MANUFACTURER.equals("tcl", true)
 
     @JvmStatic
     fun isDeX(context: Context): Boolean {

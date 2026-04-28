@@ -140,14 +140,28 @@ class ServiceDoctorActivity : AppBarActivity() {
         ))
 
         // 6. Xiaomi Restricted ADB
-        val manufacturer = Build.MANUFACTURER.lowercase()
-        if (manufacturer.contains("xiaomi")) {
+        if (EnvironmentUtils.isXiaomi()) {
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_permission, ""),
                 getString(R.string.doctor_status_limited),
                 false
             ))
             tips.add("• " + getString(R.string.doctor_tip_xiaomi))
+        }
+
+        // 6b. Oppo/OnePlus Restricted ADB (ColorOS/OxygenOS)
+        if (EnvironmentUtils.isOppo() || EnvironmentUtils.isOnePlus()) {
+            checks.add(DoctorCheck(
+                getString(R.string.doctor_check_permission, ""),
+                getString(R.string.doctor_status_manual_check),
+                false
+            ))
+            tips.add("• " + getString(R.string.doctor_tip_oppo_permission))
+        }
+
+        // 6c. TCL Device Polish
+        if (EnvironmentUtils.isTCL()) {
+            tips.add("• " + getString(R.string.doctor_tip_tcl_background))
         }
 
         // 7. Samsung Auto Blocker (One UI 6.1+)

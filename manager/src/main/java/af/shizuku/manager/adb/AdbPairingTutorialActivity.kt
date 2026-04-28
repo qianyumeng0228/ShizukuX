@@ -34,6 +34,12 @@ class AdbPairingTutorialActivity : AppBarActivity() {
         super.onCreate(savedInstanceState)
         val context = this
 
+        if (!af.shizuku.manager.ShizukuApplication.isAdbNativeAvailable) {
+            Toast.makeText(this, R.string.adb_native_unavailable, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
         binding = AdbPairingTutorialActivityBinding.inflate(layoutInflater, rootView, true)
         
         binding.header.apply {

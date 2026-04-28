@@ -39,6 +39,10 @@ class ShizukuApplication : Application(), Configuration.Provider {
     companion object {
         lateinit var appContext: Context
             private set
+
+        /** True only if libadb.so loaded successfully. ADB pairing features must check this. */
+        var isAdbNativeAvailable: Boolean = false
+            private set
     }
 
     override val workManagerConfiguration: Configuration
@@ -67,6 +71,11 @@ class ShizukuApplication : Application(), Configuration.Provider {
     private fun initializeSentryEarly() {
         if (BuildConfig.SENTRY_DSN.isEmpty()) {
             Timber.w("Sentry DSN is empty, skipping initialization")
+            return
+        }
+
+        if (ShizukuSettings.isSentryLimitReached()) {
+            Timber.i("Sentry quota reached, skipping initialization")
             return
         }
 
@@ -126,6 +135,21 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     try {
                         event.setTag("shizuku_state", if (Shizuku.pingBinder()) "connected" else "disconnected")
                         event.setTag("is_rooted", Shell.isAppGrantedRoot().toString())
+                        
+                        // Deep Vendor Diagnostics for Triage
+                        event.setTag("manufacturer", Build.MANUFACTURER)
+                        if (af.shizuku.manager.utils.EnvironmentUtils.isSamsung()) {
+                            event.setTag("oneui_version", af.shizuku.manager.utils.EnvironmentUtils.getOneUiVersion().toString())
+                        }
+                        if (af.shizuku.manager.utils.EnvironmentUtils.isOppo() || af.shizuku.manager.utils.EnvironmentUtils.isOnePlus()) {
+                            event.setTag("coloros_version", af.shizuku.manager.utils.EnvironmentUtils.getColorOsVersion())
+                        }
+                        if (af.shizuku.manager.utils.EnvironmentUtils.isXiaomi()) {
+                            event.setTag("hyperos_version", af.shizuku.manager.utils.EnvironmentUtils.getHyperOsVersion())
+                        }
+                        if (af.shizuku.manager.utils.EnvironmentUtils.isTCL()) {
+                            event.setTag("vendor", "tcl")
+                        }
                     } catch (e: Exception) {
                         // Ignore errors during state collection
                     }
@@ -172,12 +196,13 @@ class ShizukuApplication : Application(), Configuration.Provider {
         if (atLeast30) {
             try {
                 System.loadLibrary("adb")
+                isAdbNativeAvailable = true
                 Timber.d("Native library 'adb' loaded successfully")
             } catch (e: UnsatisfiedLinkError) {
-                // Capture to Sentry before the process aborts so we have a trace.
-                // Common cause: JNI class path mismatch after a package rename.
+                // Log and report but do NOT rethrow — ADB pairing features degrade gracefully.
+                // Common causes: SELinux policy on vendor ROMs, missing system dependency.
+                Timber.e(e, "libadb.so failed to load — ADB pairing features disabled")
                 Sentry.captureException(RuntimeException("libadb.so failed to load: ${e.message}", e))
-                throw e
             }
         }
     }

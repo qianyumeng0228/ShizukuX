@@ -3,16 +3,9 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_general"
-        android:title="@string/settings_category_general"
+        android:key="category_plus"
+        android:title="ShizukuX Customization"
         android:defaultValue="true">
-
-        <Preference
-            android:key="nav_behavior"
-            android:title="@string/settings_behavior"
-            android:summary="@string/settings_nav_behavior_summary"
-            android:icon="@drawable/ic_settings_suggest_24dp"
-            android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
 
         <Preference
             android:key="nav_shizuku_plus"
@@ -21,19 +14,19 @@
             android:icon="@drawable/ic_bolt_24dp"
             android:fragment="af.shizuku.manager.settings.ShizukuPlusSettingsFragment" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_appearance"
-        android:title="@string/settings_category_appearance"
-        android:defaultValue="true">
-
         <Preference
             android:key="nav_ui"
             android:title="@string/settings_user_interface"
             android:summary="@string/settings_nav_ui_summary"
             android:icon="@drawable/ic_palette_24"
             android:fragment="af.shizuku.manager.settings.UISettingsFragment" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_management"
+        android:title="Management"
+        android:defaultValue="true">
 
         <Preference
             android:key="nav_app_management"
@@ -52,9 +45,16 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_advanced"
-        android:title="@string/settings_category_advanced"
+        android:key="category_system"
+        android:title="System &amp; Integration"
         android:defaultValue="true">
+
+        <Preference
+            android:key="nav_behavior"
+            android:title="@string/settings_behavior"
+            android:summary="@string/settings_nav_behavior_summary"
+            android:icon="@drawable/ic_settings_suggest_24dp"
+            android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
 
         <Preference
             android:key="nav_root_integration"

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,7 +23,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat.Type
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.app.SnackbarHelper
@@ -122,7 +122,9 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
     }
 
     protected fun tint(icon: Drawable?): Drawable? {
-        icon?.mutate()?.setTint(requireContext().themeColor(R.attr.colorOnSurfaceVariant))
+        val tintColor = TypedValue()
+        requireContext().theme.resolveAttribute(R.attr.colorOnSurfaceVariant, tintColor, true)
+        icon?.mutate()?.setTint(tintColor.data)
         return icon
     }
 
@@ -204,74 +206,17 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         onResult(false)
     }
 
-    protected class SettingsItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
-        private val cardPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private val dividerPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        private val cornerRadius = context.resources.getDimension(R.dimen.card_corner_radius)
-        private val cardMargin = 16f * context.resources.displayMetrics.density
-
-        init {
-            cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerLow)
-            dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
-            dividerPaint.strokeWidth = 1f * context.resources.displayMetrics.density
-        }
-
+    protected class SettingsItemDecoration(context: Context) : af.shizuku.manager.widget.M3ECardItemDecoration(context) {
         override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
             val pos = parent.getChildAdapterPosition(view)
             if (pos == RecyclerView.NO_POSITION) return
             
             // Add space above category headers for M3E spacing
             if (view.tag == "category_header") {
-                outRect.top = (12 * parent.context.resources.displayMetrics.density).toInt()
+                outRect.top = (12 * density).toInt()
             }
         }
 
-        override fun onDraw(c: android.graphics.Canvas, parent: RecyclerView, state: RecyclerView.State) {
-            val count = parent.childCount
-            if (count == 0) return
-
-            var currentCardTop = Float.MIN_VALUE
-            var lastItemBottom = Float.MIN_VALUE
-
-            for (i in 0 until count) {
-                val child = parent.getChildAt(i)
-                if (child.visibility != View.VISIBLE) continue
-
-                val isHeader = child.tag == "category_header"
-
-                if (isHeader) {
-                    if (currentCardTop != Float.MIN_VALUE) {
-                        drawCard(c, parent, currentCardTop, lastItemBottom)
-                        currentCardTop = Float.MIN_VALUE
-                    }
-                } else {
-                    if (currentCardTop == Float.MIN_VALUE) {
-                        currentCardTop = child.top.toFloat()
-                    }
-                    lastItemBottom = child.bottom.toFloat()
-
-                    if (i < count - 1) {
-                        val nextChild = parent.getChildAt(i + 1)
-                        if (nextChild.visibility == View.VISIBLE && nextChild.tag != "category_header") {
-                            c.drawLine(
-                                child.left.toFloat(),
-                                child.bottom.toFloat(),
-                                child.right.toFloat(),
-                                child.bottom.toFloat(),
-                                dividerPaint
-                            )
-                        }
-                    }
-                }
-            }
-
-            if (currentCardTop != Float.MIN_VALUE) {
-                drawCard(c, parent, currentCardTop, lastItemBottom)
-            }
-        }
-
-        private fun drawCard(c: android.graphics.Canvas, parent: RecyclerView, top: Float, bottom: Float) {
-            c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, cornerRadius, cornerRadius, cardPaint)
-        }
+        override fun isHeader(view: View): Boolean = view.tag == "category_header"
     }
 }

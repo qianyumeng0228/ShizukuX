@@ -32,7 +32,8 @@ boringssl = "20250114"
 libcxx = "27.0.12077973"
 hidden-api = "4.4.0"
 refine = "4.4.0"
-room = "2.7.0-alpha13"
+room = "2.6.1"
+ksp = "2.2.20-2.0.2"
 timber = "5.0.1"
 coil = "3.4.0"
 koin = "4.0.2"
@@ -67,6 +68,7 @@ androidx-interpolator = { group = "androidx.interpolator", name = "interpolator"
 mavericks = { group = "com.airbnb.android", name = "mavericks", version.ref = "mavericks" }
 kotestJunit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotestJunit5" }
 aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutlibraries" }
+aboutlibraries-ui = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutlibraries" }
 
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 coil = { group = "io.coil-kt.coil3", name = "coil", version.ref = "coil" }
@@ -121,4 +123,5 @@ refine = { id = "dev.rikka.tools.refine", version = "4.4.0" }
 sentry = { id = "io.sentry.android.gradle", version = "6.2.0" }
 spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
 aboutlibraries = { id = "com.mikepenz.aboutlibraries.plugin", version.ref = "aboutlibraries" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 

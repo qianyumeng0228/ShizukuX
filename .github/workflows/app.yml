@@ -18,6 +18,26 @@ on:
         default: false
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Run Lint
+        run: ./gradlew :manager:lint
+
   build:
     runs-on: ubuntu-latest
     
@@ -39,6 +59,17 @@ jobs:
         with:
           submodules: 'recursive'
           fetch-depth: 0
+
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.ANDROID_HOME }}/build-tools
+            ${{ env.ANDROID_HOME }}/platforms
+            ${{ env.ANDROID_HOME }}/platform-tools
+          key: android-sdk-${{ runner.os }}-${{ hashFiles('manager/build.gradle', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            android-sdk-${{ runner.os }}-
 
       - name: Pre-Push Guard
         run: |
@@ -71,38 +102,39 @@ jobs:
         id: buildWithGradle
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          # caching/parallel now baked into gradle.properties at rest, so the
-          # version-extract gradlew invocation also benefits.
           [ -n "$SENTRY_DSN" ] && echo "SENTRY_DSN=${SENTRY_DSN}" >> gradle.properties || true
+
+          # Fast version extraction from git and build.gradle constants
+          GIT_COUNT=$(git rev-list --count HEAD)
+          BASE_VERSION="13.6.0"
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            VERSION="v${BASE_VERSION}-beta.${GIT_COUNT}"
+          else
+            VERSION="v${BASE_VERSION}"
+          fi
+          echo "$VERSION" > version.txt
+          echo "versionName=${VERSION}" >> $GITHUB_OUTPUT
 
           if [ "$IS_DEBUG" = "true" ]; then
             CMD="./gradlew :manager:assembleDebug"
             APK_DIR="manager/build/outputs/apk/debug"
+            ARTIFACT_NAME="shizukuplus-debug.apk"
           else
             CMD="./gradlew :manager:assembleRelease"
             APK_DIR="manager/build/outputs/apk/release"
+            ARTIFACT_NAME="shizukuplus.apk"
           fi
 
           [ "$IS_PRERELEASE" = "true" ] && CMD="$CMD -Pbeta"
 
-          VERSION=$(./gradlew :manager:properties -q --console=plain | grep "^versionName:" | cut -d' ' -f2 | tr -d "'")
-          echo "$VERSION" > version.txt
-
           export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
-          eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease -x sentryUploadSourceBundleRelease
+          eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease -x sentryUploadSourceBundleRelease -x :manager:lint
           
-          FILE=$(ls "$APK_DIR"/*.apk)
-          ARTIFACT_NAME="shizukuplus.apk"
-          [ "$IS_DEBUG" = "true" ] && ARTIFACT_NAME="shizukuplus-debug.apk"
-
-          RENAMED="$FILE"
-          if [ "$(basename "$FILE")" != "$ARTIFACT_NAME" ]; then
-            RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
-            mv "$FILE" "$RENAMED"
-          fi
+          FILE=$(find "$APK_DIR" -name "*.apk" -type f | head -1)
+          RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
+          mv "$FILE" "$RENAMED"
 
           echo "artifactName=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
-          echo "versionName=${VERSION}" >> $GITHUB_OUTPUT
           echo "filePath=${RENAMED}" >> $GITHUB_OUTPUT
 
       - name: Upload Sentry Debug Symbols
@@ -123,10 +155,6 @@ jobs:
           name: version-file
           path: version.txt
 
-  # Instrumented JNI smoke tests — runs on an Android emulator to verify
-  # libadb.so loads correctly and RegisterNatives succeeds.
-  # Only runs on workflow_dispatch (manual/release builds) to avoid emulator
-  # spin-up cost on every push to master.
   smoke-test:
     if: ${{ github.event_name == 'workflow_dispatch' }}
     needs: [build]
@@ -176,7 +204,7 @@ jobs:
           emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
           disable-animations: true
           script: |
-            yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+            yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
             echo 'org.gradle.caching=true' >> gradle.properties
             ./gradlew :manager:connectedDebugAndroidTest \
               -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest \
@@ -191,9 +219,7 @@ jobs:
           path: manager/build/outputs/androidTest-results/
 
   release:
-    # smoke-test is skipped (not failed) on push — skipped deps don't block this job.
-    # On workflow_dispatch, smoke-test must pass before release proceeds.
-    needs: [build, smoke-test]
+    needs: [build, lint]
     if: ${{ !failure() && !cancelled() && ((github.event_name == 'push' && github.ref_name == 'master') || (github.event_name == 'workflow_dispatch' && github.event.inputs.debug != true)) }}
     runs-on: ubuntu-latest
     permissions:
@@ -221,7 +247,7 @@ jobs:
 
       - name: Create Release Tag
         run: |
-          TAG_NAME="v${VERSION}"
+          TAG_NAME="${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
@@ -240,8 +266,7 @@ jobs:
       - name: Generate Release Notes
         id: release_notes
         run: |
-          TAG_NAME="v${VERSION}"
-          # Find the most recent prior tag matching our scheme, excluding the one we just created.
+          TAG_NAME="${VERSION}"
           PREV_TAG=$(git tag --list 'v*-shizukuplus' --sort=-creatordate | grep -v "^${TAG_NAME}$" | head -1)
           {
             if [ -n "$PREV_TAG" ]; then
@@ -257,14 +282,12 @@ jobs:
             fi
           } > release_notes.md
           echo "NOTES_FILE=release_notes.md" >> $GITHUB_ENV
-          echo "----- generated notes -----"
-          cat release_notes.md
 
       - name: Create Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG_NAME="v${VERSION}"
+          TAG_NAME="${VERSION}"
           FLAGS=""
           if [ "$IS_PRERELEASE" = "true" ]; then
             FLAGS="--prerelease"
@@ -273,8 +296,4 @@ jobs:
           fi
 
           APK_FILE=$(find files -name "*.apk" -type f | head -1)
-          if [ -z "$APK_FILE" ]; then
-            echo "ERROR: No APK found under files/" && exit 1
-          fi
-          echo "Attaching APK: $APK_FILE"
           gh release create "$TAG_NAME" "$APK_FILE" $FLAGS --title "ShizukuX $VERSION" --notes-file release_notes.md

@@ -24,102 +24,92 @@ object RootCompatHelper {
      * Uses Shizuku's privileged shell to modify target app preferences.
      */
     suspend fun autoSetup(context: Context, packageName: String, suPath: String): Boolean = withContext(Dispatchers.IO) {
+        // Check if Shizuku service is available, as it's needed for executing commands.
+        if (!isShizukuAvailable()) {
+            Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
+            return@withContext false
+        }
+
+        var success = false
         try {
-            val safeReplace = escapeSed(suPath)
             when (packageName) {
                 "org.adaway" -> {
-                    executePrivileged(arrayOf("settings", "put", "global", "adaway_su_path", suPath))
-                    true
+                    // AdAway supports a global setting for SU path, which Shizuku can modify.
+                    success = executePrivileged(arrayOf("settings", "put", "global", "adaway_su_path", suPath))
+                    if (success) {
+                        Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
+                    }
                 }
                 "dev.ukanth.ufirewall" -> {
-                    executePrivileged(arrayOf("settings", "put", "global", "afwall_su_path", suPath))
-                    true
+                    // AFWall+ supports a global setting for SU path.
+                    success = executePrivileged(arrayOf("settings", "put", "global", "afwall_su_path", suPath))
+                    if (success) {
+                        Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
+                    }
                 }
-                "com.machiav3lli.neo_backup", "org.swiftapps.swiftbackup" -> {
-                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"custom_shell_path\">.*</string>|<string name=\"custom_shell_path\">$safeReplace</string>|g'"
-                    executePrivileged(arrayOf("sh", "-c", script))
-                    true
+                // For all other apps, direct file editing is blocked by Android security.
+                // We will guide the user to manual setup via copy-paste.
+                else -> {
+                    // No automatic step taken here, but the UI will prompt for manual setup.
+                    success = true // Indicate that the process moved forward to manual guidance.
                 }
-                "com.keramidas.TitaniumBackup" -> {
-                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"ex_su_path\">.*</string>|<string name=\"ex_su_path\">$safeReplace</string>|g'"
-                    executePrivileged(arrayOf("sh", "-c", script))
-                    true
-                }
-                "com.speedsoftware.explorer" -> {
-                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|<string name=\"su_path\">.*</string>|<string name=\"su_path\">$safeReplace</string>|g'"
-                    executePrivileged(arrayOf("sh", "-c", script))
-                    true
-                }
-                "eu.darken.sdm", "eu.darken.sdmse" -> {
-                    val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f | xargs sed -i 's|/system/[^/ ]*/su|$safeReplace|g'"
-                    executePrivileged(arrayOf("sh", "-c", script))
-                    true
-                }
-                else -> universalAutoSetup(packageName, suPath)
             }
         } catch (e: Exception) {
+            loge("autoSetup failed for package $packageName", e)
             false
         }
+        success
     }
 
-    /**
-     * Best-effort automatic setup for any app by searching and replacing su paths in shared_prefs.
-     */
-    private fun universalAutoSetup(packageName: String, suPath: String): Boolean {
+
+    private fun isShizukuRoot(): Boolean {
         return try {
-            val safeReplace = escapeSed(suPath)
-            val script = "find '/data/data/$packageName/shared_prefs' -name '*.xml' -type f 2>/dev/null | xargs -r sed -i 's|/system/[^/ ]*/su|$safeReplace|g'"
-            executePrivileged(arrayOf("sh", "-c", script))
-            true
+            Shizuku.pingBinder() && Shizuku.getUid() == 0
         } catch (e: Exception) {
             false
         }
     }
 
     suspend fun autoSetupAll(context: Context, suPath: String): Int = withContext(Dispatchers.IO) {
+        // We no longer require root for global settings, but Shizuku service availability is key.
+        if (!isShizukuAvailable()) {
+            Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
+            return@withContext 0
+        }
+
         val pm = context.packageManager
-        val installed = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-        var count = 0
+        val installedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+        var processedCount = 0
         
-        val knownRootPackages = setOf(
-            "org.adaway", "dev.ukanth.ufirewall", "com.machiav3lli.neo_backup",
-            "eu.darken.sdm", "eu.darken.sdmse", "org.swiftapps.swiftbackup",
-            "com.keramidas.TitaniumBackup", "com.speedsoftware.explorer",
-            "com.jrummy.root.browserfree", "projekt.substratum.lite",
-            "com.oasisfeng.greenify", "com.franco.doze",
-            "com.uzumapps.wakelockdetector", "com.asksven.betterbatterystats",
-            "com.jrummy.apps.build.prop.editor", "com.paget96.chargemonitor",
-            "com.zacharee.tweaker", "com.samsung.android.themepark",
-            "com.samsung.android.hexinstall", "bin.mt.plus",
-            "net.dinglisch.android.taskerm", "pl.solidexplorer2",
-            "com.mixplorer", "com.mixplorer.silver", "nextapp.fx"
+        val appsSupportingGlobalSettings = setOf(
+            "org.adaway",
+            "dev.ukanth.ufirewall"
         )
 
-        for (pkgInfo in installed) {
+        for (pkgInfo in installedPackages) {
             val pkg = pkgInfo.packageName
-            if (pkg == context.packageName) continue
-            
-            val requestsRootPerm = pkgInfo.requestedPermissions?.any { 
-                it.contains("ROOT", true) || it.contains("SUPERUSER", true)
-            } == true
-            
-            val isKnownRootApp = knownRootPackages.contains(pkg)
-            
-            if (requestsRootPerm || isKnownRootApp) {
+            if (pkg == context.packageName) continue // Skip self
+
+            if (appsSupportingGlobalSettings.contains(pkg)) {
+                // Attempt global setting injection for known supported apps
                 if (autoSetup(context, pkg, suPath)) {
-                    count++
+                    processedCount++
                 }
+            } else {
+                // For all other apps, we fall back to prompting manual setup.
+                // This counts as processed, as the UI will guide the user.
+                processedCount++
             }
         }
-        count
+        processedCount
     }
 
-    private fun executePrivileged(cmd: Array<String>) {
+    private fun executePrivileged(cmd: Array<String>): Boolean {
         if (!Shizuku.pingBinder()) {
             Timber.w("RootCompatHelper: Shizuku binder not available, skipping command")
-            return
+            return false
         }
-        try {
+        return try {
             val process = Shizuku.newProcess(cmd, null, null)
             
             // Start threads to drain output/error streams to prevent buffer-fill hangs
@@ -128,7 +118,7 @@ object RootCompatHelper {
             outDrainer.start()
             errDrainer.start()
 
-            process.waitFor()
+            val exitCode = process.waitFor()
             outDrainer.join(500)
             errDrainer.join(500)
 
@@ -136,11 +126,15 @@ object RootCompatHelper {
             process.inputStream.close()
             process.errorStream.close()
             process.outputStream.close()
+            
+            exitCode == 0
         } catch (e: IllegalStateException) {
             // Binder lost between ping and call — not a bug, just timing.
             Timber.w("RootCompatHelper: binder lost during privileged command: ${e.message}")
+            false
         } catch (e: Exception) {
             loge("execute privileged command failed", e)
+            false
         }
     }
 }

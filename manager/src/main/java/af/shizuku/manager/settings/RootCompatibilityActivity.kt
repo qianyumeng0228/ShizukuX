@@ -64,17 +64,24 @@ class RootCompatibilityActivity : AppBarActivity() {
         resolvedSuPath = resolveSuPath()
 
         resolvedSuPath?.let { path ->
-            binding.globalSetupCard.isVisible = true
+            val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
+            
+            // Only show the automated setup card if we are actually rooted.
+            // For ADB users, this card is irrelevant and confusing.
+            binding.globalSetupCard.isVisible = isRoot
+            
             binding.globalSuPath.text = path
             binding.btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
             
-            binding.btnSetupAll.setOnClickListener {
-                lifecycleScope.launch {
-                    val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
-                    if (count > 0) {
-                        Toast.makeText(this@RootCompatibilityActivity, getString(R.string.su_bridge_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
-                    } else {
-                        Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+            if (isRoot) {
+                binding.btnSetupAll.setOnClickListener {
+                    lifecycleScope.launch {
+                        val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
+                        if (count > 0) {
+                            Toast.makeText(this@RootCompatibilityActivity, getString(R.string.su_bridge_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
@@ -187,7 +194,7 @@ class RootCompatibilityActivity : AppBarActivity() {
             val docId = DocumentsContract.getTreeDocumentId(uri)
             
             // Check for common volume patterns
-            when {
+            val path = when {
                 docId.startsWith("primary:") -> {
                     val relative = docId.removePrefix("primary:")
                     if (relative.isEmpty()) "/storage/emulated/0/su"
@@ -207,8 +214,12 @@ class RootCompatibilityActivity : AppBarActivity() {
                 else -> {
                     // Fallback to internal app storage if it looks like a relative path
                     if (!docId.startsWith("/")) "/storage/emulated/0/$docId/su"
-                    else null
+                    else docId // If it's already an absolute path
                 }
+            }
+            // Ensure no double slashes and correct su filename
+            path?.replace("//", "/")?.let { 
+                if (!it.endsWith("/su")) it.removeSuffix("/") + "/su" else it
             }
         } catch (e: Exception) {
             Timber.tag(TAG).d(e, "Failed to resolve su path from URI: $uriStr")
@@ -335,7 +346,14 @@ class RootCompatibilityActivity : AppBarActivity() {
 
                 holder.binding.suMagicSetup.isVisible = isInstalled
                 if (isInstalled) {
+                    val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
+                    holder.binding.suMagicSetup.alpha = if (isRoot) 1.0f else 0.5f
+                    
                     holder.binding.suMagicSetup.setOnClickListener {
+                        if (!isRoot) {
+                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_root_required, Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
                         val path = resolvedSuPath
                         if (path == null) {
                             Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()

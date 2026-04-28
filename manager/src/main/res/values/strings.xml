@@ -502,7 +502,11 @@
     <string name="su_bridge_magic_setup_all_no_apps">No supported root apps found for automation.</string>
     <string name="su_bridge_copy_open">Copy path &amp; open</string>
     <string name="su_bridge_no_export">No SU path set. Export Shizuku files first from the Home screen.</string>
-    <string name="root_hub_shizuku_aware_note">Service-level modules (auto-grant, Magisk mocking, AdAway bridge) only activate for apps that connect via the Shizuku API. The SU Bridge path works for any root app.</string>
+    <string name="su_bridge_path_copied">Path copied to clipboard</string>
+    <string name="root_hub_shizuku_aware_note">The SU Bridge provides root-like access to non-rooted devices. However, "Magic Setup" (automatic configuration) requires Shizuku in Root mode to modify other apps. In ADB mode, use "Copy path" and configure your apps manually.</string>
+    <string name="su_bridge_magic_setup_root_required">Magic Setup requires Shizuku in Root mode.</string>
+    <string name="su_bridge_no_custom_path_support">This app has no custom path setting. Requires real root.</string>
+    <string name="su_bridge_manual_setup_required">Manual setup required in ADB mode</string>
     <string name="su_bridge_how_to_use">How to use:</string>
     <string name="su_bridge_step_1">1. Export Shizuku files from the Home screen.</string>
     <string name="su_bridge_step_2">2. In your root app, look for "SU Path" or "Binary Path" in its settings.</string>
@@ -529,8 +533,8 @@
     <string name="manual_report_title">Manual Crash Report</string>
     <string name="manual_report_summary">Generate a detailed report with logs to help us debug issues manually.</string>
     <string name="manual_report_button_generate">Generate &amp; Copy</string>
-    <string name="manual_report_button_github">Open GitHub Issues</string>
-    <string name="manual_report_toast_copied">Report copied to clipboard!</string>
+    <string name="manual_report_button_github">Copy Report &amp; Go to GitHub</string>
+    <string name="manual_report_toast_copied">Report copied! Please paste it into the GitHub issue.</string>
     <string name="manual_report_last_crash_title">Report Last Crash</string>
     <string name="manual_report_last_crash_summary">A persistent crash was detected. Tap to generate a report with the saved stacktrace.</string>
     <string name="manual_report_clipboard_label">Crash Report</string>
@@ -581,6 +585,8 @@
     <string name="doctor_status_unlocked">Unlocked</string>
     <string name="doctor_status_restricted_bg">Restricted background execution</string>
     <string name="doctor_tip_xiaomi">Xiaomi/HyperOS: Enable "USB Debugging (Security Settings)" in Developer Options.</string>
+    <string name="doctor_tip_oppo_permission">Oppo/Realme/OnePlus: Disable "Permission Monitoring" in Developer Options to prevent background service kills.</string>
+    <string name="doctor_tip_tcl_background">TCL: Ensure ShizukuX is added to "Auto-start" and "High background power consumption" allowlists in Settings.</string>
     <string name="doctor_tip_battery">Disable battery optimization for ShizukuX to prevent it from being killed in the background.</string>
     <string name="doctor_tip_adb">Wireless debugging must be active for Shizuku to start in non-root mode after a reboot.</string>
     <string name="doctor_button_fix">Fix</string>
@@ -861,5 +867,6 @@
     <string name="settings_export_failed">Export failed</string>
     <string name="settings_import_success">Settings imported — restart the app to apply all changes</string>
     <string name="settings_import_failed">Import failed: invalid or incompatible file</string>
+    <string name="adb_native_unavailable">ADB pairing is not available on this device</string>
 
 </resources>

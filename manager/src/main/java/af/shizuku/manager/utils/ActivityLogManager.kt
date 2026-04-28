@@ -122,24 +122,28 @@ object ActivityLogManager {
             Timber.tag(TAG).w("DAO not available, cannot load from database")
             return
         }
-        
+
         scope.launch {
-            dao!!.getAll().collect { dbLogs ->
-                synchronized(records) {
-                    records.clear()
-                    dbLogs.reversed().forEach { log ->
-                        records.add(
-                            ActivityLogRecord(
-                                timestamp = log.timestamp,
-                                appName = log.appName,
-                                packageName = log.packageName,
-                                action = log.action
+            try {
+                dao!!.getAll().collect { dbLogs ->
+                    synchronized(records) {
+                        records.clear()
+                        dbLogs.reversed().forEach { log ->
+                            records.add(
+                                ActivityLogRecord(
+                                    timestamp = log.timestamp,
+                                    appName = log.appName,
+                                    packageName = log.packageName,
+                                    action = log.action
+                                )
                             )
-                        )
+                        }
+                        _logs.value = records.toList()
                     }
-                    _logs.value = records.toList()
+                    Timber.tag(TAG).d("Loaded ${records.size} logs from database")
                 }
-                Timber.tag(TAG).d("Loaded ${records.size} logs from database")
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Error loading logs from database")
             }
         }
     }

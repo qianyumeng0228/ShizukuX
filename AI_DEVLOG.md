@@ -17,11 +17,27 @@ Items carried forward from previous sessions that have not yet been committed.
 
 ### CI / Infrastructure
 
-- [ ] **Sentry quota** — Quota was at 100% through end of April 2026. Check Sentry dashboard
-  at start of May 2026 to confirm events are flowing again or decide on expansion.
+- [x] **CI Speed Optimization** — Parallelized lint/build jobs and added SDK caching (~50% time cut). Done 2026-04-27.
+- [x] **Room Stability** — Downgraded to 2.6.1 (Stable) to avoid alpha-branch risks. Done 2026-04-27.
+- [x] **KSP Migration** — Fully removed KAPT from Room build path for modern/fast processing. Done 2026-04-27.
+- [x] **Pre-push guard audit** — Verified script checks for CMake versions, Kotlin imports, and stale JNI package paths (af/shizuku migration). Done 2026-04-27.
+- [/] **Sentry quota** — Quota was at 100% through end of April 2026. **Automated calendar block is active** in `ShizukuApplication` and will self-expire on May 1st.
 
-- [ ] **Pre-push guard stale package names** — `.github/pre-push-check` may still reference
-  `moe.shizuku.privileged.api` in some checks. Audit after next CI pass.
+### Device Compatibility
+
+- [x] **Deep Vendor Diagnostics** — Added detection and logging for ColorOS, HyperOS, and TCL versions in manual/Sentry reports.
+- [x] **Expanded Spoofing Targets** — Added Pixel 10 Pro XL, S25 Ultra, and more flagship targets to Dev Options.
+- [x] **Service Doctor Tips** — Added specific troubleshooting for Oppo/OnePlus and TCL background kills.
+- [x] **libadb.so crash fix** — `initializeStatics()` no longer rethrows `UnsatisfiedLinkError`; ADB
+  pairing degrades gracefully on devices where the native lib can't load (TCL, Oppo ColorOS).
+  `ShizukuApplication.isAdbNativeAvailable` flag gates entry to `AdbPairingTutorialActivity`.
+
+### Crash Fixes (from Gemini ADB session 2026-04-27 — fixes applied, not yet on-device verified)
+
+- [/] **Mavericks factory crash** — ProGuard keep rules added for `MavericksViewModel` + factory to
+  prevent R8 `-repackageclasses` from breaking companion discovery. **Needs ADB verification — #200.**
+- [/] **SQLite race on fresh install** — `ActivityLogManager.loadFromDatabase()` wrapped in try-catch
+  so a DB open failure degrades to in-memory mode. **Needs ADB verification — #200.**
 
 ---
 
@@ -75,6 +91,31 @@ Things discussed or sketched that we never formally decided to build.
 ---
 
 ## Session History (newest first)
+
+### 2026-04-28 — Claude (Sonnet 4.6)
+**Commits:** (this session)
+
+**Done:**
+- Reviewed all `.ai/history/` session logs (Apr 27 Gemini sessions + all prior Claude sessions)
+- Created GH issue **#199** — ADB/Binder research umbrella for Root Compat Hub features, linking #8,
+  #9, #11, #15, #17, #18, #19 as sub-features, documenting `RootCompatHelper` regression,
+  `AdbMdns` wiring question, and Dhizuku integration gaps.
+- Created GH issue **#200** — ADB-required verification checklist for Apr 27 Gemini crash fixes
+  (Mavericks factory + SQLite race), plus the libadb.so fix from this session. Includes ADB address
+  (`192.168.1.234:33041`) and step-by-step logcat commands for when WiFi is back.
+- **libadb.so graceful degradation** — `initializeStatics()` no longer rethrows
+  `UnsatisfiedLinkError`; app continues without ADB pairing. `isAdbNativeAvailable` companion flag
+  added; `AdbPairingTutorialActivity` checks the flag and shows a toast + finish if library is absent.
+- **M3ECardItemDecoration** staged — new widget was untracked; would have broken CI on next push.
+- `adb_native_unavailable` string added to `strings.xml`.
+
+**Notes from Gemini Apr 27 session (session-2026-04-27T19-55-cdf2cb29):**
+- Gemini connected via `adb connect 192.168.1.234:33041` and read live logcat
+- Found `FATAL EXCEPTION: main` — Mavericks factory crash from R8 repackaging
+- Found `FATAL EXCEPTION: DefaultDispatcher-worker-4` — SQLite open failure on fresh install
+- Gemini applied both fixes directly to the working tree (not yet committed as a standalone commit
+  before this session — they're included in this commit)
+
 
 ### 2026-04-24 — Claude (Sonnet 4.6)
 **Commits:** `c1150113`, `91fd5c25`
