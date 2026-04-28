@@ -502,7 +502,6 @@
     <string name="su_bridge_magic_setup_all_no_apps">No supported root apps found for automation.</string>
     <string name="su_bridge_copy_open">Copy path &amp; open</string>
     <string name="su_bridge_no_export">No SU path set. Export Shizuku files first from the Home screen.</string>
-    <string name="su_bridge_path_copied">Path copied to clipboard</string>
     <string name="root_hub_shizuku_aware_note">The SU Bridge provides root-like access to non-rooted devices. However, "Magic Setup" (automatic configuration) requires Shizuku in Root mode to modify other apps. In ADB mode, use "Copy path" and configure your apps manually.</string>
     <string name="su_bridge_magic_setup_root_required">Magic Setup requires Shizuku in Root mode.</string>
     <string name="su_bridge_no_custom_path_support">This app has no custom path setting. Requires real root.</string>
