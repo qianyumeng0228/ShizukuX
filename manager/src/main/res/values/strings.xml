@@ -358,6 +358,10 @@
     <string name="settings_shizuku_plus_features">ShizukuX Features</string>
     <string name="settings_dhizuku_mode">Dhizuku Mode</string>
     <string name="settings_dhizuku_mode_summary">Delegate Device Owner (DevicePolicyManager) privileges to apps that support Dhizuku.</string>
+    <string name="dhizuku_device_owner_label">ShizukuX (Dhizuku Mode)</string>
+    <string name="dhizuku_device_owner_desc">Required for Dhizuku Mode to share Device Owner privileges with authorized apps.</string>
+    <string name="dhizuku_device_owner_enabled">Dhizuku Device Owner Enabled</string>
+    <string name="dhizuku_device_owner_disabled">Dhizuku Device Owner Disabled</string>
     <string name="settings_enhanced_api">ShizukuX Enhanced API</string>
     <string name="settings_enhanced_api_summary">Enable advanced system interfaces for power users. Required for all exclusive ShizukuX features.</string>
     <string name="settings_shell_interceptor">Shell Accelerator</string>
@@ -867,5 +871,11 @@
     <string name="settings_import_success">Settings imported — restart the app to apply all changes</string>
     <string name="settings_import_failed">Import failed: invalid or incompatible file</string>
     <string name="adb_native_unavailable">ADB pairing is not available on this device</string>
+
+    <string name="changelog_title">What\'s New</string>
+    <string name="changelog_close">Close</string>
+
+    <string name="aicore_plus_label">AICore+ Automation Bridge</string>
+    <string name="aicore_plus_description">Required for ShizukuX AICore+ features. Provides privileged UI hierarchy dumping and physical input simulation for AI-driven automation. Does not observe passwords or personal data.</string>
 
 </resources>

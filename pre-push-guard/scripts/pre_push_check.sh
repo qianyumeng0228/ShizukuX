@@ -69,7 +69,7 @@ fi
 
 # 5. Check for Ambiguous Bundle Imports
 echo -n "[5/6] Checking for ambiguous Bundle imports... "
-AMBIGUOUS_BUNDLE=$(grep -rl "import android.os.Bundle" . | xargs grep -c "import android.os.Bundle" | grep -v ":1$" | grep -v ":0$")
+AMBIGUOUS_BUNDLE=$(grep -rl --exclude-dir={.ai,.git} "import android.os.Bundle" . | xargs grep -c "import android.os.Bundle" | grep -v ":1$" | grep -v ":0$")
 if [ ! -z "$AMBIGUOUS_BUNDLE" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET}"
     echo "$AMBIGUOUS_BUNDLE"
@@ -109,7 +109,7 @@ fi
 # 8. Check for Misplaced Imports (Syntax Error Prevention)
 echo -n "[8/9] Checking for misplaced imports in Kotlin... "
 # This checks if the word 'import ' appears after 'class ' or 'object ' in the same file
-MISPLACED_IMPORTS=$(awk 'FNR==1 {flag=0} /^import / {if(flag) print FILENAME ":" FNR} /^(class|object|interface) / {flag=1}' $(find manager/src/main/java -name "*.kt" -type f))
+MISPLACED_IMPORTS=$(awk 'FNR==1 {flag=0} /^import / {if(flag) print FILENAME ":" FNR} /^(class|object|interface) / {flag=1}' $(find manager/src/main/java -name "*.kt" -type f -not -path "*/.*"))
 if [ ! -z "$MISPLACED_IMPORTS" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Imports must be at the top of the file)"
     echo "$MISPLACED_IMPORTS"
@@ -166,7 +166,7 @@ fi
 
 # 12. Check for printStackTrace leftovers
 echo -n "[12/14] Checking for printStackTrace leftovers... "
-STACK_TRACE=$(grep -rn "printStackTrace" . | grep ".kt:\|.java:")
+STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
 if [ ! -z "$STACK_TRACE" ]; then
     echo -e "${COLOR_YELLOW}WARN${COLOR_RESET} (Use loge or Log.e instead)"
     echo "$STACK_TRACE"

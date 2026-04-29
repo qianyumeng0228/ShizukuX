@@ -22,7 +22,10 @@ Items carried forward from previous sessions that have not yet been committed.
 - [x] **KSP Migration** — Fully removed KAPT from Room build path for modern/fast processing. Done 2026-04-27.
 - [x] **KSP2 / Room 2.6.1 incompatibility** — KSP 2.2.20-2.0.2 uses KSP2 architecture which requires Room 2.7+ for void DAO methods; added `ksp.useKSP2=false` to `gradle.properties` to fall back to KSP1. This was a pre-existing failure unmasked by the database brace fix. Done 2026-04-28.
 - [x] **Pre-push guard audit** — Verified script checks for CMake versions, Kotlin imports, and stale JNI package paths (af/shizuku migration). Done 2026-04-27.
-- [/] **Sentry quota** — Quota was at 100% through end of April 2026. **Automated calendar block is active** in `ShizukuApplication` and will self-expire on May 1st.
+- [x] **Sentry quota** — Quota was at 100% through end of April 2026. **Automated calendar block is active** in `ShizukuApplication` and will self-expire on May 1st.
+- [x] **Dhizuku Device Owner Gaps** — `DhizukuAdminReceiver` and related device admin XML created. Ready for ADB `dpm set-device-owner` command to fully enable Dhizuku Mode capability. Done 2026-04-28.
+- [x] **In-app Changelogs** — `ChangelogDialogFragment` created to read from `assets/changelog.txt`. Wired into `MainActivity` to show on first launch after update using `ShizukuSettings.getLastSeenVersion()`. Done 2026-04-28.
+- [x] **AICore+ Automation Bridge** — `AICorePlusService` (AccessibilityService) scaffolded to support `dumpHierarchy()`, `performTap()`, and `performSwipe()`. XML config and manifest entries added. Ready for command proxying. Done 2026-04-28.
 
 ### Device Compatibility
 
@@ -66,10 +69,6 @@ Items carried forward from previous sessions that have not yet been committed.
 
 Things discussed or sketched that we never formally decided to build.
 
-- **AICore+ full implementation** — `retro_notes.md` describes XML UI hierarchy dumping and
-  physical input simulation (touch/swipe/text) for AI automation. This was described as a feature
-  but no code path for it exists yet. Would require a privileged accessibility bridge.
-
 - **Context7 integration for dev sessions** — Use the `mcp__claude_ai_Context7__query-docs` tool
   at the start of sessions involving Android API questions (Lifecycle, WindowManager, Mavericks,
   Sentry SDK changes) rather than relying on training data. Particularly useful for Mavericks
@@ -82,9 +81,6 @@ Things discussed or sketched that we never formally decided to build.
 - **Dynamic remote DB versioning** — `AppContextManager` fetches `database/apps.json` but has no
   version/ETag caching. Could add `If-None-Match` header + local cache timestamp to reduce
   redundant fetches.
-
-- **Changelogs in-app** — Show a "What's new" bottom sheet on first launch after an update,
-  driven by the GitHub release body fetched during update check.
 
 - **Onboarding step for Root Compat Hub** — Users don't know the Root Hub exists. An optional
   onboarding card after first Shizuku connection could walk through what toggles are available.

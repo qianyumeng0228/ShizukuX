@@ -113,9 +113,18 @@ public class ShizukuSettings {
         public static final String KEY_LAST_UPDATE_CHECK = "last_update_check_time";
         public static final String KEY_LAST_CHECK_FAILED = "last_check_failed";
         public static final String KEY_UPDATE_CHANNEL = "update_channel"; // "stable" or "dev"
+        public static final String KEY_LAST_SEEN_VERSION = "last_seen_version";
     }
 
     private static SharedPreferences sPreferences;
+
+    public static int getLastSeenVersion() {
+        return getPreferences().getInt(Keys.KEY_LAST_SEEN_VERSION, -1);
+    }
+
+    public static void setLastSeenVersion(int versionCode) {
+        getPreferences().edit().putInt(Keys.KEY_LAST_SEEN_VERSION, versionCode).apply();
+    }
 
     public static boolean isSentryLimitReached() {
         return getPreferences().getBoolean(Keys.KEY_SENTRY_LIMIT_REACHED, false);

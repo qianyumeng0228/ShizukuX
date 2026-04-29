@@ -70,6 +70,14 @@ object RootCompatHelper {
         }
     }
 
+    private fun isShizukuAvailable(): Boolean {
+        return try {
+            Shizuku.pingBinder()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
     suspend fun autoSetupAll(context: Context, suPath: String): Int = withContext(Dispatchers.IO) {
         // We no longer require root for global settings, but Shizuku service availability is key.
         if (!isShizukuAvailable()) {

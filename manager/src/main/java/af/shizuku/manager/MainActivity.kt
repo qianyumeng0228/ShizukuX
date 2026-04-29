@@ -13,6 +13,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
+import af.shizuku.manager.BuildConfig
+import af.shizuku.manager.home.ChangelogDialogFragment
 import af.shizuku.manager.home.HomeActivity
 import af.shizuku.manager.migration.MigrationHelper
 import af.shizuku.manager.onboarding.OnboardingActivity
@@ -46,6 +48,20 @@ class MainActivity : HomeActivity() {
             // Check for previous crashes
             if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
                 showCrashReportDialog()
+            }
+
+            // Show "What's New" dialog on first launch after an update
+            val currentVersion = BuildConfig.VERSION_CODE
+            val lastSeenVersion = ShizukuSettings.getLastSeenVersion()
+            if (lastSeenVersion != -1 && lastSeenVersion < currentVersion) {
+                try {
+                    ChangelogDialogFragment().show(supportFragmentManager, ChangelogDialogFragment.TAG)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to show changelog dialog")
+                }
+            }
+            if (lastSeenVersion < currentVersion) {
+                ShizukuSettings.setLastSeenVersion(currentVersion)
             }
 
             Timber.d("MainActivity onCreate complete")
