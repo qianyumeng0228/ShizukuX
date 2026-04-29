@@ -23,8 +23,9 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 
 *   **Universal Privilege Provider**: Combines **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** into a single unified interface.
 *   **OneUI 8+ Theming Fix**: Provides the necessary **Overlay Manager Plus** bridge (using stable **OverlayManagerTransaction** on Android 14+) to allow engines like Hex Installer or Substratum to function on Android 16/17 and OneUI 8+.
-*   **Dhizuku Mode**: Share the system `DevicePolicyManager` binder with any app that has Shizuku permissions.
+*   **Dhizuku Mode (Integrated Device Owner)**: Share the system `DevicePolicyManager` binder with any app that has Shizuku permissions. ShizukuX can now be set as a **Device Owner** via ADB, providing a unified rootless management platform.
 *   **Customizable Gestures**: Configure swipe left, swipe right, and long-press actions for any app in the management list.
+*   **In-App Changelogs**: Instantly view what's new after an update without leaving the app.
 *   **Bulk Management**: Multi-select apps to grant/revoke permissions or hide them in one tap.
 *   **Activity Log**: Audit trail of API calls and `su` bridge commands, complete with app icons and real-time dispatch.
 *   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Granular Module Control** (AdAway, Magisk Mocking, Auto-Grant, etc.).
@@ -37,6 +38,7 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 
 ShizukuX provides exclusive system interfaces for advanced automation and tools:
 
+*   **AICore+ Automation Bridge**: A privileged `AccessibilityService` proxy for AI-driven automation. Supports XML UI hierarchy dumping and physical input simulation (tap/swipe) without requiring root.
 *   **AVF (Virtual Machine) Manager**: Manage isolated Linux/Microdroid VMs with VirtIO-GPU acceleration.
 *   **Privileged Storage Proxy**: Authenticated access to restricted paths like `/data/data/` or `/data/app/` for backups and file management.
 *   **Device Spoofing (Identity Bridge)**: Project hardware identities of modern flagships (Pixel 9 Pro XL, S24 Ultra, etc.) to bypass device-specific restrictions.
