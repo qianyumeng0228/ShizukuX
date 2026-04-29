@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
-import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.home.ChangelogDialogFragment
 import af.shizuku.manager.home.HomeActivity
 import af.shizuku.manager.migration.MigrationHelper
@@ -51,7 +50,18 @@ class MainActivity : HomeActivity() {
             }
 
             // Show "What's New" dialog on first launch after an update
-            val currentVersion = BuildConfig.VERSION_CODE
+            val currentVersion = try {
+                val pInfo = packageManager.getPackageInfo(packageName, 0)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                    pInfo.longVersionCode.toInt()
+                } else {
+                    @Suppress("DEPRECATION")
+                    pInfo.versionCode
+                }
+            } catch (e: Exception) {
+                0
+            }
+            
             val lastSeenVersion = ShizukuSettings.getLastSeenVersion()
             if (lastSeenVersion != -1 && lastSeenVersion < currentVersion) {
                 try {
