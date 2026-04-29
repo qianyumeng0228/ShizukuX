@@ -1,0 +1,60 @@
+package af.shizuku.manager.update
+
+import android.content.Context
+import android.os.Environment
+import com.topjohnwu.superuser.Shell
+import af.shizuku.manager.utils.SettingsBackupManager
+import rikka.shizuku.Shizuku
+import timber.log.Timber
+import java.io.File
+
+object UpdateInstaller {
+    private const val TAG = "UpdateInstaller"
+    const val AUTO_BACKUP_FILENAME = "shizuku_plus_auto_backup.json"
+
+    fun getBackupFile(context: Context): File {
+        return File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), AUTO_BACKUP_FILENAME)
+    }
+
+    fun forceUpdateWithShizuku(context: Context, apkFile: File): Boolean {
+        if (!Shizuku.pingBinder() && !Shell.getShell().isRoot) {
+            Timber.tag(TAG).w("No root or Shizuku available for force update.")
+            return false
+        }
+
+        try {
+            // 1. Auto-export settings to a public location
+            val backupJson = SettingsBackupManager.export(context)
+            val backupFile = getBackupFile(context)
+            backupFile.writeText(backupJson)
+            Timber.tag(TAG).i("Auto-exported settings to ${backupFile.absolutePath}")
+
+            // 2. Create a shell script to do the detached reinstall
+            val scriptFile = File(context.cacheDir, "force_update.sh")
+            val packageName = context.packageName
+            val apkPath = apkFile.absolutePath
+
+            // The script sleeps for 2 seconds to allow the app to finish its current execution,
+            // then uninstalls the current package, installs the new APK, and restarts the app.
+            val script = """
+                #!/system/bin/sh
+                sleep 2
+                pm uninstall $packageName
+                pm install -r -d "$apkPath"
+                am start -n $packageName/af.shizuku.manager.MainActivity
+                rm "$scriptFile"
+            """.trimIndent()
+            
+            scriptFile.writeText(script)
+
+            // 3. Execute the script in a detached background process via root/shizuku
+            // Using nohup and & ensures the shell process continues even after our app process is killed by the uninstall.
+            Shell.cmd("nohup sh '${scriptFile.absolutePath}' >/dev/null 2>&1 &").exec()
+            
+            return true
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to force update with Shizuku")
+            return false
+        }
+    }
+}

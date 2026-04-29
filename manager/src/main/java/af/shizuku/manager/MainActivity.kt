@@ -22,6 +22,21 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 
 class MainActivity : HomeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Auto-import settings if an auto-update via Shizuku recently occurred
+        val backupFile = af.shizuku.manager.update.UpdateInstaller.getBackupFile(this)
+        if (backupFile.exists()) {
+            try {
+                val json = backupFile.readText()
+                if (af.shizuku.manager.utils.SettingsBackupManager.import(this, json)) {
+                    Toast.makeText(this, "Settings automatically restored from previous version.", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to auto-import settings from backup file")
+            } finally {
+                backupFile.delete()
+            }
+        }
+
         // Check for previous crashes as early as possible to break crash loops
         if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
             showCrashReportDialog()

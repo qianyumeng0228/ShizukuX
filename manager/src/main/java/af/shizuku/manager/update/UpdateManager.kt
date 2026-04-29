@@ -248,6 +248,21 @@ class UpdateManager(private val context: Context) {
      */
     fun installApk(file: File) {
         try {
+            if (com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()) {
+                Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
+                val result = com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
+                if (result.isSuccess) {
+                    Timber.tag(TAG).i("Silent install successful")
+                    return
+                } else {
+                    Timber.tag(TAG).w("Silent install failed (likely signature mismatch): ${result.out}")
+                    if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
+                        Timber.tag(TAG).i("Force-update background script initiated to handle signature mismatch")
+                        return
+                    }
+                }
+            }
+
             val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 FileProvider.getUriForFile(
                     context,
