@@ -69,6 +69,10 @@
     public static ** Companion;
 }
 
+-keep interface com.airbnb.mvrx.** { *; }
+-keep class com.airbnb.mvrx.** { *; }
+-keepnames class com.airbnb.mvrx.** { *; }
+
 -allowaccessmodification
 -repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable

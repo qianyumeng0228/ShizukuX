@@ -86,8 +86,8 @@ class HomeViewModel(
         setState { copy(grantedAppCount = count) }
     }
 
-    companion object : MavericksViewModelFactory<HomeViewModel, HomeState> {
-        override fun create(viewModelContext: ViewModelContext, state: HomeState): HomeViewModel {
+    companion object : com.airbnb.mvrx.MavericksViewModelFactory<HomeViewModel, HomeState> {
+        override fun create(viewModelContext: com.airbnb.mvrx.ViewModelContext, state: HomeState): HomeViewModel {
             return HomeViewModel(state, viewModelContext.app())
         }
     }

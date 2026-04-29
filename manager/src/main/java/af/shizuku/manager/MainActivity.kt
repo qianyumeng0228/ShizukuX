@@ -22,6 +22,11 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 
 class MainActivity : HomeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Check for previous crashes as early as possible to break crash loops
+        if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
+            showCrashReportDialog()
+        }
+
         try {
             Timber.d("Calling super.onCreate")
             Sentry.addBreadcrumb(Breadcrumb("Calling super.onCreate"))
@@ -29,26 +34,6 @@ class MainActivity : HomeActivity() {
 
             Timber.d("Checking onboarding status")
             Sentry.addBreadcrumb(Breadcrumb("Checking onboarding status"))
-
-            if (!ShizukuSettings.hasSeenOnboarding()) {
-                Timber.d("Showing onboarding")
-                Sentry.addBreadcrumb(Breadcrumb("Showing onboarding"))
-                startActivity(Intent(this, OnboardingActivity::class.java))
-                finish()
-                return
-            }
-
-            // Show migration dialog whenever the old package is still installed.
-            // We re-check on every launch so users who dismissed without uninstalling are
-            // reminded. Once they uninstall the old app, this branch is never taken again.
-            if (MigrationHelper.isOldPackageInstalled(this)) {
-                showMigrationDialog()
-            }
-
-            // Check for previous crashes
-            if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
-                showCrashReportDialog()
-            }
 
             // Show "What's New" dialog on first launch after an update
             val currentVersion = try {

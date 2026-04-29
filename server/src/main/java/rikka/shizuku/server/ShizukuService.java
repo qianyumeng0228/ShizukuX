@@ -1044,7 +1044,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 )
                 .stream()
                 .filter(pi -> pi != null && pi.requestedPermissions != null)
-                .filter(pi -> ArraysKt.contains(pi.requestedPermissions, PERMISSION));
+                .filter(pi -> ArraysKt.contains(pi.requestedPermissions, PERMISSION) || 
+                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY) ||
+                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL));
 
             LOGGER.i("sending binders");
             packages
@@ -1129,7 +1131,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
 
             Bundle extra = new Bundle();
-            extra.putParcelable("af.shizuku.plus.api.intent.extra.BINDER", new BinderContainer(binder));
+            BinderContainer container = new BinderContainer(binder);
+            extra.putParcelable("af.shizuku.plus.api.intent.extra.BINDER", container);
+            extra.putParcelable("rikka.shizuku.intent.extra.BINDER", container);
 
             Bundle reply = IContentProviderUtils.callCompat(provider, null, name, "sendBinder", null, extra);
             if (reply != null) {

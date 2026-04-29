@@ -248,11 +248,19 @@ class ShizukuApplication : Application(), Configuration.Provider {
             ShizukuSettings.setSentryLimitReached(false)
         }
 
-        // 2. CRITICAL: Initialize Sentry FIRST
+        // 2. Initialize static components FIRST to ensure HiddenApiBypass is active
+        try {
+            initializeStatics()
+        } catch (e: Throwable) {
+            Timber.e(e, "Failed to initialize static components")
+            if (e is Error) throw e
+        }
+
+        // 3. Initialize Sentry
         initializeSentryEarly()
         Sentry.addBreadcrumb(Breadcrumb("App started: ${BuildConfig.VERSION_NAME}"))
 
-        // 2. Strict mode for debugging (DEBUG only)
+        // 4. Strict mode for debugging (DEBUG only)
         if (BuildConfig.DEBUG) {
             android.os.StrictMode.setThreadPolicy(
                 android.os.StrictMode.ThreadPolicy.Builder()
@@ -268,16 +276,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             )
         }
 
-        // 3. Initialize static components
-        try {
-            initializeStatics()
-        } catch (e: Throwable) {
-            Timber.e(e, "Failed to initialize static components")
-            Sentry.captureException(e)
-            if (e is Error) throw e
-        }
-
-        // 4. Initialize settings and managers
+        // 5. Initialize settings and managers
         try {
             initializeManagers()
         } catch (e: Throwable) {
@@ -286,7 +285,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             if (e is Error) throw e
         }
 
-        // 5. Update state machine
+        // 6. Update state machine
         try {
             ShizukuStateMachine.update()
         } catch (e: Exception) {
