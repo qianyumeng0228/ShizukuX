@@ -43,7 +43,7 @@ mavericks = "3.0.9"
 spotless = "6.25.0"
 kotestJunit5 = "5.9.1"
 aboutlibraries = "11.6.3"
-leakcanary = "2.15"
+leakcanary = "2.14"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
