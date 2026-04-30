@@ -97,7 +97,7 @@ aboutLibraries {
 }
 
 autoResConfig {
-    generatedClassFullName = "rikka.shizuku.manager.ShizukuLocales"
+    generatedClassFullName = "af.shizuku.manager.ShizukuLocales"
     generateRes = false
     generatedArrayFirstItem = "SYSTEM"
     generateLocaleConfig = true

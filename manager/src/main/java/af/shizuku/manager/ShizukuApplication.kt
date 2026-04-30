@@ -55,14 +55,6 @@ class ShizukuApplication : Application(), Configuration.Provider {
         appContext = base
         // Initialize ShizukuSettings as early as possible
         ShizukuSettings.initialize(base)
-
-        // Initialize Mavericks and Koin as early as possible
-        Mavericks.initialize(base)
-        startKoin {
-            if (BuildConfig.DEBUG) androidLogger()
-            androidContext(this@ShizukuApplication)
-            modules(appModule)
-        }
     }
 
     /**
@@ -235,9 +227,20 @@ class ShizukuApplication : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
         }
 
-        // 1. Register persistent crash handler
+        // 1. Initialize Sentry FIRST to catch all crashes including early startup failures
+        initializeSentryEarly()
+
+        // 2. Register persistent crash handler
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler(af.shizuku.manager.utils.CrashHandler(this, defaultHandler))
+
+        // 3. Initialize Mavericks and Koin
+        Mavericks.initialize(this)
+        startKoin {
+            if (BuildConfig.DEBUG) androidLogger()
+            androidContext(this@ShizukuApplication)
+            modules(appModule)
+        }
 
         // Sentry quota was exhausted for April 2026 — suppress SDK sends until May.
         // Remove this block on or after 2026-05-01.
@@ -256,8 +259,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             if (e is Error) throw e
         }
 
-        // 3. Initialize Sentry
-        initializeSentryEarly()
+        // 3. Add breadcrumb for start
         Sentry.addBreadcrumb(Breadcrumb("App started: ${BuildConfig.VERSION_NAME}"))
 
         // 4. Strict mode for debugging (DEBUG only)

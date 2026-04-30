@@ -50,6 +50,9 @@ class MainActivity : HomeActivity() {
             Timber.d("Checking onboarding status")
             Sentry.addBreadcrumb(Breadcrumb("Checking onboarding status"))
 
+            // Auto-restore settings if a force-update backup exists
+            checkAndRestoreBackup()
+
             // Show "What's New" dialog on first launch after an update
             val currentVersion = try {
                 val pInfo = packageManager.getPackageInfo(packageName, 0)
@@ -94,6 +97,27 @@ class MainActivity : HomeActivity() {
             Timber.e(e, "Error in onStart")
             Sentry.captureException(e)
             throw e
+        }
+    }
+
+    private fun checkAndRestoreBackup() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val backupFile = af.shizuku.manager.update.UpdateInstaller.getBackupFile(this@MainActivity)
+            if (backupFile.exists()) {
+                try {
+                    val json = backupFile.readText()
+                    if (af.shizuku.manager.utils.SettingsBackupManager.import(this@MainActivity, json)) {
+                        Timber.i("Successfully auto-restored settings from force-update backup")
+                        backupFile.delete()
+                        // Notify user or refresh UI if needed
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(this@MainActivity, R.string.migration_success_message, Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to auto-restore settings")
+                }
+            }
         }
     }
 

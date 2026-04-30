@@ -22,8 +22,8 @@ abstract class AppBarActivity : AppActivity() {
             ?: throw IllegalStateException("rootView not found - make sure layout contains coordinator_root")
     }
 
-    protected lateinit var toolbarContainer: AppBarLayout
-    protected lateinit var toolbar: Toolbar
+    protected var toolbarContainer: AppBarLayout? = null
+    protected var toolbar: Toolbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
@@ -41,24 +41,24 @@ abstract class AppBarActivity : AppActivity() {
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
         try {
-            toolbarContainer = findViewById<View>(R.id.toolbar_container) as? AppBarLayout
-                ?: throw IllegalStateException("toolbarContainer not found - make sure layout contains toolbar_container")
-            toolbar = findViewById<View>(R.id.toolbar) as? Toolbar
-                ?: throw IllegalStateException("toolbar not found - make sure layout contains toolbar")
+            val container = findViewById<View>(R.id.toolbar_container) as? AppBarLayout
+            val bar = findViewById<View>(R.id.toolbar) as? Toolbar
 
-            setSupportActionBar(toolbar)
+            if (container != null && bar != null) {
+                toolbarContainer = container
+                toolbar = bar
+                setSupportActionBar(toolbar)
 
-            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(toolbarContainer) { v, insets ->
-                val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-                v.setPadding(0, systemBars.top, 0, 0)
-                insets
+                androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
+                    val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+                    v.setPadding(0, systemBars.top, 0, 0)
+                    insets
+                }
+            } else {
+                Timber.tag("AppBarActivity").w("Toolbar or container not found in layout. ID checks: container=${container!=null}, toolbar=${bar!=null}")
             }
-        } catch (e: IllegalStateException) {
-            Timber.tag("AppBarActivity").e(e, "Layout configuration error: ${e.message}")
-            throw e
         } catch (e: Exception) {
             Timber.tag("AppBarActivity").e(e, "Failed to initialize toolbar")
-            throw e
         }
     }
 

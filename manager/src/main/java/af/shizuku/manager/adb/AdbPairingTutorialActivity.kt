@@ -125,7 +125,11 @@ class AdbPairingTutorialActivity : AppBarActivity() {
     private fun startPairingService() {
         val intent = AdbPairingService.startIntent(this)
         try {
-            startForegroundService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
         } catch (e: Throwable) {
             Timber.tag(AppConstants.TAG).e(e, "startForegroundService")
 
