@@ -36,25 +36,28 @@ import rikka.core.content.asActivity
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
+import com.airbnb.mvrx.withState
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
 
 class StartWirelessAdbViewHolder(
     private val binding: HomeStartWirelessAdbBinding,
     private val containerBinding: HomeItemContainerBinding,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val homeModel: HomeViewModel
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
-        fun creator(scope: CoroutineScope): Creator<Any> {
+        fun creator(scope: CoroutineScope, homeModel: HomeViewModel): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
                 val inner = HomeStartWirelessAdbBinding.inflate(inflater, outer.cardContent, true)
-                StartWirelessAdbViewHolder(inner, outer, scope)
+                StartWirelessAdbViewHolder(inner, outer, scope, homeModel)
             }
         }
 
-        fun start(context: android.content.Context, scope: CoroutineScope) {
-            val tcpPort = EnvironmentUtils.getAdbTcpPort()
+        fun start(context: android.content.Context, scope: CoroutineScope, discoveredPort: Int = -1) {
+            val sysPropPort = EnvironmentUtils.getAdbTcpPort()
+            val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
             val validTcpPort = if (tcpPort in 1..65535) tcpPort else -1
             if (validTcpPort > 0 && ShizukuSettings.getTcpMode()) {
                 val intent = android.content.Intent(context, StarterActivity::class.java).apply {
@@ -91,7 +94,9 @@ class StartWirelessAdbViewHolder(
                 return@setOnClickListener
             }
 
-            val tcpPort = EnvironmentUtils.getAdbTcpPort()
+            val sysPropPort = EnvironmentUtils.getAdbTcpPort()
+            val discoveredPort = withState(homeModel) { it.discoveredAdbPort }
+            val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
             val tcpMode = ShizukuSettings.getTcpMode()
             val validTcpPort = if (tcpPort in 1..65535) tcpPort else -1
 

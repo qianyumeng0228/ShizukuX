@@ -19,12 +19,31 @@ object RootCompatHelper {
 
     private fun escapeShellSingleQuote(s: String) = s.replace("'", "'\\''")
 
+    // Apps that store their SU path in Android global settings (accessible without root)
+    private val GLOBAL_SETTINGS_APPS = mapOf(
+        "org.adaway"           to "adaway_su_path",
+        "dev.ukanth.ufirewall" to "afwall_su_path",
+        "com.ramdaas.ramexe"   to "ramexe_su_path",
+        "me.piebridge.prevent"  to "prevent_su_path"
+    )
+
+    // Apps that store their SU path in shared_prefs; only reachable with UID 0 (root Shizuku).
+    // Format: package → Pair(prefs file basename, XML key name)
+    private val ROOT_PREFS_APPS = mapOf(
+        "com.keramidas.TitaniumBackup" to Pair("TitaniumBackup-preferences", "suCommand"),
+        "com.speedsoftware.rootexplorer" to Pair("RootExplorer", "SuCommandLine"),
+        "pl.solidexplorer2"              to Pair("SolidExplorer2", "su_binary_path"),
+        "com.ghisler.android.TotalCommander" to Pair("tcandroid3", "supath"),
+        "com.jrummy.root.browserfree"    to Pair("es_preferences", "su_path"),
+        "com.estrongs.android.pop"       to Pair("es_preferences", "su_path")
+    )
+
     /**
-     * Automatically configures popular root apps to use the ShizukuX SU Bridge.
-     * Uses Shizuku's privileged shell to modify target app preferences.
+     * Automatically configures a root app to use the ShizukuX SU Bridge.
+     * Uses global settings for apps that support it; falls back to direct shared_prefs
+     * editing when Shizuku is running as root (UID 0).
      */
     suspend fun autoSetup(context: Context, packageName: String, suPath: String): Boolean = withContext(Dispatchers.IO) {
-        // Check if Shizuku service is available, as it's needed for executing commands.
         if (!isShizukuAvailable()) {
             Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
             return@withContext false
@@ -32,26 +51,40 @@ object RootCompatHelper {
 
         var success = false
         try {
-            when (packageName) {
-                "org.adaway" -> {
-                    // AdAway supports a global setting for SU path, which Shizuku can modify.
-                    success = executePrivileged(arrayOf("settings", "put", "global", "adaway_su_path", suPath))
+            val globalKey = GLOBAL_SETTINGS_APPS[packageName]
+            val prefsEntry = ROOT_PREFS_APPS[packageName]
+
+            when {
+                globalKey != null -> {
+                    success = executePrivileged(arrayOf("settings", "put", "global", globalKey, suPath))
                     if (success) {
                         Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
                     }
                 }
-                "dev.ukanth.ufirewall" -> {
-                    // AFWall+ supports a global setting for SU path.
-                    success = executePrivileged(arrayOf("settings", "put", "global", "afwall_su_path", suPath))
+                prefsEntry != null && isShizukuRoot() -> {
+                    // Root Shizuku (UID 0) can directly edit another app's shared_prefs.
+                    val (prefsFile, prefsKey) = prefsEntry
+                    val escapedPath = escapeSed(escapeShellSingleQuote(suPath))
+                    val escapedKey  = escapeSed(prefsKey)
+                    val target = "/data/data/$packageName/shared_prefs/$prefsFile.xml"
+                    // Replace existing value or append if key is absent
+                    val cmd = """
+                        if [ -f '$target' ]; then
+                            if grep -q 'name="$escapedKey"' '$target'; then
+                                sed -i 's|<string name="$escapedKey">.*</string>|<string name="$escapedKey">$escapedPath</string>|' '$target'
+                            else
+                                sed -i 's|</map>|    <string name="$escapedKey">$escapedPath</string>\n</map>|' '$target'
+                            fi
+                        fi
+                    """.trimIndent()
+                    success = executePrivileged(arrayOf("sh", "-c", cmd))
                     if (success) {
                         Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
                     }
                 }
-                // For all other apps, direct file editing is blocked by Android security.
-                // We will guide the user to manual setup via copy-paste.
                 else -> {
-                    // No automatic step taken here, but the UI will prompt for manual setup.
-                    success = true // Indicate that the process moved forward to manual guidance.
+                    // No automatic path; UI will guide the user through manual setup.
+                    success = true
                 }
             }
         } catch (e: Exception) {
@@ -60,7 +93,6 @@ object RootCompatHelper {
         }
         success
     }
-
 
     private fun isShizukuRoot(): Boolean {
         return try {
@@ -79,7 +111,6 @@ object RootCompatHelper {
     }
 
     suspend fun autoSetupAll(context: Context, suPath: String): Int = withContext(Dispatchers.IO) {
-        // We no longer require root for global settings, but Shizuku service availability is key.
         if (!isShizukuAvailable()) {
             Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
             return@withContext 0
@@ -88,24 +119,17 @@ object RootCompatHelper {
         val pm = context.packageManager
         val installedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
         var processedCount = 0
-        
-        val appsSupportingGlobalSettings = setOf(
-            "org.adaway",
-            "dev.ukanth.ufirewall"
-        )
+
+        val automatable = GLOBAL_SETTINGS_APPS.keys + if (isShizukuRoot()) ROOT_PREFS_APPS.keys else emptySet()
 
         for (pkgInfo in installedPackages) {
             val pkg = pkgInfo.packageName
-            if (pkg == context.packageName) continue // Skip self
+            if (pkg == context.packageName) continue
 
-            if (appsSupportingGlobalSettings.contains(pkg)) {
-                // Attempt global setting injection for known supported apps
-                if (autoSetup(context, pkg, suPath)) {
-                    processedCount++
-                }
+            if (pkg in automatable) {
+                if (autoSetup(context, pkg, suPath)) processedCount++
             } else {
-                // For all other apps, we fall back to prompting manual setup.
-                // This counts as processed, as the UI will guide the user.
+                // Falls through to manual-guidance UI path.
                 processedCount++
             }
         }

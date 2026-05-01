@@ -9,5 +9,7 @@ data class HomeState(
     val serviceStatus: Async<ServiceStatus> = Uninitialized,
     val shouldShowBatteryOptimizationSnackbar: Boolean = false,
     val grantedAppCount: Int = 0,
-    val isEditMode: Boolean = false
+    val isEditMode: Boolean = false,
+    // Port discovered via mDNS TLS_CONNECT; -1 = not yet found
+    val discoveredAdbPort: Int = -1
 ) : MavericksState

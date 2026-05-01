@@ -242,14 +242,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
             modules(appModule)
         }
 
-        // Sentry quota was exhausted for April 2026 — suppress SDK sends until May.
-        // Remove this block on or after 2026-05-01.
-        val cal = java.util.Calendar.getInstance()
-        if (cal.get(java.util.Calendar.YEAR) == 2026 && cal.get(java.util.Calendar.MONTH) == java.util.Calendar.APRIL) {
-            ShizukuSettings.setSentryLimitReached(true)
-        } else if (cal.get(java.util.Calendar.YEAR) >= 2026 && cal.get(java.util.Calendar.MONTH) > java.util.Calendar.APRIL) {
-            ShizukuSettings.setSentryLimitReached(false)
-        }
+        // Sentry quota was suppressed through April 2026; ensure it is cleared on upgrade.
+        ShizukuSettings.setSentryLimitReached(false)
 
         // 2. Initialize static components FIRST to ensure HiddenApiBypass is active
         try {

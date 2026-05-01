@@ -2,23 +2,27 @@ package af.shizuku.manager.home
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.Keep
+import androidx.annotation.RequiresApi
+import androidx.lifecycle.Observer
+import com.airbnb.mvrx.Fail
+import com.airbnb.mvrx.Loading
 import com.airbnb.mvrx.MavericksViewModel
 import com.airbnb.mvrx.MavericksViewModelFactory
-import com.airbnb.mvrx.ViewModelContext
-import com.airbnb.mvrx.Loading
 import com.airbnb.mvrx.Success
-import com.airbnb.mvrx.Fail
+import com.airbnb.mvrx.ViewModelContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.Manifest
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.adb.AdbMdns
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.Logger.LOGGER
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.ShizukuSystemApis
-import androidx.annotation.Keep
 import rikka.shizuku.Shizuku
 
 @Keep
@@ -27,8 +31,26 @@ class HomeViewModel(
     private val appContext: Context
 ) : MavericksViewModel<HomeState>(initialState) {
 
+    private var adbMdns: AdbMdns? = null
+
     init {
         reload()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && EnvironmentUtils.isTlsSupported()) {
+            startAdbPortDiscovery()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun startAdbPortDiscovery() {
+        val observer = Observer<Int> { port ->
+            setState { copy(discoveredAdbPort = port) }
+        }
+        adbMdns = AdbMdns(appContext, AdbMdns.TLS_CONNECT, observer).also { it.start() }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        adbMdns?.stop()
     }
 
     fun reload() {

@@ -48,7 +48,7 @@ class HomeAdapter(
         }
     }
 
-    private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope)
+    private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope, homeModel)
 
     var isDragging = false
     private var isUpdating = false

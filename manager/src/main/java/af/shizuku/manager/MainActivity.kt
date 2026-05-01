@@ -22,30 +22,16 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 
 class MainActivity : HomeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Auto-import settings if an auto-update via Shizuku recently occurred
-        val backupFile = af.shizuku.manager.update.UpdateInstaller.getBackupFile(this)
-        if (backupFile.exists()) {
-            try {
-                val json = backupFile.readText()
-                if (af.shizuku.manager.utils.SettingsBackupManager.import(this, json)) {
-                    Toast.makeText(this, "Settings automatically restored from previous version.", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Timber.e(e, "Failed to auto-import settings from backup file")
-            } finally {
-                backupFile.delete()
-            }
-        }
-
-        // Check for previous crashes as early as possible to break crash loops
-        if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
-            showCrashReportDialog()
-        }
-
         try {
             Timber.d("Calling super.onCreate")
             Sentry.addBreadcrumb(Breadcrumb("Calling super.onCreate"))
             super.onCreate(savedInstanceState)
+
+            // Check for previous crashes and offer to report — must be after super so the
+            // window is attached and MaterialAlertDialogBuilder can create a dialog token.
+            if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
+                showCrashReportDialog()
+            }
 
             Timber.d("Checking onboarding status")
             Sentry.addBreadcrumb(Breadcrumb("Checking onboarding status"))

@@ -397,7 +397,8 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
             if (startWadb) {
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 nm.cancel(AdbPairingService.NOTIFICATION_ID)
-                StartWirelessAdbViewHolder.start(this, lifecycleScope)
+                val discoveredPort = withState(homeModel) { s -> s.discoveredAdbPort }
+                StartWirelessAdbViewHolder.start(this, lifecycleScope, discoveredPort)
             }
         }
     }
