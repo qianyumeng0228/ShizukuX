@@ -44,7 +44,7 @@
         android:protectionLevel="dangerous" />
     
     <uses-permission
-        android:name="af.shizuku.plus.permission.API_V23"
+        android:name="moe.shizuku.manager.permission.API_V23"
         tools:node="remove" />
 
     <application

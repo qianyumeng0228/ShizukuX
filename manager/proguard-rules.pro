@@ -47,6 +47,12 @@
     public <init>();
 }
 
+# Keep WorkManager workers instantiated by name via reflection.
+# Both RemoteDbSyncWorker and AdbStartWorker must maintain their class names.
+-keep class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
 }
