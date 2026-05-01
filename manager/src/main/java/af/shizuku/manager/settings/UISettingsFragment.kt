@@ -15,7 +15,7 @@ import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.CustomTabsHelper
 import rikka.core.util.ResourceUtils
 import rikka.material.app.LocaleDelegate
-import rikka.shizuku.manager.ShizukuLocales
+import af.shizuku.manager.ShizukuLocales
 import java.util.Locale
 
 class UISettingsFragment : BaseSettingsFragment() {
