@@ -59,12 +59,13 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                             !EnvironmentUtils.isTelevision() &&
                             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
                         ) {
-                            MaterialAlertDialogBuilder(context)
-                                .setTitle(android.R.string.dialog_alert_title)
-                                .setMessage(R.string.settings_start_on_boot_bug)
-                                .setPositiveButton(android.R.string.ok) { _, _ -> doToggle() }
-                                .setNegativeButton(android.R.string.cancel) { _, _ -> isChecked = !newValue }
-                                .show()
+                            showDialog(
+                                MaterialAlertDialogBuilder(context)
+                                    .setTitle(android.R.string.dialog_alert_title)
+                                    .setMessage(R.string.settings_start_on_boot_bug)
+                                    .setPositiveButton(android.R.string.ok) { _, _ -> doToggle() }
+                                    .setNegativeButton(android.R.string.cancel) { _, _ -> isChecked = !newValue }
+                            )
                         } else {
                             doToggle()
                         }

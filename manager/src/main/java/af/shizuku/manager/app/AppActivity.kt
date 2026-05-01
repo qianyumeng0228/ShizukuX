@@ -11,12 +11,12 @@ import rikka.material.app.MaterialActivity
 abstract class AppActivity : MaterialActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         try {
             window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
         } catch (_: Exception) {
-            // Feature may already be enabled by the theme or enableEdgeToEdge()
+            // Feature may already be enabled by the theme or base class
         }
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
     }
 

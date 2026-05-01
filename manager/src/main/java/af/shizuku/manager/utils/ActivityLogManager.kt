@@ -88,29 +88,35 @@ object ActivityLogManager {
             return
         }
 
-        try {
-            // Ensure the databases directory exists before Room tries to open it.
-            // On a fresh install the directory may not yet exist, causing SQLiteCantOpenDatabaseException.
-            val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
-            dbFile.parentFile?.mkdirs()
+        scope.launch {
+            try {
+                // Ensure the databases directory exists before Room tries to open it.
+                // On a fresh install the directory may not yet exist, causing SQLiteCantOpenDatabaseException.
+                val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
+                if (dbFile.parentFile?.exists() != true) {
+                    dbFile.parentFile?.mkdirs()
+                    // Small delay to ensure I/O visibility
+                    delay(50)
+                }
 
-            database = ActivityLogDatabase.getInstance(context)
-            dao = database?.activityLogDao()
+                database = ActivityLogDatabase.getInstance(context)
+                dao = database?.activityLogDao()
 
-            // Load retention setting
-            retentionCount = ShizukuSettings.getActivityLogRetention()
+                // Load retention setting
+                retentionCount = ShizukuSettings.getActivityLogRetention()
 
-            // Load existing logs from database
-            loadFromDatabase()
+                // Load existing logs from database
+                loadFromDatabase()
 
-            // Perform cleanup of old records
-            cleanupOldRecords()
+                // Perform cleanup of old records
+                cleanupOldRecords()
 
-            Timber.tag(TAG).d("ActivityLogManager initialized with retention count: $retentionCount")
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to initialize ActivityLogManager")
-            // Continue without database - logs will still work in memory
-            // This prevents app crash if database is corrupted
+                Timber.tag(TAG).d("ActivityLogManager initialized with retention count: $retentionCount")
+            } catch (e: Exception) {
+                Timber.tag(TAG).e(e, "Failed to initialize ActivityLogManager")
+                io.sentry.Sentry.captureException(e)
+                // Continue without database - logs will still work in memory
+            }
         }
     }
     
@@ -124,26 +130,36 @@ object ActivityLogManager {
         }
 
         scope.launch {
-            try {
-                dao!!.getAll().collect { dbLogs ->
-                    synchronized(records) {
-                        records.clear()
-                        dbLogs.reversed().forEach { log ->
-                            records.add(
-                                ActivityLogRecord(
-                                    timestamp = log.timestamp,
-                                    appName = log.appName,
-                                    packageName = log.packageName,
-                                    action = log.action
+            var retryCount = 0
+            while (retryCount < 3) {
+                try {
+                    dao!!.getAll().collect { dbLogs ->
+                        synchronized(records) {
+                            records.clear()
+                            dbLogs.reversed().forEach { log ->
+                                records.add(
+                                    ActivityLogRecord(
+                                        timestamp = log.timestamp,
+                                        appName = log.appName,
+                                        packageName = log.packageName,
+                                        action = log.action
+                                    )
                                 )
-                            )
+                            }
+                            _logs.value = records.toList()
                         }
-                        _logs.value = records.toList()
+                        Timber.tag(TAG).d("Loaded ${records.size} logs from database")
                     }
-                    Timber.tag(TAG).d("Loaded ${records.size} logs from database")
+                    break // Success
+                } catch (e: Exception) {
+                    retryCount++
+                    Timber.tag(TAG).e(e, "Error loading logs from database (retry $retryCount)")
+                    if (retryCount >= 3) {
+                        io.sentry.Sentry.captureException(e)
+                        throw e
+                    }
+                    delay(500)
                 }
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Error loading logs from database")
             }
         }
     }

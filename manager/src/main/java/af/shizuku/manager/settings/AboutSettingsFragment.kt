@@ -29,31 +29,32 @@ class AboutSettingsFragment : BaseSettingsFragment() {
             }
 
             setOnPreferenceClickListener {
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title)
-                    .setMessage(R.string.sentry_offline_notice_learn_more)
-                    .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
-                        val report = CrashReporter.generateReport(context)
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
-                            context.getString(R.string.manual_report_clipboard_label), report))
-                        
-                        Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
-                        
-                        CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
-                        
-                        if (hasLastCrash) {
-                            af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                showDialog(
+                    MaterialAlertDialogBuilder(context)
+                        .setTitle(if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title)
+                        .setMessage(R.string.sentry_offline_notice_learn_more)
+                        .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
+                            val report = CrashReporter.generateReport(context)
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                                context.getString(R.string.manual_report_clipboard_label), report))
+                            
+                            Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
+                            
+                            CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
+                            
+                            if (hasLastCrash) {
+                                af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                            }
                         }
-                    }
-                    .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
-                        af.shizuku.manager.utils.CrashReporter.shareAsFile(context)
-                        if (hasLastCrash) {
-                            af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                        .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
+                            af.shizuku.manager.utils.CrashReporter.shareAsFile(context)
+                            if (hasLastCrash) {
+                                af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)
+                            }
                         }
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
+                        .setNegativeButton(android.R.string.cancel, null)
+                )
                 true
             }
         }

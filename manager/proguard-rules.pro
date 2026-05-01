@@ -67,10 +67,10 @@
 }
 
 # Mavericks: companion-object factories discovered via Kotlin reflection;
-# -repackageclasses breaks this if the ViewModel is moved but the Factory isn't.
 # We must keep both the ViewModel and its Factory/Companion to maintain their relationship.
 -keep class af.shizuku.manager.**ViewModel { *; }
 -keep class af.shizuku.manager.**ViewModel$* { *; }
+-keep class af.shizuku.manager.home.HomeViewModel$Companion { *; }
 -keep class * implements com.airbnb.mvrx.MavericksViewModelFactory { *; }
 -keep class * extends com.airbnb.mvrx.MavericksViewModel { *; }
 -keepclassmembers class * extends com.airbnb.mvrx.MavericksViewModel {
@@ -81,7 +81,23 @@
 -keep class com.airbnb.mvrx.** { *; }
 -keepnames class com.airbnb.mvrx.** { *; }
 
+# Keep resource IDs and generated R classes to prevent "0_resource_name_obfuscated" crashes with ViewBinding.
+-keep class af.shizuku.manager.R$* { *; }
+-keepclassmembers class **.R$* {
+    public static <fields>;
+}
+
+# Coroutines and Kotlin serialization
+-keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
+-keep class kotlinx.coroutines.** { *; }
+-keep class kotlin.coroutines.** { *; }
+
+# Room
+-keep class * extends androidx.room.RoomDatabase
+-keep class * extends androidx.room.Entity
+-keep class * implements androidx.room.Dao
+
 -allowaccessmodification
--repackageclasses rikka.shizuku
+#-repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile

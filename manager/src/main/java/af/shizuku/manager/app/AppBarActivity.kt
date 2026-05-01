@@ -26,8 +26,6 @@ abstract class AppBarActivity : AppActivity() {
     protected var toolbar: Toolbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-        
         val axis = MaterialSharedAxis.X
         window.enterTransition = MaterialSharedAxis(axis, true)
         window.exitTransition = MaterialSharedAxis(axis, false)

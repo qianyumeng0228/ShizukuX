@@ -40,6 +40,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
 
     protected lateinit var batteryOptimizationListener: ActivityResultLauncher<Intent>
     protected var batteryOptimizationContinuation: CancellableContinuation<Boolean>? = null
+    private val activeDialogs = mutableListOf<android.app.Dialog>()
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         preferenceManager.setStorageDeviceProtected()
@@ -61,6 +62,21 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
     override fun onPreferenceTreeClick(preference: androidx.preference.Preference): Boolean {
         HapticUtils.tap(requireView())
         return super.onPreferenceTreeClick(preference)
+    }
+
+    override fun onDestroyView() {
+        activeDialogs.forEach { if (it.isShowing) it.dismiss() }
+        activeDialogs.clear()
+        super.onDestroyView()
+    }
+
+    /**
+     * Helper to show a dialog and track it for proper dismissal.
+     */
+    protected fun showDialog(builder: MaterialAlertDialogBuilder) {
+        val dialog = builder.show()
+        activeDialogs.add(dialog)
+        dialog.setOnDismissListener { activeDialogs.remove(dialog) }
     }
 
     override fun onCreateRecyclerView(
@@ -130,21 +146,22 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
 
     protected fun promptStopTcp(tcpModePref: androidx.preference.TwoStatePreference, applyChange: () -> Unit) {
         val context = requireContext()
-        MaterialAlertDialogBuilder(context)
-            .setTitle(android.R.string.dialog_alert_title)
-            .setMessage(context.getString(R.string.settings_tcp_mode_dialog_close_port))
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                lifecycleScope.launch {
-                    tcpModePref.apply {
-                        isEnabled = false
-                        summary = context.getString(R.string.settings_tcp_mode_closing_port)
+        showDialog(
+            MaterialAlertDialogBuilder(context)
+                .setTitle(android.R.string.dialog_alert_title)
+                .setMessage(context.getString(R.string.settings_tcp_mode_dialog_close_port))
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    lifecycleScope.launch {
+                        tcpModePref.apply {
+                            isEnabled = false
+                            summary = context.getString(R.string.settings_tcp_mode_closing_port)
+                        }
+                        AdbStarter.stopTcp(context, EnvironmentUtils.getAdbTcpPort())
+                        if (EnvironmentUtils.getAdbTcpPort() <= 0) applyChange()
                     }
-                    AdbStarter.stopTcp(context, EnvironmentUtils.getAdbTcpPort())
-                    if (EnvironmentUtils.getAdbTcpPort() <= 0) applyChange()
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+                .setNegativeButton(android.R.string.cancel, null)
+        )
     }
 
     protected fun maybePromptRestart(setting: String, newValue: Any? = null, applyChange: () -> Unit) {
@@ -158,15 +175,16 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
                 if (setting == KEY_TCP_MODE)
                     append(context.getString(R.string.settings_restart_dialog_message_wifi_required))
             }
-            MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.settings_restart_dialog_title)
-                .setMessage(HtmlCompat.fromHtml(message))
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    applyChange()
-                    ShizukuReceiverStarter.start(context, true)
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
+            showDialog(
+                MaterialAlertDialogBuilder(context)
+                    .setTitle(R.string.settings_restart_dialog_title)
+                    .setMessage(HtmlCompat.fromHtml(message))
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        applyChange()
+                        ShizukuReceiverStarter.start(context, true)
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+            )
         }
     }
 
