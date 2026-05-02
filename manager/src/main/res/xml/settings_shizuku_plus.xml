@@ -27,7 +27,7 @@
             android:key="binder_firewall_enabled"
             android:title="@string/settings_binder_firewall"
             android:summary="@string/settings_binder_firewall_summary"
-            android:icon="@drawable/ic_security_24"
+            android:icon="@drawable/ic_shield_24"
             android:defaultValue="false" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
