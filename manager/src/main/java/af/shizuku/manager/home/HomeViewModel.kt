@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.Manifest
+import af.shizuku.manager.ShizukuApplication
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbMdns
 import af.shizuku.manager.model.ServiceStatus
@@ -27,9 +28,12 @@ import rikka.shizuku.Shizuku
 
 @Keep
 class HomeViewModel(
-    initialState: HomeState,
-    private val appContext: Context
+    initialState: HomeState
 ) : MavericksViewModel<HomeState>(initialState) {
+
+    // Fetched lazily from application context; avoids a second constructor param that
+    // triggers a bytecode register-count VerifyError in release (R8) builds.
+    private val appContext: Context = ShizukuApplication.appContext
 
     private var adbMdns: AdbMdns? = null
 
@@ -113,7 +117,7 @@ class HomeViewModel(
     @Keep
     companion object : com.airbnb.mvrx.MavericksViewModelFactory<HomeViewModel, HomeState> {
         override fun create(viewModelContext: com.airbnb.mvrx.ViewModelContext, state: HomeState): HomeViewModel {
-            return HomeViewModel(state, viewModelContext.app())
+            return HomeViewModel(state)
         }
     }
 }

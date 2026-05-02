@@ -59,7 +59,9 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
         report.append(stackTrace)
 
         try {
-            getCrashFile(context).writeText(report.toString())
+            val file = getCrashFile(context)
+            file.parentFile?.mkdirs()
+            file.writeText(report.toString())
         } catch (e: Exception) {
             Timber.e(e, "Error writing crash file")
         }
