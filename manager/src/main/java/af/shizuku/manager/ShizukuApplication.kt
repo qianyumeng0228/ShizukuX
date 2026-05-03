@@ -21,6 +21,7 @@ import rikka.shizuku.Shizuku
 import timber.log.Timber
 import af.shizuku.manager.di.appModule
 import af.shizuku.manager.worker.RemoteDbSyncWorker
+import android.os.UserManager
 import com.airbnb.mvrx.Mavericks
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -219,7 +220,16 @@ class ShizukuApplication : Application(), Configuration.Provider {
             ActivityLogManager.log(appName, packageName, action)
         }
 
-        RemoteDbSyncWorker.schedule(this)
+        val userManager = getSystemService(Context.USER_SERVICE) as? UserManager
+        if (userManager == null || userManager.isUserUnlocked) {
+            try {
+                RemoteDbSyncWorker.schedule(this)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to schedule RemoteDbSyncWorker")
+            }
+        } else {
+            Timber.w("Direct Boot mode: skipping RemoteDbSyncWorker scheduling")
+        }
     }
 
     override fun onCreate() {

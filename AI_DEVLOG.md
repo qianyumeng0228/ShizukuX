@@ -99,6 +99,8 @@ Things discussed or sketched that we never formally decided to build.
 - **Shadow Binder (Issue #199)** — Implemented `IPackageManager` shadowing in `ShizukuService.java`. The server now intercepts PM calls and can "hide" apps by returning null results for specific package names.
 - **Settings UI Expansion** — Added `shadow_binder_hidden_packages` key to `ShizukuSettings.java`, wired it to the server sync, and added an `EditTextPreference` in `settings_shizuku_plus.xml`.
 - **Localization** — Added strings for the new Shadow Binder hidden packages setting.
+- **Crash fix (#201, #203)** — Fixed `NullPointerException` on `iconView.animate()` in `HomeActivity.kt` splash screen exit callback.
+- **Crash fix (Direct Boot)** — Fixed `IllegalStateException` in `ShizukuApplication.kt` where `WorkManager.getInstance()` was called during Direct Boot before the credential-encrypted storage was available. Added `UserManager.isUserUnlocked` check before scheduling `RemoteDbSyncWorker`.
 
 ### 2026-05-01 — Claude (Sonnet 4.6)
 **Commits:** `a1858c0a` (api submodule fix), `71adc664` (enhancements), (this session)

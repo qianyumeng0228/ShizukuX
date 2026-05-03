@@ -39,5 +39,5 @@ def baseVersionName = "13.6.1"
 def isBeta = project.hasProperty("beta")
 ext {
     versionCode = gitCommitCount
-    versionName = "v${baseVersionName}.r${gitCommitCount}-shizukuplus${if (isBeta) "-beta" else ""}"
+    versionName = "v${baseVersionName}.r${gitCommitCount}-shizukuplus-prerelease${if (isBeta) "-beta" else ""}"
 }
