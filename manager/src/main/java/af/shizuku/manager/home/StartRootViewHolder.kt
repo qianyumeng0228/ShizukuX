@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import rikka.core.content.asActivity
 import androidx.core.view.isVisible
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
@@ -57,7 +58,7 @@ class StartRootViewHolder(
     }
 
     private fun onStartClicked(v: View) {
-        val activity = v.context as? android.app.Activity ?: return
+        val activity = v.context.asActivity<android.app.Activity>() ?: return
         val intent = Intent(activity, StarterActivity::class.java).apply {
             putExtra(StarterActivity.EXTRA_IS_ROOT, true)
         }

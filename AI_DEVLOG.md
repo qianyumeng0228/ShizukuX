@@ -101,6 +101,8 @@ Things discussed or sketched that we never formally decided to build.
 - **Localization** — Added strings for the new Shadow Binder hidden packages setting.
 - **Crash fix (#201, #203)** — Fixed `NullPointerException` on `iconView.animate()` in `HomeActivity.kt` splash screen exit callback.
 - **Crash fix (Direct Boot)** — Fixed `IllegalStateException` in `ShizukuApplication.kt` where `WorkManager.getInstance()` was called during Direct Boot before the credential-encrypted storage was available. Added `UserManager.isUserUnlocked` check before scheduling `RemoteDbSyncWorker`.
+- **Crash fix (#205, #202)** — Fixed `NullPointerException` in `ApplicationManagementActivity` caused by a missing view layout inflation. Reverted a previous binding update to ensure `AppsActivityBinding.inflate` is properly called with `setContentView`.
+- **Crash fix (#204)** — Fixed the "Pairing button not working" and other home screen button failures. The material components context was wrapped in a `ContextThemeWrapper`, causing a safe-cast `as? android.app.Activity` to return null. Updated all ViewHolders to use `context.asActivity<android.app.Activity>()`.
 
 ### 2026-05-01 — Claude (Sonnet 4.6)
 **Commits:** `a1858c0a` (api submodule fix), `71adc664` (enhancements), (this session)

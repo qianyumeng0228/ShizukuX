@@ -113,7 +113,7 @@ class StartWirelessAdbViewHolder(
                 val intent = Intent(context, StarterActivity::class.java).apply {
                     putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
                 }
-                val activity = context as? android.app.Activity
+                val activity = context.asActivity<android.app.Activity>()
                 if (activity != null) {
                     activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
                 } else {
@@ -162,7 +162,7 @@ class StartWirelessAdbViewHolder(
         } else if ((context.display?.displayId ?: -1) > 0 || ShizukuSettings.getLegacyPairing()) {
             AdbPairDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
         } else {
-            val activity = context as? android.app.Activity ?: return
+            val activity = context.asActivity<android.app.Activity>() ?: return
             activity.startWithSceneTransition(
                 Intent(activity, AdbPairingTutorialActivity::class.java),
                 binding.icon, "icon_wireless_adb"

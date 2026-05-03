@@ -4,6 +4,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import rikka.core.content.asActivity
 import androidx.core.content.ContextCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -91,7 +92,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
 
         logButton.visibility = if (ok && af.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
         logButton.setOnClickListener {
-            val activity = context as? android.app.Activity ?: return@setOnClickListener
+            val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
             activity.startWithSceneTransition(
                 android.content.Intent(activity, af.shizuku.manager.settings.ActivityLogActivity::class.java),
                 iconView, "icon_server_status"

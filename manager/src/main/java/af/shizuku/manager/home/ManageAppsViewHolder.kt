@@ -5,6 +5,7 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import rikka.core.content.asActivity
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -62,7 +63,7 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
     }
 
     override fun onClick(v: View) {
-        val activity = v.context as? android.app.Activity ?: return
+        val activity = v.context.asActivity<android.app.Activity>() ?: return
         activity.startWithSceneTransition(
             Intent(activity, ApplicationManagementActivity::class.java),
             iconView, "icon_manage_apps"

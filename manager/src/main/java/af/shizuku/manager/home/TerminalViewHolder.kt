@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import rikka.core.content.asActivity
 import androidx.core.view.isVisible
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -64,7 +65,7 @@ class TerminalViewHolder(
     }
 
     override fun onClick(v: View) {
-        val activity = v.context as? android.app.Activity ?: return
+        val activity = v.context.asActivity<android.app.Activity>() ?: return
         activity.startWithSceneTransition(
             Intent(activity, ShellTutorialActivity::class.java),
             binding.icon, "icon_terminal"
