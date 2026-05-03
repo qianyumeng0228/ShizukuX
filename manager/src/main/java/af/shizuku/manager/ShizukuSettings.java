@@ -80,6 +80,7 @@ public class ShizukuSettings {
         public static final String KEY_BINDER_FIREWALL_ENABLED = "binder_firewall_enabled";
         public static final String KEY_BINDER_LOGGING_ENABLED = "binder_logging_enabled";
         public static final String KEY_SHADOW_BINDER_ENABLED = "shadow_binder_enabled";
+        public static final String KEY_SHADOW_BINDER_HIDDEN_PACKAGES = "shadow_binder_hidden_packages";
         public static final String KEY_ON_DEVICE_ADB_TCP = "on_device_adb_tcp";
         public static final String KEY_FORCE_START_WADB = "force_start_wadb";
         public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
@@ -515,6 +516,16 @@ public class ShizukuSettings {
         return p != null && p.getBoolean(Keys.KEY_SHADOW_BINDER_ENABLED, false);
     }
 
+    public static String getShadowBinderHiddenPackages() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_SHADOW_BINDER_HIDDEN_PACKAGES, "") : "";
+    }
+
+    public static void setShadowBinderHiddenPackages(String packages) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putString(Keys.KEY_SHADOW_BINDER_HIDDEN_PACKAGES, packages).apply();
+    }
+
     public static void setAdbProxyEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_ADB_PROXY_ENABLED, enable).apply();
@@ -714,6 +725,7 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("binder_firewall", isBinderFirewallEnabled());
                 service.updatePlusFeatureEnabled("binder_logging", isBinderLoggingEnabled());
                 service.updatePlusFeatureEnabled("shadow_binder", isShadowBinderEnabled());
+                service.setPlusSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
                 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {

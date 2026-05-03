@@ -312,10 +312,57 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             String descriptor = target.getInterfaceDescriptor();
             // Shadowing IPackageManager to hide specific apps
             if ("android.content.pm.IPackageManager".equals(descriptor)) {
-                // If the call is 'getApplicationInfo', we can mock it
-                // This is a complex area, for now we just provide the hook
+                // Save position to restore if we don't handle it
+                int pos = data.dataPosition();
+                data.setDataPosition(0);
+                
+                // Skip interface token (already checked by descriptor)
+                data.readString(); 
+                String packageName = data.readString();
+                
+                // Restore position immediately after reading what we need
+                data.setDataPosition(pos);
+
+                String hiddenPackages = plusSettingsMap.get("shadow_hidden_packages");
+                if (hiddenPackages != null && packageName != null && !packageName.isEmpty()) {
+                    boolean shouldHide = false;
+                    for (String p : hiddenPackages.split(",")) {
+                        if (packageName.equals(p.trim())) {
+                            shouldHide = true;
+                            break;
+                        }
+                    }
+
+                    if (shouldHide) {
+                        // Codes vary by API, but getApplicationInfo, getPackageInfo, 
+                        // and getPackageUid are usually low codes (1-20)
+                        // This is a broad-brush "Hide app" implementation
+                        LOGGER.i("Shadow: Hiding package %s from IPackageManager call (code %d)", packageName, code);
+                        
+                        // We return NameNotFoundException (no exception, but null/error result)
+                        // For many PM calls, returning null or 0 is sufficient
+                        reply.writeNoException();
+                        
+                        // Handle different return types based on likely code
+                        // This is a best-effort mock
+                        if (code < 50) { 
+                            reply.writeTypedObject(null, 0); // null ApplicationInfo/PackageInfo
+                        } else {
+                            reply.writeInt(0); // 0 UID or false
+                        }
+                        return true;
+                    }
+                }
             }
-        } catch (RemoteException ignored) {}
+            
+            // Shadowing IActivityManager to mock process states
+            if ("android.app.IActivityManager".equals(descriptor)) {
+                // Future expansion: hide processes from Task Manager
+            }
+            
+        } catch (Exception e) {
+            LOGGER.e("Shadow Binder error", e);
+        }
 
         return false;
     }

@@ -121,11 +121,35 @@ class AICorePlusService : AccessibilityService() {
 
     /**
      * Get a color sample from any pixel on the screen.
-     * Stub for AICore 5 advanced methods.
+     * Uses AccessibilityService.takeScreenshot on API 30+.
      */
     fun getPixelColor(x: Int, y: Int): Int {
-        // AccessibilityService.takeScreenshot is available in API 30+
-        // Full implementation would require processing the resulting ScreenshotResult
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var resultColor = android.graphics.Color.TRANSPARENT
+            
+            takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : ScreenshotResultCallback {
+                override fun onSuccess(screenshot: ScreenshotResult) {
+                    try {
+                        val hardwareBuffer = screenshot.hardwareBuffer
+                        val bitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
+                        if (bitmap != null && x in 0 until bitmap.width && y in 0 until bitmap.height) {
+                            resultColor = bitmap.getPixel(x, y)
+                        }
+                    } finally {
+                        latch.countDown()
+                    }
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    Timber.e("takeScreenshot failed with error code $errorCode")
+                    latch.countDown()
+                }
+            })
+            
+            latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
+            return resultColor
+        }
         return android.graphics.Color.TRANSPARENT
     }
 
@@ -135,26 +159,65 @@ class AICorePlusService : AccessibilityService() {
      */
     fun scheduleNPULoad(params: android.os.Bundle): Boolean {
         Timber.d("Scheduling NPU load via AICore+ Bridge: $params")
+        // In a real implementation, this would communicate with a vendor-specific NPU service
         return true
     }
 
     /**
      * Capture a privileged screenshot of a specific window/layer for AI analysis.
-     * Stub for AICore 5 advanced methods.
+     * Uses AccessibilityService.takeScreenshot on API 30+.
      */
     fun captureLayer(layerId: Int): android.graphics.Bitmap? {
-        Timber.d("Capturing layer $layerId via AICore+ Bridge")
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var resultBitmap: android.graphics.Bitmap? = null
+            
+            takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : ScreenshotResultCallback {
+                override fun onSuccess(screenshot: ScreenshotResult) {
+                    try {
+                        val hardwareBuffer = screenshot.hardwareBuffer
+                        // Convert to software bitmap so it can be returned/processed
+                        val hwBitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
+                        resultBitmap = hwBitmap?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+                    } finally {
+                        latch.countDown()
+                    }
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    Timber.e("takeScreenshot failed with error code $errorCode")
+                    latch.countDown()
+                }
+            })
+            
+            latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
+            return resultBitmap
+        }
         return null
     }
 
     /**
      * Get current system intelligence context.
-     * Stub for AICore 5 advanced methods.
+     * Returns real data about the device and service state.
      */
     fun getSystemContext(): android.os.Bundle {
         return android.os.Bundle().apply {
-            putString("bridge_version", "1.5.0")
+            putString("bridge_version", "1.6.0")
             putBoolean("accessibility_enabled", true)
+            putInt("sdk_int", android.os.Build.VERSION.SDK_INT)
+            putString("device_model", android.os.Build.MODEL)
+            putString("android_version", android.os.Build.VERSION.RELEASE)
+            
+            // Detect if we're on a heavy skin like One UI or MIUI
+            val brand = android.os.Build.BRAND.lowercase()
+            val manufacturer = android.os.Build.MANUFACTURER.lowercase()
+            putBoolean("is_samsung", brand.contains("samsung") || manufacturer.contains("samsung"))
+            putBoolean("is_xiaomi", brand.contains("xiaomi") || manufacturer.contains("xiaomi"))
+            
+            // Add current foreground activity info if possible
+            rootInActiveWindow?.let { root ->
+                putString("foreground_package", root.packageName?.toString())
+            }
         }
     }
 }

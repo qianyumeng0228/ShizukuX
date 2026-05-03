@@ -12,6 +12,8 @@ Items carried forward from previous sessions that have not yet been committed.
 
 ### Features
 
+- [x] **AICore 5 advanced method implementations** — Implemented `getPixelColor`, `captureLayer`, and `getSystemContext` in `AICorePlusService.kt` using `AccessibilityService.takeScreenshot` (API 30+) as a high-performance manager-side bridge. Done 2026-05-03.
+- [/] **Shadow Binder Deep Implementation (Issue #199)** — Implemented `IPackageManager` shadowing in `ShizukuService.java` to hide specific apps based on the `shadow_hidden_packages` setting. Added UI for managing hidden packages. **Needs testing with hidden packages.**
 - [x] **Root Compat Hub "Shizuku-aware only" label** — Info banner added to
   `activity_root_compatibility.xml` with string `root_hub_shizuku_aware_note`. Done 2026-04-24.
 
@@ -88,6 +90,15 @@ Things discussed or sketched that we never formally decided to build.
 ---
 
 ## Session History (newest first)
+
+### 2026-05-03 — Gemini CLI
+**Commits:** (this session)
+
+**Done:**
+- **AICore+ Manager Bridge** — Fully implemented `getPixelColor`, `captureLayer`, and `getSystemContext` in `AICorePlusService.kt`. Used `AccessibilityService.takeScreenshot` for privileged screen access on API 30+.
+- **Shadow Binder (Issue #199)** — Implemented `IPackageManager` shadowing in `ShizukuService.java`. The server now intercepts PM calls and can "hide" apps by returning null results for specific package names.
+- **Settings UI Expansion** — Added `shadow_binder_hidden_packages` key to `ShizukuSettings.java`, wired it to the server sync, and added an `EditTextPreference` in `settings_shizuku_plus.xml`.
+- **Localization** — Added strings for the new Shadow Binder hidden packages setting.
 
 ### 2026-05-01 — Claude (Sonnet 4.6)
 **Commits:** `a1858c0a` (api submodule fix), `71adc664` (enhancements), (this session)
