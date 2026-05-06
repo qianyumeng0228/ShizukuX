@@ -25,7 +25,6 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
         getCreatorPool().putRule(HeaderMarker.class, ToggleAllViewHolder.CREATOR);
         getCreatorPool().putRule(PackageInfo.class, AppViewHolder.CREATOR);
         getCreatorPool().putRule(Object.class, EmptyViewHolder.CREATOR);
-        setHasStableIds(true);
     }
 
     public boolean isSelectionMode() {
@@ -51,19 +50,6 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
             selectedPackages.add(packageName);
         }
         notifyDataSetChanged();
-    }
-
-    @Override
-    public long getItemId(int position) {
-        Object item = getItemAt(position);
-        if (item instanceof PackageInfo) {
-            // Use unsigned 32-bit range to avoid collisions with sentinel values below
-            return ((PackageInfo) item).packageName.hashCode() & 0xFFFFFFFFL;
-        } else if (item instanceof HeaderMarker) {
-            return Long.MAX_VALUE;       // outside int hash range, can never collide
-        } else {
-            return Long.MAX_VALUE - 1L;  // same guarantee, distinct from HeaderMarker
-        }
     }
 
     @Override

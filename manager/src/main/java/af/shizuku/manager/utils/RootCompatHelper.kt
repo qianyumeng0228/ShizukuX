@@ -2,11 +2,9 @@ package af.shizuku.manager.utils
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.widget.Toast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.ktx.loge
-import af.shizuku.manager.R
 import rikka.shizuku.Shizuku
 import timber.log.Timber
 
@@ -44,10 +42,7 @@ object RootCompatHelper {
      * editing when Shizuku is running as root (UID 0).
      */
     suspend fun autoSetup(context: Context, packageName: String, suPath: String): Boolean = withContext(Dispatchers.IO) {
-        if (!isShizukuAvailable()) {
-            Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
-            return@withContext false
-        }
+        if (!isShizukuAvailable()) return@withContext false
 
         var success = false
         try {
@@ -57,9 +52,6 @@ object RootCompatHelper {
             when {
                 globalKey != null -> {
                     success = executePrivileged(arrayOf("settings", "put", "global", globalKey, suPath))
-                    if (success) {
-                        Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
-                    }
                 }
                 prefsEntry != null && isShizukuRoot() -> {
                     // Root Shizuku (UID 0) can directly edit another app's shared_prefs.
@@ -78,9 +70,6 @@ object RootCompatHelper {
                         fi
                     """.trimIndent()
                     success = executePrivileged(arrayOf("sh", "-c", cmd))
-                    if (success) {
-                        Toast.makeText(context, R.string.su_bridge_magic_setup_success_global_setting, Toast.LENGTH_SHORT).show()
-                    }
                 }
                 else -> {
                     // No automatic path; UI will guide the user through manual setup.
@@ -111,10 +100,7 @@ object RootCompatHelper {
     }
 
     suspend fun autoSetupAll(context: Context, suPath: String): Int = withContext(Dispatchers.IO) {
-        if (!isShizukuAvailable()) {
-            Toast.makeText(context, R.string.shizuku_not_available, Toast.LENGTH_LONG).show()
-            return@withContext 0
-        }
+        if (!isShizukuAvailable()) return@withContext 0
 
         val pm = context.packageManager
         val installedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
