@@ -1,8 +1,11 @@
 package af.shizuku.manager.starter
 
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.HapticFeedbackConstants
+import android.view.View
 import timber.log.Timber
 import androidx.activity.viewModels
 import androidx.lifecycle.AndroidViewModel
@@ -56,38 +59,36 @@ class StarterActivity : AppBarActivity() {
             headerTitle.setText(if (isRoot) R.string.home_root_title else R.string.home_adb_title)
         }
 
+        binding.cancelButton.setOnClickListener { finish() }
+
         viewModel.output.observe(this) { result ->
             val output = result.data?.trim() ?: return@observe
             if (output.endsWith(Starter.serviceStartedMessage)) {
+                val haptic = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+                    HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.VIRTUAL_KEY
+                binding.root.performHapticFeedback(haptic)
                 if (!isFinishing) finish()
             } else if (result.status == Status.ERROR) {
+                binding.progressIndicator.visibility = View.GONE
+                binding.cancelButton.visibility = View.GONE
                 var message = 0
                 when (result.error) {
-                    is AdbKeyException -> {
-                        message = R.string.adb_error_key_store
-                    }
-                    is NotRootedException -> {
-                        message = R.string.start_with_root_failed
-                    }
-                    is SocketTimeoutException -> {
-                        message = R.string.cannot_connect_port
-                    }
-                    is ConnectException -> {
-                        message = R.string.cannot_connect_port
-                    }
-                    is SSLProtocolException -> {
-                        message = R.string.adb_pair_required
-                    }
-                    is TimeoutException -> {
-                        message = R.string.adb_error_timeout
-                    }
+                    is AdbKeyException -> message = R.string.adb_error_key_store
+                    is NotRootedException -> message = R.string.start_with_root_failed
+                    is SocketTimeoutException -> message = R.string.cannot_connect_port
+                    is ConnectException -> message = R.string.cannot_connect_port
+                    is SSLProtocolException -> message = R.string.adb_pair_required
+                    is TimeoutException -> message = R.string.adb_error_timeout
                 }
-
                 if (message != 0) {
                     MaterialAlertDialogBuilder(this)
                         .setMessage(message)
                         .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
-                        .setOnDismissListener { finish() }
+                        .setNegativeButton(R.string.starter_retry) { _, _ ->
+                            binding.progressIndicator.visibility = View.VISIBLE
+                            binding.cancelButton.visibility = View.VISIBLE
+                            viewModel.retry()
+                        }
                         .show()
                 }
             }
@@ -133,8 +134,12 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private var started = false
+    private var lastRoot = false
+    private var lastPort = 0
 
     fun start(root: Boolean, port: Int) {
+        lastRoot = root
+        lastPort = port
         if (!root && port !in 1..65535) {
             log(error = IllegalArgumentException("Invalid port value: $port. Port must be between 1 and 65535."))
             return
@@ -147,6 +152,12 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             else AdbStarter.startAdb(appContext, port, { log(it) })
             Starter.waitForBinder({ log(it) })
         }
+    }
+
+    fun retry() {
+        started = false
+        sb.clear()
+        start(lastRoot, lastPort)
     }
 
     private fun log(line: String? = null, error: Throwable? = null) {

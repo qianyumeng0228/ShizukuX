@@ -30,6 +30,7 @@ public class ShizukuSettings {
         public static final String KEY_WATCHDOG = "watchdog";
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
+        public static final String KEY_LAST_PORT = "last_adb_port";
         public static final String KEY_AUTO_DISABLE_USB_DEBUGGING = "auto_disable_usb_debugging";
         public static final String KEY_LANGUAGE = "language";
         public static final String KEY_TRANSLATION = "translation";
@@ -293,6 +294,14 @@ public class ShizukuSettings {
             getPreferences().edit().remove(Keys.KEY_TCP_PORT).apply();
         }
         
+    }
+
+    public static int getLastPort() {
+        return getPreferences().getInt(Keys.KEY_LAST_PORT, 0);
+    }
+
+    public static void setLastPort(int port) {
+        getPreferences().edit().putInt(Keys.KEY_LAST_PORT, port).apply();
     }
 
     public static boolean getLegacyPairing() {

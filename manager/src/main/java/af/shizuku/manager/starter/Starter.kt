@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.lifecycle.asFlow
 import java.io.File
 import java.util.concurrent.TimeoutException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.TimeoutCancellationException
 import af.shizuku.manager.R
@@ -47,16 +49,25 @@ object Starter {
             return
         }
 
-        try {
-            log?.invoke("\n" + getContext().getString(R.string.starter_waiting))
-            log?.invoke(getContext().getString(R.string.starter_waiting_description))
-            withTimeout(15_000) {
-                ShizukuStateMachine.asFlow()
-                    .first { it == ShizukuStateMachine.State.RUNNING }
+        for (attempt in 0..1) {
+            if (attempt == 1) log?.invoke(getContext().getString(R.string.starter_retrying))
+            try {
+                log?.invoke("\n" + getContext().getString(R.string.starter_waiting))
+                withTimeout(15_000) {
+                    launch {
+                        for (remaining in 14 downTo 1) {
+                            delay(1_000)
+                            log?.invoke(getContext().getString(R.string.starter_countdown, remaining))
+                        }
+                    }
+                    ShizukuStateMachine.asFlow()
+                        .first { it == ShizukuStateMachine.State.RUNNING }
+                }
+                log?.invoke(serviceStartedMessage)
+                return
+            } catch (e: TimeoutCancellationException) {
+                if (attempt == 1) throw TimeoutException("Failed to receive binder within 15 seconds")
             }
-            log?.invoke(serviceStartedMessage)
-        } catch (e: TimeoutCancellationException) {
-            throw TimeoutException("Failed to receive binder within 15 seconds")
         }
     }
 }
