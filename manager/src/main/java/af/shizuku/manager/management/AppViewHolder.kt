@@ -144,8 +144,11 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                             AuthorizationManager.grant(packageName, uid)
                             ActivityLogManager.log(appLabel, packageName, "Long-press: grant_permission")
                         }
-                        adapter.notifyItemChanged(adapterPosition, Any())
-                        adapter.notifyItemChanged(0)
+                        val pos = adapterPosition
+                        if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                            adapter.notifyItemChanged(pos, Any())
+                            adapter.notifyItemChanged(0)
+                        }
                     } catch (e: SecurityException) {
                         if (runCatching { Shizuku.getUid() }.getOrDefault(-1) != 0) {
                             showAdbLimitedDialog(context)
@@ -174,7 +177,8 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                                 if (success) {
                                     Toast.makeText(context, if (isFrozen) "App unfrozen" else "App frozen", Toast.LENGTH_SHORT).show()
                                     ActivityLogManager.log(appLabel, packageName, "Long-press: ${if (isFrozen) "unfreeze" else "freeze"}")
-                                    adapter.notifyItemChanged(adapterPosition)
+                                    val pos = adapterPosition
+                                    if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) adapter.notifyItemChanged(pos)
                                 } else {
                                     Toast.makeText(context, "Operation failed", Toast.LENGTH_SHORT).show()
                                 }
@@ -212,8 +216,11 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             if (uid != 0) showAdbLimitedDialog(context)
             return
         }
-        adapter.notifyItemChanged(adapterPosition, Any())
-        adapter.notifyItemChanged(0)
+        val pos = adapterPosition
+        if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+            adapter.notifyItemChanged(pos, Any())
+            adapter.notifyItemChanged(0)
+        }
     }
 
     // ----- Helpers -----
@@ -264,7 +271,10 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                 ActivityLogManager.log(appLabel, packageName, "Toggle Enhancement: ${enhancements[which].key} -> $isChecked")
             }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                adapter.notifyItemChanged(adapterPosition)
+                val pos = adapterPosition
+                if (pos != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                    adapter.notifyItemChanged(pos)
+                }
             }
             .show()
     }
