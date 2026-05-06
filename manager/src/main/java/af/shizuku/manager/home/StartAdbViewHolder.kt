@@ -37,6 +37,7 @@ class StartAdbViewHolder(
 
     init {
         containerBinding.root.applySpringTouch()
+        containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         binding.button1.setOnClickListener { v: View ->
             val context = v.context
             MaterialAlertDialogBuilder(context)

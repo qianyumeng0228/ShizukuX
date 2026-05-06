@@ -41,6 +41,7 @@ class StartRootViewHolder(
 
     init {
         containerBinding.root.applySpringTouch()
+        containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         val listener = View.OnClickListener { v: View -> onStartClicked(v) }
         start.setOnClickListener(listener)
         restart.setOnClickListener(listener)

@@ -28,6 +28,7 @@ class LearnMoreViewHolder(
 
     init {
         containerBinding.root.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.HOME.get()) }
+        containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         containerBinding.dragHandle.apply {
             setOnTouchListener { _, event ->
                 if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@LearnMoreViewHolder)

@@ -34,6 +34,7 @@ class TerminalViewHolder(
 
     init {
         containerBinding.root.setOnClickListener(this)
+        containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         containerBinding.root.applySpringTouch()
         containerBinding.dragHandle.apply {
             setOnTouchListener { _, event ->
