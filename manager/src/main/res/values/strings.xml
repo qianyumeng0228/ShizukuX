@@ -664,7 +664,7 @@
     <string name="starting_root_shell" translatable="false">Starting root shell…</string>
     <string name="start_with_root_failed">Can\'t start service because root permission is not granted or this device is not rooted.</string>
     <string name="starter_waiting">Waiting for service…</string>
-    <string name="starter_waiting_description">This may take up to 15 seconds.</string>
+    <string name="starter_waiting_description">Connecting — tap Cancel to stop.</string>
     <string name="starter_retrying">Retrying connection…\n</string>
     <string name="starter_retry">Retry</string>
     <string name="adb_error_timeout">Service did not start in time. Please ensure Wireless Debugging is enabled and try again.</string>

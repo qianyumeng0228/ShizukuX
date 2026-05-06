@@ -164,12 +164,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun log(line: String? = null, error: Throwable? = null) {
         line?.let { sb.appendLine(it) }
-        error?.let {
-            if (it !is TimeoutException) {
-                sb.appendLine().appendLine(Log.getStackTraceString(it))
-            }
-        }
-
+        error?.let { sb.appendLine().appendLine(Log.getStackTraceString(it)) }
         if (error == null) _output.postValue(Resource.success(sb))
         else _output.postValue(Resource.error(error, sb))
     }
