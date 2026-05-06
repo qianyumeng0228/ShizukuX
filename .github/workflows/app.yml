@@ -107,14 +107,18 @@ jobs:
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
           [ -n "$SENTRY_DSN" ] && echo "SENTRY_DSN=${SENTRY_DSN}" >> gradle.properties || true
 
-          # Fast version extraction from git and build.gradle constants
+          # Extract version from build.gradle
+          BASE_VERSION=$(grep "baseVersionName =" build.gradle | cut -d'"' -f2)
           GIT_COUNT=$(git rev-list --count HEAD)
-          BASE_VERSION="13.6.0"
+          
           if [ "$IS_PRERELEASE" = "true" ]; then
-            VERSION="v${BASE_VERSION}-beta.${GIT_COUNT}"
+            VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus-prerelease"
+            [ "$IS_PRERELEASE" = "true" ] && ARGS="-Pbeta"
           else
-            VERSION="v${BASE_VERSION}"
+            VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus"
+            ARGS=""
           fi
+          
           echo "$VERSION" > version.txt
           echo "versionName=${VERSION}" >> $GITHUB_OUTPUT
 
@@ -123,17 +127,33 @@ jobs:
             APK_DIR="manager/build/outputs/apk/debug"
             ARTIFACT_NAME="shizukuplus-debug.apk"
           else
-            CMD="./gradlew :manager:assembleRelease"
+            CMD="./gradlew :manager:assembleRelease $ARGS"
             APK_DIR="manager/build/outputs/apk/release"
             ARTIFACT_NAME="shizukuplus.apk"
           fi
-
-          [ "$IS_PRERELEASE" = "true" ] && CMD="$CMD -Pbeta"
 
           export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
           eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease -x sentryUploadSourceBundleRelease -x :manager:lint
           
           FILE=$(find "$APK_DIR" -name "*.apk" -type f | head -1)
+          if [ -z "$FILE" ]; then
+            echo "Error: No APK found in $APK_DIR"
+            exit 1
+          fi
+          
+          # Verify if signed
+          if [ "$IS_DEBUG" = "false" ]; then
+            if ! unzip -l "$FILE" | grep -q "META-INF/.*\.RSA"; then
+              echo "WARNING: Release APK appears to be UNSIGNED!"
+              # Attempt to sign if key.jks exists (failsafe)
+              if [ -f "key.jks" ]; then
+                echo "Attempting manual signing failsafe..."
+                jarsigner -keystore key.jks -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+                  -keypass "${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" "$FILE" "${{ secrets.KEYSTORE_ALIAS }}"
+              fi
+            fi
+          fi
+
           RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
           mv "$FILE" "$RENAMED"
 
