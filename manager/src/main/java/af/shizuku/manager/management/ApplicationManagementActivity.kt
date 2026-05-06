@@ -363,7 +363,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             "open_app" -> Triple(android.R.attr.colorPrimary, com.google.android.material.R.attr.colorOnPrimary, R.drawable.ic_outline_play_arrow_24)
             "app_info" -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
             "toggle_permission" -> Triple(com.google.android.material.R.attr.colorTertiary, com.google.android.material.R.attr.colorOnTertiary, R.drawable.ic_shield_24)
-            "hide_from_list" -> Triple(android.R.attr.colorError, com.google.android.material.R.attr.colorOnError, R.drawable.ic_visibility_24)
+            "hide_from_list" -> Triple(android.R.attr.colorError, com.google.android.material.R.attr.colorOnError, R.drawable.ic_visibility_off_24)
             else -> Triple(com.google.android.material.R.attr.colorSecondary, com.google.android.material.R.attr.colorOnSecondary, R.drawable.ic_outline_info_24)
         }
         val tv = TypedValue()
