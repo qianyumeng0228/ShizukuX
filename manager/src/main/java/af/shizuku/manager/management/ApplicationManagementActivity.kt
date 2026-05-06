@@ -68,7 +68,11 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
 
         val binding = AppsActivityBinding.inflate(layoutInflater, rootView, false)
         setContentView(binding.root)
-        
+
+        // Assign before observe() — LiveData delivers synchronously on config change
+        // and the observer references recyclerView, so it must be ready first.
+        recyclerView = binding.list
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         // Empty state view
@@ -139,7 +143,6 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         }
         viewModel.load()
 
-        recyclerView = binding.list
         recyclerView.adapter = adapter
         
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->

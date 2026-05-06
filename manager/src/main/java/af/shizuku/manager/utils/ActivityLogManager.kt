@@ -129,6 +129,9 @@ object ActivityLogManager {
             return
         }
 
+        // Collect the Room flow for live updates. Room flows never complete, so
+        // the collect suspends indefinitely and handles every DB change going forward.
+        // Retry on failure up to 3 times in case the DB isn't ready immediately.
         scope.launch {
             var retryCount = 0
             while (retryCount < 3) {
@@ -150,13 +153,15 @@ object ActivityLogManager {
                         }
                         Timber.tag(TAG).d("Loaded ${records.size} logs from database")
                     }
-                    break // Success
+                    // collect() only returns if the flow completes — Room flows don't,
+                    // so reaching here means the scope was cancelled. Exit cleanly.
+                    return@launch
                 } catch (e: Exception) {
                     retryCount++
                     Timber.tag(TAG).e(e, "Error loading logs from database (retry $retryCount)")
                     if (retryCount >= 3) {
                         io.sentry.Sentry.captureException(e)
-                        throw e
+                        return@launch
                     }
                     delay(500)
                 }
