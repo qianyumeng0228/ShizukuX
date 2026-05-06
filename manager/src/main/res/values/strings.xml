@@ -666,7 +666,6 @@
     <string name="starter_waiting">Waiting for service…</string>
     <string name="starter_waiting_description">This may take up to 15 seconds.</string>
     <string name="starter_retrying">Retrying connection…\n</string>
-    <string name="starter_countdown" translatable="false">%1$ds…</string>
     <string name="starter_retry">Retry</string>
     <string name="adb_error_timeout">Service did not start in time. Please ensure Wireless Debugging is enabled and try again.</string>
     <string name="adb_error_generic">An unexpected error occurred. Please try again.</string>
