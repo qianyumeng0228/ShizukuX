@@ -87,6 +87,9 @@
     public static <fields>;
 }
 
+# Custom View subclasses inflated from XML by class name — R8 must not rename or remove them.
+-keep class af.shizuku.manager.utils.EmptyStateView { public <init>(android.content.Context, android.util.AttributeSet); }
+
 # Coroutines and Kotlin serialization
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 -keep class kotlinx.coroutines.** { *; }

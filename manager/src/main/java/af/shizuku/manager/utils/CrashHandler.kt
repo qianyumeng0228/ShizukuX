@@ -60,8 +60,12 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
 
         try {
             val file = getCrashFile(context)
-            file.parentFile?.mkdirs()
-            file.writeText(report.toString())
+            // cacheDir may not exist on fresh installs or after a storage mount issue
+            val parent = file.parentFile
+            if (parent != null && !parent.exists()) parent.mkdirs()
+            if (parent == null || parent.exists()) {
+                file.writeText(report.toString())
+            }
         } catch (e: Exception) {
             Timber.e(e, "Error writing crash file")
         }

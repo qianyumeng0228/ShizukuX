@@ -91,18 +91,25 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         splash.setOnExitAnimationListener { provider ->
-            val iconView = provider.iconView
-            if (iconView != null) {
-                iconView.animate()
-                    .alpha(0f)
-                    .scaleX(0.8f)
-                    .scaleY(0.8f)
-                    .setDuration(220)
-                    .setInterpolator(android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f))
-                    .withEndAction { provider.remove() }
-                    .start()
-            } else {
-                provider.remove()
+            // Some OEM/Android 15 builds return a non-null typed View that is actually null
+            // at runtime (platform nullability contract violation). Wrapping in try-catch is
+            // the only reliable guard since the null check may be elided by R8 for non-null types.
+            try {
+                val iconView = provider.iconView
+                if (iconView != null) {
+                    iconView.animate()
+                        .alpha(0f)
+                        .scaleX(0.8f)
+                        .scaleY(0.8f)
+                        .setDuration(220)
+                        .setInterpolator(android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f))
+                        .withEndAction { provider.remove() }
+                        .start()
+                } else {
+                    provider.remove()
+                }
+            } catch (e: Exception) {
+                runCatching { provider.remove() }
             }
         }
         super.onCreate(savedInstanceState)

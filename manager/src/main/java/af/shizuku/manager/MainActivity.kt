@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
-import af.shizuku.manager.home.ChangelogDialogFragment
 import af.shizuku.manager.home.HomeActivity
 import af.shizuku.manager.migration.MigrationHelper
 import af.shizuku.manager.onboarding.OnboardingActivity
@@ -38,31 +37,6 @@ class MainActivity : HomeActivity() {
 
             // Auto-restore settings if a force-update backup exists
             checkAndRestoreBackup()
-
-            // Show "What's New" dialog on first launch after an update
-            val currentVersion = try {
-                val pInfo = packageManager.getPackageInfo(packageName, 0)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-                    pInfo.longVersionCode.toInt()
-                } else {
-                    @Suppress("DEPRECATION")
-                    pInfo.versionCode
-                }
-            } catch (e: Exception) {
-                0
-            }
-            
-            val lastSeenVersion = ShizukuSettings.getLastSeenVersion()
-            if (lastSeenVersion != -1 && lastSeenVersion < currentVersion) {
-                try {
-                    ChangelogDialogFragment().show(supportFragmentManager, ChangelogDialogFragment.TAG)
-                } catch (e: Exception) {
-                    Timber.e(e, "Failed to show changelog dialog")
-                }
-            }
-            if (lastSeenVersion < currentVersion) {
-                ShizukuSettings.setLastSeenVersion(currentVersion)
-            }
 
             Timber.d("MainActivity onCreate complete")
             Sentry.addBreadcrumb(Breadcrumb("MainActivity onCreate complete"))
