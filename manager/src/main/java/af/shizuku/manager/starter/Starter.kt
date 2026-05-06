@@ -50,13 +50,13 @@ object Starter {
         try {
             log?.invoke("\n" + getContext().getString(R.string.starter_waiting))
             log?.invoke(getContext().getString(R.string.starter_waiting_description))
-            withTimeout(30_000) {
+            withTimeout(15_000) {
                 ShizukuStateMachine.asFlow()
                     .first { it == ShizukuStateMachine.State.RUNNING }
             }
             log?.invoke(serviceStartedMessage)
         } catch (e: TimeoutCancellationException) {
-            throw TimeoutException("Failed to receive binder within 30 seconds")
+            throw TimeoutException("Failed to receive binder within 15 seconds")
         }
     }
 }

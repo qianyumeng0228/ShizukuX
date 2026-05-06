@@ -14,6 +14,7 @@ import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
 import java.net.ConnectException
 import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLProtocolException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -78,6 +79,9 @@ class StarterActivity : AppBarActivity() {
                     }
                     is SSLProtocolException -> {
                         message = R.string.adb_pair_required
+                    }
+                    is TimeoutException -> {
+                        message = R.string.adb_error_timeout
                     }
                 }
 
@@ -149,7 +153,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun log(line: String? = null, error: Throwable? = null) {
         line?.let { sb.appendLine(it) }
-        error?.let { sb.appendLine().appendLine(Log.getStackTraceString(it)) }
+        error?.let {
+            if (it !is TimeoutException) {
+                sb.appendLine().appendLine(Log.getStackTraceString(it))
+            }
+        }
 
         if (error == null) _output.postValue(Resource.success(sb))
         else _output.postValue(Resource.error(error, sb))
