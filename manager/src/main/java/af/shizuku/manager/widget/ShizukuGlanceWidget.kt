@@ -17,7 +17,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.background
 import androidx.glance.layout.Alignment
-import androidx.glance.material3.ColorProviders
+import androidx.glance.material3.GlanceTheme
 import androidx.glance.text.FontWeight
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
@@ -51,7 +51,6 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
                 .clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Status Icon
             Box(
                 modifier = GlanceModifier
                     .size(48.dp)
@@ -104,18 +103,4 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
             }
         }
     }
-}
-
-/**
- * Simple Material 3 Theme wrapper for Glance
- */
-@Composable
-fun GlanceTheme(content: @Composable () -> Unit) {
-    androidx.glance.material3.GlanceTheme(
-        colors = ColorProviders(
-            light = androidx.compose.material3.lightColorScheme(),
-            dark = androidx.compose.material3.darkColorScheme()
-        ),
-        content = content
-    )
 }
