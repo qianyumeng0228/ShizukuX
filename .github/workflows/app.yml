@@ -113,7 +113,7 @@ jobs:
           
           if [ "$IS_PRERELEASE" = "true" ]; then
             VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus-prerelease"
-            [ "$IS_PRERELEASE" = "true" ] && ARGS="-Pbeta"
+            ARGS="-Pbeta"
           else
             VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus"
             ARGS=""
@@ -127,6 +127,7 @@ jobs:
             APK_DIR="manager/build/outputs/apk/debug"
             ARTIFACT_NAME="shizukuplus-debug.apk"
           else
+            # Only exclude Sentry tasks if we aren't going to upload them later
             CMD="./gradlew :manager:assembleRelease $ARGS"
             APK_DIR="manager/build/outputs/apk/release"
             ARTIFACT_NAME="shizukuplus.apk"
