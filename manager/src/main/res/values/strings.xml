@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name" translatable="false">ShizukuX</string>
 
@@ -592,6 +593,7 @@
     <string name="doctor_tip_tcl_background">TCL: Ensure ShizukuX is added to "Auto-start" and "High background power consumption" allowlists in Settings.</string>
     <string name="doctor_tip_battery">Disable battery optimization for ShizukuX to prevent it from being killed in the background.</string>
     <string name="doctor_tip_adb">Wireless debugging must be active for Shizuku to start in non-root mode after a reboot.</string>
+    <string name="doctor_system_well_configured">Your system seems well-configured for ShizukuX.</string>
     <string name="doctor_button_fix">Fix</string>
 
     <!-- Snackbar -->
@@ -699,167 +701,6 @@
     <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> has modern Shizuku support, but it\'s requesting legacy Shizuku. This could because Shizuku is not running, please check in Shizuku app.<p>Legacy Shizuku has been deprecated since March 2019.]]></string>
     <string name="dialog_requesting_legacy_button_open_shizuku">Open Shizuku</string>
     <string name="wadb_notification_attempt_now">Attempt now</string>
-
-
-    <string name="settings_category_general">General</string>
-    <string name="settings_category_dark_mode">Dark Mode</string>
-    <string name="settings_category_automatic">Automatic</string>
-
-    <!-- Settings navigation summaries -->
-    <string name="settings_category_swipe">Swipe Actions</string>
-    <string name="settings_category_long_press">Long-press Actions</string>
-    <string name="settings_category_home_cards">Home Cards</string>
-    <string name="settings_category_activity_log">Activity Log</string>
-    <string name="settings_category_database">Database</string>
-    <string name="settings_category_network">Network</string>
-    <string name="settings_category_material_you">Material You</string>
-    <string name="settings_category_language">Language</string>
-    <string name="settings_category_appearance">Appearance</string>
-    <string name="settings_category_advanced">Advanced</string>
-
-    <string name="settings_nav_behavior_summary">Start on boot, Watchdog, and TCP mode</string>
-    <string name="settings_nav_shizuku_plus_summary">Enhanced API, shell interceptor, and more</string>
-    <string name="settings_nav_ui_summary">Theme, colors, language</string>
-    <string name="settings_nav_app_management_summary">Swipe and long-press actions</string>
-    <string name="settings_nav_home_summary">Visible cards and shortcuts</string>
-    <string name="settings_nav_legacy_summary">ADB proxy, su bridge, root compatibility</string>
-    <string name="settings_nav_advanced_summary">Diagnostics, logs, help</string>
-
-    <!-- Accessibility - Content Descriptions -->
-    <string name="accessibility_icon_server_status">Server status icon</string>
-    <string name="accessibility_icon_app_management">App management icon</string>
-    <string name="accessibility_icon_terminal">Terminal icon</string>
-    <string name="accessibility_icon_adb">ADB icon</string>
-    <string name="accessibility_icon_root">Root access icon</string>
-    <string name="accessibility_icon_wireless_adb">Wireless ADB icon</string>
-    <string name="accessibility_icon_automation">Automation icon</string>
-    <string name="accessibility_icon_learn_more">Learn more icon</string>
-    <string name="accessibility_icon_warning">Warning icon</string>
-    <string name="accessibility_icon_help">Help icon</string>
-    <string name="accessibility_icon_drag_handle">Drag to reorder</string>
-    <string name="accessibility_icon_remove">Remove card</string>
-    <string name="accessibility_icon_close">Close</string>
-    <string name="accessibility_icon_info">Information</string>
-    <string name="accessibility_icon_play">Play</string>
-    <string name="accessibility_icon_settings">Settings</string>
-    <string name="accessibility_icon_code">Code</string>
-    <string name="accessibility_icon_open_in_new">Open in new</string>
-    <string name="accessibility_icon_link">Link</string>
-    <string name="accessibility_icon_restart">Restart</string>
-    <string name="accessibility_icon_start">Start</string>
-    <string name="accessibility_button_start">Start button</string>
-    <string name="accessibility_button_restart">Restart button</string>
-    <string name="accessibility_button_view_command">View command button</string>
-    <string name="accessibility_button_view_guide">View guide button</string>
-    <string name="accessibility_button_view_intents">View intents button</string>
-    <string name="accessibility_button_pairing">Pairing button</string>
-    <string name="accessibility_button_developer_options">Developer options button</string>
-    <string name="accessibility_button_notification_settings">Notification settings button</string>
-    <string name="accessibility_button_export_files">Export files button</string>
-    <string name="accessibility_button_activity_log">Activity log button</string>
-    <string name="accessibility_swipe_right">Swipe right for quick action</string>
-    <string name="accessibility_swipe_left">Swipe left for quick action</string>
-    <string name="accessibility_action_grant_permission">Grant Shizuku permission</string>
-    <string name="accessibility_action_revoke_permission">Revoke Shizuku permission</string>
-    <string name="accessibility_action_open_app">Open application</string>
-    <string name="accessibility_action_app_info">Open app info settings</string>
-    <string name="accessibility_action_hide_app">Hide from list</string>
-    <string name="accessibility_action_unhide_app">Unhide from list</string>
-    <string name="accessibility_action_toggle_selection">Toggle selection</string>
-    <string name="accessibility_action_expand">Expand</string>
-    <string name="accessibility_action_collapse">Collapse</string>
-    <string name="accessibility_status_running">Running</string>
-    <string name="accessibility_status_stopped">Stopped</string>
-    <string name="accessibility_status_error">Error</string>
-    <string name="accessibility_permission_granted">Permission granted</string>
-    <string name="accessibility_permission_denied">Permission denied</string>
-
-    <!-- Empty State Views -->
-    <string name="empty_state_title_no_results">No results found</string>
-    <string name="empty_state_description_no_results">No apps match your current filter or search criteria.</string>
-    <string name="empty_state_title_no_apps">No apps yet</string>
-    <string name="empty_state_description_no_apps">Apps that have requested or declared the Shizuku permission will show here.</string>
-    <string name="empty_state_title_no_home_cards">All cards hidden</string>
-    <string name="empty_state_description_no_home_cards">You\'ve hidden all home screen cards. Go to Settings to restore them.</string>
-    <string name="empty_state_action_restore_home_cards">Restore cards</string>
-    <string name="empty_state_title_no_plus_features">All features disabled</string>
-    <string name="empty_state_description_no_plus_features">You\'ve disabled all ShizukuX features. Enable features to see them here.</string>
-    <string name="empty_state_title_activity_log_empty">No activity recorded</string>
-    <string name="empty_state_description_activity_log_empty">Shizuku API calls and events will appear here when activity logging is enabled.</string>
-    <string name="empty_state_title_hidden_apps">No hidden apps</string>
-    <string name="empty_state_description_hidden_apps">Apps you hide from the management list will appear here.</string>
-
-    <!-- Update Settings -->
-    <string name="settings_update_category">Auto Update</string>
-    <string name="settings_update_title">Updates</string>
-    <string name="settings_update_summary">Check for app updates and configure auto-update</string>
-    
-    <!-- Developer Options -->
-    <string name="settings_developer_options">Developer Options</string>
-    <string name="settings_developer_options_summary">Virtualization, device spoofing, and experimental features</string>
-    <string name="settings_developer_category_virtualization">Virtualization</string>
-    <string name="settings_developer_category_experimental">Experimental</string>
-    <string name="settings_auto_update_title">Auto-check for updates</string>
-    <string name="settings_auto_update_summary">Automatically check for new versions on app startup</string>
-    <string name="settings_auto_install_title">Auto-install updates</string>
-    <string name="settings_auto_install_summary">Automatically download and prompt to install updates (requires permission)</string>
-    <string name="settings_update_channel_category">Release Channel</string>
-    <string name="settings_update_channel_title">Update channel</string>
-    <string name="update_channel_stable">Stable</string>
-    <string name="update_channel_dev">Dev / Pre-release</string>
-    <string name="update_channel_dev_warning_title">Switch to Dev channel?</string>
-    <string name="update_channel_dev_warning_message">Dev releases are built from the latest commits and may contain bugs, crashes, or breaking changes. Only use this if you want to test new features early.\n\nYou can switch back to Stable at any time.</string>
-    <string name="settings_update_manual_category">Manual Update</string>
-    <string name="settings_check_for_update_title">Check for update</string>
-    <string name="settings_check_for_update_summary">Manually check if a new version is available</string>
-    <string name="settings_current_version_title">Current version</string>
-    <string name="settings_last_check_title">Last checked</string>
-    <string name="update_never_checked">Never</string>
-
-    <!-- Update Notifications -->
-    <string name="update_notification_channel">Update Notifications</string>
-    <string name="update_notification_channel_description">Notifications for app update downloads and installations</string>
-    <string name="update_downloading_title">Downloading update</string>
-    <string name="update_downloading_description">Downloading ShizukuX %1$s…</string>
-    <string name="update_downloading_progress">Downloading %1$s - %2$d%%</string>
-    <string name="update_ready_title">Update ready to install</string>
-    <string name="update_ready_description">ShizukuX %1$s is ready to install</string>
-    <string name="update_install_now">Install now</string>
-    <string name="update_download_failed_title">Download failed</string>
-    <string name="update_download_failed_message">Failed to download the update. Please try again.</string>
-
-    <!-- Migration Dialog -->
-<string name="migration_dialog_title">Important: Reinstall Required</string>
-    <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
-    <string name="migration_dialog_message_root">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nRoot access is available — tap Migrate Settings to copy your settings from the old version, then uninstall it.</string>
-    <string name="migration_migrate_settings">Migrate Settings</string>
-    <string name="migration_uninstall_old">Uninstall Old Version</string>
-    <string name="migration_dismiss">Dismiss</string>
-    <string name="migration_success_title">Settings Migrated</string>
-    <string name="migration_success_message">Your settings have been copied from the old version. You can now safely uninstall moe.shizuku.privileged.api.</string>
-    <string name="migration_failure_title">Migration Failed</string>
-    <string name="migration_failure_message">Could not read settings from the old version. You may need to reconfigure your preferences manually.\n\nYou can still uninstall the old version safely.</string>
-    <string name="migration_no_root_message">Root access is not available, so settings cannot be migrated automatically. You will need to reconfigure your preferences manually.\n\nYou can uninstall the old version when ready.</string>
-
-    <!-- Update Dialogs -->
-    <string name="update_available_title">Update Available</string>
-    <string name="update_available_message">A new version %1$s is available for download.</string>
-    <string name="update_download">Download</string>
-    <string name="update_later">Later</string>
-    <string name="update_release_notes">Release Notes</string>
-    <string name="update_up_to_date_title">Up to Date</string>
-    <string name="update_up_to_date_message">You\'re already using the latest version (%1$s).</string>
-    <string name="update_error_title">Check Failed</string>
-    <string name="update_error_message">Unable to check for updates. Please check your internet connection and try again.\n\nYou can also update manually from GitHub Releases.</string>
-    <string name="update_last_check_failed">Check failed — update manually if needed</string>
-    <string name="update_available_manual_message">Version %1$s is available. Automatic download is unavailable — tap below to open GitHub Releases.</string>
-    <string name="update_view_on_github">View on GitHub</string>
-    <string name="update_permission_required_title">Permission Required</string>
-    <string name="update_permission_required_message">To enable auto-install, please grant \"Install unknown apps\" permission in system settings.</string>
-    <string name="update_checking">Checking for updates…</string>
-    <string name="ok">OK</string>
-    <string name="no_file_picker">No file picker app found on this device</string>
-    <string name="wadb_notification_discovery_timeout">ADB port discovery timed out — retrying…</string>
     <string name="shell_export_success">Files exported successfully</string>
     <string name="shell_export_failed">Export failed — no files could be written</string>
     <string name="shell_export_partial">%1$d of %2$d files exported (some failed)</string>
@@ -941,6 +782,7 @@
     <string name="home_companion_open">Open</string>
     <string name="home_companion_install">Install</string>
     <string name="watchdog_open_stock_shizuku">Open Stock Shizuku</string>
-    </resources>
+
     <string name="settings_live_activity">Live Activity Notifications</string>
     <string name="settings_live_activity_summary">Show real-time service activity in the status bar</string>
+</resources>
