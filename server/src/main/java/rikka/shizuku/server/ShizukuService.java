@@ -299,24 +299,30 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         // The manager app (the owner of this service) is always allowed
         if (UserHandleCompat.getAppId(uid) == managerAppId) return false;
 
+        boolean isBlocked = false;
+
         // Block sensitive system operations for all other apps if firewall is active
         if ("android.os.IPowerManager".equals(descriptor)) {
             // 17 = reboot, 18 = shutdown
-            if (code == 17 || code == 18) return true;
+            if (code == 17 || code == 18) isBlocked = true;
         } else if ("android.app.IActivityManager".equals(descriptor)) {
             // 61 = clearApplicationUserData
-            if (code == 61) return true;
+            if (code == 61) isBlocked = true;
         }
         
         // Dynamic policy from settings
         String blockedDescriptors = plusSettingsMap.get("firewall_blocked_descriptors");
         if (blockedDescriptors != null && !blockedDescriptors.isEmpty()) {
             for (String blocked : blockedDescriptors.split(",")) {
-                if (descriptor.equals(blocked.trim())) return true;
+                if (descriptor.equals(blocked.trim())) isBlocked = true;
             }
         }
 
-        return false;
+        if (isBlocked) {
+            LOGGER.w("Binder call blocked: UID=%d, Descriptor=%s, Code=%d", uid, descriptor, code);
+        }
+
+        return isBlocked;
     }
 
     @Override
