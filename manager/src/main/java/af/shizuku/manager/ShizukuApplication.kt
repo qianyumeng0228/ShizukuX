@@ -256,7 +256,13 @@ class ShizukuApplication : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
         }
 
-        // 1. Initialize Sentry FIRST to catch all crashes including early startup failures
+        // 1. Run security check
+        if (af.shizuku.manager.security.SecurityGuard.isTampered()) {
+            Timber.e("Security violation: Environment tampered!")
+            // Optionally: crash or notify user
+        }
+
+        // 2. Initialize Sentry FIRST to catch all crashes including early startup failures
         initializeSentryEarly()
 
         // 2. Register persistent crash handler
