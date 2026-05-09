@@ -310,6 +310,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // 5. Initialize settings and managers
         try {
             initializeManagers()
+            if (ShizukuSettings.isLiveActivityEnabled()) {
+                startService(Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java))
+            }
         } catch (e: Throwable) {
             Timber.e(e, "Failed to initialize managers")
             Sentry.captureException(e)

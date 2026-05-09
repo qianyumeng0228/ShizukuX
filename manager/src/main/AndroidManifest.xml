@@ -253,6 +253,12 @@
             android:name=".service.AdbProxyService"
             android:exported="false" />
 
+        <service
+            android:name=".service.ShizukuLiveService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
         <receiver
             android:name=".receiver.BinderRequestReceiver"
             android:directBootAware="true"
