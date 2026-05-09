@@ -68,6 +68,7 @@ androidx-dynamicanimation = { group = "androidx.dynamicanimation", name = "dynam
 androidx-interpolator = { group = "androidx.interpolator", name = "interpolator", version.ref = "interpolator" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
+androidx-core-remoteviews = { group = "androidx.core", name = "core-remoteviews", version = "1.0.0-alpha01" }
 
 mavericks = { group = "com.airbnb.android", name = "mavericks", version.ref = "mavericks" }
 kotestJunit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotestJunit5" }

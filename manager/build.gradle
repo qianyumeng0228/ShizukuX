@@ -220,6 +220,7 @@ dependencies {
     implementation libs.androidx.interpolator
     implementation libs.androidx.glance.appwidget
     implementation libs.androidx.biometric
+    implementation libs.androidx.core.remoteviews
 
     implementation libs.timber
     implementation libs.coil
