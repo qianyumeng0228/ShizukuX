@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget colors (night) — M3 baseline dark palette -->
+    <color name="widget_background">#1C1B1F</color>
+    <color name="widget_container_ok">#4F378B</color>
+    <color name="widget_container_error">#93000A</color>
+    <color name="widget_icon_ok">#EADDFF</color>
+    <color name="widget_icon_error">#FFDAD6</color>
+    <color name="widget_title">#E6E1E5</color>
+    <color name="widget_subtitle">#CAC4D0</color>
+    <color name="widget_start_container">#4A4458</color>
+    <color name="widget_start_icon">#E8DEF8</color>
+</resources>

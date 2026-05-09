@@ -1,7 +1,6 @@
 package af.shizuku.manager.widget
 
 import android.content.Context
-import android.graphics.Color
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
@@ -23,7 +22,6 @@ import af.shizuku.manager.R
 import af.shizuku.manager.starter.StarterActivity
 import af.shizuku.manager.utils.ShizukuStateMachine
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -31,42 +29,18 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         provideContent {
-            Content(context)
+            Content()
         }
     }
 
     @Composable
-    private fun Content(context: Context) {
-        val state = ShizukuStateMachine.get()
-        val isRunning = state == ShizukuStateMachine.State.RUNNING
-
-        val bgColor = ColorProvider(
-            day = ComposeColor(0xFFFFFBFE),
-            night = ComposeColor(0xFF1C1B1F)
-        )
-        val containerColor = if (isRunning) {
-            ColorProvider(day = ComposeColor(0xFFEADDFF), night = ComposeColor(0xFF4F378B))
-        } else {
-            ColorProvider(day = ComposeColor(0xFFFFDAD6), night = ComposeColor(0xFF93000A))
-        }
-        val iconTint = if (isRunning) {
-            ColorProvider(day = ComposeColor(0xFF21005D), night = ComposeColor(0xFFFFD8E4))
-        } else {
-            ColorProvider(day = ComposeColor(0xFF410002), night = ComposeColor(0xFFFFB4AB))
-        }
-        val titleColor = ColorProvider(
-            day = ComposeColor(0xFF1C1B1F),
-            night = ComposeColor(0xFFE6E1E5)
-        )
-        val subtitleColor = ColorProvider(
-            day = ComposeColor(0xFF49454F),
-            night = ComposeColor(0xFFCAC4D0)
-        )
+    private fun Content() {
+        val isRunning = ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
 
         Row(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .background(bgColor)
+                .background(ColorProvider(R.color.widget_background))
                 .padding(16.dp)
                 .clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.CenterVertically
@@ -74,7 +48,12 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
             Box(
                 modifier = GlanceModifier
                     .size(48.dp)
-                    .background(containerColor)
+                    .background(
+                        ColorProvider(
+                            if (isRunning) R.color.widget_container_ok
+                            else R.color.widget_container_error
+                        )
+                    )
                     .padding(10.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -83,7 +62,11 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
                         if (isRunning) R.drawable.ic_server_ok_24 else R.drawable.ic_server_error_24
                     ),
                     contentDescription = null,
-                    colorFilter = ColorFilter.tint(iconTint)
+                    colorFilter = ColorFilter.tint(
+                        ColorProvider(
+                            if (isRunning) R.color.widget_icon_ok else R.color.widget_icon_error
+                        )
+                    )
                 )
             }
 
@@ -93,14 +76,17 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
                 Text(
                     text = "ShizukuX",
                     style = TextStyle(
-                        color = titleColor,
+                        color = ColorProvider(R.color.widget_title),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
                 )
                 Text(
                     text = if (isRunning) "Running" else "Stopped",
-                    style = TextStyle(color = subtitleColor, fontSize = 14.sp)
+                    style = TextStyle(
+                        color = ColorProvider(R.color.widget_subtitle),
+                        fontSize = 14.sp
+                    )
                 )
             }
 
@@ -108,12 +94,7 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
                 Box(
                     modifier = GlanceModifier
                         .size(48.dp)
-                        .background(
-                            ColorProvider(
-                                day = ComposeColor(0xFFE8DEF8),
-                                night = ComposeColor(0xFF4A4458)
-                            )
-                        )
+                        .background(ColorProvider(R.color.widget_start_container))
                         .padding(10.dp)
                         .clickable(actionStartActivity<StarterActivity>()),
                     contentAlignment = Alignment.Center
@@ -121,12 +102,7 @@ class ShizukuGlanceWidget : GlanceAppWidget() {
                     Image(
                         provider = ImageProvider(R.drawable.ic_server_start_24),
                         contentDescription = "Start",
-                        colorFilter = ColorFilter.tint(
-                            ColorProvider(
-                                day = ComposeColor(0xFF1D192B),
-                                night = ComposeColor(0xFFCCC2DC)
-                            )
-                        )
+                        colorFilter = ColorFilter.tint(ColorProvider(R.color.widget_start_icon))
                     )
                 }
             }
