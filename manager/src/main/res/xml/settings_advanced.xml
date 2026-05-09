@@ -42,4 +42,31 @@
         android:title="@string/settings_report_bug"
         android:icon="@drawable/ic_warning_24" />
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_troubleshooting"
+        android:title="Troubleshooting"
+        android:defaultValue="false">
+
+        <SwitchPreferenceCompat
+            android:key="companion_fallback"
+            android:title="@string/settings_companion_fallback"
+            android:summary="@string/settings_companion_fallback_summary"
+            android:icon="@drawable/ic_medical_services_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="companion_mode"
+            android:title="@string/settings_companion_mode"
+            android:summary="@string/settings_companion_mode_summary"
+            android:icon="@drawable/ic_baseline_link_24" />
+
+        <Preference
+            android:key="launch_stock_shizuku"
+            android:title="@string/home_companion_open"
+            android:summary="@string/home_companion_description"
+            android:icon="@drawable/ic_baseline_link_24"
+            android:dependency="companion_mode" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
 </PreferenceScreen>

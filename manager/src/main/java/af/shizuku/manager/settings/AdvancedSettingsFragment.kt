@@ -13,6 +13,9 @@ import timber.log.Timber
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.BuildConfig
 
+import af.shizuku.manager.utils.StockShizukuCompat
+import androidx.preference.TwoStatePreference
+
 class AdvancedSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -29,7 +32,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        findPreference<androidx.preference.TwoStatePreference>(KEY_LEGACY_PAIRING)?.apply {
+        findPreference<TwoStatePreference>(KEY_LEGACY_PAIRING)?.apply {
             isVisible = !EnvironmentUtils.isTelevision()
         }
 
@@ -42,6 +45,8 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             BugReportDialog().show(parentFragmentManager, "BugReportDialog")
             true
         }
+
+        setupTroubleshootingPreferences()
 
         findPreference<Preference>("reset_adb_keys")?.setOnPreferenceClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
@@ -63,6 +68,30 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
             true
+        }
+    }
+
+    private fun setupTroubleshootingPreferences() {
+        findPreference<TwoStatePreference>(KEY_COMPANION_MODE)?.apply {
+            isChecked = ShizukuSettings.isCompanionModeEnabled()
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) ShizukuSettings.setCompanionModeEnabled(newValue)
+                true
+            }
+        }
+        findPreference<TwoStatePreference>(KEY_COMPANION_FALLBACK)?.apply {
+            isChecked = ShizukuSettings.isCompanionFallbackEnabled()
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) ShizukuSettings.setCompanionFallbackEnabled(newValue)
+                true
+            }
+        }
+        findPreference<Preference>("launch_stock_shizuku")?.apply {
+            isVisible = StockShizukuCompat.isInstalled(requireContext())
+            setOnPreferenceClickListener {
+                StockShizukuCompat.launch(it.context)
+                true
+            }
         }
     }
 }
