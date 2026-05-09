@@ -100,6 +100,11 @@
 -keep class * extends androidx.room.Entity
 -keep class * implements androidx.room.Dao
 
+# Sentry compose instrumentation references compose-ui which isn't in the classpath
+# (project uses Glance only). Suppress missing-class R8 errors for these packages.
+-dontwarn io.sentry.compose.**
+-dontwarn androidx.compose.**
+
 -allowaccessmodification
 #-repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable

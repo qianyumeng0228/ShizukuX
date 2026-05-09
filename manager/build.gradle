@@ -298,6 +298,12 @@ sentry {
     
     // Track releases with git commit info
     ignoredBuildTypes = ["debug"]
+
+    // Project uses Glance (compose-based widgets) but not full compose-ui.
+    // Disable Sentry's compose bytecode instrumentation to avoid R8 missing-class errors.
+    tracingInstrumentation {
+        enabled = false
+    }
 }
 
 apply from: rootProject.file("signing.gradle")
