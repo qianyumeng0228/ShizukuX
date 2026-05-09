@@ -7,17 +7,16 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.PendingIntentCompat
-import androidx.core.app.NotificationCompat.OngoingActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.MainActivity
 
 object LiveActivityNotificationManager {
     private const val CHANNEL_ID = "live_activity_channel"
     private const val NOTIFICATION_ID = 9999
-    
+
     fun show(context: Context, status: String) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -29,38 +28,26 @@ object LiveActivityNotificationManager {
             }
             manager.createNotificationChannel(channel)
         }
-        
+
         val pendingIntent = PendingIntentCompat.getActivity(
-            context, 0, Intent(context, MainActivity::class.java),
-            0, false
+            context, 0, Intent(context, MainActivity::class.java), 0, false
         )
 
-        val ongoingActivity = OngoingActivity.Builder(
-            context, CHANNEL_ID, 
-            NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_server_ok_24)
-        )
-        .setAnimatedIcon(R.drawable.ic_server_ok_24)
-        .setStaticIcon(R.drawable.ic_server_ok_24)
-        .setTouchIntent(pendingIntent)
-        .build()
-
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_server_ok_24)
             .setContentTitle("ShizukuX Active")
             .setContentText(status)
+            .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setChronometerCountDown(false)
-            .setWhen(System.currentTimeMillis())
-            .setOngoingActivity(ongoingActivity) // Attach the 'Now Bar' metadata
-        
-        manager.notify(NOTIFICATION_ID, builder.build())
+            .build()
+
+        manager.notify(NOTIFICATION_ID, notification)
     }
-    
+
     fun dismiss(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(NOTIFICATION_ID)

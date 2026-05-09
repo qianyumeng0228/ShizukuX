@@ -490,6 +490,11 @@ public class ShizukuSettings {
         return p == null || p.getBoolean(Keys.KEY_AI_CORE_PLUS_ENABLED, true);
     }
 
+    public static void setAICorePlusEnabled(boolean enabled) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_AI_CORE_PLUS_ENABLED, enabled).apply();
+    }
+
     public static boolean isWindowManagerPlusEnabled() {
         SharedPreferences p = getPreferences();
         return p == null || p.getBoolean(Keys.KEY_WINDOW_MANAGER_PLUS_ENABLED, true);

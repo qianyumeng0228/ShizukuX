@@ -16,7 +16,7 @@ class ShizukuLiveService : Service() {
         super.onCreate()
         
         serviceScope.launch {
-            ShizukuStateMachine.state.collect { state ->
+            ShizukuStateMachine.asFlow().collect { state ->
                 val isRunning = state == ShizukuStateMachine.State.RUNNING
                 if (isRunning) {
                     LiveActivityNotificationManager.show(this@ShizukuLiveService, "System Bridge Active")

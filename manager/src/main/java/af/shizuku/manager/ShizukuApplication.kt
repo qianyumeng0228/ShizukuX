@@ -11,6 +11,7 @@ import io.sentry.Sentry
 import io.sentry.android.core.SentryAndroid
 import io.sentry.android.timber.SentryTimberTree
 import io.sentry.Breadcrumb
+import android.content.Intent
 import af.shizuku.manager.service.WatchdogService
 import af.shizuku.manager.utils.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
