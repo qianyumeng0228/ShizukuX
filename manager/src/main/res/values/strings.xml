@@ -593,7 +593,6 @@
     <string name="doctor_tip_tcl_background">TCL: Ensure ShizukuX is added to "Auto-start" and "High background power consumption" allowlists in Settings.</string>
     <string name="doctor_tip_battery">Disable battery optimization for ShizukuX to prevent it from being killed in the background.</string>
     <string name="doctor_tip_adb">Wireless debugging must be active for Shizuku to start in non-root mode after a reboot.</string>
-    <string name="doctor_system_well_configured">Your system seems well-configured for ShizukuX.</string>
     <string name="doctor_button_fix">Fix</string>
 
     <!-- Snackbar -->
