@@ -75,6 +75,7 @@ object ActivityLogManager {
     
     // Default retention count
     private var retentionCount = 100
+    private var appContext: Context? = null
     
     /**
      * Initialize the ActivityLogManager with the application context.
@@ -87,6 +88,7 @@ object ActivityLogManager {
             Timber.tag(TAG).w("ActivityLogManager already initialized")
             return
         }
+        appContext = context.applicationContext
 
         scope.launch {
             try {
@@ -181,6 +183,13 @@ object ActivityLogManager {
         if (!isInitialized.get()) {
             Timber.tag(TAG).w("ActivityLogManager not initialized, ignoring log")
             return
+        }
+        
+        // Push to Samsung Live Activity status bar if enabled
+        appContext?.let { ctx ->
+            if (ShizukuSettings.isLiveActivityEnabled()) {
+                LiveActivityNotificationManager.show(ctx, "$appName: $action")
+            }
         }
         
         val record = ActivityLogRecord(

@@ -942,3 +942,5 @@
     <string name="home_companion_install">Install</string>
     <string name="watchdog_open_stock_shizuku">Open Stock Shizuku</string>
     </resources>
+    <string name="settings_live_activity">Live Activity Notifications</string>
+    <string name="settings_live_activity_summary">Show real-time service activity in the status bar</string>

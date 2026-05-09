@@ -123,6 +123,7 @@ public class ShizukuSettings {
         // Companion Mode (ShizukuX additions)
         public static final String KEY_COMPANION_MODE = "companion_mode";
         public static final String KEY_COMPANION_FALLBACK = "companion_fallback";
+        public static final String KEY_LIVE_ACTIVITY_ENABLED = "live_activity_enabled";
     }
 
     private static SharedPreferences sPreferences;
@@ -831,5 +832,15 @@ public class ShizukuSettings {
     public static void setCompanionFallbackEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_COMPANION_FALLBACK, enable).apply();
+    }
+
+    public static boolean isLiveActivityEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_LIVE_ACTIVITY_ENABLED, false);
+    }
+
+    public static void setLiveActivityEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_LIVE_ACTIVITY_ENABLED, enable).apply();
     }
 }

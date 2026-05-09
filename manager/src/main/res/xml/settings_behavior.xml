@@ -50,6 +50,13 @@
             android:summary="@string/settings_auto_disable_usb_debugging_summary"
             android:icon="@drawable/ic_warning_24" />
 
+        <SwitchPreferenceCompat
+            android:key="live_activity_enabled"
+            android:title="@string/settings_live_activity"
+            android:summary="@string/settings_live_activity_summary"
+            android:icon="@drawable/ic_bolt_24"
+            android:defaultValue="false" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>
