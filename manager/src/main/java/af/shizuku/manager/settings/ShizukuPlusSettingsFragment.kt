@@ -154,6 +154,20 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        findPreference<Preference>("ai_core_plus_enabled")?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue == true) {
+                val lock = BiometricLock(requireActivity())
+                if (lock.canAuthenticate(requireContext())) {
+                    lock.authenticate({
+                        ShizukuSettings.setAICorePlusEnabled(true)
+                        ShizukuSettings.syncAllPlusFeaturesToServer()
+                    }, { _ -> /* Ignore or show toast */ })
+                    return@setOnPreferenceChangeListener false
+                }
+            }
+            true
+        }
+
         // Initialize all preference dependencies
         updateAllPlusFeatureDependencies()
         

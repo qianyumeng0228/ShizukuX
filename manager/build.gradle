@@ -35,6 +35,10 @@ android {
         viewBinding = true
         prefab = true
         aidl = true
+        compose = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "2.2.20"
     }
     signingConfigs {
         sign {}
@@ -214,6 +218,8 @@ dependencies {
     implementation libs.androidx.transition
     implementation libs.androidx.dynamicanimation
     implementation libs.androidx.interpolator
+    implementation libs.androidx.glance.appwidget
+    implementation libs.androidx.biometric
 
     implementation libs.timber
     implementation libs.coil

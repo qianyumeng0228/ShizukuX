@@ -13,6 +13,9 @@ abstract class AppActivity : MaterialActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         try {
             window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+            // Enable Activity enter/exit transitions
+            window.enterTransition = android.transition.Explode()
+            window.exitTransition = android.transition.Explode()
         } catch (_: Exception) {
             // Feature may already be enabled by the theme or base class
         }
