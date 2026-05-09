@@ -28,11 +28,15 @@ object LiveActivityNotificationManager {
         
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_server_ok_24)
-            .setContentTitle("ShizukuX Live")
+            .setContentTitle("ShizukuX Active")
             .setContentText(status)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC) // Visible on lock screen
+            .setChronometerCountDown(false)
+            .setWhen(System.currentTimeMillis())
         
         manager.notify(NOTIFICATION_ID, builder.build())
     }
