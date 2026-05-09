@@ -330,4 +330,11 @@
 
     <string name="update_channel_stable">Stable</string>
     <string name="update_channel_dev">Dev</string>
+
+    <!-- Swipe action labels (used in swipe_actions array) -->
+    <string name="settings_action_none">None</string>
+    <string name="settings_action_open_app">Open App</string>
+    <string name="settings_action_app_info">App Info</string>
+    <string name="settings_action_toggle_permission">Toggle Permission</string>
+    <string name="settings_action_hide_from_list">Hide from List</string>
 </resources>
