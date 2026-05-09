@@ -12,12 +12,24 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ktx.loge
 import af.shizuku.manager.utils.AppContextManager
 
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.ShizukuSettings.Keys.KEY_COMPANION_MODE
+import androidx.preference.TwoStatePreference
+
 @Keep
 class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_home_visibility, rootKey)
         val context = requireContext()
+
+        findPreference<TwoStatePreference>(KEY_COMPANION_MODE)?.apply {
+            isChecked = ShizukuSettings.isCompanionModeEnabled()
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) ShizukuSettings.setCompanionModeEnabled(newValue)
+                true
+            }
+        }
 
         findPreference<Preference>("update_app_database")?.setOnPreferenceClickListener {
             lifecycleScope.launch(Dispatchers.IO) {

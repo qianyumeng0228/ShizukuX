@@ -72,13 +72,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
     }
 
     private fun setupTroubleshootingPreferences() {
-        findPreference<TwoStatePreference>(KEY_COMPANION_MODE)?.apply {
-            isChecked = ShizukuSettings.isCompanionModeEnabled()
-            setOnPreferenceChangeListener { _, newValue ->
-                if (newValue is Boolean) ShizukuSettings.setCompanionModeEnabled(newValue)
-                true
-            }
-        }
         findPreference<TwoStatePreference>(KEY_COMPANION_FALLBACK)?.apply {
             isChecked = ShizukuSettings.isCompanionFallbackEnabled()
             setOnPreferenceChangeListener { _, newValue ->
