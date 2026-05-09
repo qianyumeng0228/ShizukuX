@@ -784,4 +784,7 @@
 
     <string name="settings_live_activity">Live Activity Notifications</string>
     <string name="settings_live_activity_summary">Show real-time service activity in the status bar</string>
+
+    <string name="update_channel_stable">Stable</string>
+    <string name="update_channel_dev">Dev</string>
 </resources>
