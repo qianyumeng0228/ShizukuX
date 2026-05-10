@@ -1,6 +1,5 @@
 package af.shizuku.manager.widget
 
-import af.shizuku.manager.R
 import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
