@@ -172,13 +172,13 @@ object AdbStarter {
     }
 
     private suspend fun connectWithRetry(client: AdbClient) {
-        var delayTime = 200L
-        val maxAttempts = 8
+        var delayTime = 500L
+        val maxAttempts = 12
         for (attempt in 1..maxAttempts) {
             try {
                 if (attempt > 1) {
                     delay(delayTime)
-                    delayTime = (delayTime * 1.5).toLong().coerceAtMost(3000L) // Exponential backoff up to 3s
+                    delayTime = (delayTime * 1.5).toLong().coerceAtMost(5000L) // Exponential backoff up to 5s
                 }
                 client.connect()
                 break

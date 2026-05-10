@@ -64,7 +64,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val isWifiOk = !EnvironmentUtils.isWifiRequired() || ShizukuSettings.isForceStartWadbEnabled()
             val port = when {
                 tcpPort > 0 && isWifiOk -> tcpPort
-                savedPort > 0 && isWifiOk -> savedPort
+                savedPort > 0 && isWifiOk && runAttemptCount == 0 -> savedPort
                 else -> callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
                     if (p > 0) trySend(p)
@@ -173,9 +173,18 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val ignored = listOf(
                 EOFException::class,
                 SecurityException::class,
-                TimeoutException::class
+                TimeoutException::class,
+                java.net.ConnectException::class,
+                java.net.SocketException::class,
+                java.net.SocketTimeoutException::class
             )
-            if (ignored.none { it.isInstance(e) }) showErrorNotification(applicationContext, e)
+            // Only show error notification if it's not a common transient error,
+            // or if we've already tried several times and it's still failing.
+            if (ignored.none { it.isInstance(e) } || runAttemptCount >= 5) {
+                if (e !is SecurityException && e !is TimeoutException) {
+                    showErrorNotification(applicationContext, e)
+                }
+            }
 
             if (ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) {
                 return Result.success()
