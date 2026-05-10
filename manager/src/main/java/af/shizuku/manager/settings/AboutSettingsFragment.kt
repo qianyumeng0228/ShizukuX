@@ -41,7 +41,8 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                             
                             Toast.makeText(context, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
                             
-                            CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/thejaustin/ShizukuPlus/issues/new")
+                            val url = CrashReporter.getGitHubReportUrl(context)
+                            CustomTabsHelper.launchUrlOrCopy(context, url)
                             
                             if (hasLastCrash) {
                                 af.shizuku.manager.utils.CrashHandler.clearLastCrash(context)

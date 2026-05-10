@@ -131,7 +131,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         emptyStateView.setDescription(R.string.empty_state_description_no_home_cards)
         emptyStateView.setActionText(R.string.empty_state_action_restore_home_cards)
         emptyStateView.setActionClickListener {
-            startActivity(android.content.Intent(this, af.shizuku.manager.settings.SettingsActivity::class.java))
+            HomeEditMode.enter()
         }
 
         // Initial status load
