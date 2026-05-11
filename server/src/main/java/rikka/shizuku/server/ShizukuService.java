@@ -144,7 +144,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         BinderSender.register(this);
 
-        Logger.setEventDispatcher((priority, tag, message, throwable) -> {
+        ((Logger) LOGGER).setEventDispatcher((priority, tag, message, throwable) -> {
             List<ClientRecord> records = clientManager.findClients(managerAppId);
             for (ClientRecord record : records) {
                 if (record.client != null) {
