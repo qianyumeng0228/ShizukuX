@@ -237,6 +237,42 @@ class ShizukuApplication : Application(), Configuration.Provider {
             ActivityLogManager.log(appName, packageName, action)
         }
 
+        Shizuku.addSentryEventListener { eventJson ->
+            try {
+                val jsonObject = org.json.JSONObject(eventJson)
+                val levelStr = jsonObject.optString("level", "error")
+                val tag = jsonObject.optString("tag", "ShizukuPlus")
+                val message = jsonObject.optString("message", "")
+                val stackTrace = jsonObject.optString("stackTrace", "")
+
+                val sentryLevel = when (levelStr.uppercase()) {
+                    "INFO" -> io.sentry.SentryLevel.INFO
+                    "WARN" -> io.sentry.SentryLevel.WARNING
+                    "ERROR" -> io.sentry.SentryLevel.ERROR
+                    "FATAL" -> io.sentry.SentryLevel.FATAL
+                    "DEBUG" -> io.sentry.SentryLevel.DEBUG
+                    else -> io.sentry.SentryLevel.ERROR
+                }
+
+                io.sentry.Sentry.withScope { scope ->
+                    scope.setTag("server_side", "true")
+                    scope.setTag("server_tag", tag)
+                    if (stackTrace.isNotEmpty()) {
+                        scope.setExtra("stackTrace", stackTrace)
+                    }
+                    val event = io.sentry.SentryEvent()
+                    event.level = sentryLevel
+                    val sentryMessage = io.sentry.protocol.Message()
+                    sentryMessage.formatted = "[$tag] $message"
+                    event.message = sentryMessage
+                    
+                    io.sentry.Sentry.captureEvent(event)
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to parse and dispatch server Sentry event: $eventJson")
+            }
+        }
+
         val userManager = getSystemService(Context.USER_SERVICE) as? UserManager
         if (userManager == null || userManager.isUserUnlocked) {
             try {
