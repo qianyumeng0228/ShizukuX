@@ -1,10 +1,8 @@
 <resources>
     <string name="app_name" translatable="false">ShizukuX</string>
-
     <!-- To translators: you can leave your here -->
     <string name="translation_contributors">thejaustin</string>
     <string name="translation_url">https://github.com/thejaustin/ShizukuPlus</string>
-
     <!-- UI Settings - Expressive -->
     <string name="settings_expressive_title">Expressive Design (M3E)</string>
     <string name="settings_expressive_shapes">Expressive Icon Shapes</string>
@@ -17,7 +15,6 @@
     <string name="settings_shape_style_summary">Customize the corner rounding of cards and dialogs</string>
     <string name="settings_animation_intensity">Animation Intensity</string>
     <string name="settings_animation_intensity_summary">Adjust the speed and "bounciness" of UI transitions</string>
-
     <string-array name="icon_styles">
         <item>Standard (Filled)</item>
         <item>Outlined</item>
@@ -28,7 +25,6 @@
         <item>outlined</item>
         <item>twotone</item>
     </string-array>
-
     <string-array name="shape_styles">
         <item>Zen (Artistic)</item>
         <item>Modern (Material 3)</item>
@@ -41,7 +37,6 @@
         <item>classic</item>
         <item>squircle</item>
     </string-array>
-
     <string-array name="animation_intensities">
         <item>None</item>
         <item>Subtle</item>
@@ -54,10 +49,8 @@
         <item>2</item>
         <item>3</item>
     </string-array>
-
     <string name="home_status_service_running_tile_sublabel">Running</string>
     <string name="home_status_service_stopped_tile_sublabel">Stopped</string>
-
     <!-- Home - Status -->
     <string name="home_status_service_is_running">%1$s is running</string>
     <string name="home_status_service_not_running">%1$s is not running</string>
@@ -66,7 +59,6 @@
     <string name="home_status_service_user_adb">adb</string>
     <string name="home_status_service_version">Version %2$s, %1$s</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
-
     <!-- Home - Adb -->
     <string name="home_adb_title"><![CDATA[Start by connecting to a computer]]></string>
     <string name="home_adb_description"><![CDATA[For devices without root, you need to use adb to start Shizuku (requires computer connection). This process needs to be repeated every time the device is restarted. Please <b><a href=\"%1$s\">read the help</a></b>.]]></string>
@@ -75,13 +67,11 @@
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* There are some other considerations, please confirm that you have read the help first.]]></string>
     <string name="home_adb_dialog_view_command_copy_button">Copy</string>
     <string name="home_adb_dialog_view_command_button_send">Send</string>
-
     <!-- Home - Wireless Adb -->
     <string name="home_wireless_adb_title"><![CDATA[Start via Wireless debugging]]></string>
     <string name="home_wireless_adb_description"><![CDATA[On Android 11 or above, you can enable Wireless debugging and start Shizuku directly from your device, without connecting to a computer.<p>Please view the step-by-step guide first.]]></string>
     <string name="home_wireless_adb_description_pre_11"><![CDATA[Before Android 11, connecting to a computer is required to enable Wireless debugging.]]></string>
     <string name="home_wireless_adb_view_guide_button">Step-by-step guide</string>
-
     <!-- Adb -->
     <string name="dialog_adb_discovery">Searching for wireless debugging service</string>
     <string name="dialog_adb_discovery_message">Please enable \"Wireless debugging\" in \"Developer options\". \"Wireless debugging\" is automatically disabled when network changes.\n\nNote, do not disable \"Developer options\" or \"USB debugging\", or Shizuku will be stopped.</string>
@@ -98,7 +88,6 @@
     <string name="dialog_usb_debugging_not_enabled">USB debugging is not enabled.\nPlease enable it in \"Developer Options\".</string>
     <string name="dialog_adb_pairing_message">Please start pairing by performing the following steps:\n- Navigate to \"Developer Options\"\n- Enable \"USB debugging\" and \"Wireless debugging\"\n- Tap the left side of \"Wireless debugging\"\n- Tap \"Pair device with pairing code\"\n- Input the pairing code in the notification</string>
     <string name="dialog_adb_pairing_accessibility_permission">On Android 14, installing/updating Shizuku with the Package Installer revokes the %1$s permission, which is required to enable the accessibility service for pairing.\n\nTo grant it, run the following ADB command:\n\n%2$s\n\nAfter running the command, you may continue with the pairing process.\n\nNote: you can bypass this by installing/updating Shizuku with ADB.</string>
-
     <!-- Service Doctor -->
     <string name="doctor_check_samsung_autoblocker">Samsung Auto Blocker</string>
     <string name="doctor_check_samsung_battery_protection">Samsung Battery Protection</string>
@@ -118,24 +107,20 @@
     <string name="doctor_tip_s22_ultra_exynos"><b>S22 Ultra (Exynos)</b>: If service response is sluggish, try disabling <b>\'RAM Plus\'</b> in Device Care > Memory.</string>
     <string name="doctor_tip_s22_ultra_snapdragon"><b>S22 Ultra (Snapdragon)</b>: Ensure \'Enhanced Processing\' is enabled in Quick Settings for maximum command throughput.</string>
     <string name="doctor_system_well_configured">Your system seems well-configured for ShizukuX.</string>
-
     <!-- Root Compatibility -->
     <string name="su_bridge_other_detected_apps">Other Detected Root Apps</string>
     <string name="su_bridge_installed_root_app">Installed Root App</string>
     <string name="su_bridge_suggested_root_app">Suggested Root App</string>
-
     <!-- Shell Tutorial -->
     <string name="terminal_tutorial_export_summary">Export the files (%1$s, %2$s, %3$s, and %4$s) to a new folder.</string>
     <string name="terminal_tutorial_copy_command">cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files</string>
     <string name="terminal_tutorial_copy_summary">This copies the exported files to your terminal app\'s private storage. You can also add aliases for %1$s, %2$s, and %3$s in your &lt;font face=\"monospace\"&gt;.bashrc&lt;/font&gt; or &lt;font face=\"monospace\"&gt;.zshrc&lt;/font&gt;.</string>
     <string name="terminal_tutorial_run_command">sh /path/to/%1$s</string>
     <string name="terminal_tutorial_run_plus_command">sh /path/to/plus [command]</string>
-
     <!-- Adb Pairing Dialog -->
     <string name="adb_pairing_searching">Searching for pairing service…</string>
     <string name="adb_pairing_status_pairing">Pairing with device…</string>
     <string name="adb_pairing_status_failed">Pairing failed.</string>
-
     <!-- App Management -->
     <string name="app_management_badge_format">&lt;b&gt;&lt;font color=\"%1$s\"&gt;[%2$s]&lt;/font&gt;&lt;/b&gt; %3$s</string>
     <string name="dialog_adb_pairing_accessibility_enable">Please enable the accessibility service to start the pairing process. This allows Shizuku to detect the pairing code.\n\nThe accessibility service will be turned off when the code is found or after 1 minute to save energy.</string>
@@ -159,13 +144,11 @@
     <string name="adb_pairing_tutorial_content_finish">Go back to Shizuku and start Shizuku.</string>
     <string name="adb_pairing_tutorial_content_network">Shizuku needs to access the local network. It is controlled by the network permission.</string>
     <string name="adb_pairing_tutorial_content_network_limation_not_foreground">Some systems (such as MIUI) disallow apps to access the network when they are not visible, even if the app uses a foreground service. Please disable battery optimization features for Shizuku on such systems.</string>
-
     <!-- Home - Root -->
     <string name="home_root_title"><![CDATA[Start (for rooted devices)]]></string>
     <string name="home_root_description"><![CDATA[If you are using Magisk, you can try %1$s. For root users, it will eventually replace Shizuku. Note, existing applications need to change a little to use %2$s.]]></string>
     <string name="home_root_button_start">Start</string>
     <string name="home_root_button_restart">Restart</string>
-
     <!-- Home - Application management -->
     <string name="home_app_management_title">Application management</string>
     <plurals name="home_app_management_authorized_apps_count">
@@ -174,7 +157,6 @@
     </plurals>
     <string name="home_app_management_view_authorized_apps"><![CDATA[Tap to manage authorized apps]]></string>
     <string name="home_app_management_empty">Apps that have requested or declared the Shizuku permission will show here.</string>
-
     <!-- Home - Automation -->
     <string name="home_automation_title">Control Shizuku with automation apps</string>
     <string name="home_automation_description">Apps like Tasker and MacroDroid can send intents to start/stop Shizuku automatically.</string>
@@ -187,15 +169,12 @@
     <string name="home_automation_bottom_sheet_label_extras">Extras</string>
     <string name="home_automation_regenerate_token">Regenerate token?</string>
     <string name="home_automation_regenerate_token_message">You will need to reconfigure your intents with the new token.</string>
-
     <!-- Home - Learn more -->
     <string name="home_learn_more_title">Developer guide</string>
     <string name="home_learn_more_description">Learn how to develop with Shizuku</string>
-
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">You need to take an extra step</string>
     <string name="home_adb_is_limited_description">Your device manufacturer has restricted adb permissions and apps using Shizuku will not work properly.\n\nUsually, this limitation can be lifted by adjusting some options in \"Developer options\". Please read the help for details on how to do this.\n\nYou may need to restart Shizuku for the operation to take effect.</string>
-
     <!-- Application management - context menu -->
     <string name="app_management_context_open_app">Open app</string>
     <string name="app_management_context_app_info">App info</string>
@@ -210,7 +189,6 @@
     <string name="app_management_hidden">App hidden</string>
     <string name="app_management_selected">%d selected</string>
     <string name="app_management_undo">Undo</string>
-
     <!-- Application management - search / filter / sort -->
     <string name="app_management_hint_search">Search apps…</string>
     <string name="app_management_filter_all">All</string>
@@ -222,7 +200,6 @@
     <string name="app_management_sort_a_to_z">Name (A–Z)</string>
     <string name="app_management_sort_last_installed">Last installed</string>
     <string name="app_management_sort_last_updated">Last updated</string>
-
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">The permission of adb is limited</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[It\'s highly possible that your device manufacturer limits the permission of adb.<p>There may be a solution for your system in <b><a href=\"%1$s\">this document</a></b>.]]></string>
@@ -239,7 +216,6 @@
     <string name="app_management_bulk_revoke">Revoke selected</string>
     <string name="app_management_bulk_hide">Hide selected</string>
     <string name="app_management_bulk_select_all">Select all</string>
-
     <!-- Terminal -->
     <string name="home_terminal_title">Use Shizuku in terminal apps</string>
     <string name="home_terminal_description">Run shell commands in terminal apps through Shizuku</string>
@@ -252,7 +228,6 @@
     <string name="terminal_tutorial_2_description">Tip: If your terminal app\'s home directory (~) is in the private files directory, placing the files there will allow you to run %1$s without writing the path.\n\nOtherwise, you can create an alias for %2$s in your terminal app\'s %3$s configuration file.</string>
     <string name="terminal_tutorial_3">Open a shell or run a ShizukuX command:</string>
     <string name="rish_description"><![CDATA[With %1$s, you can run shell commands in any terminal app.<p>Tap to learn more about how to use it.]]></string>
-
     <!-- Settings — swipe customisation -->
     <string name="settings_swipe_right">Swipe right action</string>
     <string name="settings_swipe_left">Swipe left action</string>
@@ -261,7 +236,6 @@
     <string name="settings_action_app_info">App info</string>
     <string name="settings_action_toggle_permission">Toggle permission</string>
     <string name="settings_action_hide_from_list">Hide from list</string>
-
     <!-- Settings — long-press customisation -->
     <string name="settings_app_management">App management</string>
     <string name="settings_lp_category_summary">Choose which actions appear when you long-press an app in the management list. If only one is enabled it triggers directly — no menu shown.</string>
@@ -269,7 +243,6 @@
     <string name="settings_lp_app_info">App info</string>
     <string name="settings_lp_toggle_permission">Toggle Shizuku permission</string>
     <string name="settings_lp_hide_from_list">Hide from list</string>
-
     <!-- Onboarding -->
     <string name="onboarding_welcome_title">Welcome to ShizukuX</string>
     <string name="onboarding_welcome_desc">An enhanced Shizuku with powerful app management features. Swipe gestures, quick actions, and customizable experiences — all in one place.</string>
@@ -289,13 +262,11 @@
     <string name="onboarding_setup_wadb_desc">Android 11+, no computer needed. Uses wireless debugging.</string>
     <string name="onboarding_setup_root_desc">Your device is rooted. Start Shizuku with root access.</string>
     <string name="onboarding_setup_adb_desc">Any device. Run one ADB command from a computer to get started.</string>
-
     <!-- Swipe hint overlay -->
     <string name="swipe_hint_title">Swipe gestures</string>
     <string name="swipe_hint_right">Swipe right for quick action</string>
     <string name="swipe_hint_left">Swipe left for quick action</string>
     <string name="swipe_hint_dismiss">Tap anywhere to dismiss</string>
-
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_behavior">Behavior</string>
@@ -331,7 +302,6 @@
     <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_stealth_mode">Stealth Mode</string>
     <string name="settings_stealth_mode_summary">Hide app icon and simplify UI for privacy</string>
-
     <string name="settings_report_bug">Report a bug</string>
     <string name="settings_activity_log">Activity log</string>
     <string name="settings_activity_log_empty">No activity recorded yet.</string>
@@ -356,7 +326,6 @@
     <string name="settings_reset_adb_keys_summary">Delete existing ADB keys and certificates. Useful if pairing is stuck or KeyStore is corrupted.</string>
     <string name="settings_reset_adb_keys_success">ADB keys cleared</string>
     <string name="settings_reset_adb_keys_error">Failed to reset ADB keys</string>
-
     <!-- ShizukuX Features -->
     <string name="settings_shizuku_plus_features">ShizukuX Features</string>
     <string name="settings_dhizuku_mode">Dhizuku Mode</string>
@@ -390,38 +359,27 @@
     <string name="settings_plus_app_open">Open App</string>
     <string name="settings_plus_learn_more">Learn more</string>
     <string name="help_general_plus_summary">ShizukuX extends the core Shizuku framework with powerful system-level bridges. These features allow third-party automation tools like MacroDroid and Tasker, as well as theming engines like Hex Installer, to perform privileged actions natively and securely. Each feature is designed to bridge the gap between root-only capabilities and the standard Android API, ensuring high performance and deep system integration for your favorite power-user apps.</string>
-
     <!-- Detailed Help Strings -->
     <string name="help_dhizuku_title">About Dhizuku Mode</string>
     <string name="help_dhizuku_detail">Dhizuku allows Shizuku to share its Device Owner (DevicePolicyManager) privileges with third-party apps. This is essential for apps like Dhizuku Manager or certain kiosk-mode tools that need to manage system policies without being the sole Device Owner themselves.</string>
-
     <string name="help_shell_interceptor_title">About Shell Accelerator</string>
     <string name="help_shell_interceptor_detail">The Shell Accelerator intercepts standard shell commands (am, pm, settings) and translates them directly into Shizuku server API calls. This avoids the high overhead of spawning a new /system/bin/sh process for every command, making automation in MacroDroid or Tasker significantly faster and more battery-efficient.</string>
-
     <string name="help_avf_manager_title">About AVF Manager</string>
     <string name="help_avf_manager_detail">Android Virtualization Framework (AVF) Manager allows you to run isolated Linux or Microdroid virtual machines. On supported hardware (Snapdragon 8 Gen 1+, Tensor G2+), this enables hardware-accelerated virtualization with VirtIO-GPU support for running desktop Linux environments or isolated secure tasks.</string>
-
     <string name="help_storage_proxy_title">About Storage Bridge</string>
     <string name="help_storage_proxy_detail">The Storage Bridge provides authenticated, high-speed access to restricted filesystem paths like /data/data/ (app data) and /data/app/ (APK files). This allows backup tools like Neo Backup to function without full root access, while maintaining security through Shizuku\'s permission model.</string>
-
     <string name="help_continuity_bridge_title">About Multi-Device Continuity</string>
     <string name="help_continuity_bridge_detail">Continuity Bridge allows ShizukuX devices on the same network to hand off tasks and synchronize clipboard/app state. This utilizes the Android 17 Handoff APIs (backported where possible) to allow seamless transitions of automation tasks between your phone and tablet.</string>
-
     <string name="help_ai_core_plus_title">About Intelligence Bridge</string>
     <string name="help_ai_core_plus_detail">The Intelligence Bridge grants AI assistants privileged access to screen content and NPU scheduling. It enables features like "Circle to Search" or screen-aware context for local LLMs by providing high-performance, window-aware frame capture that bypasses standard Android screen recording restrictions.</string>
-
     <string name="help_window_manager_plus_title">About Window Tuner</string>
     <string name="help_window_manager_plus_detail">Window Tuner exposes advanced WindowManager flags that allow any app to be forced into free-form mode, placed in a persistent Bubble Bar, or rendered with always-on-top overlays. This is a powerful tool for multitasking and customizing the OneUI desktop experience.</string>
-
     <string name="help_overlay_manager_plus_title">About System Theming Bridge</string>
     <string name="help_overlay_manager_plus_detail">This bridge provides rootless access to the OverlayManagerService (OMS). It uses modern OverlayManagerTransactions to register Fabricated Overlays, allowing apps like Hex Installer to modify system colors, fonts, and dimensions on OneUI 6/7/8 without requiring a rooted device.</string>
-
     <string name="help_network_governor_plus_title">About Network &amp; DNS Governor</string>
     <string name="help_network_governor_plus_detail">The Network Governor provides privileged access to the INetworkPolicyManager and Private DNS settings. It can enforce POLICY_REJECT_ALL for individual apps, providing a robust, system-level firewall that works even on Wi-Fi and 5G connections without an active VPN tunnel.</string>
-
     <string name="help_activity_manager_plus_title">About Deep Process Control</string>
     <string name="help_activity_manager_plus_detail">Deep Process Control allows the server to bypass standard app-hibernation and standby restrictions. It can force apps into the RESTRICTED standby bucket or perform a true deepForceStop (killing all services and background jobs), which is essential for aggressive battery-saving tools.</string>
-
     <!-- Plus settings category titles -->
     <string name="settings_plus_category_framework">Framework</string>
     <string name="settings_plus_category_performance">Performance &amp; Process Control</string>
@@ -441,22 +399,16 @@
     <string name="settings_root_file_interceptor_summary">Automatically injects permission-preservation flags into file operations targeting sensitive system paths.</string>
     <string name="settings_root_busybox_mocking">BusyBox Simulation</string>
     <string name="settings_root_busybox_mocking_summary">Returns a fake version string for the \'busybox\' command to satisfy legacy script requirements.</string>
-
     <string name="help_root_adaway_title">About AdAway Bridge</string>
     <string name="help_root_adaway_detail">Modern Android devices have read-only system partitions. This bridge intercepts AdAway\'s attempts to write to /system/etc/hosts and redirects them to a Shizuku-managed path in /data/adb, faking a successful mount operation.</string>
-
     <string name="help_root_magisk_title">About Magisk Mocking</string>
     <string name="help_root_magisk_detail">Many apps check for root by looking for Magisk-specific properties or the /sbin/.magisk folder. This module simulates these elements, allowing you to use root-only features in apps that refuse to start without detecting a Magisk environment.</string>
-
     <string name="help_root_auto_grant_title">About Auto-Approval</string>
     <string name="help_root_auto_grant_detail">Legacy root apps often try to grant themselves permissions via shell. This bridge listens for these \'pm grant\' calls and uses Shizuku\'s elevated privileges to approve them instantly, avoiding manual permission management.</string>
-
     <string name="help_root_file_interceptor_title">About File Interceptor</string>
     <string name="help_root_file_interceptor_detail">When apps copy files to /data/data using a standard shell, they often lose ownership and SELinux contexts. This module automatically adds flags like --preserve=all to maintain file integrity and prevent app crashes.</string>
-
     <string name="help_root_busybox_title">About BusyBox Simulation</string>
     <string name="help_root_busybox_detail">BusyBox is a suite of Unix utilities common on rooted devices. Some older root apps check for its existence before running their logic. This module returns a simulated successful response for the \'busybox\' command.</string>
-
     <string name="settings_hide_disabled_plus_features">Hide disabled Plus Features</string>
     <string name="settings_hide_disabled_plus_features_summary">Hide Plus features that are not available on this device or configuration</string>
     <string name="settings_vector">Vector Acceleration</string>
@@ -475,7 +427,6 @@
     <string name="settings_experimental_warning_title">Experimental Feature</string>
     <string name="settings_experimental_warning_message">This feature is experimental and may cause system instability or crashes. Are you sure you want to enable it?</string>
     <string name="settings_spoof_target">Target Device</string>
-
     <!-- Root Integration (renamed from Legacy Compatibility) -->
     <string name="settings_category_root_integration">Root Integration</string>
     <string name="settings_nav_root_integration_summary">SU bridge, ADB proxy, and root session management</string>
@@ -529,13 +480,11 @@
     <string name="su_bridge_device_identity_real">Real: %s</string>
     <string name="su_bridge_device_identity_spoofed">Spoofed: %s</string>
     <string name="su_bridge_device_identity_none">None (Real device shown)</string>
-
     <!-- Sentry Offline Notice -->
     <string name="sentry_offline_notice_title">Crash Reporting Offline</string>
     <string name="sentry_offline_notice_summary">Automatic crash reporting via Sentry is currently disabled due to quota limits (resets May 1st). Please report any crashes manually.</string>
     <string name="sentry_offline_notice_button">Learn More</string>
     <string name="sentry_offline_notice_learn_more">Sentry is currently offline. If the app crashes or behaves unexpectedly, please generate a report manually and post it to our GitHub Issues tracker. This helps us fix bugs even while our automated systems are paused.</string>
-
     <string name="manual_report_title">Manual Crash Report</string>
     <string name="manual_report_summary">Generate a detailed report with logs to help us debug issues manually.</string>
     <string name="manual_report_button_generate">Generate &amp; Copy</string>
@@ -555,9 +504,7 @@
     <string name="crash_detected_dialog_short_message">The report is copied. Open GitHub to paste it, or share the report as a file instead?</string>
     <string name="crash_detected_dialog_ignore">Ignore</string>
     <string name="shortcut_open_terminal">Open Terminal</string>
-
     <string name="watchdog_shizuku_crashed_action_report_manually">Report Manually</string>
-
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">First, please do the following:</string>
     <string name="bug_report_dialog_update">Check that you are using the %1$s.</string>
@@ -569,7 +516,6 @@
     <string name="bug_report_dialog_method">Please submit an issue on %1$s if you have an account.</string>
     <string name="bug_report_dialog_method_2">Otherwise, you can send an email.</string>
     <string name="bug_report_dialog_button_email">Email</string>
-
     <!-- Service Doctor -->
     <string name="home_service_doctor_title">Service Doctor</string>
     <string name="home_service_doctor_summary">Having trouble starting Shizuku? Tap to run a diagnostic check.</string>
@@ -596,13 +542,11 @@
     <string name="doctor_tip_battery">Disable battery optimization for ShizukuX to prevent it from being killed in the background.</string>
     <string name="doctor_tip_adb">Wireless debugging must be active for Shizuku to start in non-root mode after a reboot.</string>
     <string name="doctor_button_fix">Fix</string>
-
     <!-- Snackbar -->
     <string name="snackbar_invalid_port">Port must be between 1 and 65535</string>
     <string name="snackbar_battery_optimization_home">Battery optimization must be disabled for start on boot/watchdog to work properly.</string>
     <string name="snackbar_battery_optimization_settings">Please disable battery optimization to use this feature.</string>
     <string name="snackbar_action_fix">Fix</string>
-
     <!-- Toast -->
     <string name="toast_no_email_app">No email app found</string>
     <string name="toast_shizuku_already_starting">Shizuku is already starting in the background</string>
@@ -612,26 +556,22 @@
     <string name="adb_error_ssl_title">Connection Error</string>
     <string name="adb_error_ssl_message">Wireless ADB handshake failed (SSL protocol error). This typically happens when ADB keys are corrupted. Would you like to reset them in Developer Options?</string>
     <string name="adb_error_ssl_button_reset">Go to Developer Options</string>
-
     <!-- Dark Mode Setting Override -->
     <string name="dark_theme">Theme</string>
     <string name="dark_theme_off">Always light</string>
     <string name="dark_theme_on">Always dark</string>
     <string name="follow_system">Follow system</string>
-
     <!-- About -->
     <string name="settings_about">About</string>
     <string name="action_about">About</string>
     <string name="about_dialog_button_close">Close</string>
     <string name="about_view_source_code_title">Source code</string>
     <string name="about_view_source_code"><![CDATA[View source code at %s]]></string>
-
     <!-- Start/Stop -->
      <string name="start">Start</string>
      <string name="stop">Stop</string>
     <string name="action_stop">Stop Shizuku</string>
     <string name="dialog_stop_message">Shizuku service will be stopped.</string>
-
     <!-- Notification -->
     <string name="notification_channel_service_status">Service start status</string>
     <string name="notification_service_starting">Shizuku service is starting…</string>
@@ -652,7 +592,6 @@
     <string name="notification_auth_missing_message">Add the “auth” extra to your intent. You can find your token by tapping “View intents” in the app.</string>
     <string name="notification_auth_invalid_title">Invalid auth token</string>
     <string name="notification_auth_invalid_message">Make sure the token in your intent matches the one shown under “View intents” in the app.</string>
-
     <!-- Permission related, appears in system permission UI -->
     <string name="permission_group_label" translatable="false">Shizuku</string>
     <string name="permission_group_description" translatable="false">@string/permission_label</string>
@@ -661,7 +600,6 @@
     <string name="permission_warning_template"><![CDATA[Allow <b>%1$s</b> to %2$s?]]></string>
     <string name="grant_dialog_button_allow_always">Allow all the time</string>
     <string name="grant_dialog_button_deny">"Deny"</string>
-
     <!-- Starter -->
     <string name="starter">Starter</string>
     <string name="starting_root_shell" translatable="false">Starting root shell…</string>
@@ -672,7 +610,6 @@
     <string name="starter_retry">Retry</string>
     <string name="adb_error_timeout">Service did not start in time. Please ensure Wireless Debugging is enabled and try again.</string>
     <string name="adb_error_generic">An unexpected error occurred. Please try again.</string>
-
     <!-- WADB Starter -->
     <string name="wadb_notification_title">Starting Shizuku…</string>
     <string name="wadb_notification_wifi_required">Awaiting Wi-Fi connection before proceeding</string>
@@ -682,19 +619,16 @@
     <string name="wadb_permission_error_notification_title">Permission Error</string>
     <string name="wadb_permission_error_notification_content">Shizuku needs WRITE_SECURE_SETTINGS to start on boot. Tap to learn how to grant it.</string>
     <string name="wadb_notification_channel">ADB auto-start service</string>
-
     <!-- Watchdog -->
     <string name="watchdog_running">Watchdog is running</string>
     <string name="watchdog_turn_off">Turn Off</string>
     <string name="watchdog_shizuku_crashed_title">Shizuku crashed recently</string>
     <string name="watchdog_shizuku_crashed_text">Watchdog restarted the service. Tap to learn about potential fixes to prevent future crashes.</string>
     <string name="watchdog_shizuku_crashed_action_turn_off_alerts">Turn Off Alerts</string>
-
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Can\'t start browser</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="accessibility_service_description">Provides pairing support for devices (e.g., TVs and Samsung One UI phones) where notifications or split screen cannot be used easily.\n\nEnables ShizukuX to extract the pairing code from the wireless debugging pairing screen. It will disable itself once the pairing code is found.</string>
-
     <!-- Messages for legacy -->
     <string name="dialog_legacy_not_support_title">%1$s does not support modern Shizuku</string>
     <string name="dialog_legacy_not_support_message"><![CDATA[Legacy Shizuku has been deprecated since March 2019. Also, legacy Shizuku does not work on newer Android systems.<p>Please ask the developer of <b>%1$s</b> to update.]]></string>
@@ -702,12 +636,9 @@
     <string name="dialog_requesting_legacy_message"><![CDATA[<b>%1$s</b> has modern Shizuku support, but it\'s requesting legacy Shizuku. This could because Shizuku is not running, please check in Shizuku app.<p>Legacy Shizuku has been deprecated since March 2019.]]></string>
     <string name="dialog_requesting_legacy_button_open_shizuku">Open Shizuku</string>
     <string name="wadb_notification_attempt_now">Attempt now</string>
-
-
     <string name="settings_category_general">General</string>
     <string name="settings_category_dark_mode">Dark Mode</string>
     <string name="settings_category_automatic">Automatic</string>
-
     <!-- Settings navigation summaries -->
     <string name="settings_category_swipe">Swipe Actions</string>
     <string name="settings_category_long_press">Long-press Actions</string>
@@ -719,7 +650,6 @@
     <string name="settings_category_language">Language</string>
     <string name="settings_category_appearance">Appearance</string>
     <string name="settings_category_advanced">Advanced</string>
-
     <string name="settings_nav_behavior_summary">Start on boot, Watchdog, and TCP mode</string>
     <string name="settings_nav_shizuku_plus_summary">Enhanced API, shell interceptor, and more</string>
     <string name="settings_nav_ui_summary">Theme, colors, language</string>
@@ -727,7 +657,6 @@
     <string name="settings_nav_home_summary">Visible cards and shortcuts</string>
     <string name="settings_nav_legacy_summary">ADB proxy, su bridge, root compatibility</string>
     <string name="settings_nav_advanced_summary">Diagnostics, logs, help</string>
-
     <!-- Accessibility - Content Descriptions -->
     <string name="accessibility_icon_server_status">Server status icon</string>
     <string name="accessibility_icon_app_management">App management icon</string>
@@ -776,7 +705,6 @@
     <string name="accessibility_status_error">Error</string>
     <string name="accessibility_permission_granted">Permission granted</string>
     <string name="accessibility_permission_denied">Permission denied</string>
-
     <!-- Empty State Views -->
     <string name="empty_state_title_no_results">No results found</string>
     <string name="empty_state_description_no_results">No apps match your current filter or search criteria.</string>
@@ -791,12 +719,10 @@
     <string name="empty_state_description_activity_log_empty">Shizuku API calls and events will appear here when activity logging is enabled.</string>
     <string name="empty_state_title_hidden_apps">No hidden apps</string>
     <string name="empty_state_description_hidden_apps">Apps you hide from the management list will appear here.</string>
-
     <!-- Update Settings -->
     <string name="settings_update_category">Auto Update</string>
     <string name="settings_update_title">Updates</string>
     <string name="settings_update_summary">Check for app updates and configure auto-update</string>
-    
     <!-- Developer Options -->
     <string name="settings_developer_options">Developer Options</string>
     <string name="settings_developer_options_summary">Virtualization, device spoofing, and experimental features</string>
@@ -818,7 +744,6 @@
     <string name="settings_current_version_title">Current version</string>
     <string name="settings_last_check_title">Last checked</string>
     <string name="update_never_checked">Never</string>
-
     <!-- Update Notifications -->
     <string name="update_notification_channel">Update Notifications</string>
     <string name="update_notification_channel_description">Notifications for app update downloads and installations</string>
@@ -830,7 +755,6 @@
     <string name="update_install_now">Install now</string>
     <string name="update_download_failed_title">Download failed</string>
     <string name="update_download_failed_message">Failed to download the update. Please try again.</string>
-
     <!-- Migration Dialog -->
 <string name="migration_dialog_title">Important: Reinstall Required</string>
     <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
@@ -843,7 +767,6 @@
     <string name="migration_failure_title">Migration Failed</string>
     <string name="migration_failure_message">Could not read settings from the old version. You may need to reconfigure your preferences manually.\n\nYou can still uninstall the old version safely.</string>
     <string name="migration_no_root_message">Root access is not available, so settings cannot be migrated automatically. You will need to reconfigure your preferences manually.\n\nYou can uninstall the old version when ready.</string>
-
     <!-- Update Dialogs -->
     <string name="update_available_title">Update Available</string>
     <string name="update_available_message">A new version %1$s is available for download.</string>
@@ -866,7 +789,6 @@
     <string name="shell_export_success">Files exported successfully</string>
     <string name="shell_export_failed">Export failed — no files could be written</string>
     <string name="shell_export_partial">%1$d of %2$d files exported (some failed)</string>
-
     <!-- Settings backup/restore -->
     <string name="settings_backup_category">Backup &amp; Restore</string>
     <string name="settings_export_title">Export Settings</string>
@@ -880,32 +802,24 @@
     <string name="adb_native_unavailable">ADB pairing is not available on this device</string>
     <string name="shizuku_not_available">Shizuku service is not available</string>
     <string name="su_bridge_magic_setup_success_global_setting">Magic Setup completed! System global setting configured.</string>
-
     <string name="changelog_title">What\'s New</string>
     <string name="changelog_close">Close</string>
-
     <string name="aicore_plus_label">AICore+ Automation Bridge</string>
     <string name="aicore_plus_description">Required for ShizukuX AICore+ features. Provides privileged UI hierarchy dumping and physical input simulation for AI-driven automation. Does not observe passwords or personal data.</string>
-
     <!-- Common action labels -->
     <string name="action_clear_all">Clear All</string>
     <string name="action_continue">Continue</string>
     <string name="action_open_github">GitHub</string>
-
     <!-- Service Doctor auto-fix -->
     <string name="service_doctor_fix_phantom_attempted">Phantom process limit disabled. Restart the service if needed.</string>
     <string name="service_doctor_fix_requires_service">Shizuku must be running to apply this fix automatically.</string>
     <string name="service_doctor_fix_failed">Auto-fix failed: %1$s</string>
-
     <!-- ADB Pairing -->
     <string name="adb_foreground_op_denied">Unable to start foreground service — START_FOREGROUND permission is denied. Please check your device\'s app permissions.</string>
-
     <!-- Update dialog -->
     <string name="update_no_release_notes">No release notes available.</string>
-
     <!-- Accessibility service status -->
     <string name="accessibility_service_monitoring">Accessibility service active: monitoring for pairing code…</string>
-
     <!-- Dhizuku Device Owner Setup -->
     <string name="dhizuku_setup_title">Set Up Device Owner</string>
     <string name="dhizuku_setup_message">Dhizuku Mode requires ShizukuX to be set as Device Owner. Run this command once via ADB while USB debugging is enabled:\n\n%1$s\n\nAfter running the command, restart Shizuku.</string>
@@ -913,10 +827,8 @@
     <string name="dhizuku_setup_copied">Command copied to clipboard</string>
     <string name="dhizuku_status_active">Device Owner: Active</string>
     <string name="dhizuku_status_not_set">Device Owner not set — tap for setup instructions</string>
-
     <!-- Remote App DB Sync -->
     <string name="remote_db_sync_channel_name">App Database Updates</string>
-
     <!-- Binder Enhancements (Issue #199) -->
     <string name="settings_binder_firewall">Binder Firewall</string>
     <string name="settings_binder_firewall_summary">Audit and block sensitive system transactions from unauthorized apps</string>
@@ -926,12 +838,10 @@
     <string name="settings_shadow_binder_summary">Intercept and mock system service calls to hide device information or app state</string>
     <string name="settings_shadow_binder_hidden_packages">Hidden Packages</string>
     <string name="settings_shadow_binder_hidden_packages_summary">Comma-separated list of package names to hide from other apps</string>
-
     <plurals name="settings_shadow_binder_hidden_packages_count">
         <item quantity="one">%d app selected</item>
         <item quantity="other">%d apps selected</item>
     </plurals>
-
     <!-- Companion Mode -->
     <string name="settings_category_companion">Companion Mode</string>
     <string name="settings_companion_mode">Show Companion Card</string>
@@ -944,14 +854,11 @@
     <string name="home_companion_open">Open</string>
     <string name="home_companion_install">Install</string>
     <string name="watchdog_open_stock_shizuku">Open Stock Shizuku</string>
-
     <string name="settings_live_activity">Live Activity Notifications</string>
     <string name="settings_live_activity_summary">Show real-time service activity in the status bar</string>
-
     <!-- App picker dialog -->
     <string name="app_management_empty">No apps found</string>
     <string name="app_management_search_hint">Search apps</string>
-
     <!-- Root Compatibility Hub -->
     <string name="root_hub_title">Root Compatibility Hub</string>
     <string name="root_hub_global_config_title">Global SU Path</string>
@@ -968,17 +875,16 @@
     <string name="root_hub_device_identity_none">None (show real device)</string>
     <string name="root_hub_device_identity_real">Real: %s</string>
     <string name="root_hub_device_identity_spoofed">Spoofed: %s</string>
-
     <!-- Home Automation dialog labels -->
     <string name="home_automation_dialog_label_action">Action</string>
     <string name="home_automation_dialog_label_class">Class</string>
     <string name="home_automation_dialog_label_package">Package</string>
     <string name="home_automation_dialog_label_target">Target</string>
-
     <!-- Misc -->
     <string name="action_start">Start</string>
     <string name="settings_tcp_learn_more">Learn more about using automation tools to control Shizuku</string>
-
+    <string name="settings_diagnostics_category">Diagnostics</string>
+    <string name="settings_adb_category">ADB Management</string>
     <string name="settings_help">Help</string>
     <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_adb_category">ADB Management</string>
