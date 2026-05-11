@@ -299,7 +299,6 @@
     <string name="settings_version">Version</string>
     <string name="settings_developer_options_revealed">Developer Options revealed!</string>
     <string name="settings_developer_options_click_more">Tap %d more times to reveal Developer Options.</string>
-    <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_stealth_mode">Stealth Mode</string>
     <string name="settings_stealth_mode_summary">Hide app icon and simplify UI for privacy</string>
     <string name="settings_report_bug">Report a bug</string>
@@ -883,8 +882,6 @@
     <!-- Misc -->
     <string name="action_start">Start</string>
     <string name="settings_tcp_learn_more">Learn more about using automation tools to control Shizuku</string>
-    <string name="settings_diagnostics_category">Diagnostics</string>
-    <string name="settings_adb_category">ADB Management</string>
     <string name="settings_help">Help</string>
     <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_adb_category">ADB Management</string>
