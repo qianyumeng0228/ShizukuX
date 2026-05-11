@@ -978,4 +978,5 @@
     <string name="action_start">Start</string>
     <string name="settings_tcp_learn_more">Learn more about using automation tools to control Shizuku</string>
 
+    <string name="settings_help">Help</string>
 </resources>
