@@ -64,6 +64,7 @@ import rikka.rish.RishConfig;
 import rikka.shizuku.ShizukuApiConstants;
 import rikka.shizuku.server.api.IContentProviderUtils;
 import rikka.shizuku.server.util.HandlerUtil;
+import rikka.shizuku.server.util.Logger;
 import rikka.shizuku.server.util.UserHandleCompat;
 import rikka.shizuku.server.ClientManager;
 import rikka.shizuku.server.ClientRecord;
