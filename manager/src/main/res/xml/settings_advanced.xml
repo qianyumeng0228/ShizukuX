@@ -1,36 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <Preference
-        android:key="service_doctor"
-        android:title="@string/home_service_doctor_title"
-        android:summary="@string/home_service_doctor_summary"
-        android:icon="@drawable/ic_medical_services_24" />
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_diagnostics"
+        android:title="@string/settings_diagnostics_category"
+        android:defaultValue="true">
 
-    <SwitchPreferenceCompat
-        android:key="enable_activity_log"
-        android:title="@string/settings_enable_activity_log"
-        android:summary="@string/settings_enable_activity_log_summary"
-        android:icon="@drawable/ic_history_24"
-        android:defaultValue="true" />
+        <Preference
+            android:key="service_doctor"
+            android:title="@string/home_service_doctor_title"
+            android:summary="@string/home_service_doctor_summary"
+            android:icon="@drawable/ic_medical_services_24" />
 
-    <Preference
-        android:key="activity_log"
-        android:title="@string/settings_activity_log"
-        android:icon="@drawable/ic_history_24"
-        android:dependency="enable_activity_log" />
+        <SwitchPreferenceCompat
+            android:key="enable_activity_log"
+            android:title="@string/settings_enable_activity_log"
+            android:summary="@string/settings_enable_activity_log_summary"
+            android:icon="@drawable/ic_history_24"
+            android:defaultValue="true" />
 
-    <SwitchPreferenceCompat
-        android:key="legacy_pairing"
-        android:summary="@string/settings_legacy_pairing_summary"
-        android:title="@string/settings_legacy_pairing"
-        android:icon="@drawable/ic_numeric_1_circle_outline_24" />
+        <Preference
+            android:key="activity_log"
+            android:title="@string/settings_activity_log"
+            android:icon="@drawable/ic_history_24"
+            android:dependency="enable_activity_log" />
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <Preference
-        android:key="reset_adb_keys"
-        android:title="@string/settings_reset_adb_keys"
-        android:summary="@string/settings_reset_adb_keys_summary"
-        android:icon="@drawable/ic_autorenew" />
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_adb_management"
+        android:title="@string/settings_adb_category"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="legacy_pairing"
+            android:summary="@string/settings_legacy_pairing_summary"
+            android:title="@string/settings_legacy_pairing"
+            android:icon="@drawable/ic_numeric_1_circle_outline_24" />
+
+        <Preference
+            android:key="reset_adb_keys"
+            android:title="@string/settings_reset_adb_keys"
+            android:summary="@string/settings_reset_adb_keys_summary"
+            android:icon="@drawable/ic_autorenew" />
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <Preference
         android:key="help"
