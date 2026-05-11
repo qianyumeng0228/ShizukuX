@@ -143,6 +143,28 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         BinderSender.register(this);
 
+        Logger.setEventDispatcher((priority, tag, message, throwable) -> {
+            List<ClientRecord> records = clientManager.findClients(managerAppId);
+            for (ClientRecord record : records) {
+                if (record.client != null) {
+                    try {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{");
+                        sb.append("\"priority\":").append(priority).append(",");
+                        sb.append("\"tag\":\"").append(tag).append("\",");
+                        sb.append("\"message\":\"").append(message.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
+                        if (throwable != null) {
+                            String st = Log.getStackTraceString(throwable).replace("\"", "\\\"").replace("\n", "\\n");
+                            sb.append(",\"stacktrace\":\"").append(st).append("\"");
+                        }
+                        sb.append("}");
+                        record.client.dispatchSentryEvent(sb.toString());
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        });
+
         mainHandler.post(() -> {
             sendBinderToClient();
             sendBinderToManager();
