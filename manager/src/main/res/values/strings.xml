@@ -206,6 +206,7 @@
     <string name="app_management_item_summary_requires_root">* requires Shizuku runs with root</string>
     <string name="app_management_item_summary_partial_root">⚠ Partially supported — some functions still need Shizuku with root</string>
     <string name="app_management_item_summary_requires_plus">* requires ShizukuX Enhanced API</string>
+    <string name="app_management_item_summary_shizuku_aware">Shizuku-aware: Supports Shizuku natively</string>
     <string name="app_management_item_context">About this app: %s</string>
     <string name="app_management_enhancements">Enhancements</string>
     <string name="app_management_enhancements_desc">Enable Plus features for this app to improve performance and compatibility.</string>

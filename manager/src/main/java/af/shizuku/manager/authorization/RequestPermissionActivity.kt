@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
-import af.shizuku.manager.app.AppActivity
+import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.Logger.LOGGER

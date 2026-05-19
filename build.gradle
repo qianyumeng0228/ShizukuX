@@ -9,23 +9,6 @@ idea.module {
     excludeDirs += file("out")
 }
 
-subprojects { subproject ->
-    plugins.withId("com.android.base") {
-        android {
-            compileSdk = 36
-            ndkVersion = "29.0.13113456"
-            defaultConfig {
-                minSdk = 24
-                targetSdk = 36
-            }
-            compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_21
-                targetCompatibility = JavaVersion.VERSION_21
-            }
-        }
-    }
-}
-
 def getGitCommitCount() {
     try {
         return Integer.parseInt("git rev-list --count HEAD".execute([], project.rootDir).text.trim())
@@ -35,9 +18,11 @@ def getGitCommitCount() {
 }
 
 def gitCommitCount = getGitCommitCount()
-def baseVersionName = "13.6.1"
-def isBeta = project.hasProperty("beta")
+def baseVersionName = "13.6.0"
 ext {
     versionCode = gitCommitCount
-    versionName = "v${baseVersionName}.r${gitCommitCount}-shizukuplus-prerelease${if (isBeta) "-beta" else ""}"
+    versionName = "ShizukuX ${baseVersionName}.r${gitCommitCount}"
 }
+
+subprojects { subproject ->
+    plugins.withId("com.android.base") {

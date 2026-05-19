@@ -7,7 +7,7 @@ import android.os.Bundle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
-import af.shizuku.manager.app.AppActivity
+import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.ktx.toHtml
 import rikka.html.text.HtmlCompat
 

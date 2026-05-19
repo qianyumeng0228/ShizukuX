@@ -31,8 +31,8 @@ import af.shizuku.manager.AppConstants.EXTRA
 import af.shizuku.manager.R
 import af.shizuku.manager.adb.AdbKeyException
 import af.shizuku.manager.adb.AdbStarter
-import af.shizuku.manager.app.AppBarActivity
-import af.shizuku.manager.utils.ActivityLogManager
+import af.shizuku.core.ui.AppBarActivity
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.databinding.StarterActivityBinding
 import rikka.lifecycle.Resource
@@ -130,6 +130,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     val output = _output as LiveData<Resource<StringBuilder>>
 
     private val handler = CoroutineExceptionHandler { _, throwable ->
+        if (throwable !is CancellationException) {
+            io.sentry.Sentry.captureException(throwable)
+        }
         ShizukuStateMachine.update()
         log(error = throwable)
     }

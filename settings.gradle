@@ -37,6 +37,16 @@ dependencyResolutionManagement {
 }
 
 include ":server", ":starter", ":shell", ":manager", ":common", ":database"
+include ":feature:activitylog"
+project(":feature:activitylog").projectDir = file("feature/activitylog")
+include ":feature:adb"
+project(":feature:adb").projectDir = file("feature/adb")
+include ":feature:update"
+project(":feature:update").projectDir = file("feature/update")
+include ":feature:automation"
+project(":feature:automation").projectDir = file("feature/automation")
+include ":core:ui"
+project(":core:ui").projectDir = file("core/ui")
 
 def root = "api"
 

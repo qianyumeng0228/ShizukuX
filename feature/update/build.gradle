@@ -1,0 +1,29 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+}
+
+android {
+    namespace = "af.shizuku.feature.update"
+
+    buildFeatures {
+        viewBinding = true
+        buildConfig = true
+    }
+}
+
+dependencies {
+    implementation project(":common")
+    implementation project(":core:ui")
+    
+    // For R access to manager (temporary until resources are moved)
+    compileOnly project(":manager")
+    
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.timber
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.material
+    implementation libs.sentry.android.core
+}

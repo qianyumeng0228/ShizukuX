@@ -24,7 +24,7 @@ import af.shizuku.manager.starter.Starter
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
-import af.shizuku.manager.utils.UserHandleCompat
+import af.shizuku.common.util.UserHandleCompat
 import af.shizuku.manager.worker.AdbStartWorker
 
 object ShizukuReceiverStarter {

@@ -3,7 +3,7 @@ package rikka.shizuku.server
 import android.os.Process
 import af.shizuku.server.IActivityManagerPlus
 import rikka.hidden.compat.ActivityManagerApis
-import rikka.shizuku.server.util.UserHandleCompat
+import af.shizuku.common.util.UserHandleCompat
 
 class ActivityManagerPlusImpl : IActivityManagerPlus.Stub() {
     override fun deepForceStop(packageName: String?): Boolean {

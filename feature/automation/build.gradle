@@ -1,0 +1,19 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+}
+
+android {
+    namespace = "af.shizuku.feature.automation"
+}
+
+dependencies {
+    implementation project(":common")
+    implementation project(":core:ui")
+    
+    // For R access to manager
+    compileOnly project(":manager")
+    
+    implementation libs.androidx.core.ktx
+    implementation libs.timber
+}

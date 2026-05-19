@@ -65,7 +65,7 @@ import rikka.shizuku.ShizukuApiConstants;
 import rikka.shizuku.server.api.IContentProviderUtils;
 import rikka.shizuku.server.util.HandlerUtil;
 import rikka.shizuku.server.util.Logger;
-import rikka.shizuku.server.util.UserHandleCompat;
+import af.shizuku.common.util.UserHandleCompat;
 import rikka.shizuku.server.ClientManager;
 import rikka.shizuku.server.ClientRecord;
 
@@ -114,6 +114,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     public ShizukuService() {
         super();
+
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            LOGGER.e(throwable, "Uncaught exception in server thread " + thread.getName());
+            try {
+                // Give some time for the event to be dispatched before the process dies
+                Thread.sleep(500);
+            } catch (Throwable ignored) {
+            }
+            System.exit(1);
+        });
 
         HandlerUtil.setMainHandler(mainHandler);
 
@@ -297,9 +307,27 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
         }
         try {
+            // First try using the current descriptor (af.shizuku.server.IShizukuApplication)
             application.bindApplication(reply);
         } catch (Throwable e) {
-            LOGGER.w(e, "attachApplication");
+            // If it fails (likely due to interface descriptor mismatch on the client side),
+            // try using the legacy descriptor (moe.shizuku.server.IShizukuApplication)
+            LOGGER.w("attachApplication via current descriptor failed, trying legacy descriptor for " + requestPackageName);
+            try {
+                Parcel data = Parcel.obtain();
+                try {
+                    data.writeInterfaceToken("moe.shizuku.server.IShizukuApplication");
+                    // 1 = bindApplication(Bundle)
+                    data.writeInt(1);
+                    reply.writeToParcel(data, 0);
+                    application.asBinder().transact(1, data, null, IBinder.FLAG_ONEWAY);
+                    LOGGER.i("Successfully sent bindApplication via legacy descriptor to " + requestPackageName);
+                } finally {
+                    data.recycle();
+                }
+            } catch (Throwable e2) {
+                LOGGER.e(e2, "attachApplication legacy also failed for " + requestPackageName);
+            }
         }
     }
 
@@ -329,8 +357,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // 17 = reboot, 18 = shutdown
             if (code == 17 || code == 18) isBlocked = true;
         } else if ("android.app.IActivityManager".equals(descriptor)) {
-            // 61 = clearApplicationUserData
-            if (code == 61) isBlocked = true;
+            // 50/78 = forceStopPackage, 61 = clearApplicationUserData, 103 = killBackgroundProcesses
+            // Codes vary by API version, using common ones as heuristic
+            if (code == 50 || code == 61 || code == 78 || code == 103) isBlocked = true;
+        } else if ("android.content.pm.IPackageManager".equals(descriptor)) {
+            // 26 = deletePackage, 13 = installPackage
+            if (code == 26 || code == 13) isBlocked = true;
         }
         
         // Dynamic policy from settings
@@ -478,15 +510,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     } else if (cmd[i].equals("-s") || cmd[i].equals("--shell") || 
                                cmd[i].equals("-cn") || cmd[i].equals("--context") ||
                                cmd[i].equals("-g") || cmd[i].equals("--group") ||
-                               cmd[i].equals("-u") || cmd[i].equals("--user")) {
+                               cmd[i].equals("-u") || cmd[i].equals("--user") ||
+                               cmd[i].equals("-mm") || cmd[i].equals("--mount-master")) {
                         // These flags take a following argument — skip both
                         skipNext = true;
                     } else if (cmd[i].equals("-v") || cmd[i].equals("-V") || cmd[i].equals("--version")) {
                         // Return a fake version string for su
                         cmd = new String[]{"echo", "20260311:MAGISK"};
                         return newProcessInternal(cmd, env, dir);
-                    } else if (cmd[i].equals("-l") || cmd[i].equals("--login") || cmd[i].equals("-")) {
-                        // Login flag — skip, we don't set up a login environment
+                    } else if (cmd[i].equals("-l") || cmd[i].equals("--login") || cmd[i].equals("-") ||
+                               cmd[i].equals("-M") || cmd[i].equals("--magisk-mode")) {
+                        // Login or Magisk mode flags — skip safely
                     } else if (cmd[i].equals("-p") || cmd[i].equals("-m") || cmd[i].equals("--preserve-environment")) {
                         // Environment preservation flags — skip
                     } else if (!cmd[i].startsWith("-") && args.isEmpty()) {
@@ -642,15 +676,21 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                            "magisk /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n";
                         return newProcessInternal(new String[]{"echo", fakeMounts}, env, dir);
                     }
-                } else if (baseCmd.equals("test") && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
+                } else if (baseCmd.equals("test") && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk") || String.join(" ", cmd).contains("/dev/magisk") || String.join(" ", cmd).contains("/proc/self/mounts"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
-                        LOGGER.i("SUBridge: mocking test for Magisk directory");
+                        LOGGER.i("SUBridge: mocking test for Magisk-related paths");
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
-                } else if (baseCmd.equals("ls") && cmd.length > 1 && String.join(" ", cmd).contains("/su")) {
+                } else if (baseCmd.equals("ls") && cmd.length > 1 && (String.join(" ", cmd).contains("/su") || String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
-                        LOGGER.i("SUBridge: mocking ls for su path");
-                        return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 /system/xbin/su"}, env, dir);
+                        String fullCmd = String.join(" ", cmd);
+                        if (fullCmd.contains("/su")) {
+                            LOGGER.i("SUBridge: mocking ls for su path");
+                            return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 /system/xbin/su"}, env, dir);
+                        } else {
+                            LOGGER.i("SUBridge: mocking ls for Magisk path");
+                            return newProcessInternal(new String[]{"echo", "total 0"}, env, dir);
+                        }
                     }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
                     String realSuPath = plusSettingsMap.getOrDefault("su_path", "/system/xbin/su");
@@ -1424,10 +1464,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 // 65 = OP_SYSTEM_ALERT_WINDOW (fallback), 66 = OP_REQUEST_INSTALL_PACKAGES,
                 // 100 = OP_MANAGE_EXTERNAL_STORAGE, 103 = OP_ACCESS_RESTRICTED_SETTINGS, 
                 // 121 = OP_SCHEDULE_EXACT_ALARM (privileged)
-                int[] opsToElevate = {24, 43, 63, 65, 66, 100, 103, 121};
+                int[] opsToElevate = {24, 43, 63, 65, 66, 100, 103, 107, 111, 119, 121};
                 for (int op : opsToElevate) {
                     try {
-                        setMode.invoke(service, op, uid, null, 0);
+                        setMode.invoke(service, op, uid, packageName, 0); // 0 = MODE_ALLOWED
                     } catch (Exception e) {
                         LOGGER.w(e, "Plus: Failed to set AppOps mode %d for uid %d", op, uid);
                     }

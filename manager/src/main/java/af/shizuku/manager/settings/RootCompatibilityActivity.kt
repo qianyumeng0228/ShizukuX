@@ -31,15 +31,16 @@ import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.launch
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.app.AppBarActivity
+import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.databinding.ActivityRootCompatibilityBinding
 import af.shizuku.manager.databinding.AppListItemBinding
 import af.shizuku.manager.databinding.ListSectionHeaderBinding
-import af.shizuku.manager.ktx.loge
-import af.shizuku.manager.utils.AppContextManager
-import af.shizuku.manager.utils.RootCompatHelper
+import af.shizuku.common.ktx.loge
+import af.shizuku.manager.database.AppContextManager
+import af.shizuku.manager.database.RootCompatHelper
 import rikka.shizuku.Shizuku
-import af.shizuku.manager.utils.RootSupportLevel
+import af.shizuku.manager.database.RootSupportLevel
+import io.sentry.Sentry
 
 class RootCompatibilityActivity : AppBarActivity() {
 
@@ -189,43 +190,7 @@ class RootCompatibilityActivity : AppBarActivity() {
 
 
     private fun resolveSuPath(): String? {
-        val uriStr = ShizukuSettings.getExportDirUri() ?: return null
-        return try {
-            val uri = Uri.parse(uriStr)
-            val docId = DocumentsContract.getTreeDocumentId(uri)
-            
-            // Check for common volume patterns
-            val path = when {
-                docId.startsWith("primary:") -> {
-                    val relative = docId.removePrefix("primary:")
-                    if (relative.isEmpty()) "/storage/emulated/0/su"
-                    else "/storage/emulated/0/$relative/su"
-                }
-                docId.contains(":") -> {
-                    // Try to resolve secondary SD cards if possible (best-effort)
-                    val parts = docId.split(":")
-                    val volumeId = parts[0]
-                    val relative = parts[1]
-                    "/storage/$volumeId/$relative/su"
-                }
-                // Handle direct directory names if primary prefix is missing
-                docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies") -> {
-                    "/storage/emulated/0/$docId/su"
-                }
-                else -> {
-                    // Fallback to internal app storage if it looks like a relative path
-                    if (!docId.startsWith("/")) "/storage/emulated/0/$docId/su"
-                    else docId // If it's already an absolute path
-                }
-            }
-            // Ensure no double slashes and correct su filename
-            path?.replace("//", "/")?.let { 
-                if (!it.endsWith("/su")) it.removeSuffix("/") + "/su" else it
-            }
-        } catch (e: Exception) {
-            Timber.tag(TAG).d(e, "Failed to resolve su path from URI: $uriStr")
-            null
-        }
+        return af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath("su")
     }
 
     private fun copyToClipboard(text: String) {
@@ -317,6 +282,9 @@ class RootCompatibilityActivity : AppBarActivity() {
                 }
                 // "Requires Plus" badge: shown when app has Plus enhancements that benefit it
                 holder.binding.requiresPlus.visibility = if (metadata != null && metadata.potentialEnhancements.isNotEmpty()) View.VISIBLE else View.GONE
+                
+                // "Shizuku-aware" badge: shown for apps that support Shizuku natively
+                holder.binding.shizukuAware.visibility = if (metadata?.supportsShizukuNatively == true) View.VISIBLE else View.GONE
 
                 holder.binding.switchWidget.visibility = View.GONE
                 holder.binding.checkbox.visibility = View.GONE
@@ -343,6 +311,9 @@ class RootCompatibilityActivity : AppBarActivity() {
                     isInstalled = true
                 } catch (e: Exception) {
                     Timber.tag(TAG).w(e, "Failed to check if package $pkg is installed")
+                    if (e !is PackageManager.NameNotFoundException) {
+                        Sentry.captureException(e)
+                    }
                 }
 
                 holder.binding.suMagicSetup.isVisible = isInstalled
@@ -395,6 +366,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg")))
                             } catch (e: Exception) {
                                 timber.log.Timber.e(e, "start application details settings failed")
+                                Sentry.captureException(e)
                             }
                         }
                     }
@@ -431,6 +403,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")))
                             } catch (e2: Exception) {
                                 loge("start view intent failed", e2)
+                                Sentry.captureException(e2)
                             }
                         }
                     }

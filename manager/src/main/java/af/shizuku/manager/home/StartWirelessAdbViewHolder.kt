@@ -171,7 +171,12 @@ class StartWirelessAdbViewHolder(
         if (EnvironmentUtils.isTelevision()) {
             context.showAccessibilityDialog()
         } else if ((context.display?.displayId ?: -1) > 0 || ShizukuSettings.getLegacyPairing()) {
-            AdbPairDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
+            val activity = context.asActivity<FragmentActivity>()
+            if (activity != null) {
+                AdbPairDialogFragment().show(activity.supportFragmentManager)
+            } else {
+                Timber.e("onPairClicked: could not find FragmentActivity in context $context")
+            }
         } else {
             val activity = context.asActivity<android.app.Activity>() ?: return
             activity.startWithSceneTransition(

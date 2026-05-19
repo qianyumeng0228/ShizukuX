@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.Parcel
-import af.shizuku.manager.ktx.loge
+import af.shizuku.common.ktx.loge
 import af.shizuku.manager.utils.Logger.LOGGER
 import rikka.shizuku.Shizuku
 import af.shizuku.manager.ShizukuSettings

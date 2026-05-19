@@ -18,7 +18,7 @@ import af.shizuku.manager.R
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
-import af.shizuku.manager.utils.ActivityLogManager
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.utils.StockShizukuCompat

@@ -69,7 +69,7 @@
 ```
 
 ### Release Tracking
-- [x] Version format consistent: shizuku-plus@X.X.X.rXXXX-shizukuplus
+- [x] Version format consistent: ShizukuX 13.6.0.rXXXX
 - [x] GitHub release notes include Sentry link
 - [x] Commits linked to each release
 - [x] Source context uploaded for better stack traces
@@ -98,6 +98,7 @@
 - [x] No lint errors
 - [x] No duplicate resource keys
 - [x] No missing R imports
+- [x] Feature modularity verification (activitylog, adb, update, automation)
 
 ## 📊 Monitoring & Analytics
 
@@ -107,6 +108,7 @@
 - [x] Crash-free sessions tracking active
 - [x] Performance monitoring data flowing
 - [x] ANR reports appearing (if any)
+- [x] Server-side crash reporting active
 
 ### Key Metrics to Watch (Post-Release)
 - **Crash-free users**: Target > 99%
@@ -118,12 +120,12 @@
 ## 🚀 Release Process
 
 ### Before Release
-1. [ ] All pre-release testing completed
-2. [ ] Sentry issues reviewed and resolved
-3. [ ] GitHub Actions build passing
-4. [ ] Version name updated in build.gradle
+1. [x] All pre-release testing completed
+2. [x] Sentry issues reviewed and resolved
+3. [x] GitHub Actions build passing
+4. [x] Version name updated in build.gradle (13.6.0)
 5. [ ] CHANGELOG.md updated (if exists)
-6. [ ] README.md updated with new features (if applicable)
+6. [x] README.md updated with new features
 
 ### Release Steps
 1. [ ] Merge to master branch
@@ -143,16 +145,13 @@
 ## 📝 Current Release Notes
 
 ### 🔧 Improvements
-- **Crash fixes**: Resolved Mavericks `HomeViewModel` factory crash after R8 repackaging; fixed `coordinator_root IllegalStateException` in five activities (RootCompatibility, ActivityLog, AdbPairingTutorial, Starter, ShellTutorial) caused by content-only layouts being used as root frames
-- **Migration dialog**: Reconstructed `showMigrationDialog()` from placeholder; both root and no-root branches now work correctly
-- **Crash report dialog**: Removed duplicate button that was silently overriding the "Share File" action
-- **Activity Log**: Upgraded adapter from `notifyDataSetChanged()` to `ListAdapter` + `DiffUtil` for smooth incremental updates
-- **Animations**: Added Material Shared Axis X transitions to all `AppBarActivity` screens
-- **UI components**: Added `header_card.xml` reusable hero header and `MotionUtils.kt` spring-scale touch animations with haptics
-- **Accessibility**: Added `importantForAccessibility="no"` to decorative icons; added content descriptions for drag handle and remove button
-- **AppContextManager**: Added `overlay_manager_plus` and `network_governor_plus` enhancement mappings to fix silent data loss from remote DB imports
-- **Settings**: Added import/export in Developer Options
-- **Manual crash reporting**: Added crash report dialog on startup offering clipboard copy, GitHub issue link, or file share
+- **Modularity**: Extracted ADB, Updates, and AICore+ Automation into independent feature modules for a cleaner architecture.
+- **Versioning**: Aligned base version with upstream Shizuku 13.6.0; adopted simplified naming convention `ShizukuX 13.6.0.rXXXX`.
+- **Crash Reporting**: Relocated manual crash reporting to Developer Options; enabled global server-side crash reporting via Sentry.
+- **Sentry Expansion**: Added automated tracking to ADB pairing and core diagnostic activities.
+- **Crash fixes**: Resolved Mavericks `HomeViewModel` factory crash after R8 repackaging; fixed `coordinator_root IllegalStateException` in activities caused by content-only layouts.
+- **Migration dialog**: Both root and no-root branches now work correctly.
+- **Activity Log**: Upgraded adapter to `ListAdapter` + `DiffUtil` for smooth updates.
 
 ## 📝 Release Notes Archive
 
@@ -197,6 +196,6 @@
 
 ---
 
-**Last Updated:** 2026-04-04
-**Release Version:** 13.6.1.r{COUNT}-shizukuplus
+**Last Updated:** 2026-05-18
+**Release Version:** 13.6.0.r{COUNT}
 **Status:** ✅ Ready for Release

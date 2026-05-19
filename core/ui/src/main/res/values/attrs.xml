@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="emptyIcon" format="reference" />
+    <attr name="emptyTitle" format="reference|string" />
+    <attr name="emptyDescription" format="reference|string" />
+    <attr name="emptyActionText" format="reference|string" />
+
+    <declare-styleable name="EmptyStateView">
+        <attr name="emptyIcon" />
+        <attr name="emptyTitle" />
+        <attr name="emptyDescription" />
+        <attr name="emptyActionText" />
+    </declare-styleable>
+</resources>

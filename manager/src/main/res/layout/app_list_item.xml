@@ -93,6 +93,18 @@
                 android:text="@string/app_management_item_summary_requires_plus" />
 
             <TextView
+                android:id="@+id/shizuku_aware"
+                android:layout_width="wrap_content"
+                android:textAppearance="?textAppearanceLabelSmall"
+                android:layout_height="wrap_content"
+                android:textColor="?colorPrimary"
+                android:visibility="gone"
+                android:drawableStart="@drawable/ic_server_ok_24"
+                android:drawablePadding="4dp"
+                android:drawableTint="?colorPrimary"
+                android:text="@string/app_management_item_summary_shizuku_aware" />
+
+            <TextView
                 android:id="@+id/su_path_nav"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

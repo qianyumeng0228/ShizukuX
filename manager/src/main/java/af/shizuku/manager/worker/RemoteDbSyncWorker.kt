@@ -10,7 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.utils.AppContextManager
+import af.shizuku.manager.database.AppContextManager
 import timber.log.Timber
 import java.net.HttpURLConnection
 import java.net.URL

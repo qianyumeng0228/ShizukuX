@@ -1,0 +1,154 @@
+package af.shizuku.manager.adb
+
+import android.app.AppOpsManager
+import android.app.ForegroundServiceStartNotAllowedException
+import android.app.NotificationManager
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.provider.Settings
+import timber.log.Timber
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
+import af.shizuku.manager.R
+import af.shizuku.manager.AppConstants
+import af.shizuku.core.ui.AppBarActivity
+import af.shizuku.manager.databinding.AdbPairingTutorialActivityBinding
+import af.shizuku.manager.utils.SettingsHelper
+import af.shizuku.manager.utils.SettingsPage
+import af.shizuku.manager.utils.ShizukuStateMachine
+import rikka.compatibility.DeviceCompatibility
+
+@RequiresApi(Build.VERSION_CODES.R)
+class AdbPairingTutorialActivity : AppBarActivity() {
+
+    private lateinit var binding: AdbPairingTutorialActivityBinding
+
+    private var notificationEnabled: Boolean = false
+
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val context = this
+
+        if (!af.shizuku.manager.ShizukuApplication.isAdbNativeAvailable) {
+            Toast.makeText(this, R.string.adb_native_unavailable, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        binding = AdbPairingTutorialActivityBinding.inflate(layoutInflater, rootView, true)
+        
+        binding.header.apply {
+            headerIcon.setImageResource(R.drawable.ic_wadb_24)
+            headerIcon.transitionName = "icon_wireless_adb"
+            headerTitle.setText(R.string.home_wireless_adb_title)
+        }
+        
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+
+        notificationEnabled = isNotificationEnabled()
+
+        if (notificationEnabled) {
+            startPairingService()
+        }
+
+        binding.apply {
+            syncNotificationEnabled()
+
+            if (DeviceCompatibility.isMiui()) {
+                miui.isVisible = true
+            }
+
+            developerOptions.setOnClickListener {
+                SettingsHelper.launchOrHighlightWirelessDebugging(context)
+            }
+
+            notificationOptions.setOnClickListener {
+                SettingsPage.Notifications.NotificationSettings.launch(context)
+            }
+        }
+    }
+
+
+    private fun syncNotificationEnabled() {
+        binding.apply {
+            // Keep steps visible so user can prepare, but show warning
+            notificationDisabled.isGone = notificationEnabled
+            // notification is the "success" card, only show if enabled
+            notification.isVisible = notificationEnabled
+        }
+    }
+
+    private fun isNotificationEnabled(): Boolean {
+        val context = this
+
+        val nm = context.getSystemService(NotificationManager::class.java)
+        val channel = nm.getNotificationChannel(AdbPairingService.NOTIFICATION_CHANNEL)
+        return nm.areNotificationsEnabled() &&
+                (channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE)
+    }
+
+    private val runningListener: (ShizukuStateMachine.State) -> Unit = { state ->
+        if (state == ShizukuStateMachine.State.RUNNING && !isFinishing) {
+            window?.decorView?.post { if (!isFinishing) finish() }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        ShizukuStateMachine.addListener(runningListener)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        ShizukuStateMachine.removeListener(runningListener)
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val newNotificationEnabled = isNotificationEnabled()
+        if (newNotificationEnabled != notificationEnabled) {
+            notificationEnabled = newNotificationEnabled
+            syncNotificationEnabled()
+
+            if (newNotificationEnabled) {
+                startPairingService()
+            }
+        }
+    }
+
+    private fun startPairingService() {
+        val intent = AdbPairingService.startIntent(this)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Throwable) {
+            Timber.tag(AppConstants.TAG).e(e, "startForegroundService")
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && e is ForegroundServiceStartNotAllowedException
+            ) {
+                val appOps = getSystemService(AppOpsManager::class.java)
+                val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    appOps.unsafeCheckOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName)
+                } else {
+                    @Suppress("DEPRECATION")
+                    appOps.noteOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName, null, null)
+                }
+                
+                if (mode == AppOpsManager.MODE_ERRORED) {
+                    Toast.makeText(this, R.string.adb_foreground_op_denied, Toast.LENGTH_LONG).show()
+                }
+                startService(intent)
+            }
+        }
+    }
+}

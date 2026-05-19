@@ -10,6 +10,7 @@ that apply to every agent regardless of vendor.
 |-------|------|
 | Claude Code | [`CLAUDE.md`](CLAUDE.md) |
 | Gemini | [`GEMINI.md`](GEMINI.md) |
+| Jules | [`JULES.md`](JULES.md) |
 
 Read the guide for the agent you are. They share most rules but the
 Claude file is the most fleshed-out — start there if your guide is sparse.

@@ -12,7 +12,7 @@ import java.util.Map;
 import af.shizuku.starter.ServiceStarter;
 import rikka.hidden.compat.PackageManagerApis;
 import rikka.hidden.compat.UserManagerApis;
-import rikka.shizuku.server.util.UserHandleCompat;
+import af.shizuku.common.util.UserHandleCompat;
 
 public class ShizukuUserServiceManager extends UserServiceManager {
 

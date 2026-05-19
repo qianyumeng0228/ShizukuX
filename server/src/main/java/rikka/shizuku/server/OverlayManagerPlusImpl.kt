@@ -5,7 +5,7 @@ import android.os.Process
 import android.os.ServiceManager
 import android.util.Log
 import af.shizuku.server.IOverlayManagerPlus
-import rikka.shizuku.server.util.UserHandleCompat
+import af.shizuku.common.util.UserHandleCompat
 
 class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
 

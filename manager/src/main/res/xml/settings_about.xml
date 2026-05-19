@@ -19,16 +19,4 @@
         android:summary="@string/settings_open_source_licenses_summary"
         android:icon="@drawable/ic_article_24" />
 
-    <PreferenceCategory
-        android:key="category_support"
-        android:title="Support &amp; Feedback">
-
-        <Preference
-            android:key="manual_report"
-            android:title="@string/manual_report_title"
-            android:summary="@string/manual_report_summary"
-            android:icon="@drawable/ic_server_error_24" />
-
-    </PreferenceCategory>
-
 </PreferenceScreen>

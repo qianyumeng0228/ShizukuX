@@ -26,10 +26,12 @@ class MainActivity : HomeActivity() {
             Sentry.addBreadcrumb(Breadcrumb("Calling super.onCreate"))
             super.onCreate(savedInstanceState)
 
-            // Check for previous crashes and offer to report — must be after super so the
-            // window is attached and MaterialAlertDialogBuilder can create a dialog token.
+            // Check for previous crashes and offer to report — only for developers if Sentry is disabled.
+            // Take manual reporting out of the general purpose UI for end users.
             if (af.shizuku.manager.utils.CrashHandler.getLastCrashReport(this) != null) {
-                showCrashReportDialog()
+                if (ShizukuSettings.isVectorEnabled() && BuildConfig.SENTRY_DSN.isEmpty()) {
+                    showCrashReportDialog()
+                }
             }
 
             Timber.d("Checking onboarding status")

@@ -109,10 +109,7 @@
             android:name=".management.ApplicationManagementActivity"
             android:exported="false"
             android:label="@string/home_app_management_title" />
-        <activity
-            android:name=".settings.ActivityLogActivity"
-            android:exported="false"
-            android:label="@string/settings_activity_log" />
+
         <activity
             android:name=".settings.RootCompatibilityActivity"
             android:exported="false"
@@ -121,10 +118,6 @@
             android:name=".settings.ServiceDoctorActivity"
             android:exported="false"
             android:label="@string/home_service_doctor_title" />
-        <activity
-            android:name=".adb.AdbPairingTutorialActivity"
-            android:exported="false"
-            android:label="@string/adb_pairing" />
         <activity
             android:name=".shell.ShellTutorialActivity"
             android:exported="false"
@@ -155,6 +148,7 @@
             android:theme="@style/GrantPermissions">
             <intent-filter>
                 <action android:name="${applicationId}.intent.action.REQUEST_PERMISSION" />
+                <action android:name="moe.shizuku.manager.intent.action.REQUEST_PERMISSION" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
@@ -189,24 +183,6 @@
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:foregroundServiceType="shortService"
             tools:node="merge" />
-
-        <service
-            android:name=".adb.AdbPairingService"
-            android:enabled="true"
-            android:exported="false"
-            android:foregroundServiceType="shortService" />
-
-        <service
-            android:name=".adb.AdbPairingAccessibilityService"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_config" />
-        </service>
 
         <service
             android:name=".service.WatchdogService"
@@ -321,7 +297,7 @@
 
         <provider
             android:name=".ShizukuManagerProvider"
-            android:authorities="${applicationId}.shizuku"
+            android:authorities="${applicationId}.shizuku;moe.shizuku.privileged.api"
             android:directBootAware="true"
             android:enabled="true"
             android:exported="true"
@@ -345,19 +321,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <service
-            android:name=".automation.AICorePlusService"
-            android:label="@string/aicore_plus_label"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_service_automation" />
-        </service>
-
         <receiver
             android:name=".admin.DhizukuAdminReceiver"
             android:description="@string/dhizuku_device_owner_desc"

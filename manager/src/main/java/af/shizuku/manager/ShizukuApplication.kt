@@ -13,7 +13,12 @@ import io.sentry.android.timber.SentryTimberTree
 import io.sentry.Breadcrumb
 import android.content.Intent
 import af.shizuku.manager.service.WatchdogService
-import af.shizuku.manager.utils.ActivityLogManager
+import af.shizuku.manager.utils.ThemeDelegateImpl
+import af.shizuku.core.ui.ThemeDelegateManager
+import af.shizuku.manager.utils.AppContextSettingsImpl
+import af.shizuku.manager.database.AppContextManager
+import af.shizuku.manager.utils.ActivityLogSettingsImpl
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
 import org.lsposed.hiddenapibypass.HiddenApiBypass
 import rikka.core.util.BuildUtils.atLeast30
@@ -221,7 +226,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
      * Initialize settings and managers
      */
     private fun initializeManagers() {
-        ActivityLogManager.initialize(this)
+        ActivityLogManager.initialize(this, ActivityLogSettingsImpl())
+        AppContextManager.initialize(AppContextSettingsImpl())
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
         
@@ -286,6 +292,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
     }
 
     override fun onCreate() {
+        ThemeDelegateManager.setDelegate(ThemeDelegateImpl())
         super.onCreate()
 
         // 0. Initialize Timber

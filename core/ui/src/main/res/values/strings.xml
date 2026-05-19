@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="empty_state_title_no_results">No results</string>
+    <string name="empty_state_description_no_results">Try searching for something else.</string>
+</resources>

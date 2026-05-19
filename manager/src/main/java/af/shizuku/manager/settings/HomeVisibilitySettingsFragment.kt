@@ -9,8 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
-import af.shizuku.manager.ktx.loge
-import af.shizuku.manager.utils.AppContextManager
+import af.shizuku.common.ktx.loge
+import af.shizuku.manager.database.AppContextManager
 
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ShizukuSettings.Keys.KEY_COMPANION_MODE

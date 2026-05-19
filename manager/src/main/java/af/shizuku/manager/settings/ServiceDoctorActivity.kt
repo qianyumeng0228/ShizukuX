@@ -25,7 +25,7 @@ import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
 import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.adb.AdbPairingAccessibilityService
-import af.shizuku.manager.app.AppBarActivity
+import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.databinding.ActivityServiceDoctorBinding
 import af.shizuku.manager.databinding.ItemDoctorCheckBinding
 import af.shizuku.manager.utils.EnvironmentUtils
@@ -33,6 +33,7 @@ import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
+import io.sentry.Sentry
 
 class ServiceDoctorActivity : AppBarActivity() {
 
@@ -238,6 +239,7 @@ class ServiceDoctorActivity : AppBarActivity() {
                                 withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, R.string.service_doctor_fix_requires_service, Toast.LENGTH_SHORT).show() }
                             }
                         } catch (e: Exception) {
+                            Sentry.captureException(e)
                             withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, getString(R.string.service_doctor_fix_failed, e.message), Toast.LENGTH_LONG).show() }
                         }
                     }

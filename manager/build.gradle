@@ -19,8 +19,6 @@ android {
     namespace = "af.shizuku.manager"
     defaultConfig {
         applicationId = "af.shizuku.plus.api"
-        versionCode = rootProject.ext.versionCode
-        versionName = rootProject.ext.versionName
         def sentryDsn = project.findProperty('SENTRY_DSN') ?: ''
         buildConfigField "String", "SENTRY_DSN", "\"${sentryDsn}\""
         manifestPlaceholders = [sentryDsn: sentryDsn]
@@ -201,6 +199,12 @@ dependencies {
     implementation project(":api")
     implementation project(":provider")
     implementation project(":database")
+    implementation project(":common")
+    implementation project(":core:ui")
+    implementation project(":feature:activitylog")
+    implementation project(":feature:adb")
+    implementation project(":feature:update")
+    implementation project(":feature:automation")
 
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub

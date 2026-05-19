@@ -21,4 +21,17 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_debug"
+        android:title="Debug &amp; Diagnostics"
+        android:defaultValue="true">
+
+        <Preference
+            android:key="manual_report"
+            android:title="@string/manual_report_title"
+            android:summary="@string/manual_report_summary"
+            android:icon="@drawable/ic_server_error_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
 </PreferenceScreen>

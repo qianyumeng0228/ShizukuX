@@ -91,18 +91,49 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
-### 2026-05-03 — Gemini CLI
+### 2026-05-18 — Gemini CLI
 **Commits:** (this session)
 
 **Done:**
-- **AICore+ Manager Bridge** — Fully implemented `getPixelColor`, `captureLayer`, and `getSystemContext` in `AICorePlusService.kt`. Used `AccessibilityService.takeScreenshot` for privileged screen access on API 30+.
-- **Shadow Binder (Issue #199)** — Implemented `IPackageManager` shadowing in `ShizukuService.java`. The server now intercepts PM calls and can "hide" apps by returning null results for specific package names.
-- **Settings UI Expansion** — Added `shadow_binder_hidden_packages` key to `ShizukuSettings.java`, wired it to the server sync, and added an `EditTextPreference` in `settings_shizuku_plus.xml`.
-- **Localization** — Added strings for the new Shadow Binder hidden packages setting.
-- **Crash fix (#201, #203)** — Fixed `NullPointerException` on `iconView.animate()` in `HomeActivity.kt` splash screen exit callback.
-- **Crash fix (Direct Boot)** — Fixed `IllegalStateException` in `ShizukuApplication.kt` where `WorkManager.getInstance()` was called during Direct Boot before the credential-encrypted storage was available. Added `UserManager.isUserUnlocked` check before scheduling `RemoteDbSyncWorker`.
-- **Crash fix (#205, #202)** — Fixed `NullPointerException` in `ApplicationManagementActivity` caused by a missing view layout inflation. Reverted a previous binding update to ensure `AppsActivityBinding.inflate` is properly called with `setContentView`.
-- **Crash fix (#204)** — Fixed the "Pairing button not working" and other home screen button failures. The material components context was wrapped in a `ContextThemeWrapper`, causing a safe-cast `as? android.app.Activity` to return null. Updated all ViewHolders to use `context.asActivity<android.app.Activity>()`.
+- **Aligned Versioning with Upstream** — Reverted `baseVersionName` to `13.6.0` to match upstream Shizuku and maintain compatibility expectations.
+- **Crash Reporting Refactor** — Relocated "Manual Crash Report" from the About section to Developer Options. End-users no longer see manual reporting prompts unless they enable Developer Mode and Sentry is inactive.
+- **Automated Sentry Expansion** — Added Sentry exception capturing and breadcrumbs to critical failure points that previously lacked automated tracking:
+    - **Server-Side Crashes:** Implemented a global uncaught exception handler in the Shizuku server process that dispatches events to the manager app for Sentry reporting.
+    - **ADB Pairing:** Added failure tracking to `AdbPairingAccessibilityService` and `StarterActivity`.
+    - **Plus Diagnostics:** Added reporting to `ServiceDoctorActivity` and `RootCompatibilityActivity`.
+- **README Cleanup** — Removed the Sentry quota warning and "Status Notice" from the README as it is no longer relevant for the current release.
+- **Global Version Inheritance** — (Previous part of session) Moved `versionCode` and `versionName` definitions to the root `subprojects` block.
+- **Feature Modularization** — (Previous part of session) Extracted ADB and Update features into independent modules `:feature:adb` and `:feature:update`.
+
+**Notes:**
+- `isVectorEnabled()` is used as the gate for developer options and manual reporting UI.
+- Sentry limit is now cleared on upgrade to ensure automated reporting is active by default for all users.
+
+### 2026-05-16 — Gemini CLI
+**Commits:** (this session)
+
+**Done:**
+- **Activity Log Persistence Fix** — Fixed a logic error in `ActivityLogManager.kt` where logs were being loaded in reverse order from the database. Now, newest records are correctly placed at the front of the list, ensuring consistency between in-memory and persisted logs.
+- **SU Bridge & Magisk Compatibility** — Significantly expanded the `su` interception logic in `ShizukuService.java`. Added support for more `su` flags like `-mm` (mount-master) and `-M` (magisk-mode).
+- **Robust Magisk Mocking** — Improved the mocking of Magisk-related system paths in `ls` and `test` commands within the SU Bridge. Added mocks for `/dev/magisk` and `/proc/self/mounts` to improve compatibility with root-seeking apps.
+- **Binder Firewall Hardening** — Enhanced the Binder Firewall to block additional sensitive operations (force-stop, kill processes, delete packages) for unauthorized apps, improving the overall security posture.
+- **"Shizuku-aware" Labeling** — Added a `supportsShizukuNatively` flag to `AppMetadata` and updated the `RootCompatibilityActivity` to display a "Shizuku-aware" badge for apps that support Shizuku natively.
+- **Improved Command Display** — Centralized the logic for resolving SAF URIs to local paths in `EnvironmentUtils.resolveExportedPath`. Updated `ShellTutorialActivity` to show the ACTUAL command for `rish` and `plus` based on the user's export directory.
+- **Enhanced System Elevation** — Expanded the `elevateApp` logic in `ShizukuService.java` to grant more AppOps (exact alarms, notifications, full-screen intents) and fixed a bug in the `setMode` call.
+- **Plus Services Audit** — Verified implementations of `WindowManagerPlus`, `AICorePlus`, `StorageProxy`, and `NetworkGovernorPlus`, ensuring robust hidden API access and shell fallbacks.
+- **Project Modularity Push** — Unified `UserHandleCompat` and `UserInfoCompat` across all modules into the `:common` module. Moved platform-specific logic from `EnvironmentUtils` to `:common`.
+- **ActivityLog Decoupling** — Moved `ActivityLogManager` and `ActivityLogRecord` to the `:database` module and decoupled them from the main app module using the `ActivityLogSettings` interface.
+- **UI Core Extraction** — Created `:core:ui` module and moved base activities (`AppActivity`, `AppBarActivity`) and common widgets (`EmptyStateView`) there. Introduced `ThemeDelegate` to allow `:core:ui` components to use app-specific themes without direct dependencies.
+- **Feature Modularization** — Fully extracted the Activity Log feature into `:feature:activitylog`. This module now contains the `ActivityLogActivity`, its specific layouts, and depends on `:core:ui` and `:database`.
+- **Project Structure Update** — Updated `settings.gradle` and `build.gradle` files to reflect the new modular architecture. Simplified `:manager` by delegating base UI logic to `:core:ui`.
+- **Database Module Expansion** — Relocated `AppContextManager` and `RootCompatHelper` to the `:database` module. Decoupled `AppContextManager` using the `AppContextSettings` interface. Unified Kotlin logging extensions into `:common`.
+
+
+**Notes:**
+- `ActivityLogDao` persistence "gap" is now fully resolved and validated.
+- `rish` command display is now dynamic and user-specific.
+- Root Compatibility Hub now clearly distinguishes between legacy root apps and Shizuku-native apps.
+
 
 ### 2026-05-01 — Claude (Sonnet 4.6)
 **Commits:** `a1858c0a` (api submodule fix), `71adc664` (enhancements), (this session)

@@ -33,7 +33,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbPairingService
-import af.shizuku.manager.app.AppBarActivity
+import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.app.SnackbarHelper
 import af.shizuku.manager.databinding.AboutDialogBinding
 import af.shizuku.manager.databinding.HomeActivityBinding

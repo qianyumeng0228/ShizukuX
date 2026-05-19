@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import af.shizuku.manager.R
-import af.shizuku.manager.app.AppBarFragmentActivity
+import af.shizuku.core.ui.AppBarFragmentActivity
 
 class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 

@@ -1,0 +1,40 @@
+plugins {
+    id "com.android.library"
+    id "org.jetbrains.kotlin.android"
+}
+
+android {
+    namespace = "af.shizuku.feature.activitylog"
+    compileSdk = 35
+
+    defaultConfig {
+        minSdk = 24
+    }
+
+    buildFeatures {
+        viewBinding = true
+    }
+
+    kotlinOptions {
+        jvmTarget = "21"
+    }
+}
+
+dependencies {
+    implementation project(":common")
+    implementation project(":database")
+    implementation project(":core:ui")
+    
+    // For R access to manager (temporary until resources are moved)
+    compileOnly project(":manager")
+    
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.recyclerview
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.timber
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.material
+    implementation libs.coil
+    implementation libs.coil.network
+}

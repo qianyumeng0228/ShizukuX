@@ -23,7 +23,7 @@ import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbPairingTutorialActivity
-import af.shizuku.manager.app.AppActivity
+import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.databinding.ActivityOnboardingBinding
 import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.databinding.PageOnboardingWelcomeBinding

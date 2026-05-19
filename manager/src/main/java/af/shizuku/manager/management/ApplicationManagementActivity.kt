@@ -28,14 +28,14 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.snackbar.Snackbar
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.app.AppBarActivity
+import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.AppsActivityBinding
 import af.shizuku.manager.databinding.AppsAppbarActivityBinding
 import af.shizuku.manager.databinding.SwipeHintOverlayBinding
-import af.shizuku.manager.ktx.loge
+import af.shizuku.common.ktx.loge
 import af.shizuku.manager.management.AppViewHolder.Callbacks
-import af.shizuku.manager.utils.ActivityLogManager
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.lifecycle.Status
 import rikka.recyclerview.addEdgeSpacing

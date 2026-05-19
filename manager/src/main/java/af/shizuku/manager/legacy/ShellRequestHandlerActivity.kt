@@ -2,7 +2,7 @@ package af.shizuku.manager.legacy
 
 import android.os.Bundle
 import android.widget.Toast
-import af.shizuku.manager.app.AppActivity
+import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 
 import af.shizuku.manager.ShizukuSettings

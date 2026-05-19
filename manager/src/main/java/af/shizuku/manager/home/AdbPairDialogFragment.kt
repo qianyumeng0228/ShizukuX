@@ -29,7 +29,7 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.*
 import af.shizuku.manager.databinding.AdbPairDialogBinding
-import af.shizuku.manager.ktx.loge
+import af.shizuku.common.ktx.loge
 import af.shizuku.manager.utils.SettingsHelper
 import java.net.ConnectException
 

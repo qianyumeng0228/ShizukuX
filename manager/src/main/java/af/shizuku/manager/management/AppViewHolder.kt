@@ -25,11 +25,11 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.AppListItemBinding
 import af.shizuku.manager.ktx.toHtml
-import af.shizuku.manager.utils.ActivityLogManager
-import af.shizuku.manager.utils.AppContextManager
+import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.database.AppContextManager
 import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.ShizukuSystemApis
-import af.shizuku.manager.utils.UserHandleCompat
+import af.shizuku.common.util.UserHandleCompat
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator

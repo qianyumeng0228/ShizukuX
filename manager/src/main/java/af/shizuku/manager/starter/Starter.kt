@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.asFlow
 import java.io.File
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.R
 import af.shizuku.manager.utils.ShizukuStateMachine
 
@@ -45,8 +46,13 @@ object Starter {
         }
         log?.invoke("\n" + getContext().getString(R.string.starter_waiting))
         val t0 = System.currentTimeMillis()
-        ShizukuStateMachine.asFlow()
-            .first { it == ShizukuStateMachine.State.RUNNING }
+        
+        // Use withTimeout to prevent infinite hanging and trigger the error UI in StarterActivity
+        withTimeout(20_000) {
+            ShizukuStateMachine.asFlow()
+                .first { it == ShizukuStateMachine.State.RUNNING }
+        }
+        
         val elapsed = (System.currentTimeMillis() - t0) / 1000.0
         log?.invoke("Connected in ${String.format("%.1f", elapsed)}s")
         log?.invoke(serviceStartedMessage)

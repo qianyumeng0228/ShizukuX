@@ -112,10 +112,10 @@ jobs:
           GIT_COUNT=$(git rev-list --count HEAD)
           
           if [ "$IS_PRERELEASE" = "true" ]; then
-            VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus-prerelease"
+            VERSION="ShizukuX ${BASE_VERSION}.r${GIT_COUNT}"
             ARGS="-Pbeta"
           else
-            VERSION="v${BASE_VERSION}.r${GIT_COUNT}-shizukuplus"
+            VERSION="ShizukuX ${BASE_VERSION}.r${GIT_COUNT}"
             ARGS=""
           fi
           
@@ -293,20 +293,62 @@ jobs:
 
       - name: Generate Release Notes
         id: release_notes
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           TAG_NAME="${VERSION}"
-          PREV_TAG=$(git tag --list 'v*-shizukuplus' --sort=-creatordate | grep -v "^${TAG_NAME}$" | head -1)
+          # Find the previous release tag (ignoring current and non-version tags)
+          PREV_TAG=$(git tag --list '*13.6.0.r*' --sort=-creatordate | grep -v "^${TAG_NAME}$" | head -1)
+          
           {
+            echo "# ${TAG_NAME}"
+            echo
+            
             if [ -n "$PREV_TAG" ]; then
+              RANGE="${PREV_TAG}..HEAD"
               echo "## Changes since ${PREV_TAG}"
-              echo
-              git log "${PREV_TAG}..${TAG_NAME}" --no-merges --pretty=format:"- %s (%h)"
-              echo
             else
-              echo "## Initial release"
+              RANGE="HEAD"
+              echo "## Recent Changes"
+            fi
+            echo
+
+            # Categorized Commits
+            FEATS=$(git log "$RANGE" --no-merges --grep="^feat" --pretty=format:"- %s (%h)" || true)
+            if [ -n "$FEATS" ]; then
+              echo "### ✨ New Features"
+              echo "$FEATS"
               echo
-              git log -20 --no-merges --pretty=format:"- %s (%h)"
+            fi
+
+            FIXES=$(git log "$RANGE" --no-merges --grep="^fix" --pretty=format:"- %s (%h)" || true)
+            if [ -n "$FIXES" ]; then
+              echo "### 🐛 Bug Fixes"
+              echo "$FIXES"
               echo
+            fi
+
+            OTHERS=$(git log "$RANGE" --no-merges --grep="^feat" --grep="^fix" --invert-grep --pretty=format:"- %s (%h)" || true)
+            if [ -n "$OTHERS" ]; then
+              echo "### 🔧 Improvements & Refactors"
+              echo "$OTHERS"
+              echo
+            fi
+
+            # Build Context (Failed attempts since last success)
+            echo "### 🏗️ Build History"
+            FAILED_RUNS=$(gh run list --branch master --status failure --limit 10 --json databaseId,createdAt,url --template '{{range .}}- [Build #{{.databaseId}}]({{.url}}) ({{.createdAt}})\n{{end}}' || true)
+            if [ -n "$FAILED_RUNS" ]; then
+              echo "Attempts leading to this successful release:"
+              echo "$FAILED_RUNS"
+            else
+              echo "Build succeeded on the first attempt for this iteration."
+            fi
+            
+            if [ -n "$PREV_TAG" ]; then
+              echo
+              echo "---"
+              echo "[Full Changelog](https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${TAG_NAME})"
             fi
           } > release_notes.md
           echo "NOTES_FILE=release_notes.md" >> $GITHUB_ENV
@@ -316,12 +358,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG_NAME="${VERSION}"
-          FLAGS=""
-          if [ "$IS_PRERELEASE" = "true" ]; then
-            FLAGS="--prerelease"
-          else
-            FLAGS="--draft"
-          fi
-
           APK_FILE=$(find files -name "*.apk" -type f | head -1)
-          gh release create "$TAG_NAME" "$APK_FILE" $FLAGS --title "ShizukuX $VERSION" --notes-file release_notes.md
+          # Always create a full release as requested
+          gh release create "$TAG_NAME" "$APK_FILE" --title "$VERSION" --notes-file release_notes.md

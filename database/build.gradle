@@ -2,6 +2,7 @@ plugins {
     id "com.android.library"
     id "org.jetbrains.kotlin.android"
     id "com.google.devtools.ksp"
+    id "org.jetbrains.kotlin.plugin.serialization" version "2.2.20"
 }
 
 android {
@@ -35,5 +36,11 @@ dependencies {
     api libs.room.ktx
     ksp libs.room.compiler
 
+    implementation project(":common")
+    implementation project(":api")
+    
     implementation libs.androidx.core.ktx
+    implementation libs.timber
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.serialization.json
 }

@@ -1,6 +1,8 @@
 package af.shizuku.manager.settings
 
 import android.app.Activity
+import android.content.ClipboardManager
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -10,10 +12,14 @@ import androidx.preference.TwoStatePreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.utils.SettingsBackupManager
+import af.shizuku.manager.utils.CrashHandler
+import af.shizuku.manager.utils.CrashReporter
+import af.shizuku.manager.utils.CustomTabsHelper
 
 class DeveloperOptionsFragment : BaseSettingsFragment() {
 
@@ -108,6 +114,47 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
         findPreference<Preference>("import_settings")?.setOnPreferenceClickListener {
             importLauncher.launch(arrayOf("application/json", "text/plain"))
             true
+        }
+
+        // Manual Crash Report
+        findPreference<Preference>("manual_report")?.apply {
+            val ctx = context ?: return@apply
+            val hasLastCrash = CrashHandler.getLastCrashReport(ctx) != null
+            if (hasLastCrash) {
+                setTitle(R.string.manual_report_last_crash_title)
+                setSummary(R.string.manual_report_last_crash_summary)
+            }
+
+            setOnPreferenceClickListener {
+                showDialog(
+                    MaterialAlertDialogBuilder(ctx)
+                        .setTitle(if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title)
+                        .setMessage(R.string.manual_report_summary)
+                        .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
+                            val report = CrashReporter.generateReport(ctx)
+                            val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                                ctx.getString(R.string.manual_report_clipboard_label), report))
+                            
+                            Toast.makeText(ctx, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
+                            
+                            val url = CrashReporter.getGitHubReportUrl(ctx)
+                            CustomTabsHelper.launchUrlOrCopy(ctx, url)
+                            
+                            if (hasLastCrash) {
+                                CrashHandler.clearLastCrash(ctx)
+                            }
+                        }
+                        .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
+                            CrashReporter.shareAsFile(ctx)
+                            if (hasLastCrash) {
+                                CrashHandler.clearLastCrash(ctx)
+                            }
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                )
+                true
+            }
         }
     }
 }

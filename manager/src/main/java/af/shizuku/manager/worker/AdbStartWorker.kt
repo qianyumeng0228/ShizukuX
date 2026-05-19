@@ -32,7 +32,7 @@ import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbMdns
-import af.shizuku.manager.utils.ActivityLogManager
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState

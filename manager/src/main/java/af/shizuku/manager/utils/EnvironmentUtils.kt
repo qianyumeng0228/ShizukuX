@@ -21,23 +21,12 @@ private val appContext: Context
 object EnvironmentUtils {
 
     @JvmStatic
-    fun isWatch(): Boolean {
-        return (appContext.getSystemService(UiModeManager::class.java).currentModeType
-                == Configuration.UI_MODE_TYPE_WATCH)
-    }
+    fun isWatch(): Boolean = af.shizuku.common.util.EnvironmentUtils.isWatch(appContext)
 
     @JvmStatic
-    fun isTelevision(): Boolean {
-        return (appContext.getSystemService(UiModeManager::class.java).currentModeType
-                == Configuration.UI_MODE_TYPE_TELEVISION ||
-                appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK))
-    }
+    fun isTelevision(): Boolean = af.shizuku.common.util.EnvironmentUtils.isTelevision(appContext)
 
-    fun isTlsSupported(): Boolean {
-        return if (isTelevision())
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-            else Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-    }
+    fun isTlsSupported(): Boolean = af.shizuku.common.util.EnvironmentUtils.isTlsSupported(appContext)
 
     fun isWifiRequired(): Boolean {
         return (getAdbTcpPort() <= 0 || !ShizukuSettings.getTcpMode())
@@ -48,48 +37,22 @@ object EnvironmentUtils {
     }
 
     @JvmStatic
-    fun getFullSdkVersion(): Int {
-        return if (Build.VERSION.SDK_INT >= 36) {
-            // Android 16 introduces SDK_INT_FULL
-            try {
-                val field = Build.VERSION::class.java.getField("SDK_INT_FULL")
-                field.getInt(null)
-            } catch (e: Exception) {
-                Build.VERSION.SDK_INT * 100 // Fallback
-            }
-        } else {
-            Build.VERSION.SDK_INT * 100
-        }
-    }
+    fun getFullSdkVersion(): Int = af.shizuku.common.util.EnvironmentUtils.getFullSdkVersion()
 
     @JvmStatic
-    fun isSamsung(): Boolean {
-        return Build.MANUFACTURER.equals("samsung", ignoreCase = true)
-    }
+    fun isSamsung(): Boolean = af.shizuku.common.util.EnvironmentUtils.isSamsung()
 
     @JvmStatic
-    fun getOneUiVersion(): Int {
-        if (!isSamsung()) return -1
-        try {
-            val field = Build.VERSION::class.java.getDeclaredField("SEM_PLATFORM_INT")
-            return (field.get(null) as Int - 90000) / 10000
-        } catch (e: Exception) {
-            // Fallback for newer versions if SEM_PLATFORM_INT changes
-            if (Build.VERSION.SDK_INT >= 36) return 8 
-            return -1
-        }
-    }
+    fun getOneUiVersion(): Int = af.shizuku.common.util.EnvironmentUtils.getOneUiVersion()
 
     @JvmStatic
-    fun isOneUi8(): Boolean {
-        return isSamsung() && getOneUiVersion() >= 8
-    }
+    fun isOneUi8(): Boolean = af.shizuku.common.util.EnvironmentUtils.isOneUi8()
 
     @JvmStatic
-    fun isOppo(): Boolean = Build.MANUFACTURER.equals("oppo", true) || Build.MANUFACTURER.equals("realme", true)
+    fun isOppo(): Boolean = af.shizuku.common.util.EnvironmentUtils.isOppo()
 
     @JvmStatic
-    fun isOnePlus(): Boolean = Build.MANUFACTURER.equals("oneplus", true)
+    fun isOnePlus(): Boolean = af.shizuku.common.util.EnvironmentUtils.isOnePlus()
 
     @JvmStatic
     fun getColorOsVersion(): String {
@@ -97,7 +60,7 @@ object EnvironmentUtils {
     }
 
     @JvmStatic
-    fun isXiaomi(): Boolean = Build.MANUFACTURER.equals("xiaomi", true) || Build.MANUFACTURER.equals("redmi", true) || Build.MANUFACTURER.equals("poco", true)
+    fun isXiaomi(): Boolean = af.shizuku.common.util.EnvironmentUtils.isXiaomi()
 
     @JvmStatic
     fun getHyperOsVersion(): String {
@@ -105,35 +68,56 @@ object EnvironmentUtils {
     }
 
     @JvmStatic
-    fun isTCL(): Boolean = Build.MANUFACTURER.equals("tcl", true)
+    fun isTCL(): Boolean = af.shizuku.common.util.EnvironmentUtils.isTCL()
 
     @JvmStatic
-    fun isDeX(context: Context): Boolean {
-        val config = context.resources.configuration
-        return try {
-            val field = config.javaClass.getField("semDesktopModeEnabled")
-            field.getInt(config) == 1
-        } catch (e: Exception) {
-            (config.uiMode and android.content.res.Configuration.UI_MODE_TYPE_MASK) == android.content.res.Configuration.UI_MODE_TYPE_DESK
-        }
-    }
+    fun isDeX(context: Context): Boolean = af.shizuku.common.util.EnvironmentUtils.isDeX(context)
 
     @JvmStatic
-    fun isSecondaryUser(): Boolean {
-        return try {
-            val myUserHandle = android.os.Process.myUserHandle()
-            val toString = myUserHandle.toString()
-            // UserHandle{0} is owner. Secure Folder is usually 150+.
-            !toString.contains("{0}")
-        } catch (e: Exception) {
-            false
-        }
-    }
+    fun isSecondaryUser(): Boolean = af.shizuku.common.util.EnvironmentUtils.isSecondaryUser()
 
     fun getAdbTcpPort(): Int {
-        var port = SystemProperties.getInt("service.adb.tcp.port", -1)
-        if (port == -1) port = SystemProperties.getInt("persist.adb.tcp.port", -1)
+        var port = af.shizuku.common.util.EnvironmentUtils.getAdbTcpPort()
         if (port == -1 && isTelevision() && !isTlsSupported()) port = ShizukuSettings.getTcpPort()
         return port
+    }
+
+    /**
+     * Resolves a SAF directory URI to a physical file path for a given filename.
+     */
+    @JvmStatic
+    fun resolveExportedPath(filename: String): String? {
+        val uriStr = ShizukuSettings.getExportDirUri() ?: return null
+        return try {
+            val uri = android.net.Uri.parse(uriStr)
+            val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
+            
+            // Check for common volume patterns
+            val basePath = when {
+                docId.startsWith("primary:") -> {
+                    val relative = docId.removePrefix("primary:")
+                    if (relative.isEmpty()) "/storage/emulated/0"
+                    else "/storage/emulated/0/$relative"
+                }
+                docId.contains(":") -> {
+                    val parts = docId.split(":")
+                    val volumeId = parts[0]
+                    val relative = parts[1]
+                    "/storage/$volumeId/$relative"
+                }
+                docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies") -> {
+                    "/storage/emulated/0/$docId"
+                }
+                else -> {
+                    if (!docId.startsWith("/")) "/storage/emulated/0/$docId"
+                    else docId 
+                }
+            }
+            
+            val path = basePath.replace("//", "/") + "/" + filename
+            path.replace("//", "/")
+        } catch (e: Exception) {
+            null
+        }
     }
 }

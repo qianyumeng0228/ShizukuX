@@ -1,7 +1,7 @@
 package af.shizuku.manager.di
 
-import af.shizuku.manager.utils.ActivityLogManager
-import af.shizuku.manager.utils.AppContextManager
+import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.database.AppContextManager
 import af.shizuku.manager.update.UpdateManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module

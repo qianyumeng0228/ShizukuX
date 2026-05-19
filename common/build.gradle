@@ -10,5 +10,6 @@ android {
 }
 
 dependencies {
+    implementation libs.timber
     compileOnly libs.hidden.stub
 }
