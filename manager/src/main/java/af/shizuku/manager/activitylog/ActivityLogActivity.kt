@@ -19,7 +19,7 @@ import coil3.request.crossfade
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import af.shizuku.core.ui.EmptyStateView
-import af.shizuku.manager.databinding.ActivityLogItemBinding
+import af.shizuku.manager.databinding.ItemActivityLogBinding
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.database.ActivityLogRecord
 import java.text.SimpleDateFormat
@@ -80,10 +80,10 @@ class ActivityLogFragment : Fragment() {
         }
     }
 
-    private class LogViewHolder(private val binding: ActivityLogItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    private class LogViewHolder(private val binding: ItemActivityLogBinding) : RecyclerView.ViewHolder(binding.root) {
         companion object {
             private val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-            fun create(parent: ViewGroup) = LogViewHolder(ActivityLogItemBinding.inflate(LayoutInflater.from(parent.context), parent, false))
+            fun create(parent: ViewGroup) = LogViewHolder(ItemActivityLogBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
 
         fun bind(record: ActivityLogRecord) {
