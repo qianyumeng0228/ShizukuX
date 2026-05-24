@@ -1,9 +1,9 @@
 package af.shizuku.manager.legacy
-import android.content.Intent
 
-import android.os.Bundle
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
-import af.shizuku.core.ui.AppActivity
+import af.shizuku.manager.app.AppActivity
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 
 import af.shizuku.manager.ShizukuSettings
@@ -12,6 +12,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.os.Build
+import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import af.shizuku.manager.MainActivity
 

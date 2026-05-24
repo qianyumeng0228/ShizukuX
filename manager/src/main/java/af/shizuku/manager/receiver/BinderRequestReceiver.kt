@@ -6,9 +6,15 @@ import af.shizuku.manager.shell.ShellBinderRequestHandler
 
 class BinderRequestReceiver : AuthenticatedReceiver() {
 
-    override fun onAuthenticated(context: Context, intent: Intent) {
-        if (intent.action == "rikka.shizuku.intent.action.REQUEST_BINDER") {
-            ShellBinderRequestHandler.handleRequest(context, intent, true)
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != "rikka.shizuku.intent.action.REQUEST_BINDER") {
+            return
         }
+
+        super.onReceive(context, intent)
+    }
+
+    override fun onAuthenticated(context: Context, intent: Intent) {
+        ShellBinderRequestHandler.handleRequest(context, intent, true)
     }
 }

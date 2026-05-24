@@ -131,4 +131,39 @@ object InputValidationUtils {
         }
         return sanitized
     }
+
+    // Whitelist of allowed directory prefixes for the Storage Proxy
+    private val ALLOWED_STORAGE_PREFIXES = listOf(
+        "/data/data/",
+        "/data/user/",
+        "/data/app/",
+        "/storage/emulated/",
+        "/sdcard/",
+        "/data/adb/shizuku/"
+    )
+
+    /**
+     * Validates if a file path is safe for access via the Storage Proxy.
+     * Prevents directory traversal and restricts access to specific whitelisted directories.
+     *
+     * @param path the path to validate
+     * @return true if the path is safe, false otherwise
+     */
+    @JvmStatic
+    fun isSafePath(path: String?): Boolean {
+        if (path.isNullOrEmpty()) return false
+
+        return try {
+            // Resolve the path to its canonical form to eliminate traversal (e.g., ../)
+            val canonicalPath = java.io.File(path).canonicalPath
+
+            // Ensure the canonical path starts with one of the allowed prefixes
+            ALLOWED_STORAGE_PREFIXES.any { prefix ->
+                canonicalPath.startsWith(prefix) || canonicalPath == prefix.removeSuffix("/")
+            }
+        } catch (e: Exception) {
+            // If canonicalization fails, assume the path is unsafe
+            false
+        }
+    }
 }

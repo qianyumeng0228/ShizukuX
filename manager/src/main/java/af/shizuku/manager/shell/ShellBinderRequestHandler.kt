@@ -16,11 +16,10 @@ object ShellBinderRequestHandler {
             return false
         }
 
-        if (requireAuth || true) { // Always check for now as master does
+        if (requireAuth) {
             val authToken = intent.getStringExtra("auth")
             val expectedToken = ShizukuSettings.getAuthToken()
-            if (authToken.isNullOrEmpty() || authToken != expectedToken) {
-                LOGGER.w("Invalid or missing auth token in REQUEST_BINDER intent")
+            if (authToken != expectedToken) {
                 return false
             }
         }
@@ -28,20 +27,23 @@ object ShellBinderRequestHandler {
         val binder = intent.getBundleExtra("data")?.getBinder("binder") ?: return false
         val shizukuBinder = Shizuku.getBinder()
         if (shizukuBinder == null) {
-            LOGGER.w("Binder not received or Shizuku service not running")
+            LOGGER.e("shizuku binder is null")
+            return false
         }
 
         val data = Parcel.obtain()
-        return try {
+        val reply = Parcel.obtain()
+        try {
+            data.writeInterfaceToken("rikka.shizuku.IShizukuService")
             data.writeStrongBinder(shizukuBinder)
-            data.writeString(context.applicationInfo.sourceDir)
-            binder.transact(1, data, null, IBinder.FLAG_ONEWAY)
-            true
-        } catch (e: Throwable) {
-            Timber.e("transact binder failed", e)
-            false
+            binder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
+            return true
+        } catch (e: Exception) {
+            LOGGER.e(e, "transact")
+            return false
         } finally {
             data.recycle()
+            reply.recycle()
         }
     }
 }
