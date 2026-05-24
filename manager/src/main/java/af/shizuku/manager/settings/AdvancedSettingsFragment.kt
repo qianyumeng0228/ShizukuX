@@ -1,4 +1,5 @@
 package af.shizuku.manager.settings
+import af.shizuku.manager.activitylog.ActivityLogActivity
 
 import android.content.Intent
 import android.os.Bundle
