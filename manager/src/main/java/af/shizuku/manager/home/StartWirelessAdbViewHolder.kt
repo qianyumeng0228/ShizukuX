@@ -1,4 +1,5 @@
 package af.shizuku.manager.home
+import timber.log.Timber
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
