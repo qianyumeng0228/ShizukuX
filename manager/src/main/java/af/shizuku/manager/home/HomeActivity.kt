@@ -128,10 +128,10 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
 
         // Empty state view for when all cards are hidden
         val emptyStateView = binding.emptyStateView
-        emptyStateView.setIcon(R.drawable.ic_empty_home_24)
-        emptyStateView.setTitle(R.string.empty_state_title_no_home_cards)
-        emptyStateView.setDescription(R.string.empty_state_description_no_home_cards)
-        emptyStateView.setActionText(R.string.empty_state_action_restore_home_cards)
+        emptyStateView.icon = R.drawable.ic_empty_home_24
+        emptyStateView.title = getString(R.string.empty_state_title_no_home_cards)
+        emptyStateView.description = getString(R.string.empty_state_description_no_home_cards)
+        emptyStateView.actionText = getString(R.string.empty_state_action_restore_home_cards)
         emptyStateView.setActionClickListener {
             HomeEditMode.enter()
         }

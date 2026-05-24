@@ -22,6 +22,16 @@ object RootCompatHelper {
         "com.google.android.gms" to "gms"
     )
 
+    suspend fun autoSetupAll(context: Context, path: String): Int = withContext(Dispatchers.IO) {
+        Timber.i("Auto setup all for path: $path")
+        0
+    }
+
+    suspend fun autoSetup(context: Context, packageName: String, path: String): Boolean = withContext(Dispatchers.IO) {
+        Timber.i("Auto setup for $packageName at path: $path")
+        fixPermissions(context, packageName)
+    }
+
     suspend fun fixPermissions(context: Context, packageName: String): Boolean = withContext(Dispatchers.IO) {
         try {
             val pm = context.packageManager

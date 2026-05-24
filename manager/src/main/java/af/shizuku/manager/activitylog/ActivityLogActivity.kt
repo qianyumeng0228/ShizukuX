@@ -35,9 +35,9 @@ class ActivityLogFragment : Fragment() {
         val binding = af.shizuku.core.ui.databinding.AppsActivityBinding.inflate(inflater, container, false)
         
         emptyStateView = binding.emptyStateView
-        emptyStateView.setIcon(R.drawable.ic_empty_log_24)
-        emptyStateView.setTitle(R.string.empty_state_title_activity_log_empty)
-        emptyStateView.setDescription(R.string.empty_state_description_activity_log_empty)
+        emptyStateView.icon = R.drawable.ic_empty_log_24
+        emptyStateView.title = getString(R.string.empty_state_title_activity_log_empty)
+        emptyStateView.description = getString(R.string.empty_state_description_activity_log_empty)
         emptyStateView.hideActionButton()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.list) { view, insets ->
@@ -62,7 +62,7 @@ class ActivityLogFragment : Fragment() {
     }
 
     // Retain original LogAdapter/LogViewHolder implementation ...
-    class LogAdapter : ListAdapter<ActivityLogRecord, LogViewHolder>(DIFF) {
+    internal class LogAdapter : ListAdapter<ActivityLogRecord, LogViewHolder>(DIFF) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = LogViewHolder.create(parent)
         override fun onBindViewHolder(holder: LogViewHolder, position: Int) = holder.bind(getItem(position))
 

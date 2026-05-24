@@ -8,7 +8,8 @@ import af.shizuku.manager.R
 import af.shizuku.manager.databinding.ActivitySystemHubBinding
 import af.shizuku.feature.activitylog.ActivityLogFragment
 import com.google.android.material.tabs.TabLayoutMediator
-import rikka.core.ui.AppActivity
+import af.shizuku.core.ui.AppActivity
+import af.shizuku.core.ui.AppBarActivity
 
 class SystemHubActivity : AppActivity() {
 

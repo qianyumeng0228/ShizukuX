@@ -51,6 +51,10 @@ class EmptyStateView @JvmOverloads constructor(
         binding.emptyStateIcon.setImageResource(iconRes)
     }
 
+    var icon: Int
+        get() = 0 // Not really usable as getter
+        set(value) = setIcon(value)
+
     fun setTitle(@StringRes titleRes: Int) {
         binding.emptyStateTitle.setText(titleRes)
     }
@@ -59,6 +63,10 @@ class EmptyStateView @JvmOverloads constructor(
         binding.emptyStateTitle.text = title
     }
 
+    var title: CharSequence
+        get() = binding.emptyStateTitle.text
+        set(value) = setTitle(value)
+
     fun setDescription(@StringRes descriptionRes: Int) {
         binding.emptyStateDescription.setText(descriptionRes)
     }
@@ -66,6 +74,10 @@ class EmptyStateView @JvmOverloads constructor(
     fun setDescription(description: CharSequence) {
         binding.emptyStateDescription.text = description
     }
+
+    var description: CharSequence
+        get() = binding.emptyStateDescription.text
+        set(value) = setDescription(value)
 
     fun setActionText(@StringRes actionTextRes: Int) {
         binding.emptyStateActionButton.setText(actionTextRes)
@@ -76,6 +88,10 @@ class EmptyStateView @JvmOverloads constructor(
         binding.emptyStateActionButton.text = actionText
         binding.emptyStateActionButton.visibility = View.VISIBLE
     }
+
+    var actionText: CharSequence
+        get() = binding.emptyStateActionButton.text
+        set(value) = setActionText(value)
 
     fun hideActionButton() {
         binding.emptyStateActionButton.visibility = View.GONE

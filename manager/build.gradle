@@ -200,7 +200,7 @@ dependencies {
     implementation project(":provider")
     implementation project(":database")
     implementation project(":common")
-    implementation project(":core:ui")
+    api project(":core:ui")
 
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub

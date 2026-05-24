@@ -10,7 +10,6 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
-import timber.log.Timber
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.*
