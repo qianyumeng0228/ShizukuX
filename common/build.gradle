@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "rikka.shizuku.common"
+    namespace = "af.shizuku.common"
     buildFeatures {
         buildConfig = false
     }

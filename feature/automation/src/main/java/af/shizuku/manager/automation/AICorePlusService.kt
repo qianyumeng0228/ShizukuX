@@ -20,7 +20,7 @@ class AICorePlusService : AccessibilityService() {
         override fun simulateTouch(x: Float, y: Float): Boolean = this@AICorePlusService.simulateTouch(x, y)
         override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean = 
             this@AICorePlusService.simulateSwipe(x1, y1, x2, y2, duration)
-        override fun simulateText(text: String): Boolean = this@AICorePlusService.simulateText(text)
+        override fun simulateText(text: String?): Boolean = this@AICorePlusService.simulateText(text ?: "")
         override fun getPixelColor(x: Int, y: Int): Int = this@AICorePlusService.getPixelColor(x, y)
         override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICorePlusService.captureLayer(layerId)
     }
