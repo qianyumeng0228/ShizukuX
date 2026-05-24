@@ -1,4 +1,5 @@
 package af.shizuku.manager.adb
+import timber.log.Timber
 import af.shizuku.manager.R
 
 import android.annotation.TargetApi
@@ -16,7 +17,7 @@ import kotlinx.coroutines.*
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.home.HomeActivity
-import af.shizuku.common.ktx.loge
+
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
 
@@ -161,7 +162,7 @@ class AdbPairingService : Service() {
             val key = try {
                 AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
             } catch (e: Throwable) {
-                loge("failed to load or create AdbKey", e)
+                Timber.e("failed to load or create AdbKey", e)
                 return@launch
             }
 
