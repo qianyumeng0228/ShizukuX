@@ -33,7 +33,7 @@ import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.AppsActivityBinding
 import af.shizuku.manager.databinding.AppsAppbarActivityBinding
 import af.shizuku.manager.databinding.SwipeHintOverlayBinding
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import af.shizuku.manager.management.AppViewHolder.Callbacks
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.ShizukuStateMachine
@@ -134,7 +134,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 Status.ERROR -> {
                     finish()
                     Toast.makeText(this, Objects.toString(it.error, "unknown"), Toast.LENGTH_SHORT).show()
-                    loge("load apps failed", it.error)
+                    Timber.e("load apps failed", it.error)
                 }
                 Status.LOADING -> {}
             }

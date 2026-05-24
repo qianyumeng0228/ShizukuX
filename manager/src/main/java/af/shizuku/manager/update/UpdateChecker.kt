@@ -11,7 +11,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import kotlinx.coroutines.withContext
-import af.shizuku.feature.update.BuildConfig
+import af.shizuku.manager.BuildConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import org.xmlpull.v1.XmlPullParser

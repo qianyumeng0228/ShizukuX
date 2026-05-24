@@ -201,10 +201,6 @@ dependencies {
     implementation project(":database")
     implementation project(":common")
     implementation project(":core:ui")
-    implementation project(":feature:activitylog")
-    implementation project(":feature:adb")
-    implementation project(":feature:update")
-    implementation project(":feature:automation")
 
     implementation libs.hidden.compat
     compileOnly libs.hidden.stub

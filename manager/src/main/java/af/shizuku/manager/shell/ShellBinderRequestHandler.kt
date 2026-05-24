@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.Parcel
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import af.shizuku.manager.utils.Logger.LOGGER
 import rikka.shizuku.Shizuku
 import af.shizuku.manager.ShizukuSettings
@@ -40,7 +40,7 @@ object ShellBinderRequestHandler {
             binder.transact(1, data, null, IBinder.FLAG_ONEWAY)
             true
         } catch (e: Throwable) {
-            loge("transact binder failed", e)
+            Timber.e("transact binder failed", e)
             false
         } finally {
             data.recycle()

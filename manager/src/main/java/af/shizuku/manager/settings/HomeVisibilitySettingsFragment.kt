@@ -9,7 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import af.shizuku.manager.database.AppContextManager
 
 import af.shizuku.manager.ShizukuSettings
@@ -56,7 +56,7 @@ class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
                         Toast.makeText(context, R.string.settings_update_app_database_success, Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    loge("update app database failed", e)
+                    Timber.e("update app database failed", e)
                     withContext(Dispatchers.Main) {
                         Toast.makeText(context, R.string.settings_update_app_database_error, Toast.LENGTH_SHORT).show()
                     }

@@ -29,7 +29,7 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.*
 import af.shizuku.manager.databinding.AdbPairDialogBinding
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import af.shizuku.manager.utils.SettingsHelper
 import java.net.ConnectException
 
@@ -207,7 +207,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             val key = try {
                 AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
             } catch (e: Throwable) {
-                loge("failed to load or create AdbKey", e)
+                Timber.e("failed to load or create AdbKey", e)
                 _isPairing.postValue(false)
                 _result.postValue(AdbKeyException(e))
                 return@launch
@@ -218,7 +218,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }.onFailure {
                 _isPairing.postValue(false)
                 _result.postValue(it)
-                loge("adb pairing failed", it)
+                Timber.e("adb pairing failed", it)
             }.onSuccess {
                 _isPairing.postValue(false)
                 if (it) {

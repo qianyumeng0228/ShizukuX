@@ -1,4 +1,4 @@
-package af.shizuku.feature.activitylog
+package af.shizuku.manager.activitylog
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -18,7 +18,7 @@ import coil3.request.crossfade
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import af.shizuku.core.ui.EmptyStateView
-import af.shizuku.feature.activitylog.databinding.ActivityLogItemBinding
+import af.shizuku.manager.databinding.ActivityLogItemBinding
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.database.ActivityLogRecord
 import java.text.SimpleDateFormat

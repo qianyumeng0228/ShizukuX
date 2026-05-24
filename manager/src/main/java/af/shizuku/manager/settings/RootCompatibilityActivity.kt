@@ -35,7 +35,7 @@ import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.databinding.ActivityRootCompatibilityBinding
 import af.shizuku.manager.databinding.AppListItemBinding
 import af.shizuku.manager.databinding.ListSectionHeaderBinding
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import af.shizuku.manager.database.AppContextManager
 import af.shizuku.manager.database.RootCompatHelper
 import rikka.shizuku.Shizuku
@@ -402,7 +402,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                             try {
                                 startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")))
                             } catch (e2: Exception) {
-                                loge("start view intent failed", e2)
+                                Timber.e("start view intent failed", e2)
                                 Sentry.captureException(e2)
                             }
                         }
