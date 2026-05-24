@@ -1,7 +1,7 @@
+import timber.log.Timber
 package af.shizuku.manager.database
 
 import android.content.Context
-import timber.log.Timber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

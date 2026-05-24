@@ -64,7 +64,7 @@ class AICorePlusImpl(
         if (taskData == null) return null
         
         try {
-            android.provider.Settings.System.putInt(service.contentResolver, "processing_speed", 2)
+            // android.provider.Settings.System.putInt(service.contentResolver, "processing_speed", 2)
             val response = Bundle()
             response.putBoolean("success", true)
             return response
