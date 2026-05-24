@@ -11,5 +11,6 @@ android {
 
 dependencies {
     implementation libs.timber
+    implementation libs.androidx.annotation
     compileOnly libs.hidden.stub
 }
