@@ -3,10 +3,8 @@ package rikka.shizuku.server
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
-import android.hardware.HardwareBuffer
 import android.os.Bundle
 import android.os.IBinder
-import android.os.ServiceManager
 import android.util.Log
 import af.shizuku.server.IAICorePlus
 
@@ -38,11 +36,7 @@ class AICorePlusImpl(
     override fun getPixelColor(x: Int, y: Int): Int {
         if (!checkExperimental()) return Color.TRANSPARENT
         return try {
-            val bridge = automationBridge
-            if (bridge != null) {
-                return bridge.getPixelColor(x, y)
-            }
-            getPixelColorViaSurfaceControl(x, y)
+            automationBridge?.getPixelColor(x, y) ?: getPixelColorViaSurfaceControl(x, y)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get pixel color", e)
             Color.TRANSPARENT
@@ -69,37 +63,21 @@ class AICorePlusImpl(
         if (!service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("npu_acceleration")) return null
         if (taskData == null) return null
         
-        setNpuPowerMode(2) // High Performance
-        
-        return try {
-            val taskType = taskData.getString("task_type", "INFERENCE")
-            Log.d(TAG, "Scheduling NPU task: type=$taskType")
-            
+        try {
+            android.provider.Settings.System.putInt(service.contentResolver, "processing_speed", 2)
             val response = Bundle()
             response.putBoolean("success", true)
-            response
+            return response
         } catch (e: Exception) {
             Log.e(TAG, "Failed to schedule NPU task", e)
-            null
+            return null
         }
     }
 
-    private fun setNpuPowerMode(mode: Int) {
-        try {
-            android.provider.Settings.System.putInt(service.contentResolver, "processing_speed", mode)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set NPU power mode", e)
-        }
-    }
-
-    override fun captureLayer(layerId: Int): Bitmap? {
+    override fun captureLayer(p0: Int): Bitmap? {
         if (!checkExperimental()) return null
         return try {
-            val bridge = automationBridge
-            if (bridge != null) {
-                return bridge.captureLayer(layerId)
-            }
-            captureLayerViaSurfaceControl(layerId)
+            automationBridge?.captureLayer(p0) ?: captureLayerViaSurfaceControl(p0)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to capture layer", e)
             null
@@ -126,29 +104,25 @@ class AICorePlusImpl(
         return bundle
     }
 
-    override fun simulateTouch(x: Float, y: Float): Boolean {
+    override fun simulateTouch(p0: Float, p1: Float): Boolean {
         if (!checkExperimental()) return false
         return try {
-            val bridge = automationBridge
-            if (bridge != null) {
-                return bridge.simulateTouch(x, y)
+            automationBridge?.simulateTouch(p0, p1) ?: run {
+                val process = Runtime.getRuntime().exec(arrayOf("input", "tap", p0.toString(), p1.toString()))
+                process.waitFor() == 0
             }
-            val process = Runtime.getRuntime().exec(arrayOf("input", "tap", x.toString(), y.toString()))
-            process.waitFor() == 0
         } catch (e: Exception) {
             false
         }
     }
 
-    override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean {
+    override fun simulateSwipe(p0: Float, p1: Float, p2: Float, p3: Float, p4: Int): Boolean {
         if (!checkExperimental()) return false
         return try {
-            val bridge = automationBridge
-            if (bridge != null) {
-                return bridge.simulateSwipe(x1, y1, x2, y2, duration)
+            automationBridge?.simulateSwipe(p0, p1, p2, p3, p4) ?: run {
+                val process = Runtime.getRuntime().exec(arrayOf("input", "swipe", p0.toString(), p1.toString(), p2.toString(), p3.toString(), p4.toString()))
+                process.waitFor() == 0
             }
-            val process = Runtime.getRuntime().exec(arrayOf("input", "swipe", x1.toString(), y1.toString(), x2.toString(), y2.toString(), duration.toString()))
-            process.waitFor() == 0
         } catch (e: Exception) {
             false
         }
@@ -157,12 +131,10 @@ class AICorePlusImpl(
     override fun simulateText(text: String?): Boolean {
         if (!checkExperimental() || text == null) return false
         return try {
-            val bridge = automationBridge
-            if (bridge != null) {
-                return bridge.simulateText(text)
+            automationBridge?.simulateText(text) ?: run {
+                val process = Runtime.getRuntime().exec(arrayOf("input", "text", text))
+                process.waitFor() == 0
             }
-            val process = Runtime.getRuntime().exec(arrayOf("input", "text", text))
-            process.waitFor() == 0
         } catch (e: Exception) {
             false
         }

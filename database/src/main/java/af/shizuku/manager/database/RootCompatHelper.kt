@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import rikka.shizuku.Shizuku
 import timber.log.Timber
 
@@ -66,7 +66,7 @@ object RootCompatHelper {
                 }
             }
         } catch (e: Exception) {
-            loge("autoSetup failed for package $packageName", e)
+            Timber.e("autoSetup failed for package $packageName", e)
             false
         }
         success

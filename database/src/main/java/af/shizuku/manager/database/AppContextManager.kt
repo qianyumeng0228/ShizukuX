@@ -1,6 +1,6 @@
 package af.shizuku.manager.database
 
-import af.shizuku.common.ktx.loge
+import timber.log.Timber
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -223,7 +223,7 @@ object AppContextManager {
                 )
             }
         } catch (e: Exception) {
-            loge("load app database from cache failed", e)
+            Timber.e("load app database from cache failed", e)
         }
     }
 
