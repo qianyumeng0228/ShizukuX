@@ -15,7 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import af.shizuku.manager.R
+import af.shizuku.core.ui.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.adb.AdbClient

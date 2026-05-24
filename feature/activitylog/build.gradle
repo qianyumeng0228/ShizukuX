@@ -25,9 +25,6 @@ dependencies {
     implementation project(":database")
     implementation project(":core:ui")
     
-    // For R access to manager (temporary until resources are moved)
-    compileOnly project(":manager")
-    
     implementation libs.androidx.core.ktx
     implementation libs.androidx.appcompat
     implementation libs.androidx.recyclerview

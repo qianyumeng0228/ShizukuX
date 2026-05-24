@@ -16,7 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import af.shizuku.manager.R
+import af.shizuku.core.ui.R
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.PreferenceAdbKeyStore

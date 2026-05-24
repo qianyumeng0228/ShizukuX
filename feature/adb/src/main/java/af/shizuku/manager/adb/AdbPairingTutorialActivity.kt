@@ -13,7 +13,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
-import af.shizuku.manager.R
+import af.shizuku.core.ui.R
 import af.shizuku.manager.AppConstants
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.databinding.AdbPairingTutorialActivityBinding

@@ -102,6 +102,7 @@ Things discussed or sketched that we never formally decided to build.
     - [Architecture] Refactored standalone diagnostic activities into reusable fragments (`ServerMetricsFragment`, `ActivityLogFragment`) for better modularity.
     - [Feature] Implemented **Native Window Crawler** using high-performance `AccessibilityNodeInfo` traversal, significantly reducing UI hierarchy analysis latency.
     - [Optimization] Implemented **Dynamic remote DB ETag caching** in `RemoteDbSyncWorker` to skip redundant downloads when the app-context database hasn't changed.
+    - [Build Fix] Resolved **Circular Dependency** in Gradle task graph. Moved shared strings and core icons from `:manager` to `:core:ui` and updated feature module imports, allowing `:manager` to depend on features without recursive dependency back to `:manager` for resources.
     - [Security] Organized all AI Core features under a new "AI Core Settings" developer category, introducing a **Master AI Core Toggle** that gates all sub-features (Accessibility, NPU, Window Crawler) while preserving individual control.
 - **Versioning & Modularity Alignment**
     - Corrected versioning scheme to "ShizukuX 13.6.0.rXXXX" across all modules.

@@ -13,9 +13,6 @@ dependencies {
     implementation project(":aidl")
     implementation project(":api")
     
-    // For R access to manager
-    compileOnly project(":manager")
-    
     implementation libs.androidx.core.ktx
     implementation libs.timber
 }

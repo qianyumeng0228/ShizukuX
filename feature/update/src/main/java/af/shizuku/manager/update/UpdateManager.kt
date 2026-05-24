@@ -17,7 +17,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import io.sentry.Sentry
-import af.shizuku.manager.R
+import af.shizuku.core.ui.R
 import af.shizuku.manager.home.HomeActivity
 import java.io.File
 import kotlinx.coroutines.*
