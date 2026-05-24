@@ -38,7 +38,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_clear_all"
-            style="@style/Widget.Material3.Button.TextButton"
+            
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/action_clear_all"
@@ -66,7 +66,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_filter_system"
-            style="@style/Widget.Material3.Button.Icon"
+            
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"

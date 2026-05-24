@@ -123,7 +123,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/su_copy_open"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:insetTop="0dp"
@@ -136,7 +136,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/su_magic_setup"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"
                     android:layout_marginStart="8dp"

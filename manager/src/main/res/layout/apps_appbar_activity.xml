@@ -30,7 +30,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/search_layout"
-            style="@style/Widget.Material3.TextInputLayout.FilledBox.Dense"
+            
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
@@ -65,7 +65,7 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_all"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_management_filter_all"
@@ -73,21 +73,21 @@
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_granted"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_management_filter_granted" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_denied"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_management_filter_denied" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chip_hidden"
-                    style="@style/Widget.Material3.Chip.Filter"
+                    
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/app_management_filter_hidden" />

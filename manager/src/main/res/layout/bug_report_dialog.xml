@@ -16,7 +16,7 @@
         android:divider="@drawable/spacing_list_item_vertical">
 
         <TextView
-            style="@style/TextAppearance.Material3.TitleMedium"
+            
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/bug_report_dialog_before_reporting" />

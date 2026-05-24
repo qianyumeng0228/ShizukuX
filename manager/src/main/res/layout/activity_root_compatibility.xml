@@ -98,7 +98,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_copy_global"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -107,7 +107,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_setup_all"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -163,7 +163,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.Material3.CardView.Elevated"
+            
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -224,7 +224,7 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/su_path_card"
-            style="@style/Widget.Material3.CardView.Filled"
+            
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -262,14 +262,14 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/copy_path_button"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/su_bridge_copy_path" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/magic_setup_all_button"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"

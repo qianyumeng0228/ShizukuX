@@ -33,7 +33,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.Material3.CardView.Filled"
+                
                 app:cardCornerRadius="24dp"
                 android:layout_marginBottom="16dp">
 
@@ -66,7 +66,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.Material3.CardView.Elevated"
+                
                 app:cardCornerRadius="24dp"
                 android:layout_marginBottom="16dp">
 
@@ -99,7 +99,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                style="@style/Widget.Material3.CardView.Outlined"
+                
                 app:cardCornerRadius="24dp">
 
                 <LinearLayout
