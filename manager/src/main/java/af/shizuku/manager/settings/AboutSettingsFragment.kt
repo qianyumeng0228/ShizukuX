@@ -1,4 +1,5 @@
 package af.shizuku.manager.settings
+import af.shizuku.manager.utils.CustomTabsHelper
 
 import android.os.Bundle
 import android.widget.Toast

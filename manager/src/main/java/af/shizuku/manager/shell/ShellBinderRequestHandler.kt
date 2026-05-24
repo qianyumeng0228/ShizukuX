@@ -8,7 +8,6 @@ import timber.log.Timber
 import af.shizuku.manager.utils.Logger.LOGGER
 import rikka.shizuku.Shizuku
 import af.shizuku.manager.ShizukuSettings
-
 import af.shizuku.manager.ShizukuSettings
 
 object ShellBinderRequestHandler {

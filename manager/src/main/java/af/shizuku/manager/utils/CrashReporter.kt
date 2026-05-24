@@ -6,7 +6,7 @@ import android.content.Context
 import android.net.Uri
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.activitylog.ActivityLogManager
+import af.shizuku.manager.database.ActivityLogManager
 import com.topjohnwu.superuser.Shell
 import java.io.File
 import java.text.SimpleDateFormat
