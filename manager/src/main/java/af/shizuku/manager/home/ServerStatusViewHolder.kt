@@ -40,15 +40,40 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
     private inline val textView get() = binding.text1
     private inline val summaryView get() = binding.text2
     private inline val iconView get() = binding.icon
-    private inline val logButton get() = binding.btnActivityLog
+    private inline val logChip get() = binding.btnActivityLog
+    private inline val diagnosticsChip get() = binding.btnDiagnostics
+    private inline val statusIndicator get() = binding.statusIndicator
     private inline val sentryButton get() = binding.btnSentryOffline
 
     override fun onBind() {
         val context = itemView.context
         val status = data
         val ok = status.isRunning
+        val state = af.shizuku.manager.utils.ShizukuStateMachine.get()
         
-        // Show Sentry offline button only if limit is reached (flag set via remote update or manual toggle)
+        // Live Status Indicator
+        statusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            when {
+                ok -> ContextCompat.getColor(context, R.color.status_ok)
+                state == af.shizuku.manager.utils.ShizukuStateMachine.State.STARTING -> ContextCompat.getColor(context, R.color.status_starting)
+                else -> ContextCompat.getColor(context, R.color.status_error)
+            }
+        )
+
+        // Pulse animation for Starting/Running state
+        if (state == af.shizuku.manager.utils.ShizukuStateMachine.State.STARTING || ok) {
+            val pulse = android.view.animation.AlphaAnimation(0.4f, 1.0f).apply {
+                duration = if (ok) 1500 else 600
+                repeatMode = android.view.animation.Animation.REVERSE
+                repeatCount = android.view.animation.Animation.INFINITE
+                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
+            }
+            statusIndicator.startAnimation(pulse)
+        } else {
+            statusIndicator.clearAnimation()
+        }
+        
+        // Show Sentry offline button only if limit is reached
         sentryButton.visibility = if (af.shizuku.manager.ShizukuSettings.isSentryLimitReached()) View.VISIBLE else View.GONE
         sentryButton.setOnClickListener {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
@@ -90,13 +115,19 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
             }
         }
 
-        logButton.visibility = if (ok && af.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
-        logButton.setOnClickListener {
+        logChip.visibility = if (ok && af.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
+        logChip.setOnClickListener {
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
             activity.startWithSceneTransition(
                 android.content.Intent(activity, af.shizuku.feature.activitylog.ActivityLogActivity::class.java),
                 iconView, "icon_server_status"
             )
+        }
+
+        diagnosticsChip.visibility = if (ok) View.VISIBLE else View.GONE
+        diagnosticsChip.setOnClickListener {
+            val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
+            activity.startActivity(android.content.Intent(activity, SystemHubActivity::class.java))
         }
 
         val typedValue = android.util.TypedValue()
@@ -117,7 +148,8 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
 
         textView.setTextColor(textColor)
         summaryView.setTextColor(textColor)
-        logButton.setTextColor(textColor)
+        logChip.setTextColor(textColor)
+        diagnosticsChip.setTextColor(textColor)
 
         iconView.setBackgroundResource(R.drawable.shape_droplet_background)
         iconView.backgroundTintList = android.content.res.ColorStateList.valueOf(textColor)
@@ -153,18 +185,5 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         textView.text = title.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
         summaryView.text = summary.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
         summaryView.visibility = if (TextUtils.isEmpty(summaryView.text)) View.GONE else View.VISIBLE
-
-        // M3E Pulse Animation for STARTING state
-        if (rikka.shizuku.Shizuku.isPreV11() || af.shizuku.manager.utils.ShizukuStateMachine.get() == af.shizuku.manager.utils.ShizukuStateMachine.State.STARTING) {
-            val pulseAnim = android.view.animation.AlphaAnimation(0.6f, 1.0f).apply {
-                duration = 800
-                repeatMode = android.view.animation.Animation.REVERSE
-                repeatCount = android.view.animation.Animation.INFINITE
-                interpolator = android.view.animation.AccelerateDecelerateInterpolator()
-            }
-            iconView.startAnimation(pulseAnim)
-        } else {
-            iconView.clearAnimation()
-        }
     }
 }

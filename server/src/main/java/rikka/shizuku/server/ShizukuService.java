@@ -105,7 +105,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final int managerAppId;
     private final VirtualMachineManagerImpl virtualMachineManager = new VirtualMachineManagerImpl();
     private final StorageProxyImpl storageProxy = new StorageProxyImpl();
-    private final AICorePlusImpl aiCorePlus = new AICorePlusImpl();
+    private final AICorePlusImpl aiCorePlus;
     private final WindowManagerPlusImpl windowManagerPlus = new WindowManagerPlusImpl();
     private final ContinuityBridgeImpl continuityBridge = new ContinuityBridgeImpl();
     private final OverlayManagerPlusImpl overlayManagerPlus = new OverlayManagerPlusImpl();
@@ -144,6 +144,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         configManager = getConfigManager();
         clientManager = getClientManager();
+        aiCorePlus = new AICorePlusImpl(clientManager, this);
 
         ApkChangedObservers.start(ai.sourceDir, () -> {
             if (getManagerApplicationInfo() == null) {
@@ -1499,6 +1500,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public boolean isPlusFeatureEnabled(String key) {
         enforceCallingPermission("isPlusFeatureEnabled");
         return checkPlusFeatureEnabled(key);
+    }
+
+    private af.shizuku.server.IAIAutomationBridge aiAutomationBridge;
+
+    @Override
+    public void registerAIAutomationBridge(af.shizuku.server.IAIAutomationBridge bridge) {
+        enforceCallingPermission("registerAIAutomationBridge");
+        this.aiAutomationBridge = bridge;
+        if (aiCorePlus != null) {
+            aiCorePlus.setAutomationBridge(bridge);
+        }
     }
 
     @Override

@@ -24,5 +24,19 @@ ext {
     versionName = "ShizukuX ${baseVersionName}.r${gitCommitCount}"
 }
 
-subprojects { subproject ->
+subprojects {
     plugins.withId("com.android.base") {
+        android {
+            compileSdk = 35
+            buildToolsVersion = "35.0.0"
+            defaultConfig {
+                minSdk = 24
+                targetSdk = 35
+            }
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_21
+                targetCompatibility = JavaVersion.VERSION_21
+            }
+        }
+    }
+}

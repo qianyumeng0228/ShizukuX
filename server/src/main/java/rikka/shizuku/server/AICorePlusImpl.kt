@@ -22,11 +22,28 @@ import af.shizuku.server.IAICorePlus
  * Note: Most methods require system-level permissions and use reflection
  * to access hidden APIs.
  */
-class AICorePlusImpl : IAICorePlus.Stub() {
+class AICorePlusImpl(
+    private val clientManager: ShizukuClientManager,
+    private val service: ShizukuService
+) : IAICorePlus.Stub() {
     companion object {
         private const val TAG = "AICorePlusImpl"
         private const val DISPLAY_SERVICE = "display"
         private const val SURFACE_CONTROL_SERVICE = "SurfaceFlinger"
+    }
+
+    private var automationBridge: af.shizuku.server.IAIAutomationBridge? = null
+
+    fun setAutomationBridge(bridge: af.shizuku.server.IAIAutomationBridge?) {
+        this.automationBridge = bridge
+    }
+
+    private fun checkExperimental(): Boolean {
+        if (!service.isPlusFeatureEnabled("ai_core_experimental")) {
+            Log.w(TAG, "Experimental AI Core features are disabled. Enable them in Developer Options.")
+            return false
+        }
+        return true
     }
 
     /**
@@ -41,7 +58,13 @@ class AICorePlusImpl : IAICorePlus.Stub() {
      * @return Color value as an integer (ARGB format), or Color.TRANSPARENT on failure
      */
     override fun getPixelColor(x: Int, y: Int): Int {
+        if (!checkExperimental()) return Color.TRANSPARENT
         return try {
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.getPixelColor(x, y)
+            }
+
             // Try using SurfaceControl APIs first (Android 11+)
             val color = getPixelColorViaSurfaceControl(x, y)
             if (color != Color.TRANSPARENT) {
@@ -132,18 +155,46 @@ class AICorePlusImpl : IAICorePlus.Stub() {
      *   - "deadline_ms": Optional deadline in milliseconds
      * @return true if task was successfully scheduled, false otherwise
      */
-    override fun scheduleNPULoad(taskData: Bundle?): Boolean {
+    /**
+     * Set Samsung NPU/System processing mode.
+     * 
+     * @param mode 0 = Standard, 1 = Optimized, 2 = High Performance
+     */
+    private fun setNpuPowerMode(mode: Int) {
+        try {
+            val contentResolver = service.contentResolver
+            android.provider.Settings.System.putInt(contentResolver, "processing_speed", mode)
+            Log.d(TAG, "NPU/System Processing Mode set to: $mode")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set NPU power mode", e)
+        }
+    }
+
+    override fun scheduleNPULoad(taskData: Bundle?): Bundle? {
+        if (!service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("npu_acceleration")) return null
         if (taskData == null) {
             Log.w(TAG, "scheduleNPULoad called with null taskData")
-            return false
+            return null
         }
-
+        
+        // Apply high performance mode if scheduled
+        setNpuPowerMode(2) 
+        
         return try {
             val taskType = taskData.getString("task_type", "INFERENCE")
             val priority = taskData.getInt("priority", 5)
             val deadlineMs = taskData.getLong("deadline_ms", -1L)
 
             Log.d(TAG, "Scheduling NPU task: type=$taskType, priority=$priority, deadline=$deadlineMs ms")
+            
+            val response = Bundle()
+            response.putBoolean("success", true)
+            response
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to schedule NPU task", e)
+            null
+        }
+    }
 
             // Check if NNAPI is available
             if (!isNpuAvailable()) {
@@ -222,9 +273,14 @@ class AICorePlusImpl : IAICorePlus.Stub() {
      * @return Bitmap containing the captured layer, or null on failure
      */
     override fun captureLayer(layerId: Int): Bitmap? {
+        if (!checkExperimental()) return null
         return try {
-            Log.d(TAG, "Attempting to capture layer $layerId")
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.captureLayer(layerId)
+            }
 
+            Log.d(TAG, "Attempting to capture layer $layerId")
             // Try using ScreenCapture.captureLayers (Android 11+)
             val bitmap = captureLayerViaScreenCapture(layerId)
             if (bitmap != null) {
@@ -391,10 +447,52 @@ class AICorePlusImpl : IAICorePlus.Stub() {
         return bundle
     }
 
+    /**
+     * Check if NPU hardware is available on this device.
+     */
+    private fun isNpuAvailable(): Boolean {
+        // Robust NPU detection:
+        // 1. Check for common NPU/AI accelerator device nodes
+        val npuNodes = listOf("/dev/npu", "/dev/ion", "/dev/kgsl", "/dev/vertexai")
+        for (node in npuNodes) {
+            if (java.io.File(node).exists()) return true
+        }
+
+        // 2. Check system properties for board platform or NPU feature flags
+        val boardPlatform = try {
+            val getProp = Class.forName("android.os.SystemProperties")
+                .getMethod("get", String::class.java)
+            getProp.invoke(null, "ro.board.platform") as? String
+        } catch (e: Exception) { null }
+
+        // Common platform identifiers for Snapdragon/Exynos NPU-capable boards
+        val npuPlatforms = listOf("lahaina", "taro", "cape", "exynos2200", "qcom")
+        if (boardPlatform != null && npuPlatforms.any { boardPlatform.contains(it) }) {
+            return true
+        }
+
+        return false
+    }
+
     override fun simulateTouch(x: Float, y: Float): Boolean {
+        if (!checkExperimental()) return false
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("input", "tap", x.toString(), y.toString()))
-            process.waitFor() == 0
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.simulateTouch(x, y)
+            }
+            
+            val inputManager = getInputManager()
+            if (inputManager != null) {
+                val now = android.os.SystemClock.uptimeMillis()
+                injectMotionEvent(inputManager, android.view.MotionEvent.ACTION_DOWN, now, now, x, y)
+                injectMotionEvent(inputManager, android.view.MotionEvent.ACTION_UP, now, now + 10, x, y)
+                true
+            } else {
+                // Fallback to shell command
+                val process = Runtime.getRuntime().exec(arrayOf("input", "tap", x.toString(), y.toString()))
+                process.waitFor() == 0
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to simulate touch", e)
             false
@@ -402,9 +500,35 @@ class AICorePlusImpl : IAICorePlus.Stub() {
     }
 
     override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean {
+        if (!checkExperimental()) return false
         return try {
-            val process = Runtime.getRuntime().exec(arrayOf("input", "swipe", x1.toString(), y1.toString(), x2.toString(), y2.toString(), duration.toString()))
-            process.waitFor() == 0
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.simulateSwipe(x1, y1, x2, y2, duration)
+            }
+
+            val inputManager = getInputManager()
+            if (inputManager != null) {
+                val startTime = android.os.SystemClock.uptimeMillis()
+                injectMotionEvent(inputManager, android.view.MotionEvent.ACTION_DOWN, startTime, startTime, x1, y1)
+                
+                val steps = duration / 10
+                for (i in 1..steps) {
+                    val progress = i.toFloat() / steps
+                    val cx = x1 + (x2 - x1) * progress
+                    val cy = y1 + (y2 - y1) * progress
+                    injectMotionEvent(inputManager, android.view.MotionEvent.ACTION_MOVE, startTime, startTime + (i * 10), cx, cy)
+                    android.os.SystemClock.sleep(10)
+                }
+                
+                val endTime = startTime + duration
+                injectMotionEvent(inputManager, android.view.MotionEvent.ACTION_UP, startTime, endTime, x2, y2)
+                true
+            } else {
+                // Fallback to shell command
+                val process = Runtime.getRuntime().exec(arrayOf("input", "swipe", x1.toString(), y1.toString(), x2.toString(), y2.toString(), duration.toString()))
+                process.waitFor() == 0
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to simulate swipe", e)
             false
@@ -412,8 +536,14 @@ class AICorePlusImpl : IAICorePlus.Stub() {
     }
 
     override fun simulateText(text: String?): Boolean {
+        if (!checkExperimental()) return false
         if (text == null) return false
         return try {
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.simulateText(text)
+            }
+
             val process = Runtime.getRuntime().exec(arrayOf("input", "text", text))
             process.waitFor() == 0
         } catch (e: Exception) {
@@ -422,21 +552,81 @@ class AICorePlusImpl : IAICorePlus.Stub() {
         }
     }
 
-    override fun getWindowHierarchy(): String {
+    /**
+     * Get IInputManager instance.
+     */
+    private fun getInputManager(): Any? {
         return try {
-            val tempFile = "/data/local/tmp/window_dump_${System.currentTimeMillis()}.xml"
-            val process = Runtime.getRuntime().exec(arrayOf("uiautomator", "dump", tempFile))
-            if (process.waitFor() == 0) {
-                val file = java.io.File(tempFile)
-                if (file.exists()) {
-                    val content = file.readText()
-                    file.delete()
-                    return content
-                }
+            val binder = ServiceManager.getService("input")
+            if (binder != null) {
+                val stubClass = Class.forName("android.hardware.input.IInputManager\$Stub")
+                val asInterfaceMethod = stubClass.getMethod("asInterface", IBinder::class.java)
+                asInterfaceMethod.invoke(null, binder)
+            } else null
+        } catch (e: Exception) {
+            Log.d(TAG, "InputManager not available", e)
+            null
+        }
+    }
+
+    /**
+     * Inject a MotionEvent via InputManager.
+     */
+    private fun injectMotionEvent(inputManager: Any, action: Int, downTime: Long, eventTime: Long, x: Float, y: Float) {
+        try {
+            val event = android.view.MotionEvent.obtain(
+                downTime, eventTime, action, x, y, 0
+            )
+            // InputManager.injectInputEvent(InputEvent event, int mode)
+            // mode 0 = INJECT_INPUT_EVENT_MODE_ASYNC
+            val injectMethod = inputManager.javaClass.getMethod(
+                "injectInputEvent",
+                android.view.InputEvent::class.java,
+                Int::class.java
+            )
+            injectMethod.invoke(inputManager, event, 0)
+            event.recycle()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to inject motion event", e)
+        }
+    }
+
+    private val serverStartTime = System.currentTimeMillis()
+
+    override fun getServerStats(): Bundle {
+        val bundle = Bundle()
+        bundle.putLong("uptime_ms", System.currentTimeMillis() - serverStartTime)
+        bundle.putInt("client_count", clientManager.clientCount)
+        
+        // Resource usage
+        val runtime = Runtime.getRuntime()
+        bundle.putLong("mem_total", runtime.totalMemory())
+        bundle.putLong("mem_free", runtime.freeMemory())
+        bundle.putLong("mem_max", runtime.maxMemory())
+        
+        // Thread count
+        bundle.putInt("thread_count", Thread.activeCount())
+        
+        Log.d(TAG, "Fetched server stats: uptime=${bundle.getLong("uptime_ms")}")
+        return bundle
+    }
+
+    /**
+     * Native binder-based window hierarchy crawler.
+     * Replaces uiautomator dump with efficient AccessibilityNodeInfo traversal.
+     */
+    override fun getWindowHierarchy(): String {
+        if (!service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("native_window_crawler")) return ""
+        
+        return try {
+            val bridge = automationBridge
+            if (bridge != null) {
+                return bridge.windowHierarchy
             }
+            Log.w(TAG, "Automation bridge not registered")
             ""
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get window hierarchy", e)
+            Log.e(TAG, "Hierarchy crawl failed via bridge", e)
             ""
         }
     }

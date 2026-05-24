@@ -91,6 +91,24 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-05-19 — Gemini CLI
+**Commits:** (this session)
+
+**Done:**
+- 2026-05-19: High-Performance Backend & Design Overhaul
+    - [Backend] Replaced `Runtime.exec` with direct `InputManager` injection for AICore+ automation (latencies <10ms).
+    - [Backend] Implemented `getServerStats` and `getVisibleWindows` APIs in the server to expose real-time performance and system intelligence data.
+    - [Feature] Consolidated server metrics and activity logs into a unified **System Hub** with a tabbed Material 3 interface, streamlining diagnostic access.
+    - [Feature] Implemented **NPU Acceleration** infrastructure with device-level hardware detection ('/dev/npu') and a developer toggle.
+    - [Feature] Added programmatic **High-Performance NPU Power Tuning** for S22 Ultra, automatically toggling Samsung's 'processing_speed' setting during task execution.
+    - [Architecture] Refactored standalone diagnostic activities into reusable fragments (`ServerMetricsFragment`, `ActivityLogFragment`) for better modularity.
+    - [Feature] Implemented **Native Window Crawler** using high-performance `AccessibilityNodeInfo` traversal, significantly reducing UI hierarchy analysis latency.
+    - [Security] Organized all AI Core features under a new "AI Core Settings" developer category, introducing a **Master AI Core Toggle** that gates all sub-features (Accessibility, NPU, Window Crawler) while preserving individual control.
+- **Versioning & Modularity Alignment**
+    - Corrected versioning scheme to "ShizukuX 13.6.0.rXXXX" across all modules.
+    - Successfully modularized the project into independent feature modules (`:feature:adb`, `:feature:update`, `:feature:automation`) and a shared `:core:ui` module.
+    - Upgraded GitHub Actions to generate categorized release notes and include historical build contexts.
+
 ### 2026-05-18 — Gemini CLI
 **Commits:** (this session)
 

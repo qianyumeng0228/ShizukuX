@@ -6,6 +6,8 @@ import android.graphics.Path
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import timber.log.Timber
+import af.shizuku.server.IAIAutomationBridge
+import rikka.shizuku.Shizuku
 
 /**
  * AICore+ Automation Bridge
@@ -13,9 +15,38 @@ import timber.log.Timber
  */
 class AICorePlusService : AccessibilityService() {
 
+    private val bridge = object : IAIAutomationBridge.Stub() {
+        override fun getWindowHierarchy(): String = this@AICorePlusService.getWindowHierarchy()
+        override fun simulateTouch(x: Float, y: Float): Boolean = this@AICorePlusService.simulateTouch(x, y)
+        override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean = 
+            this@AICorePlusService.simulateSwipe(x1, y1, x2, y2, duration)
+        override fun simulateText(text: String): Boolean = this@AICorePlusService.simulateText(text)
+        override fun getPixelColor(x: Int, y: Int): Int = this@AICorePlusService.getPixelColor(x, y)
+        override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICorePlusService.captureLayer(layerId)
+    }
+
+    companion object {
+        var instance: AICorePlusService? = null
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        instance = this
         Timber.d("AICorePlusService connected")
+        registerBridge()
+    }
+
+    private fun registerBridge() {
+        if (Shizuku.pingBinder()) {
+            try {
+                val binder = Shizuku.getBinder()
+                val service = af.shizuku.server.IShizukuService.Stub.asInterface(binder)
+                service.registerAIAutomationBridge(bridge)
+                Timber.d("Successfully registered AIAutomationBridge to server")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to register AIAutomationBridge")
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
@@ -24,6 +55,7 @@ class AICorePlusService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
+        instance = null
         Timber.d("AICorePlusService interrupted")
     }
 
@@ -32,6 +64,9 @@ class AICorePlusService : AccessibilityService() {
      * @return XML string representation of the hierarchy.
      */
     fun dumpHierarchy(): String {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) {
+            return "<error>Experimental features disabled</error>"
+        }
         val rootNode = rootInActiveWindow ?: return "<error>Root node unavailable</error>"
         val sb = java.lang.StringBuilder()
         buildXml(rootNode, sb, 0)
@@ -76,6 +111,7 @@ class AICorePlusService : AccessibilityService() {
      * Simulates a physical tap at the given coordinates.
      */
     fun performTap(x: Float, y: Float): Boolean {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false
         val path = Path().apply { moveTo(x, y) }
         val stroke = GestureDescription.StrokeDescription(path, 0, 50)
         val gesture = GestureDescription.Builder().addStroke(stroke).build()
@@ -91,6 +127,7 @@ class AICorePlusService : AccessibilityService() {
      * Simulates a swipe between two coordinates.
      */
     fun performSwipe(startX: Float, startY: Float, endX: Float, endY: Float, durationMs: Long = 300): Boolean {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false
         val path = Path().apply {
             moveTo(startX, startY)
             lineTo(endX, endY)
@@ -111,6 +148,7 @@ class AICorePlusService : AccessibilityService() {
      * Note: Requires a focused input field and may use the Clipboard or ImeService.
      */
     fun simulateText(text: String): Boolean {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false
         val rootNode = rootInActiveWindow ?: return false
         val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return false
         val arguments = android.os.Bundle().apply {
@@ -124,6 +162,7 @@ class AICorePlusService : AccessibilityService() {
      * Uses AccessibilityService.takeScreenshot on API 30+.
      */
     fun getPixelColor(x: Int, y: Int): Int {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return android.graphics.Color.TRANSPARENT
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultColor = android.graphics.Color.TRANSPARENT
@@ -158,6 +197,7 @@ class AICorePlusService : AccessibilityService() {
      * Stub for AICore 5 advanced methods.
      */
     fun scheduleNPULoad(params: android.os.Bundle): Boolean {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false
         Timber.d("Scheduling NPU load via AICore+ Bridge: $params")
         // In a real implementation, this would communicate with a vendor-specific NPU service
         return true
@@ -168,6 +208,7 @@ class AICorePlusService : AccessibilityService() {
      * Uses AccessibilityService.takeScreenshot on API 30+.
      */
     fun captureLayer(layerId: Int): android.graphics.Bitmap? {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return null
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultBitmap: android.graphics.Bitmap? = null

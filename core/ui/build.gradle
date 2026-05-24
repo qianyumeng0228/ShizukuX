@@ -29,4 +29,7 @@ dependencies {
     implementation libs.material
     implementation libs.timber
     implementation libs.rikkax.core
+    implementation libs.rikkax.material
+    implementation libs.rikkax.appcompat
+    implementation libs.rikkax.layoutinflater
 }

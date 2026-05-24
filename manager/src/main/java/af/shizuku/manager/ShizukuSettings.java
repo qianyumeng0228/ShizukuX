@@ -61,6 +61,10 @@ public class ShizukuSettings {
         public static final String KEY_STORAGE_PROXY_ENABLED = "storage_proxy_enabled";
         public static final String KEY_CONTINUITY_BRIDGE_ENABLED = "continuity_bridge_enabled";
         public static final String KEY_AI_CORE_PLUS_ENABLED = "ai_core_plus_enabled";
+        public static final String KEY_AI_CORE_MASTER_ENABLED = "ai_core_master_enabled";
+        public static final String KEY_AI_CORE_EXPERIMENTAL_ENABLED = "ai_core_experimental_enabled";
+        public static final String KEY_NPU_ACCELERATION_ENABLED = "npu_acceleration_enabled";
+        public static final String KEY_NATIVE_WINDOW_CRAWLER_ENABLED = "native_window_crawler_enabled";
         public static final String KEY_WINDOW_MANAGER_PLUS_ENABLED = "window_manager_plus_enabled";
         public static final String KEY_OVERLAY_MANAGER_PLUS_ENABLED = "overlay_manager_plus_enabled";
         public static final String KEY_NETWORK_GOVERNOR_PLUS_ENABLED = "network_governor_plus_enabled";
@@ -496,6 +500,46 @@ public class ShizukuSettings {
         if (p != null) p.edit().putBoolean(Keys.KEY_AI_CORE_PLUS_ENABLED, enabled).apply();
     }
 
+    public static boolean isAiCoreMasterEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_AI_CORE_MASTER_ENABLED, false);
+    }
+
+    public static void setAiCoreMasterEnabled(boolean enabled) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_AI_CORE_MASTER_ENABLED, enabled).apply();
+    }
+
+    public static boolean isAICoreExperimentalEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_AI_CORE_EXPERIMENTAL_ENABLED, false);
+    }
+
+    public static void setAICoreExperimentalEnabled(boolean enabled) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_AI_CORE_EXPERIMENTAL_ENABLED, enabled).apply();
+    }
+
+    public static boolean isNpuAccelerationEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_NPU_ACCELERATION_ENABLED, false);
+    }
+
+    public static void setNpuAccelerationEnabled(boolean enabled) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_NPU_ACCELERATION_ENABLED, enabled).apply();
+    }
+
+    public static boolean isNativeWindowCrawlerEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_NATIVE_WINDOW_CRAWLER_ENABLED, false);
+    }
+
+    public static void setNativeWindowCrawlerEnabled(boolean enabled) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_NATIVE_WINDOW_CRAWLER_ENABLED, enabled).apply();
+    }
+
     public static boolean isWindowManagerPlusEnabled() {
         SharedPreferences p = getPreferences();
         return p == null || p.getBoolean(Keys.KEY_WINDOW_MANAGER_PLUS_ENABLED, true);
@@ -725,6 +769,10 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("storage_proxy", isStorageProxyEnabled());
                 service.updatePlusFeatureEnabled("continuity_bridge", isContinuityBridgeEnabled());
                 service.updatePlusFeatureEnabled("ai_core_plus", isAICorePlusEnabled());
+                service.updatePlusFeatureEnabled("ai_core_master", isAiCoreMasterEnabled());
+                service.updatePlusFeatureEnabled("ai_core_experimental", isAICoreExperimentalEnabled());
+                service.updatePlusFeatureEnabled("npu_acceleration", isNpuAccelerationEnabled());
+                service.updatePlusFeatureEnabled("native_window_crawler", isNativeWindowCrawlerEnabled());
                 service.updatePlusFeatureEnabled("window_manager_plus", isWindowManagerPlusEnabled());
                 service.updatePlusFeatureEnabled("overlay_manager_plus", isOverlayManagerPlusEnabled());
                 service.updatePlusFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());

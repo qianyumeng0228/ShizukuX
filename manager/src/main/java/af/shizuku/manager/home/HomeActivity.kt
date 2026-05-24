@@ -114,8 +114,9 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         }
         super.onCreate(savedInstanceState)
 
-        // Bind to the rootView that was created by AppBarActivity.setContentView(getLayoutId())
-        val binding = HomeActivityBinding.bind(rootView)
+        // Bind to the content view that was created by AppBarActivity.setContentView(getLayoutId())
+        // In AppBarActivity, index 0 is AppBarLayout, index 1 is the content view.
+        val binding = HomeActivityBinding.bind(rootView.getChildAt(1))
 
         when (intent?.getStringExtra("shortcut_action")) {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
