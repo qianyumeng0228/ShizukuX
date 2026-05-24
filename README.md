@@ -127,3 +127,9 @@ Full license texts and per-library details: [OPEN_SOURCE_LICENSES.md](OPEN_SOURC
 ## 📃 License
 
 [Apache 2.0](LICENSE)
+
+### Acknowledgments
+- Special thanks to **AkayamiShurui42** for the proactive security research and stability patches (Reference: #239).
+
+### Acknowledgments
+- Special thanks to **AkayamiShurui42** for the proactive security research and stability patches (Reference: #239).

@@ -101,3 +101,19 @@ which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizu
 ---
 
 *Last updated: 2026-04-29*
+## 2026-05-24: Security & Stability Hardening
+- **Ported improvements from community contributions (PR #239):**
+    - Implemented **Path Traversal Protection** in StorageProxyImpl using canonical path validation and directory whitelisting.
+    - Added **Runtime Tamper Detection** in SecurityGuard to identify Xposed/Frida hooks.
+    - Strengthened **DhizukuProvider** security by adding signature-level permissions.
+    - **Service Hardening**: Forced Shizuku server classes into primary DEX to resolve ClassNotFoundException on cold start.
+    - **Interface Alignment**: Standardized IActivityManagerPlus AIDL and implementation to support package-specific process limits.
+    - **Stability**: Added authentication requirement for REQUEST_BINDER and improved error handling for shell-based storage fallbacks.
+## 2026-05-24: Security & Stability Hardening
+- **Ported improvements from community contributions (PR #239):**
+    - Implemented **Path Traversal Protection** in StorageProxyImpl using canonical path validation and directory whitelisting.
+    - Added **Runtime Tamper Detection** in SecurityGuard to identify Xposed/Frida hooks.
+    - Strengthened **DhizukuProvider** security by adding signature-level permissions.
+    - **Service Hardening**: Forced Shizuku server classes into primary DEX to resolve ClassNotFoundException on cold start.
+    - **Interface Alignment**: Standardized IActivityManagerPlus AIDL and implementation to support package-specific process limits.
+    - **Stability**: Added authentication requirement for REQUEST_BINDER and improved error handling for shell-based storage fallbacks.
