@@ -1,6 +1,7 @@
 package af.shizuku.manager.database
 
 import timber.log.Timber
+
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 

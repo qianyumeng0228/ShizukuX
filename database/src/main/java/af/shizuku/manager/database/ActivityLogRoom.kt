@@ -1,5 +1,6 @@
-import timber.log.Timber
 package af.shizuku.manager.database
+
+import timber.log.Timber
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

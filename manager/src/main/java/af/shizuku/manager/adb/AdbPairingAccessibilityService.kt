@@ -1,4 +1,5 @@
 package af.shizuku.manager.adb
+import af.shizuku.manager.R
 
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent

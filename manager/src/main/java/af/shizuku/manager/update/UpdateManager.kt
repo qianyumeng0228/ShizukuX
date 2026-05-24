@@ -1,4 +1,5 @@
 package af.shizuku.manager.update
+import af.shizuku.manager.R
 
 import android.annotation.SuppressLint
 import android.app.DownloadManager

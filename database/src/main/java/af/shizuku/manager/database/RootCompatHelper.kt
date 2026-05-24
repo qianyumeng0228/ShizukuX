@@ -1,11 +1,12 @@
 package af.shizuku.manager.database
 
+import timber.log.Timber
+
 import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
-import timber.log.Timber
 
 object RootCompatHelper {
 
