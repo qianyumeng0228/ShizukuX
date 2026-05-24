@@ -31,15 +31,15 @@ class EmptyStateView @JvmOverloads constructor(
         ).apply {
             try {
                 val iconRes = getResourceId(R.styleable.EmptyStateView_emptyIcon, R.drawable.ic_help_outline_24)
-                val titleStr = getString(R.styleable.EmptyStateView_emptyTitle) ?: context.getString(R.string.empty_state_title_no_results)
-                val descriptionStr = getString(R.styleable.EmptyStateView_emptyDescription) ?: context.getString(R.string.empty_state_description_no_results)
-                val actionTextStr = getString(R.styleable.EmptyStateView_emptyActionText)
+                val titleRes = getResourceId(R.styleable.EmptyStateView_emptyTitle, R.string.empty_state_title_no_results)
+                val descriptionRes = getResourceId(R.styleable.EmptyStateView_emptyDescription, R.string.empty_state_description_no_results)
+                val actionTextRes = getResourceId(R.styleable.EmptyStateView_emptyActionText, 0)
 
-                icon = iconRes
-                title = titleStr
-                description = descriptionStr
-                if (!actionTextStr.isNullOrEmpty()) {
-                    actionText = actionTextStr
+                setIcon(iconRes)
+                setTitle(titleRes)
+                setDescription(descriptionRes)
+                if (actionTextRes != 0) {
+                    setActionText(actionTextRes)
                 }
             } finally {
                 recycle()
@@ -47,45 +47,34 @@ class EmptyStateView @JvmOverloads constructor(
         }
     }
 
-    var icon: Int = 0
-        set(@DrawableRes value) {
-            field = value
-            binding.emptyStateIcon.setImageResource(value)
-        }
-
-    var title: CharSequence = ""
-        set(value) {
-            field = value
-            binding.emptyStateTitle.text = value
-        }
-
-    var description: CharSequence = ""
-        set(value) {
-            field = value
-            binding.emptyStateDescription.text = value
-        }
-
-    var actionText: CharSequence = ""
-        set(value) {
-            field = value
-            binding.emptyStateActionButton.text = value
-            binding.emptyStateActionButton.visibility = if (value.isNotEmpty()) View.VISIBLE else View.GONE
-        }
-
-    fun setIconResource(@DrawableRes iconRes: Int) {
-        icon = iconRes
+    fun setIcon(@DrawableRes iconRes: Int) {
+        binding.emptyStateIcon.setImageResource(iconRes)
     }
 
-    fun setTitleResource(@StringRes titleRes: Int) {
-        title = context.getText(titleRes)
+    fun setTitle(@StringRes titleRes: Int) {
+        binding.emptyStateTitle.setText(titleRes)
     }
 
-    fun setDescriptionResource(@StringRes descriptionRes: Int) {
-        description = context.getText(descriptionRes)
+    fun setTitle(title: CharSequence) {
+        binding.emptyStateTitle.text = title
     }
 
-    fun setActionTextResource(@StringRes actionTextRes: Int) {
-        actionText = context.getText(actionTextRes)
+    fun setDescription(@StringRes descriptionRes: Int) {
+        binding.emptyStateDescription.setText(descriptionRes)
+    }
+
+    fun setDescription(description: CharSequence) {
+        binding.emptyStateDescription.text = description
+    }
+
+    fun setActionText(@StringRes actionTextRes: Int) {
+        binding.emptyStateActionButton.setText(actionTextRes)
+        binding.emptyStateActionButton.visibility = View.VISIBLE
+    }
+
+    fun setActionText(actionText: CharSequence) {
+        binding.emptyStateActionButton.text = actionText
+        binding.emptyStateActionButton.visibility = View.VISIBLE
     }
 
     fun hideActionButton() {
@@ -93,7 +82,7 @@ class EmptyStateView @JvmOverloads constructor(
     }
 
     fun showActionButton() {
-        if (actionText.isNotEmpty()) {
+        if (binding.emptyStateActionButton.text.isNotEmpty()) {
             binding.emptyStateActionButton.visibility = View.VISIBLE
         }
     }

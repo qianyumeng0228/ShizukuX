@@ -6,7 +6,7 @@ import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.ActivitySystemHubBinding
-import af.shizuku.feature.activitylog.ActivityLogFragment
+import af.shizuku.manager.activitylog.ActivityLogFragment
 import com.google.android.material.tabs.TabLayoutMediator
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.core.ui.AppBarActivity

@@ -119,7 +119,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         logChip.setOnClickListener {
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
             activity.startWithSceneTransition(
-                android.content.Intent(activity, af.shizuku.feature.activitylog.ActivityLogActivity::class.java),
+                android.content.Intent(activity, af.shizuku.manager.activitylog.ActivityLogActivity::class.java),
                 iconView, "icon_server_status"
             )
         }
