@@ -31,15 +31,15 @@ class EmptyStateView @JvmOverloads constructor(
         ).apply {
             try {
                 val iconRes = getResourceId(R.styleable.EmptyStateView_emptyIcon, R.drawable.ic_help_outline_24)
-                val titleRes = getResourceId(R.styleable.EmptyStateView_emptyTitle, R.string.empty_state_title_no_results)
-                val descriptionRes = getResourceId(R.styleable.EmptyStateView_emptyDescription, R.string.empty_state_description_no_results)
-                val actionTextRes = getResourceId(R.styleable.EmptyStateView_emptyActionText, 0)
+                val titleStr = getString(R.styleable.EmptyStateView_emptyTitle) ?: context.getString(R.string.empty_state_title_no_results)
+                val descriptionStr = getString(R.styleable.EmptyStateView_emptyDescription) ?: context.getString(R.string.empty_state_description_no_results)
+                val actionTextStr = getString(R.styleable.EmptyStateView_emptyActionText)
 
-                setIcon(iconRes)
-                setTitle(titleRes)
-                setDescription(descriptionRes)
-                if (actionTextRes != 0) {
-                    setActionText(actionTextRes)
+                icon = iconRes
+                title = titleStr
+                description = descriptionStr
+                if (!actionTextStr.isNullOrEmpty()) {
+                    actionText = actionTextStr
                 }
             } finally {
                 recycle()
@@ -47,58 +47,53 @@ class EmptyStateView @JvmOverloads constructor(
         }
     }
 
-    fun setIcon(@DrawableRes iconRes: Int) {
-        binding.emptyStateIcon.setImageResource(iconRes)
+    var icon: Int = 0
+        set(@DrawableRes value) {
+            field = value
+            binding.emptyStateIcon.setImageResource(value)
+        }
+
+    var title: CharSequence = ""
+        set(value) {
+            field = value
+            binding.emptyStateTitle.text = value
+        }
+
+    var description: CharSequence = ""
+        set(value) {
+            field = value
+            binding.emptyStateDescription.text = value
+        }
+
+    var actionText: CharSequence = ""
+        set(value) {
+            field = value
+            binding.emptyStateActionButton.text = value
+            binding.emptyStateActionButton.visibility = if (value.isNotEmpty()) View.VISIBLE else View.GONE
+        }
+
+    fun setIconResource(@DrawableRes iconRes: Int) {
+        icon = iconRes
     }
 
-    var icon: Int
-        get() = 0 // Not really usable as getter
-        set(value) = setIcon(value)
-
-    fun setTitle(@StringRes titleRes: Int) {
-        binding.emptyStateTitle.setText(titleRes)
+    fun setTitleResource(@StringRes titleRes: Int) {
+        title = context.getText(titleRes)
     }
 
-    fun setTitle(title: CharSequence) {
-        binding.emptyStateTitle.text = title
+    fun setDescriptionResource(@StringRes descriptionRes: Int) {
+        description = context.getText(descriptionRes)
     }
 
-    var title: CharSequence
-        get() = binding.emptyStateTitle.text
-        set(value) = setTitle(value)
-
-    fun setDescription(@StringRes descriptionRes: Int) {
-        binding.emptyStateDescription.setText(descriptionRes)
+    fun setActionTextResource(@StringRes actionTextRes: Int) {
+        actionText = context.getText(actionTextRes)
     }
-
-    fun setDescription(description: CharSequence) {
-        binding.emptyStateDescription.text = description
-    }
-
-    var description: CharSequence
-        get() = binding.emptyStateDescription.text
-        set(value) = setDescription(value)
-
-    fun setActionText(@StringRes actionTextRes: Int) {
-        binding.emptyStateActionButton.setText(actionTextRes)
-        binding.emptyStateActionButton.visibility = View.VISIBLE
-    }
-
-    fun setActionText(actionText: CharSequence) {
-        binding.emptyStateActionButton.text = actionText
-        binding.emptyStateActionButton.visibility = View.VISIBLE
-    }
-
-    var actionText: CharSequence
-        get() = binding.emptyStateActionButton.text
-        set(value) = setActionText(value)
 
     fun hideActionButton() {
         binding.emptyStateActionButton.visibility = View.GONE
     }
 
     fun showActionButton() {
-        if (binding.emptyStateActionButton.text.isNotEmpty()) {
+        if (actionText.isNotEmpty()) {
             binding.emptyStateActionButton.visibility = View.VISIBLE
         }
     }
