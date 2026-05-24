@@ -72,13 +72,36 @@ class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             readTimeout = READ_TIMEOUT_MS
             setRequestProperty("User-Agent", "ShizukuX/${BuildConfig.VERSION_NAME}")
             setRequestProperty("Accept", "application/json")
+            
+            ShizukuSettings.getRemoteDbEtag()?.let {
+                setRequestProperty("If-None-Match", it)
+            }
+            ShizukuSettings.getRemoteDbLastModified()?.let {
+                setRequestProperty("If-Modified-Since", it)
+            }
         }
         return try {
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                Timber.w("RemoteDbSync: HTTP ${connection.responseCode} from $urlString")
-                return null
+            when (connection.responseCode) {
+                HttpURLConnection.HTTP_OK -> {
+                    val etag = connection.getHeaderField("ETag")
+                    val lastModified = connection.getHeaderField("Last-Modified")
+                    
+                    ShizukuSettings.setRemoteDbEtag(etag)
+                    ShizukuSettings.setRemoteDbLastModified(lastModified)
+                    
+                    connection.inputStream.bufferedReader().use { it.readText() }.takeIf { it.isNotBlank() }
+                }
+                HttpURLConnection.HTTP_NOT_MODIFIED -> {
+                    Timber.d("RemoteDbSync: 304 Not Modified — using local cache")
+                    // If not modified, the cache is implicitly fresh, update the timestamp
+                    ShizukuSettings.setLastDbUpdate(System.currentTimeMillis())
+                    null
+                }
+                else -> {
+                    Timber.w("RemoteDbSync: HTTP ${connection.responseCode} from $urlString")
+                    null
+                }
             }
-            connection.inputStream.bufferedReader().use { it.readText() }.takeIf { it.isNotBlank() }
         } finally {
             connection.disconnect()
         }

@@ -80,9 +80,7 @@ Things discussed or sketched that we never formally decided to build.
   of `749d72a6`) due to instability. If Compose is reconsidered, start with a single isolated
   screen (e.g. Service Doctor) rather than a full home screen migration.
 
-- **Dynamic remote DB ETag caching** — `RemoteDbSyncWorker` now fetches the remote DB but
-  doesn't send `If-None-Match`. Could add ETag/Last-Modified header caching to skip the
-  download when content hasn't changed (saves bandwidth on unchanged data).
+- [x] **Dynamic remote DB ETag caching** — Added ETag/Last-Modified header support to `RemoteDbSyncWorker` to skip redundant downloads when the app-context database hasn't changed on GitHub. Saves bandwidth and improves sync efficiency. Done 2026-05-19.
 
 - **Onboarding step for Root Compat Hub** — Users don't know the Root Hub exists. An optional
   onboarding card after first Shizuku connection could walk through what toggles are available.
@@ -103,6 +101,7 @@ Things discussed or sketched that we never formally decided to build.
     - [Feature] Added programmatic **High-Performance NPU Power Tuning** for S22 Ultra, automatically toggling Samsung's 'processing_speed' setting during task execution.
     - [Architecture] Refactored standalone diagnostic activities into reusable fragments (`ServerMetricsFragment`, `ActivityLogFragment`) for better modularity.
     - [Feature] Implemented **Native Window Crawler** using high-performance `AccessibilityNodeInfo` traversal, significantly reducing UI hierarchy analysis latency.
+    - [Optimization] Implemented **Dynamic remote DB ETag caching** in `RemoteDbSyncWorker` to skip redundant downloads when the app-context database hasn't changed.
     - [Security] Organized all AI Core features under a new "AI Core Settings" developer category, introducing a **Master AI Core Toggle** that gates all sub-features (Accessibility, NPU, Window Crawler) while preserving individual control.
 - **Versioning & Modularity Alignment**
     - Corrected versioning scheme to "ShizukuX 13.6.0.rXXXX" across all modules.

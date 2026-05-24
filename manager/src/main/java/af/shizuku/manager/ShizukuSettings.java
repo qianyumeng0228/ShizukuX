@@ -52,6 +52,8 @@ public class ShizukuSettings {
         public static final String KEY_ACTIVITY_LOG_RETENTION = "activity_log_retention";
         public static final String KEY_LAST_DB_UPDATE = "last_db_update";
         public static final String KEY_REMOTE_DB_JSON = "remote_db_json";
+        public static final String KEY_REMOTE_DB_ETAG = "remote_db_etag";
+        public static final String KEY_REMOTE_DB_LAST_MODIFIED = "remote_db_last_modified";
 
         // Dhizuku & API (ShizukuX additions)
         public static final String KEY_DHIZUKU_MODE = "dhizuku_mode";
@@ -410,6 +412,22 @@ public class ShizukuSettings {
     public static void setLastDbUpdate(long time) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putLong(Keys.KEY_LAST_DB_UPDATE, time).apply();
+    }
+
+    public static String getRemoteDbEtag() {
+        return getPreferences().getString(Keys.KEY_REMOTE_DB_ETAG, null);
+    }
+
+    public static void setRemoteDbEtag(String etag) {
+        getPreferences().edit().putString(Keys.KEY_REMOTE_DB_ETAG, etag).apply();
+    }
+
+    public static String getRemoteDbLastModified() {
+        return getPreferences().getString(Keys.KEY_REMOTE_DB_LAST_MODIFIED, null);
+    }
+
+    public static void setRemoteDbLastModified(String lastModified) {
+        getPreferences().edit().putString(Keys.KEY_REMOTE_DB_LAST_MODIFIED, lastModified).apply();
     }
 
     public static boolean isAppEnhancementEnabled(String packageName, String enhancementKey) {
