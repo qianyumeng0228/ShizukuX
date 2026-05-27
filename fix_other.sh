@@ -1,0 +1,1 @@
+sed -i 's/import rikka.material.app.AppActivity/import rikka.material.app.MaterialActivity\nimport af.shizuku.manager.app.AppActivity/' manager/src/main/java/af/shizuku/manager/legacy/ShellRequestHandlerActivity.kt

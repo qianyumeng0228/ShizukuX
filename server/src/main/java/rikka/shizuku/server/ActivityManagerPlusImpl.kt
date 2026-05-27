@@ -77,7 +77,7 @@ class ActivityManagerPlusImpl : IActivityManagerPlus.Stub() {
         }
     }
 
-    override fun setAppProcessLimit(packageName: String?, limit: Int) {
+    override fun setAppProcessLimit(limit: Int) {
         try {
             // This setting is internal to ActivityManagerService but can be set via 'am' on some builds
             // Fallback to global setting if command fails

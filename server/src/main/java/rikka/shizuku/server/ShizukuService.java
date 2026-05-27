@@ -83,9 +83,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private static void waitSystemService(String name) {
         while (ServiceManager.getService(name) == null) {
             try {
-                LOGGER.i("service " + name + " is not started, wait 1s.");
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
+                LOGGER.i("service " + name + " is not started, waiting...");
+                ServiceManager.class.getMethod("waitForService", String.class).invoke(null, name);
+            } catch (Exception e) {
                 LOGGER.w(e.getMessage(), e);
             }
         }
