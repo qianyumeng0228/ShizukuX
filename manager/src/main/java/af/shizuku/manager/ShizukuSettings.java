@@ -850,8 +850,8 @@ public class ShizukuSettings {
                         Timber.tag("ShizukuSettings").e(e, "failed to update su_path");
                     }
                 }
-            } catch (Exception e) {
-                Timber.tag("ShizukuSettings").e(e, "failed to process document result");
+            } catch (Throwable tr) {
+                Timber.tag("ShizukuSettings").e(tr, "failed to sync plus features");
             }
         }).start();
     }

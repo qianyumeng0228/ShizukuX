@@ -1273,6 +1273,18 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     private static void sendBinderToClient(Binder binder, int userId) {
         try {
+            java.util.Set<String> runningPackages = new java.util.HashSet<>();
+            try {
+                for (android.app.ActivityManager.RunningAppProcessInfo process : ActivityManagerApis.getRunningAppProcessesNoThrow()) {
+                    if (process.pkgList != null) {
+                        for (String pkg : process.pkgList) {
+                            runningPackages.add(pkg);
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+
             Stream<PackageInfo> packages =
                 PackageManagerApis.getInstalledPackagesNoThrow(
                     PackageManager.GET_PERMISSIONS, userId
@@ -1281,7 +1293,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 .filter(pi -> pi != null && pi.requestedPermissions != null)
                 .filter(pi -> ArraysKt.contains(pi.requestedPermissions, PERMISSION) || 
                               ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY) ||
-                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL));
+                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL))
+                .filter(pi -> runningPackages.contains(pi.packageName));
 
             LOGGER.i("sending binders");
             packages
