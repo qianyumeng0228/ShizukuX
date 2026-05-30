@@ -23,8 +23,54 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.core.view.MenuProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.activity.result.contract.ActivityResultContracts
+import af.shizuku.manager.backup.BackupRestoreManager
+import af.shizuku.manager.backup.CryptoUtils
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 
 class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
+
+    private val createBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        val lock = BiometricLock(requireActivity())
+        lock.authenticate(onSuccess = {
+            try {
+                val cipher = CryptoUtils.getCipherForEncryption()
+                val payload = BackupRestoreManager.createBackupPayload(ctx, cipher)
+                ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                    OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+                }
+                Toast.makeText(ctx, "Backup exported successfully", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }, onError = { errCode ->
+            Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
+        })
+    }
+
+    private val restoreBackupLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        val lock = BiometricLock(requireActivity())
+        lock.authenticate(onSuccess = {
+            try {
+                val payload = ctx.contentResolver.openInputStream(uri)?.use { `is` ->
+                    InputStreamReader(`is`, Charsets.UTF_8).readText()
+                } ?: return@authenticate
+                BackupRestoreManager.restoreFromPayload(ctx, payload) { iv ->
+                    CryptoUtils.getCipherForDecryption(iv)
+                }
+                Toast.makeText(ctx, "Backup restored successfully. Please restart the app.", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }, onError = { errCode ->
+            Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
+        })
+    }
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         if (!isAdded) return
@@ -92,6 +138,19 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 }
             }
             false
+        }
+
+        val backupSettingsPref = findPreference<Preference>("backup_settings")
+        backupSettingsPref?.setOnPreferenceClickListener {
+            val dateStr = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            createBackupLauncher.launch("ShizukuPlus_Settings_$dateStr.json")
+            true
+        }
+
+        val restoreSettingsPref = findPreference<Preference>("restore_settings")
+        restoreSettingsPref?.setOnPreferenceClickListener {
+            restoreBackupLauncher.launch(arrayOf("application/json", "*/*"))
+            true
         }
 
         val hideDisabledPref = findPreference<TwoStatePreference>("hide_disabled_plus_features")

@@ -2,6 +2,25 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_plus_cloud_sync"
+        android:title="Cloud Sync &amp; Backup"
+        android:defaultValue="true">
+
+        <Preference
+            android:key="backup_settings"
+            android:title="Backup Settings"
+            android:summary="Export your configurations and enhancements securely using Biometric encryption."
+            android:icon="@drawable/ic_cloud_upload_24" />
+
+        <Preference
+            android:key="restore_settings"
+            android:title="Restore Settings"
+            android:summary="Restore your configurations from an encrypted backup."
+            android:icon="@drawable/ic_cloud_download_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
     <!-- Framework: core delegation and master Plus switch -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_framework"
