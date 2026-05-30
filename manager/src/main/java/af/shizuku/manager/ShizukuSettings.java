@@ -251,6 +251,10 @@ public class ShizukuSettings {
         return token;
     }
 
+    public static boolean isSamsungSystemUidEscalationEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED, false);
+    }
+
     public static boolean getStartOnBoot(Context context) {
         ComponentName bootCompleteReceiver = new ComponentName(context.getPackageName(), BootCompleteReceiver.class.getName());
         int state = context.getPackageManager().getComponentEnabledSetting(bootCompleteReceiver);
