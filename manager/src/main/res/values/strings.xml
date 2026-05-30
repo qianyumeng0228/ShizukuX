@@ -389,7 +389,7 @@
     <string name="settings_plus_app_setup_title">Setup Integration</string>
     <string name="settings_plus_app_open">Open App</string>
     <string name="settings_plus_learn_more">Learn more</string>
-    <string name="help_general_plus_summary">ShizukuX extends the core Shizuku framework with powerful system-level bridges. These features allow third-party automation tools like MacroDroid and Tasker, as well as theming engines like Hex Installer, to perform privileged actions natively and securely. Each feature is designed to bridge the gap between root-only capabilities and the standard Android API, ensuring high performance and deep system integration for your favorite power-user apps.</string>
+    <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Plus features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (af.shizuku.plus.api).<br><br><b>Important:</b> ShizukuX does NOT automatically work with existing apps that use stock Shizuku. Apps like SD Maid SE and SwiftBackup bind to the stock package name (moe.shizuku.privileged.api) and cannot discover ShizukuX without developer updates.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. To grant stock app permissions: stop ShizukuX, open stock Shizuku, grant permissions, then switch back. The Companion card on the home screen makes switching easy.]]></string>
 
     <!-- Detailed Help Strings -->
     <string name="help_dhizuku_title">About Dhizuku Mode</string>
