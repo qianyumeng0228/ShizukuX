@@ -994,6 +994,5 @@
     <string name="settings_tcp_learn_more">Learn more about using automation tools to control Shizuku</string>
 
     <string name="settings_help">Help</string>
-    <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_adb_category">ADB Management</string>
 </resources>
