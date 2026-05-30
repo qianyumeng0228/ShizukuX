@@ -130,6 +130,6 @@ Full license texts and per-library details: [OPEN_SOURCE_LICENSES.md](OPEN_SOURC
 
 ### Acknowledgments
 - Special thanks to **AkayamiShurui42** for the proactive security research and stability patches (Reference: #239).
-
-### Acknowledgments
-- Special thanks to **AkayamiShurui42** for the proactive security research and stability patches (Reference: #239).
+- Thank you to **AlexeiCrystal** for identifying MIUI crash bugs and suggesting the Compat Hub workaround for legacy apps (#241, #242).
+- Thank you to **ddnexus** and **kai-bash** for highlighting the Device Owner factory reset trap and Google Backup conflicts (#237).
+- Thank you to **Kevinco1** for feedback on root compat app detection issues (#243).
