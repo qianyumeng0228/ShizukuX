@@ -1,0 +1,17 @@
+Configuration on demand is an incubating feature.
+
+> Task :manager:dependencies
+
+------------------------------------------------------------
+Project ':manager'
+------------------------------------------------------------
+
+testImplementation - Implementation only dependencies for 'test' sources. (n)
+\--- io.kotest:kotest-runner-junit5:5.9.1 (n)
+
+(n) - A dependency or dependency configuration that cannot be resolved.
+
+A web-based, searchable dependency report is available by adding the --scan option.
+
+BUILD SUCCESSFUL in 2s
+1 actionable task: 1 executed
