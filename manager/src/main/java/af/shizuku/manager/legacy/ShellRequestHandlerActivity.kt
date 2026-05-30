@@ -3,7 +3,7 @@ package af.shizuku.manager.legacy
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
-import af.shizuku.manager.app.AppActivity
+import rikka.material.app.MaterialActivity
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 
 import af.shizuku.manager.ShizukuSettings
@@ -16,7 +16,7 @@ import android.os.Bundle
 import androidx.core.app.NotificationCompat
 import af.shizuku.manager.MainActivity
 
-class ShellRequestHandlerActivity : AppActivity() {
+class ShellRequestHandlerActivity : MaterialActivity() {
 
     companion object {
         private const val CHANNEL_ID = "auth_errors"

@@ -20,7 +20,7 @@ abstract class AuthenticatedReceiver : BroadcastReceiver() {
         private const val NOTIFICATION_ID = 1450
     }
 
-    final override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(context: Context, intent: Intent) {
         val authToken = intent.getStringExtra("auth")
         val expectedToken = ShizukuSettings.getAuthToken()
 

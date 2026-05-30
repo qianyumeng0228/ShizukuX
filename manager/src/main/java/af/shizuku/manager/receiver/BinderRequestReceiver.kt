@@ -11,7 +11,7 @@ class BinderRequestReceiver : AuthenticatedReceiver() {
             return
         }
 
-        super.onReceive(context, intent)
+        super. onReceive(context, intent)
     }
 
     override fun onAuthenticated(context: Context, intent: Intent) {
