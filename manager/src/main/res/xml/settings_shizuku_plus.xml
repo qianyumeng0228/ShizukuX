@@ -218,7 +218,7 @@
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="samsung_system_uid_escalation_enabled"
             android:title="Samsung System UID Escalation"
-            android:summary="[DANGEROUS] Attempt to escalate to UID 1000 (system) using an exploit specific to unpatched Samsung devices. Use at your own risk."
+            android:summary="[DANGEROUS] Attempt to escalate to UID 1000 (system) using an exploit specific to unpatched Samsung devices (by pascua28). Use at your own risk."
             android:icon="@drawable/ic_warning_24"
             android:defaultValue="false" />
 

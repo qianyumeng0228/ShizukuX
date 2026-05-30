@@ -86,7 +86,8 @@ Thanks to the following upstream contributors and projects whose work makes Shiz
 - **[RikkaApps / Rikka](https://github.com/RikkaApps)** — For the foundational Shizuku project and its elegant API design.
 - **[thedjchi](https://github.com/thedjchi)** — For the intermediate fork and initial quality-of-life improvements.
 - **[Muntashir Akon](https://github.com/MuntashirAkon)** — For the aShell You codebase, which inspired the terminal and shell automation features.
-- **[iamr0s](https://github.com/iamr0s)** — For Dhizuku, enabling the unified Device Owner privilege mode.
+- **[iamr0s](https://github.com/iamr0s)** — For Dhizuku, enabling the unified Device Owner privilege mode, and AndroidAppProcess for standalone Java process execution.
+- **[pascua28](https://github.com/pascua28)** — For native Samsung System UID 1000 escalation integration.
 
 ### Upstream Projects
 
@@ -94,7 +95,9 @@ Thanks to the following upstream contributors and projects whose work makes Shiz
 |---------|--------|---------|------|
 | [Shizuku](https://github.com/RikkaApps/Shizuku) | RikkaApps / Rikka | Apache 2.0 | Foundational privileged-process architecture |
 | [Shizuku (fork)](https://github.com/thedjchi/Shizuku) | thedjchi | Apache 2.0 | Intermediate fork with QoL improvements |
+| [Shizuku (fork)](https://github.com/pascua28/Shizuku) | pascua28 | Apache 2.0 | Samsung UID 1000 system execution exploit |
 | [Dhizuku](https://github.com/iamr0s/Dhizuku) | iamr0s | Apache 2.0 | Device Owner binder sharing (Dhizuku Mode) |
+| [AndroidAppProcess](https://github.com/iamr0s/AndroidAppProcess) | iamr0s | LGPL-3.0 | Standalone high-privileged Java process wrapper |
 
 ### Open Source Libraries
 
