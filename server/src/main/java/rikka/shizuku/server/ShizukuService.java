@@ -1036,15 +1036,28 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(requestUid)) {
                 PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName, PackageManager.GET_PERMISSIONS, userId);
-                if (pi == null || pi.requestedPermissions == null || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+                if (pi == null || pi.requestedPermissions == null) {
+                    continue;
+                }
+
+                String permToGrant = null;
+                if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+                    permToGrant = PERMISSION;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL)) {
+                    permToGrant = ServerConstants.PERMISSION_ORIGINAL;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY)) {
+                    permToGrant = ServerConstants.PERMISSION_LEGACY;
+                }
+
+                if (permToGrant == null) {
                     continue;
                 }
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    PermissionManagerApis.grantRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
                 } else {
-                    PermissionManagerApis.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
                 }
             }
         }
@@ -1113,15 +1126,28 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(uid)) {
                 PackageInfo pi = PackageManagerApis.getPackageInfoNoThrow(packageName, PackageManager.GET_PERMISSIONS, userId);
-                if (pi == null || pi.requestedPermissions == null || !ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+                if (pi == null || pi.requestedPermissions == null) {
+                    continue;
+                }
+
+                String permToGrant = null;
+                if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+                    permToGrant = PERMISSION;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL)) {
+                    permToGrant = ServerConstants.PERMISSION_ORIGINAL;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY)) {
+                    permToGrant = ServerConstants.PERMISSION_LEGACY;
+                }
+
+                if (permToGrant == null) {
                     continue;
                 }
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    PermissionManagerApis.grantRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
                 } else {
-                    PermissionManagerApis.revokeRuntimePermission(packageName, PERMISSION, userId);
+                    PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
                     onPermissionRevoked(packageName);
                 }
             }
@@ -1357,7 +1383,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             Bundle extra = new Bundle();
             extra.putParcelable("af.shizuku.plus.api.intent.extra.BINDER", new af.shizuku.api.BinderContainer(binder));
-            extra.putParcelable("rikka.shizuku.intent.extra.BINDER", new af.shizuku.api.BinderContainer(binder));
+            extra.putParcelable("rikka.shizuku.intent.extra.BINDER", new rikka.shizuku.BinderContainer(binder));
+            extra.putParcelable("moe.shizuku.privileged.api.intent.extra.BINDER", new moe.shizuku.api.BinderContainer(binder));
 
             Bundle reply = IContentProviderUtils.callCompat(provider, null, name, "sendBinder", null, extra);
             if (reply != null) {
