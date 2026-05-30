@@ -18,7 +18,7 @@
 
     <!-- This app exists solely to spoof the package name so apps like SwiftBackup pass their isInstalled checks. -->
     <application
-        android:label="Shizuku (Compat Hub)"
+        android:label="ShizukuX Compat Hub"
         android:hasCode="false"
         android:icon="@android:drawable/ic_secure">
     </application>
