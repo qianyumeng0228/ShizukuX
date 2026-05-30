@@ -692,6 +692,11 @@ public class ShizukuSettings {
         return p != null && p.getBoolean(Keys.KEY_SU_BRIDGE_ENABLED, true);
     }
 
+    public static String getCustomSuPath() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString("custom_su_path", "") : "";
+    }
+
     public static boolean isRootAdawayBridgeEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_ROOT_ADAWAY_BRIDGE_ENABLED, false);
@@ -798,6 +803,7 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());
                 service.updatePlusFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
                 service.updatePlusFeatureEnabled("su_bridge", isSuBridgeEnabled());
+                service.setPlusSetting("custom_su_path", getCustomSuPath());
                 service.updatePlusFeatureEnabled("root_adaway_bridge", isRootAdawayBridgeEnabled());
                 service.updatePlusFeatureEnabled("root_magisk_mocking", isRootMagiskMockingEnabled());
                 service.updatePlusFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());

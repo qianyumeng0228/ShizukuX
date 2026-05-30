@@ -30,6 +30,15 @@
         android:icon="@drawable/ic_root_24"
         android:defaultValue="false" />
 
+    <EditTextPreference
+        android:key="custom_su_path"
+        android:title="Custom SU Path"
+        android:summary="Set a custom path for the su binary spoofing (e.g., /system/xbin/su). Leave blank for default."
+        android:dependency="su_bridge_enabled"
+        android:icon="@drawable/ic_terminal_24"
+        app:iconSpaceReserved="true"
+        android:singleLine="true" />
+
     <Preference
         android:key="root_compatibility_hub"
         android:title="@string/settings_root_integration_hub"

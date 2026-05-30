@@ -684,19 +684,21 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 } else if (baseCmd.equals("ls") && cmd.length > 1 && (String.join(" ", cmd).contains("/su") || String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
-                        String fullCmd = String.join(" ", cmd);
-                        if (fullCmd.contains("/su")) {
+                        if (java.util.Arrays.asList(cmd).contains("su")) {
                             LOGGER.i("SUBridge: mocking ls for su path");
-                            return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 /system/xbin/su"}, env, dir);
-                        } else {
+                            String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
+                            if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/system/xbin/su";
+                            return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 " + customSuPath}, env, dir);
+                        } else if (java.util.Arrays.asList(cmd).contains("magisk")) {
                             LOGGER.i("SUBridge: mocking ls for Magisk path");
-                            return newProcessInternal(new String[]{"echo", "total 0"}, env, dir);
+                            return newProcessInternal(new String[]{"echo", "-rwxr-xr-x 1 root root 14528 2026-03-11 12:00 /sbin/magisk"}, env, dir);
                         }
                     }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
-                    String realSuPath = plusSettingsMap.getOrDefault("su_path", "/system/xbin/su");
-                    LOGGER.i("SUBridge: mocking which su command -> " + realSuPath);
-                    return newProcessInternal(new String[]{"echo", realSuPath}, env, dir);
+                    String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
+                    if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/system/xbin/su";
+                    LOGGER.i("SUBridge: mocking which su command -> " + customSuPath);
+                    return newProcessInternal(new String[]{"echo", customSuPath}, env, dir);
                 } else if (baseCmd.equals("getprop") && cmd.length > 1) {
                     String prop = cmd[1];
                     boolean forceReal = prop.startsWith("real.");
@@ -840,16 +842,47 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             }
                         }
                         return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if ((baseCmd.equals("tar") || baseCmd.equals("cp")) && (String.join(" ", cmd).contains("/data/data/") || String.join(" ", cmd).contains("/data/app/"))) {
+                    } else if ((baseCmd.equals("tar") || baseCmd.equals("cp")) && (String.join(" ", cmd).contains("/data/data/") || String.join(" ", cmd).contains("/data/app/") || String.join(" ", cmd).contains("/data/user/"))) {
                         String fullCmd = String.join(" ", cmd);
                         LOGGER.i("SUBridge: mapping backup command to native bu utility: " + fullCmd);
-                        // Functional Workaround: Translate file-based backup to Android's Backup Utility flow
-                        // Extract package name from /data/data/<pkg> or /data/app/<pkg>-...
-                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/data/(?:data|app)/([^/\\-\\s]+)").matcher(fullCmd);
+                        java.util.regex.Matcher m = java.util.regex.Pattern.compile("/data/(?:data|app|user/\\d+)/([^/\\-\\s]+)").matcher(fullCmd);
                         if (m.find()) {
                             String targetPkg = m.group(1);
-                            // Run native backup flow for the detected package
-                            return newProcessInternal(new String[]{"bu", "backup", "-apk", "-obb", targetPkg}, env, dir);
+                            String archivePath = null;
+                            for (int i = 1; i < cmd.length; i++) {
+                                if (cmd[i].contains("f") && cmd[i].startsWith("-") && i + 1 < cmd.length) {
+                                    archivePath = cmd[i + 1];
+                                    break;
+                                } else if (cmd[i].endsWith(".tar") || cmd[i].endsWith(".gz")) {
+                                    archivePath = cmd[i];
+                                    break;
+                                }
+                            }
+                            boolean isRestore = fullCmd.contains("-x") || fullCmd.contains("--extract");
+                            boolean isGzip = fullCmd.contains("-z") || fullCmd.contains("--gzip") || (archivePath != null && archivePath.endsWith(".gz"));
+
+                            if (archivePath != null) {
+                                if (isRestore) {
+                                    String restoreCmd = "(printf 'ANDROID BACKUP\\n1\\n1\\nnone\\n' ; ";
+                                    if (isGzip) restoreCmd += "gunzip -c " + archivePath;
+                                    else restoreCmd += "cat " + archivePath;
+                                    restoreCmd += ") | bu restore";
+                                    return newProcessInternal(new String[]{"sh", "-c", restoreCmd}, env, dir);
+                                } else {
+                                    String backupCmd = "bu backup -apk -obb " + targetPkg + " | tail -c +25 ";
+                                    if (isGzip) backupCmd += "| gzip -c ";
+                                    backupCmd += "> " + archivePath;
+                                    return newProcessInternal(new String[]{"sh", "-c", backupCmd}, env, dir);
+                                }
+                            } else {
+                                if (isRestore) {
+                                    String restoreCmd = "(printf 'ANDROID BACKUP\\n1\\n1\\nnone\\n' ; cat) | bu restore";
+                                    return newProcessInternal(new String[]{"sh", "-c", restoreCmd}, env, dir);
+                                } else {
+                                    String backupCmd = "bu backup -apk -obb " + targetPkg + " | tail -c +25";
+                                    return newProcessInternal(new String[]{"sh", "-c", backupCmd}, env, dir);
+                                }
+                            }
                         }
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     } else if (baseCmd.equals("screencap")) {
