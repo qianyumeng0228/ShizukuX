@@ -60,8 +60,14 @@ class StartRootViewHolder(
 
     private fun onStartClicked(v: View) {
         val activity = v.context.asActivity<android.app.Activity>() ?: return
+        val isRooted = af.shizuku.manager.utils.EnvironmentUtils.isRooted()
+        val isSystem = af.shizuku.manager.ShizukuSettings.isSamsungSystemUidEscalationEnabled() && !isRooted
         val intent = Intent(activity, StarterActivity::class.java).apply {
-            putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+            if (isSystem) {
+                putExtra(StarterActivity.EXTRA_IS_SYSTEM, true)
+            } else {
+                putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+            }
         }
         activity.startWithSceneTransition(intent, binding.icon, "icon_root")
     }

