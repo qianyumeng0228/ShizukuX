@@ -29,6 +29,15 @@ android {
     kotlinOptions {
         jvmTarget = "21"
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
 }
 
 dependencies {
@@ -43,4 +52,10 @@ dependencies {
     implementation libs.timber
     implementation libs.kotlinx.coroutines.core
     implementation libs.kotlinx.serialization.json
+
+    testImplementation libs.kotestJunit5
+    testImplementation libs.robolectric
+    testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.androidx.test.core
+    testImplementation libs.room.testing
 }
