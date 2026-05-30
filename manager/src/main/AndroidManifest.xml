@@ -340,6 +340,13 @@
             </intent-filter>
         </receiver>
 
+        <!-- Fake ADB Server -->
+        <activity
+            android:name=".adb.FakeAdbPairingActivity"
+            android:theme="@android:style/Theme.DeviceDefault.Light.Dialog.Alert"
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

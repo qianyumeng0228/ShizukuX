@@ -1,0 +1,64 @@
+package af.shizuku.manager.adb
+
+import android.app.Activity
+import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicBoolean
+
+class FakeAdbPairingActivity : Activity() {
+
+    companion object {
+        private var currentLatch: CountDownLatch? = null
+        private var currentResult = AtomicBoolean(false)
+
+        fun requestPairingSync(context: Context, pubKeyStr: String): Boolean {
+            val latch = CountDownLatch(1)
+            currentLatch = latch
+            currentResult.set(false)
+
+            val intent = Intent(context, FakeAdbPairingActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("pubKey", pubKeyStr)
+            }
+            context.startActivity(intent)
+
+            try {
+                latch.await()
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
+            return currentResult.get()
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        val pubKeyStr = intent.getStringExtra("pubKey") ?: ""
+        val hash = pubKeyStr.hashCode().toString(16).toUpperCase()
+
+        AlertDialog.Builder(this)
+            .setTitle("Allow fake ADB connection?")
+            .setMessage("An app is trying to connect to ShizukuX via the Fake Local ADB server.\n\nRSA key fingerprint:\n$hash")
+            .setPositiveButton("Allow") { _, _ ->
+                currentResult.set(true)
+                currentLatch?.countDown()
+                finish()
+            }
+            .setNegativeButton("Deny") { _, _ ->
+                currentResult.set(false)
+                currentLatch?.countDown()
+                finish()
+            }
+            .setOnCancelListener {
+                currentResult.set(false)
+                currentLatch?.countDown()
+                finish()
+            }
+            .setCancelable(false)
+            .show()
+    }
+}

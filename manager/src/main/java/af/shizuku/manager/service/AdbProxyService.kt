@@ -177,68 +177,16 @@ class AdbProxyService : Service() {
     }
 
     private suspend fun handleClient(socket: Socket) {
-        val coroutineContext = currentCoroutineContext()
         socket.use {
-            socket.soTimeout = TIMEOUT_MS
-            val reader = BufferedReader(InputStreamReader(socket.getInputStream(), Charsets.UTF_8))
-            val writer = PrintWriter(java.io.OutputStreamWriter(socket.getOutputStream(), Charsets.UTF_8), true)
-            writer.println("SHIZUKU_PROXY/1.0 READY")
+            socket.soTimeout = 0
             try {
-                while (coroutineContext.isActive) {
-                    // Check if ready to read to allow cancellation to interrupt the blocking read
-                    while (coroutineContext.isActive && !reader.ready()) {
-                        kotlinx.coroutines.delay(50)
-                    }
-                    if (!coroutineContext.isActive) break
-                    
-                    val currentLine = reader.readLine() ?: break
-                    val cmd = currentLine.trim()
-                    if (cmd.isEmpty()) continue
-                    if (cmd == "exit" || cmd == "quit") break
-                    if (cmd.length > MAX_CMD_LEN) {
-                        writer.println("ERROR: command too long")
-                        continue
-                    }
-                    runCommand(cmd, writer)
-                }
+                val handler = af.shizuku.manager.adb.FakeAdbClientHandler(this@AdbProxyService, socket)
+                handler.loop()
             } catch (e: SocketException) {
                 // Client disconnected — normal
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Client error")
             }
-        }
-    }
-
-    private suspend fun runCommand(cmd: String, writer: PrintWriter) {
-        val coroutineContext = currentCoroutineContext()
-        var process: java.lang.Process? = null
-        try {
-            process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            val stdout = BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8))
-            val stderr = BufferedReader(InputStreamReader(process.errorStream, Charsets.UTF_8))
-            
-            // Launch concurrent readers so we don't block on just stdout
-            kotlinx.coroutines.coroutineScope {
-                launch {
-                    stdout.forEachLine { if (isActive) writer.println(it) }
-                }
-                launch {
-                    stderr.forEachLine { if (isActive) writer.println("ERR: $it") }
-                }
-            }
-            
-            val exit = process.waitFor()
-            if (coroutineContext.isActive) writer.println("EXIT:$exit")
-        } catch (e: Exception) {
-            if (e !is kotlinx.coroutines.CancellationException) {
-                Timber.tag(TAG).e(e, "Command failed: $cmd")
-                writer.println("ERROR: ${e.message}")
-                writer.println("EXIT:1")
-            } else {
-                throw e
-            }
-        } finally {
-            process?.destroy()
         }
     }
 

@@ -471,3 +471,29 @@ private fun RSAPublicKey.adbEncoded(name: String): ByteArray {
     nameBytes.copyInto(bytes, base64Bytes.size)
     return bytes
 }
+
+fun parseAdbPublicKey(keyStr: String): RSAPublicKey {
+    val base64 = keyStr.substringBefore(' ')
+    val bytes = Base64.decode(base64, Base64.DEFAULT)
+    val buffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
+    val modulusSizeWords = buffer.int
+    val n0inv = buffer.int
+    val modulusInts = IntArray(modulusSizeWords)
+    for (i in 0 until modulusSizeWords) {
+        modulusInts[i] = buffer.int
+    }
+    val rrInts = IntArray(modulusSizeWords)
+    for (i in 0 until modulusSizeWords) {
+        rrInts[i] = buffer.int
+    }
+    val exponent = buffer.int
+
+    var modulus = BigInteger.ZERO
+    val r32 = BigInteger.ZERO.setBit(32)
+    for (i in modulusInts.indices.reversed()) {
+        modulus = modulus.multiply(r32).add(BigInteger.valueOf(modulusInts[i].toLong() and 0xFFFFFFFFL))
+    }
+
+    val spec = RSAPublicKeySpec(modulus, BigInteger.valueOf(exponent.toLong() and 0xFFFFFFFFL))
+    return KeyFactory.getInstance("RSA").generatePublic(spec) as RSAPublicKey
+}
