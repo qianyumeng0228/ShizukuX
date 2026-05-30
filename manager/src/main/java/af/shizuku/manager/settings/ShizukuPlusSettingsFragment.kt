@@ -71,6 +71,15 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             false
         }
 
+        // Clear Device Owner button — only visible when app holds DO status
+        val clearDoPref = findPreference<Preference>("clear_device_owner")
+        clearDoPref?.isVisible = isDeviceOwnerActive(requireContext())
+        clearDoPref?.setOnPreferenceClickListener {
+            val ctx = context ?: return@setOnPreferenceClickListener true
+            showClearDeviceOwnerDialog(ctx)
+            true
+        }
+
         val customApiPref = requireNotNull(findPreference<TwoStatePreference>(KEY_CUSTOM_API_ENABLED))
         customApiPref.isChecked = ShizukuSettings.isCustomApiEnabled()
         customApiPref.setOnPreferenceChangeListener { _, newValue ->
@@ -194,6 +203,36 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             getString(R.string.dhizuku_status_not_set)
         val baseSummary = getString(R.string.settings_dhizuku_mode_summary)
         pref.summary = "$statusLine\n\n$baseSummary"
+        // Show/hide the Clear Device Owner button based on active status
+        findPreference<Preference>("clear_device_owner")?.isVisible = active
+    }
+
+    private fun showClearDeviceOwnerDialog(ctx: Context) {
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.dhizuku_clear_owner_title)
+            .setMessage(R.string.dhizuku_clear_owner_message)
+            .setPositiveButton(R.string.dhizuku_clear_owner_confirm) { _, _ ->
+                clearDeviceOwner(ctx)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun clearDeviceOwner(ctx: Context) {
+        try {
+            val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            dpm.clearDeviceOwnerApp(ctx.packageName)
+            Toast.makeText(ctx, R.string.dhizuku_clear_owner_success, Toast.LENGTH_LONG).show()
+            // Refresh the UI to reflect the change
+            val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
+            if (dhizukuPref != null) {
+                ShizukuSettings.setDhizukuModeEnabled(false)
+                dhizukuPref.isChecked = false
+                updateDhizukuDeviceOwnerStatus(dhizukuPref)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(ctx, R.string.dhizuku_clear_owner_failure, Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun showDhizukuSetupDialog(ctx: Context) {

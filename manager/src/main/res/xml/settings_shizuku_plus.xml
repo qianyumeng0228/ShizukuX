@@ -16,6 +16,14 @@
             app:infoTitle="@string/help_dhizuku_title"
             app:infoDetail="@string/help_dhizuku_detail" />
 
+        <!-- Only shown when app is active Device Owner; tapping clears DO status -->
+        <Preference
+            android:key="clear_device_owner"
+            android:title="@string/settings_clear_device_owner"
+            android:summary="@string/settings_clear_device_owner_summary"
+            android:icon="@drawable/ic_delete_24"
+            android:visible="false" />
+
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="custom_api_enabled"
             android:title="@string/settings_enhanced_api"
