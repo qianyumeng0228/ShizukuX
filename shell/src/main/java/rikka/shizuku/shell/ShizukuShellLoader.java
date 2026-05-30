@@ -1,8 +1,6 @@
 package rikka.shizuku.shell;
 
 import android.app.ActivityManagerNative;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 import android.app.IActivityManager;
 import android.content.Intent;
 import android.os.Binder;
@@ -63,8 +61,7 @@ public class ShizukuShellLoader {
         Intent intent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
                 .setPackage("af.shizuku.plus.api")
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-                .putExtra("data", data)
-                .putExtra("auth", System.getenv("SHIZUKU_TOKEN"));
+                .putExtra("data", data);
 
         if (!TextUtils.isEmpty(authToken)) {
             intent.putExtra("auth", authToken);
@@ -78,11 +75,6 @@ public class ShizukuShellLoader {
             am = ActivityManagerNative.asInterface(amBinder);
         }
 
-        // broadcastIntent will fail on Android 8.x
-        //  com.android.server.am.ActivityManagerService.isInstantApp(ActivityManagerService.java:18547)
-        //  com.android.server.am.ActivityManagerService.broadcastIntentLocked(ActivityManagerService.java:18972)
-        //  com.android.server.am.ActivityManagerService.broadcastIntent(ActivityManagerService.java:19703)
-        //
         try {
             am.broadcastIntent(null, intent, null, null, 0, null, null,
                     null, -1, null, true, false, 0);
@@ -92,7 +84,6 @@ public class ShizukuShellLoader {
                 throw e;
             }
 
-<<<<<<< HEAD
             LOGGER.warning("broadcastIntent fails on Android 8.0 or 8.1, fallback to startActivity");
 
             Intent baseActivityIntent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
@@ -104,9 +95,6 @@ public class ShizukuShellLoader {
             if (!TextUtils.isEmpty(authToken)) {
                 baseActivityIntent.putExtra("auth", authToken);
             }
-=======
-            LOGGER.severe("broadcastIntent fails on Android 8.0 or 8.1, fallback to startActivity");
->>>>>>> origin/fix_logging-3430839810391412202
 
             Intent activityIntent = Intent.createChooser(
                     baseActivityIntent,
@@ -180,15 +168,6 @@ public class ShizukuShellLoader {
         ), 5000);
 
         Looper.loop();
-        System.exit(0);
-    }
-
-    private static void abort(String message) {
-        LOGGER.severe(message);
-        System.exit(1);
-    }
-}
-
         System.exit(0);
     }
 
