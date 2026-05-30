@@ -1,6 +1,8 @@
 package rikka.shizuku.shell;
 
 import android.app.ActivityManagerNative;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import android.app.IActivityManager;
 import android.content.Intent;
 import android.os.Binder;
@@ -90,6 +92,7 @@ public class ShizukuShellLoader {
                 throw e;
             }
 
+<<<<<<< HEAD
             LOGGER.warning("broadcastIntent fails on Android 8.0 or 8.1, fallback to startActivity");
 
             Intent baseActivityIntent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
@@ -101,6 +104,9 @@ public class ShizukuShellLoader {
             if (!TextUtils.isEmpty(authToken)) {
                 baseActivityIntent.putExtra("auth", authToken);
             }
+=======
+            LOGGER.severe("broadcastIntent fails on Android 8.0 or 8.1, fallback to startActivity");
+>>>>>>> origin/fix_logging-3430839810391412202
 
             Intent activityIntent = Intent.createChooser(
                     baseActivityIntent,
@@ -128,7 +134,7 @@ public class ShizukuShellLoader {
             cls.getDeclaredMethod("main", String[].class, String.class, IBinder.class, Handler.class)
                     .invoke(null, args, callingPackage, binder, handler);
         } catch (ClassNotFoundException tr) {
-            LOGGER.log(Level.SEVERE, "Class not found\nMake sure you have Shizuku v12.0.0 or above installed", tr);
+            LOGGER.log(Level.SEVERE, "Class not found. Make sure you have Shizuku v12.0.0 or above installed.", tr);
             System.exit(1);
         } catch (Throwable tr) {
             LOGGER.log(Level.SEVERE, "Failed to load shell class", tr);
@@ -174,6 +180,15 @@ public class ShizukuShellLoader {
         ), 5000);
 
         Looper.loop();
+        System.exit(0);
+    }
+
+    private static void abort(String message) {
+        LOGGER.severe(message);
+        System.exit(1);
+    }
+}
+
         System.exit(0);
     }
 

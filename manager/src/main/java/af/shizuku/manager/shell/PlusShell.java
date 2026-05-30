@@ -24,6 +24,7 @@ public class PlusShell {
 
     private static final Logger LOGGER = new Logger("PlusShell");
 
+<<<<<<< HEAD
     private static class LogTree extends Timber.Tree {
         @Override
         protected void log(int priority, String tag, String message, Throwable t) {
@@ -39,6 +40,12 @@ public class PlusShell {
     private static void printHelp() {
         LOGGER.i("ShizukuX CLI Helper (plus)");
         LOGGER.i("Usage: plus [command] [args]");
+=======
+
+    private static void printHelp() {
+        LOGGER.i("ShizukuX CLI Helper (plus)");
+        LOGGER.w("Usage: plus [command] [args]");
+>>>>>>> origin/fix_logging-3430839810391412202
         LOGGER.i("");
         LOGGER.i("Commands:");
         LOGGER.i("  vm list                   List all Microdroid VMs");
@@ -58,7 +65,11 @@ public class PlusShell {
 
     private static void handleSu(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 2) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus su [command]");
+=======
+            LOGGER.w("Usage: plus su [command]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -74,7 +85,11 @@ public class PlusShell {
 
     private static void handleAppOps(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 2) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus appops [package_name]");
+=======
+            LOGGER.w("Usage: plus appops [package_name]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -112,7 +127,11 @@ public class PlusShell {
 
     private static void handleVm(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 2) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus vm [list|start|stop|delete|status]");
+=======
+            LOGGER.w("Usage: plus vm [list|start|stop|delete|status]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -136,7 +155,11 @@ public class PlusShell {
                 }
                 break;
             case "start":
+<<<<<<< HEAD
                 if (name == null) LOGGER.i("Usage: plus vm start [name]");
+=======
+                if (name == null) LOGGER.w("Usage: plus vm start [name]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     LOGGER.i("Starting VM: " + name);
                     if (vmManager.start(name)) LOGGER.i("VM started successfully.");
@@ -144,35 +167,52 @@ public class PlusShell {
                 }
                 break;
             case "stop":
+<<<<<<< HEAD
                 if (name == null) LOGGER.i("Usage: plus vm stop [name]");
+=======
+                if (name == null) LOGGER.w("Usage: plus vm stop [name]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     if (vmManager.stop(name)) LOGGER.i("VM stopped.");
                     else LOGGER.e("Failed to stop VM.");
                 }
                 break;
             case "delete":
-                if (name == null) LOGGER.i("Usage: plus vm delete [name]");
+                if (name == null) LOGGER.w("Usage: plus vm delete [name]");
                 else {
                     if (vmManager.delete(name)) LOGGER.i("VM deleted.");
                     else LOGGER.e("Failed to delete VM.");
                 }
                 break;
             case "status":
+<<<<<<< HEAD
                 if (name == null) LOGGER.i("Usage: plus vm status [name]");
+=======
+                if (name == null) LOGGER.w("Usage: plus vm status [name]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     String status = vmManager.getStatus(name);
                     LOGGER.i("VM Status (" + name + "): " + (status != null ? status : "UNKNOWN"));
                 }
                 break;
             default:
+<<<<<<< HEAD
                 LOGGER.e("Unknown VM command: " + command);
                 LOGGER.i("Usage: plus vm [list|start|stop|delete|status]");
+=======
+                LOGGER.w("Unknown VM command: " + command);
+                LOGGER.w("Usage: plus vm [list|start|stop|delete|status]");
+>>>>>>> origin/fix_logging-3430839810391412202
         }
     }
 
     private static void handleAm(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 2) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus am [freeze|unfreeze|stop|kill-all] [package_name]");
+=======
+            LOGGER.w("Usage: plus am [freeze|unfreeze|stop|kill-all] [package_name]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -188,28 +228,40 @@ public class PlusShell {
 
         switch (command) {
             case "freeze":
+<<<<<<< HEAD
                 if (packageName == null) LOGGER.i("Usage: plus am freeze [package]");
+=======
+                if (packageName == null) LOGGER.w("Usage: plus am freeze [package]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     if (am.freezeApp(packageName)) LOGGER.i("App frozen: " + packageName);
                     else LOGGER.e("Failed to freeze app.");
                 }
                 break;
             case "unfreeze":
+<<<<<<< HEAD
                 if (packageName == null) LOGGER.i("Usage: plus am unfreeze [package]");
+=======
+                if (packageName == null) LOGGER.w("Usage: plus am unfreeze [package]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     if (am.unfreezeApp(packageName)) LOGGER.i("App unfrozen: " + packageName);
                     else LOGGER.e("Failed to unfreeze app.");
                 }
                 break;
             case "stop":
-                if (packageName == null) LOGGER.i("Usage: plus am stop [package]");
+                if (packageName == null) LOGGER.w("Usage: plus am stop [package]");
                 else {
                     if (am.deepForceStop(packageName)) LOGGER.i("App force-stopped: " + packageName);
                     else LOGGER.e("Failed to stop app.");
                 }
                 break;
             case "clear":
+<<<<<<< HEAD
                 if (packageName == null) LOGGER.i("Usage: plus am clear [package]");
+=======
+                if (packageName == null) LOGGER.w("Usage: plus am clear [package]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     if (am.clearAppData(packageName)) LOGGER.i("App data cleared: " + packageName);
                     else LOGGER.e("Failed to clear app data.");
@@ -220,13 +272,21 @@ public class PlusShell {
                 else LOGGER.e("Failed to kill processes.");
                 break;
             default:
+<<<<<<< HEAD
                 LOGGER.e("Unknown am command: " + command);
+=======
+                LOGGER.w("Unknown am command: " + command);
+>>>>>>> origin/fix_logging-3430839810391412202
         }
     }
 
     private static void handleWm(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 3) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus wm [immersive|dex-high-refresh] [on|off]");
+=======
+            LOGGER.w("Usage: plus wm [immersive|dex-high-refresh] [on|off]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -250,13 +310,17 @@ public class PlusShell {
                 LOGGER.i("DeX High Refresh Rate (120Hz): " + (enabled ? "ON" : "OFF"));
                 break;
             default:
+<<<<<<< HEAD
                 LOGGER.e("Unknown wm command: " + command);
+=======
+                LOGGER.w("Unknown wm command: " + command);
+>>>>>>> origin/fix_logging-3430839810391412202
         }
     }
 
     private static void handleAiCore(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 2) {
-            LOGGER.i("Usage: plus aicore [touch|swipe|text|dump|pixel|context] [args]");
+            LOGGER.w("Usage: plus aicore [touch|swipe|text|dump|pixel|context] [args]");
             return;
         }
 
@@ -270,7 +334,11 @@ public class PlusShell {
         String command = args[1];
         switch (command) {
             case "touch":
+<<<<<<< HEAD
                 if (args.length < 4) LOGGER.i("Usage: plus aicore touch [x] [y]");
+=======
+                if (args.length < 4) LOGGER.w("Usage: plus aicore touch [x] [y]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     float x = Float.parseFloat(args[2]);
                     float y = Float.parseFloat(args[3]);
@@ -279,7 +347,11 @@ public class PlusShell {
                 }
                 break;
             case "swipe":
+<<<<<<< HEAD
                 if (args.length < 6) LOGGER.i("Usage: plus aicore swipe [x1] [y1] [x2] [y2] [duration_ms]");
+=======
+                if (args.length < 6) LOGGER.w("Usage: plus aicore swipe [x1] [y1] [x2] [y2] [duration_ms]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     float x1 = Float.parseFloat(args[2]);
                     float y1 = Float.parseFloat(args[3]);
@@ -291,7 +363,11 @@ public class PlusShell {
                 }
                 break;
             case "text":
+<<<<<<< HEAD
                 if (args.length < 3) LOGGER.i("Usage: plus aicore text [content]");
+=======
+                if (args.length < 3) LOGGER.w("Usage: plus aicore text [content]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     StringBuilder text = new StringBuilder();
                     for (int i = 2; i < args.length; i++) {
@@ -310,12 +386,16 @@ public class PlusShell {
                 }
                 break;
             case "pixel":
+<<<<<<< HEAD
                 if (args.length < 4) LOGGER.i("Usage: plus aicore pixel [x] [y]");
+=======
+                if (args.length < 4) LOGGER.w("Usage: plus aicore pixel [x] [y]");
+>>>>>>> origin/fix_logging-3430839810391412202
                 else {
                     int x = Integer.parseInt(args[2]);
                     int y = Integer.parseInt(args[3]);
                     int color = aicore.getPixelColor(x, y);
-                    LOGGER.i(String.format("Pixel at (%d, %d): #%08X", x, y, color));
+                    LOGGER.i("Pixel at (%d, %d): #%08X", x, y, color);
                 }
                 break;
             case "context":
@@ -330,13 +410,21 @@ public class PlusShell {
                 }
                 break;
             default:
+<<<<<<< HEAD
                 LOGGER.e("Unknown aicore command: " + command);
+=======
+                LOGGER.w("Unknown aicore command: " + command);
+>>>>>>> origin/fix_logging-3430839810391412202
         }
     }
 
     private static void handleStorage(String[] args, IBinder binder) throws RemoteException {
         if (args.length < 3) {
+<<<<<<< HEAD
             LOGGER.i("Usage: plus storage [ls|cat|rm|mkdir|stat] [path]");
+=======
+            LOGGER.w("Usage: plus storage [ls|cat|rm|mkdir|stat] [path]");
+>>>>>>> origin/fix_logging-3430839810391412202
             return;
         }
 
@@ -374,7 +462,11 @@ public class PlusShell {
                         System.out.flush();
                     }
                 } catch (java.io.IOException e) {
+<<<<<<< HEAD
                     LOGGER.e(e, "Error reading file");
+=======
+                    LOGGER.e("Error reading file: " + e.getMessage());
+>>>>>>> origin/fix_logging-3430839810391412202
                 }
                 break;
             case "rm":
@@ -397,8 +489,13 @@ public class PlusShell {
                 }
                 break;
             default:
+<<<<<<< HEAD
                 LOGGER.e("Unknown storage command: " + command);
                 LOGGER.i("Usage: plus storage [ls|cat|rm|mkdir|stat] [path]");
+=======
+                LOGGER.w("Unknown storage command: " + command);
+                LOGGER.w("Usage: plus storage [ls|cat|rm|mkdir|stat] [path]");
+>>>>>>> origin/fix_logging-3430839810391412202
         }
     }
 
@@ -425,7 +522,7 @@ public class PlusShell {
         LOGGER.i("\nPlus Features Status:");
         String[] features = {"su_bridge", "shell_interceptor", "avf_manager", "storage_proxy", "ai_core_plus"};
         for (String f : features) {
-            LOGGER.i(String.format("  %-18s: %s", f, service.isPlusFeatureEnabled(f) ? "ENABLED" : "DISABLED"));
+            LOGGER.i("  %-18s: %s", f, service.isPlusFeatureEnabled(f) ? "ENABLED" : "DISABLED");
         }
         
         LOGGER.i("\nDevice Identity:");
@@ -435,8 +532,12 @@ public class PlusShell {
     }
 
     public static void main(String[] args, String packageName, IBinder binder, Handler handler) {
+<<<<<<< HEAD
         Timber.plant(new LogTree());
 
+=======
+        timber.log.Timber.plant(new timber.log.Timber.DebugTree());
+>>>>>>> origin/fix_logging-3430839810391412202
         if (args.length == 0 || args[0].equals("help")) {
             printHelp();
             System.exit(0);
@@ -480,7 +581,7 @@ public class PlusShell {
                     handleDoctor(binder);
                     break;
                 default:
-                    LOGGER.e("Unknown command: " + args[0]);
+                    LOGGER.w("Unknown command: " + args[0]);
                     printHelp();
             }
         } catch (Throwable tr) {
@@ -489,4 +590,33 @@ public class PlusShell {
             System.exit(0);
         }
     }
+}
+    }
+}
+}
+}
+       }
+    }
+}
+    }
+}
+}
+}
+
+}
+    }
+    }
+}
+    }
+}
+}
+}
+       }
+    }
+}
+    }
+}
+}
+}
+
 }
