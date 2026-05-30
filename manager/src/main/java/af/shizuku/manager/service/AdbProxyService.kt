@@ -42,48 +42,46 @@ class AdbProxyService : Service() {
         private const val MAX_CMD_LEN = 8192
         private const val TIMEOUT_MS = 30_000 // 30s per command
 
-        /** Configures adbd TCP mode via Shizuku. Requires Shizuku with root. */
+        private fun execShellCommand(cmd: Array<String>): Boolean {
+            return if (Shizuku.pingBinder()) {
+                try {
+                    Shizuku.newProcess(cmd, null, null).waitFor() == 0
+                } catch (e: Exception) { false }
+            } else if (com.topjohnwu.superuser.Shell.getShell().isRoot) {
+                com.topjohnwu.superuser.Shell.cmd(*cmd).exec().isSuccess
+            } else {
+                false
+            }
+        }
+
+        /** Configures adbd TCP mode via Shizuku or Root. */
         fun enableAdbTcp(port: Int = 5555): Boolean {
-            if (!Shizuku.pingBinder()) {
-                Timber.tag(TAG).w("Shizuku service is not running - cannot enable adbd TCP mode")
+            if (!Shizuku.pingBinder() && !com.topjohnwu.superuser.Shell.getShell().isRoot) {
+                Timber.tag(TAG).w("Shizuku service is not running and no root - cannot enable adbd TCP mode")
                 return false
             }
             return try {
                 // Step 1: Set the TCP port property
-                Shizuku.newProcess(
-                    arrayOf("setprop", "service.adb.tcp.port", port.toString()), null, null
-                ).waitFor()
+                execShellCommand(arrayOf("setprop", "service.adb.tcp.port", port.toString()))
 
                 // Also set the persistent property so TCP mode survives reboots
-                runCatching {
-                    Shizuku.newProcess(
-                        arrayOf("setprop", "persist.adb.tcp.port", port.toString()), null, null
-                    ).waitFor()
-                }
+                execShellCommand(arrayOf("setprop", "persist.adb.tcp.port", port.toString()))
 
                 // Step 2: Restart adbd — try multiple approaches for vendor compatibility
                 // Primary: ctl.restart is the most compatible init signal (works on AOSP, Samsung, Xiaomi)
-                val restartViaCtl = runCatching {
-                    Shizuku.newProcess(
-                        arrayOf("setprop", "ctl.restart", "adbd"), null, null
-                    ).waitFor()
-                }.isSuccess
+                val restartViaCtl = execShellCommand(arrayOf("setprop", "ctl.restart", "adbd"))
 
                 if (!restartViaCtl || EnvironmentUtils.isSamsung()) {
                     // Samsung specific: sometimes ctl.restart is ignored, toggling the property forces a restart
-                    runCatching {
-                        Shizuku.newProcess(arrayOf("setprop", "adb.network.port", port.toString()), null, null).waitFor()
-                    }
+                    execShellCommand(arrayOf("setprop", "adb.network.port", port.toString()))
                     
                     // Fallback A: explicit stop/start (AOSP init services)
-                    val stopped = runCatching {
-                        Shizuku.newProcess(arrayOf("stop", "adbd"), null, null).waitFor()
-                    }.isSuccess
+                    val stopped = execShellCommand(arrayOf("stop", "adbd"))
                     if (stopped) {
-                        Shizuku.newProcess(arrayOf("start", "adbd"), null, null).waitFor()
+                        execShellCommand(arrayOf("start", "adbd"))
                     } else {
                         // Fallback B: pkill lets init auto-restart the daemon
-                        Shizuku.newProcess(arrayOf("pkill", "adbd"), null, null).waitFor()
+                        execShellCommand(arrayOf("pkill", "adbd"))
                     }
                 }
 
@@ -97,32 +95,22 @@ class AdbProxyService : Service() {
 
         /** Disables adbd TCP mode, reverting to USB only. */
         fun disableAdbTcp(): Boolean {
-            if (!Shizuku.pingBinder()) {
-                Timber.tag(TAG).w("Shizuku service is not running - cannot disable adbd TCP mode")
+            if (!Shizuku.pingBinder() && !com.topjohnwu.superuser.Shell.getShell().isRoot) {
+                Timber.tag(TAG).w("Shizuku service is not running and no root - cannot disable adbd TCP mode")
                 return false
             }
             return try {
                 // Set port to -1 (disabled) and restart adbd
-                Shizuku.newProcess(
-                    arrayOf("setprop", "service.adb.tcp.port", "-1"), null, null
-                ).waitFor()
+                execShellCommand(arrayOf("setprop", "service.adb.tcp.port", "-1"))
 
                 // Clear the persistent property too
-                runCatching {
-                    Shizuku.newProcess(
-                        arrayOf("setprop", "persist.adb.tcp.port", ""), null, null
-                    ).waitFor()
-                }
+                execShellCommand(arrayOf("setprop", "persist.adb.tcp.port", ""))
 
                 // Use same multi-fallback restart
-                val restarted = runCatching {
-                    Shizuku.newProcess(
-                        arrayOf("setprop", "ctl.restart", "adbd"), null, null
-                    ).waitFor()
-                }.isSuccess
+                val restarted = execShellCommand(arrayOf("setprop", "ctl.restart", "adbd"))
                 if (!restarted) {
-                    runCatching { Shizuku.newProcess(arrayOf("stop", "adbd"), null, null).waitFor() }
-                    runCatching { Shizuku.newProcess(arrayOf("start", "adbd"), null, null).waitFor() }
+                    execShellCommand(arrayOf("stop", "adbd"))
+                    execShellCommand(arrayOf("start", "adbd"))
                 }
                 Timber.tag(TAG).i("adbd TCP mode disabled")
                 true
