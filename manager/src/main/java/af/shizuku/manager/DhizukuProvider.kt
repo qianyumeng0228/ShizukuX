@@ -15,20 +15,20 @@ import rikka.shizuku.Shizuku
 
 class DhizukuProvider : ContentProvider() {
 
-    private val binder = object : IDhizuku.Stub() {
+    private inner class DhizukuV1Binder : IDhizuku.Stub() {
         override fun getVersion(): Int = 1
 
         override fun getBinder(): IBinder? {
             if (!ShizukuSettings.isDhizukuModeEnabled()) return null
             if (!ShizukuStateMachine.isRunning()) return null
 
-            // Only the manager itself (same UID) may obtain the raw DPM binder.
-            // Client apps must go through the Shizuku permission grant flow.
             val callingUid = Binder.getCallingUid()
             val myUid = android.os.Process.myUid()
-            if (callingUid != myUid &&
-                Shizuku.checkRemotePermission("af.shizuku.plus.permission.API_V23") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                return null
+            if (callingUid != myUid) {
+                val pkgName = context?.packageManager?.getPackagesForUid(callingUid)?.firstOrNull() ?: ""
+                if (!af.shizuku.manager.authorization.AuthorizationManager.granted(pkgName, callingUid)) {
+                    return null
+                }
             }
 
             return try {
@@ -40,14 +40,58 @@ class DhizukuProvider : ContentProvider() {
 
         override fun isPermissionGranted(): Boolean {
             if (!ShizukuSettings.isDhizukuModeEnabled()) return false
-            // Simplified: if Shizuku is running and app has Shizuku permission, we count it as granted for Dhizuku too
-            return Shizuku.checkRemotePermission("af.shizuku.plus.permission.API_V23") == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val callingUid = Binder.getCallingUid()
+            if (callingUid == android.os.Process.myUid()) return true
+            val pkgName = context?.packageManager?.getPackagesForUid(callingUid)?.firstOrNull() ?: ""
+            return af.shizuku.manager.authorization.AuthorizationManager.granted(pkgName, callingUid)
         }
 
         override fun transact(code: Int, data: Bundle?): Bundle {
-            // Dhizuku allows remote transactions on the DPM binder
-            // We can implement this by proxying to the DPM binder if needed
             return Bundle()
+        }
+    }
+
+    private inner class DhizukuV2Binder : Binder() {
+        override fun getInterfaceDescriptor(): String = "com.rosan.dhizuku.aidl.IDhizuku"
+
+        override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+            if (!ShizukuSettings.isDhizukuModeEnabled()) return false
+
+            if (code == FIRST_CALL_TRANSACTION + 10) { // TRANSACT_CODE_REMOTE_BINDER
+                data.enforceInterface("com.rosan.dhizuku.server")
+                val targetBinder = data.readStrongBinder()
+                val targetCode = data.readInt()
+                val targetFlags = data.readInt()
+                return targetBinder.transact(targetCode, data, reply, targetFlags)
+            }
+
+            if (code == FIRST_CALL_TRANSACTION + 0 || code == FIRST_CALL_TRANSACTION + 1 || code == FIRST_CALL_TRANSACTION + 2) {
+                data.enforceInterface("com.rosan.dhizuku.aidl.IDhizuku")
+                when (code) {
+                    FIRST_CALL_TRANSACTION + 0 -> { // getVersionCode
+                        reply?.writeNoException()
+                        reply?.writeInt(5) // V5
+                        return true
+                    }
+                    FIRST_CALL_TRANSACTION + 1 -> { // getVersionName
+                        reply?.writeNoException()
+                        reply?.writeString("3.0")
+                        return true
+                    }
+                    FIRST_CALL_TRANSACTION + 2 -> { // isPermissionGranted
+                        reply?.writeNoException()
+                        val callingUid = Binder.getCallingUid()
+                        val granted = if (callingUid == android.os.Process.myUid()) true else {
+                            val pkgName = context?.packageManager?.getPackagesForUid(callingUid)?.firstOrNull() ?: ""
+                            af.shizuku.manager.authorization.AuthorizationManager.granted(pkgName, callingUid)
+                        }
+                        reply?.writeInt(if (granted) 1 else 0)
+                        return true
+                    }
+                }
+            }
+
+            return super.onTransact(code, data, reply, flags)
         }
     }
 
@@ -66,7 +110,12 @@ class DhizukuProvider : ContentProvider() {
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         if ("getBinder" == method) {
             val bundle = Bundle()
-            bundle.putBinder("binder", binder.asBinder())
+            bundle.putBinder("binder", DhizukuV1Binder())
+            return bundle
+        }
+        if ("client" == method) {
+            val bundle = Bundle()
+            bundle.putBinder("dhizuku_binder", DhizukuV2Binder())
             return bundle
         }
         return null
