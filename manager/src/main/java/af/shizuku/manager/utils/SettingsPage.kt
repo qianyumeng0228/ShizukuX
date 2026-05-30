@@ -26,9 +26,17 @@ sealed class SettingsPage(
         object HighlightWirelessDebugging : Developer(fragmentArg = "toggle_adb_wireless")
 
         object WirelessDebugging : Developer() {
+            // Brands that ship MIUI/HyperOS and cannot handle ACTION_QS_TILE_PREFERENCES
+            // for WirelessDebugging — the QS tile intent causes a NullPointerException
+            // in their Settings app (see GitHub issue #241). Fall back to the
+            // fragment-highlight intent which works on all ROMs.
+            private val MIUI_BRANDS = setOf("xiaomi", "redmi", "poco")
+
             override fun buildIntent(context: Context): Intent {
-                if (Build.BRAND in setOf("xiaomi", "redmi", "poco")) {
-                    HighlightWirelessDebugging.buildIntent(context)
+                if (Build.BRAND.lowercase() in MIUI_BRANDS) {
+                    // MIUI / HyperOS: ACTION_QS_TILE_PREFERENCES crashes Settings.
+                    // Use the fragment-highlight intent instead.
+                    return HighlightWirelessDebugging.buildIntent(context)
                 }
 
                 return Intent(TileService.ACTION_QS_TILE_PREFERENCES).apply {
@@ -49,7 +57,11 @@ sealed class SettingsPage(
                 runCatching {
                     context.startActivity(buildIntent(context))
                 }.recoverCatching {
+                    // First fallback: highlight wireless debugging in developer options
                     HighlightWirelessDebugging.launch(context)
+                }.recoverCatching {
+                    // Second fallback: open developer options root
+                    Options.launch(context)
                 }.onFailure { e ->
                     Timber.tag("SettingsUtils").w("Failed to start Settings activity (${e.javaClass.simpleName}): ${e.message}")
                 }
