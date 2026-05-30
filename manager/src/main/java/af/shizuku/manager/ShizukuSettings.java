@@ -99,6 +99,8 @@ public class ShizukuSettings {
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
 
         // Long-press action toggles (ShizukuX additions)
+        public static final String KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED = "samsung_system_uid_escalation_enabled";
+        public static final String KEY_KEEP_SU_APP = "keep_su_app";
         public static final String KEY_LP_OPEN_APP = "lp_open_app";
         public static final String KEY_LP_APP_INFO = "lp_app_info";
         public static final String KEY_LP_TOGGLE_PERMISSION = "lp_toggle_permission";

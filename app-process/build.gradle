@@ -1,0 +1,25 @@
+plugins {
+    id "com.android.library"
+}
+
+android {
+    namespace = "com.rosan.app_process"
+    compileSdk = 34
+
+    defaultConfig {
+        minSdk = 21
+        targetSdk = 34
+    }
+
+    buildFeatures {
+        buildConfig = true
+        aidl = true
+    }
+}
+
+dependencies {
+    compileOnly project(":api")
+    compileOnly 'androidx.annotation:annotation:1.6.0'
+    implementation 'commons-cli:commons-cli:1.5.0'
+    implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'
+}
