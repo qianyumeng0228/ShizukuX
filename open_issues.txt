@@ -1,0 +1,573 @@
+ISSUE 206
+author:	dracinn
+association:	none
+edited:	false
+status:	none
+--
+Csn confirm I have the same results.
+
+Device: motorola moto g play - 2024 (fogona_g)
+Android Version: 14 (API 34)
+ShizukuX Version: v13.6.1.r1710-shizukuplus-prerelease-beta (1710)
+
+
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Thanks for the thorough write-up — your hypothesis about the package name is correct.
+
+**Why apps don't detect ShizukuX:**
+Apps bind to Shizuku using the package name `moe.shizuku.privileged.api`. ShizukuX uses `af.shizuku.manager`, so apps that hard-code the original package name won't discover it automatically. This is a known compatibility gap. The recommended workaround for now is to keep stock Shizuku installed alongside ShizukuX if you need broad third-party app support — ShizukuX handles the extended features while stock Shizuku handles discovery.
+
+**Service timeout (30s TimeoutException):**
+On Android 16 / OneUI 8.0 the ADB handshake timing has changed. We're aware of this and investigating. As a workaround, try starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions).
+
+We'll track both issues in #199.
+
+---
+*Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
+--
+author:	thecaticorn01
+association:	none
+edited:	false
+status:	none
+--
+Thank you! One quick question, though.
+
+When I install both Shizuku and ShizukuX side by side, I can only start one at a time. If I start Shizuku, ShizukuX says it is not running and apps such as SD Maid SE don't appear to be able to take advantage of the Plus functionality. But if I start ShizukuX, apps do not even discover Shizuku in the first place.
+
+What do you mean by "ShizukuX handles the extended features while stock Shizuku handles discovery"? I am not sure if I am doing something wrong, but it appears that each one overrides the other instead of working in tandem.
+
+Also, I tried your workaround of "starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions)", but I still could not get ShizukuX to start. Could you explain in more detail please?
+
+Thank you again for your hard work; I look forward to seeing this project as it continues to mature!
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+@thecaticorn01 — good question, and you're right that the original explanation was unclear.
+
+**How they're meant to coexist:**
+Both apps can run at the same time — they each start a separate privileged server process (`shizuku_server` vs `shizuku_plus_server`) and register separate binders. Starting one does not stop the other.
+
+**Why apps don't "see" ShizukuX automatically:**
+Third-party apps (SD Maid SE, SwiftBackup, etc.) discover Shizuku by connecting to `moe.shizuku.privileged.api` — that's the stock Shizuku package name hard-coded in their binding logic. ShizukuX has a different package name (`af.shizuku.plus.api`), so those apps will never find it through normal discovery. **This isn't a runtime conflict — they're just looking at different packages.**
+
+**What "extended features" actually means:**
+Right now, the "extended features" ShizukuX provides are accessed through the ShizukuX manager UI itself (Overlay Manager Plus, AICore Bridge, Root Compatibility Hub, etc.) — not through existing third-party apps. A third-party app would have to be explicitly coded to use the ShizukuX API to benefit from those features.
+
+**Practical setup:**
+- Start stock Shizuku → grant permissions to SD Maid SE, SwiftBackup, MTManager, etc. inside Shizuku's app list. Those apps work normally.
+- Start ShizukuX → use its manager features (OMP, Watchdog, activity log, etc.).
+- They run in parallel without interfering.
+
+The "override" behaviour you saw may have been apps not finding stock Shizuku's binder when only ShizukuX was running — which is expected, since they're looking for a different package. Starting both resolves it.
+
+---
+*Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+**Update on the timeout:** The connection timeout has been made adaptive — no more fixed 15 s or 30 s window. The service waits as long as it needs and connects the instant it's ready. If wireless ADB consistently refuses to start on your device, Legacy ADB (USB → `adb tcpip 5555`) remains the reliable fallback.
+
+---
+*Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
+--
+author:	thecaticorn01
+association:	none
+edited:	true
+status:	none
+--
+Okay. I did want to point out, though, that I'm pretty sure Claude was wrong in your previous post. From my experience, and from the info I put in my original issue, both apps **can't** run at the same time, and starting one **does** stop the other.
+
+Also, why do apps have to be hard coded to use the ShizukuX API? I thought the whole purpose of ShizukuX was to be backwards compatible with OG Shizuku, so that developers didn't have to do any additional work to support the fork (unless they wanted to use the exclusive Plus features).
+
+**EDIT**: I don't see what the purpose of removing the timeout is, since it still never starts (even after 5 full minutes of sitting on the 'waiting for service' screen). Also, I have tried both `adb tcpip 5555` and Wireless Debugging with the latest version of ShizukuX (v13.6.1.r1734-shizukuplus-prerelease), but neither work yet. I don't think that `adb tcpip 5555` is a "reliable fallback" like you/Claude suggest.
+--
+author:	thecaticorn01
+association:	none
+edited:	false
+status:	none
+--
+Bump - any progress? Tried the latest version of ShizukuX (v13.6.0.r1778) and it still doesn't work. I can't run Shizuku and ShizukuX at the same time no matter what combination of USB/Wireless/TCPIP debugging I use (see above post), so Companion Mode is essentially worthless since no apps can take advantage of Plus features even with both Shizuku and ShizukuX installed.
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+The app is presently in a very broken state and I'm preparing to start getting to work on fixing things. I'll review everything you mentioned and see what I can do. I just had my phone wiped from a bootloop issue on my S22U though (likely caused by full storage/overheating from overuse - unrelated to any of my hobby projecta), so I'm setting up my development environment again at the moment with antigravity as the new core, so I'll get back to you as soon as possible. 
+
+I'm fixing up things over on Obtainium+ at the moment, and then coming back to this project in a little while to check the work I had Jules doing, and then get everything back in order.
+
+I also agree with you on the issue with Claude/Gemini or whichever stating that it needs to be hardcoded as well as that screws up the whole point like you mentioned. I'll look into the weird timeout stuff too. It should work just like Shizuku, if not better. I need to lean in to being more Human-In-The-Loop here rather than handing things off to the agents. 
+
+I apologize for the delays and potential frustrations, and I'll get back to you when I have developed fixes for everything you've mentioned. Thanks for supporting this lil pet project of mine as I slowly learn more about Android backend development.
+
+— thejaustin (the human)
+--
+=================
+ISSUE 204
+author:	MoamenElahmdy
+association:	none
+edited:	false
+status:	none
+--
+yeah this happen to me also
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Thanks for the report. A few things to try on Honor devices:
+
+1. **Use the QR Code / Legacy pairing option** — tap the small link below the main Pair button. Some Honor ROM builds restrict the default wireless ADB pairing flow.
+2. Make sure **Wireless Debugging** is enabled under *Developer Options* (not just USB Debugging).
+3. Try connecting your phone and PC to the same Wi-Fi network — cross-subnet connections will silently fail.
+
+If none of these work, please share your Honor smart 200 firmware build number and we can check for known ROM-specific issues.
+
+---
+*Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Thanks for the report. On Android 15, the Pair button opens the system's **Wireless Debugging** pairing screen — if it appears to do nothing, the most common cause is one of these:
+
+1. **Wireless Debugging is not enabled.** Open **Settings → Developer Options → Wireless debugging** and make sure it is toggled on. If Developer Options isn't visible, tap your build number 7 times in Settings → About phone.
+2. **Developer Options are disabled between sessions.** Some Android 15 ROMs (including Honor's MagicOS) reset Developer Options after a reboot. Re-enable the toggle, then tap Pair again.
+3. **Honor-specific restriction.** MagicOS 9 (Android 15) has been observed to block the `ACTION_WIRELESS_DEBUGGING_PAIR` intent on some builds. If the Pair button opens nothing at all, go to **Developer Options → Wireless debugging → Pair device with pairing code** manually, note the IP/port/code shown, and use the in-app pairing dialog with those values.
+
+If none of these apply, let me know which MagicOS build you're on and whether tapping Pair shows any response (a brief ripple, a dialog, or nothing at all).
+
+---
+*Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
+--
+author:	tiffyty
+association:	none
+edited:	false
+status:	none
+--
+Thanks for the reply,
+When I click the pair button it doesn't do anything it is like a useless
+button
+
+On Wed, 6 May 2026, 19:28 thejaustin, ***@***.***> wrote:
+
+> *thejaustin* left a comment (thejaustin/ShizukuPlus#204)
+> <https://github.com/thejaustin/ShizukuPlus/issues/204#issuecomment-4390465538>
+>
+> Thanks for the report. On Android 15, the Pair button opens the system's *Wireless
+> Debugging* pairing screen — if it appears to do nothing, the most common
+> cause is one of these:
+>
+>    1. *Wireless Debugging is not enabled.* Open *Settings → Developer
+>    Options → Wireless debugging* and make sure it is toggled on. If
+>    Developer Options isn't visible, tap your build number 7 times in Settings
+>    → About phone.
+>    2. *Developer Options are disabled between sessions.* Some Android 15
+>    ROMs (including Honor's MagicOS) reset Developer Options after a reboot.
+>    Re-enable the toggle, then tap Pair again.
+>    3. *Honor-specific restriction.* MagicOS 9 (Android 15) has been
+>    observed to block the ACTION_WIRELESS_DEBUGGING_PAIR intent on some
+>    builds. If the Pair button opens nothing at all, go to *Developer
+>    Options → Wireless debugging → Pair device with pairing code*
+>    manually, note the IP/port/code shown, and use the in-app pairing dialog
+>    with those values.
+>
+> If none of these apply, let me know which MagicOS build you're on and
+> whether tapping Pair shows any response (a brief ripple, a dialog, or
+> nothing at all).
+> ------------------------------
+>
+> *Co-authored with Claude · claude.ai/claude-code
+> <https://claude.ai/claude-code>*
+>
+> —
+> Reply to this email directly, view it on GitHub
+> <https://github.com/thejaustin/ShizukuPlus/issues/204#issuecomment-4390465538>,
+> or unsubscribe
+> <https://github.com/notifications/unsubscribe-auth/CDBM43JFXV642BUS52F4H5D4ZNY4HAVCNFSM6AAAAACYOKYO7GVHI2DSMVQWIX3LMV43OSLTON2WKQ3PNVWWK3TUHM2DGOJQGQ3DKNJTHA>
+> .
+> Triage notifications on the go with GitHub Mobile for iOS
+> <https://apps.apple.com/app/apple-store/id1477376905?ct=notification-email&mt=8&pt=524675>
+> or Android
+> <https://play.google.com/store/apps/details?id=com.github.android&referrer=utm_campaign%3Dnotification-email%26utm_medium%3Demail%26utm_source%3Dgithub>.
+>
+> You are receiving this because you authored the thread.Message ID:
+> ***@***.***>
+>
+
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+> Thanks for the reply,
+> When I click the pair button it doesn't do anything it is like a useless
+> button
+> 
+> On Wed, 6 May 2026, 19:28 thejaustin, ***@***.***> wrote:
+> 
+> > *thejaustin* left a comment (thejaustin/ShizukuPlus#204)
+> > <https://github.com/thejaustin/ShizukuPlus/issues/204#issuecomment-4390465538>
+> >
+> > Thanks for the report. On Android 15, the Pair button opens the system's *Wireless
+> > Debugging* pairing screen — if it appears to do nothing, the most common
+> > cause is one of these:
+> >
+> >    1. *Wireless Debugging is not enabled.* Open *Settings → Developer
+> >    Options → Wireless debugging* and make sure it is toggled on. If
+> >    Developer Options isn't visible, tap your build number 7 times in Settings
+> >    → About phone.
+> >    2. *Developer Options are disabled between sessions.* Some Android 15
+> >    ROMs (including Honor's MagicOS) reset Developer Options after a reboot.
+> >    Re-enable the toggle, then tap Pair again.
+> >    3. *Honor-specific restriction.* MagicOS 9 (Android 15) has been
+> >    observed to block the ACTION_WIRELESS_DEBUGGING_PAIR intent on some
+> >    builds. If the Pair button opens nothing at all, go to *Developer
+> >    Options → Wireless debugging → Pair device with pairing code*
+> >    manually, note the IP/port/code shown, and use the in-app pairing dialog
+> >    with those values.
+> >
+> > If none of these apply, let me know which MagicOS build you're on and
+> > whether tapping Pair shows any response (a brief ripple, a dialog, or
+> > nothing at all).
+> > ------------------------------
+> >
+> > *Co-authored with Claude · claude.ai/claude-code
+> > <https://claude.ai/claude-code>*
+> >
+> > —
+> > Reply to this email directly, view it on GitHub
+> > <https://github.com/thejaustin/ShizukuPlus/issues/204#issuecomment-4390465538>,
+> > or unsubscribe
+> > <https://github.com/notifications/unsubscribe-auth/CDBM43JFXV642BUS52F4H5D4ZNY4HAVCNFSM6AAAAACYOKYO7GVHI2DSMVQWIX3LMV43OSLTON2WKQ3PNVWWK3TUHM2DGOJQGQ3DKNJTHA>
+> > .
+> > Triage notifications on the go with GitHub Mobile for iOS
+> > <https://apps.apple.com/app/apple-store/id1477376905?ct=notification-email&mt=8&pt=524675>
+> > or Android
+> > <https://play.google.com/store/apps/details?id=com.github.android&referrer=utm_campaign%3Dnotification-email%26utm_medium%3Demail%26utm_source%3Dgithub>.
+> >
+> > You are receiving this because you authored the thread.Message ID:
+> > ***@***.***>
+> >
+> 
+
+I'll double check on this in just a little bit and let you know what I find. Let me know if recent releases have fixed this for you or not. It may be that notifications need to be enabled for the app — in which case I need to make sure that the app gives a popup asking for notification perms on pairing request if it's not already.
+
+Thanks for your feedback as always! While this is co-developed with Claude & Gemini, I appreciate that humans are trying the app and reporting back, and I apologize if you get a comment from Claude or Gemini, before I! Feel free to tag me if that's the case with any of your issues, and I'll check back as soon as I can — especially if the issue has not been resolved! 
+
+- thejaustin (the human being behind this project!)
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+I have yet to check on this, but will be working on fixes for the app very soon! Stay tuned! I apologize for the delays! Thanks for taking interest in this hobby project! 
+--
+=================
+ISSUE 74
+author:	44cK3r
+association:	none
+edited:	false
+status:	none
+--
+It doesn't even launch on my Oppo Find X2 Pro running ColorOS 13.1 Android 13
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Multiple crash fixes have been shipped in recent commits. Please retest with the latest build — if the issue persists, reopen with a logcat or Sentry crash ID.
+--
+author:	44cK3r
+association:	none
+edited:	false
+status:	none
+--
+How do I get this issue to reopen?
+
+Version: 13.6.0.r1601-shizukuplus-beta
+
+No longer launches again
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Will reopen this. been toying around with fast paced development with AI in my terminal in my phone. Might take this project more seriously soon. Edited all releases as pre-release. Take note all APK releases are currently geared toward the s22 Ultra and testing on my device without a computer. I apologize if it feels as though I was ignoring complaints, I just wasn't fully aware since my coding agent was closing the issues before I could read them. I'll make a note with the agent to also ensure we don't close issues or respond to comments made by other users of the project that aren't myself. Thanks for checking out this pet project of mine, and I hope to update you as soon as the repo is in a better state and more functional.
+--
+author:	44cK3r
+association:	none
+edited:	false
+status:	none
+--
+All good mate I love that you are testing on real hardware most people just use emulators and I don't like that as they don't get real world results
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Thanks for the report, and thanks to both of you for your patience.
+
+**Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+
+**What to try:**
+1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
+2. Make sure Shizuku itself (the base app) is installed and running first
+3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+
+**Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
+
+If the crash persists with the latest build, a logcat output or crash details would help us track it down.
+
+— *Claude (AI assistant for @thejaustin)*
+*Have more questions or need further help? Tag @thejaustin.*
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+> All good mate I love that you are testing on real hardware most people just use emulators and I don't like that as they don't get real world results
+
+I enjoy testing directly on device especially now that I know it's possible to develop and test on the same device! One of the coolest things I learned by toying around with AI & GH Actions with Termux! Let me know if any of the recent updates work for you! I'm trying to get things in a more functional state and analyzing every detail instead of adding more features for the time being... so if you see anything weird let me know and I'll tackle it as soon as I can!
+
+— a message actually written by me and not Claude (lol)
+--
+author:	44cK3r
+association:	none
+edited:	true
+status:	none
+--
+All Versions: 13.6.0.r1637-shizukuplus-beta 1637 to 13.6.0.r1651-shizukuplus-beta instantly crash
+
+I now have a headache after all that sorry
+--
+author:	Saiylem
+association:	none
+edited:	true
+status:	none
+--
+While I haven't tried the last couple releases, r1581 is the only one I've ran that's been able to not immediately crash on tap from launcher.
+Beyond r1581 telling me im running 13.0- and that 13.6 is available, it effectively supports all my immediate use cases.
+
+Fold 6, Android 16, OneUI 8.5.
+
+That said, my device is in a state of flux as I adhd my way around small steps in a dozen different pathways, so I doubt any logs I provide could be traced back to this app in isolation.
+
+r1581 is great and you have my thanks and respect for being an accomplished member of the human race.
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+> All Versions: 13.6.0.r1637-shizukuplus-beta 1637 to 13.6.0.r1651-shizukuplus-beta instantly crash
+> 
+> I now have a headache after all that sorry
+
+yeah the naming scheme for versions isn't my favorite and I may update it soon. I'm attempting to add manual error and crash logging to go alongside the sentry crash logging (especially since I'm not ready to pay for a higher quota and this month is up already)
+
+I have notated in the description that the app is currently broken and am working on bringing it back to life. Will update when successful.
+
+(For context: #190 tracks the Sentry quota situation, and #191 tracks the manual crash reporting work.)
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+> While I haven't tried the last couple releases, r1581 is the only one I've ran that's been able to not immediately crash on tap from launcher.
+> Beyond r1581 telling me im running 13.0- and that 13.6 is available, it effectively supports all my immediate use cases.
+> 
+> Fold 6, Android 16, OneUI 8.5.
+> 
+> That said, my device is in a state of flux as I adhd my way around small steps in a dozen different pathways, so I doubt any logs I provide could be traced back to this app in isolation.
+> 
+> r1581 is great and you have my thanks and respect for being an accomplished member of the human race.
+
+I feel appreciated with a very interesting but sweet compliment, thanks! :)
+
+I too have a device in chronic flux, though generally organized with 1000+ apps installed (and partially archived), so I feel you! It's fun to toy around with the system and see what we can do!
+
+No worries on logs, I'll be working on implementing proper in-app logging as I fix up the app and make sure it actually launches!
+
+As mentioned in my last comment, Sentry has been inactive most of the month due to quota of crashes reported, so fixing launch crashes just hasn't been as simple as it was before.
+
+The description of the project has been updated with a status in brackets at the end of the description notating that the app is broken at the moment. 
+
+I will get back to you both as soon as things are functional again!
+
+(For context: #190 tracks the Sentry quota situation, and #191 tracks the manual crash reporting work.)
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+For the record: this is a regression of #99 (same `InstantiationException` on `HomeActivity`, originally surfaced via Sentry as SHIZUKUPLUS-1F and closed as fixed). Cross-linking so the history is traceable — once we get the manual crash reporting from #191 producing fresh stack traces, we'll be able to confirm whether the cause is identical or just symptomatically similar.
+
+-Claude
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+I have cross-referenced all related historical reports (#86, #88, #99) to this issue. As mentioned, we are currently without automated crash data due to the Sentry quota limit (#190). Once the manual reporting system in #191 is fully rolled out, we will be able to verify if this regression on non-Samsung devices shares the same root cause as the previous instantiation failures.
+
+— Claude (AI assistant for @thejaustin)
+Have more questions or need further help? Tag @thejaustin.
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+I have cross-referenced all related historical reports (#86, #88, #99) to this issue. As mentioned, we are currently without automated crash data due to the Sentry quota limit (#190). Once the manual reporting system in #191 is fully rolled out, we will be able to verify if this regression on non-Samsung devices shares the same root cause as the previous instantiation failures.
+
+---
+— *Claude (AI assistant for @thejaustin)*
+*Have more questions or need further help? Tag @thejaustin.*
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+Update for non-Samsung users: I have enhanced the internal `CrashReporter` to specifically detect and include vendor-specific version data for **ColorOS (Oppo/OnePlus)**, **HyperOS/MIUI (Xiaomi)**, and **TCL** devices. 
+
+If you encounter a launch crash on the latest build, the manual crash dialog now has a streamlined **'Copy Report & Go to GitHub'** flow. This will give us the high-fidelity logs needed to debug these device-specific regressions despite Sentry being offline (#190).
+
+---
+— *Claude (AI assistant for @thejaustin)*
+*Have more questions or need further help? Tag @thejaustin.*
+--
+author:	Kevinco1
+association:	none
+edited:	false
+status:	none
+--
+> Thanks for the report, and thanks to both of you for your patience.
+> 
+> **Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+> 
+> **What to try:**
+> 
+> 1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
+> 2. Make sure Shizuku itself (the base app) is installed and running first
+> 3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+> 
+> **Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
+> 
+> If the crash persists with the latest build, a logcat output or crash details would help us track it down.
+> 
+> — _Claude (AI assistant for [@thejaustin](https://github.com/thejaustin))_ _Have more questions or need further help? Tag [@thejaustin](https://github.com/thejaustin)._
+
+I'm confused with #2...regular Shizuku has to be running during the intital setup of your fork or has to be always installed because plus works together with it? 
+--
+author:	thejaustin
+association:	owner
+edited:	true
+status:	none
+--
+> > Thanks for the report, and thanks to both of you for your patience.
+> > 
+> > **Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+> > 
+> > **What to try:**
+> > 
+> > 1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
+> > 2. Make sure Shizuku itself (the base app) is installed and running first
+> > 3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+> > 
+> > **Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
+> > 
+> > If the crash persists with the latest build, a logcat output or crash details would help us track it down.
+> > 
+> > — _Claude (AI assistant for [@thejaustin](https://github.com/thejaustin))_ _Have more questions or need further help? Tag [@thejaustin](https://github.com/thejaustin)._
+> 
+> I'm confused with #2...regular Shizuku has to be running during the intital setup of your fork or has to be always installed because plus works together with it? 
+
+That shouldn't be necessary. I have been experimenting with using it for attempting to set up certain root comparability features, but haven't gotten very far with it. That's likely why Claude referenced it in the comment it auto-wrote you. I'm investigating why it stated that now, and should have an update to the comment soon, as well as a fix for the crashes, hopefully. Sentry quota resets on Friday, and GH Actions does the same... yeah... I've just reached my quota there as well 😅 After the 100th test release through GitHub I'm not surprised though, lol.
+
+Anyway I'll update you soon. Just keep in mind this project may be active, but it's far from stable. I don't recommend using it regularly, and quite frankly, having OG or a fork of Shizuku installed alongside might be a bright idea. Let me know if you have any other thoughts or issues!
+
+— thejaustin (it's actually me — and not Claude!)
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+I apologize for the confusion regarding point #2 in my previous response.
+
+The suggestion that the regular Shizuku app must be running was a technical error in my analysis. I mentioned it because the codebase contains a MigrationHelper that specifically looks for the old 'moe.shizuku' package to migrate user settings. I mistakenly conflated this 'one-time data source for migration' with a persistent 'requirement for setup'.
+
+To clarify: ShizukuX is a full, standalone replacement. 
+
+The package rename to 'af.shizuku.plus.api' was done strictly for copyright reasons, and the fork is designed to maintain full compatibility with all existing Shizuku-enabled applications. You do NOT need the original Shizuku app installed for ShizukuX to work or to support your other apps.
+
+— Claude (AI assistant for @thejaustin)
+--
+author:	Saiylem
+association:	none
+edited:	true
+status:	none
+--
+So I wanted to give some info that may or may not be useful- with the most recent release, I'm able to launch into activities to get the service running, with the exception of the Main Activity (the app home screen) and Application Management (the screen of app toggles)- those alone cause an instant crash.
+
+Fold 6, Android 16, OneUI 8.5.
+--
+author:	44cK3r
+association:	none
+edited:	false
+status:	none
+--
+Um... This makes zero sense whatsoever
+
+![Screenshot_2026-04-30-23-54-13-53_b783bf344239542886fee7b48fa4b892.jpg](https://github.com/user-attachments/assets/7b53620d-f469-4be1-8519-f5b34d33a373)
+
+![Screenshot_2026-04-30-23-53-50-46_3d73e98b1ad3bd2575f7a56513d89a0c.jpg](https://github.com/user-attachments/assets/294b28d8-c3fe-4919-9e5f-e473ed29b0dc)
+
+![Screenshot_2026-04-30-23-54-01-45_83ceefc07bf7d3f049298861e11860bc.jpg](https://github.com/user-attachments/assets/c4748a11-7795-4fbe-85b1-934d80921984)
+
+
+--
+author:	thejaustin
+association:	owner
+edited:	false
+status:	none
+--
+> Um... This makes zero sense whatsoever
+> 
+> ![Screenshot_2026-04-30-23-54-13-53_b783bf344239542886fee7b48fa4b892.jpg](https://github.com/user-attachments/assets/7b53620d-f469-4be1-8519-f5b34d33a373)
+> 
+> ![Screenshot_2026-04-30-23-53-50-46_3d73e98b1ad3bd2575f7a56513d89a0c.jpg](https://github.com/user-attachments/assets/294b28d8-c3fe-4919-9e5f-e473ed29b0dc)
+> 
+> ![Screenshot_2026-04-30-23-54-01-45_83ceefc07bf7d3f049298861e11860bc.jpg](https://github.com/user-attachments/assets/c4748a11-7795-4fbe-85b1-934d80921984)
+> 
+> 
+
+It has to do with the different application IDs and names I was using before. I've got things set up to use the ShizukuX name now, and am working on fixes at the moment that I'll push soon. I'm trying to ensure the app actually functions as separate to Shizuku while still giving the user all the capabilities of the original app. Apps that worked with Shizuku should still work with ShizukuPlus without adding the custom API and currently I think that has been broken, amongst other things. Anyway, you may need to uninstall and reinstall any other versions of ShizukuX you have. I don't personally recognize one of the ones you have.
+--
+=================

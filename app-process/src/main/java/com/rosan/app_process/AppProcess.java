@@ -7,6 +7,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -118,7 +119,7 @@ public abstract class AppProcess implements Closeable {
                 mManager = null;
             }, 0);
         } catch (RemoteException e) {
-            e.printStackTrace();
+            Log.e("AppProcess", "linkToDeath failed", e);
         }
         return initialized();
     }

@@ -8,14 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import af.shizuku.manager.R
-import af.shizuku.manager.databinding.ActivityPlusDashboardBinding
+import af.shizuku.manager.databinding.FragmentServerMetricsBinding
 import rikka.shizuku.Shizuku
 import af.shizuku.server.IAICorePlus
 import timber.log.Timber
 
 class ServerMetricsFragment : Fragment() {
 
-    private var _binding: ActivityPlusDashboardBinding? = null
+    private var _binding: FragmentServerMetricsBinding? = null
     private val binding get() = _binding!!
     private val handler = Handler(Looper.getMainLooper())
     private var aiCore: IAICorePlus? = null
@@ -28,7 +28,7 @@ class ServerMetricsFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        _binding = ActivityPlusDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentServerMetricsBinding.inflate(inflater, container, false)
         return binding.root
     }
 

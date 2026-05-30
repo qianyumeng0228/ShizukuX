@@ -31,6 +31,7 @@ import android.os.Parcel;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.util.Log;
+import org.json.JSONObject;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -160,17 +161,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             for (ClientRecord record : records) {
                 if (record.client != null) {
                     try {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("{");
-                        sb.append("\"priority\":").append(priority).append(",");
-                        sb.append("\"tag\":\"").append(tag).append("\",");
-                        sb.append("\"message\":\"").append(message.replace("\"", "\\\"").replace("\n", "\\n")).append("\"");
+                        JSONObject json = new JSONObject();
+                        json.put("priority", priority);
+                        json.put("tag", tag);
+                        json.put("message", message);
                         if (throwable != null) {
-                            String st = Log.getStackTraceString(throwable).replace("\"", "\\\"").replace("\n", "\\n");
-                            sb.append(",\"stacktrace\":\"").append(st).append("\"");
+                            json.put("stacktrace", Log.getStackTraceString(throwable));
                         }
-                        sb.append("}");
-                        record.client.dispatchSentryEvent(sb.toString());
+                        record.client.dispatchSentryEvent(json.toString());
                     } catch (Throwable ignored) {
                     }
                 }

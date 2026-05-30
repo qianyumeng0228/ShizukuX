@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name" translatable="false">ShizukuX</string>
+    <string name="server_uptime">Server Uptime</string>
+    <string name="active_connections">Active Connections</string>
+    <string name="server_memory_usage">Server Memory Usage</string>
 
     <!-- To translators: you can leave your here -->
     <string name="translation_contributors">thejaustin</string>
