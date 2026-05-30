@@ -318,6 +318,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
             // Optionally: crash or notify user
         }
 
+        // Sentry quota was suppressed through April 2026; ensure it is cleared on upgrade.
+        ShizukuSettings.setSentryLimitReached(false)
+
         // 2. Initialize Sentry FIRST to catch all crashes including early startup failures
         initializeSentryEarly()
 
@@ -332,9 +335,6 @@ class ShizukuApplication : Application(), Configuration.Provider {
             androidContext(this@ShizukuApplication)
             modules(appModule)
         }
-
-        // Sentry quota was suppressed through April 2026; ensure it is cleared on upgrade.
-        ShizukuSettings.setSentryLimitReached(false)
 
         // 2. Initialize static components FIRST to ensure HiddenApiBypass is active
         try {
