@@ -38,7 +38,7 @@ class FakeAdbPairingActivity : Activity() {
         super.onCreate(savedInstanceState)
         
         val pubKeyStr = intent.getStringExtra("pubKey") ?: ""
-        val hash = pubKeyStr.hashCode().toString(16).toUpperCase()
+        val hash = pubKeyStr.hashCode().toString(16).uppercase()
 
         AlertDialog.Builder(this)
             .setTitle("Allow fake ADB connection?")
