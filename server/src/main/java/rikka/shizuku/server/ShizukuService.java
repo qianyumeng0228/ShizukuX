@@ -1275,10 +1275,25 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         try {
             java.util.Set<String> runningPackages = new java.util.HashSet<>();
             try {
-                for (android.app.ActivityManager.RunningAppProcessInfo process : android.app.ActivityManager.getService().getRunningAppProcesses()) {
-                    if (process.pkgList != null) {
-                        for (String pkg : process.pkgList) {
-                            runningPackages.add(pkg);
+                java.util.List<android.app.ActivityManager.RunningAppProcessInfo> processes = null;
+                try {
+                    java.lang.reflect.Method getService = android.app.ActivityManager.class.getMethod("getService");
+                    Object am = getService.invoke(null);
+                    processes = (java.util.List<android.app.ActivityManager.RunningAppProcessInfo>) am.getClass().getMethod("getRunningAppProcesses").invoke(am);
+                } catch (Throwable t) {
+                    try {
+                        java.lang.reflect.Method getDefault = Class.forName("android.app.ActivityManagerNative").getMethod("getDefault");
+                        Object am = getDefault.invoke(null);
+                        processes = (java.util.List<android.app.ActivityManager.RunningAppProcessInfo>) am.getClass().getMethod("getRunningAppProcesses").invoke(am);
+                    } catch (Throwable ignored) {
+                    }
+                }
+                if (processes != null) {
+                    for (android.app.ActivityManager.RunningAppProcessInfo process : processes) {
+                        if (process.pkgList != null) {
+                            for (String pkg : process.pkgList) {
+                                runningPackages.add(pkg);
+                            }
                         }
                     }
                 }
