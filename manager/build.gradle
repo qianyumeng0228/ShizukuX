@@ -271,7 +271,7 @@ dependencies {
     testImplementation libs.robolectric
     testImplementation libs.kotlinx.coroutines.test
     testImplementation libs.androidx.work.test
-    testImplementation libs.mavericks-testing
+    testImplementation libs.mavericks.testing
     testImplementation libs.androidx.test.core
     testImplementation "junit:junit:4.13.2"
     androidTestImplementation "androidx.test.ext:junit:1.2.1"
