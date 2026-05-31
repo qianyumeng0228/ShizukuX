@@ -1,5 +1,6 @@
 package af.shizuku.manager
 
+import af.shizuku.manager.BuildConfig
 import android.app.Application
 import android.content.Context
 import android.os.Build
