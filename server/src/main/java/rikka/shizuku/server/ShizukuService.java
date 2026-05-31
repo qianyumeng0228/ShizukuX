@@ -1275,7 +1275,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         try {
             java.util.Set<String> runningPackages = new java.util.HashSet<>();
             try {
-                for (android.app.ActivityManager.RunningAppProcessInfo process : ActivityManagerApis.getRunningAppProcessesNoThrow()) {
+                for (android.app.ActivityManager.RunningAppProcessInfo process : ActivityManagerApis.getRunningAppProcesses()) {
                     if (process.pkgList != null) {
                         for (String pkg : process.pkgList) {
                             runningPackages.add(pkg);
