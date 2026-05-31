@@ -104,7 +104,7 @@ class ShellTutorialActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = TerminalTutorialActivityBinding.bind(rootView.getChildAt(1))
+        val binding = TerminalTutorialActivityBinding.bind(rootView)
 
         binding.header.apply {
             headerIcon.setImageResource(R.drawable.ic_terminal_24)

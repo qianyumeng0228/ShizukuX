@@ -117,7 +117,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         viewModel.packages.observe(this) {
             when (it.status) {
                 Status.SUCCESS -> {
-                    val data = it.data as List<PackageInfo>
+                    val data = it.data ?: emptyList()
                     adapter.updateData(data)
                     
                     // Show empty state when filtered results are empty

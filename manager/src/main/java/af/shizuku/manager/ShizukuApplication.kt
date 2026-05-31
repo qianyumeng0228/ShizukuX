@@ -305,11 +305,6 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // 0. Initialize Timber
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
-        
-        // 1. Run security check
-        if (af.shizuku.manager.security.SecurityGuard.isTampered()) {
-            Timber.e("Security violation: Environment tampered!")
-        }
         }
 
         // 1. Run security check
