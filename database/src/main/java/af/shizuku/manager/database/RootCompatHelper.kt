@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import af.shizuku.common.ktx.loge
 import rikka.shizuku.Shizuku
 import timber.log.Timber
 
@@ -77,7 +76,7 @@ object RootCompatHelper {
                 }
             }
         } catch (e: Exception) {
-            loge("autoSetup failed for package $packageName", e)
+            Timber.e(e, "autoSetup failed for package $packageName")
             false
         }
         success
@@ -151,7 +150,7 @@ object RootCompatHelper {
             Timber.w("RootCompatHelper: binder lost during privileged command: ${e.message}")
             false
         } catch (e: Exception) {
-            loge("execute privileged command failed", e)
+            Timber.e(e, "execute privileged command failed")
             false
         }
     }
