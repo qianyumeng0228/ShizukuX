@@ -124,6 +124,7 @@ Thanks to the following upstream contributors and projects whose work makes Shiz
 | [AboutLibraries](https://github.com/mikepenz/AboutLibraries) | Mike Penz | Apache 2.0 |
 | [Bouncy Castle](https://www.bouncycastle.org/) | Legion of Bouncy Castle | MIT |
 | [Sentry Android SDK](https://github.com/getsentry/sentry-java) | Sentry | MIT |
+| [SQLite (C Recovery API / CLI)](https://sqlite.org/) | D. Richard Hipp / SQLite Consortium | Public Domain |
 
 Full license texts and per-library details: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | [NOTICE](NOTICE)
 

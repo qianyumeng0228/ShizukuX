@@ -282,32 +282,59 @@ object ActivityLogManager {
                 database = null
                 dao = null
                 
+                var recoverySuccessful = false
                 val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
                 val timestamp = getTimestampFilename()
+                val corruptedBackup = File(dbFile.path + "_corrupt_backup_" + timestamp)
+
                 listOf(
                     dbFile,
                     File(dbFile.path + "-shm"),
                     File(dbFile.path + "-wal")
                 ).forEach { file ->
-                    if (file.exists()) {
-                        val backupFile = File(file.path + "_corrupt_backup_" + timestamp)
-                        file.renameTo(backupFile)
+                    if (file.exists() && file.name.endsWith(".db")) {
+                        file.renameTo(corruptedBackup)
+                    } else if (file.exists()) {
+                        file.delete()
                     }
                 }
                 
                 if (dbFile.parentFile?.exists() != true) {
                     dbFile.parentFile?.mkdirs()
                 }
+
+                // Attempt Programmatic SQLite .recover
+                try {
+                    val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "sqlite3 \${corruptedBackup.absolutePath} '.recover' | sqlite3 \${dbFile.absolutePath}"))
+                    val exitCode = process.waitFor()
+                    if (exitCode == 0 && dbFile.exists() && dbFile.length() > 0) {
+                        recoverySuccessful = true
+                        Timber.tag(TAG).i("Successfully recovered corrupted database via sqlite3 CLI!")
+                    } else {
+                        // Cleanup failed partial recovery
+                        if (dbFile.exists()) dbFile.delete()
+                    }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "sqlite3 binary not available for automatic recovery.")
+                }
                 
                 database = ActivityLogDatabase.getInstance(context)
                 dao = database?.activityLogDao()
                 
-                settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can extract the backup to attempt recovery.")
+                if (recoverySuccessful) {
+                    settings?.showNotification("System Recovered", "Activity log database was corrupted but automatically salvaged using SQLite recovery!")
+                } else {
+                    settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can extract the backup to attempt recovery.")
+                }
                 
                 val recoveryRecord = ActivityLogRecord(
                     appName = "System",
                     packageName = context.packageName,
-                    action = "Database autofixed after corruption. Corrupted file backed up to shizuku_activity_logs.db_corrupt_backup_$timestamp"
+                    action = if (recoverySuccessful) {
+                        "Database automatically recovered and salvaged from corruption!"
+                    } else {
+                        "Database autofixed after corruption. Corrupted file backed up to \${corruptedBackup.name}"
+                    }
                 )
                 
                 synchronized(records) {
