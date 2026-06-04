@@ -13,6 +13,11 @@ import android.widget.Toast
 import timber.log.Timber
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.BuildConfig
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import af.shizuku.manager.database.AppContextManager
 
 import af.shizuku.manager.utils.StockShizukuCompat
 import androidx.preference.TwoStatePreference
@@ -22,6 +27,40 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_advanced, rootKey)
         val context = requireContext()
+
+        findPreference<Preference>("update_app_database")?.setOnPreferenceClickListener {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val url = java.net.URL("https://raw.githubusercontent.com/thejaustin/ShizukuPlus/master/database/apps.json")
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    val content = try {
+                        connection.instanceFollowRedirects = true
+                        connection.requestMethod = "GET"
+                        connection.connectTimeout = 10_000
+                        connection.readTimeout = 10_000
+                        
+                        val responseCode = connection.responseCode
+                        if (responseCode != java.net.HttpURLConnection.HTTP_OK) {
+                            throw java.io.IOException("HTTP $responseCode from GitHub")
+                        }
+                        
+                        connection.inputStream.use { it.bufferedReader().readText() }
+                    } finally {
+                        connection.disconnect()
+                    }
+                    withContext(Dispatchers.Main) {
+                        AppContextManager.updateDatabase(content)
+                        Toast.makeText(context, R.string.settings_update_app_database_success, Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Timber.e("update app database failed", e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, R.string.settings_update_app_database_error, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            true
+        }
 
         findPreference<Preference>("service_doctor")?.setOnPreferenceClickListener {
             startActivity(Intent(context, ServiceDoctorActivity::class.java))

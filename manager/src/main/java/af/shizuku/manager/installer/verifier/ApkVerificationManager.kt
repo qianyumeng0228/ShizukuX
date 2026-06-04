@@ -51,8 +51,22 @@ class ApkVerificationManager(
         )
     }
 
-    private fun computeSha256(file: File): String {
-        // Implementation for hashing the file
-        return "mock_sha256_hash"
+    private suspend fun computeSha256(apkFile: File): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val digest = java.security.MessageDigest.getInstance("SHA-256")
+                apkFile.inputStream().use { fis ->
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    while (fis.read(buffer).also { bytesRead = it } != -1) {
+                        digest.update(buffer, 0, bytesRead)
+                    }
+                }
+                digest.digest().joinToString("") { "%02x".format(it) }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to compute SHA-256 for APK")
+                ""
+            }
+        }
     }
 }

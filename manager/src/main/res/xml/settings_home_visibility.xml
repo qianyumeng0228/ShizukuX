@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <af.shizuku.manager.settings.HomeLayoutSimulatorPreference
+        android:key="home_layout_simulator" />
+
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_home_cards"
         android:title="@string/settings_category_home_cards"

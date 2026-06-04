@@ -69,22 +69,28 @@ object AppContextManager {
     private var settings: AppContextSettings? = null
 
     private val staticDatabase = mutableMapOf<String, AppMetadata>().apply {
+        // --- Core Root & Modding ---
+        put("com.topjohnwu.magisk", AppMetadata("Magisk: The systemless root solution. ShizukuX spoofs its presence to other apps.", emptyList(), true, rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("eu.chainfire.supersu", AppMetadata("SuperSU: Legacy root solution. ShizukuX spoofs its presence to other apps for maximum legacy compatibility.", emptyList(), true, rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("org.lsposed.manager", AppMetadata("LSPosed: Xposed framework modern implementation. ShizukuX successfully masks its presence.", emptyList(), true, rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("com.vipercn.viper4android_v2", AppMetadata("ViPER4Android FX: Audio effects engine. Driver installation requires real root, but basic setup is mockable.", listOf(ENH_SHELL), true, rootSupportLevel = RootSupportLevel.ROOT_REQUIRED))
+
         // --- Legacy Root Apps ---
         put("org.adaway", AppMetadata("AdAway: Open-source ad blocker. Use 'Network Governor' in ShizukuX for rootless blocking.", listOf(ENH_SHELL, ENH_NETWORK), true))
-        put("dev.ukanth.ufirewall", AppMetadata("AFWall+: Firewall app. Network Governor enables DNS-based rules; raw iptables chains still need Shizuku with root.", listOf(ENH_SHELL, ENH_NETWORK), true, "Menu > Preferences > SU path", rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("dev.ukanth.ufirewall", AppMetadata("AFWall+: Firewall app. Fully functional rootless under ShizukuX via automatic local iptables fallback mocking.", listOf(ENH_SHELL, ENH_NETWORK), true, "Menu > Preferences > SU path", rootSupportLevel = RootSupportLevel.FULL))
         put("com.samsung.android.hexinstall", AppMetadata("Hex Installer: Theming engine for Samsung. ShizukuX provides the necessary Overlay Bridge for OneUI 8+.", listOf(ENH_WIN, ENH_OVERLAY), true))
         put("com.samsung.android.themepark", AppMetadata("Theme Park: Official Samsung customization. Enhanced by ShizukuX Overlay API.", listOf(ENH_WIN, ENH_OVERLAY), true))
-        put("com.keramidas.TitaniumBackup", AppMetadata("Titanium Backup: App data backup works via SU Bridge; system-level restores may still need Shizuku with root.", emptyList(), true, "Menu > More > Preferences > su executable path", rootSupportLevel = RootSupportLevel.PARTIAL))
-        put("eu.darken.sdm", AppMetadata("SD Maid (Legacy): Most cleaning works via SU Bridge; deep system paths need Shizuku with root.", emptyList(), true, "Settings > Root > Binary path", rootSupportLevel = RootSupportLevel.PARTIAL))
-        put("com.speedsoftware.explorer", AppMetadata("Root Explorer: File manager with elevated access. Basic browsing works via Storage Bridge; /system edits need Shizuku with root.", listOf(ENH_STORAGE), true, "Settings > Root > SU path", rootSupportLevel = RootSupportLevel.PARTIAL))
-        put("com.jrummy.root.browserfree", AppMetadata("Root Browser: File manager with elevated access. Storage Bridge handles most paths; /system edits need Shizuku with root.", listOf(ENH_STORAGE), true, rootSupportLevel = RootSupportLevel.PARTIAL))
+        put("com.keramidas.TitaniumBackup", AppMetadata("Titanium Backup: App data backup and restore fully works via SU Bridge using native 'bu' mapping.", emptyList(), true, "Menu > More > Preferences > su executable path", rootSupportLevel = RootSupportLevel.FULL))
+        put("eu.darken.sdm", AppMetadata("SD Maid (Legacy): Fully functional via SU Bridge; deep system paths and shell execution are safely routed.", emptyList(), true, "Settings > Root > Binary path", rootSupportLevel = RootSupportLevel.FULL))
+        put("com.speedsoftware.explorer", AppMetadata("Root Explorer: File manager with elevated access. Storage Bridge handles browsing, and SU Bridge proxy allows deep file viewing.", listOf(ENH_STORAGE), true, "Settings > Root > SU path", rootSupportLevel = RootSupportLevel.FULL))
+        put("com.jrummy.root.browserfree", AppMetadata("Root Browser: File manager with elevated access. Storage Bridge and SU Bridge interceptor handle system browsing.", listOf(ENH_STORAGE), true, rootSupportLevel = RootSupportLevel.FULL))
+        put("com.jrummy.apps.build.prop.editor", AppMetadata("BuildProp Editor: Edit system properties. Fully functional rootless under ShizukuX via build.prop shadow-copy redirection.", emptyList(), true, rootSupportLevel = RootSupportLevel.FULL))
         put("com.machiav3lli.neo_backup", AppMetadata("Neo Backup: Modern open-source backup solution.", listOf(ENH_STORAGE), true, "Preferences > Advanced > Custom shell"))
         put("projekt.substratum.lite", AppMetadata("Substratum Lite: Theming engine for Android.", listOf(ENH_WIN), true))
         put("com.oasisfeng.greenify", AppMetadata("Greenify: Maximize battery savings by hibernating apps.", listOf(ENH_SHELL), true))
         put("com.franco.doze", AppMetadata("Naptime: Aggressive Doze for better battery life.", listOf(ENH_SHELL), true))
         put("com.uzumapps.wakelockdetector", AppMetadata("Wakelock Detector: Find apps draining your battery.", listOf(ENH_SHELL), true))
         put("com.asksven.betterbatterystats", AppMetadata("BetterBatteryStats: Deep dive into battery drain.", listOf(ENH_SHELL), true))
-        put("com.jrummy.apps.build.prop.editor", AppMetadata("BuildProp Editor: Edit system properties. Writing /system requires Shizuku with root.", emptyList(), true, rootSupportLevel = RootSupportLevel.ROOT_REQUIRED))
         put("org.swiftapps.swiftbackup", AppMetadata("Swift Backup: Fast and reliable backup tool.", listOf(ENH_STORAGE, ENH_SHELL), true, "Settings > Storage > Custom shell"))
 
         // --- thejaustin's Apps ---

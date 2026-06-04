@@ -25,6 +25,12 @@
     <declare-styleable name="PlusFeaturePreference">
         <attr name="infoTitle" format="reference|string" />
         <attr name="infoDetail" format="reference|string" />
+        <attr name="badgeType" format="enum">
+            <enum name="none" value="0" />
+            <enum name="plus" value="1" />
+            <enum name="root" value="2" />
+            <enum name="experimental" value="3" />
+        </attr>
     </declare-styleable>
 </resources>
 

@@ -14,4 +14,60 @@
 
     <style name="ThemeOverlay.DynamicColors.Dark" parent="ThemeOverlay.Material3.DynamicColors.Dark.Shizuku"/>
 
+    <!-- Violet Accent Overlay -->
+    <style name="ThemeOverlay.Accent.Violet">
+        <item name="colorPrimary">#7B1FA2</item>
+        <item name="colorPrimaryContainer">#F3E5F5</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#4A148C</item>
+    </style>
+    <style name="ThemeOverlay.Accent.Violet.Dark">
+        <item name="colorPrimary">#E040FB</item>
+        <item name="colorPrimaryContainer">#4A148C</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorOnPrimaryContainer">#F3E5F5</item>
+    </style>
+
+    <!-- Green Accent Overlay -->
+    <style name="ThemeOverlay.Accent.Green">
+        <item name="colorPrimary">#00796B</item>
+        <item name="colorPrimaryContainer">#E0F2F1</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#004D40</item>
+    </style>
+    <style name="ThemeOverlay.Accent.Green.Dark">
+        <item name="colorPrimary">#64FFDA</item>
+        <item name="colorPrimaryContainer">#004D40</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorOnPrimaryContainer">#E0F2F1</item>
+    </style>
+
+    <!-- Crimson Accent Overlay -->
+    <style name="ThemeOverlay.Accent.Crimson">
+        <item name="colorPrimary">#C2185B</item>
+        <item name="colorPrimaryContainer">#FCE4EC</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#880E4F</item>
+    </style>
+    <style name="ThemeOverlay.Accent.Crimson.Dark">
+        <item name="colorPrimary">#FF4081</item>
+        <item name="colorPrimaryContainer">#880E4F</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorOnPrimaryContainer">#FCE4EC</item>
+    </style>
+
+    <!-- Ocean Accent Overlay -->
+    <style name="ThemeOverlay.Accent.Ocean">
+        <item name="colorPrimary">#0288D1</item>
+        <item name="colorPrimaryContainer">#E1F5FE</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#01579B</item>
+    </style>
+    <style name="ThemeOverlay.Accent.Ocean.Dark">
+        <item name="colorPrimary">#40C4FF</item>
+        <item name="colorPrimaryContainer">#01579B</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorOnPrimaryContainer">#E1F5FE</item>
+    </style>
+
 </resources>

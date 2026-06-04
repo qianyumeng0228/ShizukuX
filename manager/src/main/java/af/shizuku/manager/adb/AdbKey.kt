@@ -147,7 +147,12 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     }
 
     private fun encrypt(plaintext: ByteArray, aad: ByteArray?): ByteArray? {
-        if (encryptionKey == null) return plaintext
+        if (encryptionKey == null) {
+            if (af.shizuku.manager.ShizukuSettings.isSoftwareKeystoreFallbackEnabled()) {
+                return plaintext
+            }
+            return null
+        }
         
         if (plaintext.size > Int.MAX_VALUE - IV_SIZE_IN_BYTES - TAG_SIZE_IN_BYTES) {
             return null
@@ -162,7 +167,12 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     }
 
     private fun decrypt(ciphertext: ByteArray, aad: ByteArray?): ByteArray? {
-        if (encryptionKey == null) return ciphertext
+        if (encryptionKey == null) {
+            if (af.shizuku.manager.ShizukuSettings.isSoftwareKeystoreFallbackEnabled()) {
+                return ciphertext
+            }
+            return null
+        }
         
         if (ciphertext.size < IV_SIZE_IN_BYTES + TAG_SIZE_IN_BYTES) {
             return null

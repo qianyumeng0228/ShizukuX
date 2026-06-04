@@ -21,6 +21,27 @@ class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_home_visibility, rootKey)
+        val simulatorPref = findPreference<HomeLayoutSimulatorPreference>("home_layout_simulator")
+        simulatorPref?.setFragment(this)
+
+        val switchKeys = listOf(
+            "show_start_adb_home",
+            "show_terminal_home",
+            "show_automation_home",
+            "show_activity_log_home",
+            "show_learn_more_home"
+        )
+
+        for (prefKey in switchKeys) {
+            findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) {
+                    preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, newValue)?.apply()
+                    simulatorPref?.notifyChanged()
+                }
+                true
+            }
+        }
+
         val context = requireContext()
 
         findPreference<TwoStatePreference>(KEY_COMPANION_MODE)?.apply {

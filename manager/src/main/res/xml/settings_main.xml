@@ -2,6 +2,9 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <af.shizuku.manager.settings.SettingsSearchHeaderPreference
+        android:key="settings_search_header" />
+
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus"
         android:title="ShizukuX Power Tools"
@@ -25,22 +28,15 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_personalization"
-        android:title="Personalization"
+        android:title="Appearance"
         android:defaultValue="true">
 
         <Preference
-            android:key="nav_ui"
+            android:key="nav_personalization"
             android:title="Appearance"
-            android:summary="Theme, icons, and animations"
+            android:summary="Theme, corners, shapes, and home layout customizer"
             android:icon="@drawable/ic_palette_24"
-            android:fragment="af.shizuku.manager.settings.UISettingsFragment" />
-
-        <Preference
-            android:key="nav_home_visibility"
-            android:title="Home Layout"
-            android:summary="Customize visible cards and shortcuts"
-            android:icon="@drawable/ic_window_24"
-            android:fragment="af.shizuku.manager.settings.HomeVisibilitySettingsFragment" />
+            android:fragment="af.shizuku.manager.settings.PersonalizationSettingsFragment" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -80,28 +76,14 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_update"
-        android:title="@string/settings_update_category"
-        android:defaultValue="true">
-
-        <Preference
-            android:key="nav_update"
-            android:title="@string/settings_update_title"
-            android:summary="@string/settings_update_summary"
-            android:icon="@drawable/ic_update_24"
-            android:fragment="af.shizuku.manager.settings.UpdateSettingsFragment" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_about"
-        android:title="@string/settings_about"
+        android:title="About"
         android:defaultValue="true">
 
         <Preference
             android:key="nav_about"
-            android:title="@string/settings_about"
-            android:summary="@string/settings_version"
+            android:title="About"
+            android:summary="Version info, open-source licenses, and update options"
             android:icon="@drawable/ic_info_24"
             android:fragment="af.shizuku.manager.settings.AboutSettingsFragment" />
 

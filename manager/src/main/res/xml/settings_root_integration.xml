@@ -30,6 +30,9 @@
         android:icon="@drawable/ic_root_24"
         android:defaultValue="false" />
 
+    <af.shizuku.manager.settings.SUBridgeDiagramPreference
+        android:key="su_bridge_diagram" />
+
     <EditTextPreference
         android:key="custom_su_path"
         android:title="Custom SU Path"
@@ -47,7 +50,7 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_root_modules"
-        android:title="Service-Level Modules"
+        android:title="Rootless Bridges (Actually Works)"
         android:defaultValue="true">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
@@ -58,6 +61,24 @@
             android:defaultValue="false"
             app:infoTitle="@string/help_root_adaway_title"
             app:infoDetail="@string/help_root_adaway_detail" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_build_prop_redirect_enabled"
+            android:title="build.prop Redirection"
+            android:summary="Redirect system build property modifications to a writable proxy file rootless"
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false"
+            app:infoTitle="build.prop Redirection Explainer"
+            app:infoDetail="This module automatically shadow-copies the original build.prop to a user-writable path and redirects all writes to it, allowing tweakers to safely modify system values rootless." />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_iptables_mocking_enabled"
+            android:title="Firewall Success Mocking"
+            android:summary="Intercept and fake success for iptables rules when local netfilter permissions fail"
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false"
+            app:infoTitle="Firewall Mocking Explainer"
+            app:infoDetail="Fakes execution success for iptables commands when rootless limitations prevent real rules from being set, letting firewall apps continue functioning." />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_magisk_mocking_enabled"
@@ -96,5 +117,42 @@
             app:infoDetail="@string/help_root_busybox_detail" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_ghost_bridge"
+        android:title="Mocking & Simulation (Fakes Success)"
+        android:defaultValue="false">
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="overlay_fs_proxy_enabled"
+            android:title="OverlayFS System Ghosting"
+            android:summary="[Developer] Seamlessly mount virtual overlay filesystems to simulate rw /system for root apps. Warning: Highly experimental."
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="false" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_kernel_ghosting_enabled"
+            android:title="Kernel Driver Ghosting"
+            android:summary="[Developer] Silently simulate success for insmod/rmmod kernel commands. Appears to work but does not actually load drivers."
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_partition_ghosting_enabled"
+            android:title="Partition Flash Ghosting"
+            android:summary="[Developer] Intercept and fake 'dd' operations targeting /dev/block/. Prevents ROM flashers from crashing while doing nothing."
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            android:defaultValue="false" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_power_ghosting_enabled"
+            android:title="Power State Ghosting"
+            android:summary="[Developer] Intercept reboot, recovery, and soft-reboot commands and silently ignore them to prevent unwanted device restarts."
+            android:icon="@drawable/ic_server_restart"
+            android:defaultValue="false" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+
 
 </PreferenceScreen>

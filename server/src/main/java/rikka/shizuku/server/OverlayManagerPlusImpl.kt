@@ -117,4 +117,11 @@ class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
             return false
         }
     }
+
+    override fun prepareShadowMount(callingPackage: String?, partition: String?): Boolean {
+        if (callingPackage == null || partition == null) return false
+        Log.i(TAG, "Ghost Bridge: Preparing shadow mount for partition $partition requested by $callingPackage")
+        // Mock success for Ghost Bridge emulation. Actual overlay logic requires root/magisk module to mount OverlayFS
+        return true
+    }
 }

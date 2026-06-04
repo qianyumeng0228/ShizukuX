@@ -96,6 +96,8 @@ public class ShizukuSettings {
         public static final String KEY_ROOT_AUTO_GRANT_ENABLED = "root_auto_grant_enabled";
         public static final String KEY_ROOT_FILE_INTERCEPTOR_ENABLED = "root_file_interceptor_enabled";
         public static final String KEY_ROOT_BUSYBOX_MOCKING_ENABLED = "root_busybox_mocking_enabled";
+        public static final String KEY_ROOT_BUILD_PROP_REDIRECT_ENABLED = "root_build_prop_redirect_enabled";
+        public static final String KEY_ROOT_IPTABLES_MOCKING_ENABLED = "root_iptables_mocking_enabled";
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
 
         // Long-press action toggles (ShizukuX additions)
@@ -253,6 +255,10 @@ public class ShizukuSettings {
 
     public static boolean isSamsungSystemUidEscalationEnabled() {
         return getPreferences().getBoolean(Keys.KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED, false);
+    }
+
+    public static boolean isSoftwareKeystoreFallbackEnabled() {
+        return getPreferences().getBoolean("software_keystore_fallback_enabled", false);
     }
 
     public static boolean getStartOnBoot(Context context) {
@@ -726,6 +732,16 @@ public class ShizukuSettings {
         return p != null && p.getBoolean(Keys.KEY_ROOT_BUSYBOX_MOCKING_ENABLED, false);
     }
 
+    public static boolean isRootBuildPropRedirectEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_BUILD_PROP_REDIRECT_ENABLED, false);
+    }
+
+    public static boolean isRootIptablesMockingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_IPTABLES_MOCKING_ENABLED, false);
+    }
+
     public static boolean showStartAdbHome() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_SHOW_START_ADB_HOME, false);
@@ -813,6 +829,8 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());
                 service.updatePlusFeatureEnabled("root_file_interceptor", isRootFileInterceptorEnabled());
                 service.updatePlusFeatureEnabled("root_busybox_mocking", isRootBusyboxMockingEnabled());
+                service.updatePlusFeatureEnabled("root_build_prop_redirect", isRootBuildPropRedirectEnabled());
+                service.updatePlusFeatureEnabled("root_iptables_mocking", isRootIptablesMockingEnabled());
                 service.updatePlusFeatureEnabled("vector", isVectorEnabled());
                 service.updatePlusFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
                 service.updatePlusFeatureEnabled("spoof_device", isSpoofDeviceEnabled());

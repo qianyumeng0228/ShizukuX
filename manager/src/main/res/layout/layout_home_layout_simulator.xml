@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginTop="16dp"
+    android:layout_marginBottom="8dp"
+    app:cardElevation="0dp"
+    app:cardCornerRadius="24dp"
+    app:cardBackgroundColor="?colorSurfaceContainerLow"
+    app:strokeWidth="1dp"
+    app:strokeColor="?colorOutlineVariant">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dashboard Layout Simulator"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="?colorPrimary"
+            android:textStyle="bold"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Mock Device Frame containing Home Dashboard -->
+        <LinearLayout
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@drawable/shape_mock_device"
+            android:gravity="center_horizontal">
+
+            <!-- Mock Title/Header -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ShizukuX"
+                android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                android:textColor="?colorOnSurface"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Block 1: ADB Start -->
+            <LinearLayout
+                android:id="@+id/sim_start_adb"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/shape_node_inactive"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_adb_24"
+                    android:tint="?colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Wireless ADB"
+                    android:textSize="10sp"
+                    android:textColor="?colorOnSurfaceVariant" />
+                <ImageView
+                    android:id="@+id/eye_start_adb"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_visibility_24"
+                    android:tint="?colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <!-- Block 2: Terminal -->
+            <LinearLayout
+                android:id="@+id/sim_terminal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/shape_node_inactive"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_terminal_24"
+                    android:tint="?colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Terminal Apps"
+                    android:textSize="10sp"
+                    android:textColor="?colorOnSurfaceVariant" />
+                <ImageView
+                    android:id="@+id/eye_terminal"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_visibility_24"
+                    android:tint="?colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <!-- Block 3: Automation -->
+            <LinearLayout
+                android:id="@+id/sim_automation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/shape_node_inactive"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_integration_instructions_24"
+                    android:tint="?colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Automation"
+                    android:textSize="10sp"
+                    android:textColor="?colorOnSurfaceVariant" />
+                <ImageView
+                    android:id="@+id/eye_automation"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_visibility_24"
+                    android:tint="?colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <!-- Block 4: Activity Log -->
+            <LinearLayout
+                android:id="@+id/sim_activity_log"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/shape_node_inactive"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_article_24"
+                    android:tint="?colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Activity Logs"
+                    android:textSize="10sp"
+                    android:textColor="?colorOnSurfaceVariant" />
+                <ImageView
+                    android:id="@+id/eye_activity_log"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_visibility_24"
+                    android:tint="?colorOnSurfaceVariant" />
+            </LinearLayout>
+
+            <!-- Block 5: Learn More -->
+            <LinearLayout
+                android:id="@+id/sim_learn_more"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:background="@drawable/shape_node_inactive"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_outline_info_24"
+                    android:tint="?colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    android:text="Developer Guide"
+                    android:textSize="10sp"
+                    android:textColor="?colorOnSurfaceVariant" />
+                <ImageView
+                    android:id="@+id/eye_learn_more"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:src="@drawable/ic_visibility_24"
+                    android:tint="?colorOnSurfaceVariant" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Tap simulated blocks in the mockup device to instantly toggle their visibility on the main home screen."
+            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+            android:textColor="?colorOnSurfaceVariant"
+            android:textAlignment="center" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

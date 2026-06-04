@@ -13,6 +13,13 @@
             android:icon="@drawable/ic_medical_services_24" />
 
         <SwitchPreferenceCompat
+            android:key="diagnostics_enabled"
+            android:title="Enable Settings Diagnostics"
+            android:summary="Scan configurations for conflicts and anomalies proactively"
+            android:icon="@drawable/ic_warning_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
             android:key="enable_activity_log"
             android:title="@string/settings_enable_activity_log"
             android:summary="@string/settings_enable_activity_log_summary"
@@ -24,6 +31,12 @@
             android:title="@string/settings_activity_log"
             android:icon="@drawable/ic_history_24"
             android:dependency="enable_activity_log" />
+
+        <Preference
+            android:key="update_app_database"
+            android:title="@string/settings_update_app_database"
+            android:summary="@string/settings_update_app_database_summary"
+            android:icon="@drawable/ic_autorenew" />
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

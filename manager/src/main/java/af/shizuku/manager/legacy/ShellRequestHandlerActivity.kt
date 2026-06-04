@@ -27,7 +27,8 @@ class ShellRequestHandlerActivity : MaterialActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val authToken = intent.getStringExtra("auth")
+        val rawToken = intent.getStringExtra("auth")
+        val authToken = if (rawToken != null) af.shizuku.manager.utils.IntentCrypto.decrypt(rawToken) else null
         val expectedToken = ShizukuSettings.getAuthToken()
 
         if (authToken.isNullOrEmpty()) {

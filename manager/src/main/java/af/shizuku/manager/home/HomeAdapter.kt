@@ -66,7 +66,13 @@ class HomeAdapter(
         setHasStableIds(true)
         HomeEditMode.onChanged = { updateData() }
         HomeEditMode.removeCardCallback = { cardId ->
-            ShizukuSettings.addHiddenHomeCard(cardId.toString())
+            val hiddenSet = ShizukuSettings.getHiddenHomeCards().toMutableSet()
+            if (cardId.toString() in hiddenSet) {
+                hiddenSet.remove(cardId.toString())
+            } else {
+                hiddenSet.add(cardId.toString())
+            }
+            ShizukuSettings.setHiddenHomeCards(hiddenSet)
             HomeEditMode.exit()
             updateData()
         }
@@ -127,21 +133,22 @@ class HomeAdapter(
 
                 // Draggable cards
                 cardOrder.forEach { id ->
-                    if (id.toString() in hidden) return@forEach
+                    val isHidden = id.toString() in hidden
+                    if (isHidden && !isEditMode) return@forEach
                     when (id) {
-                        ID_TERMINAL -> if (adbPermission && ShizukuSettings.showTerminalHome())
+                        ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                             addItem(TerminalViewHolder.CREATOR, status, id)
-                        ID_START_ROOT -> if (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()))
+                        ID_START_ROOT -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled())))
                             addItem(StartRootViewHolder.CREATOR, rootRestart, id)
-                        ID_START_WADB -> if (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0))
+                        ID_START_WADB -> if (isEditMode || (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0)))
                             addItem(startWadbCreator, null, id)
-                        ID_START_ADB -> if (isPrimaryUser && ShizukuSettings.showStartAdbHome())
+                        ID_START_ADB -> if (isEditMode || (isPrimaryUser && ShizukuSettings.showStartAdbHome()))
                             addItem(StartAdbViewHolder.CREATOR, null, id)
-                        ID_AUTOMATION -> if (ShizukuSettings.showAutomationHome())
+                        ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
                             addItem(AutomationViewHolder.CREATOR, null, id)
-                        ID_LEARN_MORE -> if (ShizukuSettings.showLearnMoreHome())
+                        ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
                             addItem(LearnMoreViewHolder.CREATOR, null, id)
-                        ID_COMPANION -> if (ShizukuSettings.isCompanionModeEnabled())
+                        ID_COMPANION -> if (isEditMode || ShizukuSettings.isCompanionModeEnabled())
                             addItem(ShizukuCompanionViewHolder.CREATOR, companionInstalled, id)
                     }
                 }
@@ -157,6 +164,10 @@ class HomeAdapter(
     }
 
     override fun onBindViewHolder(holder: BaseViewHolder<*>, position: Int) {
+        val id = getItemId(position)
+        val hidden = ShizukuSettings.getHiddenHomeCards()
+        holder.itemView.tag = id.toString() in hidden
+
         super.onBindViewHolder(holder, position)
 
         // M3E entrance animation — only on first appearance per card id, not every recycle.

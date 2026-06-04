@@ -1,6 +1,7 @@
 package af.shizuku.manager.settings
 
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -126,6 +127,75 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        // Device Owner Tools - Screen Capture Lockdown
+        findPreference<TwoStatePreference>("dhizuku_disable_screencap")?.setOnPreferenceChangeListener { _, newValue ->
+            val enabled = newValue as? Boolean ?: false
+            val ctx = context ?: return@setOnPreferenceChangeListener false
+            try {
+                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
+                dpm.setScreenCaptureDisabled(admin, enabled)
+                Toast.makeText(ctx, if (enabled) "Screen Capture Disabled Globally" else "Screen Capture Enabled", Toast.LENGTH_SHORT).show()
+                true
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Failed: Device Owner privileges required", Toast.LENGTH_LONG).show()
+                false
+            }
+        }
+
+        // Device Owner Tools - USB Data Lockdown
+        findPreference<TwoStatePreference>("dhizuku_disallow_usb")?.setOnPreferenceChangeListener { _, newValue ->
+            val enabled = newValue as? Boolean ?: false
+            val ctx = context ?: return@setOnPreferenceChangeListener false
+            try {
+                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
+                if (enabled) {
+                    dpm.addUserRestriction(admin, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+                    Toast.makeText(ctx, "USB Data Locked Down", Toast.LENGTH_SHORT).show()
+                } else {
+                    dpm.clearUserRestriction(admin, android.os.UserManager.DISALLOW_USB_FILE_TRANSFER)
+                    Toast.makeText(ctx, "USB Data Unlocked", Toast.LENGTH_SHORT).show()
+                }
+                true
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Failed: Device Owner privileges required", Toast.LENGTH_LONG).show()
+                false
+            }
+        }
+
+        // Device Owner Tools - App Freezing
+        findPreference<Preference>("dhizuku_suspended_packages")?.setOnPreferenceChangeListener { _, newValue ->
+            val packagesStr = newValue as? String ?: ""
+            val packagesList = if (packagesStr.isBlank()) emptyList() else packagesStr.split(",").map { it.trim() }
+            val ctx = context ?: return@setOnPreferenceChangeListener false
+            try {
+                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
+                val pm = ctx.packageManager
+                val installed = pm.getInstalledPackages(0).map { it.packageName }.toSet()
+                
+                // Clear any existing suspensions first
+                val toUnsuspend = installed.toMutableList()
+                dpm.setPackagesSuspended(admin, toUnsuspend.toTypedArray(), false)
+                
+                // Set chosen suspensions
+                if (packagesList.isNotEmpty()) {
+                    val toSuspend = packagesList.filter { installed.contains(it) }
+                    val failed = dpm.setPackagesSuspended(admin, toSuspend.toTypedArray(), true)
+                    if (failed.isNotEmpty()) {
+                        Toast.makeText(ctx, "Failed to freeze: ${failed.joinToString()}", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(ctx, "Frozen ${toSuspend.size} applications", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                true
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Failed: Device Owner privileges required", Toast.LENGTH_LONG).show()
+                false
+            }
+        }
+
         val customApiPref = requireNotNull(findPreference<TwoStatePreference>(KEY_CUSTOM_API_ENABLED))
         customApiPref.isChecked = ShizukuSettings.isCustomApiEnabled()
         customApiPref.setOnPreferenceChangeListener { _, newValue ->
@@ -195,6 +265,23 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "samsung_system_uid_escalation_enabled"
         )
 
+        fun notifyDiagramForKey(prefKey: String) {
+            val diagramKey = when (prefKey) {
+                "storage_proxy_enabled" -> "storage_proxy_diagram"
+                "shadow_binder_enabled" -> "shadow_binder_diagram"
+                "binder_firewall_enabled" -> "binder_firewall_diagram"
+                "avf_manager_enabled" -> "vm_manager_diagram"
+                "ai_core_plus_enabled" -> "ai_core_plus_diagram"
+                "continuity_bridge_enabled" -> "continuity_bridge_diagram"
+                "network_governor_plus_enabled" -> "network_governor_plus_diagram"
+                "overlay_manager_plus_enabled" -> "overlay_manager_plus_diagram"
+                else -> null
+            }
+            if (diagramKey != null) {
+                findPreference<Preference>(diagramKey)?.notifyChanged()
+            }
+        }
+
         plusKeys.forEach { (prefKey, featureName) ->
             findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
                 val enabled = newValue as? Boolean ?: false
@@ -203,12 +290,16 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, true)?.apply()
                         ShizukuSettings.syncAllPlusFeaturesToServer()
                         updatePlusFeatureDependency(prefKey, true)
+                        notifyDiagramForKey(prefKey)
+                        findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
                     }
                     false // Handle manually after dialog
                 } else {
                     preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, enabled)?.apply()
                     ShizukuSettings.syncAllPlusFeaturesToServer()
                     updatePlusFeatureDependency(prefKey, enabled)
+                    notifyDiagramForKey(prefKey)
+                    findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
                     true
                 }
             }
@@ -226,16 +317,28 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         }
 
         findPreference<Preference>("ai_core_plus_enabled")?.setOnPreferenceChangeListener { _, newValue ->
-            if (newValue == true) {
+            val enabled = newValue as? Boolean ?: false
+            if (enabled) {
                 val lock = BiometricLock(requireActivity())
                 if (lock.canAuthenticate(requireContext())) {
                     lock.authenticate({
                         ShizukuSettings.setAICorePlusEnabled(true)
                         ShizukuSettings.syncAllPlusFeaturesToServer()
+                        activity?.runOnUiThread {
+                            findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
+                            notifyDiagramForKey("ai_core_plus_enabled")
+                            findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
+                        }
                     }, { _ -> /* Ignore or show toast */ })
                     return@setOnPreferenceChangeListener false
                 }
             }
+            // fallback / standard or disabling
+            preferenceManager.sharedPreferences?.edit()?.putBoolean("ai_core_plus_enabled", enabled)?.apply()
+            ShizukuSettings.syncAllPlusFeaturesToServer()
+            updatePlusFeatureDependency("ai_core_plus_enabled", enabled)
+            notifyDiagramForKey("ai_core_plus_enabled")
+            findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
             true
         }
 

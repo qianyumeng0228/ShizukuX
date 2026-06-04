@@ -78,6 +78,36 @@ class AICorePlusService : AccessibilityService() {
      */
     fun getWindowHierarchy(): String = dumpHierarchy()
 
+    /**
+     * Streams the hierarchy XML over a ParcelFileDescriptor pipe to bypass the 1MB Binder limit.
+     */
+    fun dumpHierarchyStream(): android.os.ParcelFileDescriptor? {
+        if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) {
+            return null
+        }
+        val xml = dumpHierarchy()
+        val pipe = android.os.ParcelFileDescriptor.createPipe()
+        val readFd = pipe[0]
+        val writeFd = pipe[1]
+        
+        Thread {
+            try {
+                android.os.ParcelFileDescriptor.AutoCloseOutputStream(writeFd).use {
+                    it.write(xml.toByteArray(Charsets.UTF_8))
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to stream hierarchy")
+            }
+        }.start()
+        
+        return readFd
+    }
+
+    /**
+     * Alias for stream dump.
+     */
+    fun getWindowHierarchyStream(): android.os.ParcelFileDescriptor? = dumpHierarchyStream()
+
     private fun buildXml(node: AccessibilityNodeInfo, sb: StringBuilder, depth: Int) {
         val indent = "  ".repeat(depth)
         sb.append(indent).append("<node")

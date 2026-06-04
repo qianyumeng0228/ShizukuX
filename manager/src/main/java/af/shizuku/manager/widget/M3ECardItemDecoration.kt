@@ -40,7 +40,16 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
             if (isHeader(child)) {
                 if (currentCardTop != Float.MIN_VALUE) {
                     drawCard(c, parent, currentCardTop, lastItemBottom)
-                    currentCardTop = Float.MIN_VALUE
+                }
+                currentCardTop = child.top.toFloat()
+                lastItemBottom = child.bottom.toFloat()
+
+                // Draw a divider under the header if it's expanded (i.e. has visible children)
+                if (shouldDrawDivider(parent, i, count)) {
+                    val left = child.left.toFloat() + getDividerInset(child)
+                    val right = child.right.toFloat() - getDividerEndInset(child)
+                    val y = child.bottom.toFloat()
+                    c.drawLine(left, y, right, y, dividerPaint)
                 }
             } else {
                 if (currentCardTop == Float.MIN_VALUE) {
@@ -64,9 +73,9 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
 
     protected open fun isHeader(view: View): Boolean = false
 
-    protected open fun getDividerInset(view: View): Float = 0f
+    protected open fun getDividerInset(view: View): Float = 56f * density
 
-    protected open fun getDividerEndInset(view: View): Float = 0f
+    protected open fun getDividerEndInset(view: View): Float = 16f * density
 
     protected open fun shouldDrawDivider(parent: RecyclerView, index: Int, count: Int): Boolean {
         if (index >= count - 1) return false

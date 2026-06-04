@@ -104,13 +104,33 @@ class AICorePlusImpl(
         return bundle
     }
 
+    private var inputShellProcess: Process? = null
+    private var inputShellWriter: java.io.OutputStreamWriter? = null
+
+    private fun injectInput(cmd: String): Boolean {
+        return try {
+            if (inputShellProcess == null) { // Simple alive check
+                try { inputShellProcess?.exitValue() } catch (e: IllegalThreadStateException) { /* Alive */ }
+            }
+            if (inputShellProcess == null) {
+                inputShellProcess = Runtime.getRuntime().exec("sh")
+                inputShellWriter = java.io.OutputStreamWriter(inputShellProcess!!.outputStream)
+            }
+            inputShellWriter?.write("$cmd\n")
+            inputShellWriter?.flush()
+            true
+        } catch (e: Exception) {
+            inputShellProcess?.destroy()
+            inputShellProcess = null
+            inputShellWriter = null
+            false
+        }
+    }
+
     override fun simulateTouch(p0: Float, p1: Float): Boolean {
         if (!checkExperimental()) return false
         return try {
-            automationBridge?.simulateTouch(p0, p1) ?: run {
-                val process = Runtime.getRuntime().exec(arrayOf("input", "tap", p0.toString(), p1.toString()))
-                process.waitFor() == 0
-            }
+            automationBridge?.simulateTouch(p0, p1) ?: injectInput("input tap $p0 $p1")
         } catch (e: Exception) {
             false
         }
@@ -119,10 +139,7 @@ class AICorePlusImpl(
     override fun simulateSwipe(p0: Float, p1: Float, p2: Float, p3: Float, p4: Int): Boolean {
         if (!checkExperimental()) return false
         return try {
-            automationBridge?.simulateSwipe(p0, p1, p2, p3, p4) ?: run {
-                val process = Runtime.getRuntime().exec(arrayOf("input", "swipe", p0.toString(), p1.toString(), p2.toString(), p3.toString(), p4.toString()))
-                process.waitFor() == 0
-            }
+            automationBridge?.simulateSwipe(p0, p1, p2, p3, p4) ?: injectInput("input swipe $p0 $p1 $p2 $p3 $p4")
         } catch (e: Exception) {
             false
         }
@@ -131,10 +148,8 @@ class AICorePlusImpl(
     override fun simulateText(text: String?): Boolean {
         if (!checkExperimental() || text == null) return false
         return try {
-            automationBridge?.simulateText(text) ?: run {
-                val process = Runtime.getRuntime().exec(arrayOf("input", "text", text))
-                process.waitFor() == 0
-            }
+            val safeText = text.replace("'", "\\'").replace("\"", "\\\"")
+            automationBridge?.simulateText(text) ?: injectInput("input text '$safeText'")
         } catch (e: Exception) {
             false
         }

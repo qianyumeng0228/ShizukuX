@@ -78,4 +78,20 @@
         <item>dev</item>
     </string-array>
 
+    <string-array name="custom_accents">
+        <item>Standard Blue (Default)</item>
+        <item>Midnight Violet</item>
+        <item>Forest Green</item>
+        <item>Crimson Rose</item>
+        <item>Deep Ocean</item>
+    </string-array>
+
+    <string-array name="custom_accents_values">
+        <item>DEFAULT</item>
+        <item>VIOLET</item>
+        <item>GREEN</item>
+        <item>CRIMSON</item>
+        <item>OCEAN</item>
+    </string-array>
+
 </resources>

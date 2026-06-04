@@ -171,8 +171,15 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun startSys() {
-        log("Attempting Samsung System UID Escalation via FOTA agent...\n\n")
+        if (!af.shizuku.manager.ShizukuSettings.isSamsungSystemUidEscalationEnabled()) {
+            log("Samsung System UID Escalation is disabled for security reasons.\n")
+            log("Enable it in Developer Settings to use this experimental feature.\n\n")
+            log("info: shizuku_starter exit with 1")
+            return
+        }
 
+        log("Attempting Samsung System UID Escalation via FOTA agent...\n\n")
+        
         withContext(Dispatchers.IO) {
             val intent = android.content.Intent().apply {
                 setClassName("com.sdet.fotaagent", "com.sdet.fotaagent.Main")

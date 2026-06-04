@@ -44,12 +44,17 @@ object ServiceStarter {
         callingUid: Int,
         debug: Boolean
     ): String {
-        val processName = "$packageName:$processNameSuffix"
+        // Sanitize single quotes to prevent shell injection escapes
+        val safePackageName = packageName.replace("'", "'\\''")
+        val safeClassname = classname.replace("'", "'\\''")
+        val safeProcessNameSuffix = processNameSuffix.replace("'", "'\\''")
+        
+        val processName = "$safePackageName:$safeProcessNameSuffix"
         return String.format(
             Locale.ENGLISH, USER_SERVICE_CMD_FORMAT,
             managerApkPath, appProcess, if (debug) " $DEBUG_ARGS" else "",
             processName,
-            token, packageName, classname, callingUid, if (debug) " --debug-name=$processName" else ""
+            token, safePackageName, safeClassname, callingUid, if (debug) " --debug-name=$processName" else ""
         )
     }
 

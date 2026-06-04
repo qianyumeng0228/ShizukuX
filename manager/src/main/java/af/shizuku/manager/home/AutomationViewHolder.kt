@@ -58,7 +58,8 @@ class AutomationViewHolder(
         }
         binding.button1.setOnClickListener { v ->
             val context = v.context
-            val authToken = ShizukuSettings.getAuthToken()
+            val authToken = af.shizuku.manager.ShizukuSettings.getAuthToken()
+            val encryptedToken = af.shizuku.manager.utils.IntentCrypto.encrypt(authToken)
 
             val sheetBinding = HomeAutomationBottomSheetBinding.inflate(
                 LayoutInflater.from(context)
@@ -70,7 +71,7 @@ class AutomationViewHolder(
                     Field(actionLayout, actionEditText, action),
                     Field(packageLayout, packageEditText, context.packageName),
                     Field(targetLayout, targetEditText, "Broadcast Receiver"),
-                    Field(extrasLayout, extrasEditText, authToken)
+                    Field(extrasLayout, extrasEditText, "auth:$encryptedToken")
                 )
 
                 fields.forEach { (layout, input, initText) ->

@@ -39,6 +39,22 @@ object HomeEditMode {
         io.sentry.Sentry.addBreadcrumb("HomeEditMode: applyOverlay() isActive=$isActive")
         binding.removeBtn.isVisible = isActive
         binding.dragHandle.isVisible = isActive
+
+        val isHidden = binding.root.tag as? Boolean ?: false
+
+        if (isActive && isHidden) {
+            binding.root.alpha = 0.45f
+            binding.removeBtn.setIconResource(R.drawable.ic_add_24)
+            val activeColor = binding.root.context.getColor(R.color.system_accent1_600)
+            binding.removeBtn.iconTint = android.content.res.ColorStateList.valueOf(activeColor)
+        } else {
+            binding.root.alpha = 1.0f
+            binding.removeBtn.setIconResource(R.drawable.ic_close_24)
+            val errorTint = android.util.TypedValue()
+            binding.root.context.theme.resolveAttribute(com.google.android.material.R.attr.colorError, errorTint, true)
+            binding.removeBtn.iconTint = android.content.res.ColorStateList.valueOf(errorTint.data)
+        }
+
         val res = binding.cardContent.resources
         val base = res.getDimensionPixelSize(R.dimen.card_content_padding)
         val handleClearance = if (isActive)

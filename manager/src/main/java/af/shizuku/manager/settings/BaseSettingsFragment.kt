@@ -64,6 +64,47 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         return super.onPreferenceTreeClick(preference)
     }
 
+    override fun onResume() {
+        super.onResume()
+        val highlightKey = arguments?.getString("highlight_key")
+        if (!highlightKey.isNullOrEmpty()) {
+            listView?.post {
+                val adapter = listView?.adapter
+                if (adapter != null) {
+                    var position = -1
+                    for (i in 0 until adapter.itemCount) {
+                        val pref = (adapter as? androidx.preference.PreferenceGroupAdapter)?.getItem(i)
+                        if (pref?.key == highlightKey) {
+                            position = i
+                            break
+                        }
+                    }
+                    
+                    if (position >= 0) {
+                        listView?.smoothScrollToPosition(position)
+                        listView?.postDelayed({
+                            val holder = listView?.findViewHolderForAdapterPosition(position)
+                            holder?.itemView?.let { itemView ->
+                                val defaultBg = itemView.background
+                                val tintColor = TypedValue()
+                                requireContext().theme.resolveAttribute(R.attr.colorPrimaryContainer, tintColor, true)
+                                itemView.setBackgroundColor(tintColor.data)
+                                itemView.animate()
+                                    .setDuration(1200)
+                                    .alpha(1.0f)
+                                    .withEndAction {
+                                        itemView.background = defaultBg
+                                    }
+                                    .start()
+                            }
+                        }, 400)
+                    }
+                }
+            }
+            arguments?.remove("highlight_key")
+        }
+    }
+
     override fun onDestroyView() {
         activeDialogs.forEach { if (it.isShowing) it.dismiss() }
         activeDialogs.clear()
