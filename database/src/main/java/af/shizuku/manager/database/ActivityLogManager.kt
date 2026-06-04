@@ -283,12 +283,16 @@ object ActivityLogManager {
                 dao = null
                 
                 val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
+                val timestamp = getTimestampFilename()
                 listOf(
                     dbFile,
                     File(dbFile.path + "-shm"),
                     File(dbFile.path + "-wal")
                 ).forEach { file ->
-                    if (file.exists()) file.delete()
+                    if (file.exists()) {
+                        val backupFile = File(file.path + "_corrupt_backup_" + timestamp)
+                        file.renameTo(backupFile)
+                    }
                 }
                 
                 if (dbFile.parentFile?.exists() != true) {
@@ -298,12 +302,12 @@ object ActivityLogManager {
                 database = ActivityLogDatabase.getInstance(context)
                 dao = database?.activityLogDao()
                 
-                settings?.showNotification("System Warning", "Activity log database was reset due to corruption")
+                settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can extract the backup to attempt recovery.")
                 
                 val recoveryRecord = ActivityLogRecord(
                     appName = "System",
                     packageName = context.packageName,
-                    action = "Database autofixed after corruption/open error"
+                    action = "Database autofixed after corruption. Corrupted file backed up to shizuku_activity_logs.db_corrupt_backup_$timestamp"
                 )
                 
                 synchronized(records) {
