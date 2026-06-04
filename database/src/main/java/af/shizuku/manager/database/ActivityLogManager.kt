@@ -54,7 +54,12 @@ object ActivityLogManager {
     private var database: ActivityLogDatabase? = null
     private var dao: ActivityLogDao? = null
     
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val isResettingDatabase = AtomicBoolean(false)
+    
+    private val exceptionHandler = kotlinx.coroutines.CoroutineExceptionHandler { _, exception ->
+        handleDatabaseError(exception)
+    }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO + exceptionHandler)
     
     private val isInitialized = AtomicBoolean(false)
     private val isCleaningUp = AtomicBoolean(false)
@@ -123,6 +128,9 @@ object ActivityLogManager {
                 } catch (e: Exception) {
                     retryCount++
                     delay(500)
+                    if (retryCount >= 3) {
+                        handleDatabaseError(e)
+                    }
                 }
             }
         }
@@ -171,8 +179,11 @@ object ActivityLogManager {
                 )
                 d.insert(roomLog)
             } catch (e: android.database.sqlite.SQLiteCantOpenDatabaseException) {
-                // Ignore broken SQLite/Room databases on custom ROMs without spamming Sentry
                 Timber.tag(TAG).w("Error saving log: SQLiteCantOpenDatabaseException")
+                handleDatabaseError(e)
+            } catch (e: android.database.sqlite.SQLiteDatabaseCorruptException) {
+                Timber.tag(TAG).w("Error saving log: SQLiteDatabaseCorruptException")
+                handleDatabaseError(e)
             } catch (e: Exception) {
                 Timber.tag(TAG).w(e, "Error saving log")
             }
@@ -185,6 +196,8 @@ object ActivityLogManager {
         scope.launch {
             try {
                 dao?.deleteExcess(retentionCount)
+            } catch (e: Exception) {
+                handleDatabaseError(e)
             } finally {
                 isCleaningUp.set(false)
             }
@@ -249,5 +262,66 @@ object ActivityLogManager {
     
     private fun escapeJson(str: String): String {
         return str.replace("\\", "\\\\").replace("\"", "\\\"")
+    }
+
+    private fun handleDatabaseError(e: Throwable) {
+        val context = appContext ?: return
+        
+        val isDbError = e is android.database.sqlite.SQLiteCantOpenDatabaseException ||
+                e is android.database.sqlite.SQLiteDatabaseCorruptException ||
+                e.cause is android.database.sqlite.SQLiteCantOpenDatabaseException ||
+                e.cause is android.database.sqlite.SQLiteDatabaseCorruptException
+                
+        if (!isDbError || isResettingDatabase.getAndSet(true)) return
+        
+        scope.launch {
+            try {
+                Timber.tag(TAG).w("Autofixing corrupted database: \${e.message}")
+                
+                ActivityLogDatabase.resetInstance()
+                database = null
+                dao = null
+                
+                val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
+                listOf(
+                    dbFile,
+                    File(dbFile.path + "-shm"),
+                    File(dbFile.path + "-wal")
+                ).forEach { file ->
+                    if (file.exists()) file.delete()
+                }
+                
+                if (dbFile.parentFile?.exists() != true) {
+                    dbFile.parentFile?.mkdirs()
+                }
+                
+                database = ActivityLogDatabase.getInstance(context)
+                dao = database?.activityLogDao()
+                
+                settings?.showNotification("System Warning", "Activity log database was reset due to corruption")
+                
+                val recoveryRecord = ActivityLogRecord(
+                    appName = "System",
+                    packageName = context.packageName,
+                    action = "Database autofixed after corruption/open error"
+                )
+                
+                synchronized(records) {
+                    records.add(0, recoveryRecord)
+                    _logs.value = records.toList()
+                }
+                
+                dao?.insert(ActivityLogRoom(
+                    timestamp = recoveryRecord.timestamp,
+                    appName = recoveryRecord.appName,
+                    packageName = recoveryRecord.packageName,
+                    action = recoveryRecord.action
+                ))
+            } catch (resetError: Exception) {
+                Timber.tag(TAG).e(resetError, "Failed to autofix database")
+            } finally {
+                isResettingDatabase.set(false)
+            }
+        }
     }
 }

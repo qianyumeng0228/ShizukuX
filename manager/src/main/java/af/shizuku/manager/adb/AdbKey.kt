@@ -11,6 +11,7 @@ import androidx.core.content.edit
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.cert.X509v3CertificateBuilder
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder
 import rikka.core.ktx.unsafeLazy
 import java.io.ByteArrayInputStream
@@ -71,7 +72,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 0x04, 0x14)
     }
 
-    private val encryptionKey: Key
+    private val encryptionKey: Key?
 
     private val privateKey: RSAPrivateKey
     private val publicKey: RSAPublicKey
@@ -80,12 +81,8 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     init {
         val encryptionKeyMaybe = getOrCreateEncryptionKey()
         if (encryptionKeyMaybe == null) {
-            Timber.tag(TAG).w("AndroidKeyStore is unusable. ADB functionality will be severely limited or fail.")
-            // Fallback: This is not ideal but prevents a crash. 
-            // In a real scenario, we might want to prompt the user or use a less secure storage.
-            // For now, we'll try to proceed with a dummy key to avoid the 'error()' crash.
-            val dummyKey = javax.crypto.spec.SecretKeySpec(ByteArray(32), "AES")
-            this.encryptionKey = dummyKey
+            Timber.tag(TAG).w("AndroidKeyStore is unusable. Falling back to software-backed (BouncyCastle) key storage.")
+            this.encryptionKey = null
         } else {
             this.encryptionKey = encryptionKeyMaybe
         }
@@ -150,6 +147,8 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     }
 
     private fun encrypt(plaintext: ByteArray, aad: ByteArray?): ByteArray? {
+        if (encryptionKey == null) return plaintext
+        
         if (plaintext.size > Int.MAX_VALUE - IV_SIZE_IN_BYTES - TAG_SIZE_IN_BYTES) {
             return null
         }
@@ -163,6 +162,8 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     }
 
     private fun decrypt(ciphertext: ByteArray, aad: ByteArray?): ByteArray? {
+        if (encryptionKey == null) return ciphertext
+        
         if (ciphertext.size < IV_SIZE_IN_BYTES + TAG_SIZE_IN_BYTES) {
             return null
         }
@@ -182,16 +183,29 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
         var ciphertext = adbKeyStore.get()
         if (ciphertext != null) {
             try {
-                val plaintext = decrypt(ciphertext, aad)
+                val plaintext = decrypt(ciphertext, aad) ?: throw IllegalStateException("Decryption failed")
 
-                val keyFactory = KeyFactory.getInstance("RSA")
+                val keyFactory = if (encryptionKey == null) {
+                    Security.addProvider(BouncyCastleProvider())
+                    KeyFactory.getInstance("RSA", "BC")
+                } else {
+                    KeyFactory.getInstance("RSA")
+                }
                 privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(plaintext)) as RSAPrivateKey
             } catch (e: Exception) {
                 Timber.tag(TAG).w(e, "Failed to decrypt stored ADB key; generating a new key")
             }
         }
         if (privateKey == null) {
-            val keyPairGenerator = KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
+            val keyPairGenerator = try {
+                if (encryptionKey == null) throw ProviderException("Force fallback")
+                KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
+            } catch (e: Exception) {
+                Timber.tag(TAG).w(e, "Using BouncyCastle for RSA generation")
+                Security.addProvider(BouncyCastleProvider())
+                KeyPairGenerator.getInstance("RSA", "BC")
+            }
+            
             keyPairGenerator.initialize(RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
             val keyPair = keyPairGenerator.generateKeyPair()
             privateKey = keyPair.private as RSAPrivateKey
