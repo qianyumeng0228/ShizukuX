@@ -27,4 +27,38 @@ object StockShizukuCompat {
             false
         }
     }
+
+    fun startViaStockShizuku(): Boolean {
+        if (!rikka.shizuku.Shizuku.pingBinder()) return false
+        return try {
+            val starterCmd = af.shizuku.manager.starter.Starter.internalCommand
+            // Spawn a fully detached process that waits 1 second, then starts our server.
+            // We immediately force-stop the original Shizuku so the ports/ServiceManager are freed up.
+            val cmd = "nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 & am force-stop $PACKAGE"
+            rikka.shizuku.Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun isOriginalRunning(): Boolean {
+        if (!rikka.shizuku.Shizuku.pingBinder()) return false
+        return try {
+            val process = rikka.shizuku.Shizuku.newProcess(arrayOf("sh", "-c", "ps -A | grep shizuku_server"), null, null)
+            val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
+            var line: String?
+            var isOriginal = false
+            while (reader.readLine().also { line = it } != null) {
+                if (line!!.contains("moe.shizuku.privileged.api")) {
+                    isOriginal = true
+                    break
+                }
+            }
+            process.destroy()
+            isOriginal
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

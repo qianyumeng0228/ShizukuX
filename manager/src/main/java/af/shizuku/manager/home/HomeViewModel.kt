@@ -64,7 +64,12 @@ class HomeViewModel(
             try {
                 val status = loadStatus()
                 val companionInstalled = StockShizukuCompat.isInstalled(appContext)
-                setState { copy(serviceStatus = Success(status), companionInstalled = companionInstalled) }
+                val isOriginalRunning = StockShizukuCompat.isOriginalRunning()
+                setState { copy(
+                    serviceStatus = Success(status), 
+                    companionInstalled = companionInstalled,
+                    isOriginalShizukuRunning = isOriginalRunning
+                ) }
             } catch (e: Exception) {
                 LOGGER.e(e, "Failed to load Shizuku status")
                 setState { copy(serviceStatus = Fail(e)) }

@@ -31,6 +31,7 @@ class HomeAdapter(
         const val ID_ADB_PERMISSION_LIMITED = 7L
         const val ID_AUTOMATION = 8L
         const val ID_COMPANION = 9L
+        const val ID_START_VIA_STOCK = 10L
 
         private val DEFAULT_ORDER = listOf(
             ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_LEARN_MORE, ID_COMPANION
@@ -102,6 +103,7 @@ class HomeAdapter(
                 Triple(it.serviceStatus.invoke(), it.grantedAppCount, it.isEditMode)
             }
             val companionInstalled = withState(homeModel) { it.companionInstalled }
+            val isOriginalShizukuRunning = withState(homeModel) { it.isOriginalShizukuRunning }
 
             if (status == null) {
                 isUpdating = false
@@ -124,6 +126,9 @@ class HomeAdapter(
                 // Fixed cards
                 var fixedCardCount = 0
                 addItem(ServerStatusViewHolder.CREATOR, status, ID_STATUS); fixedCardCount++
+                if (isOriginalShizukuRunning) {
+                    addItem(StartStockShizukuViewHolder.CREATOR, null, ID_START_VIA_STOCK); fixedCardCount++
+                }
                 if (adbPermission) {
                     addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS); fixedCardCount++
                 }
