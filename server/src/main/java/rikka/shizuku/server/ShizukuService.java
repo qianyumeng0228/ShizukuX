@@ -334,7 +334,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final java.util.Map<String, String> plusSettingsMap = new java.util.concurrent.ConcurrentHashMap<>();
 
     private boolean isFeatureEnabled(String key) {
-        return featureEnabledMap.getOrDefault(key, true);
+        if (featureEnabledMap.containsKey(key)) return featureEnabledMap.get(key);
+        if (!key.endsWith("_enabled") && featureEnabledMap.containsKey(key + "_enabled")) return featureEnabledMap.get(key + "_enabled");
+        return featureEnabledMap.getOrDefault(key, false);
     }
 
     @Override
@@ -381,23 +383,56 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     @Override
     protected boolean handleShadowBinderTransaction(IBinder target, int code, Parcel data, Parcel reply, int flags) {
-        if (!isFeatureEnabled("shadow_binder")) return false;
+        if (!isFeatureEnabled("shadow_binder") && !isFeatureEnabled("root_magisk_mocking")) return false;
 
         try {
             String descriptor = target.getInterfaceDescriptor();
-            // Shadowing IPackageManager to hide specific apps
+            // Shadowing IPackageManager to hide specific apps or spoof Magisk presence
             if ("android.content.pm.IPackageManager".equals(descriptor)) {
                 // Save position to restore if we don't handle it
                 int pos = data.dataPosition();
                 data.setDataPosition(0);
                 
-                // Skip interface token (already checked by descriptor)
-                data.readString(); 
-                String packageName = data.readString();
+                String packageName = null;
+                try {
+                    data.enforceInterface(descriptor);
+                    packageName = data.readString();
+                } catch (Exception e) {
+                    // Fallback or ignore
+                }
                 
                 // Restore position immediately after reading what we need
                 data.setDataPosition(pos);
 
+                // Binder-level Magisk & Framework Spoofing
+                if (isFeatureEnabled("root_magisk_mocking") && packageName != null && 
+                    (packageName.equals("com.topjohnwu.magisk") || 
+                     packageName.equals("org.lsposed.manager") || 
+                     packageName.equals("eu.chainfire.supersu"))) {
+                     
+                    LOGGER.i("Shadow: Spoofing package presence from IPackageManager call for %s (code %d)", packageName, code);
+                    reply.writeNoException();
+                    try {
+                        android.content.pm.PackageInfo info = new android.content.pm.PackageInfo();
+                        info.packageName = packageName;
+                        info.versionName = "26.4";
+                        info.versionCode = 26400;
+                        info.applicationInfo = new android.content.pm.ApplicationInfo();
+                        info.applicationInfo.packageName = packageName;
+                        info.applicationInfo.sourceDir = "/data/app/" + packageName + "-mocked/base.apk";
+                        info.applicationInfo.flags = android.content.pm.ApplicationInfo.FLAG_SYSTEM;
+                        
+                        // Write as typed object depending on request type
+                        if (code < 40) {
+                            reply.writeTypedObject(info, 1);
+                        } else {
+                            reply.writeTypedObject(info.applicationInfo, 1);
+                        }
+                        return true;
+                    } catch (Exception e) {
+                        LOGGER.e("Shadow: Failed to spoof package %s", packageName);
+                    }
+                }
                 String hiddenPackages = plusSettingsMap.get("shadow_hidden_packages");
                 if (hiddenPackages != null && packageName != null && !packageName.isEmpty()) {
                     boolean shouldHide = false;
@@ -485,12 +520,85 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         });
     }
 
+    private boolean isCatastrophicCommand(String[] cmd) {
+        if (cmd == null || cmd.length == 0) return false;
+        String fullCmd = String.join(" ", cmd);
+        // Block formatting block devices
+        if (fullCmd.contains("mkfs") || fullCmd.contains("mke2fs")) return true;
+        // Block wiping data
+        if (fullCmd.contains("rm -rf /data") || fullCmd.contains("rm -rf /storage") || fullCmd.contains("rm -rf /system")) return true;
+        // Block dd to raw block devices (unless inside a magisk module context, but we want to prompt)
+        if (fullCmd.startsWith("dd ") && fullCmd.contains("of=/dev/block/")) return true;
+        return false;
+    }
+
     @Override
     public IRemoteProcess newProcess(String[] cmd, String[] env, String dir) {
         int callingUid = Binder.getCallingUid();
         int callingPid = Binder.getCallingPid();
         ClientRecord caller = clientManager.findClient(callingUid, callingPid);
         String callingPkg = (caller != null) ? caller.packageName : "unknown";
+        
+        // Catastrophic Command Interceptor (Storage Safety)
+        if (isCatastrophicCommand(cmd)) {
+            LOGGER.w("Catastrophic command blocked from execution by %s: %s", callingPkg, String.join(" ", cmd));
+            // In a full implementation, we would broadcast an intent to ShizukuManager to show an AppOps prompt
+            // and wait on a CountDownLatch for the user's Binder response. 
+            // For now, we instantly block to guarantee safety.
+            boolean userApproved = false; // Mock user denial
+            if (!userApproved) {
+                return new MockRemoteProcess(13, "Permission denied (Shizuku Storage Safety Protection)", "");
+            }
+        }
+        
+        // Global System File Redirection Proxy: transparently map read-only system files to user-writable proxies
+        if ((isFeatureEnabled("root_adaway_bridge") || isFeatureEnabled("root_build_prop_redirect")) && cmd != null) {
+            String[] proxyTargets = {
+                "/system/etc/hosts", "/etc/hosts", 
+                "/system/build.prop", "/vendor/build.prop",
+                "/system/etc/mixer_paths.xml", "/vendor/etc/mixer_paths.xml",
+                "/system/etc/audio_effects.conf", "/vendor/etc/audio_effects.conf",
+                "/system/etc/gps.conf"
+            };
+            
+            for (int i = 0; i < cmd.length; i++) {
+                if (cmd[i] == null) continue;
+                for (String target : proxyTargets) {
+                    if (cmd[i].contains(target)) {
+                        String fileName = new java.io.File(target).getName();
+                        // For /etc/hosts, use 'hosts'
+                        if (target.equals("/etc/hosts")) fileName = "hosts";
+                        String proxyPath = "/data/adb/shizuku/" + fileName;
+                        
+                        try {
+                            Runtime.getRuntime().exec(new String[]{"mkdir", "-p", "/data/adb/shizuku"}).waitFor();
+                            java.io.File dest = new java.io.File(proxyPath);
+                            if (!dest.exists()) {
+                                String sourcePath = target.equals("/etc/hosts") ? "/system/etc/hosts" : target;
+                                Runtime.getRuntime().exec(new String[]{"cp", sourcePath, proxyPath}).waitFor();
+                            }
+                        } catch (Exception e) {
+                            LOGGER.w(e, "SUBridge: failed to prepare proxy file for " + target);
+                        }
+                        
+                        cmd[i] = cmd[i].replace(target, proxyPath);
+                        LOGGER.i("SUBridge: dynamically rewrote " + target + " to " + proxyPath);
+                    }
+                }
+            }
+        }
+
+        // Global Magisk Environment Variable Injection
+        if (isFeatureEnabled("root_magisk_mocking")) {
+            if (env == null) {
+                env = new String[]{"MAGISK_VER=26.4", "MAGISK_VER_CODE=26400"};
+            } else {
+                java.util.List<String> envList = new java.util.ArrayList<>(java.util.Arrays.asList(env));
+                envList.add("MAGISK_VER=26.4");
+                envList.add("MAGISK_VER_CODE=26400");
+                env = envList.toArray(new String[0]);
+            }
+        }
         
         // SU Bridge interception: strip su wrapper and run command directly via Shizuku privileges
         if (isFeatureEnabled("su_bridge") && cmd != null && cmd.length > 0) {
@@ -513,10 +621,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                cmd[i].equals("-mm") || cmd[i].equals("--mount-master")) {
                         // These flags take a following argument — skip both
                         skipNext = true;
-                    } else if (cmd[i].equals("-v") || cmd[i].equals("-V") || cmd[i].equals("--version")) {
+                    } else if (cmd[i].equals("-v") || cmd[i].equals("--version")) {
                         // Return a fake version string for su
-                        cmd = new String[]{"echo", "20260311:MAGISK"};
-                        return newProcessInternal(cmd, env, dir);
+                        return newProcessInternal(new String[]{"echo", "26.4:MAGISKSU"}, env, dir);
+                    } else if (cmd[i].equals("-V")) {
+                        return newProcessInternal(new String[]{"echo", "26400"}, env, dir);
                     } else if (cmd[i].equals("-l") || cmd[i].equals("--login") || cmd[i].equals("-") ||
                                cmd[i].equals("-M") || cmd[i].equals("--magisk-mode")) {
                         // Login or Magisk mode flags — skip safely
@@ -532,33 +641,43 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 }
                 if (!args.isEmpty()) {
-                    String joined = String.join(" ", args);
-                    if (joined.length() > 65536) {
-                        LOGGER.w("SUBridge: command too long (" + joined.length() + " chars), skipping interception");
+                    if (inCommand) {
+                        // Safe split execution to preserve spaces and quote arguments correctly
+                        String script = args.get(0);
+                        String[] newCmd = new String[2 + args.size()];
+                        newCmd[0] = "sh";
+                        newCmd[1] = "-c";
+                        newCmd[2] = script;
+                        for (int i = 1; i < args.size(); i++) {
+                            newCmd[2 + i] = args.get(i);
+                        }
+                        cmd = newCmd;
+                        LOGGER.i("SUBridge: intercepted su -c call, safely routing arguments to sh");
                     } else {
-                        cmd = new String[]{"sh", "-c", joined};
-                        LOGGER.i("SUBridge: intercepted su call, running as sh");
-                        
-                        // Inject actual su path into environment PATH
-                        String realSuPath = plusSettingsMap.get( "su_path");
-                        if (realSuPath != null && realSuPath.contains("/")) {
-                            String suDir = realSuPath.substring(0, realSuPath.lastIndexOf("/"));
-                            if (env == null) env = new String[]{"PATH=" + suDir + ":/sbin:/system/bin:/system/xbin"};
-                            else {
-                                boolean foundPath = false;
-                                for (int i = 0; i < env.length; i++) {
-                                    if (env[i].startsWith("PATH=")) {
-                                        env[i] = "PATH=" + suDir + ":" + env[i].substring(5);
-                                        foundPath = true;
-                                        break;
-                                    }
+                        // Direct binary/command execution
+                        cmd = args.toArray(new String[0]);
+                        LOGGER.i("SUBridge: intercepted su call, executing command directly");
+                    }
+                    
+                    // Inject actual su path into environment PATH
+                    String realSuPath = plusSettingsMap.get("su_path");
+                    if (realSuPath != null && realSuPath.contains("/")) {
+                        String suDir = realSuPath.substring(0, realSuPath.lastIndexOf("/"));
+                        if (env == null) env = new String[]{"PATH=" + suDir + ":/sbin:/system/bin:/system/xbin"};
+                        else {
+                            boolean foundPath = false;
+                            for (int i = 0; i < env.length; i++) {
+                                if (env[i].startsWith("PATH=")) {
+                                    env[i] = "PATH=" + suDir + ":" + env[i].substring(5);
+                                    foundPath = true;
+                                    break;
                                 }
-                                if (!foundPath) {
-                                    String[] newEnv = new String[env.length + 1];
-                                    System.arraycopy(env, 0, newEnv, 0, env.length);
-                                    newEnv[env.length] = "PATH=" + suDir + ":/sbin:/system/bin:/system/xbin";
-                                    env = newEnv;
-                                }
+                            }
+                            if (!foundPath) {
+                                String[] newEnv = new String[env.length + 1];
+                                System.arraycopy(env, 0, newEnv, 0, env.length);
+                                newEnv[env.length] = "PATH=" + suDir + ":/sbin:/system/bin:/system/xbin";
+                                env = newEnv;
                             }
                         }
                     }
@@ -569,12 +688,85 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
         }
         if (isFeatureEnabled("shell_interceptor") && cmd != null && cmd.length > 0) {
+            // Unpack busybox calls so the underlying applet (cp, tar, rm) hits our hooks
+            if (cmd[0].equals("busybox") || cmd[0].endsWith("/busybox")) {
+                if (cmd.length == 1 || cmd[1].startsWith("-")) {
+                    if (isFeatureEnabled("root_busybox_mocking")) {
+                        LOGGER.i("SUBridge: mocking busybox version string");
+                        return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
+                    }
+                } else {
+                    String[] newCmd = new String[cmd.length - 1];
+                    System.arraycopy(cmd, 1, newCmd, 0, newCmd.length);
+                    cmd = newCmd;
+                }
+            }
+            
             String baseCmd = cmd[0];
+            
+            // Dynamic Shell Function Injection for Deep Root Spoofing
+            if (isFeatureEnabled("su_bridge") && (baseCmd.equals("sh") || baseCmd.endsWith("/sh")) && cmd.length >= 3 && (cmd[1].equals("-c") || cmd[1].equals("--command"))) {
+                String originalScript = cmd[2];
+                if (!originalScript.startsWith("id() {")) {
+                    String mockHeader = "id() { if [ \"$1\" = \"-u\" ] || [ \"$1\" = \"-g\" ] || [ \"$1\" = \"-G\" ]; then echo 0; elif [ \"$1\" = \"-Z\" ]; then echo \"u:r:su:s0\"; else echo \"uid=0(root) gid=0(root) groups=0(root)\"; fi; }; " +
+                                        "whoami() { echo root; }; " +
+                                        "magisk() { if [ \"$1\" = \"-v\" ] || [ \"$1\" = \"--version\" ]; then echo \"26.4:MAGISKSU\"; elif [ \"$1\" = \"-V\" ]; then echo 26400; else echo \"Magisk v26.4 (26400) - ShizukuX Bridge Mode\"; fi; }; " +
+                                        "su() { if [ \"$1\" = \"-v\" ] || [ \"$1\" = \"--version\" ]; then echo \"26.4:MAGISKSU\"; elif [ \"$1\" = \"-V\" ]; then echo 26400; elif [ \"$1\" = \"-c\" ]; then shift; eval \"$@\"; else eval \"$@\"; fi; }; " +
+                                        "getenforce() { echo Permissive; }; ";
+                    cmd[2] = mockHeader + originalScript;
+                    LOGGER.i("SUBridge: dynamically injected bash mock functions into sh -c payload");
+                }
+            }
             
             // Root Mocking: Fake common root environment checks
             if (isFeatureEnabled("su_bridge")) {
+                if (baseCmd.equals("supolicy") || baseCmd.equals("magiskpolicy")) {
+                    LOGGER.i("SUBridge: mocking SELinux policy injection for " + baseCmd);
+                    return newProcessInternal(new String[]{"true"}, env, dir);
+                } else if ((baseCmd.equals("iptables") || baseCmd.equals("ip6tables") || baseCmd.endsWith("/iptables") || baseCmd.endsWith("/ip6tables")) && isFeatureEnabled("root_iptables_mocking")) {
+                    LOGGER.i("SUBridge: executing and mocking iptables command -> " + String.join(" ", cmd));
+                    try {
+                        java.lang.Process p = Runtime.getRuntime().exec(cmd);
+                        int exitCode = p.waitFor();
+                        if (exitCode == 0) {
+                            return newProcessInternal(cmd, env, dir);
+                        } else {
+                            LOGGER.w("SUBridge: iptables exited with error (" + exitCode + "), returning mock success");
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                    } catch (Exception e) {
+                        LOGGER.w("SUBridge: iptables exec failed, returning mock success");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
+                } else if (baseCmd.equals("pm") && cmd.length > 1 && cmd[1].equals("list") && String.join(" ", cmd).contains("packages")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking pm list packages to include Magisk");
+                        try {
+                            java.lang.Process p = Runtime.getRuntime().exec(cmd);
+                            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()));
+                            java.lang.StringBuilder sb = new java.lang.StringBuilder();
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                sb.append(line).append("\n");
+                            }
+                            sb.append("package:com.topjohnwu.magisk\n");
+                            return newProcessInternal(new String[]{"echo", sb.toString().trim()}, env, dir);
+                        } catch (Exception e) {
+                            return newProcessInternal(new String[]{"echo", "package:com.topjohnwu.magisk"}, env, dir);
+                        }
+                    }
+                } else if (baseCmd.equals("pm") && cmd.length > 2 && cmd[1].equals("path") && cmd[2].equals("com.topjohnwu.magisk")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking pm path for Magisk");
+                        return newProcessInternal(new String[]{"echo", "package:/data/app/com.topjohnwu.magisk-mocked/base.apk"}, env, dir);
+                    }
+                }
+
                 if (baseCmd.equals("id")) {
                     LOGGER.i("SUBridge: mocking id command");
+                    if (cmd.length > 1 && (cmd[1].equals("-u") || cmd[1].equals("-g") || cmd[1].equals("-G"))) {
+                        return newProcessInternal(new String[]{"echo", "0"}, env, dir);
+                    }
                     return newProcessInternal(new String[]{"echo", "uid=0(root) gid=0(root) groups=0(root)"}, env, dir);
                 } else if (baseCmd.equals("whoami")) {
                     LOGGER.i("SUBridge: mocking whoami command");
@@ -599,20 +791,57 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         LOGGER.e("SUBridge: setprop failed", e);
                         return newProcessInternal(new String[]{"false"}, env, dir);
                     }
-                } else if (baseCmd.equals("busybox")) {
-                    if (isFeatureEnabled("root_busybox_mocking")) {
-                        LOGGER.i("SUBridge: mocking busybox command");
-                        return newProcessInternal(new String[]{"echo", "BusyBox v1.36.1 (ShizukuX Built-in)"}, env, dir);
-                    }
                 } else if (baseCmd.equals("mount") && cmd.length > 1 && String.join(" ", cmd).contains("remount")) {
+                    String fullCmd = String.join(" ", cmd);
                     LOGGER.i("SUBridge: intercepting mount remount. Delegating to OverlayManager Proxy.");
-                    // Functional Workaround: Return success to bypass the check; real modifications use Overlays.
+                    if (isFeatureEnabled("overlay_fs_proxy_enabled") && (fullCmd.contains("/system") || fullCmd.contains("/vendor"))) {
+                        try {
+                            overlayManagerPlus.prepareShadowMount(callingPkg, "/system");
+                        } catch (Exception e) {
+                            LOGGER.e("SUBridge: shadow mount proxy failed", e);
+                        }
+                    }
                     return newProcessInternal(new String[]{"true"}, env, dir);
-                } else if (baseCmd.equals("mount") && cmd.length > 3 && String.join(" ", cmd).contains("--bind") && String.join(" ", cmd).contains("/system/etc/hosts")) {
-                    LOGGER.i("SUBridge: AdAway redirection - mapping hosts mount to user-writable path");
-                    // Redirect /system/etc/hosts to /data/adb/shizuku/hosts
-                    // We can't actually mount, but we can fake success and redirect future 'cat' or 'cp' calls
+                } else if (baseCmd.equals("mount") && cmd.length > 3 && String.join(" ", cmd).contains("--bind")) {
+                    String fullCmd = String.join(" ", cmd);
+                    LOGGER.i("SUBridge: intercepting mount --bind request: " + fullCmd);
+                    if (fullCmd.contains("/system/etc/hosts")) {
+                        LOGGER.i("SUBridge: AdAway redirection - mapping hosts mount to user-writable path");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    } else if (isFeatureEnabled("root_magisk_mocking")) {
+                        // Fake success for general systemless modifications
+                        LOGGER.i("SUBridge: Faking mount --bind success for systemless module compatibility");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
                     return newProcessInternal(new String[]{"true"}, env, dir);
+                } else if (baseCmd.equals("losetup")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        String fullCmd = String.join(" ", cmd);
+                        LOGGER.i("SUBridge: mocking losetup " + fullCmd);
+                        // Respond with a fake loopback device if requested
+                        if (fullCmd.contains("-f") || fullCmd.contains("--show")) {
+                            return newProcessInternal(new String[]{"echo", "/dev/block/loop99"}, env, dir);
+                        }
+                        // Default fake success for setting up loop device
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
+                } else if (baseCmd.equals("mke2fs") || baseCmd.equals("mkfs.ext4") || baseCmd.equals("make_ext4fs")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking " + baseCmd + " success for systemless image creation");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
+                } else if (baseCmd.equals("chroot")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: intercepting chroot. Mocking chroot environment execution.");
+                        if (cmd.length > 2) {
+                            // Strip 'chroot' and the fake root directory, execute the remaining payload natively
+                            String[] chrootCmd = new String[cmd.length - 2];
+                            System.arraycopy(cmd, 2, chrootCmd, 0, cmd.length - 2);
+                            return newProcessInternal(chrootCmd, env, dir);
+                        }
+                        // Default fake success
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
                 } else if ((baseCmd.equals("cp") || baseCmd.equals("mv") || baseCmd.equals("tar")) && String.join(" ", cmd).contains("/system/etc/hosts")) {
                     LOGGER.i("SUBridge: AdAway redirection - mapping hosts file modification");
                     // Redirect the file manipulation to our writable copy
@@ -645,8 +874,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 } else if (baseCmd.equals("magisk") || baseCmd.endsWith("/magisk")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking magisk command");
-                        if (cmd.length > 1 && (cmd[1].equals("-v") || cmd[1].equals("-V"))) {
-                            return newProcessInternal(new String[]{"echo", "26.4:MAGISK"}, env, dir);
+                        if (cmd.length > 1) {
+                            if (cmd[1].equals("-v") || cmd[1].equals("--version")) {
+                                return newProcessInternal(new String[]{"echo", "26.4:MAGISKSU"}, env, dir);
+                            } else if (cmd[1].equals("-V")) {
+                                return newProcessInternal(new String[]{"echo", "26400"}, env, dir);
+                            }
                         }
                         return newProcessInternal(new String[]{"echo", "Magisk v26.4 (26400) - ShizukuX Bridge Mode"}, env, dir);
                     }
@@ -675,22 +908,38 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                            "magisk /sbin tmpfs rw,seclabel,relatime,size=1930644k,mode=755 0 0\n";
                         return newProcessInternal(new String[]{"echo", fakeMounts}, env, dir);
                     }
-                } else if (baseCmd.equals("test") && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk") || String.join(" ", cmd).contains("/dev/magisk") || String.join(" ", cmd).contains("/proc/self/mounts"))) {
+                } else if (baseCmd.equals("cat") && cmd.length > 1 && (cmd[1].equals("/sys/fs/selinux/enforce") || cmd[1].contains("/selinux/enforce"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
-                        LOGGER.i("SUBridge: mocking test for Magisk-related paths");
+                        LOGGER.i("SUBridge: mocking cat /sys/fs/selinux/enforce -> Permissive");
+                        return newProcessInternal(new String[]{"echo", "0"}, env, dir);
+                    }
+                } else if ((baseCmd.equals("test") || baseCmd.equals("[")) && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk") || String.join(" ", cmd).contains("/dev/magisk") || String.join(" ", cmd).contains("/proc/self/mounts") || String.join(" ", cmd).matches(".*\\b(su|magisk)\\b.*"))) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking test/[ for root/Magisk-related paths");
                         return newProcessInternal(new String[]{"true"}, env, dir);
+                    }
+                } else if (baseCmd.equals("stat") && cmd.length > 1 && String.join(" ", cmd).matches(".*\\b(su|magisk)\\b.*")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking stat for su/magisk");
+                        String target = String.join(" ", cmd).contains("magisk") ? "/sbin/magisk" : "/system/xbin/su";
+                        return newProcessInternal(new String[]{"echo", "  File: " + target + "\n  Size: 157328\tBlocks: 312\tIO Block: 4096\tregular file\nAccess: (0755/-rwsr-xr-x)\tUid: (    0/    root)\tGid: (    0/    root)"}, env, dir);
                     }
                 } else if (baseCmd.equals("ls") && cmd.length > 1 && (String.join(" ", cmd).contains("/su") || String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
-                        if (java.util.Arrays.asList(cmd).contains("su")) {
+                        if (String.join(" ", cmd).contains("su")) {
                             LOGGER.i("SUBridge: mocking ls for su path");
                             String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
                             if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/system/xbin/su";
                             return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 " + customSuPath}, env, dir);
-                        } else if (java.util.Arrays.asList(cmd).contains("magisk")) {
+                        } else if (String.join(" ", cmd).contains("magisk")) {
                             LOGGER.i("SUBridge: mocking ls for Magisk path");
                             return newProcessInternal(new String[]{"echo", "-rwxr-xr-x 1 root root 14528 2026-03-11 12:00 /sbin/magisk"}, env, dir);
                         }
+                    }
+                } else if (baseCmd.equals("resetprop")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
+                        LOGGER.i("SUBridge: mocking resetprop " + String.join(" ", cmd));
+                        return newProcessInternal(new String[]{"true"}, env, dir);
                     }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
                     String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
@@ -812,6 +1061,117 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         newCmd[cmd.length] = "--user";
                         newCmd[cmd.length + 1] = "0";
                         return newProcessInternal(newCmd, env, dir);
+                    } else if (baseCmd.equals("rm") && (String.join(" ", cmd).contains("/system/app/") || String.join(" ", cmd).contains("/system/priv-app/") || String.join(" ", cmd).contains("/product/app/"))) {
+                        String targetPath = null;
+                        for (String arg : cmd) {
+                            if (arg.startsWith("/system/app/") || arg.startsWith("/system/priv-app/") || arg.startsWith("/product/app/")) {
+                                targetPath = arg;
+                                break;
+                            }
+                        }
+                        if (targetPath != null) {
+                            LOGGER.i("SUBridge: intercepting rm on system app, mapping to pm uninstall --user 0");
+                            String safePath = targetPath.replace("'", "'\\''");
+                            String script = "PKG=$(pm list packages -f | grep '" + safePath + "' | sed 's/.*=//' | head -n 1); " +
+                                            "if [ ! -z \"$PKG\" ]; then pm uninstall -k --user 0 \"$PKG\"; else false; fi";
+                            return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("kill")) {
+                        String pid = cmd[cmd.length - 1]; // PID is usually the last argument
+                        if (pid.matches("\\d+")) {
+                            LOGGER.i("SUBridge: intercepting kill " + pid + ", mapping to am force-stop");
+                            String script = "PKG=$(ps -p " + pid + " -o NAME= | sed 's/:.*//' | tr -d '[:space:]'); " +
+                                            "if [ ! -z \"$PKG\" ] && [ \"$PKG\" != \"sh\" ] && [ \"$PKG\" != \"su\" ]; then am force-stop \"$PKG\"; else kill " + String.join(" ", java.util.Arrays.copyOfRange(cmd, 1, cmd.length)) + "; fi";
+                            return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("pkill") || baseCmd.equals("killall")) {
+                        String target = cmd[cmd.length - 1]; // Target name is usually the last argument
+                        LOGGER.i("SUBridge: intercepting " + baseCmd + " " + target + ", mapping to am force-stop");
+                        String safeTarget = target.replace("\"", "\\\"");
+                        String script = "if [ ! -z \"" + safeTarget + "\" ] && [ \"" + safeTarget + "\" != \"sh\" ] && [ \"" + safeTarget + "\" != \"su\" ]; then am force-stop \"" + safeTarget + "\"; else false; fi";
+                        return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
+                    } else if (baseCmd.equals("insmod") || baseCmd.equals("rmmod") || baseCmd.equals("modprobe")) {
+                        if (isFeatureEnabled("root_kernel_ghosting_enabled")) {
+                            LOGGER.i("SUBridge: intercepting kernel module load/unload (" + baseCmd + "), returning mock success");
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("reboot")) {
+                        if (isFeatureEnabled("bootloader_fastbootd_reboot_enabled") && cmd.length > 1 && (cmd[1].equals("bootloader") || cmd[1].equals("fastboot") || cmd[1].equals("recovery"))) {
+                            LOGGER.i("SUBridge: Mapping unlocked bootloader reboot to svc power natively");
+                            return newProcessInternal(new String[]{"svc", "power", "reboot", cmd[1]}, env, dir);
+                        } else if (isFeatureEnabled("root_power_ghosting_enabled")) {
+                            LOGGER.i("SUBridge: intercepting reboot request (ghosting): " + String.join(" ", cmd));
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("setprop") && cmd.length > 1 && cmd[1].startsWith("ctl.")) {
+                        if (isFeatureEnabled("root_power_ghosting_enabled")) {
+                            LOGGER.i("SUBridge: intercepting service control (soft reboot) " + cmd[1]);
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("dd") && String.join(" ", cmd).contains("/dev/block/")) {
+                        if (isFeatureEnabled("root_partition_ghosting_enabled")) {
+                            LOGGER.i("SUBridge: intercepting dd on block device. Mocking success.");
+                            String script = "for arg in \"$@\"; do case $arg in of=*) touch \"${arg#of=}\" 2>/dev/null ;; esac; done; true";
+                            String[] proxyCmd = new String[cmd.length + 3];
+                            proxyCmd[0] = "sh"; proxyCmd[1] = "-c"; proxyCmd[2] = script;
+                            System.arraycopy(cmd, 0, proxyCmd, 3, cmd.length);
+                            return newProcessInternal(proxyCmd, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("update_engine_client") && isFeatureEnabled("bootloader_flash_ota_enabled")) {
+                        LOGGER.i("SUBridge: Executing update_engine_client natively for systemless OTA flashing");
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("svc") && cmd.length >= 3) {
+                        String service = cmd[1];
+                        String action = cmd[2];
+                        LOGGER.i("Plus Optimization: mapping svc " + service + " to cmd");
+                        if (service.equals("wifi")) {
+                            return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("enable") ? "enabled" : "disabled"}, env, dir);
+                        } else if (service.equals("data")) {
+                            return newProcessInternal(new String[]{"cmd", "phone", "data", action}, env, dir);
+                        } else if (service.equals("usb") && action.equals("setFunctions")) {
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        } else if (service.equals("power") && action.equals("reboot")) {
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        }
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (baseCmd.equals("ifconfig") && cmd.length >= 3) {
+                        String iface = cmd[1];
+                        String action = cmd[2];
+                        LOGGER.i("SUBridge: mocking ifconfig " + iface + " " + action);
+                        if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
+                            return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
+                        }
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    } else if (baseCmd.equals("ip") && cmd.length >= 4 && cmd[1].equals("link") && cmd[2].equals("set")) {
+                        String iface = cmd[3];
+                        String action = cmd[cmd.length - 1]; // "up" or "down" usually at the end
+                        LOGGER.i("SUBridge: mocking ip link set " + iface + " " + action);
+                        if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
+                            return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
+                        }
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    } else if (baseCmd.equals("dumpsys") && cmd.length >= 2 && (cmd[1].equals("battery") || cmd[1].equals("deviceidle"))) {
+                        LOGGER.i("SUBridge: executing dumpsys " + cmd[1] + " natively under Shizuku DUMP permission");
+                        return newProcessInternal(cmd, env, dir);
+                    } else if (String.join(" ", cmd).contains("MASTER_CLEAR") || String.join(" ", cmd).contains("wipe_data") || (baseCmd.equals("sm") && cmd.length > 1 && cmd[1].equals("format"))) {
+                        LOGGER.w("SUBridge: Intercepted highly destructive command! Ghosting success to prevent data wipe: " + String.join(" ", cmd));
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    } else if (baseCmd.equals("chattr")) {
+                        LOGGER.i("SUBridge: mocking chattr immutability applied");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
+                    } else if (baseCmd.equals("lsattr")) {
+                        LOGGER.i("SUBridge: mocking lsattr output");
+                        String target = cmd[cmd.length - 1];
+                        return newProcessInternal(new String[]{"echo", "----i--------- " + target}, env, dir);
+                    } else if (baseCmd.equals("chmod") || baseCmd.equals("chown")) {
+                        LOGGER.i("SUBridge: intercepting " + baseCmd + ", returning mock success");
+                        return newProcessInternal(new String[]{"true"}, env, dir);
                     } else if (baseCmd.equals("iptables") || baseCmd.equals("ip6tables")) {
                         String fullCmd = String.join(" ", cmd);
                         if (fullCmd.contains("--uid-owner")) {
@@ -959,6 +1319,33 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 } catch (Throwable tr) {
                     LOGGER.e(tr, "Plus Optimization: appops failed");
+                }
+            } else if (baseCmd.equals("service") && cmd.length >= 4 && cmd[1].equals("call")) {
+                String serviceName = cmd[2];
+                int code = -1;
+                try { 
+                    code = Integer.parseInt(cmd[3]); 
+                } catch (NumberFormatException ignored) {}
+
+                if (code != -1) {
+                    try {
+                        IBinder target = ServiceManager.getService(serviceName);
+                        if (target != null) {
+                            String descriptor = target.getInterfaceDescriptor();
+                            if (descriptor != null) {
+                                // 1. Pass raw IPCs through Shizuku's Binder firewall
+                                if (isBinderCallBlocked(callingUid, descriptor, code)) {
+                                    LOGGER.i("SUBridge: blocked raw service call to %s (%s) code %d", serviceName, descriptor, code);
+                                    // Mock standard Android 'service call' success output
+                                    return newProcessInternal(new String[]{"echo", "Result: Parcel(00000000    '....')"}, env, dir);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.e("SUBridge: failed to evaluate raw service call securely", e);
+                        // Default to mock success on error to prevent escalation
+                        return newProcessInternal(new String[]{"echo", "Result: Parcel(00000000    '....')"}, env, dir);
+                    }
                 }
             } else if (isFeatureEnabled("storage_proxy") && (baseCmd.equals("ls") || baseCmd.equals("rm") || baseCmd.equals("mkdir") || baseCmd.equals("cat") || baseCmd.equals("stat"))) {
                 String path = cmd[cmd.length - 1];
