@@ -19,6 +19,8 @@ android {
     namespace = "af.shizuku.manager"
     defaultConfig {
         applicationId = "af.shizuku.plus.api"
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName
         def sentryDsn = project.findProperty('SENTRY_DSN') ?: ''
         buildConfigField "String", "SENTRY_DSN", "\"${sentryDsn}\""
         manifestPlaceholders = [sentryDsn: sentryDsn]

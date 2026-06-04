@@ -381,10 +381,35 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         return isBlocked;
     }
 
+    private static int TRANSACTION_getPackageInfo = -1;
+    private static int TRANSACTION_getApplicationInfo = -1;
+    private static int TRANSACTION_getPackageUid = -1;
+
+    static {
+        try {
+            Class<?> stub = Class.forName("android.content.pm.IPackageManager$Stub");
+            try {
+                java.lang.reflect.Field f1 = stub.getDeclaredField("TRANSACTION_getPackageInfo");
+                f1.setAccessible(true);
+                TRANSACTION_getPackageInfo = f1.getInt(null);
+            } catch (Exception ignore) {}
+            try {
+                java.lang.reflect.Field f2 = stub.getDeclaredField("TRANSACTION_getApplicationInfo");
+                f2.setAccessible(true);
+                TRANSACTION_getApplicationInfo = f2.getInt(null);
+            } catch (Exception ignore) {}
+            try {
+                java.lang.reflect.Field f3 = stub.getDeclaredField("TRANSACTION_getPackageUid");
+                f3.setAccessible(true);
+                TRANSACTION_getPackageUid = f3.getInt(null);
+            } catch (Exception ignore) {}
+        } catch (Throwable t) {
+            LOGGER.w(t, "Shadow: Failed to dynamically look up IPackageManager transaction codes");
+        }
+    }
+
     @Override
     protected boolean handleShadowBinderTransaction(IBinder target, int code, Parcel data, Parcel reply, int flags) {
-        if (!isFeatureEnabled("shadow_binder") && !isFeatureEnabled("root_magisk_mocking")) return false;
-
         try {
             String descriptor = target.getInterfaceDescriptor();
             // Shadowing IPackageManager to hide specific apps or spoof Magisk presence
@@ -404,11 +429,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 // Restore position immediately after reading what we need
                 data.setDataPosition(pos);
 
+                // Spoof original Shizuku package to fix #248 and #249 (client app hardcoded checks)
+                boolean isShizukuSpoof = "moe.shizuku.privileged.api".equals(packageName);
+                
+                if (!isFeatureEnabled("shadow_binder") && !isFeatureEnabled("root_magisk_mocking") && !isShizukuSpoof) return false;
+
                 // Binder-level Magisk & Framework Spoofing
-                if (isFeatureEnabled("root_magisk_mocking") && packageName != null && 
+                if ((isFeatureEnabled("root_magisk_mocking") && packageName != null && 
                     (packageName.equals("com.topjohnwu.magisk") || 
                      packageName.equals("org.lsposed.manager") || 
-                     packageName.equals("eu.chainfire.supersu"))) {
+                     packageName.equals("eu.chainfire.supersu"))) || isShizukuSpoof) {
                      
                     LOGGER.i("Shadow: Spoofing package presence from IPackageManager call for %s (code %d)", packageName, code);
                     reply.writeNoException();
@@ -422,13 +452,18 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         info.applicationInfo.sourceDir = "/data/app/" + packageName + "-mocked/base.apk";
                         info.applicationInfo.flags = android.content.pm.ApplicationInfo.FLAG_SYSTEM;
                         
-                        // Write as typed object depending on request type
-                        if (code < 40) {
+                        if (code == TRANSACTION_getPackageInfo) {
                             reply.writeTypedObject(info, 1);
-                        } else {
+                            return true;
+                        } else if (code == TRANSACTION_getApplicationInfo) {
                             reply.writeTypedObject(info.applicationInfo, 1);
+                            return true;
+                        } else if (code == TRANSACTION_getPackageUid) {
+                            reply.writeInt(10000); // Mock UID
+                            return true;
                         }
-                        return true;
+                        // Fallback: let the system handle it or return false
+                        return false;
                     } catch (Exception e) {
                         LOGGER.e("Shadow: Failed to spoof package %s", packageName);
                     }
@@ -444,23 +479,18 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
 
                     if (shouldHide) {
-                        // Codes vary by API, but getApplicationInfo, getPackageInfo, 
-                        // and getPackageUid are usually low codes (1-20)
-                        // This is a broad-brush "Hide app" implementation
-                        LOGGER.i("Shadow: Hiding package %s from IPackageManager call (code %d)", packageName, code);
-                        
-                        // We return NameNotFoundException (no exception, but null/error result)
-                        // For many PM calls, returning null or 0 is sufficient
-                        reply.writeNoException();
-                        
-                        // Handle different return types based on likely code
-                        // This is a best-effort mock
-                        if (code < 50) { 
-                            reply.writeTypedObject(null, 0); // null ApplicationInfo/PackageInfo
-                        } else {
-                            reply.writeInt(0); // 0 UID or false
+                        // Only intercept known methods to prevent Type Confusion crashes
+                        if (code == TRANSACTION_getPackageInfo || code == TRANSACTION_getApplicationInfo || code == TRANSACTION_getPackageUid) {
+                            LOGGER.i("Shadow: Hiding package %s from IPackageManager call (code %d)", packageName, code);
+                            reply.writeNoException();
+                            
+                            if (code == TRANSACTION_getPackageInfo || code == TRANSACTION_getApplicationInfo) { 
+                                reply.writeTypedObject(null, 0); // null ApplicationInfo/PackageInfo
+                            } else {
+                                reply.writeInt(0); // 0 UID
+                            }
+                            return true;
                         }
-                        return true;
                     }
                 }
             }
@@ -1988,6 +2018,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     @Override
     public void dispatchPackageChanged(Intent intent) throws RemoteException {
+        enforceManagerPermission("dispatchPackageChanged");
         String action = intent.getAction();
         if (Intent.ACTION_PACKAGE_REMOVED.equals(action) || Intent.ACTION_PACKAGE_REPLACED.equals(action)) {
             android.net.Uri data = intent.getData();
