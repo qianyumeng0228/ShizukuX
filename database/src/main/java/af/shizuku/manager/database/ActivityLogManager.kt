@@ -324,7 +324,7 @@ object ActivityLogManager {
                 if (recoverySuccessful) {
                     settings?.showNotification("System Recovered", "Activity log database was corrupted but automatically salvaged using SQLite recovery!")
                 } else {
-                    settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can extract the backup to attempt recovery.")
+                    settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can attempt manual recovery in Developer Settings.")
                 }
                 
                 val recoveryRecord = ActivityLogRecord(
@@ -333,7 +333,7 @@ object ActivityLogManager {
                     action = if (recoverySuccessful) {
                         "Database automatically recovered and salvaged from corruption!"
                     } else {
-                        "Database autofixed after corruption. Corrupted file backed up to \${corruptedBackup.name}"
+                        "Database autofixed after corruption. Backup saved to ${corruptedBackup.name}"
                     }
                 )
                 
@@ -349,9 +349,44 @@ object ActivityLogManager {
                     action = recoveryRecord.action
                 ))
             } catch (resetError: Exception) {
-                Timber.tag(TAG).e(resetError, "Failed to autofix database")
+                Timber.tag(TAG).e(resetError, "CRITICAL: Failed to autofix database!")
             } finally {
                 isResettingDatabase.set(false)
+            }
+        }
+    }
+
+    suspend fun manualRecoverDatabase(context: android.content.Context, backupFile: File, method: String): String {
+        if (!backupFile.exists()) return "Backup file not found."
+        
+        val newDbFile = context.getDatabasePath("shizuku_activity_logs.db")
+        
+        return withContext(Dispatchers.IO) {
+            try {
+                when (method) {
+                    "recover" -> {
+                        val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "sqlite3 ${backupFile.absolutePath} '.recover' | sqlite3 ${newDbFile.absolutePath}"))
+                        if (process.waitFor() == 0) "Recovery successful via SQLite .recover" else "SQLite .recover failed."
+                    }
+                    "dump" -> {
+                        val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "sqlite3 ${backupFile.absolutePath} '.dump' | sqlite3 ${newDbFile.absolutePath}"))
+                        if (process.waitFor() == 0) "Recovery successful via SQLite .dump" else "SQLite .dump failed."
+                    }
+                    "raw_text_extraction" -> {
+                        // Raw binary scraping for partial recovery of readable text logs
+                        val content = backupFile.readBytes()
+                        val text = String(content, Charsets.US_ASCII)
+                        val regex = Regex("[A-Za-z0-9_{}\\\":., -]{15,}")
+                        val matches = regex.findAll(text).map { it.value }.toList()
+                        
+                        val exportFile = File(context.filesDir, "partial_text_recovery_${getTimestampFilename()}.txt")
+                        exportFile.writeText(matches.joinToString("\n"))
+                        "Partial text extracted to ${exportFile.name}"
+                    }
+                    else -> "Unknown recovery method."
+                }
+            } catch (e: Exception) {
+                "Recovery failed: ${e.message}"
             }
         }
     }
