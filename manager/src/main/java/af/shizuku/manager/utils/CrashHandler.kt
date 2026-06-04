@@ -67,7 +67,7 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
                 file.writeText(report.toString())
             }
         } catch (e: Exception) {
-            Timber.e(e, "Error writing crash file")
+            Timber.w(e, "Error writing crash file")
         }
     }
 }

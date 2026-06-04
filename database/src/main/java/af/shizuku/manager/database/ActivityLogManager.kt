@@ -170,8 +170,11 @@ object ActivityLogManager {
                     action = record.action
                 )
                 d.insert(roomLog)
+            } catch (e: android.database.sqlite.SQLiteCantOpenDatabaseException) {
+                // Ignore broken SQLite/Room databases on custom ROMs without spamming Sentry
+                Timber.tag(TAG).w("Error saving log: SQLiteCantOpenDatabaseException")
             } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Error saving log")
+                Timber.tag(TAG).w(e, "Error saving log")
             }
         }
     }

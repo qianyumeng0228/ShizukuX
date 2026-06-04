@@ -80,7 +80,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
     init {
         val encryptionKeyMaybe = getOrCreateEncryptionKey()
         if (encryptionKeyMaybe == null) {
-            Timber.tag(TAG).e("AndroidKeyStore is unusable. ADB functionality will be severely limited or fail.")
+            Timber.tag(TAG).w("AndroidKeyStore is unusable. ADB functionality will be severely limited or fail.")
             // Fallback: This is not ideal but prevents a crash. 
             // In a real scenario, we might want to prompt the user or use a less secure storage.
             // For now, we'll try to proceed with a dummy key to avoid the 'error()' crash.
@@ -117,14 +117,14 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
         try {
             keyStore.load(null)
         } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to load KeyStore")
+            Timber.tag(TAG).w(e, "Failed to load KeyStore")
             return null
         }
 
         val key = try {
             keyStore.getKey(ENCRYPTION_KEY_ALIAS, null)
         } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to get key from KeyStore (common on Samsung), attempting reset")
+            Timber.tag(TAG).w(e, "Failed to get key from KeyStore (common on Samsung), attempting reset")
             try {
                 keyStore.deleteEntry(ENCRYPTION_KEY_ALIAS)
             } catch (ignored: Exception) {}
@@ -143,7 +143,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 keyGenerator.generateKey()
             } catch (e: Exception) {
                 // Samsung Knox or Auto Blocker can throw ProviderException or generic Exception here
-                Timber.tag(TAG).e(e, "Failed to generate encryption key in KeyStore. Device might have restricted KeyStore access.")
+                Timber.tag(TAG).w(e, "Failed to generate encryption key in KeyStore. Device might have restricted KeyStore access.")
                 null
             }
         }
