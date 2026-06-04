@@ -18,6 +18,13 @@
             android:title="@string/settings_watchdog"
             android:icon="@drawable/ic_visibility_24" />
 
+        <SwitchPreferenceCompat
+            android:key="auto_reconnect_mdns"
+            android:title="Intelligent Auto-Reconnect"
+            android:summary="Run a lightweight mDNS network listener to automatically rebind the Shizuku server if the ADB daemon drops on sleep/doze. Enabled by default."
+            android:defaultValue="true"
+            android:icon="@drawable/ic_server_restart" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
