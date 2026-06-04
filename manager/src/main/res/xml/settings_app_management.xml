@@ -62,4 +62,39 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_verified_install"
+        android:title="Verified Installation (Third-Party APKs)"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="verify_apk_local"
+            android:title="Local Signature Matching"
+            android:summary="Verify updates mathematically match the installed app's signature. Fast and 100% offline."
+            android:defaultValue="true"
+            android:icon="@drawable/ic_shield_24" />
+
+        <SwitchPreferenceCompat
+            android:key="verify_apk_fdroid"
+            android:title="F-Droid / IzzyOnDroid Offline Index"
+            android:summary="Verify APK hashes locally against trusted open-source metadata. Enabled by default for privacy."
+            android:defaultValue="true"
+            android:icon="@drawable/ic_folder_24" />
+
+        <SwitchPreferenceCompat
+            android:key="verify_apk_virustotal"
+            android:title="VirusTotal Integration"
+            android:summary="Scan third-party APK hashes against the VirusTotal API before installation. Requires network."
+            android:defaultValue="false"
+            android:icon="@drawable/ic_system_update" />
+            
+        <SwitchPreferenceCompat
+            android:key="verify_apk_pithus"
+            android:title="Pithus Threat Intel"
+            android:summary="Check hashes against Pithus (open-source MobSF aggregator) to detect malware traits."
+            android:defaultValue="false"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
 </PreferenceScreen>

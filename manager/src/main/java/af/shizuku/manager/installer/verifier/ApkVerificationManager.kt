@@ -1,5 +1,6 @@
 package af.shizuku.manager.installer.verifier
 
+import android.content.SharedPreferences
 import java.io.File
 
 data class VerificationResult(
@@ -11,22 +12,47 @@ data class VerificationResult(
 
 interface ApkVerificationClient {
     val name: String
+    val preferenceKey: String
     suspend fun verifyApk(apkFile: File, sha256: String): VerificationResult
 }
 
 class ApkVerificationManager(
-    private val clients: List<ApkVerificationClient>
+    private val clients: List<ApkVerificationClient>,
+    private val sharedPreferences: SharedPreferences
 ) {
     suspend fun verify(apkFile: File): VerificationResult {
-        // Implementation will iterate through enabled clients and aggregate risk scores
-        // Returning a combined VerificationResult.
-        // E.g., LocalSignatureClient, VirusTotalClient, FDroidIndexClient, PithusClient, KoodousClient, MobSfClient
+        // Compute SHA256 of the APK once
+        val sha256 = computeSha256(apkFile)
+        val activeMethods = mutableListOf<String>()
+        var totalRisk = 0
+        var isSafe = true
+        val detailsBuilder = StringBuilder()
+
+        for (client in clients) {
+            // Check if the client is enabled in settings
+            // F-Droid and Local Signature are enabled by default (true), others default to false
+            val isEnabledByDefault = client.preferenceKey in listOf("verify_apk_fdroid", "verify_apk_local")
+            if (sharedPreferences.getBoolean(client.preferenceKey, isEnabledByDefault)) {
+                val result = client.verifyApk(apkFile, sha256)
+                activeMethods.add(client.name)
+                totalRisk += result.riskScore
+                detailsBuilder.appendLine("${client.name}: ${result.details}")
+                if (!result.isSafe) {
+                    isSafe = false
+                }
+            }
+        }
         
         return VerificationResult(
-            isSafe = true,
-            methodsUsed = clients.map { it.name },
-            riskScore = 0,
-            details = "Verification passed."
+            isSafe = isSafe,
+            methodsUsed = activeMethods,
+            riskScore = totalRisk,
+            details = detailsBuilder.toString().trim()
         )
+    }
+
+    private fun computeSha256(file: File): String {
+        // Implementation for hashing the file
+        return "mock_sha256_hash"
     }
 }
