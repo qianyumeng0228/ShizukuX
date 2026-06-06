@@ -110,7 +110,13 @@ object CrashReporter {
     fun shareAsFile(context: Context) {
         val report = generateReport(context)
         val file = File(context.cacheDir, "shizuku_plus_crash_report.txt")
-        file.writeText(report)
+        val parent = file.parentFile
+        if (parent != null && !parent.exists()) {
+            parent.mkdirs()
+        }
+        if (parent == null || parent.exists()) {
+            file.writeText(report)
+        }
 
         val uri = androidx.core.content.FileProvider.getUriForFile(
             context,

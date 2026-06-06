@@ -221,7 +221,11 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
                 category = "adb.pairing"
                 level = io.sentry.SentryLevel.ERROR
             })
-            Timber.tag(TAG).e(e, "Error during pairing process")
+            if (e is AdbInvalidPairingCodeException) {
+                Timber.tag(TAG).w("Invalid pairing code entered")
+            } else {
+                Timber.tag(TAG).e(e, "Error during pairing process")
+            }
             state = State.Stopped
             return false
         } finally {

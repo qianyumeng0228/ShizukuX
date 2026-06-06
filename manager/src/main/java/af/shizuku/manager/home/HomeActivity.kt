@@ -93,11 +93,11 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         val splash = installSplashScreen()
         splash.setOnExitAnimationListener { provider ->
             // Some OEM/Android 15 builds return a non-null typed View that is actually null
-            // at runtime (platform nullability contract violation). Wrapping in try-catch is
-            // the only reliable guard since the null check may be elided by R8 for non-null types.
+            // at runtime (platform nullability contract violation). 
+            // We use safe casting to Any? to prevent R8 from eliding the null check.
             try {
-                val iconView = provider.iconView
-                if (iconView != null) {
+                val iconView: Any? = provider.iconView
+                if (iconView is android.view.View) {
                     iconView.animate()
                         .alpha(0f)
                         .scaleX(0.8f)

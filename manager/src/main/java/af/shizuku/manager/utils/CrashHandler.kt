@@ -62,8 +62,15 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
             val file = getCrashFile(context)
             // cacheDir may not exist on fresh installs or after a storage mount issue
             val parent = file.parentFile
-            if (parent != null && !parent.exists()) parent.mkdirs()
-            if (parent == null || parent.exists()) {
+            if (parent != null) {
+                if (parent.exists() && !parent.isDirectory) {
+                    parent.delete()
+                }
+                if (!parent.exists()) {
+                    parent.mkdirs()
+                }
+            }
+            if (parent == null || parent.isDirectory) {
                 file.writeText(report.toString())
             }
         } catch (e: Exception) {

@@ -1,0 +1,37 @@
+potential-bugs:
+  active: true
+  UnsafeCallOnNullableType:
+    active: true
+
+security:
+  active: true
+  UnsafeIntentHandling:
+    active: true
+  UnsecureRandomHandling:
+    active: true
+
+complexity:
+  active: true
+  StringLiteralDuplication:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
+
+style:
+  active: true
+  MagicNumber:
+    active: false
+
+# Custom rules to flag hardcoded secrets and poor crypto can be implemented via detekt-security
+# Or just relying on the built-in security rules in the default config (such as UnsecureRandomHandling).
+# We also enable failfast to fail the build when issues are found.
+
+build:
+  maxIssues: 0
+  weights:
+    complexity: 1
+    formatting: 1
+    style: 1
+    comments: 1
+    bugs: 1
+    performance: 1
+    security: 10

@@ -25,9 +25,17 @@ class ShizukuWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         // Refresh all widgets on server state changes or other events
-        val manager = AppWidgetManager.getInstance(context) ?: return
-        val ids = manager.getAppWidgetIds(ComponentName(context, ShizukuWidgetProvider::class.java))
-        onUpdate(context, manager, ids)
+        try {
+            val manager = AppWidgetManager.getInstance(context)
+            if (manager != null) {
+                val ids = manager.getAppWidgetIds(ComponentName(context, ShizukuWidgetProvider::class.java))
+                if (ids != null && ids.isNotEmpty()) {
+                    onUpdate(context, manager, ids)
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore potential NPEs or RemoteExceptions from OEM AppWidgetManager implementations
+        }
     }
 
     companion object {

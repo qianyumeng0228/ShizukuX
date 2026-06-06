@@ -47,6 +47,11 @@ abstract class ActivityLogDatabase : RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): ActivityLogDatabase {
+            val dbFile = context.getDatabasePath(DATABASE_NAME)
+            val parent = dbFile.parentFile
+            if (parent != null && !parent.exists()) {
+                parent.mkdirs()
+            }
             return Room.databaseBuilder(
                 context.applicationContext,
                 ActivityLogDatabase::class.java,

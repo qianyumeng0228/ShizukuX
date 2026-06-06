@@ -363,7 +363,11 @@ class ShizukuApplication : Application(), Configuration.Provider {
         try {
             initializeManagers()
             if (ShizukuSettings.getWatchdog()) {
-                startService(Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java))
+                try {
+                    startService(Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java))
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to start ShizukuLiveService")
+                }
             }
         } catch (e: Throwable) {
             Timber.e(e, "Failed to initialize managers")

@@ -114,14 +114,14 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
         try {
             keyStore.load(null)
         } catch (e: Exception) {
-            Timber.tag(TAG).w(e, "Failed to load KeyStore")
+            Timber.tag(TAG).w("Failed to load KeyStore: ${e.message}")
             return null
         }
 
         val key = try {
             keyStore.getKey(ENCRYPTION_KEY_ALIAS, null)
         } catch (e: Exception) {
-            Timber.tag(TAG).w(e, "Failed to get key from KeyStore (common on Samsung), attempting reset")
+            Timber.tag(TAG).w("Failed to get key from KeyStore (common on Samsung), attempting reset: ${e.message}")
             try {
                 keyStore.deleteEntry(ENCRYPTION_KEY_ALIAS)
             } catch (ignored: Exception) {}
@@ -140,7 +140,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 keyGenerator.generateKey()
             } catch (e: Exception) {
                 // Samsung Knox or Auto Blocker can throw ProviderException or generic Exception here
-                Timber.tag(TAG).w(e, "Failed to generate encryption key in KeyStore. Device might have restricted KeyStore access.")
+                Timber.tag(TAG).w("Failed to generate encryption key in KeyStore. Device might have restricted KeyStore access: ${e.message}")
                 null
             }
         }
@@ -148,10 +148,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
     private fun encrypt(plaintext: ByteArray, aad: ByteArray?): ByteArray? {
         if (encryptionKey == null) {
-            if (af.shizuku.manager.ShizukuSettings.isSoftwareKeystoreFallbackEnabled()) {
-                return plaintext
-            }
-            return null
+            return plaintext
         }
         
         if (plaintext.size > Int.MAX_VALUE - IV_SIZE_IN_BYTES - TAG_SIZE_IN_BYTES) {
@@ -168,10 +165,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
     private fun decrypt(ciphertext: ByteArray, aad: ByteArray?): ByteArray? {
         if (encryptionKey == null) {
-            if (af.shizuku.manager.ShizukuSettings.isSoftwareKeystoreFallbackEnabled()) {
-                return ciphertext
-            }
-            return null
+            return ciphertext
         }
         
         if (ciphertext.size < IV_SIZE_IN_BYTES + TAG_SIZE_IN_BYTES) {
@@ -203,7 +197,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 }
                 privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(plaintext)) as RSAPrivateKey
             } catch (e: Exception) {
-                Timber.tag(TAG).w(e, "Failed to decrypt stored ADB key; generating a new key")
+                Timber.tag(TAG).w("Failed to decrypt stored ADB key; generating a new key: ${e.message}")
             }
         }
         if (privateKey == null) {
@@ -211,7 +205,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 if (encryptionKey == null) throw ProviderException("Force fallback")
                 KeyPairGenerator.getInstance(KeyProperties.KEY_ALGORITHM_RSA)
             } catch (e: Exception) {
-                Timber.tag(TAG).w(e, "Using BouncyCastle for RSA generation")
+                Timber.tag(TAG).w("Using BouncyCastle for RSA generation: ${e.message}")
                 Security.addProvider(BouncyCastleProvider())
                 KeyPairGenerator.getInstance("RSA", "BC")
             }

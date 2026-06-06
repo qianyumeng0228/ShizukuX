@@ -33,6 +33,25 @@ class WatchdogService : Service() {
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var job: Job? = null
 
+    private fun startForegroundSafely() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID_WATCHDOG,
+                    buildNotification(),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(
+                    NOTIFICATION_ID_WATCHDOG,
+                    buildNotification()
+                )
+            }
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to start foreground")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
@@ -43,6 +62,8 @@ class WatchdogService : Service() {
                 NotificationChannel(WATCHDOG_CHANNEL_ID, "Watchdog", NotificationManager.IMPORTANCE_LOW)
             )
         }
+
+        startForegroundSafely()
 
         job = scope.launch {
             ShizukuStateMachine.asFlow().collectLatest { state ->
@@ -72,18 +93,7 @@ class WatchdogService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(
-                NOTIFICATION_ID_WATCHDOG,
-                buildNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            )
-        } else {
-            startForeground(
-                NOTIFICATION_ID_WATCHDOG,
-                buildNotification()
-            )
-        }
+        startForegroundSafely()
         return START_STICKY
     }
 

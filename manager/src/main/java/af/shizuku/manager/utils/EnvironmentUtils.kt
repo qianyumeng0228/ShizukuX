@@ -32,8 +32,13 @@ object EnvironmentUtils {
         return (getAdbTcpPort() <= 0 || !ShizukuSettings.getTcpMode())
     }
 
+    private var isRootedCached: Boolean? = null
+
     fun isRooted(): Boolean {
-        return Shell.getShell().isRoot
+        if (isRootedCached == null) {
+            isRootedCached = Shell.isAppGrantedRoot() == true || Shell.getShell().isRoot
+        }
+        return isRootedCached!!
     }
 
     @JvmStatic
