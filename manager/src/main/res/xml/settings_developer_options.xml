@@ -37,7 +37,7 @@
             android:key="manual_db_recovery"
             android:title="Manual Database Recovery"
             android:summary="Attempt to salvage corrupted Activity Logs using advanced methods (.dump, .recover, or Raw Text Extraction). Use if automatic recovery failed."
-            android:icon="@drawable/ic_restore_24" />
+            android:icon="@drawable/ic_history_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

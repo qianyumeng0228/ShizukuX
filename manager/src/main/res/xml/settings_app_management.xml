@@ -86,7 +86,7 @@
             android:title="VirusTotal Integration"
             android:summary="Scan third-party APK hashes against the VirusTotal API before installation. Requires network."
             android:defaultValue="false"
-            android:icon="@drawable/ic_system_update" />
+            android:icon="@drawable/ic_update_24" />
             
         <SwitchPreferenceCompat
             android:key="verify_apk_pithus"

@@ -42,7 +42,7 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:layout_marginHorizontal="12dp"
-                android:background="@drawable/shape_preview_droplet">
+                android:background="@drawable/shape_droplet_background">
                 <ImageView
                     android:id="@+id/mock_icon_img_1"
                     android:layout_width="32dp"
@@ -58,7 +58,7 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:layout_marginHorizontal="12dp"
-                android:background="@drawable/shape_preview_leaf">
+                android:background="@drawable/shape_expressive_leaf_background">
                 <ImageView
                     android:id="@+id/mock_icon_img_2"
                     android:layout_width="32dp"
@@ -74,7 +74,7 @@
                 android:layout_width="64dp"
                 android:layout_height="64dp"
                 android:layout_marginHorizontal="12dp"
-                android:background="@drawable/shape_preview_squircle">
+                android:background="@drawable/shape_circle_icon_background">
                 <ImageView
                     android:id="@+id/mock_icon_img_3"
                     android:layout_width="32dp"

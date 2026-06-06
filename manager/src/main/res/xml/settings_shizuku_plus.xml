@@ -264,7 +264,7 @@
             android:key="software_keystore_fallback_enabled"
             android:title="Software KeyStore Fallback"
             android:summary="[RISKY] Allows caching the ADB RSA Private Key encrypted with a software-based static AES key if your device's hardware KeyStore fails (e.g., Samsung Knox). Reduces pairing prompts but decreases security."
-            android:icon="@drawable/ic_security_24"
+            android:icon="@drawable/ic_shield_24"
             android:defaultValue="false"
             app:badgeType="experimental" />
 
