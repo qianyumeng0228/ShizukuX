@@ -120,7 +120,7 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_ghost_bridge"
-        android:title="Mocking & Simulation (Fakes Success)"
+        android:title="Mocking &amp; Simulation (Fakes Success)"
         android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
