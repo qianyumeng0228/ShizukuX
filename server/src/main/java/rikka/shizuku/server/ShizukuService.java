@@ -577,7 +577,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // For now, we instantly block to guarantee safety.
             boolean userApproved = false; // Mock user denial
             if (!userApproved) {
-                return new MockRemoteProcess(13, "Permission denied (Shizuku Storage Safety Protection)", "");
+                throw new SecurityException("Permission denied (Shizuku Storage Safety Protection)");
             }
         }
         
