@@ -36,7 +36,7 @@ class HomeVisibilitySettingsFragment : BaseSettingsFragment() {
             findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
                 if (newValue is Boolean) {
                     preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, newValue)?.apply()
-                    simulatorPref?.notifyChanged()
+                    simulatorPref?.let { it.isVisible = false; it.isVisible = true }
                 }
                 true
             }

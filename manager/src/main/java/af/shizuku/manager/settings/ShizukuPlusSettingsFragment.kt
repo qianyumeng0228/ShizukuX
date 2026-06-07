@@ -278,7 +278,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 else -> null
             }
             if (diagramKey != null) {
-                findPreference<Preference>(diagramKey)?.notifyChanged()
+                findPreference<Preference>(diagramKey)?.let { it.isVisible = false; it.isVisible = true }
             }
         }
 
@@ -291,7 +291,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         ShizukuSettings.syncAllPlusFeaturesToServer()
                         updatePlusFeatureDependency(prefKey, true)
                         notifyDiagramForKey(prefKey)
-                        findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
+                        findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                     }
                     false // Handle manually after dialog
                 } else {
@@ -299,7 +299,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                     ShizukuSettings.syncAllPlusFeaturesToServer()
                     updatePlusFeatureDependency(prefKey, enabled)
                     notifyDiagramForKey(prefKey)
-                    findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
+                    findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                     true
                 }
             }
@@ -327,7 +327,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         activity?.runOnUiThread {
                             findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
                             notifyDiagramForKey("ai_core_plus_enabled")
-                            findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
+                            findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                         }
                     }, { _ -> /* Ignore or show toast */ })
                     return@setOnPreferenceChangeListener false
@@ -338,7 +338,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             ShizukuSettings.syncAllPlusFeaturesToServer()
             updatePlusFeatureDependency("ai_core_plus_enabled", enabled)
             notifyDiagramForKey("ai_core_plus_enabled")
-            findPreference<Preference>("plus_status_dashboard")?.notifyChanged()
+            findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
             true
         }
 

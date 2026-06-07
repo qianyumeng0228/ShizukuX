@@ -73,7 +73,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
             if (newValue is Boolean) {
                 preferenceManager.sharedPreferences?.edit()?.putBoolean("su_bridge_enabled", newValue)?.apply()
                 ShizukuSettings.syncAllPlusFeaturesToServer()
-                findPreference<Preference>("su_bridge_diagram")?.notifyChanged()
+                findPreference<Preference>("su_bridge_diagram")?.let { it.isVisible = false; it.isVisible = true }
             }
             true
         }
@@ -148,7 +148,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
                     val chosen = presetValues[which]
                     if (chosen == "custom") {
                         // Let the default EditTextDialog handle custom text entry
-                        suPathPref.onClick()
+                        (this@RootIntegrationSettingsFragment).onDisplayPreferenceDialog(suPathPref)
                     } else {
                         suPathPref.text = chosen
                         Toast.makeText(context, "SU path preset applied: ${presets[which]}", Toast.LENGTH_SHORT).show()

@@ -23,4 +23,7 @@
     <color name="system_neutral_outline">#79747E</color>
     <color name="system_neutral_variant40">#49454F</color>
     <color name="system_accent1_600">#4F378B</color>
+    <color name="system_accent2_600">#5E5E5E</color>
+    <color name="system_accent3_600">#7D5260</color>
+    <color name="system_accent1_400">#D0BCFF</color>
 </resources>
