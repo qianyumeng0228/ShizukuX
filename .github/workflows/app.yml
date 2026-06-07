@@ -113,10 +113,10 @@ jobs:
           GIT_COUNT=$(git rev-list --count HEAD)
           
           if [ "$IS_PRERELEASE" = "true" ]; then
-            VERSION="ShizukuX ${BASE_VERSION}.r${GIT_COUNT}"
+            VERSION="v${BASE_VERSION}.r${GIT_COUNT}"
             ARGS="-Pbeta"
           else
-            VERSION="ShizukuX ${BASE_VERSION}.r${GIT_COUNT}"
+            VERSION="v${BASE_VERSION}.r${GIT_COUNT}"
             ARGS=""
           fi
           
