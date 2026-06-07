@@ -42,7 +42,7 @@ class BinderFirewallDiagramPreference @JvmOverloads constructor(
             nodeGate?.setBackgroundResource(R.drawable.shape_node_active)
             nodeStatus?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
@@ -52,7 +52,7 @@ class BinderFirewallDiagramPreference @JvmOverloads constructor(
             statusLabel?.text = "Blocked"
             statusLabel?.setTextColor(activeColor)
             statusText?.text = "Binder Firewall is active. Unverified connections are securely blocked at the gateway!"
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeApp?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeGate?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -66,9 +66,9 @@ class BinderFirewallDiagramPreference @JvmOverloads constructor(
             statusIcon?.setImageResource(R.drawable.ic_close_24)
             statusIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusLabel?.text = "Bypassed"
-            statusLabel?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusLabel?.setTextColor(android.graphics.Color.GRAY)
             statusText?.text = "Binder Firewall is currently disabled. All packages can connect unrestricted."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

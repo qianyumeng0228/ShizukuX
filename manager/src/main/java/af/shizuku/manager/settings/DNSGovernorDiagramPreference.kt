@@ -50,13 +50,13 @@ class DNSGovernorDiagramPreference @JvmOverloads constructor(
             nodeGov?.setBackgroundResource(R.drawable.shape_node_active)
             nodeResolved?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             govIcon?.setTint(activeColor)
             statusText?.text = "DNS Governor is active. Local requests are governed and speed-optimized."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeReq?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeGov?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -68,7 +68,7 @@ class DNSGovernorDiagramPreference @JvmOverloads constructor(
 
             govIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "DNS Governor is currently disabled. Stock local network settings are used."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

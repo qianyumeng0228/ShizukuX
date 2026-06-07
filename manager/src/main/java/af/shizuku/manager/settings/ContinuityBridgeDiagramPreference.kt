@@ -39,13 +39,13 @@ class ContinuityBridgeDiagramPreference @JvmOverloads constructor(
             nodeSync?.setBackgroundResource(R.drawable.shape_node_active)
             nodeTarget?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             contIcon?.setTint(activeColor)
             statusText?.text = "Continuity Bridge is active. UI bounds and layout changes are synchronized in real-time."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodePhone?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeSync?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -57,7 +57,7 @@ class ContinuityBridgeDiagramPreference @JvmOverloads constructor(
 
             contIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "Continuity Bridge is currently disabled. Layout changes are not synchronized."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

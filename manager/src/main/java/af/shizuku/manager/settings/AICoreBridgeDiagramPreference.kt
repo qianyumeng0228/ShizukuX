@@ -39,13 +39,13 @@ class AICoreBridgeDiagramPreference @JvmOverloads constructor(
             nodeCore?.setBackgroundResource(R.drawable.shape_node_active)
             nodeNpu?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             aiIcon?.setTint(activeColor)
             statusText?.text = "AI Bridge is active. Automation requests route via high-priority NPU processing units."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeShell?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeCore?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -57,7 +57,7 @@ class AICoreBridgeDiagramPreference @JvmOverloads constructor(
 
             aiIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "AI Bridge is currently disabled. Shell task optimizations route via standard execution threads."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

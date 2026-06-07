@@ -76,7 +76,7 @@ class HomeLayoutSimulatorPreference @JvmOverloads constructor(
             block.setBackgroundResource(R.drawable.shape_node_active)
             block.alpha = 1.0f
             eye.setImageResource(R.drawable.ic_visibility_24)
-            eye.imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.system_accent1_600))
+            eye.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.DKGRAY)
         } else {
             block.setBackgroundResource(R.drawable.shape_node_inactive)
             block.alpha = 0.5f

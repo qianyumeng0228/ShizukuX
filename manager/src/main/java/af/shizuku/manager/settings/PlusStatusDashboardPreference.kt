@@ -41,7 +41,7 @@ class PlusStatusDashboardPreference @JvmOverloads constructor(
                 container?.setBackgroundResource(R.drawable.shape_node_active)
                 container?.alpha = 1.0f
                 dot?.setBackgroundResource(R.drawable.shape_status_indicator)
-                dot?.backgroundTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.system_accent1_600))
+                dot?.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.DKGRAY)
             } else {
                 container?.setBackgroundResource(R.drawable.shape_node_inactive)
                 container?.alpha = 0.45f

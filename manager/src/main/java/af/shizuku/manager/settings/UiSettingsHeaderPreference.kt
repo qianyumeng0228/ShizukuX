@@ -35,7 +35,7 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
 
         val density = context.resources.displayMetrics.density
         // Use surface container color for contrast
-        val accentColor = context.getColor(R.color.system_accent1_100)
+        val accentColor = android.graphics.Color.LTGRAY
 
         // Draw asymmetrical or rounded shapes dynamically
         fun applyShape(container: FrameLayout?, isDroplet: Boolean, isLeaf: Boolean) {
@@ -56,7 +56,7 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
                     "squircle" -> ShapeAppearanceModel.builder()
                         .setAllCorners(com.google.android.material.shape.CornerFamily.ROUNDED, 24f * density)
                         .build()
-                    "zen", else -> {
+                    else -> {
                         // Asymmetrical Shape Treatments
                         if (isDroplet) {
                             ShapeAppearanceModel.builder()
@@ -81,8 +81,9 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
                 }
             }
 
-            val drawable = MaterialShapeDrawable(shapeModel).apply {
-                fillColor = android.content.res.ColorStateList.valueOf(accentColor)
+            val drawable = MaterialShapeDrawable().apply {
+                shapeAppearanceModel = shapeModel
+                setTint(accentColor)
             }
             container.background = drawable
         }
@@ -98,7 +99,7 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
                 "classic" -> "Classic Material 2 standard rounded shapes."
                 "modern" -> "Modern Material 3 extra-large rounded containers."
                 "squircle" -> "Organic squircle containers for smooth continuous rounding."
-                "zen", else -> "Zen asymmetrical leaf and droplet icon container shapes."
+                else -> "Zen asymmetrical leaf and droplet icon container shapes."
             }
         }
     }

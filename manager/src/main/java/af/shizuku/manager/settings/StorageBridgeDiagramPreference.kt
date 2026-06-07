@@ -42,13 +42,13 @@ class StorageBridgeDiagramPreference @JvmOverloads constructor(
             nodeBridge?.setBackgroundResource(R.drawable.shape_node_active)
             nodeStorage?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             bridgeIcon?.setTint(activeColor)
             statusText?.text = "Storage Bridge is active. File requests bypass slow SAF, routing directly through ShizukuX lightning-fast file proxy!"
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             // Apply Inactive Theme Style
             nodeApp?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -61,7 +61,7 @@ class StorageBridgeDiagramPreference @JvmOverloads constructor(
 
             bridgeIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "Storage Bridge is currently disabled. File access routes directly via slow Android SAF API."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

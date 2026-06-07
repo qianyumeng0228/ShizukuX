@@ -51,13 +51,13 @@ class ShadowBinderDiagramPreference @JvmOverloads constructor(
             nodeMask?.setBackgroundResource(R.drawable.shape_node_active)
             nodePackages?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             maskIcon?.setTint(activeColor)
             statusText?.text = "Shadow Binder is active. Queried packages are cloaked and invisible to specific querying apps."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeApp?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeMask?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -69,7 +69,7 @@ class ShadowBinderDiagramPreference @JvmOverloads constructor(
 
             maskIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "Shadow Binder is currently disabled. No packages are hidden."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

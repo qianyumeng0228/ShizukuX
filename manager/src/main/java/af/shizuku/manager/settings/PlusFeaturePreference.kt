@@ -113,7 +113,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
                     1 -> { // plus
                         badgeTextView.text = "PLUS"
                         badgeTextView.setTextColor(context.getColor(android.R.color.white))
-                        badgeView.setCardBackgroundColor(context.getColor(R.color.system_accent1_600))
+                        badgeView.setCardBackgroundColor(android.graphics.Color.DKGRAY)
                     }
                     2 -> { // root
                         badgeTextView.text = "ROOT"

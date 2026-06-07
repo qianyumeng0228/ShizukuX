@@ -39,13 +39,13 @@ class VMManagerDiagramPreference @JvmOverloads constructor(
             nodeHypervisor?.setBackgroundResource(R.drawable.shape_node_active)
             nodeSandbox?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             vmIcon?.setTint(activeColor)
             statusText?.text = "VM Manager is active. Isolated Virtual Machine execution sandboxes are successfully routing via the AVF Hypervisor."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeHost?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeHypervisor?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -57,7 +57,7 @@ class VMManagerDiagramPreference @JvmOverloads constructor(
 
             vmIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "VM Manager is currently disabled. Processes execute directly on the host system."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 

@@ -49,13 +49,13 @@ class SUBridgeDiagramPreference @JvmOverloads constructor(
             nodeBridge?.setBackgroundResource(R.drawable.shape_node_active)
             nodeShizuku?.setBackgroundResource(R.drawable.shape_node_active)
 
-            val activeColor = context.getColor(R.color.system_accent1_600)
+            val activeColor = android.graphics.Color.DKGRAY
             line1?.setBackgroundColor(activeColor)
             line2?.setBackgroundColor(activeColor)
 
             bridgeIcon?.setTint(activeColor)
             statusText?.text = "SU Bridge is active. Older root apps will be intercepted and routed through Shizuku."
-            statusText?.setTextColor(context.getColor(R.color.system_accent1_700))
+            statusText?.setTextColor(android.graphics.Color.BLACK)
         } else {
             nodeClient?.setBackgroundResource(R.drawable.shape_node_inactive)
             nodeBridge?.setBackgroundResource(R.drawable.shape_node_inactive)
@@ -67,7 +67,7 @@ class SUBridgeDiagramPreference @JvmOverloads constructor(
 
             bridgeIcon?.setTint(context.getColor(R.color.system_neutral_variant40))
             statusText?.text = "SU Bridge is disabled. Apps demanding root will fail unless they support Shizuku natively."
-            statusText?.setTextColor(context.getColor(R.color.system_neutral_variant60))
+            statusText?.setTextColor(android.graphics.Color.GRAY)
         }
     }
 
