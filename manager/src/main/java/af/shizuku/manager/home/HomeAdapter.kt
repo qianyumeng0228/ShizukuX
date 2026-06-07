@@ -176,7 +176,6 @@ class HomeAdapter(
         super.onBindViewHolder(holder, position)
 
         // M3E entrance animation — only on first appearance per card id, not every recycle.
-        val id = getItemId(position)
         if (!animatedIds.add(id)) return
         val view = holder.itemView
         view.alpha = 0f

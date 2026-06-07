@@ -1,6 +1,9 @@
 package af.shizuku.manager.installer.verifier
 
 import android.content.SharedPreferences
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.util.Log
 import java.io.File
 
 data class VerificationResult(
@@ -64,7 +67,7 @@ class ApkVerificationManager(
                 }
                 digest.digest().joinToString("") { "%02x".format(it) }
             } catch (e: Exception) {
-                Timber.e(e, "Failed to compute SHA-256 for APK")
+                Log.e("ApkVerifier", "Failed to compute SHA-256 for APK", e)
                 ""
             }
         }

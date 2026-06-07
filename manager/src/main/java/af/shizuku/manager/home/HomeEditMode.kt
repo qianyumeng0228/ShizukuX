@@ -51,7 +51,7 @@ object HomeEditMode {
             binding.root.alpha = 1.0f
             binding.removeBtn.setIconResource(R.drawable.ic_close_24)
             val errorTint = android.util.TypedValue()
-            binding.root.context.theme.resolveAttribute(com.google.android.material.R.attr.colorError, errorTint, true)
+            binding.root.context.theme.resolveAttribute(android.R.attr.colorError, errorTint, true)
             binding.removeBtn.iconTint = android.content.res.ColorStateList.valueOf(errorTint.data)
         }
 
