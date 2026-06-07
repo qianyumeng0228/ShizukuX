@@ -41,43 +41,7 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_ai_core"
-        android:title="AI Core Settings"
-        android:defaultValue="true">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="ai_core_master_enabled"
-            android:title="Enable AI Core Features"
-            android:summary="Global master toggle for all AI Core automation and acceleration services."
-            android:defaultValue="false"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="ai_core_experimental_enabled"
-            android:title="Experimental Accessibility Features"
-            android:summary="Enable touch injection, screen capture, and window hierarchy dumping. WARNING: Privacy and security implications."
-            android:defaultValue="false"
-            android:dependency="ai_core_master_enabled"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="npu_acceleration_enabled"
-            android:title="NPU Acceleration &amp; Power Tuning"
-            android:summary="Enable high-priority NPU scheduling and system performance modes. Supported on compatible hardware."
-            android:defaultValue="false"
-            android:dependency="ai_core_master_enabled"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="native_window_crawler_enabled"
-            android:title="Native Window Hierarchy Crawler"
-            android:summary="Use native binder-based crawler for faster UI analysis. WARNING: Comprehensive window data exposure."
-            android:defaultValue="false"
-            android:dependency="ai_core_master_enabled"
-            app:badgeType="experimental" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 
 
