@@ -20,10 +20,23 @@ class ShizukuTileService : TileService() {
         val tile = qsTile ?: return
         val state = ShizukuStateMachine.get()
         val isRunning = state == ShizukuStateMachine.State.RUNNING
+        val isStarting = state == ShizukuStateMachine.State.STARTING
 
-        tile.state = if (isRunning) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-        tile.label = if (isRunning) "Shizuku: Active" else "Shizuku: Off"
-        tile.subtitle = if (isRunning) "Running" else "Tap to Start"
+        tile.state = when {
+            isRunning -> Tile.STATE_ACTIVE
+            isStarting -> Tile.STATE_UNAVAILABLE
+            else -> Tile.STATE_INACTIVE
+        }
+        tile.label = when {
+            isRunning -> "Shizuku: Active"
+            isStarting -> "Starting..."
+            else -> "Shizuku: Off"
+        }
+        tile.subtitle = when {
+            isRunning -> "Running"
+            isStarting -> "Please wait"
+            else -> "Tap to Start"
+        }
         tile.updateTile()
     }
 
@@ -39,11 +52,22 @@ class ShizukuTileService : TileService() {
                 }
                 startActivityAndCollapse(intent)
             } else {
-                // If stopped, trigger startup flow
-                val intent = Intent("af.shizuku.manager.action.START_SERVICE").apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                // Attempt to start silently if root is available
+                if (com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true) {
+                    ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
+                    updateTile()
+                    com.topjohnwu.superuser.Shell.cmd(af.shizuku.manager.starter.Starter.internalCommand)
+                        .submit {
+                            ShizukuStateMachine.update()
+                            updateTile()
+                        }
+                } else {
+                    // Fallback to UI for ADB pairing/start
+                    val intent = Intent("af.shizuku.manager.action.START_SERVICE").apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    startActivityAndCollapse(intent)
                 }
-                startActivityAndCollapse(intent)
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to launch Shizuku: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()

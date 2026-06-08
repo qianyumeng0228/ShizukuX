@@ -365,6 +365,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
             if (ShizukuSettings.getWatchdog()) {
                 try {
                     startService(Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java))
+                } catch (e: IllegalStateException) {
+                    Timber.w(e, "Failed to start ShizukuLiveService in background")
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to start ShizukuLiveService")
                 }
