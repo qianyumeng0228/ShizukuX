@@ -53,6 +53,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
             } else {
                 setBackgroundColor(typedValue.data)
             }
+        }
 
         // Add RecyclerView for search results
         searchResultsList = RecyclerView(this).apply {
