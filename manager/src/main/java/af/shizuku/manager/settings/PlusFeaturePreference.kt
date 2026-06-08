@@ -42,13 +42,13 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
         
         titleView?.apply {
             isSingleLine = false
-            maxLines = 4
         }
         
         summaryView?.apply {
             isSingleLine = false
-            maxLines = 15
         }
+        
+        holder.itemView.requestLayout()
         
         holder.itemView.setOnLongClickListener {
             if (integrationPackage != null) launchIntegration() else showHelp()
