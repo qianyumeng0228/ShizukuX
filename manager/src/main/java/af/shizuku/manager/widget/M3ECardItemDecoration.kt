@@ -78,9 +78,7 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     protected open fun getDividerEndInset(view: View): Float = 16f * density
 
     protected open fun shouldDrawDivider(parent: RecyclerView, index: Int, count: Int): Boolean {
-        if (index >= count - 1) return false
-        val nextChild = parent.getChildAt(index + 1)
-        return nextChild.visibility == View.VISIBLE && !isHeader(nextChild)
+        return false
     }
 
     protected fun drawCard(c: Canvas, parent: RecyclerView, top: Float, bottom: Float) {
