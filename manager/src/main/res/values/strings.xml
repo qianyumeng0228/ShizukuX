@@ -939,7 +939,7 @@
     <string name="settings_shadow_binder">Shadow Binder</string>
     <string name="settings_shadow_binder_summary">Intercept and mock system service calls to hide device information or app state</string>
     <string name="settings_shadow_binder_hidden_packages">Hidden Packages</string>
-    <string name="settings_shadow_binder_hidden_packages_summary">Comma-separated list of package names to hide from other apps</string>
+    <string name="settings_shadow_binder_hidden_packages_summary">Comma-separated list of package names to hide from other apps. If you have both OG Shizuku and ShizukuX installed, add both (moe.shizuku.privileged.api, af.shizuku.manager) to prevent conflicts.</string>
 
     <plurals name="settings_shadow_binder_hidden_packages_count">
         <item quantity="one">%d app selected</item>

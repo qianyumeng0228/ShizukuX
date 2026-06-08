@@ -134,6 +134,7 @@
             
         <activity
             android:name=".activitylog.ActivityLogActivity"
+            android:theme="@style/Theme"
             android:exported="false"
             android:label="@string/settings_activity_log" />
 
@@ -148,6 +149,7 @@
             android:label="@string/su_bridge_title" />
         <activity
             android:name=".settings.ServiceDoctorActivity"
+            android:theme="@style/Theme"
             android:exported="false"
             android:label="@string/home_service_doctor_title" />
         <activity
