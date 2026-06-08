@@ -750,21 +750,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 if (baseCmd.equals("supolicy") || baseCmd.equals("magiskpolicy")) {
                     LOGGER.i("SUBridge: mocking SELinux policy injection for " + baseCmd);
                     return newProcessInternal(new String[]{"true"}, env, dir);
-                } else if ((baseCmd.equals("iptables") || baseCmd.equals("ip6tables") || baseCmd.endsWith("/iptables") || baseCmd.endsWith("/ip6tables")) && isFeatureEnabled("root_iptables_mocking")) {
-                    LOGGER.i("SUBridge: executing and mocking iptables command -> " + String.join(" ", cmd));
-                    try {
-                        java.lang.Process p = Runtime.getRuntime().exec(cmd);
-                        int exitCode = p.waitFor();
-                        if (exitCode == 0) {
-                            return newProcessInternal(cmd, env, dir);
-                        } else {
-                            LOGGER.w("SUBridge: iptables exited with error (" + exitCode + "), returning mock success");
-                            return newProcessInternal(new String[]{"true"}, env, dir);
-                        }
-                    } catch (Exception e) {
-                        LOGGER.w("SUBridge: iptables exec failed, returning mock success");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
-                    }
+
                 } else if (baseCmd.equals("pm") && cmd.length > 1 && cmd[1].equals("list") && String.join(" ", cmd).contains("packages")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking pm list packages to include Magisk");
@@ -1097,35 +1083,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         String safeTarget = target.replace("\"", "\\\"");
                         String script = "if [ ! -z \"" + safeTarget + "\" ] && [ \"" + safeTarget + "\" != \"sh\" ] && [ \"" + safeTarget + "\" != \"su\" ]; then am force-stop \"" + safeTarget + "\"; else false; fi";
                         return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
-                    } else if (baseCmd.equals("insmod") || baseCmd.equals("rmmod") || baseCmd.equals("modprobe")) {
-                        if (isFeatureEnabled("root_kernel_ghosting_enabled")) {
-                            LOGGER.i("SUBridge: intercepting kernel module load/unload (" + baseCmd + "), returning mock success");
-                            return newProcessInternal(new String[]{"true"}, env, dir);
-                        }
-                        return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("reboot")) {
                         if (isFeatureEnabled("bootloader_fastbootd_reboot_enabled") && cmd.length > 1 && (cmd[1].equals("bootloader") || cmd[1].equals("fastboot") || cmd[1].equals("recovery"))) {
                             LOGGER.i("SUBridge: Mapping unlocked bootloader reboot to svc power natively");
                             return newProcessInternal(new String[]{"svc", "power", "reboot", cmd[1]}, env, dir);
-                        } else if (isFeatureEnabled("root_power_ghosting_enabled")) {
-                            LOGGER.i("SUBridge: intercepting reboot request (ghosting): " + String.join(" ", cmd));
-                            return newProcessInternal(new String[]{"true"}, env, dir);
-                        }
-                        return newProcessInternal(cmd, env, dir);
-                    } else if (baseCmd.equals("setprop") && cmd.length > 1 && cmd[1].startsWith("ctl.")) {
-                        if (isFeatureEnabled("root_power_ghosting_enabled")) {
-                            LOGGER.i("SUBridge: intercepting service control (soft reboot) " + cmd[1]);
-                            return newProcessInternal(new String[]{"true"}, env, dir);
-                        }
-                        return newProcessInternal(cmd, env, dir);
-                    } else if (baseCmd.equals("dd") && String.join(" ", cmd).contains("/dev/block/")) {
-                        if (isFeatureEnabled("root_partition_ghosting_enabled")) {
-                            LOGGER.i("SUBridge: intercepting dd on block device. Mocking success.");
-                            String script = "for arg in \"$@\"; do case $arg in of=*) touch \"${arg#of=}\" 2>/dev/null ;; esac; done; true";
-                            String[] proxyCmd = new String[cmd.length + 3];
-                            proxyCmd[0] = "sh"; proxyCmd[1] = "-c"; proxyCmd[2] = script;
-                            System.arraycopy(cmd, 0, proxyCmd, 3, cmd.length);
-                            return newProcessInternal(proxyCmd, env, dir);
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("update_engine_client") && isFeatureEnabled("bootloader_flash_ota_enabled")) {
@@ -1145,66 +1106,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(new String[]{"true"}, env, dir);
                         }
                         return newProcessInternal(cmd, env, dir);
-                    } else if (baseCmd.equals("ifconfig") && cmd.length >= 3) {
-                        String iface = cmd[1];
-                        String action = cmd[2];
-                        LOGGER.i("SUBridge: mocking ifconfig " + iface + " " + action);
-                        if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
-                            return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
-                        }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if (baseCmd.equals("ip") && cmd.length >= 4 && cmd[1].equals("link") && cmd[2].equals("set")) {
-                        String iface = cmd[3];
-                        String action = cmd[cmd.length - 1]; // "up" or "down" usually at the end
-                        LOGGER.i("SUBridge: mocking ip link set " + iface + " " + action);
-                        if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
-                            return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
-                        }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+
                     } else if (baseCmd.equals("dumpsys") && cmd.length >= 2 && (cmd[1].equals("battery") || cmd[1].equals("deviceidle"))) {
                         LOGGER.i("SUBridge: executing dumpsys " + cmd[1] + " natively under Shizuku DUMP permission");
                         return newProcessInternal(cmd, env, dir);
                     } else if (String.join(" ", cmd).contains("MASTER_CLEAR") || String.join(" ", cmd).contains("wipe_data") || (baseCmd.equals("sm") && cmd.length > 1 && cmd[1].equals("format"))) {
                         LOGGER.w("SUBridge: Intercepted highly destructive command! Ghosting success to prevent data wipe: " + String.join(" ", cmd));
                         return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if (baseCmd.equals("chattr")) {
-                        LOGGER.i("SUBridge: mocking chattr immutability applied");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if (baseCmd.equals("lsattr")) {
-                        LOGGER.i("SUBridge: mocking lsattr output");
-                        String target = cmd[cmd.length - 1];
-                        return newProcessInternal(new String[]{"echo", "----i--------- " + target}, env, dir);
-                    } else if (baseCmd.equals("chmod") || baseCmd.equals("chown")) {
-                        LOGGER.i("SUBridge: intercepting " + baseCmd + ", returning mock success");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if (baseCmd.equals("iptables") || baseCmd.equals("ip6tables")) {
-                        String fullCmd = String.join(" ", cmd);
-                        if (fullCmd.contains("--uid-owner")) {
-                            try {
-                                // Extract UID from "--uid-owner <uid>"
-                                int index = -1;
-                                for (int i = 0; i < cmd.length; i++) {
-                                    if (cmd[i].equals("--uid-owner")) { index = i + 1; break; }
-                                }
-                                if (index != -1 && index < cmd.length) {
-                                    int uid = Integer.parseInt(cmd[index]);
-                                    boolean restricted = !fullCmd.contains("-D"); // -A or -I means add/restrict, -D means delete/unrestrict
-                                    LOGGER.i("SUBridge: mapping iptables for UID " + uid + " to NetworkPolicy (restricted=" + restricted + ")");
-                                    
-                                    IBinder binder = ServiceManager.getService("netpolicy");
-                                    if (binder != null) {
-                                        Object service = Class.forName("android.net.INetworkPolicyManager$Stub")
-                                            .getMethod("asInterface", IBinder.class).invoke(null, binder);
-                                        // 1 = POLICY_REJECT_METERED_BACKGROUND, 4 = POLICY_REJECT_ALL (if available on target android version)
-                                        int policy = restricted ? 1 : 0; 
-                                        service.getClass().getMethod("setUidPolicy", int.class, int.class).invoke(service, uid, policy);
-                                    }
-                                }
-                            } catch (Exception e) {
-                                LOGGER.e("SUBridge: failed to map iptables to NetworkPolicy", e);
-                            }
-                        }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+
                     } else if ((baseCmd.equals("tar") || baseCmd.equals("cp")) && (String.join(" ", cmd).contains("/data/data/") || String.join(" ", cmd).contains("/data/app/") || String.join(" ", cmd).contains("/data/user/"))) {
                         String fullCmd = String.join(" ", cmd);
                         LOGGER.i("SUBridge: mapping backup command to native bu utility: " + fullCmd);
