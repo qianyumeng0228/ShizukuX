@@ -278,6 +278,54 @@
             android:icon="@drawable/ic_smartphone_24" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="overlay_fs_proxy_enabled"
+            android:title="OverlayFS System Spoofing"
+            android:summary="[GHOST FEATURE] Simulates a writable /system partition by intercepting mount commands. Does not actually mount anything."
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_kernel_ghosting_enabled"
+            android:title="Kernel Driver Spoofing"
+            android:summary="[GHOST FEATURE] Intercepts insmod/rmmod and silently fakes success. Appears to work but does not load any drivers."
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_partition_ghosting_enabled"
+            android:title="Partition Flash Spoofing"
+            android:summary="[GHOST FEATURE] Intercepts 'dd' operations to /dev/block/. Prevents flashers from crashing by pretending to write data."
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_power_ghosting_enabled"
+            android:title="Power State Spoofing"
+            android:summary="[GHOST FEATURE] Intercepts reboot commands and silently ignores them, returning a fake success code."
+            android:icon="@drawable/ic_server_restart"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_iptables_mocking_enabled"
+            android:title="Firewall Spoofing"
+            android:summary="[GHOST FEATURE] Fakes success for iptables commands when rootless limitations prevent actual firewall rules from being applied."
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_build_prop_redirect_enabled"
+            android:title="build.prop Redirection"
+            android:summary="[SPOOF FEATURE] Claims to redirect system build property writes. Intercepts writes and fakes a success exit code."
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="samsung_system_uid_escalation_enabled"
             android:title="Samsung System UID Escalation"
             android:summary="[DANGEROUS] Attempt to escalate to UID 1000 (system) using an exploit specific to unpatched Samsung devices (by pascua28). Use at your own risk."
