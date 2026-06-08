@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="companion_conflict_title">Stock Shizuku Detected</string>
+    <string name="companion_conflict_description">Having stock Shizuku installed alongside ShizukuX can cause permission conflicts and app crashes. To ensure ShizukuX functions correctly, please uninstall or disable the stock Shizuku app.\n\nYou can do this via:\n1. Settings -> Apps -> Shizuku -> Disable/Uninstall\n2. Below buttons (if ShizukuX service is running)\n3. ADB: adb shell pm disable-user --user 0 moe.shizuku.privileged.api</string>
+    <string name="companion_action_disable">Disable Stock</string>
+    <string name="companion_action_uninstall">Uninstall Stock</string>
+    <string name="companion_disable_success">Stock Shizuku has been disabled successfully.</string>
+    <string name="companion_disable_failure">Failed to disable Stock Shizuku. Ensure ShizukuX is running or use ADB manually.</string>
+</resources>

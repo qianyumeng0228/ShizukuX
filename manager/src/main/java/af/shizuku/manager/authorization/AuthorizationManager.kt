@@ -77,25 +77,33 @@ object AuthorizationManager {
         } else {
             try {
                 (Shizuku.getFlagsForUid(uid, MASK_PERMISSION) and FLAG_ALLOWED) == FLAG_ALLOWED
-            } catch (e: IllegalStateException) {
+            } catch (e: Throwable) {
                 false
             }
         }
     }
 
     fun grant(packageName: String, uid: Int) {
-        if (Shizuku.isPreV11()) {
-            ShizukuSystemApis.grantRuntimePermission(packageName, Manifest.permission.API_V23, uid / 100000)
-        } else {
-            Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, FLAG_ALLOWED)
+        try {
+            if (Shizuku.isPreV11()) {
+                ShizukuSystemApis.grantRuntimePermission(packageName, Manifest.permission.API_V23, uid / 100000)
+            } else {
+                Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, FLAG_ALLOWED)
+            }
+        } catch (e: Throwable) {
+            // Ignore error from incompatible server
         }
     }
 
     fun revoke(packageName: String, uid: Int) {
-        if (Shizuku.isPreV11()) {
-            ShizukuSystemApis.revokeRuntimePermission(packageName, Manifest.permission.API_V23, uid / 100000)
-        } else {
-            Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, 0)
+        try {
+            if (Shizuku.isPreV11()) {
+                ShizukuSystemApis.revokeRuntimePermission(packageName, Manifest.permission.API_V23, uid / 100000)
+            } else {
+                Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, 0)
+            }
+        } catch (e: Throwable) {
+            // Ignore error from incompatible server
         }
     }
 }

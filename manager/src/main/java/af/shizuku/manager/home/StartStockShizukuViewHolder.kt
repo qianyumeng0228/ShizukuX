@@ -36,16 +36,34 @@ class StartStockShizukuViewHolder(
     }
 
     private fun onStartClicked(v: View) {
-        StockShizukuCompat.startViaStockShizuku()
-        val activity = v.context.asActivity<android.app.Activity>() ?: return
-        android.widget.Toast.makeText(activity, "Starting ShizukuX via original Shizuku...", android.widget.Toast.LENGTH_SHORT).show()
+        if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
+            val starterCmd = af.shizuku.manager.starter.Starter.internalCommand
+            val cmd = "am force-stop moe.shizuku.privileged.api && am force-stop af.shizuku.plus.api && nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 &"
+            try {
+                com.topjohnwu.superuser.Shell.cmd(cmd).exec()
+                val activity = v.context.asActivity<android.app.Activity>() ?: return
+                android.widget.Toast.makeText(activity, "Restarting via Root...", android.widget.Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                // Ignore
+            }
+        } else {
+            val activity = v.context.asActivity<android.app.Activity>() ?: return
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+                .setTitle("Incompatible Server Running")
+                .setMessage("The original Shizuku server is currently running in the background. Because of Android security constraints, ShizukuX cannot communicate with or kill the original server.\n\nPlease completely restart your device to kill the original server, then start ShizukuX using ADB or Root.")
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
     }
 
     override fun onBind() {
         start.isEnabled = true
-        start.text = "Start via original Shizuku"
-        binding.title.text = "Setup via Original Shizuku"
-        binding.text1.text = "The original Shizuku is currently running. You can use its root privileges to automatically start ShizukuX and stop the original service."
-        binding.icon.setImageResource(R.drawable.ic_bolt_24)
+        start.text = "Fix Conflict"
+        binding.title.text = "Incompatible Server Detected"
+        binding.text1.text = "The original Shizuku server is running in the background. It is incompatible with ShizukuX and blocks it from starting."
+        binding.icon.setImageResource(R.drawable.ic_baseline_warning_24)
+        
+        // Use a warning color for the icon if possible
+        binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.RED)
     }
 }

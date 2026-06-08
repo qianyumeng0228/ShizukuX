@@ -58,6 +58,12 @@ object StockShizukuCompat {
             process.destroy()
             isOriginal
         } catch (e: Exception) {
+            // If the stock server is running but the stock manager is uninstalled,
+            // ANY call to the server will throw this specific exception because the server
+            // tries to enforce a permission that no longer exists on the device.
+            if (e is IllegalArgumentException && e.message?.contains("moe.shizuku.manager.permission.API_V23") == true) {
+                return true
+            }
             false
         }
     }

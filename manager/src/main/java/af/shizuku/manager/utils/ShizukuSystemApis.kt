@@ -79,6 +79,8 @@ object ShizukuSystemApis {
             PermissionManagerApis.checkPermission(permName, pkgName, userId)
         } catch (tr: RemoteException) {
             throw RuntimeException(tr.message, tr)
+        } catch (tr: Throwable) {
+            PackageManager.PERMISSION_DENIED
         }
     }
 
@@ -90,6 +92,8 @@ object ShizukuSystemApis {
             PermissionManagerApis.grantRuntimePermission(packageName, permissionName, userId)
         } catch (tr: RemoteException) {
             throw RuntimeException(tr.message, tr)
+        } catch (tr: Throwable) {
+            // Permission may be unknown
         }
     }
 
@@ -101,6 +105,8 @@ object ShizukuSystemApis {
             PermissionManagerApis.revokeRuntimePermission(packageName, permissionName, userId)
         } catch (tr: RemoteException) {
             throw RuntimeException(tr.message, tr)
+        } catch (tr: Throwable) {
+            // Permission may be unknown
         }
     }
 }

@@ -49,6 +49,7 @@ class WatchdogService : Service() {
             }
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to start foreground")
+            stopSelf()
         }
     }
 
