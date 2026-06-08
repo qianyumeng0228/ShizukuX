@@ -99,8 +99,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
             </intent-filter>
         </activity-alias>
 
@@ -131,8 +129,13 @@
             android:label="@string/app_name" />
         <activity
             android:name=".home.SystemHubActivity"
-            android:theme="@style/Theme.App.DialogHost"
+            android:theme="@style/Theme"
             android:exported="false" />
+            
+        <activity
+            android:name=".activitylog.ActivityLogActivity"
+            android:exported="false"
+            android:label="@string/settings_activity_log" />
 
         <activity
             android:name=".management.ApplicationManagementActivity"

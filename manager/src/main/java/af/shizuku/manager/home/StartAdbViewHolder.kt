@@ -73,7 +73,10 @@ class StartAdbViewHolder(
                 .show()
         }
         binding.text1.movementMethod = LinkMovementMethod.getInstance()
-        binding.text1.text = context.getString(R.string.home_adb_description, Helps.ADB.get())
+        binding.text1.text = androidx.core.text.HtmlCompat.fromHtml(
+            context.getString(R.string.home_adb_description, Helps.ADB.get()),
+            androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY
+        )
             .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
         containerBinding.dragHandle.apply {
             setOnTouchListener { _, event ->

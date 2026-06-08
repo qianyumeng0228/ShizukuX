@@ -1,0 +1,30 @@
+262	CLOSED	ShizukuX App Fails to Build	module: manager-app, bug	2026-06-06T11:00:57Z
+260	OPEN	UX Overhaul: Migrate Experimental and Dangerous Features to Main Settings		2026-06-04T07:42:14Z
+259	CLOSED	Improvement: Prevent Sentry quota exhaustion from non-fatal CrashHandler writes		2026-06-04T06:13:59Z
+258	CLOSED	Crash: NullPointerException in ShizukuWidgetProvider on devices without widget support		2026-06-04T06:13:56Z
+257	CLOSED	Bug: ADB pairing fails on Samsung Knox devices due to hardware KeyStore ProviderException		2026-06-04T07:42:13Z
+256	CLOSED	Crash Loop: SQLiteCantOpenDatabaseException and DB corruption spamming Sentry		2026-06-04T07:42:12Z
+255	CLOSED	Feature: Add explicit danger warning dialog for Systemless OTA flashing		2026-06-04T07:42:10Z
+254	CLOSED	Crash: InstantiationException on HomeActivity from legacy shortcuts		2026-06-04T07:42:09Z
+253	OPEN	Discussion: Google Account Protection, Play Store Installations, and Safe Third-Party Alternatives		2026-06-04T07:42:16Z
+252	OPEN	Discussion: Future Safety Measures for Systemless OTA Flashing & Root Integrations		2026-06-04T07:42:17Z
+251	CLOSED	Shizuku service won't start	bug	2026-06-06T11:02:11Z
+250	CLOSED	ShizukuX Invalid App Versioning	module: manager-app, bug	2026-06-06T11:01:13Z
+249	CLOSED	Shizuku＋ not recognised by apps	module: server, bug	2026-06-06T11:02:06Z
+248	CLOSED	Apps that use shizuku do not recognize shizukux	module: server, bug	2026-06-06T11:02:02Z
+247	OPEN	The reset icon is not displaying correctly	module: manager-app, bug	2026-05-31T17:54:12Z
+243	CLOSED	How to enable + features?	module: manager-app, bug	2026-06-04T07:42:18Z
+242	CLOSED	How is ShizukuX supposed to work with other apps?	module: manager-app	2026-05-30T10:37:31Z
+241	CLOSED	Settings crashes when opening wireless debugging settings	module: manager-app, bug	2026-05-30T10:37:33Z
+240	CLOSED	Question: Standalone privileged service starter (Shizuku as a library)		2026-06-04T22:24:38Z
+237	CLOSED	Clear Device Owner	module: manager-app	2026-06-04T13:22:30Z
+236	CLOSED	FEATURE: Execute as System UID 1000	module: manager-app	2026-06-04T08:08:52Z
+212	CLOSED	Feature: Cloud-Synced Settings & Recovery		2026-05-30T09:36:13Z
+211	OPEN	Feature: System Health & Binder Profiler		2026-05-30T11:59:00Z
+210	OPEN	Feature: Context-Aware Automation Engine		2026-05-30T11:56:26Z
+209	CLOSED	Add backwards compatibility for regular Shizuku		2026-05-30T09:33:03Z
+208	CLOSED	How to use this app as apps support shizuku not detecting shizukux for permission	module: server, bug	2026-06-04T09:26:58Z
+207	CLOSED	Shizuku Plus service doesn't launch. Shows an error javascript message even after enabling wireless debugging and entering pairing code and starting the service.	module: server, bug	2026-05-06T18:49:27Z
+206	CLOSED	ShizukuX Service Launch Error	module: server, bug	2026-06-06T11:01:50Z
+205	CLOSED	not able to use the app at all	module: server, bug	2026-05-06T18:49:52Z
+204	CLOSED	Pairing button not working	bug	2026-06-06T11:01:37Z

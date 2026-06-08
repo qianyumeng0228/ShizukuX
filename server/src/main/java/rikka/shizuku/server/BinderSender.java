@@ -154,11 +154,15 @@ public class BinderSender {
                 continue;
 
             if (ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
-                boolean granted;
-                if (pid == -1)
-                    granted = PermissionManagerApis.checkPermission(PERMISSION_MANAGER, uid) == PackageManager.PERMISSION_GRANTED;
-                else
-                    granted = ActivityManagerApis.checkPermission(PERMISSION_MANAGER, pid, uid) == PackageManager.PERMISSION_GRANTED;
+                boolean granted = false;
+                try {
+                    if (pid == -1)
+                        granted = PermissionManagerApis.checkPermission(PERMISSION_MANAGER, uid) == PackageManager.PERMISSION_GRANTED;
+                    else
+                        granted = ActivityManagerApis.checkPermission(PERMISSION_MANAGER, pid, uid) == PackageManager.PERMISSION_GRANTED;
+                } catch (Throwable e) {
+                    LOGGER.w("checkPermission failed for manager");
+                }
 
                 if (granted) {
                     ShizukuService.sendBinderToManager(sShizukuService, userId);

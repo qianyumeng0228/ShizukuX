@@ -301,7 +301,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             try {
                 PermissionManagerApis.grantRuntimePermission(MANAGER_APPLICATION_ID,
                         WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid));
-            } catch (RemoteException e) {
+            } catch (Throwable e) {
                 LOGGER.w(e, "grant WRITE_SECURE_SETTINGS");
             }
         }
@@ -1503,9 +1503,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
+                    try {
+                        PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
+                    } catch (Throwable e) {
+                        LOGGER.w("grantRuntimePermission failed for " + permToGrant);
+                    }
                 } else {
-                    PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
+                    try {
+                        PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
+                    } catch (Throwable e) {
+                        LOGGER.w("revokeRuntimePermission failed for " + permToGrant);
+                    }
                 }
             }
         }
@@ -1593,9 +1601,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
                 int deviceId = 0;//Context.DEVICE_ID_DEFAULT
                 if (allowed) {
-                    PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
+                    try {
+                        PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
+                    } catch (Throwable e) {
+                        LOGGER.w("grantRuntimePermission failed for " + permToGrant);
+                    }
                 } else {
-                    PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
+                    try {
+                        PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
+                    } catch (Throwable e) {
+                        LOGGER.w("revokeRuntimePermission failed for " + permToGrant);
+                    }
                     onPermissionRevoked(packageName);
                 }
             }

@@ -46,8 +46,13 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
         searchOverlayContainer = FrameLayout(this).apply {
             id = View.generateViewId()
             visibility = View.GONE
-            setBackgroundColor(getColor(android.R.color.transparent))
-        }
+            val typedValue = android.util.TypedValue()
+            theme.resolveAttribute(android.R.attr.windowBackground, typedValue, true)
+            if (typedValue.resourceId != 0) {
+                setBackgroundResource(typedValue.resourceId)
+            } else {
+                setBackgroundColor(typedValue.data)
+            }
 
         // Add RecyclerView for search results
         searchResultsList = RecyclerView(this).apply {
