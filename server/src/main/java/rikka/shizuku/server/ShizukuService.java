@@ -582,9 +582,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
         
         // Global System File Redirection Proxy: transparently map read-only system files to user-writable proxies
-        if ((isFeatureEnabled("root_adaway_bridge") || isFeatureEnabled("root_build_prop_redirect")) && cmd != null) {
+        if (isFeatureEnabled("root_build_prop_redirect") && cmd != null) {
             String[] proxyTargets = {
-                "/system/etc/hosts", "/etc/hosts", 
                 "/system/build.prop", "/vendor/build.prop",
                 "/system/etc/mixer_paths.xml", "/vendor/etc/mixer_paths.xml",
                 "/system/etc/audio_effects.conf", "/vendor/etc/audio_effects.conf",
@@ -596,15 +595,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 for (String target : proxyTargets) {
                     if (cmd[i].contains(target)) {
                         String fileName = new java.io.File(target).getName();
-                        // For /etc/hosts, use 'hosts'
-                        if (target.equals("/etc/hosts")) fileName = "hosts";
                         String proxyPath = "/data/adb/shizuku/" + fileName;
                         
                         try {
                             Runtime.getRuntime().exec(new String[]{"mkdir", "-p", "/data/adb/shizuku"}).waitFor();
                             java.io.File dest = new java.io.File(proxyPath);
                             if (!dest.exists()) {
-                                String sourcePath = target.equals("/etc/hosts") ? "/system/etc/hosts" : target;
+                                String sourcePath = target;
                                 Runtime.getRuntime().exec(new String[]{"cp", sourcePath, proxyPath}).waitFor();
                             }
                         } catch (Exception e) {
@@ -835,10 +832,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 } else if (baseCmd.equals("mount") && cmd.length > 3 && String.join(" ", cmd).contains("--bind")) {
                     String fullCmd = String.join(" ", cmd);
                     LOGGER.i("SUBridge: intercepting mount --bind request: " + fullCmd);
-                    if (fullCmd.contains("/system/etc/hosts")) {
-                        LOGGER.i("SUBridge: AdAway redirection - mapping hosts mount to user-writable path");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
-                    } else if (isFeatureEnabled("root_magisk_mocking")) {
+                    if (isFeatureEnabled("root_magisk_mocking")) {
                         // Fake success for general systemless modifications
                         LOGGER.i("SUBridge: Faking mount --bind success for systemless module compatibility");
                         return newProcessInternal(new String[]{"true"}, env, dir);
@@ -872,25 +866,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         // Default fake success
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
-                } else if ((baseCmd.equals("cp") || baseCmd.equals("mv") || baseCmd.equals("tar")) && String.join(" ", cmd).contains("/system/etc/hosts")) {
-                    LOGGER.i("SUBridge: AdAway redirection - mapping hosts file modification");
-                    // Redirect the file manipulation to our writable copy
-                    for (int i = 0; i < cmd.length; i++) {
-                        if (cmd[i].contains("/system/etc/hosts")) cmd[i] = "/data/adb/shizuku/hosts";
-                    }
-                    // Ensure the directory exists before redirecting — if it can't be created
-                    // the redirected path won't exist and the cp/mv/tar will fail.
-                    try {
-                        int mkdirExit = Runtime.getRuntime().exec(new String[]{"mkdir", "-p", "/data/adb/shizuku"}).waitFor();
-                        if (mkdirExit != 0) {
-                            LOGGER.w("SUBridge: mkdir /data/adb/shizuku failed (exit %d), skipping hosts redirect", mkdirExit);
-                            return newProcessInternal(new String[]{"false"}, env, dir);
-                        }
-                    } catch (Exception e) {
-                        LOGGER.w(e, "SUBridge: mkdir /data/adb/shizuku threw, skipping hosts redirect");
-                        return newProcessInternal(new String[]{"false"}, env, dir);
-                    }
-                    return newProcessInternal(cmd, env, dir);
                 } else if ((baseCmd.equals("cp") || baseCmd.equals("mv") || baseCmd.equals("tar")) && (String.join(" ", cmd).contains("/data/data") || String.join(" ", cmd).contains("/system"))) {
                     if (isFeatureEnabled("root_file_interceptor")) {
                         LOGGER.i("SUBridge: injecting permission-preservation flags for sensitive file operation");

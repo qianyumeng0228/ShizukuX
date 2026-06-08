@@ -81,7 +81,6 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
         val rootModules = listOf(
             "root_build_prop_redirect_enabled",
             "root_iptables_mocking_enabled",
-            "root_adaway_bridge_enabled",
             "root_magisk_mocking_enabled",
             "root_auto_grant_enabled",
             "root_file_interceptor_enabled",

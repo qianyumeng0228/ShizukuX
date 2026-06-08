@@ -243,7 +243,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "overlay_manager_plus_enabled" to "overlay_manager_plus",
             "network_governor_plus_enabled" to "network_governor_plus",
             "activity_manager_plus_enabled" to "activity_manager_plus",
-            "root_adaway_bridge_enabled" to "root_adaway_bridge",
             "root_magisk_mocking_enabled" to "root_magisk_mocking",
             "root_auto_grant_enabled" to "root_auto_grant",
             "root_file_interceptor_enabled" to "root_file_interceptor",
@@ -465,9 +464,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 "eu.darken.sdm" to "SD Maid",
                 "eu.darken.sdmse" to "SD Maid SE"
             ),
-            "root_adaway_bridge_enabled" to listOf(
-                "org.adaway" to "AdAway"
-            ),
             "root_magisk_mocking_enabled" to listOf(
                 "com.topjohnwu.magisk" to "Magisk Manager"
             )
@@ -509,7 +505,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
         
         // Root Compat modules
-        updatePreferenceDependency("root_adaway_bridge_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("root_magisk_mocking_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("root_auto_grant_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("root_file_interceptor_enabled", customApiEnabled, hideDisabled)

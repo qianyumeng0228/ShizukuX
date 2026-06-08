@@ -50,14 +50,7 @@
         android:title="Rootless Bridges (Actually Works)"
         android:defaultValue="true">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_adaway_bridge_enabled"
-            android:title="@string/settings_root_adaway_bridge"
-            android:summary="@string/settings_root_adaway_bridge_summary"
-            android:icon="@drawable/ic_shield_24"
-            android:defaultValue="false"
-            app:infoTitle="@string/help_root_adaway_title"
-            app:infoDetail="@string/help_root_adaway_detail" />
+
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_build_prop_redirect_enabled"
