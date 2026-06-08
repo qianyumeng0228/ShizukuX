@@ -56,12 +56,12 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@android:id/button2"
-            style="@style/CardButton.Tonal"
+            style="@style/CardButton"
             android:layout_width="wrap_content"
             android:layout_weight="1"
             android:text="@string/companion_action_uninstall"
             android:visibility="gone"
-            app:icon="@drawable/ic_baseline_delete_24" />
+            app:icon="@drawable/ic_delete_24" />
     </LinearLayout>
 
 </LinearLayout>
