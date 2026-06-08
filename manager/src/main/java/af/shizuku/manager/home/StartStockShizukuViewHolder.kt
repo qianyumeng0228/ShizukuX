@@ -61,7 +61,7 @@ class StartStockShizukuViewHolder(
         start.text = "Fix Conflict"
         binding.title.text = "Incompatible Server Detected"
         binding.text1.text = "The original Shizuku server is running in the background. It is incompatible with ShizukuX and blocks it from starting."
-        binding.icon.setImageResource(R.drawable.ic_baseline_warning_24)
+        binding.icon.setImageResource(R.drawable.ic_warning_24)
         
         // Use a warning color for the icon if possible
         binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.RED)
