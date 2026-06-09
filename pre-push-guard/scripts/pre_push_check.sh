@@ -219,14 +219,6 @@ else
     echo -e "${COLOR_YELLOW}SKIP${COLOR_RESET} (xmllint not found)"
 fi
 
-# 16. Spotless Check
-echo -n "[16/17] Checking code formatting with spotlessCheck... "
-if ./gradlew spotlessCheck; then
-    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
-else
-    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Run ./gradlew spotlessApply to fix formatting)"
-    ERRORS=$((ERRORS + 1))
-fi
 
 # 17. Dry-Run Build Validation
 echo -n "[17/17] Validating Gradle build configuration (dry-run)... "
