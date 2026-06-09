@@ -20,7 +20,7 @@
         <item name="android:divider">@drawable/spacing_list_item_vertical</item>
     </style>
 
-    <style name="CardButton" parent="Widget.Material3.Button.TonalButton">
+    <style name="CardButton" parent="Widget.Material3Expressive.Button.TonalButton">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:backgroundTint">?colorSecondaryContainer</item>
