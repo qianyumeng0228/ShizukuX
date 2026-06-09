@@ -111,6 +111,11 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         super.onDestroyView()
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setDivider(null)
+    }
+
     /**
      * Helper to show a dialog and track it for proper dismissal.
      */
@@ -140,7 +145,6 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)
         recyclerView.clipToPadding = false
-        setDivider(null)
         recyclerView.addItemDecoration(SettingsItemDecoration(context))
 
         ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { _, insets ->
