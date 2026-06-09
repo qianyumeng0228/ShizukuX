@@ -43,24 +43,27 @@ object AuthorizationManager {
 
     fun getPackages(): List<PackageInfo> {
         val packages: MutableList<PackageInfo> = ArrayList()
-        if (Shizuku.isPreV11() || (Shizuku.getVersion() == 11 && Shizuku.getServerPatchVersion() < 3)) {
-            val allPackages: MutableList<PackageInfo> = ArrayList()
-            for (user in ShizukuSystemApis.getUsers(useCache = false)) {
-                try {
-                    allPackages.addAll(ShizukuSystemApis.getInstalledPackages((PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS).toLong(), user.id))
-                } catch (e: Throwable) {
-                    LOGGER.w(e, "getInstalledPackages")
+        try {
+            if (Shizuku.isPreV11() || (Shizuku.getVersion() == 11 && Shizuku.getServerPatchVersion() < 3)) {
+                val allPackages: MutableList<PackageInfo> = ArrayList()
+                for (user in ShizukuSystemApis.getUsers(useCache = false)) {
+                    try {
+                        allPackages.addAll(ShizukuSystemApis.getInstalledPackages((PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS).toLong(), user.id))
+                    } catch (e: Throwable) {
+                        LOGGER.w(e, "getInstalledPackages")
+                    }
                 }
+                for (pi in allPackages) {
+                    if (BuildConfig.APPLICATION_ID == pi.packageName) continue
+                    if (pi.applicationInfo?.metaData?.getBoolean("af.shizuku.client.V3_SUPPORT") != true) continue
+                    if (pi.requestedPermissions?.contains(Manifest.permission.API_V23) != true) continue
+                    packages.add(pi)
+                }
+            } else {
+                packages.addAll(getApplications(-1))
             }
-            for (pi in allPackages) {
-                if (BuildConfig.APPLICATION_ID == pi.packageName) continue
-                if (pi.applicationInfo?.metaData?.getBoolean("af.shizuku.client.V3_SUPPORT") != true) continue
-                if (pi.requestedPermissions?.contains(Manifest.permission.API_V23) != true) continue
-
-                packages.add(pi)
-            }
-        } else {
-            packages.addAll(getApplications(-1))
+        } catch (e: Throwable) {
+            LOGGER.w(e, "getPackages failed, possibly due to ghost stock server")
         }
         return packages
     }
@@ -72,14 +75,14 @@ object AuthorizationManager {
     fun granted(packageName: String, uid: Int): Boolean {
         if (!Shizuku.pingBinder()) return false
         
-        return if (Shizuku.isPreV11()) {
-            ShizukuSystemApis.checkPermission(Manifest.permission.API_V23, packageName, uid / 100000) == PackageManager.PERMISSION_GRANTED
-        } else {
-            try {
+        return try {
+            if (Shizuku.isPreV11()) {
+                ShizukuSystemApis.checkPermission(Manifest.permission.API_V23, packageName, uid / 100000) == PackageManager.PERMISSION_GRANTED
+            } else {
                 (Shizuku.getFlagsForUid(uid, MASK_PERMISSION) and FLAG_ALLOWED) == FLAG_ALLOWED
-            } catch (e: Throwable) {
-                false
             }
+        } catch (e: Throwable) {
+            false
         }
     }
 

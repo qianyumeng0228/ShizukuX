@@ -33,16 +33,15 @@
         android:visibility="gone" />
 
     <!-- Remove button: shown in edit mode, top-right corner -->
-    <com.google.android.material.button.MaterialButton
+    <ImageButton
         android:id="@+id/remove_btn"
-        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="top|end"
         android:layout_margin="4dp"
-        app:icon="@drawable/ic_close_24"
-        app:iconSize="24dp"
-        app:iconTint="?attr/colorError"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_close_24"
+        app:tint="?attr/colorError"
         android:contentDescription="@string/accessibility_icon_remove"
         android:elevation="4dp"
         android:visibility="gone" />

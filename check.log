@@ -1,0 +1,196 @@
+[0;33mRunning ShizukuX Pre-Push Guard...[0m
+[1/6] Checking CMake version... [0;32mPASS[0m
+[2/6] Checking Java/Kotlin Interop (INSTANCE)... [0;32mPASS[0m
+[3/6] Checking for duplicate resource keys... [0;32mPASS[0m
+[4/6] Checking for missing R imports in Kotlin... [0;31mFAIL[0m
+manager/src/main/java/af/shizuku/manager/home/HomeAdapter.kt
+[5/6] Checking for ambiguous Bundle imports... [0;32mPASS[0m
+[6/9] Checking for missing Coroutine imports... [0;32mPASS[0m
+[7/9] Checking for missing lifecycleScope imports... [0;32mPASS[0m
+[8/9] Checking for misplaced imports in Kotlin... [0;32mPASS[0m
+[9/9] Checking submodule remote sync status... [0;32mPASS[0m (Submodule directory exists)
+[10/12] Checking for hardcoded package names in XML resources... [0;32mPASS[0m
+[11/12] Checking for unresolved colorPrimary... [0;32mPASS[0m
+[12/14] Checking for printStackTrace leftovers... [0;33mWARN[0m (Use loge or Log.e instead)
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error.log:74608:build	Pre-Push Guard	2026-06-06T12:23:04.2012632Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error.log:74609:build	Pre-Push Guard	2026-06-06T12:23:04.2013341Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error.log:74610:build	Pre-Push Guard	2026-06-06T12:23:04.2014023Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error.log:74611:build	Pre-Push Guard	2026-06-06T12:23:04.2014755Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error.log:74612:build	Pre-Push Guard	2026-06-06T12:23:04.2015482Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error.log:74613:build	Pre-Push Guard	2026-06-06T12:23:04.2016291Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error.log:74614:build	Pre-Push Guard	2026-06-06T12:23:04.2017147Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error.log:74615:build	Pre-Push Guard	2026-06-06T12:23:04.2018069Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error.log:74616:build	Pre-Push Guard	2026-06-06T12:23:04.2018998Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error.log:74617:build	Pre-Push Guard	2026-06-06T12:23:04.2019679Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error.log:74618:build	Pre-Push Guard	2026-06-06T12:23:04.2020322Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error.log:74619:build	Pre-Push Guard	2026-06-06T12:23:04.2020955Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error.log:74620:build	Pre-Push Guard	2026-06-06T12:23:04.2021575Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error.log:74621:build	Pre-Push Guard	2026-06-06T12:23:04.2022221Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error.log:74622:build	Pre-Push Guard	2026-06-06T12:23:04.2022854Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error.log:74623:build	Pre-Push Guard	2026-06-06T12:23:04.2023465Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error.log:74624:build	Pre-Push Guard	2026-06-06T12:23:04.2024234Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error.log:74625:build	Pre-Push Guard	2026-06-06T12:23:04.2024910Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error.log:74626:build	Pre-Push Guard	2026-06-06T12:23:04.2025627Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error.log:74627:build	Pre-Push Guard	2026-06-06T12:23:04.2026365Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error.log:74628:build	Pre-Push Guard	2026-06-06T12:23:04.2027182Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error.log:74629:build	Pre-Push Guard	2026-06-06T12:23:04.2028464Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_2.log:74608:build	Pre-Push Guard	2026-06-06T23:11:52.6940496Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_2.log:74609:build	Pre-Push Guard	2026-06-06T23:11:52.6941719Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_2.log:74610:build	Pre-Push Guard	2026-06-06T23:11:52.6942591Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_2.log:74611:build	Pre-Push Guard	2026-06-06T23:11:52.6943492Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_2.log:74612:build	Pre-Push Guard	2026-06-06T23:11:52.6944398Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_2.log:74613:build	Pre-Push Guard	2026-06-06T23:11:52.6945396Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_2.log:74614:build	Pre-Push Guard	2026-06-06T23:11:52.6946466Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_2.log:74615:build	Pre-Push Guard	2026-06-06T23:11:52.6947391Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_2.log:74616:build	Pre-Push Guard	2026-06-06T23:11:52.6948728Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_2.log:74617:build	Pre-Push Guard	2026-06-06T23:11:52.6949608Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_2.log:74618:build	Pre-Push Guard	2026-06-06T23:11:52.6950338Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_2.log:74619:build	Pre-Push Guard	2026-06-06T23:11:52.6951062Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_2.log:74620:build	Pre-Push Guard	2026-06-06T23:11:52.6951773Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_2.log:74621:build	Pre-Push Guard	2026-06-06T23:11:52.6952493Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_2.log:74622:build	Pre-Push Guard	2026-06-06T23:11:52.6953196Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_2.log:74623:build	Pre-Push Guard	2026-06-06T23:11:52.6953876Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_2.log:74624:build	Pre-Push Guard	2026-06-06T23:11:52.6954772Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_2.log:74625:build	Pre-Push Guard	2026-06-06T23:11:52.6955541Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_2.log:74626:build	Pre-Push Guard	2026-06-06T23:11:52.6956334Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_2.log:74627:build	Pre-Push Guard	2026-06-06T23:11:52.6957322Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_2.log:74628:build	Pre-Push Guard	2026-06-06T23:11:52.6959267Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_2.log:74629:build	Pre-Push Guard	2026-06-06T23:11:52.6960888Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_3.log:75741:build	Pre-Push Guard	2026-06-06T23:50:23.8850670Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_3.log:75742:build	Pre-Push Guard	2026-06-06T23:50:23.8851084Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_3.log:75743:build	Pre-Push Guard	2026-06-06T23:50:23.8851543Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_3.log:75744:build	Pre-Push Guard	2026-06-06T23:50:23.8851925Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_3.log:75745:build	Pre-Push Guard	2026-06-06T23:50:23.8852253Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_3.log:75746:build	Pre-Push Guard	2026-06-06T23:50:23.8852694Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_3.log:75747:build	Pre-Push Guard	2026-06-06T23:50:23.8853104Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_3.log:75748:build	Pre-Push Guard	2026-06-06T23:50:23.8853413Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_3.log:75749:build	Pre-Push Guard	2026-06-06T23:50:23.8853744Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_3.log:75750:build	Pre-Push Guard	2026-06-06T23:50:23.8854040Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_3.log:75751:build	Pre-Push Guard	2026-06-06T23:50:23.8854327Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_3.log:75752:build	Pre-Push Guard	2026-06-06T23:50:23.8854601Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_3.log:75753:build	Pre-Push Guard	2026-06-06T23:50:23.8854869Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_3.log:75754:build	Pre-Push Guard	2026-06-06T23:50:23.8855678Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_3.log:75755:build	Pre-Push Guard	2026-06-06T23:50:23.8856010Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_3.log:75756:build	Pre-Push Guard	2026-06-06T23:50:23.8856285Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_3.log:75757:build	Pre-Push Guard	2026-06-06T23:50:23.8856829Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_3.log:75758:build	Pre-Push Guard	2026-06-06T23:50:23.8857196Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_3.log:75759:build	Pre-Push Guard	2026-06-06T23:50:23.8857544Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_3.log:75760:build	Pre-Push Guard	2026-06-06T23:50:23.8857898Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_3.log:75761:build	Pre-Push Guard	2026-06-06T23:50:23.8858281Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_3.log:75762:build	Pre-Push Guard	2026-06-06T23:50:23.8858696Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_4.log:75836:build	Pre-Push Guard	2026-06-07T00:00:20.2581630Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_4.log:75837:build	Pre-Push Guard	2026-06-07T00:00:20.2582382Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_4.log:75838:build	Pre-Push Guard	2026-06-07T00:00:20.2583135Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_4.log:75839:build	Pre-Push Guard	2026-06-07T00:00:20.2583981Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_4.log:75840:build	Pre-Push Guard	2026-06-07T00:00:20.2584785Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_4.log:75841:build	Pre-Push Guard	2026-06-07T00:00:20.2585640Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_4.log:75842:build	Pre-Push Guard	2026-06-07T00:00:20.2586557Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_4.log:75843:build	Pre-Push Guard	2026-06-07T00:00:20.2587349Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_4.log:75844:build	Pre-Push Guard	2026-06-07T00:00:20.2588082Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_4.log:75845:build	Pre-Push Guard	2026-06-07T00:00:20.2588787Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_4.log:75846:build	Pre-Push Guard	2026-06-07T00:00:20.2589720Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_4.log:75847:build	Pre-Push Guard	2026-06-07T00:00:20.2590377Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_4.log:75848:build	Pre-Push Guard	2026-06-07T00:00:20.2591880Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_4.log:75849:build	Pre-Push Guard	2026-06-07T00:00:20.2592557Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_4.log:75850:build	Pre-Push Guard	2026-06-07T00:00:20.2593230Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_4.log:75851:build	Pre-Push Guard	2026-06-07T00:00:20.2593871Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_4.log:75852:build	Pre-Push Guard	2026-06-07T00:00:20.2594780Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_4.log:75853:build	Pre-Push Guard	2026-06-07T00:00:20.2595511Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_4.log:75854:build	Pre-Push Guard	2026-06-07T00:00:20.2596297Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_4.log:75855:build	Pre-Push Guard	2026-06-07T00:00:20.2597080Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_4.log:75856:build	Pre-Push Guard	2026-06-07T00:00:20.2597873Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_4.log:75857:build	Pre-Push Guard	2026-06-07T00:00:20.2598725Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_5.log:74605:build	Pre-Push Guard	2026-06-07T00:08:58.4970526Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_5.log:74606:build	Pre-Push Guard	2026-06-07T00:08:58.4971904Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_5.log:74607:build	Pre-Push Guard	2026-06-07T00:08:58.4972924Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_5.log:74608:build	Pre-Push Guard	2026-06-07T00:08:58.4974018Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_5.log:74609:build	Pre-Push Guard	2026-06-07T00:08:58.4975119Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_5.log:74610:build	Pre-Push Guard	2026-06-07T00:08:58.4976319Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_5.log:74611:build	Pre-Push Guard	2026-06-07T00:08:58.4977626Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_5.log:74612:build	Pre-Push Guard	2026-06-07T00:08:58.4978740Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_5.log:74613:build	Pre-Push Guard	2026-06-07T00:08:58.4979994Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_5.log:74614:build	Pre-Push Guard	2026-06-07T00:08:58.4981005Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_5.log:74615:build	Pre-Push Guard	2026-06-07T00:08:58.4982143Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_5.log:74616:build	Pre-Push Guard	2026-06-07T00:08:58.4982855Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_5.log:74617:build	Pre-Push Guard	2026-06-07T00:08:58.4983542Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_5.log:74618:build	Pre-Push Guard	2026-06-07T00:08:58.4984284Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_5.log:74619:build	Pre-Push Guard	2026-06-07T00:08:58.4985011Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_5.log:74620:build	Pre-Push Guard	2026-06-07T00:08:58.4985710Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_5.log:74621:build	Pre-Push Guard	2026-06-07T00:08:58.4986583Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_5.log:74622:build	Pre-Push Guard	2026-06-07T00:08:58.4987453Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_5.log:74623:build	Pre-Push Guard	2026-06-07T00:08:58.4989106Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_5.log:74624:build	Pre-Push Guard	2026-06-07T00:08:58.4990655Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_5.log:74625:build	Pre-Push Guard	2026-06-07T00:08:58.4992208Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_5.log:74626:build	Pre-Push Guard	2026-06-07T00:08:58.4993861Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_6.log:75747:build	Pre-Push Guard	2026-06-07T00:20:25.6773932Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_6.log:75748:build	Pre-Push Guard	2026-06-07T00:20:25.6775195Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_6.log:75749:build	Pre-Push Guard	2026-06-07T00:20:25.6776369Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_6.log:75750:build	Pre-Push Guard	2026-06-07T00:20:25.6777648Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_6.log:75751:build	Pre-Push Guard	2026-06-07T00:20:25.6778812Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_6.log:75752:build	Pre-Push Guard	2026-06-07T00:20:25.6779751Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_6.log:75753:build	Pre-Push Guard	2026-06-07T00:20:25.6780724Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_6.log:75754:build	Pre-Push Guard	2026-06-07T00:20:25.6781526Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_6.log:75755:build	Pre-Push Guard	2026-06-07T00:20:25.6782281Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_6.log:75756:build	Pre-Push Guard	2026-06-07T00:20:25.6783034Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_6.log:75757:build	Pre-Push Guard	2026-06-07T00:20:25.6783740Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_6.log:75758:build	Pre-Push Guard	2026-06-07T00:20:25.6784391Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_6.log:75759:build	Pre-Push Guard	2026-06-07T00:20:25.6785062Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_6.log:75760:build	Pre-Push Guard	2026-06-07T00:20:25.6786072Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_6.log:75761:build	Pre-Push Guard	2026-06-07T00:20:25.6786786Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_6.log:75762:build	Pre-Push Guard	2026-06-07T00:20:25.6787440Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_6.log:75763:build	Pre-Push Guard	2026-06-07T00:20:25.6788323Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_6.log:75764:build	Pre-Push Guard	2026-06-07T00:20:25.6789153Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_6.log:75765:build	Pre-Push Guard	2026-06-07T00:20:25.6789925Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_6.log:75766:build	Pre-Push Guard	2026-06-07T00:20:25.6790728Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_6.log:75767:build	Pre-Push Guard	2026-06-07T00:20:25.6791537Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_6.log:75768:build	Pre-Push Guard	2026-06-07T00:20:25.6792409Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+./build_error_7.log:74606:build	Pre-Push Guard	2026-06-07T00:30:06.2637318Z ./app-process/src/main/java/com/rosan/app_process/AppProcess.java:242:                e.printStackTrace();
+./build_error_7.log:74607:build	Pre-Push Guard	2026-06-07T00:30:06.2638701Z ./app-process/src/main/java/com/rosan/app_process/NewProcess.java:46:            e.printStackTrace();
+./build_error_7.log:74608:build	Pre-Push Guard	2026-06-07T00:30:06.2639516Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:99:                e.printStackTrace();
+./build_error_7.log:74609:build	Pre-Push Guard	2026-06-07T00:30:06.2640372Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:104:                    e.printStackTrace();
+./build_error_7.log:74610:build	Pre-Push Guard	2026-06-07T00:30:06.2641594Z ./app-process/src/main/java/com/rosan/app_process/RemoteProcessImpl.java:109:                    e.printStackTrace();
+./build_error_7.log:74611:build	Pre-Push Guard	2026-06-07T00:30:06.2642522Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:62:                    e.printStackTrace();
+./build_error_7.log:74612:build	Pre-Push Guard	2026-06-07T00:30:06.2643507Z ./api/server-shared/src/main/java/rikka/shizuku/server/util/ParcelFileDescriptorUtil.java:67:                    e.printStackTrace();
+./build_error_7.log:74613:build	Pre-Push Guard	2026-06-07T00:30:06.2644350Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:198:            tr.printStackTrace();
+./build_error_7.log:74614:build	Pre-Push Guard	2026-06-07T00:30:06.2645097Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:269:                        e.printStackTrace();
+./build_error_7.log:74615:build	Pre-Push Guard	2026-06-07T00:30:06.2645865Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:274:                        e.printStackTrace();
+./build_error_7.log:74616:build	Pre-Push Guard	2026-06-07T00:30:06.2646979Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:303:            tr.printStackTrace();
+./build_error_7.log:74617:build	Pre-Push Guard	2026-06-07T00:30:06.2648067Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:342:            tr.printStackTrace();
+./build_error_7.log:74618:build	Pre-Push Guard	2026-06-07T00:30:06.2649096Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:359:            tr.printStackTrace();
+./build_error_7.log:74619:build	Pre-Push Guard	2026-06-07T00:30:06.2650378Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:375:                    e.printStackTrace();
+./build_error_7.log:74620:build	Pre-Push Guard	2026-06-07T00:30:06.2651831Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:406:            tr.printStackTrace();
+./build_error_7.log:74621:build	Pre-Push Guard	2026-06-07T00:30:06.2652911Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:421:            tr.printStackTrace();
+./build_error_7.log:74622:build	Pre-Push Guard	2026-06-07T00:30:06.2654460Z ./api/demo/src/main/java/rikka/shizuku/demo/DemoActivity.java:441:            tr.printStackTrace();
+./build_error_7.log:74623:build	Pre-Push Guard	2026-06-07T00:30:06.2655612Z ./manager/src/main/java/af/shizuku/manager/utils/CrashHandler.kt:50:        throwable.printStackTrace(pw)
+./build_error_7.log:74624:build	Pre-Push Guard	2026-06-07T00:30:06.2656988Z ./manager/src/main/java/af/shizuku/manager/adb/FakeAdbPairingActivity.kt:31:                e.printStackTrace()
+./build_error_7.log:74625:build	Pre-Push Guard	2026-06-07T00:30:06.2658432Z ./manager/src/main/java/af/shizuku/manager/settings/SettingsSearchEngine.kt:72:                e.printStackTrace()
+./build_error_7.log:74626:build	Pre-Push Guard	2026-06-07T00:30:06.2659878Z ./manager/src/main/java/af/shizuku/manager/shell/PlusShell.java:32:                if (t != null) t.printStackTrace(System.err);
+./build_error_7.log:74627:build	Pre-Push Guard	2026-06-07T00:30:06.2661798Z ./pre-push-guard/scripts/pre_push_check.sh:169:STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
+[13/14] Checking for stale JNI class paths (moe/shizuku)... [0;32mPASS[0m
+[14/14] Checking JniSmokeTest exists... [0;32mPASS[0m
+[15/15] Checking layout XML well-formedness... [0;33mSKIP[0m (xmllint not found)
+
+[0;33m----------------------------------------[0m
+[0;31mFailure: 1 critical issues found.[0m

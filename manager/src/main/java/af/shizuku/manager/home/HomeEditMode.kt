@@ -43,16 +43,18 @@ object HomeEditMode {
         val isHidden = binding.root.tag as? Boolean ?: false
 
         if (isActive && isHidden) {
-            binding.root.alpha = 0.45f
-            binding.removeBtn.setIconResource(R.drawable.ic_add_24)
+            binding.cardContent.alpha = 0.45f
+            binding.dragHandle.alpha = 0.15f // Fade drag handle even more
+            binding.removeBtn.setImageResource(R.drawable.ic_add_24)
             val activeColor = binding.root.context.getColor(R.color.system_accent1_600)
-            binding.removeBtn.iconTint = android.content.res.ColorStateList.valueOf(activeColor)
+            binding.removeBtn.imageTintList = android.content.res.ColorStateList.valueOf(activeColor)
         } else {
-            binding.root.alpha = 1.0f
-            binding.removeBtn.setIconResource(R.drawable.ic_close_24)
+            binding.cardContent.alpha = 1.0f
+            binding.dragHandle.alpha = 0.30f // Restore original drag handle alpha
+            binding.removeBtn.setImageResource(R.drawable.ic_close_24)
             val errorTint = android.util.TypedValue()
             binding.root.context.theme.resolveAttribute(android.R.attr.colorError, errorTint, true)
-            binding.removeBtn.iconTint = android.content.res.ColorStateList.valueOf(errorTint.data)
+            binding.removeBtn.imageTintList = android.content.res.ColorStateList.valueOf(errorTint.data)
         }
 
         val res = binding.cardContent.resources

@@ -96,11 +96,7 @@
         <activity-alias
             android:name="af.shizuku.manager.home.HomeActivity"
             android:targetActivity=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-            </intent-filter>
-        </activity-alias>
+            android:exported="true" />
 
         <activity-alias
             android:name="af.shizuku.manager.ApplicationManagementActivity"

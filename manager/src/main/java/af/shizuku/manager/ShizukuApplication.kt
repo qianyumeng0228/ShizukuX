@@ -350,14 +350,12 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     .detectAll()
                     .penaltyLog()
                     .penaltyFlashScreen()
-                    .penaltyDeath()
                     .build()
             )
             android.os.StrictMode.setVmPolicy(
                 android.os.StrictMode.VmPolicy.Builder()
                     .detectAll()
                     .penaltyLog()
-                    .penaltyDeath()
                     .build()
             )
         }

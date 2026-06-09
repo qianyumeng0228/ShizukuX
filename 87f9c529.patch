@@ -1,0 +1,193 @@
+commit 87f9c529c81c3b19a64044019282e90ef0b0d9d4
+Author: thejaustin <thejaustin@users.noreply.github.com>
+Date:   Sun Jun 7 22:27:35 2026 -0500
+
+    chore(settings): move experimental section and remove custom visuals to fix overlap
+
+diff --git a/manager/src/main/res/xml/settings_developer_options.xml b/manager/src/main/res/xml/settings_developer_options.xml
+index 72f35620..a51d5488 100644
+--- a/manager/src/main/res/xml/settings_developer_options.xml
++++ b/manager/src/main/res/xml/settings_developer_options.xml
+@@ -45,4 +45,27 @@
+ 
+ 
+ 
++
++
++    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
++        android:key="category_dangerous_experimental"
++        android:title="Dangerous &amp; Experimental Settings"
++        android:defaultValue="false">
++
++        <af.shizuku.manager.settings.PlusFeaturePreference
++            android:key="bootloader_flash_ota_enabled"
++            android:title="[DANGEROUS] Systemless OTA Flashing"
++            android:summary="Use android.os.UpdateEngine via Shizuku shell to seamlessly install zip payloads to the inactive slot without custom recovery. DANGER: Flashing incompatible payloads WILL result in a hard brick or bootloop."
++            android:icon="@drawable/ic_update_24"
++            android:defaultValue="false" />
++            
++        <af.shizuku.manager.settings.PlusFeaturePreference
++            android:key="bootloader_fastbootd_reboot_enabled"
++            android:title="[Experimental] Fastbootd &amp; Recovery Bridging"
++            android:summary="Allow root apps to physically trigger bootloader, fastbootd, and recovery reboots natively using Android's RecoverySystem APIs."
++            android:icon="@drawable/ic_server_restart"
++            android:defaultValue="false" />
++
++    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
++
+ </PreferenceScreen>
+diff --git a/manager/src/main/res/xml/settings_main.xml b/manager/src/main/res/xml/settings_main.xml
+index ca93a016..5402ac7a 100644
+--- a/manager/src/main/res/xml/settings_main.xml
++++ b/manager/src/main/res/xml/settings_main.xml
+@@ -88,25 +88,4 @@
+ 
+     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+ 
+-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+-        android:key="category_dangerous_experimental"
+-        android:title="Dangerous &amp; Experimental Settings"
+-        android:defaultValue="false">
+-
+-        <af.shizuku.manager.settings.PlusFeaturePreference
+-            android:key="bootloader_flash_ota_enabled"
+-            android:title="[DANGEROUS] Systemless OTA Flashing"
+-            android:summary="Use android.os.UpdateEngine via Shizuku shell to seamlessly install zip payloads to the inactive slot without custom recovery. DANGER: Flashing incompatible payloads WILL result in a hard brick or bootloop."
+-            android:icon="@drawable/ic_update_24"
+-            android:defaultValue="false" />
+-            
+-        <af.shizuku.manager.settings.PlusFeaturePreference
+-            android:key="bootloader_fastbootd_reboot_enabled"
+-            android:title="[Experimental] Fastbootd &amp; Recovery Bridging"
+-            android:summary="Allow root apps to physically trigger bootloader, fastbootd, and recovery reboots natively using Android's RecoverySystem APIs."
+-            android:icon="@drawable/ic_server_restart"
+-            android:defaultValue="false" />
+-
+-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+-
+ </PreferenceScreen>
+diff --git a/manager/src/main/res/xml/settings_personalization.xml b/manager/src/main/res/xml/settings_personalization.xml
+index 59bee8c8..989ccbc6 100644
+--- a/manager/src/main/res/xml/settings_personalization.xml
++++ b/manager/src/main/res/xml/settings_personalization.xml
+@@ -3,8 +3,6 @@
+     xmlns:app="http://schemas.android.com/apk/res-auto">
+ 
+     <!-- Section 1: Visual Design Preview -->
+-    <af.shizuku.manager.settings.UiSettingsHeaderPreference
+-        android:key="ui_settings_header" />
+ 
+     <!-- Section 2: Appearance & Theme -->
+     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+diff --git a/manager/src/main/res/xml/settings_root_integration.xml b/manager/src/main/res/xml/settings_root_integration.xml
+index b67452ec..68c356f1 100644
+--- a/manager/src/main/res/xml/settings_root_integration.xml
++++ b/manager/src/main/res/xml/settings_root_integration.xml
+@@ -30,9 +30,6 @@
+         android:icon="@drawable/ic_root_24"
+         android:defaultValue="false" />
+ 
+-    <af.shizuku.manager.settings.SUBridgeDiagramPreference
+-        android:key="su_bridge_diagram" />
+-
+     <EditTextPreference
+         android:key="custom_su_path"
+         android:title="Custom SU Path"
+diff --git a/manager/src/main/res/xml/settings_shizuku_plus.xml b/manager/src/main/res/xml/settings_shizuku_plus.xml
+index 4ae1a260..23f0514c 100644
+--- a/manager/src/main/res/xml/settings_shizuku_plus.xml
++++ b/manager/src/main/res/xml/settings_shizuku_plus.xml
+@@ -94,9 +94,6 @@
+             android:defaultValue="false"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.ShadowBinderDiagramPreference
+-            android:key="shadow_binder_diagram" />
+-
+         <af.shizuku.manager.settings.AppPickerPreference
+             android:key="shadow_binder_hidden_packages"
+             android:title="@string/settings_shadow_binder_hidden_packages"
+@@ -132,9 +129,6 @@
+             app:infoDetail="@string/help_network_governor_plus_detail"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
+-            android:key="network_governor_plus_diagram" />
+-
+         <af.shizuku.manager.settings.PlusFeaturePreference
+             android:key="binder_firewall_enabled"
+             android:title="@string/settings_binder_firewall"
+@@ -143,9 +137,6 @@
+             android:defaultValue="false"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
+-            android:key="binder_firewall_diagram" />
+-
+         <af.shizuku.manager.settings.PlusFeaturePreference
+             android:key="shell_interceptor_enabled"
+             android:title="Shell Accelerator"
+@@ -174,9 +165,6 @@
+             app:infoDetail="@string/help_storage_proxy_detail"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.StorageBridgeDiagramPreference
+-            android:key="storage_proxy_diagram" />
+-
+ 
+ 
+         <af.shizuku.manager.settings.PlusFeaturePreference
+@@ -189,9 +177,6 @@
+             app:infoDetail="@string/help_avf_manager_detail"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.VMManagerDiagramPreference
+-            android:key="vm_manager_diagram" />
+-
+     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+ 
+     <!-- Intelligence & Continuity -->
+@@ -212,9 +197,6 @@
+             app:infoDetail="@string/help_continuity_bridge_detail"
+             app:badgeType="plus" />
+ 
+-        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
+-            android:key="continuity_bridge_diagram" />
+-
+     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+ 
+     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+@@ -244,9 +226,6 @@
+             app:infoDetail="@string/help_overlay_manager_plus_detail"
+             app:badgeType="experimental" />
+ 
+-        <af.shizuku.manager.settings.ThemingBridgeDiagramPreference
+-            android:key="overlay_manager_plus_diagram" />
+-
+         <af.shizuku.manager.settings.PlusFeaturePreference
+             android:key="ai_core_plus_enabled"
+             android:title="AI Bridge &amp; NPU (Experimental)"
+@@ -257,9 +236,6 @@
+             app:infoDetail="@string/help_ai_core_plus_detail"
+             app:badgeType="experimental" />
+ 
+-        <af.shizuku.manager.settings.AICoreBridgeDiagramPreference
+-            android:key="ai_core_plus_diagram" />
+-
+         <af.shizuku.manager.settings.PlusFeaturePreference
+             android:key="software_keystore_fallback_enabled"
+             android:title="Software KeyStore Fallback"
+diff --git a/manager/src/main/res/xml/settings_ui.xml b/manager/src/main/res/xml/settings_ui.xml
+index 53264a90..92372d96 100644
+--- a/manager/src/main/res/xml/settings_ui.xml
++++ b/manager/src/main/res/xml/settings_ui.xml
+@@ -1,9 +1,6 @@
+ <?xml version="1.0" encoding="utf-8"?>
+ <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+ 
+-    <af.shizuku.manager.settings.UiSettingsHeaderPreference
+-        android:key="ui_settings_header" />
+-
+     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+         android:key="category_dark_mode"
+         android:title="@string/settings_category_dark_mode"
