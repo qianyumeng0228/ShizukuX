@@ -35,7 +35,7 @@
     <!-- Remove button: shown in edit mode, top-right corner -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/remove_btn"
-        style="@style/Widget.Material3.Button.IconButton.FilledTonal"
+        style="@style/Widget.Material3.Button.IconButton.Filled.Tonal"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="top|end"
