@@ -36,7 +36,7 @@ import org.koin.core.context.startKoin
 
 /**
  * ShizukuX Application class
- * 
+ *
  * Initialization order:
  * 1. Sentry (for crash reporting)
  * 2. Static components (native libraries)
@@ -83,43 +83,43 @@ class ShizukuApplication : Application(), Configuration.Provider {
         try {
             SentryAndroid.init(this) { options ->
                 options.dsn = BuildConfig.SENTRY_DSN
-                
+
                 // Attach visual context for better debugging
                 options.isAttachScreenshot = true
                 options.isAttachViewHierarchy = true
-                
+
                 // User interaction and lifecycle tracing
                 options.isEnableUserInteractionTracing = true
                 options.isEnableUserInteractionBreadcrumbs = true
                 options.isEnableAutoActivityLifecycleTracing = true
-                
+
                 // ANR detection — 10s threshold avoids false positives from privileged
                 // system calls (__epoll_pwait / __ioctl) in the event loop
                 options.isAnrEnabled = true
                 options.anrTimeoutIntervalMillis = 10000L
-                
+
                 // Performance monitoring (sampled)
                 options.tracesSampleRate = 0.2 // 20% sampling for production
                 options.profilesSampleRate = 0.1 // 10% profiling
-                
+
                 // Release tracking with GitHub integration
                 options.release = "shizuku-plus@${BuildConfig.VERSION_NAME}"
                 options.environment = if (BuildConfig.DEBUG) "development" else "production"
                 options.dist = "${BuildConfig.VERSION_CODE}"
-                
+
                 // Session tracking for crash-free rate
                 options.isEnableAutoSessionTracking = true
                 options.sessionTrackingIntervalMillis = 30000L
-                
+
                 // Include breadcrumbs for navigation tracking
                 options.maxBreadcrumbs = 100
-                
+
                 // Send default PII (for device info, not user data)
                 options.isSendDefaultPii = false
-                
+
                 // Enable NDK crash reporting
                 options.isEnableNdk = true
-                
+
                 // Add context about the app
                 options.setBeforeSend { event, _ ->
                     // 1. Drop coroutine cancellations
@@ -127,10 +127,10 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     if (throwable is kotlinx.coroutines.CancellationException) return@setBeforeSend null
 
                     // 2. Drop expected ADB connection failures (transient or user-induced)
-                    if (throwable is java.io.EOFException || 
-                        throwable is java.net.SocketException || 
+                    if (throwable is java.io.EOFException ||
+                        throwable is java.net.SocketException ||
                         throwable is java.net.SocketTimeoutException ||
-                        throwable is java.net.ConnectException || 
+                        throwable is java.net.ConnectException ||
                         throwable is javax.net.ssl.SSLException ||
                         throwable?.javaClass?.simpleName == "AdbKeyException") {
                         return@setBeforeSend null
@@ -146,12 +146,12 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     event.setTag("version_name", BuildConfig.VERSION_NAME)
                     event.setTag("version_code", BuildConfig.VERSION_CODE.toString())
                     event.setTag("build_type", if (BuildConfig.DEBUG) "debug" else "release")
-                    
+
                     // Add system state at time of crash
                     try {
                         event.setTag("shizuku_state", if (Shizuku.pingBinder()) "connected" else "disconnected")
                         event.setTag("is_rooted", Shell.isAppGrantedRoot().toString())
-                        
+
                         // Deep Vendor Diagnostics for Triage
                         event.setTag("manufacturer", Build.MANUFACTURER)
                         if (af.shizuku.manager.utils.EnvironmentUtils.isSamsung()) {
@@ -169,15 +169,15 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     } catch (e: Exception) {
                         // Ignore errors during state collection
                     }
-                    
+
                     event
                 }
             }
-            
+
             // Set user context (anonymous, for crash grouping)
             Sentry.setUser(null) // Anonymous user
             Sentry.setTag("app_variant", BuildConfig.VERSION_NAME)
-            
+
             // Plant Sentry Timber tree to automatically capture logs as breadcrumbs
             // Sentry 8.x requires: (scopes, minEventLevel, minBreadcrumbLevel)
             try {
@@ -189,7 +189,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             } catch (e: Exception) {
                 Timber.e(e, "Failed to plant SentryTimberTree")
             }
-            
+
             Timber.d("Sentry initialized with release tracking and advanced monitoring")
         } catch (e: Exception) {
             Timber.e(e, "Failed to initialize Sentry early")
@@ -204,11 +204,11 @@ class ShizukuApplication : Application(), Configuration.Provider {
         Timber.d("Initializing static components")
 
         Shell.setDefaultBuilder(Shell.Builder.create().setFlags(Shell.FLAG_REDIRECT_STDERR))
-        
+
         if (Build.VERSION.SDK_INT >= 28) {
             HiddenApiBypass.setHiddenApiExemptions("")
         }
-        
+
         if (atLeast30) {
             try {
                 System.loadLibrary("adb")
@@ -231,7 +231,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
         AppContextManager.initialize(AppContextSettingsImpl())
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
-        
+
         // Initialize Starter with context
         af.shizuku.manager.starter.Starter.initialize(this)
 
@@ -239,7 +239,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             WatchdogService.start(this)
             af.shizuku.manager.worker.WatchdogWorker.schedule(this)
         }
-        
+
         try {
             af.shizuku.manager.automation.registerDefaultRules()
             Intent(this, af.shizuku.manager.automation.AutomationService::class.java).also { startService(it) }
@@ -279,7 +279,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     val sentryMessage = io.sentry.protocol.Message()
                     sentryMessage.formatted = "[$tag] $message"
                     event.message = sentryMessage
-                    
+
                     io.sentry.Sentry.captureEvent(event)
                 }
             } catch (e: Exception) {

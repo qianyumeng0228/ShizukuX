@@ -46,17 +46,17 @@ object MigrationHelper {
      */
     fun migrateSettings(context: Context): Boolean {
         var anyMigrated = false
-        
+
         // Migrate main settings
         if (migrateFile(context, "settings", "/data/data/$OLD_PACKAGE/shared_prefs/settings.xml")) {
             anyMigrated = true
         }
-        
+
         // Migrate app management preferences
         if (migrateFile(context, "app_management_prefs", "/data/data/$OLD_PACKAGE/shared_prefs/app_management_prefs.xml")) {
             anyMigrated = true
         }
-        
+
         return anyMigrated
     }
 

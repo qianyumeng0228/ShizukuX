@@ -46,7 +46,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                     Toast.makeText(context, R.string.settings_developer_options_revealed, Toast.LENGTH_SHORT).show()
                     return@setOnPreferenceClickListener true
                 }
-                
+
                 versionClickCount++
                 if (versionClickCount >= 7) {
                     ShizukuSettings.setVectorEnabled(true)

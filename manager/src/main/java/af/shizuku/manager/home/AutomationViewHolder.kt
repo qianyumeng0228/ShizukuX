@@ -101,7 +101,7 @@ class AutomationViewHolder(
                         .setTitle(R.string.home_automation_regenerate_token)
                         .setMessage(R.string.home_automation_regenerate_token_message)
                         .setNegativeButton(android.R.string.cancel, null)
-                        .setPositiveButton(android.R.string.ok, { _, _ -> 
+                        .setPositiveButton(android.R.string.ok, { _, _ ->
                             val authToken = ShizukuSettings.generateAuthToken()
                             extrasEditText.setText(authToken)
                         })

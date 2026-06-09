@@ -36,7 +36,7 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
                 val pm = context.applicationContext.packageManager
                 cachedApps = withContext(Dispatchers.IO) {
                     pm.getInstalledApplications(PackageManager.GET_META_DATA)
-                        .map { 
+                        .map {
                             AppItem(
                                 it.loadLabel(pm).toString(),
                                 it.packageName,
@@ -89,12 +89,12 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
 
         private fun applyFilters() {
             filteredItems = allItems.filter { item ->
-                val matchesSearch = currentQuery.isEmpty() || 
-                    item.label.contains(currentQuery, ignoreCase = true) || 
+                val matchesSearch = currentQuery.isEmpty() ||
+                    item.label.contains(currentQuery, ignoreCase = true) ||
                     item.packageName.contains(currentQuery, ignoreCase = true)
-                
+
                 val matchesSystem = showSystem || !item.isSystem
-                
+
                 matchesSearch && matchesSystem
             }
             notifyDataSetChanged()
@@ -143,13 +143,13 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
         val emptyView = dialogView.findViewById<View>(R.id.empty_text)
         val btnClearAll = dialogView.findViewById<MaterialButton>(R.id.btn_clear_all)
         val btnFilterSystem = dialogView.findViewById<MaterialButton>(R.id.btn_filter_system)
-        
+
         titleView.text = title
         searchView.isIconified = false
         searchView.queryHint = context.getString(R.string.app_management_search_hint)
 
         recyclerView.layoutManager = LinearLayoutManager(context)
-        
+
         scope.launch {
             val currentPackages = getPersistedString("").split(",").filter { it.isNotBlank() }.toSet()
             val selectedPackages = currentPackages.toMutableSet()
@@ -231,11 +231,11 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
                 val selectedNames = packages.mapNotNull { pkg ->
                     apps.find { it.packageName == pkg }?.label
                 }
-                
+
                 val limit = 3
                 val displayNames = selectedNames.take(limit).joinToString(", ")
                 val remaining = selectedNames.size - limit
-                
+
                 summary = if (remaining > 0) {
                     "$displayNames +$remaining more"
                 } else {

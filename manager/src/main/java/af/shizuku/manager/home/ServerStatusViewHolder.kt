@@ -50,7 +50,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         val status = data
         val ok = status.isRunning
         val state = af.shizuku.manager.utils.ShizukuStateMachine.get()
-        
+
         // Live Status Indicator
         statusIndicator.backgroundTintList = android.content.res.ColorStateList.valueOf(
             when {
@@ -72,7 +72,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         } else {
             statusIndicator.clearAnimation()
         }
-        
+
         // Show Sentry offline button only if limit is reached
         sentryButton.visibility = if (af.shizuku.manager.ShizukuSettings.isSentryLimitReached()) View.VISIBLE else View.GONE
         sentryButton.setOnClickListener {
@@ -85,7 +85,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
                 }
                 .show()
         }
-        
+
         // S-Pen / DeX Mouse Hover Effect (Expressive Polish)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             itemView.setOnHoverListener { v, event ->

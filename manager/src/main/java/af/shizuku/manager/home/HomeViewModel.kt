@@ -66,7 +66,7 @@ class HomeViewModel(
                 val companionInstalled = StockShizukuCompat.isInstalled(appContext)
                 val isOriginalRunning = StockShizukuCompat.isOriginalRunning()
                 setState { copy(
-                    serviceStatus = Success(status), 
+                    serviceStatus = Success(status),
                     companionInstalled = companionInstalled,
                     isOriginalShizukuRunning = isOriginalRunning
                 ) }
@@ -94,7 +94,7 @@ class HomeViewModel(
                 null
             }
         } else null
-        
+
         val permissionTest = Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
 
         try {
@@ -102,7 +102,7 @@ class HomeViewModel(
         } catch (e: Exception) {
             LOGGER.w(e, "Permission check failed")
         }
-        
+
         return ServiceStatus(uid, apiVersion, patchVersion, seContext, permissionTest)
     }
 

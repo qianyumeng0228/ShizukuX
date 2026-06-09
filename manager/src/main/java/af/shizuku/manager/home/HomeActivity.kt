@@ -93,7 +93,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         val splash = installSplashScreen()
         splash.setOnExitAnimationListener { provider ->
             // Some OEM/Android 15 builds return a non-null typed View that is actually null
-            // at runtime (platform nullability contract violation). 
+            // at runtime (platform nullability contract violation).
             // We use safe casting to Any? to prevent R8 from eliding the null check.
             try {
                 val iconView: Any? = provider.iconView
@@ -142,9 +142,9 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         homeModel.onEach(HomeState::serviceStatus) {
             if (it is Success) {
                 val status = it.invoke()
-                val wasRunning = adapter.itemCount > 0 && (adapter.getItemId(0) == HomeAdapter.ID_STATUS) && 
+                val wasRunning = adapter.itemCount > 0 && (adapter.getItemId(0) == HomeAdapter.ID_STATUS) &&
                                 (withState(homeModel) { s -> s.serviceStatus.invoke()?.isRunning == true })
-                
+
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
 
@@ -156,11 +156,11 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                         val cx = view.width / 2
                         val cy = statusCard?.let { it.top + it.height / 2 } ?: 100
                         val finalRadius = Math.hypot(view.width.toDouble(), view.height.toDouble()).toFloat()
-                        
+
                         // OneUI 8+ uses more "elastic" easing (0.22, 1, 0.36, 1)
-                        val interpolator = if (EnvironmentUtils.isOneUi8()) 
+                        val interpolator = if (EnvironmentUtils.isOneUi8())
                             androidx.core.view.animation.PathInterpolatorCompat.create(0.22f, 1f, 0.36f, 1f)
-                        else 
+                        else
                             androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
 
                         android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
@@ -168,7 +168,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                             this.interpolator = interpolator
                             start()
                         }
-                        
+
                         if (EnvironmentUtils.isOneUi8()) {
                             HapticUtils.success(view)
                         }
@@ -185,11 +185,11 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                     msg = getString(R.string.snackbar_battery_optimization_home),
                     duration = Snackbar.LENGTH_INDEFINITE,
                     actionText = getString(R.string.snackbar_action_fix),
-                    action = { 
+                    action = {
                         if (EnvironmentUtils.isSamsung()) {
                             SettingsPage.Samsung.DeviceCareBattery.launch(this)
                         } else {
-                            SettingsHelper.requestIgnoreBatteryOptimizations(this, null) 
+                            SettingsHelper.requestIgnoreBatteryOptimizations(this, null)
                         }
                     }
                 )
@@ -230,7 +230,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         checkForUpdates()
 
         val recyclerView = binding.list
-        
+
         // Force single column for original Shizuku look
         val spanCount = 1
         val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
@@ -242,7 +242,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         // Samsung DeX Specific: add 'sidebar' feel with larger horizontal margins
         val isDeX = EnvironmentUtils.isSamsung() && EnvironmentUtils.isDeX(this)
         val dexPadding = if (isDeX) (48 * resources.displayMetrics.density).toInt() else 0
-        
+
         recyclerView.adapter = adapter
         (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
@@ -347,7 +347,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
             override fun handleOnBackProgressed(backEvent: androidx.activity.BackEventCompat) {
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     val progress = backEvent.progress
-                    
+
                     if (progress > 0.1f && !backThresholdReached) {
                         backThresholdReached = true
                         HapticUtils.gestureThreshold(recyclerView)
@@ -362,7 +362,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                     recyclerView.alpha = 1f - (0.15f * progress)
                 }
             }
-            
+
             override fun handleOnBackPressed() {
                 backThresholdReached = false
                 if (HomeEditMode.isActive) {
@@ -378,7 +378,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                     }
                 }
             }
-            
+
             override fun handleOnBackCancelled() {
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     recyclerView.animate()

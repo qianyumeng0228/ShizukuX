@@ -27,7 +27,7 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
         val container1 = holder.findViewById(R.id.mock_icon_container_1) as? FrameLayout
         val container2 = holder.findViewById(R.id.mock_icon_container_2) as? FrameLayout
         val container3 = holder.findViewById(R.id.mock_icon_container_3) as? FrameLayout
-        
+
         val descText = holder.findViewById(R.id.preview_description) as? TextView
 
         val shapeStyle = ShizukuSettings.getShapeStyle() // "zen", "modern", "classic", "squircle"

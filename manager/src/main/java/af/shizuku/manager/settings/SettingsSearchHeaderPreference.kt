@@ -19,7 +19,7 @@ class SettingsSearchHeaderPreference @JvmOverloads constructor(
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
-        
+
         holder.findViewById(R.id.search_bar_card)?.setOnClickListener {
             val activity = context as? Activity
             // Programmatically trigger the search action item located in the toolbar

@@ -60,7 +60,7 @@ class BugReportDialog : DialogFragment() {
                 """.trimIndent()
 
                 val intent = Intent(Intent.ACTION_SENDTO, Uri.parse(
-                    "mailto:" + context.getString(R.string.support_email) + 
+                    "mailto:" + context.getString(R.string.support_email) +
                     "?subject=" + Uri.encode("[ISSUE TITLE]") +
                     "&body=" + Uri.encode(plainBody)
                 ))

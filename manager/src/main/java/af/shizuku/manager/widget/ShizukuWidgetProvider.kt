@@ -42,12 +42,12 @@ class ShizukuWidgetProvider : AppWidgetProvider() {
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             val state = ShizukuStateMachine.get()
             val isRunning = state == ShizukuStateMachine.State.RUNNING
-            
+
             val views = RemoteViews(context.packageName, R.layout.widget_shizuku)
-            
+
             // Set Text
             views.setTextViewText(R.id.widget_status, if (isRunning) "Running" else "Stopped")
-            
+
             // Set Colors and Icons based on state
             if (isRunning) {
                 views.setInt(R.id.widget_icon, "setBackgroundResource", R.drawable.shape_droplet_background)

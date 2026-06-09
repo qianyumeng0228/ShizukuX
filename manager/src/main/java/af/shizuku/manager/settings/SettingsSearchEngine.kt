@@ -42,19 +42,19 @@ object SettingsSearchEngine {
                 val parser = context.resources.getXml(xmlId)
                 var eventType = parser.eventType
                 var currentCategory: String? = null
-                
+
                 while (eventType != XmlPullParser.END_DOCUMENT) {
                     if (eventType == XmlPullParser.START_TAG) {
                         val tagName = parser.name
-                        if (tagName == "PreferenceCategory" || 
+                        if (tagName == "PreferenceCategory" ||
                             tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
                             tagName.endsWith("PreferenceCategory")) {
-                            
+
                             val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
                             currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
                         } else if (tagName != "PreferenceScreen") {
                             val key = parser.getAttributeValue(namespace, "key")
-                            
+
                             val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
                             val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
 
@@ -82,7 +82,7 @@ object SettingsSearchEngine {
         val q = query.trim().lowercase()
 
         return items.filter { item ->
-            item.title.lowercase().contains(q) || 
+            item.title.lowercase().contains(q) ||
             (item.summary != null && item.summary.lowercase().contains(q)) ||
             (item.category != null && item.category.lowercase().contains(q))
         }

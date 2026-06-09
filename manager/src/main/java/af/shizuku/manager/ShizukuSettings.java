@@ -276,7 +276,7 @@ public class ShizukuSettings {
         );
         getPreferences().edit().putBoolean(Keys.KEY_START_ON_BOOT, enable).apply();
     }
-    
+
     public static boolean getWatchdog() {
         return getPreferences().getBoolean(Keys.KEY_WATCHDOG, false);
     }
@@ -317,7 +317,7 @@ public class ShizukuSettings {
         } else {
             getPreferences().edit().remove(Keys.KEY_TCP_PORT).apply();
         }
-        
+
     }
 
     public static int getLastPort() {
@@ -842,7 +842,7 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("binder_logging", isBinderLoggingEnabled());
                 service.updatePlusFeatureEnabled("shadow_binder", isShadowBinderEnabled());
                 service.setPlusSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
-                
+
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {
                     try {
@@ -860,7 +860,7 @@ public class ShizukuSettings {
                         } else if (docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies")) {
                             resolvedPath = "/storage/emulated/0/" + docId + "/su";
                         }
-                        
+
                         if (resolvedPath != null) {
                             service.setPlusSetting("su_path", resolvedPath);
                         }

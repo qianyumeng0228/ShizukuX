@@ -162,7 +162,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                     (context as? Callbacks)?.onHideApp(packageName)
                 })
             }
-            
+
             // ShizukuX Power Tool: Freeze/Unfreeze
             if (ShizukuSettings.isCustomApiEnabled()) {
                 val shizukuService = rikka.shizuku.Shizuku.getBinder()
@@ -285,7 +285,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
 
         val userId = UserHandleCompat.getUserId(appInfo.uid)
         val appLabel = AppIconCache.getLabel(context, appInfo)
-        
+
         name.text = if (userId != UserHandleCompat.myUserId()) {
             val userInfo = ShizukuSystemApis.getUserInfo(userId)
             "$appLabel - ${userInfo.name} ($userId)"

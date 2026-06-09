@@ -150,7 +150,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
         if (encryptionKey == null) {
             return plaintext
         }
-        
+
         if (plaintext.size > Int.MAX_VALUE - IV_SIZE_IN_BYTES - TAG_SIZE_IN_BYTES) {
             return null
         }
@@ -167,7 +167,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
         if (encryptionKey == null) {
             return ciphertext
         }
-        
+
         if (ciphertext.size < IV_SIZE_IN_BYTES + TAG_SIZE_IN_BYTES) {
             return null
         }
@@ -209,7 +209,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 Security.addProvider(BouncyCastleProvider())
                 KeyPairGenerator.getInstance("RSA", "BC")
             }
-            
+
             keyPairGenerator.initialize(RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4))
             val keyPair = keyPairGenerator.generateKeyPair()
             privateKey = keyPair.private as RSAPrivateKey
@@ -272,13 +272,13 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
                 /**
                  * Validates the certificate chain for ADB TLS connection.
-                 * 
+                 *
                  * ADB uses self-signed certificates for peer-to-peer connections.
                  * This implementation follows the Trust-on-First-Use (TOFU) model:
                  * - Validates certificate format and validity dates
                  * - Accepts self-signed certificates (expected for ADB)
                  * - Logs certificate information for audit purposes
-                 * 
+                 *
                  * @param chain The certificate chain presented by the peer
                  * @param authType The key exchange algorithm used
                  * @throws CertificateException if validation fails
@@ -319,17 +319,17 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
                 /**
                  * Performs comprehensive validation of the certificate chain.
-                 * 
+                 *
                  * Validation steps:
                  * 1. Check chain is not null and not empty
                  * 2. Verify certificate validity dates (not expired, not not-yet-valid)
                  * 3. Verify certificate can be used for the intended purpose
                  * 4. Log certificate details for audit trail
-                 * 
+                 *
                  * Note: ADB uses self-signed certificates, so we don't verify the chain
                  * against trusted CAs. Instead, we validate the certificate format and
                  * rely on the ADB pairing protocol (SPAKE2+) for authentication.
-                 * 
+                 *
                  * @param chain The certificate chain to validate
                  * @param authType The authentication type
                  * @param role The role (client or server) for logging
@@ -349,7 +349,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
 
                     // Step 2: Validate the peer certificate (first in chain)
                     val peerCert = chain[0]
-                    
+
                     // Check certificate validity dates
                     try {
                         peerCert.checkValidity()
@@ -376,7 +376,7 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                         // Bit 0: digitalSignature, Bit 1: nonRepudiation, Bit 2: keyEncipherment
                         val hasDigitalSignature = keyUsage.size > 0 && keyUsage[0]
                         val hasKeyEncipherment = keyUsage.size > 2 && keyUsage[2]
-                        
+
                         if (!hasDigitalSignature && !hasKeyEncipherment) {
                             Timber.tag(TAG).w("Certificate lacks required key usage flags for $role")
                             // Note: We don't throw here as some valid ADB implementations

@@ -146,10 +146,10 @@ class ShellTutorialActivity : AppBarActivity() {
                 .toHtml()
 
             text3.text = getString(R.string.terminal_tutorial_3)
-            
+
             val rishPath = af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath(SH_NAME) ?: "/sdcard/$SH_NAME"
             val plusPath = af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath(PLUS_NAME) ?: "/sdcard/$PLUS_NAME"
-            
+
             val rishCmd = getString(R.string.terminal_tutorial_run_command, rishPath)
             val plusCmd = getString(R.string.terminal_tutorial_run_plus_command) + " (sh $plusPath)"
             command3.text = "$rishCmd\n\n$plusCmd"

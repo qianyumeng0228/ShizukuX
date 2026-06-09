@@ -41,7 +41,7 @@ class AdbDialogFragment : DialogFragment() {
             setView(binding.root)
             setNegativeButton(android.R.string.cancel, null)
             setPositiveButton(R.string.development_settings, null)
-            
+
             // Samsung Specific: Launch in Pop-up mode
             if (EnvironmentUtils.isSamsung()) {
                 setNeutralButton("Pop-up Settings") { _, _ ->

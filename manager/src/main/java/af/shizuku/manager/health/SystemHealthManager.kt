@@ -13,7 +13,7 @@ object SystemHealthManager {
     fun getSystemHealth(): SystemHealthData {
         var cpuTemp = 0f
         var batteryTemp = 0f
-        
+
         try {
             // Read CPU temp (commonly thermal_zone0 or cpu_thermal)
             val cpuResult = Shell.cmd("cat /sys/class/thermal/thermal_zone0/temp").exec()

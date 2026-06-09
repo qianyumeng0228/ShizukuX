@@ -64,7 +64,7 @@ object UpdateChecker {
     suspend fun checkForUpdate(channel: String = "stable"): CheckResult = withContext(Dispatchers.IO) {
         val transaction = Sentry.startTransaction("UpdateCheck", "check_for_update")
         Sentry.getSpan()?.setTag("channel", channel)
-        
+
         try {
             for (attempt in 0 until 2) {
                 if (attempt > 0) delay(RETRY_DELAY_MS)

@@ -16,7 +16,7 @@ object CrashReporter {
 
     fun generateReport(context: Context): String {
         val sb = StringBuilder()
-        
+
         // 1. Header
         sb.append("## ShizukuX Manual Crash Report\n\n")
         sb.append("Please describe what you were doing when the crash occurred.\n\n")
@@ -48,12 +48,12 @@ object CrashReporter {
         }
         sb.append("- **ShizukuX Version:** ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})\n")
         sb.append("- **Rooted:** ${Shell.isAppGrantedRoot()}\n")
-        
+
         // Detailed Diagnostics (from Service Doctor logic)
         sb.append("- **Battery Optimization:** ${SettingsHelper.isIgnoringBatteryOptimizations(context)}\n")
         sb.append("- **Wireless ADB Port:** ${EnvironmentUtils.getAdbTcpPort()}\n")
         sb.append("- **Write Secure Settings:** ${SettingsHelper.hasWriteSecureSettings(context)}\n")
-        
+
         sb.append("- **Timestamp:** ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())}\n\n")
 
         // 4. Activity Logs (Breadcrumbs)

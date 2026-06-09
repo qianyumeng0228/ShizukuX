@@ -72,7 +72,7 @@ class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coroutine
             readTimeout = READ_TIMEOUT_MS
             setRequestProperty("User-Agent", "ShizukuX/${BuildConfig.VERSION_NAME}")
             setRequestProperty("Accept", "application/json")
-            
+
             ShizukuSettings.getRemoteDbEtag()?.let {
                 setRequestProperty("If-None-Match", it)
             }
@@ -85,10 +85,10 @@ class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coroutine
                 HttpURLConnection.HTTP_OK -> {
                     val etag = connection.getHeaderField("ETag")
                     val lastModified = connection.getHeaderField("Last-Modified")
-                    
+
                     ShizukuSettings.setRemoteDbEtag(etag)
                     ShizukuSettings.setRemoteDbLastModified(lastModified)
-                    
+
                     connection.inputStream.bufferedReader().use { it.readText() }.takeIf { it.isNotBlank() }
                 }
                 HttpURLConnection.HTTP_NOT_MODIFIED -> {

@@ -29,7 +29,7 @@ object BackupRestoreManager {
         val cipher = cipherProvider(iv)
         val decryptedBytes = cipher.doFinal(data)
         val jsonString = String(decryptedBytes, Charsets.UTF_8)
-        
+
         val success = SettingsBackupManager.import(context, jsonString)
         if (!success) {
             throw Exception("Failed to import settings (invalid format)")

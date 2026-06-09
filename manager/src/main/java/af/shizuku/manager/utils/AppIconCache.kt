@@ -96,10 +96,10 @@ object AppIconCache {
                             view: ImageView): Job {
         val packageName = info.packageName
         val size = view.measuredWidth.let { if (it > 0) it else context.resources.getDimensionPixelSize(R.dimen.default_app_icon_size) }
-        
+
         // Tag the view with the current package being loaded to handle recycling
         view.setTag(R.id.tag_app_icon_package, packageName)
-        
+
         val weakView = WeakReference(view)
         return scope.launch {
             val cachedBitmap = get(packageName, userId, size)

@@ -44,7 +44,7 @@ class StarterActivity : AppBarActivity() {
 
     private val viewModel: ViewModel by viewModels()
 
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -52,7 +52,7 @@ class StarterActivity : AppBarActivity() {
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_close_24)
 
         val binding = StarterActivityBinding.inflate(layoutInflater, rootView, true)
-        
+
         val isRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, false)
         binding.header.apply {
             headerIcon.setImageResource(if (isRoot) R.drawable.ic_root_24 else R.drawable.ic_adb_24)
@@ -105,7 +105,7 @@ class StarterActivity : AppBarActivity() {
         if (hasFocus && !hasStarted) {
             hasStarted = true
             val port = intent.getIntExtra(EXTRA_PORT, 0)
-            
+
             viewModel.start(
                 intent.getBooleanExtra(EXTRA_IS_ROOT, false),
                 intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
@@ -179,7 +179,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         log("Attempting Samsung System UID Escalation via FOTA agent...\n\n")
-        
+
         withContext(Dispatchers.IO) {
             val intent = android.content.Intent().apply {
                 setClassName("com.sdet.fotaagent", "com.sdet.fotaagent.Main")
@@ -242,5 +242,5 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    
+
 }

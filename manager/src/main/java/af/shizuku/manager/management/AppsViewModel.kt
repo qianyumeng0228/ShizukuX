@@ -84,13 +84,13 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val allPackages = AuthorizationManager.getPackages()
                 rawPackages = allPackages
-                
+
                 var granted = 0
                 for (pi in allPackages) {
                     val appInfo = pi.applicationInfo ?: continue
                     if (AuthorizationManager.granted(pi.packageName, appInfo.uid)) granted++
                 }
-                
+
                 if (!onlyCount || filterState != FilterState.ALL) {
                     applyFiltersAndSort()
                 }
@@ -115,7 +115,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     } else {
                         if (pi.packageName in hiddenPackages) return@filter false
                     }
-                    
+
                     val appInfo = pi.applicationInfo
                     val label = appInfo?.loadLabel(pm)?.toString() ?: ""
                     val matchesSearch = searchQuery.isBlank() ||

@@ -91,7 +91,7 @@ object ShizukuReceiverStarter {
         )
 
         val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-        
+
         if (msg != null) nb.setContentText(msg)
 
         return nb
@@ -122,7 +122,7 @@ object ShizukuReceiverStarter {
     private fun rootStart(context: Context) {
         Sentry.addBreadcrumb(Breadcrumb("Background Root start initiated").apply { category = "shizuku.starter" })
         if (!Shell.getShell().isRoot) {
-            Sentry.addBreadcrumb(Breadcrumb("Background Root start failed - no root").apply { 
+            Sentry.addBreadcrumb(Breadcrumb("Background Root start failed - no root").apply {
                 category = "shizuku.starter"
                 level = io.sentry.SentryLevel.WARNING
             })
@@ -135,7 +135,7 @@ object ShizukuReceiverStarter {
             ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
             Shell.cmd(Starter.internalCommand).exec()
         } catch (e: Exception) {
-            Sentry.addBreadcrumb(Breadcrumb("Background Root start failed: ${e.message}").apply { 
+            Sentry.addBreadcrumb(Breadcrumb("Background Root start failed: ${e.message}").apply {
                 category = "shizuku.starter"
                 level = io.sentry.SentryLevel.ERROR
             })

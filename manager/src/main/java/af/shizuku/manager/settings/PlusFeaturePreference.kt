@@ -36,20 +36,20 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
-        
+
         val titleView = holder.findViewById(android.R.id.title) as? TextView
         val summaryView = holder.findViewById(android.R.id.summary) as? TextView
-        
+
         titleView?.apply {
             isSingleLine = false
         }
-        
+
         summaryView?.apply {
             isSingleLine = false
         }
-        
+
         holder.itemView.requestLayout()
-        
+
         holder.itemView.setOnLongClickListener {
             if (integrationPackage != null) launchIntegration() else showHelp()
             true
@@ -77,7 +77,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
     private fun showHelp() {
         if (infoDetail != 0) {
             val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(context)
-            
+
             // Outer container
             val container = android.widget.LinearLayout(context).apply {
                 orientation = android.widget.LinearLayout.VERTICAL

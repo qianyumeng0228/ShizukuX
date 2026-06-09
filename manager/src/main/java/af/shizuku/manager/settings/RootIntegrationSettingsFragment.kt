@@ -16,7 +16,7 @@ import rikka.shizuku.Shizuku
 
 /**
  * Root Integration Settings
- * 
+ *
  * Provides SU Bridge and ADB proxy features to integrate root access
  * with apps that don't natively support Shizuku.
  */
@@ -28,7 +28,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
 
         // Sync current su_bridge state to server on fragment open
         ShizukuSettings.syncAllPlusFeaturesToServer()
-        
+
         val bootloaderUnlocked = isBootloaderUnlocked()
         val bootloaderCategory = findPreference<androidx.preference.PreferenceGroup>("category_unlocked_bootloader")
         if (bootloaderCategory != null) {
@@ -164,7 +164,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
             val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
             val locked = reader.readLine()
             if (locked == "0") return true
-            
+
             val process2 = Runtime.getRuntime().exec(arrayOf("getprop", "ro.boot.verifiedbootstate"))
             val reader2 = java.io.BufferedReader(java.io.InputStreamReader(process2.inputStream))
             val state = reader2.readLine()

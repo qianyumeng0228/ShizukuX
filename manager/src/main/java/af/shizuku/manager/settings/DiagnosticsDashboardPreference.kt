@@ -38,7 +38,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
 
         val sp = preferenceManager.sharedPreferences
         val isDisabledGlobal = sp?.getBoolean("diagnostics_enabled", true) == false
-        
+
         if (isDisabledGlobal) {
             container.visibility = View.GONE
             return
@@ -92,7 +92,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
         for (warning in visibleWarnings) {
             val itemView = inflater.inflate(R.layout.layout_diagnostic_item, listContainer, false)
             itemView.findViewById<TextView>(R.id.diagnostic_text).text = warning.message
-            
+
             // Set action handling on tapping the warning card itself
             itemView.setOnClickListener {
                 when (warning.id) {

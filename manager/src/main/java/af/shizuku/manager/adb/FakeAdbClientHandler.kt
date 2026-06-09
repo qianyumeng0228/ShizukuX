@@ -22,16 +22,16 @@ class FakeAdbClientHandler(
     companion object {
         private const val TAG = "FakeAdbClient"
         private const val PREFS_NAME = "fake_adb_keys"
-        
+
         // Multiplexing
         private val localIdCounter = AtomicInteger(1)
     }
 
     private val inputStream = DataInputStream(socket.getInputStream())
     private val outputStream = DataOutputStream(socket.getOutputStream())
-    
+
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    
+
     // We only support one active session per connection, but could support multiple
     private val activeProcesses = ConcurrentHashMap<Int, ShizukuRemoteProcess>()
 
@@ -65,7 +65,7 @@ class FakeAdbClientHandler(
                 } else if (msg.arg0 == AdbProtocol.ADB_AUTH_RSAPUBLICKEY) {
                     val pubKeyStr = String(msg.data!!).trimEnd('\u0000')
                     Timber.tag(TAG).i("Received public key: $pubKeyStr")
-                    
+
                     if (isKeyAuthorized(pubKeyStr)) {
                         authenticated = true
                         writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
@@ -151,7 +151,7 @@ class FakeAdbClientHandler(
                         // We will just blast WRTEs for now (fake adb clients might not care).
                     }
                 } catch (e: Exception) {}
-                
+
                 // Read stderr (optional, usually multiplexed in ADB but we can just blast it)
                 try {
                     while (true) {
@@ -177,18 +177,18 @@ class FakeAdbClientHandler(
         for (keyStr in allKeys) {
             try {
                 val pubKey = parseAdbPublicKey(keyStr)
-                
+
                 // ADB's signature is a raw RSA encryption of a PKCS#1 padded token.
                 // It does NOT hash the token before signing. It treats the token as the hash.
                 val cipher = javax.crypto.Cipher.getInstance("RSA/ECB/NoPadding")
                 cipher.init(javax.crypto.Cipher.DECRYPT_MODE, pubKey)
                 val decrypted = cipher.doFinal(signature)
-                
+
                 // Check if the decrypted payload ends with our exact token
                 var match = true
                 val offset = decrypted.size - token.size
                 if (offset < 0) continue
-                
+
                 for (i in token.indices) {
                     if (decrypted[offset + i] != token[i]) {
                         match = false

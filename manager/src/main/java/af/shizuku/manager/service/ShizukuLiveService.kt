@@ -14,7 +14,7 @@ class ShizukuLiveService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        
+
         serviceScope.launch {
             ShizukuStateMachine.asFlow().collect { state ->
                 val isRunning = state == ShizukuStateMachine.State.RUNNING

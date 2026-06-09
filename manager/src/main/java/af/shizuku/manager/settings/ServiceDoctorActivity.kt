@@ -45,7 +45,7 @@ class ServiceDoctorActivity : AppBarActivity() {
         runDiagnostics()
     }
 
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -252,7 +252,7 @@ class ServiceDoctorActivity : AppBarActivity() {
         if (EnvironmentUtils.isSamsung()) {
             tips.add("• " + getString(R.string.doctor_tip_samsung_optimization))
             tips.add("• " + getString(R.string.doctor_tip_samsung_sleeping))
-            
+
             val board = Build.HARDWARE.lowercase()
             if (board.contains("exynos")) {
                 tips.add("• " + getString(R.string.doctor_tip_s22_ultra_exynos))
@@ -297,7 +297,7 @@ class ServiceDoctorActivity : AppBarActivity() {
             holder.binding.icon.setImageResource(if (check.ok) R.drawable.ic_server_ok_24 else R.drawable.ic_server_error_24)
             val colorAttr = if (check.ok) com.google.android.material.R.attr.colorTertiary else android.R.attr.colorError
             holder.binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(context.themeColor(colorAttr))
-            
+
             if (check.onFix != null) {
                 holder.binding.btnFix.visibility = View.VISIBLE
                 holder.binding.btnFix.setOnClickListener { check.onFix.invoke() }

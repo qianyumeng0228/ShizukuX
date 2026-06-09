@@ -68,7 +68,7 @@ class AdbMdns(
     private fun onServiceResolved(resolvedService: NsdServiceInfo) {
         val hostAddress = resolvedService.host.hostAddress
         val isLocal = hostAddress == "127.0.0.1" || hostAddress == "::1" || resolvedService.host.isLoopbackAddress
-        
+
         if (running && (isLocal || NetworkInterface.getNetworkInterfaces()
                 .asSequence()
                 .any { networkInterface ->

@@ -45,7 +45,7 @@ class ApkVerificationManager(
                 }
             }
         }
-        
+
         return VerificationResult(
             isSafe = isSafe,
             methodsUsed = activeMethods,

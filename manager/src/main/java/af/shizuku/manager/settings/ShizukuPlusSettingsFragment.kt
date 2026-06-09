@@ -174,11 +174,11 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
                 val pm = ctx.packageManager
                 val installed = pm.getInstalledPackages(0).map { it.packageName }.toSet()
-                
+
                 // Clear any existing suspensions first
                 val toUnsuspend = installed.toMutableList()
                 dpm.setPackagesSuspended(admin, toUnsuspend.toTypedArray(), false)
-                
+
                 // Set chosen suspensions
                 if (packagesList.isNotEmpty()) {
                     val toSuspend = packagesList.filter { installed.contains(it) }
@@ -343,7 +343,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         // Initialize all preference dependencies
         updateAllPlusFeatureDependencies()
-        
+
         // Check for integrated apps and update summaries
         checkAppIntegrations()
     }
@@ -503,7 +503,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
-        
+
         // Root Compat modules
         updatePreferenceDependency("root_magisk_mocking_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("root_auto_grant_enabled", customApiEnabled, hideDisabled)
@@ -516,7 +516,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         // These also depend on window_manager_plus_enabled
         val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
         updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerPlusEnabled, hideDisabled)
-        
+
         // Force RecyclerView to recalculate layout after hiding/showing items.
         // Guard: PreferenceFragmentCompat.getListView() throws (not returns null) before
         // onCreateView completes, so the safe-call (?.) does NOT protect us — use

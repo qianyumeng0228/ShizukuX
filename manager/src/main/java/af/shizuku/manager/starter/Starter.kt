@@ -15,11 +15,11 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 object Starter {
 
     private var context: Context? = null
-    
+
     private fun getContext(): Context {
         return context ?: throw IllegalStateException("Context not initialized")
     }
-    
+
     fun initialize(context: Context) {
         this.context = context.applicationContext
     }
@@ -46,13 +46,13 @@ object Starter {
         }
         log?.invoke("\n" + getContext().getString(R.string.starter_waiting))
         val t0 = System.currentTimeMillis()
-        
+
         // Use withTimeout to prevent infinite hanging and trigger the error UI in StarterActivity
         withTimeout(20_000) {
             ShizukuStateMachine.asFlow()
                 .first { it == ShizukuStateMachine.State.RUNNING }
         }
-        
+
         val elapsed = (System.currentTimeMillis() - t0) / 1000.0
         log?.invoke("Connected in ${String.format("%.1f", elapsed)}s")
         log?.invoke(serviceStartedMessage)

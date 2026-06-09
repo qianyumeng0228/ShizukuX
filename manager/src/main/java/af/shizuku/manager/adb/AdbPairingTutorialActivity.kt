@@ -29,7 +29,7 @@ class AdbPairingTutorialActivity : AppBarActivity() {
 
     private var notificationEnabled: Boolean = false
 
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val context = this
@@ -41,13 +41,13 @@ class AdbPairingTutorialActivity : AppBarActivity() {
         }
 
         binding = AdbPairingTutorialActivityBinding.inflate(layoutInflater, rootView, true)
-        
+
         binding.header.apply {
             headerIcon.setImageResource(R.drawable.ic_wadb_24)
             headerIcon.transitionName = "icon_wireless_adb"
             headerTitle.setText(R.string.home_wireless_adb_title)
         }
-        
+
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         notificationEnabled = isNotificationEnabled()
@@ -143,7 +143,7 @@ class AdbPairingTutorialActivity : AppBarActivity() {
                     @Suppress("DEPRECATION")
                     appOps.noteOpNoThrow("android:start_foreground", android.os.Process.myUid(), packageName, null, null)
                 }
-                
+
                 if (mode == AppOpsManager.MODE_ERRORED) {
                     Toast.makeText(this, R.string.adb_foreground_op_denied, Toast.LENGTH_LONG).show()
                 }

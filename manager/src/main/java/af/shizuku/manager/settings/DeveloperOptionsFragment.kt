@@ -135,12 +135,12 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
                             val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
                                 ctx.getString(R.string.manual_report_clipboard_label), report))
-                            
+
                             Toast.makeText(ctx, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
-                            
+
                             val url = CrashReporter.getGitHubReportUrl(ctx)
                             CustomTabsHelper.launchUrlOrCopy(ctx, url)
-                            
+
                             if (hasLastCrash) {
                                 CrashHandler.clearLastCrash(ctx)
                             }

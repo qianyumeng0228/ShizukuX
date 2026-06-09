@@ -122,7 +122,7 @@ public class PlusShell {
             LOGGER.e("Error: VM Manager feature is disabled in ShizukuX settings.");
             return;
         }
-        
+
         String command = args[1];
         String name = args.length > 2 ? args[2] : null;
 
@@ -406,7 +406,7 @@ public class PlusShell {
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
         boolean enabled = service.isPlusFeatureEnabled("spoof_device");
         String target = service.getPlusSetting("spoof_target");
-        
+
         LOGGER.i("Identity Spoofing: " + (enabled ? "ACTIVE" : "DISABLED"));
         if (enabled) {
             LOGGER.i("Current Target: " + (target != null ? target : "None (Default)"));
@@ -421,13 +421,13 @@ public class PlusShell {
         LOGGER.i("Server Version: " + service.getVersion());
         LOGGER.i("Server UID: " + service.getUid());
         LOGGER.i("SELinux Context: " + service.getSELinuxContext());
-        
+
         LOGGER.i("\nPlus Features Status:");
         String[] features = {"su_bridge", "shell_interceptor", "avf_manager", "storage_proxy", "ai_core_plus"};
         for (String f : features) {
             LOGGER.i("  %-18s: %s", f, service.isPlusFeatureEnabled(f) ? "ENABLED" : "DISABLED");
         }
-        
+
         LOGGER.i("\nDevice Identity:");
         LOGGER.i("  Model: " + android.os.Build.MODEL);
         LOGGER.i("  Brand: " + android.os.Build.BRAND);
@@ -442,7 +442,7 @@ public class PlusShell {
         }
 
         Shizuku.onBinderReceived(binder, packageName);
-        
+
         try {
             switch (args[0]) {
                 case "log":

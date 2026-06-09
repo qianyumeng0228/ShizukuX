@@ -23,7 +23,7 @@ class OtaSafetyValidator {
         // Skeleton logic for now
         val parsedDevice = currentDevice // Assume match for skeleton
         val isHomeCsc = true // Assume safe for skeleton
-        
+
         if (parsedDevice != currentDevice) {
             return ValidationResult(
                 isSafe = false,

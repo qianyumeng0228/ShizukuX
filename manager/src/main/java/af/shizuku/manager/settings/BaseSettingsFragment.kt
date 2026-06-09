@@ -79,7 +79,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
                             break
                         }
                     }
-                    
+
                     if (position >= 0) {
                         listView?.smoothScrollToPosition(position)
                         listView?.postDelayed({
@@ -274,7 +274,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
             val pos = parent.getChildAdapterPosition(view)
             if (pos == RecyclerView.NO_POSITION) return
-            
+
             // Add space above category headers for M3E spacing
             if (view.tag == "category_header") {
                 outRect.top = (12 * density).toInt()

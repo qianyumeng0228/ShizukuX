@@ -67,7 +67,7 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
         }
 
         final List<Object> oldList = new ArrayList<>(getItems());
-        
+
         DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
             @Override
             public int getOldListSize() {

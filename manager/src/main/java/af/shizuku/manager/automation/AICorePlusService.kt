@@ -18,7 +18,7 @@ class AICorePlusService : AccessibilityService() {
     private val bridge = object : IAIAutomationBridge.Stub() {
         override fun getWindowHierarchy(): String = this@AICorePlusService.getWindowHierarchy()
         override fun simulateTouch(x: Float, y: Float): Boolean = this@AICorePlusService.simulateTouch(x, y)
-        override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean = 
+        override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean =
             this@AICorePlusService.simulateSwipe(x1, y1, x2, y2, duration)
         override fun simulateText(text: String?): Boolean = this@AICorePlusService.simulateText(text ?: "")
         override fun getPixelColor(x: Int, y: Int): Int = this@AICorePlusService.getPixelColor(x, y)
@@ -89,7 +89,7 @@ class AICorePlusService : AccessibilityService() {
         val pipe = android.os.ParcelFileDescriptor.createPipe()
         val readFd = pipe[0]
         val writeFd = pipe[1]
-        
+
         Thread {
             try {
                 android.os.ParcelFileDescriptor.AutoCloseOutputStream(writeFd).use {
@@ -99,7 +99,7 @@ class AICorePlusService : AccessibilityService() {
                 Timber.e(e, "Failed to stream hierarchy")
             }
         }.start()
-        
+
         return readFd
     }
 
@@ -170,7 +170,7 @@ class AICorePlusService : AccessibilityService() {
     /**
      * Alias for performSwipe to match IAICorePlus AIDL.
      */
-    fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean = 
+    fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean =
         performSwipe(x1, y1, x2, y2, duration.toLong())
 
     /**
@@ -196,7 +196,7 @@ class AICorePlusService : AccessibilityService() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultColor = android.graphics.Color.TRANSPARENT
-            
+
             takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : AccessibilityService.TakeScreenshotCallback {
                 override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
                     try {
@@ -215,7 +215,7 @@ class AICorePlusService : AccessibilityService() {
                     latch.countDown()
                 }
             })
-            
+
             latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
             return resultColor
         }
@@ -242,7 +242,7 @@ class AICorePlusService : AccessibilityService() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultBitmap: android.graphics.Bitmap? = null
-            
+
             takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : AccessibilityService.TakeScreenshotCallback {
                 override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
                     try {
@@ -260,7 +260,7 @@ class AICorePlusService : AccessibilityService() {
                     latch.countDown()
                 }
             })
-            
+
             latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
             return resultBitmap
         }
@@ -278,13 +278,13 @@ class AICorePlusService : AccessibilityService() {
             putInt("sdk_int", android.os.Build.VERSION.SDK_INT)
             putString("device_model", android.os.Build.MODEL)
             putString("android_version", android.os.Build.VERSION.RELEASE)
-            
+
             // Detect if we're on a heavy skin like One UI or MIUI
             val brand = android.os.Build.BRAND.lowercase()
             val manufacturer = android.os.Build.MANUFACTURER.lowercase()
             putBoolean("is_samsung", brand.contains("samsung") || manufacturer.contains("samsung"))
             putBoolean("is_xiaomi", brand.contains("xiaomi") || manufacturer.contains("xiaomi"))
-            
+
             // Add current foreground activity info if possible
             rootInActiveWindow?.let { root ->
                 putString("foreground_package", root.packageName?.toString())

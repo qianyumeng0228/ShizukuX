@@ -18,7 +18,7 @@ class AutomationService : Service() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
-    
+
     private lateinit var connectivityManager: ConnectivityManager
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -41,12 +41,12 @@ class AutomationService : Service() {
         super.onCreate()
         Timber.tag("AutomationService").d("Service created")
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        
+
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .build()
         connectivityManager.registerNetworkCallback(request, networkCallback)
-        
+
         startForegroundAppMonitor()
     }
 
@@ -55,7 +55,7 @@ class AutomationService : Service() {
             val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val info = wifiManager.connectionInfo
             val ssid = info?.ssid?.removeSurrounding("\"")
-            
+
             val activeNetwork = connectivityManager.activeNetwork
             val caps = connectivityManager.getNetworkCapabilities(activeNetwork)
             val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
@@ -79,7 +79,7 @@ class AutomationService : Service() {
                     val startTime = endTime - 10000 // 10 seconds ago
                     val events = usageStatsManager.queryEvents(startTime, endTime)
                     var currentApp: String? = null
-                    
+
                     val event = android.app.usage.UsageEvents.Event()
                     while (events.hasNextEvent()) {
                         events.getNextEvent(event)
@@ -87,7 +87,7 @@ class AutomationService : Service() {
                             currentApp = event.packageName
                         }
                     }
-                    
+
                     if (currentApp != null && currentApp != lastForegroundApp) {
                         lastForegroundApp = currentApp
                         AutomationEngine.dispatchEvent(ForegroundAppEvent(currentApp), applicationContext)

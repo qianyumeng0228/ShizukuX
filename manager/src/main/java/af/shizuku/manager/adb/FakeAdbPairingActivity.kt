@@ -36,7 +36,7 @@ class FakeAdbPairingActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         val pubKeyStr = intent.getStringExtra("pubKey") ?: ""
         val hash = pubKeyStr.hashCode().toString(16).uppercase()
 

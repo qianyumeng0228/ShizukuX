@@ -67,7 +67,7 @@ sealed class SettingsPage(
                 }
             }
         }
-        
+
     }
 
     sealed class Notifications(

@@ -183,7 +183,7 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
     private var state: State = State.Ready
 
     fun start(): Boolean {
-        Sentry.addBreadcrumb(Breadcrumb("ADB Pairing started").apply { 
+        Sentry.addBreadcrumb(Breadcrumb("ADB Pairing started").apply {
             category = "adb.pairing"
             setData("host", host)
             setData("port", port.toString())
@@ -194,7 +194,7 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
             state = State.ExchangingMsgs
 
             if (!doExchangeMsgs()) {
-                Sentry.addBreadcrumb(Breadcrumb("ADB Pairing failed at message exchange").apply { 
+                Sentry.addBreadcrumb(Breadcrumb("ADB Pairing failed at message exchange").apply {
                     category = "adb.pairing"
                     level = io.sentry.SentryLevel.ERROR
                 })
@@ -205,7 +205,7 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
             state = State.ExchangingPeerInfo
 
             if (!doExchangePeerInfo()) {
-                Sentry.addBreadcrumb(Breadcrumb("ADB Pairing failed at peer info exchange").apply { 
+                Sentry.addBreadcrumb(Breadcrumb("ADB Pairing failed at peer info exchange").apply {
                     category = "adb.pairing"
                     level = io.sentry.SentryLevel.ERROR
                 })
@@ -217,7 +217,7 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
             state = State.Stopped
             return true
         } catch (e: Exception) {
-            Sentry.addBreadcrumb(Breadcrumb("ADB Pairing error: ${e.message}").apply { 
+            Sentry.addBreadcrumb(Breadcrumb("ADB Pairing error: ${e.message}").apply {
                 category = "adb.pairing"
                 level = io.sentry.SentryLevel.ERROR
             })

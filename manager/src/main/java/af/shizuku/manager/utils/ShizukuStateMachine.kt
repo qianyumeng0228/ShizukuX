@@ -25,20 +25,20 @@ object ShizukuStateMachine {
 
     init {
         Shizuku.addBinderReceivedListenerSticky(
-            Shizuku.OnBinderReceivedListener { 
+            Shizuku.OnBinderReceivedListener {
                 Sentry.addBreadcrumb(Breadcrumb("Binder received - service is now RUNNING").apply {
                     category = "shizuku.service"
                 })
-                set(State.RUNNING) 
+                set(State.RUNNING)
             }
         )
         Shizuku.addBinderDeadListener(
-            Shizuku.OnBinderDeadListener { 
+            Shizuku.OnBinderDeadListener {
                 Sentry.addBreadcrumb(Breadcrumb("Binder dead - service connection lost").apply {
                     category = "shizuku.service"
                     level = io.sentry.SentryLevel.WARNING
                 })
-                setDead() 
+                setDead()
             }
         )
     }
@@ -110,7 +110,7 @@ object ShizukuStateMachine {
         } finally {
             span?.finish()
         }
-        
+
         val state = if (isAlive) State.RUNNING else State.STOPPED
         set(state)
         return state
@@ -121,7 +121,7 @@ object ShizukuStateMachine {
     }
 
     fun isDead(): Boolean {
-        return (get() == State.STOPPED || get() == State.CRASHED) 
+        return (get() == State.STOPPED || get() == State.CRASHED)
     }
 
     fun addListener(listener: (State) -> Unit) {

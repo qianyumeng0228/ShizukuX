@@ -119,12 +119,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 Status.SUCCESS -> {
                     val data = it.data ?: emptyList()
                     adapter.updateData(data)
-                    
+
                     // Show empty state when filtered results are empty
                     val hasData = data.isNotEmpty()
                     emptyStateView.visibility = if (hasData) View.GONE else View.VISIBLE
                     recyclerView.visibility = if (hasData) View.VISIBLE else View.GONE
-                    
+
                     if (firstLoad && !data.isNullOrEmpty()) {
                         firstLoad = false
                         recyclerView.scheduleLayoutAnimation()
@@ -142,18 +142,18 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         viewModel.load()
 
         recyclerView.adapter = adapter
-        
+
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
             val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
             v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, systemBars.bottom)
             insets
         }
-        
+
         // M3E 2026 Layout Animation for fluid motion on entry
         recyclerView.layoutAnimation = AnimationUtils.loadLayoutAnimation(
             this, R.anim.layout_animation_slide_bottom
         )
-        
+
         recyclerView.setBackgroundColor(Color.TRANSPARENT)
         recyclerView.addItemDecoration(AppListItemDecoration(this))
         recyclerView.fixEdgeEffect()
@@ -184,7 +184,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             menu.add(0, 10, 0, R.string.app_management_bulk_select_all).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             menu.add(0, 11, 0, R.string.app_management_bulk_grant).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             menu.add(0, 12, 0, R.string.app_management_bulk_revoke).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
-            
+
             if (viewModel.filterState == FilterState.HIDDEN) {
                 menu.add(0, 14, 0, R.string.app_management_undo).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             } else {
@@ -301,7 +301,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
                 val item = items.getOrNull(pos) as? PackageInfo
                 adapter.notifyItemChanged(pos) // snap back
                 item ?: return
-                
+
                 val action = if (direction == ItemTouchHelper.RIGHT) swipeRightAction else swipeLeftAction
                 handleSwipeAction(item, action)
             }
@@ -325,10 +325,10 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         val opts = ActivityOptions.makeCustomAnimation(
             this, android.R.anim.fade_in, android.R.anim.fade_out
         ).toBundle()
-        
+
         val appLabel = item.applicationInfo?.loadLabel(packageManager)?.toString() ?: item.packageName
         ActivityLogManager.log(appLabel, item.packageName, "Swipe: $action")
-        
+
         when (action) {
             "open_app" -> {
                 val intent = packageManager.getLaunchIntentForPackage(item.packageName)
@@ -376,7 +376,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
         val intrinsicHeight = icon?.intrinsicHeight ?: 0
         val intrinsicWidth = icon?.intrinsicWidth ?: 0
         val top = v.top + (v.height - intrinsicHeight) / 2
-        
+
         if (dX > 0) {
             bg.setBounds(v.left, v.top, v.left + dX.toInt(), v.bottom)
             bg.draw(c)

@@ -74,7 +74,7 @@ class AdbProxyService : Service() {
                 if (!restartViaCtl || EnvironmentUtils.isSamsung()) {
                     // Samsung specific: sometimes ctl.restart is ignored, toggling the property forces a restart
                     execShellCommand(arrayOf("setprop", "adb.network.port", port.toString()))
-                    
+
                     // Fallback A: explicit stop/start (AOSP init services)
                     val stopped = execShellCommand(arrayOf("stop", "adbd"))
                     if (stopped) {

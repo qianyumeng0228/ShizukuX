@@ -5,7 +5,7 @@ import android.view.HapticFeedbackConstants
 import android.view.View
 
 /**
- * Utility for providing "expressive" haptic feedback, 
+ * Utility for providing "expressive" haptic feedback,
  * common in modern Material 3 Enhanced (M3E) applications.
  */
 object HapticUtils {

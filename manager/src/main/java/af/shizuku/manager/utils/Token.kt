@@ -21,5 +21,5 @@ object Token {
         (1..length)
             .map { CHARS[random.nextInt(CHARS.length)] }
             .joinToString("")
-            
+
 }

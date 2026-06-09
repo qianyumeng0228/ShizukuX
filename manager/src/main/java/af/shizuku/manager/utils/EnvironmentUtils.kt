@@ -96,7 +96,7 @@ object EnvironmentUtils {
         return try {
             val uri = android.net.Uri.parse(uriStr)
             val docId = android.provider.DocumentsContract.getTreeDocumentId(uri)
-            
+
             // Check for common volume patterns
             val basePath = when {
                 docId.startsWith("primary:") -> {
@@ -115,10 +115,10 @@ object EnvironmentUtils {
                 }
                 else -> {
                     if (!docId.startsWith("/")) "/storage/emulated/0/$docId"
-                    else docId 
+                    else docId
                 }
             }
-            
+
             val path = basePath.replace("//", "/") + "/" + filename
             path.replace("//", "/")
         } catch (e: Exception) {

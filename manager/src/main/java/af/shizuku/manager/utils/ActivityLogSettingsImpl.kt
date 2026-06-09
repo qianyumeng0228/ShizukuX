@@ -5,15 +5,15 @@ import af.shizuku.manager.database.ActivityLogSettings
 
 class ActivityLogSettingsImpl : ActivityLogSettings {
     override fun isActivityLogEnabled(): Boolean = ShizukuSettings.isActivityLogEnabled()
-    
+
     override fun getWatchdog(): Boolean = ShizukuSettings.getWatchdog()
-    
+
     override fun getActivityLogRetention(): Int = ShizukuSettings.getActivityLogRetention()
-    
+
     override fun setActivityLogRetention(count: Int) {
         ShizukuSettings.setActivityLogRetention(count)
     }
-    
+
     override fun showNotification(appName: String, action: String) {
         LiveActivityNotificationManager.show(af.shizuku.manager.ShizukuApplication.appContext, "$appName: $action")
     }

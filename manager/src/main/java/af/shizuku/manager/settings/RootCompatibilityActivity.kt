@@ -66,14 +66,14 @@ class RootCompatibilityActivity : AppBarActivity() {
 
         resolvedSuPath?.let { path ->
             val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
-            
+
             // Only show the automated setup card if we are actually rooted.
             // For ADB users, this card is irrelevant and confusing.
             binding.globalSetupCard.isVisible = isRoot
-            
+
             binding.globalSuPath.text = path
             binding.btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
-            
+
             if (isRoot) {
                 binding.btnSetupAll.setOnClickListener {
                     lifecycleScope.launch {
@@ -94,10 +94,10 @@ class RootCompatibilityActivity : AppBarActivity() {
         val realModel = android.os.Build.MODEL
         val realManufacturer = android.os.Build.MANUFACTURER
         binding.deviceIdentityReal.text = getString(R.string.su_bridge_device_identity_real, "$realManufacturer $realModel")
-        
+
         if (ShizukuSettings.isSpoofDeviceEnabled()) {
             var target = ShizukuSettings.getSpoofTarget()
-            
+
             if (target == "auto") {
                 val model = android.os.Build.MODEL
                 val manuf = android.os.Build.MANUFACTURER
@@ -239,7 +239,7 @@ class RootCompatibilityActivity : AppBarActivity() {
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = items[position]
-            
+
             // M3E Expressive Animation: Scale and Fade Entrance for items
             holder.itemView.alpha = 0f
             holder.itemView.scaleX = 0.96f
@@ -262,7 +262,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 holder.binding.summary.text = pkg
                 holder.binding.appContext.text = metadata?.description ?: ""
                 holder.binding.appContext.visibility = if (holder.binding.appContext.text.isNullOrEmpty()) View.GONE else View.VISIBLE
-                
+
                 // Root support badge: color and text vary by support level
                 when (metadata?.rootSupportLevel) {
                     RootSupportLevel.ROOT_REQUIRED -> {
@@ -281,7 +281,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 }
                 // "Requires Plus" badge: shown when app has Plus enhancements that benefit it
                 holder.binding.requiresPlus.visibility = if (metadata != null && metadata.potentialEnhancements.isNotEmpty()) View.VISIBLE else View.GONE
-                
+
                 // "Shizuku-aware" badge: shown for apps that support Shizuku natively
                 holder.binding.shizukuAware.visibility = if (metadata?.supportsShizukuNatively == true) View.VISIBLE else View.GONE
 
@@ -291,7 +291,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 val navHint = metadata?.suPathSettingNav ?: this@RootCompatibilityActivity.getString(R.string.su_bridge_default_nav_hint)
                 holder.binding.suPathNav.text = navHint
                 holder.binding.suPathNav.visibility = View.VISIBLE
-                
+
                 holder.binding.suCopyOpen.visibility = View.VISIBLE
                 holder.binding.suCopyOpen.setOnClickListener {
                     val path = resolvedSuPath
@@ -319,7 +319,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 if (isInstalled) {
                     val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
                     holder.binding.suMagicSetup.alpha = if (isRoot) 1.0f else 0.5f
-                    
+
                     holder.binding.suMagicSetup.setOnClickListener {
                         if (!isRoot) {
                             Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_root_required, Toast.LENGTH_SHORT).show()
@@ -341,7 +341,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                         }
                     }
                 }
-                
+
                 // Load App Info
                 try {
                     val info = pm.getApplicationInfo(pkg, 0)
@@ -350,7 +350,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                         crossfade(true)
                     }
                     holder.itemView.alpha = 1.0f
-                    
+
                     if (metadata == null) {
                         holder.binding.appContext.text = getString(R.string.su_bridge_installed_root_app)
                         holder.binding.appContext.visibility = View.VISIBLE
@@ -375,7 +375,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                         crossfade(true)
                     }
                     holder.itemView.alpha = 0.5f
-                    
+
                     if (metadata == null) {
                         holder.binding.appContext.text = getString(R.string.su_bridge_suggested_root_app)
                         holder.binding.appContext.visibility = View.VISIBLE

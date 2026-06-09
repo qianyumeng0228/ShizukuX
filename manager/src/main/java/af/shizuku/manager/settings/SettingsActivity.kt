@@ -28,7 +28,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         // Listen for back stack changes to update title
         supportFragmentManager.addOnBackStackChangedListener {
             if (supportFragmentManager.backStackEntryCount == 0) {
@@ -41,7 +41,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
 
     private fun setupSearchOverlay() {
         val root = findViewById<ViewGroup>(android.R.id.content)
-        
+
         // Create search container
         searchOverlayContainer = FrameLayout(this).apply {
             id = View.generateViewId()
@@ -124,7 +124,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
         val searchView = searchItem.actionView as? SearchView ?: return super.onCreateOptionsMenu(menu)
 
         searchView.queryHint = "Search settings…"
-        
+
         searchItem.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem): Boolean {
                 isSearchActive = true
@@ -221,7 +221,7 @@ class SettingsActivity : AppBarFragmentActivity(), PreferenceFragmentCompat.OnPr
         fun bind(item: SettingsSearchEngine.SettingItem, onClick: (SettingsSearchEngine.SettingItem) -> Unit) {
             categoryText.text = item.category ?: "Settings"
             titleText.text = item.title
-            
+
             if (item.summary.isNullOrEmpty()) {
                 summaryText.visibility = View.GONE
             } else {

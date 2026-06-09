@@ -41,23 +41,23 @@ object UpdateInstaller {
                 sleep 2
                 pm uninstall $packageName
                 pm install -r -d "$apkPath"
-                
+
                 # Enhance: Auto-grant crucial permissions and AppOps to ensure a truly seamless transition
                 pm grant $packageName android.permission.POST_NOTIFICATIONS 2>/dev/null
                 pm grant $packageName android.permission.WRITE_SECURE_SETTINGS 2>/dev/null
                 appops set $packageName SYSTEM_ALERT_WINDOW allow 2>/dev/null
                 appops set $packageName GET_USAGE_STATS allow 2>/dev/null
-                
+
                 am start -n $packageName/af.shizuku.manager.MainActivity
                 rm "$scriptFile"
             """.trimIndent()
-            
+
             scriptFile.writeText(script)
 
             // 3. Execute the script in a detached background process via root/shizuku
             // Using nohup and & ensures the shell process continues even after our app process is killed by the uninstall.
             Shell.cmd("nohup sh '${scriptFile.absolutePath}' >/dev/null 2>&1 &").exec()
-            
+
             return true
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to force update with Shizuku")

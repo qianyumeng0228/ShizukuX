@@ -33,7 +33,7 @@ class ActivityLogFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val binding = af.shizuku.core.ui.databinding.AppsActivityBinding.inflate(inflater, container, false)
-        
+
         emptyStateView = binding.emptyStateView
         emptyStateView.setIcon(R.drawable.ic_empty_log_24)
         emptyStateView.setTitle(getString(R.string.empty_state_title_activity_log_empty))
@@ -47,7 +47,7 @@ class ActivityLogFragment : Fragment() {
         }
 
         binding.list.adapter = adapter
-        
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 ActivityLogManager.logs.collectLatest { records ->
@@ -83,7 +83,7 @@ class ActivityLogFragment : Fragment() {
         fun bind(record: ActivityLogRecord) {
             val context = binding.root.context
             val pm = context.packageManager
-            
+
             try {
                 val ai = pm.getApplicationInfo(record.packageName, 0)
                 binding.appName.text = ai.loadLabel(pm)
@@ -94,7 +94,7 @@ class ActivityLogFragment : Fragment() {
                 binding.appName.text = record.appName.ifEmpty { record.packageName }
                 binding.icon.load(R.drawable.ic_system_icon)
             }
-            
+
             binding.packageName.text = record.packageName
             binding.action.text = record.action
             binding.timestamp.text = dateFormat.format(Date(record.timestamp))

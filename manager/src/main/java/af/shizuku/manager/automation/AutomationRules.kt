@@ -49,7 +49,7 @@ class AppSpecificProfileRule : AutomationRule {
     override fun execute(context: Context) {
         val app = currentApp ?: return
         Timber.i("Foreground app changed to \$app, applying profile")
-        
+
         when (app) {
             "com.banking.app" -> {
                 Timber.i("Applying secure profile for banking app")

@@ -10,9 +10,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * A persistent worker that ensures the ShizukuX Watchdog remains active.
- * 
- * Samsung's OneUI is aggressive at killing background services. 
- * This worker acts as a "Self-Healing" mechanism by checking the 
+ *
+ * Samsung's OneUI is aggressive at killing background services.
+ * This worker acts as a "Self-Healing" mechanism by checking the
  * state every 1-2 hours and restarting the Watchdog if necessary.
  */
 class WatchdogWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
