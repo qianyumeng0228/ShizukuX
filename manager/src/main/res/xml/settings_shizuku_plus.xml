@@ -94,6 +94,12 @@
             android:defaultValue="false"
             app:badgeType="plus" />
 
+        <af.shizuku.manager.settings.ShadowBinderDiagramPreference
+            android:key="shadow_binder_diagram" />
+
+        <af.shizuku.manager.settings.ShadowBinderDiagramPreference
+            android:key="shadow_binder_diagram" />
+
         <af.shizuku.manager.settings.AppPickerPreference
             android:key="shadow_binder_hidden_packages"
             android:title="@string/settings_shadow_binder_hidden_packages"
@@ -129,6 +135,12 @@
             app:infoDetail="@string/help_network_governor_plus_detail"
             app:badgeType="plus" />
 
+        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
+            android:key="network_governor_plus_diagram" />
+
+        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
+            android:key="network_governor_plus_diagram" />
+
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="binder_firewall_enabled"
             android:title="@string/settings_binder_firewall"
@@ -136,6 +148,12 @@
             android:icon="@drawable/ic_shield_24"
             android:defaultValue="false"
             app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
+            android:key="binder_firewall_diagram" />
+
+        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
+            android:key="binder_firewall_diagram" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="shell_interceptor_enabled"
@@ -165,6 +183,12 @@
             app:infoDetail="@string/help_storage_proxy_detail"
             app:badgeType="plus" />
 
+        <af.shizuku.manager.settings.StorageBridgeDiagramPreference
+            android:key="storage_proxy_diagram" />
+
+        <af.shizuku.manager.settings.StorageBridgeDiagramPreference
+            android:key="storage_proxy_diagram" />
+
 
 
         <af.shizuku.manager.settings.PlusFeaturePreference
@@ -176,6 +200,9 @@
             app:infoTitle="@string/help_avf_manager_title"
             app:infoDetail="@string/help_avf_manager_detail"
             app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.VMManagerDiagramPreference
+            android:key="vm_manager_diagram" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -196,6 +223,12 @@
             app:infoTitle="@string/help_continuity_bridge_title"
             app:infoDetail="@string/help_continuity_bridge_detail"
             app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
+            android:key="continuity_bridge_diagram" />
+
+        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
+            android:key="continuity_bridge_diagram" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -226,6 +259,12 @@
             app:infoDetail="@string/help_overlay_manager_plus_detail"
             app:badgeType="experimental" />
 
+        <af.shizuku.manager.settings.ThemingBridgeDiagramPreference
+            android:key="overlay_manager_plus_diagram" />
+
+        <af.shizuku.manager.settings.ThemingBridgeDiagramPreference
+            android:key="overlay_manager_plus_diagram" />
+
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="ai_core_plus_enabled"
             android:title="AI Bridge &amp; NPU (Experimental)"
@@ -235,6 +274,12 @@
             app:infoTitle="@string/help_ai_core_plus_title"
             app:infoDetail="@string/help_ai_core_plus_detail"
             app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.AICoreBridgeDiagramPreference
+            android:key="ai_core_plus_diagram" />
+
+        <af.shizuku.manager.settings.AICoreBridgeDiagramPreference
+            android:key="ai_core_plus_diagram" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="software_keystore_fallback_enabled"
@@ -276,54 +321,6 @@
             android:defaultValue="pixel_8_pro"
             android:summary="%s"
             android:icon="@drawable/ic_smartphone_24" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="overlay_fs_proxy_enabled"
-            android:title="OverlayFS System Spoofing"
-            android:summary="[GHOST FEATURE] Simulates a writable /system partition by intercepting mount commands. Does not actually mount anything."
-            android:icon="@drawable/ic_folder_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_kernel_ghosting_enabled"
-            android:title="Kernel Driver Spoofing"
-            android:summary="[GHOST FEATURE] Intercepts insmod/rmmod and silently fakes success. Appears to work but does not load any drivers."
-            android:icon="@drawable/ic_settings_suggest_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_partition_ghosting_enabled"
-            android:title="Partition Flash Spoofing"
-            android:summary="[GHOST FEATURE] Intercepts 'dd' operations to /dev/block/. Prevents flashers from crashing by pretending to write data."
-            android:icon="@drawable/ic_admin_panel_settings_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_power_ghosting_enabled"
-            android:title="Power State Spoofing"
-            android:summary="[GHOST FEATURE] Intercepts reboot commands and silently ignores them, returning a fake success code."
-            android:icon="@drawable/ic_server_restart"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_iptables_mocking_enabled"
-            android:title="Firewall Spoofing"
-            android:summary="[GHOST FEATURE] Fakes success for iptables commands when rootless limitations prevent actual firewall rules from being applied."
-            android:icon="@drawable/ic_shield_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_build_prop_redirect_enabled"
-            android:title="build.prop Redirection"
-            android:summary="[SPOOF FEATURE] Claims to redirect system build property writes. Intercepts writes and fakes a success exit code."
-            android:icon="@drawable/ic_settings_suggest_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="samsung_system_uid_escalation_enabled"

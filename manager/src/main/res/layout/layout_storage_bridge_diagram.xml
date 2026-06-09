@@ -20,18 +20,17 @@
         android:gravity="center">
 
         <!-- Visual Flow Row -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:layout_gravity="center">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <!-- Node 1: App -->
             <LinearLayout
                 android:id="@+id/flow_node_app"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_inactive">
@@ -52,11 +51,9 @@
             <!-- Line/Arrow 1 -->
             <View
                 android:id="@+id/flow_line_1"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="4dp"
-                android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/flow_node_app"
-                android:layout_toStartOf="@+id/flow_node_bridge"
                 android:layout_marginHorizontal="8dp"
                 android:background="?colorOutlineVariant" />
 
@@ -65,7 +62,6 @@
                 android:id="@+id/flow_node_bridge"
                 android:layout_width="70dp"
                 android:layout_height="70dp"
-                android:layout_centerInParent="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_inactive">
@@ -87,11 +83,9 @@
             <!-- Line/Arrow 2 -->
             <View
                 android:id="@+id/flow_line_2"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="4dp"
-                android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/flow_node_bridge"
-                android:layout_toStartOf="@+id/flow_node_storage"
                 android:layout_marginHorizontal="8dp"
                 android:background="?colorOutlineVariant" />
 
@@ -100,8 +94,6 @@
                 android:id="@+id/flow_node_storage"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_inactive">
@@ -119,7 +111,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-        </RelativeLayout>
+        </LinearLayout>
 
         <!-- Dynamic Status Explanation -->
         <TextView

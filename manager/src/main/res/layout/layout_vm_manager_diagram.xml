@@ -20,17 +20,17 @@
         android:gravity="center">
 
         <!-- Flow Visuals -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="80dp">
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <!-- Node 1: Host System -->
             <LinearLayout
                 android:id="@+id/vm_node_host"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_active">
@@ -51,11 +51,9 @@
             <!-- Line 1 -->
             <View
                 android:id="@+id/vm_line_1"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="4dp"
-                android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/vm_node_host"
-                android:layout_toStartOf="@+id/vm_node_hypervisor"
                 android:layout_marginHorizontal="8dp"
                 android:background="?colorPrimary" />
 
@@ -64,7 +62,6 @@
                 android:id="@+id/vm_node_hypervisor"
                 android:layout_width="70dp"
                 android:layout_height="70dp"
-                android:layout_centerInParent="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_active">
@@ -86,11 +83,9 @@
             <!-- Line 2 -->
             <View
                 android:id="@+id/vm_line_2"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="4dp"
-                android:layout_centerVertical="true"
-                android:layout_toEndOf="@id/vm_node_hypervisor"
-                android:layout_toStartOf="@+id/vm_node_sandbox"
                 android:layout_marginHorizontal="8dp"
                 android:background="?colorOutlineVariant" />
 
@@ -99,8 +94,6 @@
                 android:id="@+id/vm_node_sandbox"
                 android:layout_width="60dp"
                 android:layout_height="60dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
                 android:orientation="vertical"
                 android:gravity="center"
                 android:background="@drawable/shape_node_inactive">
@@ -118,7 +111,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-        </RelativeLayout>
+        </LinearLayout>
 
         <!-- Status Explanation -->
         <TextView
