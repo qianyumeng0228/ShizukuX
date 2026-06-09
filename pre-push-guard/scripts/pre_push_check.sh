@@ -221,7 +221,7 @@ fi
 
 # 16. Spotless Check
 echo -n "[16/17] Checking code formatting with spotlessCheck... "
-if ./gradlew spotlessCheck >/dev/null 2>&1; then
+if ./gradlew spotlessCheck; then
     echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
 else
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Run ./gradlew spotlessApply to fix formatting)"
