@@ -1,7 +1,6 @@
 package af.shizuku.manager.settings
 
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.*
@@ -19,7 +18,7 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        androidx.activity.enableEdgeToEdge()
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
 
         SettingsSearchEngine.init(this)
 

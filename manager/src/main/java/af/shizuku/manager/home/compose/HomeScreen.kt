@@ -48,7 +48,7 @@ fun HomeScreen(
                         IconButton(onClick = onSettingsClick) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_settings_outline_24),
-                                contentDescription = stringResource(id = R.string.action_settings)
+                                contentDescription = stringResource(id = R.string.settings_title)
                             )
                         }
                         IconButton(onClick = onHelpClick) {

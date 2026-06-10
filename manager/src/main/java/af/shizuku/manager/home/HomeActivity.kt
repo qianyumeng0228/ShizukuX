@@ -120,7 +120,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
             }
         }
         super.onCreate(savedInstanceState)
-        androidx.activity.enableEdgeToEdge()
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
 
         var showEmptyState by mutableStateOf(false)
         var isEditMode by mutableStateOf(HomeEditMode.isActive)

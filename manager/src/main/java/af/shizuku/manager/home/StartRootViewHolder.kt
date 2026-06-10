@@ -89,7 +89,6 @@ class StartRootViewHolder(
                 if (available) {
                     lottieView.setAnimation("lottie/button_start.json")
                     lottieView.playAnimation()
-                    start.icon = null
                 }
             }
         }
