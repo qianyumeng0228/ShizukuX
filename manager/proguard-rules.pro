@@ -1,6 +1,4 @@
--keepclassmembers class * implements android.os.Parcelable {
-    public static final ** CREATOR;
-}
+
 
 -keepclasseswithmembernames,includedescriptorclasses class * {
     native <methods>;
@@ -90,15 +88,9 @@
 # Custom View subclasses inflated from XML by class name — R8 must not rename or remove them.
 -keep class af.shizuku.manager.utils.EmptyStateView { public <init>(android.content.Context, android.util.AttributeSet); }
 
-# Coroutines and Kotlin serialization
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
--keep class kotlinx.coroutines.** { *; }
--keep class kotlin.coroutines.** { *; }
 
-# Room
--keep class * extends androidx.room.RoomDatabase
--keep class * extends androidx.room.Entity
--keep class * implements androidx.room.Dao
+
 
 # Sentry compose instrumentation references compose-ui which isn't in the classpath
 # (project uses Glance only). Suppress missing-class R8 errors for these packages.
