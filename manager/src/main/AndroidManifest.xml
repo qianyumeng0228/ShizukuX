@@ -46,9 +46,15 @@
         android:permissionGroup="af.shizuku.plus.permission-group.API"
         android:protectionLevel="dangerous" />
     
-    <uses-permission
+    <permission
         android:name="moe.shizuku.manager.permission.API_V23"
-        tools:node="remove" />
+        android:description="@string/permission_description"
+        android:icon="@drawable/ic_system_icon"
+        android:label="@string/permission_label"
+        android:permissionGroup="af.shizuku.plus.permission-group.API"
+        android:protectionLevel="dangerous" />
+    
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
 
     <application
         android:name=".ShizukuApplication"

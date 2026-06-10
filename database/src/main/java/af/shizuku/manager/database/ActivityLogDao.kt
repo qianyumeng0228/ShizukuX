@@ -19,7 +19,7 @@ interface ActivityLogDao {
     suspend fun insert(log: ActivityLogRoom): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(logs: List<ActivityLogRoom>)
+    suspend fun insertAll(logs: List<ActivityLogRoom>): List<Long>
 
     @Query("SELECT * FROM activity_logs ORDER BY timestamp DESC")
     fun getAll(): Flow<List<ActivityLogRoom>>
@@ -28,7 +28,7 @@ interface ActivityLogDao {
     fun getLimited(limit: Int): Flow<List<ActivityLogRoom>>
 
     @Query("DELETE FROM activity_logs")
-    suspend fun clear()
+    suspend fun clear(): Int
 
     /**
      * Delete activity logs except for the most recent ones.
@@ -46,7 +46,7 @@ interface ActivityLogDao {
     suspend fun getCount(): Int
 
     @Delete
-    suspend fun delete(log: ActivityLogRoom)
+    suspend fun delete(log: ActivityLogRoom): Int
 
     @Query("SELECT * FROM activity_logs ORDER BY timestamp ASC LIMIT 1")
     suspend fun getOldest(): ActivityLogRoom?
