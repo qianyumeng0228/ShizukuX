@@ -23,27 +23,31 @@
         android:icon="@drawable/ic_server_restart"
         android:defaultValue="false" />
 
-    <SwitchPreferenceCompat
-        android:key="su_bridge_enabled"
-        android:title="@string/settings_fake_su"
-        android:summary="@string/settings_fake_su_summary"
-        android:icon="@drawable/ic_root_24"
-        android:defaultValue="false" />
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_su_bridge"
+        android:title="SU Bridge Configuration"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="su_bridge_enabled"
+            android:title="@string/settings_fake_su"
+            android:summary="@string/settings_fake_su_summary"
+            android:icon="@drawable/ic_root_24"
+            android:defaultValue="false" />
 
         <af.shizuku.manager.settings.SUBridgeDiagramPreference
             android:key="su_bridge_diagram" />
 
-    <af.shizuku.manager.settings.SUBridgeDiagramPreference
-        android:key="su_bridge_diagram" />
+        <EditTextPreference
+            android:key="custom_su_path"
+            android:title="Custom SU Path"
+            android:summary="Set a custom path for the su binary spoofing (e.g., /system/xbin/su). Leave blank for default."
+            android:dependency="su_bridge_enabled"
+            android:icon="@drawable/ic_terminal_24"
+            app:iconSpaceReserved="true"
+            android:singleLine="true" />
 
-    <EditTextPreference
-        android:key="custom_su_path"
-        android:title="Custom SU Path"
-        android:summary="Set a custom path for the su binary spoofing (e.g., /system/xbin/su). Leave blank for default."
-        android:dependency="su_bridge_enabled"
-        android:icon="@drawable/ic_terminal_24"
-        app:iconSpaceReserved="true"
-        android:singleLine="true" />
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <Preference
         android:key="root_compatibility_hub"
@@ -127,7 +131,7 @@
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_kernel_ghosting_enabled"
             android:title="Kernel Driver Ghosting"
-            android:summary="[Developer] Silently simulate success for insmod/rmmod kernel commands. Appears to work but does not actually load drivers."
+            android:summary="[Developer] Silently simulate success for insmod/rmmod kernel commands without loading the kernel modules."
             android:icon="@drawable/ic_settings_suggest_24"
             android:defaultValue="false" />
 
