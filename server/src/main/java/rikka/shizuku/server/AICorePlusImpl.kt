@@ -164,10 +164,15 @@ class AICorePlusImpl(
         }
     }
 
+    private val serverStartTimeMs = android.os.SystemClock.elapsedRealtime()
+
     override fun getServerStats(): Bundle? {
         val bundle = Bundle()
         bundle.putInt("client_count", clientManager.clientCount)
         bundle.putLong("mem_total", Runtime.getRuntime().totalMemory())
+        bundle.putLong("mem_free", Runtime.getRuntime().freeMemory())
+        bundle.putLong("mem_max", Runtime.getRuntime().maxMemory())
+        bundle.putLong("uptime_ms", android.os.SystemClock.elapsedRealtime() - serverStartTimeMs)
         return bundle
     }
 

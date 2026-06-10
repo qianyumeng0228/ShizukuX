@@ -27,7 +27,10 @@ class AICorePlusImplTest {
         every { Log.d(any(), any()) } returns 0
         every { Log.w(any(), any<String>()) } returns 0
 
-        aiCorePlusImpl = AICorePlusImpl()
+        val clientManagerMock = mockk<ShizukuClientManager>(relaxed = true)
+        val serviceMock = mockk<ShizukuService>(relaxed = true)
+        every { serviceMock.isPlusFeatureEnabled(any()) } returns true
+        aiCorePlusImpl = AICorePlusImpl(clientManagerMock, serviceMock)
         runtimeMock = mockk(relaxed = true)
         processMock = mockk(relaxed = true)
 
