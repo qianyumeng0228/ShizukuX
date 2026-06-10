@@ -1,5 +1,6 @@
 plugins {
     id "com.android.library"
+    id "org.jetbrains.kotlin.plugin.compose"
 }
 
 android {
@@ -12,8 +13,12 @@ android {
 
     buildFeatures {
         viewBinding = true
+        compose = true
     }
 
+    composeOptions {
+        kotlinCompilerExtensionVersion = "2.2.20"
+    }
 }
 
 dependencies {
@@ -30,4 +35,13 @@ dependencies {
     api libs.rikkax.appcompat
     api libs.rikkax.layoutinflater
     api libs.rikkax.compatibility
+
+    api platform(libs.compose.bom)
+    api libs.compose.ui
+    api libs.compose.ui.graphics
+    api libs.compose.ui.tooling.preview
+    api libs.compose.material3
+    api libs.androidx.activity.compose
+    api libs.coil.compose
+    debugApi libs.compose.ui.tooling
 }

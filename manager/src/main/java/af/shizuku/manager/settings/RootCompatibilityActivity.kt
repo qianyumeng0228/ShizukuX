@@ -72,17 +72,29 @@ class RootCompatibilityActivity : AppBarActivity() {
             binding.globalSetupCard.isVisible = isRoot
 
             binding.globalSuPath.text = path
-            binding.btnCopyGlobal.setOnClickListener { copyToClipboard(path) }
+            binding.btnCopyGlobal.setContent {
+                af.shizuku.core.ui.compose.Button(
+                    onClick = { copyToClipboard(path) }
+                ) {
+                    androidx.compose.material3.Text(getString(R.string.su_bridge_copy_path))
+                }
+            }
 
             if (isRoot) {
-                binding.btnSetupAll.setOnClickListener {
-                    lifecycleScope.launch {
-                        val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
-                        if (count > 0) {
-                            Toast.makeText(this@RootCompatibilityActivity, getString(R.string.su_bridge_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
-                        } else {
-                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+                binding.btnSetupAll.setContent {
+                    af.shizuku.core.ui.compose.Button(
+                        onClick = {
+                            lifecycleScope.launch {
+                                val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)
+                                if (count > 0) {
+                                    Toast.makeText(this@RootCompatibilityActivity, getString(R.string.su_bridge_magic_setup_all_summary, count), Toast.LENGTH_LONG).show()
+                                } else {
+                                    Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_all_no_apps, Toast.LENGTH_SHORT).show()
+                                }
+                            }
                         }
+                    ) {
+                        androidx.compose.material3.Text(getString(R.string.su_bridge_setup_all))
                     }
                 }
             }
@@ -292,14 +304,19 @@ class RootCompatibilityActivity : AppBarActivity() {
                 holder.binding.suPathNav.text = navHint
                 holder.binding.suPathNav.visibility = View.VISIBLE
 
-                holder.binding.suCopyOpen.visibility = View.VISIBLE
-                holder.binding.suCopyOpen.setOnClickListener {
-                    val path = resolvedSuPath
-                    if (path != null) {
-                        copyToClipboard(path)
-                        launchOrStore(pkg)
-                    } else {
-                        Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
+                holder.binding.suCopyOpen.setContent {
+                    af.shizuku.core.ui.compose.Button(
+                        onClick = {
+                            val path = resolvedSuPath
+                            if (path != null) {
+                                copyToClipboard(path)
+                                launchOrStore(pkg)
+                            } else {
+                                Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        androidx.compose.material3.Text(this@RootCompatibilityActivity.getString(R.string.su_bridge_copy_open))
                     }
                 }
 
@@ -320,24 +337,27 @@ class RootCompatibilityActivity : AppBarActivity() {
                     val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
                     holder.binding.suMagicSetup.alpha = if (isRoot) 1.0f else 0.5f
 
-                    holder.binding.suMagicSetup.setOnClickListener {
-                        if (!isRoot) {
-                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_root_required, Toast.LENGTH_SHORT).show()
-                            return@setOnClickListener
-                        }
-                        val path = resolvedSuPath
-                        if (path == null) {
-                            Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
-                            return@setOnClickListener
-                        }
-                        lifecycleScope.launch {
-                            val success = RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, path)
-                            if (success) {
-                                Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.su_bridge_magic_setup_success, holder.binding.title.text), Toast.LENGTH_LONG).show()
-                                launchOrStore(pkg)
-                            } else {
-                                Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_fail, Toast.LENGTH_SHORT).show()
+                    holder.binding.suMagicSetup.setContent {
+                        af.shizuku.core.ui.compose.Button(
+                            enabled = isRoot,
+                            onClick = {
+                                val path = resolvedSuPath
+                                if (path == null) {
+                                    Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_no_export, Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+                                lifecycleScope.launch {
+                                    val success = RootCompatHelper.autoSetup(this@RootCompatibilityActivity, pkg, path)
+                                    if (success) {
+                                        Toast.makeText(this@RootCompatibilityActivity, this@RootCompatibilityActivity.getString(R.string.su_bridge_magic_setup_success, holder.binding.title.text), Toast.LENGTH_LONG).show()
+                                        launchOrStore(pkg)
+                                    } else {
+                                        Toast.makeText(this@RootCompatibilityActivity, R.string.su_bridge_magic_setup_fail, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             }
+                        ) {
+                            androidx.compose.material3.Text(this@RootCompatibilityActivity.getString(R.string.su_bridge_magic_setup))
                         }
                     }
                 }

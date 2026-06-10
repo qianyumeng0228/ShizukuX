@@ -91,7 +91,7 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_ghost_bridge"
-        android:title="Mocking &amp; Simulation (Fakes Success)"
+        android:title="Mocking &amp; Simulation"
         android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
@@ -151,6 +151,25 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_unlocked_bootloader"
+        android:title="Bootloader Integration"
+        android:defaultValue="false">
 
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="bootloader_flash_ota_enabled"
+            android:title="Systemless OTA Flashing"
+            android:summary="Flash OTA payloads to inactive slot without root or custom recovery"
+            android:icon="@drawable/ic_system_update_24"
+            android:defaultValue="false" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="bootloader_fastbootd_reboot_enabled"
+            android:title="FastbootD Transition"
+            android:summary="Restart directly into fastbootd user space from Shizuku shell"
+            android:icon="@drawable/ic_server_restart"
+            android:defaultValue="false" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

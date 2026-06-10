@@ -121,34 +121,19 @@
                 android:layout_marginTop="4dp"
                 android:orientation="horizontal">
 
-                <com.google.android.material.button.MaterialButton
+                <androidx.compose.ui.platform.ComposeView
                     android:id="@+id/su_copy_open"
-                    
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:paddingHorizontal="12dp"
-                    android:textAppearance="?textAppearanceLabelMedium"
-                    android:text="@string/su_bridge_copy_open"
+                    android:layout_height="wrap_content"
                     android:visibility="gone"
                     tools:visibility="visible" />
 
-                <com.google.android.material.button.MaterialButton
+                <androidx.compose.ui.platform.ComposeView
                     android:id="@+id/su_magic_setup"
-                    
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    android:paddingHorizontal="12dp"
-                    android:textAppearance="?textAppearanceLabelMedium"
-                    android:text="@string/su_bridge_magic_setup"
                     android:visibility="gone"
-                    app:icon="@drawable/ic_settings_suggest_24"
-                    app:iconPadding="4dp"
-                    app:iconSize="14dp"
                     tools:visibility="visible" />
 
             </LinearLayout>
