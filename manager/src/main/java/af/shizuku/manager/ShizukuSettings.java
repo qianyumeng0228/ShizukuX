@@ -91,7 +91,6 @@ public class ShizukuSettings {
         public static final String KEY_ON_DEVICE_ADB_TCP = "on_device_adb_tcp";
         public static final String KEY_FORCE_START_WADB = "force_start_wadb";
         public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
-        public static final String KEY_ROOT_ADAWAY_BRIDGE_ENABLED = "root_adaway_bridge_enabled";
         public static final String KEY_ROOT_MAGISK_MOCKING_ENABLED = "root_magisk_mocking_enabled";
         public static final String KEY_ROOT_AUTO_GRANT_ENABLED = "root_auto_grant_enabled";
         public static final String KEY_ROOT_FILE_INTERCEPTOR_ENABLED = "root_file_interceptor_enabled";
@@ -707,11 +706,6 @@ public class ShizukuSettings {
         return p != null ? p.getString("custom_su_path", "") : "";
     }
 
-    public static boolean isRootAdawayBridgeEnabled() {
-        SharedPreferences p = getPreferences();
-        return p != null && p.getBoolean(Keys.KEY_ROOT_ADAWAY_BRIDGE_ENABLED, false);
-    }
-
     public static boolean isRootMagiskMockingEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_ROOT_MAGISK_MOCKING_ENABLED, false);
@@ -824,7 +818,6 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
                 service.updatePlusFeatureEnabled("su_bridge", isSuBridgeEnabled());
                 service.setPlusSetting("custom_su_path", getCustomSuPath());
-                service.updatePlusFeatureEnabled("root_adaway_bridge", isRootAdawayBridgeEnabled());
                 service.updatePlusFeatureEnabled("root_magisk_mocking", isRootMagiskMockingEnabled());
                 service.updatePlusFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());
                 service.updatePlusFeatureEnabled("root_file_interceptor", isRootFileInterceptorEnabled());

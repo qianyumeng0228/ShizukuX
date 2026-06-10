@@ -53,17 +53,8 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_root_modules"
-        android:title="Rootless Bridges (Actually Works)"
+        android:title="Rootless Bridges"
         android:defaultValue="true">
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_adaway_bridge_enabled"
-            android:title="@string/settings_root_adaway_bridge"
-            android:summary="@string/settings_root_adaway_bridge_summary"
-            android:icon="@drawable/ic_shield_24"
-            android:defaultValue="false"
-            app:infoTitle="@string/help_root_adaway_title"
-            app:infoDetail="@string/help_root_adaway_detail" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_build_prop_redirect_enabled"
@@ -73,6 +64,31 @@
             android:defaultValue="false"
             app:infoTitle="build.prop Redirection Explainer"
             app:infoDetail="This module automatically shadow-copies the original build.prop to a user-writable path and redirects all writes to it, allowing tweakers to safely modify system values rootless." />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_auto_grant_enabled"
+            android:title="@string/settings_root_auto_grant"
+            android:summary="@string/settings_root_auto_grant_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_auto_grant_title"
+            app:infoDetail="@string/help_root_auto_grant_detail" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="root_file_interceptor_enabled"
+            android:title="@string/settings_root_file_interceptor"
+            android:summary="@string/settings_root_file_interceptor_summary"
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_root_file_interceptor_title"
+            app:infoDetail="@string/help_root_file_interceptor_detail" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_ghost_bridge"
+        android:title="Mocking &amp; Simulation (Fakes Success)"
+        android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_iptables_mocking_enabled"
@@ -93,24 +109,6 @@
             app:infoDetail="@string/help_root_magisk_detail" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_auto_grant_enabled"
-            android:title="@string/settings_root_auto_grant"
-            android:summary="@string/settings_root_auto_grant_summary"
-            android:icon="@drawable/ic_admin_panel_settings_24"
-            android:defaultValue="false"
-            app:infoTitle="@string/help_root_auto_grant_title"
-            app:infoDetail="@string/help_root_auto_grant_detail" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="root_file_interceptor_enabled"
-            android:title="@string/settings_root_file_interceptor"
-            android:summary="@string/settings_root_file_interceptor_summary"
-            android:icon="@drawable/ic_folder_24"
-            android:defaultValue="false"
-            app:infoTitle="@string/help_root_file_interceptor_title"
-            app:infoDetail="@string/help_root_file_interceptor_detail" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_busybox_mocking_enabled"
             android:title="@string/settings_root_busybox_mocking"
             android:summary="@string/settings_root_busybox_mocking_summary"
@@ -118,13 +116,6 @@
             android:defaultValue="false"
             app:infoTitle="@string/help_root_busybox_title"
             app:infoDetail="@string/help_root_busybox_detail" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_ghost_bridge"
-        android:title="Mocking &amp; Simulation (Fakes Success)"
-        android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="overlay_fs_proxy_enabled"
