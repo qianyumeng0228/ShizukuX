@@ -15,7 +15,7 @@ class ComposeButtonView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : AbstractComposeView(context, attrs, defStyleAttr) {
 
-    var text: CharSequence by mutableStateOf("")
+    var text: CharSequence? by mutableStateOf("")
     private var onClickListener: OnClickListener? = null
     var isEnabledState by mutableStateOf(true)
 
@@ -42,9 +42,7 @@ class ComposeButtonView @JvmOverloads constructor(
         text = context.getString(resId)
     }
 
-    fun setText(newText: CharSequence?) {
-        text = newText ?: ""
-    }
+
 
     fun setIconTintResource(resId: Int) {
         // stub to avoid compilation error
@@ -57,7 +55,7 @@ class ComposeButtonView @JvmOverloads constructor(
             onClick = { onClickListener?.onClick(this@ComposeButtonView) },
             enabled = isEnabledState
         ) {
-            Text(text.toString())
+            Text(text?.toString() ?: "")
         }
     }
 }
