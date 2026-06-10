@@ -1,5 +1,6 @@
 plugins {
     id "com.android.library"
+}
 
 android {
     namespace = "af.shizuku.core.ui"
