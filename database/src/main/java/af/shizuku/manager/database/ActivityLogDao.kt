@@ -16,10 +16,10 @@ import kotlinx.coroutines.flow.Flow
 interface ActivityLogDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(log: ActivityLogRoom): Long
+    fun insert(log: ActivityLogRoom): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(logs: List<ActivityLogRoom>): List<Long>
+    fun insertAll(logs: List<ActivityLogRoom>)
 
     @Query("SELECT * FROM activity_logs ORDER BY timestamp DESC")
     fun getAll(): Flow<List<ActivityLogRoom>>
@@ -28,26 +28,26 @@ interface ActivityLogDao {
     fun getLimited(limit: Int): Flow<List<ActivityLogRoom>>
 
     @Query("DELETE FROM activity_logs")
-    suspend fun clear(): Int
+    fun clear()
 
     /**
      * Delete activity logs except for the most recent ones.
      */
     @Query("DELETE FROM activity_logs WHERE id NOT IN (SELECT id FROM (SELECT id FROM activity_logs ORDER BY timestamp DESC, id DESC LIMIT :limit))")
-    suspend fun deleteExcess(limit: Int): Int
+    fun deleteExcess(limit: Int): Int
 
     /**
      * Delete activity logs older than the specified timestamp.
      */
     @Query("DELETE FROM activity_logs WHERE timestamp < :timestamp")
-    suspend fun deleteOlderThan(timestamp: Long): Int
+    fun deleteOlderThan(timestamp: Long): Int
 
     @Query("SELECT COUNT(*) FROM activity_logs")
-    suspend fun getCount(): Int
+    fun getCount(): Int
 
     @Delete
-    suspend fun delete(log: ActivityLogRoom): Int
+    fun delete(log: ActivityLogRoom)
 
     @Query("SELECT * FROM activity_logs ORDER BY timestamp ASC LIMIT 1")
-    suspend fun getOldest(): ActivityLogRoom?
+    fun getOldest(): ActivityLogRoom?
 }
