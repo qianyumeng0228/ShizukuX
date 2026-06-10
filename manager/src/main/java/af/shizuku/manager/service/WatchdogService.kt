@@ -34,22 +34,17 @@ class WatchdogService : Service() {
     private var job: Job? = null
 
     private fun startForegroundSafely() {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                startForeground(
-                    NOTIFICATION_ID_WATCHDOG,
-                    buildNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-                )
-            } else {
-                startForeground(
-                    NOTIFICATION_ID_WATCHDOG,
-                    buildNotification()
-                )
-            }
-        } catch (e: Exception) {
-            Timber.tag(TAG).e(e, "Failed to start foreground")
-            stopSelf()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID_WATCHDOG,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else {
+            startForeground(
+                NOTIFICATION_ID_WATCHDOG,
+                buildNotification()
+            )
         }
     }
 
