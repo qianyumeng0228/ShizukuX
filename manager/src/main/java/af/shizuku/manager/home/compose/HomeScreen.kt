@@ -1,0 +1,118 @@
+package af.shizuku.manager.home.compose
+
+import android.content.Context
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.recyclerview.widget.RecyclerView
+import af.shizuku.manager.R
+import androidx.compose.foundation.Image
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import af.shizuku.core.ui.compose.Button
+import af.shizuku.core.ui.compose.ButtonSize
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    isEditMode: Boolean,
+    showEmptyState: Boolean,
+    onStopClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onHelpClick: () -> Unit,
+    onRestoreHomeCards: () -> Unit,
+    recyclerViewProvider: (Context, PaddingValues) -> RecyclerView
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        if (isEditMode) stringResource(R.string.home_edit_mode_hint) 
+                        else stringResource(R.string.app_name)
+                    ) 
+                },
+                actions = {
+                    if (!isEditMode) {
+                        IconButton(onClick = onStopClick) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_stop_24),
+                                contentDescription = stringResource(R.string.action_stop)
+                            )
+                        }
+                        IconButton(onClick = onSettingsClick) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_settings_24),
+                                contentDescription = stringResource(R.string.action_settings)
+                            )
+                        }
+                        IconButton(onClick = onHelpClick) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_help_24),
+                                contentDescription = "Help"
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (showEmptyState) {
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    HomeEmptyState(onRestoreHomeCards)
+                }
+            } else {
+                AndroidView(
+                    factory = { context -> recyclerViewProvider(context, innerPadding) },
+                    update = { view -> recyclerViewProvider(view.context, innerPadding) },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeEmptyState(onRestoreHomeCards: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_empty_home_24),
+            contentDescription = null,
+            modifier = Modifier.size(72.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.empty_state_title_no_home_cards),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.empty_state_description_no_home_cards),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(
+            size = ButtonSize.Medium,
+            onClick = onRestoreHomeCards
+        ) {
+            Text(stringResource(R.string.empty_state_action_restore_home_cards))
+        }
+    }
+}

@@ -58,16 +58,22 @@ import rikka.recyclerview.addItemSpacing
 import rikka.recyclerview.fixEdgeEffect
 import rikka.shizuku.Shizuku
 
-abstract class HomeActivity : AppBarActivity(), MavericksView {
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.PaddingValues
+import af.shizuku.core.ui.AppActivity
+import af.shizuku.manager.home.compose.HomeScreen
+
+abstract class HomeActivity : AppActivity(), MavericksView {
 
     private val homeModel: HomeViewModel by viewModel()
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
     private var versionClickCount = 0
 
-    override fun getLayoutId(): Int {
-        return R.layout.home_activity
-    }
+    // Removed getLayoutId
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
         when (state) {
@@ -114,26 +120,61 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
             }
         }
         super.onCreate(savedInstanceState)
+        androidx.activity.enableEdgeToEdge()
 
-        // Bind to the content view that was created by AppBarActivity.setContentView(getLayoutId())
-        // In AppBarActivity, index 0 is AppBarLayout, index 1 is the content view.
-        val binding = HomeActivityBinding.bind(rootView)
+        var showEmptyState by mutableStateOf(false)
+        var isEditMode by mutableStateOf(HomeEditMode.isActive)
+        val recyclerView = RecyclerView(this).apply {
+            id = android.R.id.list
+            clipToPadding = false
+        }
+
+        setContent {
+            HomeScreen(
+                isEditMode = isEditMode,
+                showEmptyState = showEmptyState,
+                onStopClick = {
+                    if (ShizukuStateMachine.isRunning()) {
+                        MaterialAlertDialogBuilder(this)
+                            .setMessage(R.string.dialog_stop_message)
+                            .setPositiveButton(android.R.string.ok) { _, _ ->
+                                ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                                runCatching { Shizuku.exit() }
+                            }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
+                    }
+                },
+                onSettingsClick = {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                },
+                onHelpClick = {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.settings_shizuku_plus_features)
+                        .setMessage(R.string.help_general_plus_summary)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                },
+                onRestoreHomeCards = { HomeEditMode.enter() },
+                recyclerViewProvider = { ctx, paddingValues ->
+                    val density = ctx.resources.displayMetrics.density
+                    recyclerView.apply {
+                        setPadding(
+                            paddingLeft,
+                            (paddingValues.calculateTopPadding().value * density).toInt(),
+                            paddingRight,
+                            (paddingValues.calculateBottomPadding().value * density).toInt()
+                        )
+                    }
+                }
+            )
+        }
 
         when (intent?.getStringExtra("shortcut_action")) {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 AdbDialogFragment().show(supportFragmentManager)
             }
             "open_terminal" -> startActivity(android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java))
-        }
-
-        // Empty state view for when all cards are hidden
-        val emptyStateView = binding.emptyStateView
-        emptyStateView.setIcon(R.drawable.ic_empty_home_24)
-        emptyStateView.setTitle(getString(R.string.empty_state_title_no_home_cards))
-        emptyStateView.setDescription(getString(R.string.empty_state_description_no_home_cards))
-        emptyStateView.setActionText(getString(R.string.empty_state_action_restore_home_cards))
-        emptyStateView.setActionClickListener {
-            HomeEditMode.enter()
         }
 
         // Initial status load
@@ -148,10 +189,9 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
 
-                // Expressive Ripple: If service just started, perform a circular reveal
                 if (status.isRunning && !wasRunning && ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    binding.list.post {
-                        val view = binding.list
+                    recyclerView.post {
+                        val view = recyclerView
                         val statusCard = view.findViewHolderForAdapterPosition(0)?.itemView
                         val cx = view.width / 2
                         val cy = statusCard?.let { it.top + it.height / 2 } ?: 100
@@ -181,7 +221,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
             if (it) {
                 SnackbarHelper.show(
                     this,
-                    binding.root,
+                    recyclerView,
                     msg = getString(R.string.snackbar_battery_optimization_home),
                     duration = Snackbar.LENGTH_INDEFINITE,
                     actionText = getString(R.string.snackbar_action_fix),
@@ -203,7 +243,7 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                 if (it is Success && it.invoke().isRunning == false) {
                     SnackbarHelper.show(
                         this,
-                        binding.root,
+                        recyclerView,
                         msg = "Samsung Auto Blocker may block ADB on One UI 7/8. Check Security settings.",
                         duration = Snackbar.LENGTH_LONG,
                         actionText = "Check",
@@ -229,8 +269,6 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         // Check for updates on app startup (if enabled)
         checkForUpdates()
 
-        val recyclerView = binding.list
-
         // Force single column for original Shizuku look
         val spanCount = 1
         val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
@@ -253,15 +291,14 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
                 systemBars.left + dexPadding,
                 v.paddingTop,
                 systemBars.right + dexPadding,
-                systemBars.bottom
+                v.paddingBottom
             )
             insets
         }
 
         // Listen for empty state changes
         adapter.onEmptyStateChanged = { isEmpty ->
-            emptyStateView.visibility = if (isEmpty) View.VISIBLE else View.GONE
-            recyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
+            showEmptyState = isEmpty
         }
 
         val cardSpacing = resources.getDimension(R.dimen.card_spacing)
@@ -396,15 +433,10 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         HomeEditMode.onChanged = {
             lifecycleScope.launch {
                 delay(150)
+                isEditMode = HomeEditMode.isActive
                 homeModel.setEditMode(HomeEditMode.isActive)
                 adapter.updateData()
-                invalidateOptionsMenu()
                 backCallback.isEnabled = HomeEditMode.isActive
-                if (HomeEditMode.isActive) {
-                    supportActionBar?.setTitle(R.string.home_edit_mode_hint)
-                } else {
-                    supportActionBar?.setTitle(R.string.app_name)
-                }
             }
         }
 
@@ -456,50 +488,6 @@ abstract class HomeActivity : AppBarActivity(), MavericksView {
         super.onDestroy()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        if (HomeEditMode.isActive) {
-            menu.findItem(R.id.action_stop)?.isVisible = false
-            menu.findItem(R.id.action_settings)?.isVisible = false
-            menu.findItem(R.id.action_help)?.isVisible = false
-        }
-        return super.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_help -> {
-                MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.settings_shizuku_plus_features)
-                    .setMessage(R.string.help_general_plus_summary)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show()
-                true
-            }
-            R.id.action_stop -> {
-                if (ShizukuStateMachine.isRunning()) {
-                    MaterialAlertDialogBuilder(this)
-                        .setMessage(R.string.dialog_stop_message)
-                        .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                            ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                            runCatching { Shizuku.exit() }
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
-                }
-                true
-            }
-            R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
 
     /**
      * Check for updates on app startup and show popup dialog
