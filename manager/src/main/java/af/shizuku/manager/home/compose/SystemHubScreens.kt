@@ -37,7 +37,7 @@ fun ServerMetricsScreen() {
             try {
                 if (Shizuku.pingBinder()) {
                     val binder = Shizuku.getBinder()
-                    val shizukuService = af.shizuku.server.IShizukuService.Stub.asInterface(binder)
+                    val shizukuService = moe.shizuku.server.IShizukuService.Stub.asInterface(binder)
                     val ai = shizukuService.aiCorePlus
                     val stats = ai.serverStats
                     

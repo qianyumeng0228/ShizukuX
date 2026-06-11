@@ -22,7 +22,7 @@ object AuthorizationManager {
         val data = Parcel.obtain()
         val reply = Parcel.obtain()
         return try {
-            data.writeInterfaceToken("af.shizuku.server.IShizukuService")
+            data.writeInterfaceToken("moe.shizuku.server.IShizukuService")
             data.writeInt(userId)
             val binder = Shizuku.getBinder()
                 ?: throw IllegalStateException("Shizuku binder not available")

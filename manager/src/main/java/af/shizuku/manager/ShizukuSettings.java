@@ -801,7 +801,7 @@ public class ShizukuSettings {
             try {
                 android.os.IBinder binder = (android.os.IBinder) rikka.shizuku.Shizuku.getBinder();
                 if (binder == null) return;
-                af.shizuku.server.IShizukuService service = af.shizuku.server.IShizukuService.Stub.asInterface(binder);
+                moe.shizuku.server.IShizukuService service = moe.shizuku.server.IShizukuService.Stub.asInterface(binder);
                 service.updatePlusFeatureEnabled("custom_api", isCustomApiEnabled());
                 service.updatePlusFeatureEnabled("shell_interceptor", isShellInterceptorEnabled());
                 service.updatePlusFeatureEnabled("avf_manager", isAvfManagerEnabled());

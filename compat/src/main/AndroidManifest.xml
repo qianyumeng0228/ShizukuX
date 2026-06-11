@@ -6,8 +6,27 @@
     <!-- This app exists solely to spoof the package name so apps like SwiftBackup pass their isInstalled checks. -->
     <application
         android:label="ShizukuX Compat Hub"
-        android:hasCode="false"
+        android:hasCode="true"
         android:icon="@android:drawable/ic_secure">
+        
+        <activity
+            android:name=".ForwardActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="moe.shizuku.manager.intent.action.REQUEST_PERMISSION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".ForwardReceiver"
+            android:exported="true">
+            <intent-filter android:priority="1000">
+                <action android:name="rikka.shizuku.intent.action.REQUEST_BINDER" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

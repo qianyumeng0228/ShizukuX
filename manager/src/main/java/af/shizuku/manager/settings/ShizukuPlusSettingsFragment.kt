@@ -17,7 +17,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.security.BiometricLock
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import rikka.shizuku.Shizuku
-import af.shizuku.server.IShizukuService
+import moe.shizuku.server.IShizukuService
 
 import android.view.Menu
 import android.view.MenuInflater

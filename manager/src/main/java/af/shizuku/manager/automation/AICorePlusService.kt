@@ -40,7 +40,7 @@ class AICorePlusService : AccessibilityService() {
         if (Shizuku.pingBinder()) {
             try {
                 val binder = Shizuku.getBinder()
-                val service = af.shizuku.server.IShizukuService.Stub.asInterface(binder)
+                val service = moe.shizuku.server.IShizukuService.Stub.asInterface(binder)
                 service.registerAIAutomationBridge(bridge)
                 Timber.d("Successfully registered AIAutomationBridge to server")
             } catch (e: Exception) {

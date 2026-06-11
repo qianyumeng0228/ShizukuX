@@ -41,7 +41,7 @@ class ServerMetricsFragment : Fragment() {
         try {
             if (Shizuku.pingBinder()) {
                 val binder = Shizuku.getBinder()
-                val shizukuService = af.shizuku.server.IShizukuService.Stub.asInterface(binder)
+                val shizukuService = moe.shizuku.server.IShizukuService.Stub.asInterface(binder)
                 aiCore = shizukuService.aiCorePlus
             }
         } catch (e: Exception) {

@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.service.AdbProxyService
-import af.shizuku.server.IShizukuService
+import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
 /**
