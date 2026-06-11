@@ -34,7 +34,9 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
         }
 
         setContent {
-            af.shizuku.core.ui.compose.AppTheme {
+            af.shizuku.core.ui.compose.AppTheme(
+                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(this)
+            ) {
                 SettingsScreen(
                     title = currentTitle,
                     onNavigateUp = {

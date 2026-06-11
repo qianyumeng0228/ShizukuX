@@ -130,7 +130,9 @@ abstract class HomeActivity : AppActivity(), MavericksView {
         }
 
         setContent {
-            af.shizuku.core.ui.compose.AppTheme {
+            af.shizuku.core.ui.compose.AppTheme(
+                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(this)
+            ) {
                 HomeScreen(
                 isEditMode = isEditMode,
                 showEmptyState = showEmptyState,

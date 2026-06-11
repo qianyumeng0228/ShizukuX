@@ -38,9 +38,9 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
                     pm.getInstalledApplications(PackageManager.GET_META_DATA)
                         .map {
                             AppItem(
-                                it.loadLabel(pm).toString(),
+                                af.shizuku.manager.utils.AppIconCache.getLabel(context, it),
                                 it.packageName,
-                                it.loadIcon(pm),
+                                it,
                                 false,
                                 (it.flags and ApplicationInfo.FLAG_SYSTEM) != 0 && (it.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0
                             )
@@ -67,7 +67,7 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
     data class AppItem(
         val label: String,
         val packageName: String,
-        val icon: Drawable,
+        val appInfo: ApplicationInfo,
         var isChecked: Boolean,
         val isSystem: Boolean
     )
@@ -111,7 +111,16 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
             val item = filteredItems[position]
             holder.title.text = item.label
             holder.summary.text = item.packageName
-            holder.icon.setImageDrawable(item.icon)
+            
+            holder.iconJob?.cancel()
+            holder.icon.setImageDrawable(null)
+            holder.iconJob = af.shizuku.manager.utils.AppIconCache.loadIconBitmapAsync(
+                holder.itemView.context,
+                item.appInfo,
+                item.appInfo.uid / 100000,
+                holder.icon
+            )
+
             holder.checkbox.isChecked = item.isChecked
 
             holder.itemView.setOnClickListener {
@@ -129,6 +138,7 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
             val summary: TextView = view.findViewById(R.id.summary)
             val icon: ImageView = view.findViewById(R.id.icon)
             val checkbox: CheckBox = view.findViewById(R.id.checkbox)
+            var iconJob: Job? = null
         }
     }
 

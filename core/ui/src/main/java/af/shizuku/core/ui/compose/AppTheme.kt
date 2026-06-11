@@ -11,15 +11,23 @@ import androidx.compose.ui.graphics.Color
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
+    isBlackNightTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
+    val context = LocalContext.current
+    var colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
         darkTheme -> darkColorScheme()
         else -> lightColorScheme()
+    }
+
+    if (darkTheme && isBlackNightTheme) {
+        colorScheme = colorScheme.copy(
+            background = Color.Black,
+            surface = Color.Black
+        )
     }
 
     MaterialTheme(

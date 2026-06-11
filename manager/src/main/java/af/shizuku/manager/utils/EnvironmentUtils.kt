@@ -32,13 +32,25 @@ object EnvironmentUtils {
         return (getAdbTcpPort() <= 0 || !ShizukuSettings.getTcpMode())
     }
 
+    @Volatile
     private var isRootedCached: Boolean? = null
 
     fun isRooted(): Boolean {
-        if (isRootedCached == null) {
-            isRootedCached = checkSuExists()
+        val cached = isRootedCached
+        if (cached != null) return cached
+
+        // Fallback synchronous check with strict short circuit to prevent ANRs on hung filesystems
+        // If it hangs, we just return false immediately
+        return try {
+            val future = java.util.concurrent.Executors.newSingleThreadExecutor().submit(java.util.concurrent.Callable {
+                checkSuExists()
+            })
+            val result = future.get(500, java.util.concurrent.TimeUnit.MILLISECONDS)
+            isRootedCached = result
+            result
+        } catch (e: Exception) {
+            false
         }
-        return isRootedCached!!
     }
 
     private fun checkSuExists(): Boolean {
