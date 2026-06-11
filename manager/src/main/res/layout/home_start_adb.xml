@@ -37,7 +37,7 @@
         android:layout_height="wrap_content"
         tools:text="@string/home_adb_description" />
 
-    <af.shizuku.core.ui.compose.ComposeButtonView
+    <com.google.android.material.button.MaterialButton
         android:id="@android:id/button1"
         style="@style/CardButton"
         android:layout_width="wrap_content"

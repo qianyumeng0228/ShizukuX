@@ -39,7 +39,7 @@
         android:lineSpacingMultiplier="1.2"
         tools:text="There are no items to display" />
 
-    <af.shizuku.core.ui.compose.ComposeButtonView
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/empty_state_action_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

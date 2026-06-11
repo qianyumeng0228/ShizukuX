@@ -36,7 +36,7 @@
 
         </LinearLayout>
 
-        <af.shizuku.core.ui.compose.ComposeButtonView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_clear_all"
             
             android:layout_width="wrap_content"
@@ -64,7 +64,7 @@
             app:queryBackground="@android:color/transparent"
             app:queryHint="@string/app_management_search_hint" />
 
-        <af.shizuku.core.ui.compose.ComposeButtonView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_filter_system"
             
             android:layout_width="48dp"

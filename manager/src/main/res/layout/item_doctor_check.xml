@@ -42,7 +42,7 @@
 
     </LinearLayout>
 
-    <af.shizuku.core.ui.compose.ComposeButtonView
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btn_fix"
         
         android:layout_width="wrap_content"
