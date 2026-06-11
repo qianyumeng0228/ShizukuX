@@ -14,7 +14,12 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
         private const val CRASH_FILE_NAME = "last_crash.txt"
 
         fun getCrashFile(context: Context): File {
-            return File(context.cacheDir, CRASH_FILE_NAME)
+            val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                context.createDeviceProtectedStorageContext()
+            } else {
+                context
+            }
+            return File(storageContext.cacheDir, CRASH_FILE_NAME)
         }
 
         fun getLastCrashReport(context: Context): String? {

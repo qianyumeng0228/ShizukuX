@@ -80,7 +80,12 @@ object ActivityLogManager {
 
         scope.launch {
             try {
-                val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
+                val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.createDeviceProtectedStorageContext()
+                } else {
+                    context
+                }
+                val dbFile = storageContext.getDatabasePath("shizuku_activity_logs.db")
                 if (dbFile.parentFile?.exists() != true) {
                     dbFile.parentFile?.mkdirs()
                     delay(50)
@@ -282,8 +287,13 @@ object ActivityLogManager {
                 database = null
                 dao = null
                 
+                val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.createDeviceProtectedStorageContext()
+                } else {
+                    context
+                }
                 var recoverySuccessful = false
-                val dbFile = context.getDatabasePath("shizuku_activity_logs.db")
+                val dbFile = storageContext.getDatabasePath("shizuku_activity_logs.db")
                 val timestamp = getTimestampFilename()
                 val corruptedBackup = File(dbFile.path + "_corrupt_backup_" + timestamp)
 
@@ -359,7 +369,12 @@ object ActivityLogManager {
     suspend fun manualRecoverDatabase(context: android.content.Context, backupFile: File, method: String): String {
         if (!backupFile.exists()) return "Backup file not found."
         
-        val newDbFile = context.getDatabasePath("shizuku_activity_logs.db")
+        val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            context.createDeviceProtectedStorageContext()
+        } else {
+            context
+        }
+        val newDbFile = storageContext.getDatabasePath("shizuku_activity_logs.db")
         
         return withContext(Dispatchers.IO) {
             try {
