@@ -82,7 +82,7 @@ class EmptyStateView @JvmOverloads constructor(
     }
 
     fun showActionButton() {
-        if (binding.emptyStateActionButton.text.isNotEmpty()) {
+        if (!binding.emptyStateActionButton.text.isNullOrEmpty()) {
             binding.emptyStateActionButton.visibility = View.VISIBLE
         }
     }
