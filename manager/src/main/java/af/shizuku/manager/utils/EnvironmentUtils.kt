@@ -36,9 +36,17 @@ object EnvironmentUtils {
 
     fun isRooted(): Boolean {
         if (isRootedCached == null) {
-            isRootedCached = Shell.isAppGrantedRoot() == true || Shell.getShell().isRoot
+            isRootedCached = Shell.isAppGrantedRoot() == true || checkSuExists()
         }
         return isRootedCached!!
+    }
+
+    private fun checkSuExists(): Boolean {
+        val paths = System.getenv("PATH")?.split(":") ?: return false
+        for (path in paths) {
+            if (java.io.File(path, "su").exists()) return true
+        }
+        return false
     }
 
     @JvmStatic
