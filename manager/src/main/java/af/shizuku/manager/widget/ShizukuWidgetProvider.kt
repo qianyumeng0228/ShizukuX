@@ -26,7 +26,7 @@ class ShizukuWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         // Refresh all widgets on server state changes or other events
         try {
-            val manager = AppWidgetManager.getInstance(context)
+            val manager: AppWidgetManager? = context.getSystemService(Context.APPWIDGET_SERVICE) as? AppWidgetManager
             if (manager != null) {
                 val ids = manager.getAppWidgetIds(ComponentName(context, ShizukuWidgetProvider::class.java))
                 if (ids != null && ids.isNotEmpty()) {
