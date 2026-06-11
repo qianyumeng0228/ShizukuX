@@ -132,7 +132,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
                         throwable is java.net.SocketTimeoutException ||
                         throwable is java.net.ConnectException ||
                         throwable is javax.net.ssl.SSLException ||
-                        throwable?.javaClass?.simpleName == "AdbKeyException") {
+                        throwable?.javaClass?.simpleName == "AdbKeyException" ||
+                        throwable?.javaClass?.simpleName == "AdbInvalidPairingCodeException") {
                         return@setBeforeSend null
                     }
 

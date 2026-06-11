@@ -13,17 +13,19 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
     companion object {
         private const val CRASH_FILE_NAME = "last_crash.txt"
 
-        fun getCrashFile(context: Context): File {
+        fun getCrashFile(context: Context): File? {
             val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
                 context.createDeviceProtectedStorageContext()
             } else {
                 context
             }
-            return File(storageContext.cacheDir, CRASH_FILE_NAME)
+            val dir = storageContext.cacheDir ?: storageContext.filesDir
+            if (dir == null) return null
+            return File(dir, CRASH_FILE_NAME)
         }
 
         fun getLastCrashReport(context: Context): String? {
-            val file = getCrashFile(context)
+            val file = getCrashFile(context) ?: return null
             if (!file.exists()) return null
             return try {
                 file.readText()
@@ -33,7 +35,7 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
         }
 
         fun clearLastCrash(context: Context) {
-            val file = getCrashFile(context)
+            val file = getCrashFile(context) ?: return
             if (file.exists()) file.delete()
         }
     }
@@ -64,7 +66,7 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
         report.append(stackTrace)
 
         try {
-            val file = getCrashFile(context)
+            val file = getCrashFile(context) ?: return
             // cacheDir may not exist on fresh installs or after a storage mount issue
             val parent = file.parentFile
             if (parent != null) {

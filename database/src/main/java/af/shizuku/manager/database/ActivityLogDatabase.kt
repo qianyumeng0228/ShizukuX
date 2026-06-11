@@ -60,7 +60,7 @@ abstract class ActivityLogDatabase : RoomDatabase() {
             return Room.databaseBuilder(
                 storageContext,
                 ActivityLogDatabase::class.java,
-                DATABASE_NAME
+                dbFile.absolutePath
             )
                 .fallbackToDestructiveMigration()
                 .build()
