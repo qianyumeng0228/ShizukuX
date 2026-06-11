@@ -332,10 +332,18 @@ class OnboardingActivity : AppActivity() {
     private fun onPairClicked() {
         if (EnvironmentUtils.isTelevision()) {
             showAccessibilityDialog()
-        } else if (ShizukuSettings.getLegacyPairing()) {
-            AdbPairDialogFragment().show(supportFragmentManager, null)
         } else {
-            startActivity(Intent(this, AdbPairingTutorialActivity::class.java))
+            val serviceIntent = af.shizuku.manager.adb.AdbPairingService.startIntent(this)
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
+                af.shizuku.manager.utils.SettingsHelper.launchOrHighlightWirelessDebugging(this)
+            } catch (e: Exception) {
+                AdbPairDialogFragment().show(supportFragmentManager, null)
+            }
         }
     }
 

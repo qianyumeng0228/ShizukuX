@@ -130,7 +130,8 @@ abstract class HomeActivity : AppActivity(), MavericksView {
         }
 
         setContent {
-            HomeScreen(
+            af.shizuku.core.ui.compose.AppTheme {
+                HomeScreen(
                 isEditMode = isEditMode,
                 showEmptyState = showEmptyState,
                 onStopClick = {
@@ -168,6 +169,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                     }
                 }
             )
+            }
         }
 
         when (intent?.getStringExtra("shortcut_action")) {

@@ -195,23 +195,20 @@ class StartWirelessAdbViewHolder(
             }
             return
         }
-
-        // Notifications available: use the preferred pairing path.
-        if ((context.display?.displayId ?: -1) > 0 || ShizukuSettings.getLegacyPairing()) {
-            // Secondary display or legacy mode: show in-app pairing dialog directly
+        val serviceIntent = af.shizuku.manager.adb.AdbPairingService.startIntent(context)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+            af.shizuku.manager.utils.SettingsHelper.launchOrHighlightWirelessDebugging(context)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to start AdbPairingService")
             val activity = context.asActivity<FragmentActivity>()
             if (activity != null) {
                 AdbPairDialogFragment().show(activity.supportFragmentManager)
-            } else {
-                Timber.e("onPairClicked: could not find FragmentActivity in context $context")
             }
-        } else {
-            // Primary display: open the pairing tutorial (notification-based pairing code)
-            val activity = context.asActivity<android.app.Activity>() ?: return
-            activity.startWithSceneTransition(
-                Intent(activity, AdbPairingTutorialActivity::class.java),
-                binding.icon, "icon_wireless_adb"
-            )
         }
     }
 }

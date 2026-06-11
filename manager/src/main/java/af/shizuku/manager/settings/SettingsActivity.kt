@@ -34,30 +34,32 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
         }
 
         setContent {
-            SettingsScreen(
-                title = currentTitle,
-                onNavigateUp = {
-                    if (!onSupportNavigateUp()) {
-                        finish()
+            af.shizuku.core.ui.compose.AppTheme {
+                SettingsScreen(
+                    title = currentTitle,
+                    onNavigateUp = {
+                        if (!onSupportNavigateUp()) {
+                            finish()
+                        }
+                    },
+                    onNavigateToSetting = { item -> navigateToSetting(item) },
+                    searchResults = searchResults,
+                    onSearchQueryChanged = { query ->
+                        if (query.isBlank()) {
+                            searchResults = emptyList()
+                        } else {
+                            searchResults = SettingsSearchEngine.search(this, query)
+                        }
+                    },
+                    onContainerCreated = {
+                        if (savedInstanceState == null && supportFragmentManager.findFragmentById(R.id.fragment_container) == null) {
+                            supportFragmentManager.beginTransaction()
+                                .replace(R.id.fragment_container, SettingsFragment())
+                                .commit()
+                        }
                     }
-                },
-                onNavigateToSetting = { item -> navigateToSetting(item) },
-                searchResults = searchResults,
-                onSearchQueryChanged = { query ->
-                    if (query.isBlank()) {
-                        searchResults = emptyList()
-                    } else {
-                        searchResults = SettingsSearchEngine.search(this, query)
-                    }
-                },
-                onContainerCreated = {
-                    if (savedInstanceState == null && supportFragmentManager.findFragmentById(R.id.fragment_container) == null) {
-                        supportFragmentManager.beginTransaction()
-                            .replace(R.id.fragment_container, SettingsFragment())
-                            .commit()
-                    }
-                }
-            )
+                )
+            }
         }
     }
 
