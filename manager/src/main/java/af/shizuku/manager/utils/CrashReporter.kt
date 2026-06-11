@@ -109,7 +109,8 @@ object CrashReporter {
      */
     fun shareAsFile(context: Context) {
         val report = generateReport(context)
-        val file = File(context.cacheDir, "shizuku_plus_crash_report.txt")
+        val dir = context.cacheDir ?: context.filesDir ?: return
+        val file = File(dir, "shizuku_plus_crash_report.txt")
         val parent = file.parentFile
         if (parent != null && !parent.exists()) {
             parent.mkdirs()

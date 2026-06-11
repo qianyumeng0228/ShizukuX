@@ -12,8 +12,9 @@ object UpdateInstaller {
     private const val TAG = "UpdateInstaller"
     const val AUTO_BACKUP_FILENAME = "shizuku_plus_auto_backup.json"
 
-    fun getBackupFile(context: Context): File {
-        return File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), AUTO_BACKUP_FILENAME)
+    fun getBackupFile(context: Context): File? {
+        val extDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.filesDir ?: return null
+        return File(extDir, AUTO_BACKUP_FILENAME)
     }
 
     fun forceUpdateWithShizuku(context: Context, apkFile: File): Boolean {
@@ -26,11 +27,14 @@ object UpdateInstaller {
             // 1. Auto-export settings to a public location
             val backupJson = SettingsBackupManager.export(context)
             val backupFile = getBackupFile(context)
-            backupFile.writeText(backupJson)
-            Timber.tag(TAG).i("Auto-exported settings to ${backupFile.absolutePath}")
+            if (backupFile != null) {
+                backupFile.writeText(backupJson)
+                Timber.tag(TAG).i("Auto-exported settings to ${backupFile.absolutePath}")
+            }
 
             // 2. Create a shell script to do the detached reinstall
-            val scriptFile = File(context.cacheDir, "force_update.sh")
+            val cacheDir = context.cacheDir ?: context.filesDir ?: return false
+            val scriptFile = File(cacheDir, "force_update.sh")
             val packageName = context.packageName
             val apkPath = apkFile.absolutePath
 

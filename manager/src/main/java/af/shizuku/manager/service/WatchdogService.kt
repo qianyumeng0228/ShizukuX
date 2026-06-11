@@ -216,7 +216,7 @@ class WatchdogService : Service() {
                     context.startService(intent)
                 }
             } catch (e: Exception) {
-                Timber.tag("ShizukuApplication").e("Failed to start WatchdogService: ${e.message}" )
+                Timber.tag("ShizukuApplication").w(e, "Failed to start WatchdogService: ${e.message}" )
             }
         }
 

@@ -65,7 +65,7 @@ class MainActivity : HomeActivity() {
     private fun checkAndRestoreBackup() {
         lifecycleScope.launch(Dispatchers.IO) {
             val backupFile = af.shizuku.manager.update.UpdateInstaller.getBackupFile(this@MainActivity)
-            if (backupFile.exists()) {
+            if (backupFile != null && backupFile.exists()) {
                 try {
                     val json = backupFile.readText()
                     if (af.shizuku.manager.utils.SettingsBackupManager.import(this@MainActivity, json)) {

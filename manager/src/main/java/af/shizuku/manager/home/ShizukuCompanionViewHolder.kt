@@ -61,7 +61,8 @@ class ShizukuCompanionViewHolder(
                     Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
                 }
             } else {
-                val tmpApk = java.io.File(v.context.cacheDir, "compat.apk")
+                val dir = v.context.cacheDir ?: v.context.filesDir ?: return@setOnClickListener
+                val tmpApk = java.io.File(dir, "compat.apk")
                 try {
                     v.context.assets.open("compat.apk").use { input ->
                         tmpApk.outputStream().use { output ->
