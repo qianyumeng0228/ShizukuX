@@ -13,5 +13,6 @@ data class HomeState(
     // Port discovered via mDNS TLS_CONNECT; -1 = not yet found
     val discoveredAdbPort: Int = -1,
     val companionInstalled: Boolean = false,
+    val compatHubInstalled: Boolean = false,
     val isOriginalShizukuRunning: Boolean = false
 ) : MavericksState

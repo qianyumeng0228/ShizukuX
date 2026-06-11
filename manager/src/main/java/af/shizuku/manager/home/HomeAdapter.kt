@@ -104,6 +104,7 @@ class HomeAdapter(
                 Triple(it.serviceStatus.invoke(), it.grantedAppCount, it.isEditMode)
             }
             val companionInstalled = withState(homeModel) { it.companionInstalled }
+            val compatHubInstalled = withState(homeModel) { it.compatHubInstalled }
             val isOriginalShizukuRunning = withState(homeModel) { it.isOriginalShizukuRunning }
 
             if (status == null) {
@@ -155,7 +156,7 @@ class HomeAdapter(
                         ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
                             addItem(LearnMoreViewHolder.CREATOR, null, id)
                         ID_COMPANION -> if (isEditMode || ShizukuSettings.isCompanionModeEnabled())
-                            addItem(ShizukuCompanionViewHolder.CREATOR, companionInstalled, id)
+                            addItem(ShizukuCompanionViewHolder.CREATOR, Pair(companionInstalled, compatHubInstalled), id)
                     }
                 }
 

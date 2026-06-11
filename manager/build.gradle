@@ -153,10 +153,27 @@ afterEvaluate {
     if (optimizeReleaseResources != null) {
         optimizeReleaseResources.finalizedBy(collapseReleaseResourceNames)
     }
+    
+    tasks.register("copyCompatApkRelease", Copy) {
+        dependsOn ":compat:assembleRelease"
+        from "${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/release/compat-release-unsigned.apk"
+        into "src/main/assets"
+        rename { "compat.apk" }
+    }
+    
+    tasks.register("copyCompatApkDebug", Copy) {
+        dependsOn ":compat:assembleDebug"
+        from "${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/debug/compat-debug.apk"
+        into "src/main/assets"
+        rename { "compat.apk" }
+    }
+    
+    tasks.findByName("preReleaseBuild")?.dependsOn("copyCompatApkRelease")
     tasks.findByName("preReleaseBuild")?.dependsOn(":shell:assembleRelease")
+    
+    tasks.findByName("preDebugBuild")?.dependsOn("copyCompatApkDebug")
     tasks.findByName("preDebugBuild")?.dependsOn(":shell:assembleDebug")
 }
-
 
 
 tasks.withType(CompileArtProfileTask.class).configureEach {

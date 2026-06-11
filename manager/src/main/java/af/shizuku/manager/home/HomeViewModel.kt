@@ -63,11 +63,13 @@ class HomeViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val status = loadStatus()
-                val companionInstalled = StockShizukuCompat.isInstalled(appContext)
+                val companionInstalled = StockShizukuCompat.isStockShizukuInstalled(appContext)
+                val compatHubInstalled = StockShizukuCompat.isCompatAppInstalled(appContext)
                 val isOriginalRunning = StockShizukuCompat.isOriginalRunning()
                 setState { copy(
                     serviceStatus = Success(status),
                     companionInstalled = companionInstalled,
+                    compatHubInstalled = compatHubInstalled,
                     isOriginalShizukuRunning = isOriginalRunning
                 ) }
             } catch (e: Exception) {

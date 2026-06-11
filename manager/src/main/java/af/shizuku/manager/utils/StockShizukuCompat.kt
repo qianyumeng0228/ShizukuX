@@ -17,6 +17,19 @@ object StockShizukuCompat {
         }
     }
 
+    fun isCompatAppInstalled(context: Context): Boolean {
+        return try {
+            val info = context.packageManager.getPackageInfo(PACKAGE, 0)
+            info.versionName?.contains("compat") == true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
+    }
+
+    fun isStockShizukuInstalled(context: Context): Boolean {
+        return isInstalled(context) && !isCompatAppInstalled(context)
+    }
+
     fun launch(context: Context): Boolean {
         return try {
             val intent = context.packageManager.getLaunchIntentForPackage(PACKAGE) ?: return false

@@ -39,9 +39,8 @@
         android:lineSpacingMultiplier="1.2"
         tools:text="There are no items to display" />
 
-    <com.google.android.material.button.MaterialButton
+    <af.shizuku.core.ui.compose.ComposeButtonView
         android:id="@+id/empty_state_action_button"
-        style="@style/Widget.Material3.Button.TonalButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/m3e_spacing_large"

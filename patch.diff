@@ -1,0 +1,19 @@
+--- manager/src/main/AndroidManifest.xml
++++ manager/src/main/AndroidManifest.xml
+@@ -46,14 +46,8 @@
+         android:permissionGroup="af.shizuku.plus.permission-group.API"
+         android:protectionLevel="dangerous" />
+     
+-    <permission
++    <permission
+         android:name="moe.shizuku.manager.permission.API_V23"
+-        android:description="@string/permission_description"
+-        android:icon="@drawable/ic_system_icon"
+-        android:label="@string/permission_label"
+-        android:permissionGroup="af.shizuku.plus.permission-group.API"
+-        android:protectionLevel="dangerous" />
+-    
++        tools:node="remove" />
+     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+ 
+     <application
