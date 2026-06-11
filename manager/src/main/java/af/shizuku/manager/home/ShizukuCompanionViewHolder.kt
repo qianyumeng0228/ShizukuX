@@ -42,23 +42,45 @@ class ShizukuCompanionViewHolder(
         binding.button1.setOnClickListener { v ->
             val companionInstalled = data?.first ?: false
             if (companionInstalled) {
-                val cmd = "pm disable-user --user 0 ${StockShizukuCompat.PACKAGE}"
-                if (Shizuku.pingBinder()) {
-                    try {
-                        Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-                        Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    val cmd = "pm disable-user --user 0 ${StockShizukuCompat.PACKAGE}"
+                    if (Shizuku.pingBinder()) {
+                        try {
+                            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+                            val success = process.waitFor() == 0
+                            process.destroy()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                if (success) {
+                                    Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
+                        try {
+                            val result = com.topjohnwu.superuser.Shell.cmd(cmd).exec()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                if (result.isSuccess) {
+                                    Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
+                        }
                     }
-                } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
-                    try {
-                        com.topjohnwu.superuser.Shell.cmd(cmd).exec()
-                        Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
                 }
             } else {
                 val dir = v.context.cacheDir ?: v.context.filesDir ?: return@setOnClickListener
@@ -75,22 +97,44 @@ class ShizukuCompanionViewHolder(
                 }
                 
                 val cmd = "pm install -r ${tmpApk.absolutePath}"
-                if (Shizuku.pingBinder()) {
-                    try {
-                        Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-                        Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                    if (Shizuku.pingBinder()) {
+                        try {
+                            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+                            val success = process.waitFor() == 0
+                            process.destroy()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                if (success) {
+                                    Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
+                        try {
+                            val result = com.topjohnwu.superuser.Shell.cmd(cmd).exec()
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                if (result.isSuccess) {
+                                    Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } else {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                        }
                     }
-                } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
-                    try {
-                        com.topjohnwu.superuser.Shell.cmd(cmd).exec()
-                        Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
-                    } catch (e: Exception) {
-                        Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
                 }
             }
         }

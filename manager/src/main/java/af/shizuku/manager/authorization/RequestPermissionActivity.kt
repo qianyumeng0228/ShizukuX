@@ -53,7 +53,7 @@ class RequestPermissionActivity : AppActivity() {
         val uid = intent.getIntExtra("uid", -1)
         val pid = intent.getIntExtra("pid", -1)
         val requestCode = intent.getIntExtra("requestCode", -1)
-        val ai = intent.getParcelableExtra<ApplicationInfo>("applicationInfo")
+        val ai = androidx.core.content.IntentCompat.getParcelableExtra(intent, "applicationInfo", ApplicationInfo::class.java)
         if (uid == -1 || pid == -1 || ai == null) {
             finish()
             return

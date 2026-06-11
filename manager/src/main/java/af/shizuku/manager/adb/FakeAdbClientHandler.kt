@@ -162,6 +162,7 @@ class FakeAdbClientHandler(
                 } catch (e: Exception) {}
 
                 process.waitFor()
+                process.destroy()
                 activeProcesses.remove(localId)
                 writeMessage(AdbMessage(AdbProtocol.A_CLSE, localId, remoteId, ByteArray(0)))
             }.start()

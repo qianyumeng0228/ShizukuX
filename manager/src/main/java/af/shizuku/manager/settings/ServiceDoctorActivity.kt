@@ -233,7 +233,9 @@ class ServiceDoctorActivity : AppBarActivity() {
                         try {
                             // Try to disable it via Shizuku if running
                             if (ShizukuStateMachine.isRunning()) {
-                                Shizuku.newProcess(arrayOf("device_config", "put", "activity_manager", "max_phantom_processes", "2147483647"), null, null).waitFor()
+                                val p = Shizuku.newProcess(arrayOf("device_config", "put", "activity_manager", "max_phantom_processes", "2147483647"), null, null)
+                                p.waitFor()
+                                p.destroy()
                                 withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, R.string.service_doctor_fix_phantom_attempted, Toast.LENGTH_SHORT).show() }
                             } else {
                                 withContext(Dispatchers.Main) { Toast.makeText(this@ServiceDoctorActivity, R.string.service_doctor_fix_requires_service, Toast.LENGTH_SHORT).show() }

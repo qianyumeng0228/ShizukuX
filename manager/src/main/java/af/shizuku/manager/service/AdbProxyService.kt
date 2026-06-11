@@ -45,7 +45,10 @@ class AdbProxyService : Service() {
         private fun execShellCommand(cmd: Array<String>): Boolean {
             return if (Shizuku.pingBinder()) {
                 try {
-                    Shizuku.newProcess(cmd, null, null).waitFor() == 0
+                    val p = Shizuku.newProcess(cmd, null, null)
+                    val success = p.waitFor() == 0
+                    p.destroy()
+                    success
                 } catch (e: Exception) { false }
             } else if (com.topjohnwu.superuser.Shell.getShell().isRoot) {
                 com.topjohnwu.superuser.Shell.cmd(*cmd).exec().isSuccess
