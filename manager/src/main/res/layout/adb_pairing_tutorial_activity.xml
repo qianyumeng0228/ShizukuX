@@ -105,6 +105,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/notification_options"
+                        style="@style/Widget.Material3.Button.TonalButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
@@ -252,6 +253,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/developer_options"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"

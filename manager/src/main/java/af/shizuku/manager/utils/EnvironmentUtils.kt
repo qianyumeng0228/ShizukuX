@@ -36,7 +36,7 @@ object EnvironmentUtils {
 
     fun isRooted(): Boolean {
         if (isRootedCached == null) {
-            isRootedCached = Shell.isAppGrantedRoot() == true || checkSuExists()
+            isRootedCached = checkSuExists()
         }
         return isRootedCached!!
     }
