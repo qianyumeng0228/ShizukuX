@@ -15,7 +15,8 @@ import android.widget.Toast
 import rikka.shizuku.Shizuku
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
-
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 class ShizukuCompanionViewHolder(
     private val binding: HomeShizukuCompanionBinding,
     private val containerBinding: HomeItemContainerBinding,
