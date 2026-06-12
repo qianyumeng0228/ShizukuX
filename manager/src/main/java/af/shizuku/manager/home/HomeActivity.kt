@@ -63,6 +63,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.platform.LocalContext
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.home.compose.HomeScreen
 
@@ -102,9 +103,9 @@ abstract class HomeActivity : AppActivity(), MavericksView {
             // at runtime (platform nullability contract violation).
             // We use safe casting to Any? to prevent R8 from eliding the null check.
             try {
-                val iconView: android.view.View? = provider.iconView
-                if (iconView != null) {
-                    iconView.animate()
+                val iconViewAny: Any? = provider.iconView
+                if (iconViewAny is android.view.View) {
+                    iconViewAny.animate()
                         ?.alpha(0f)
                         ?.scaleX(0.8f)
                         ?.scaleY(0.8f)
@@ -130,8 +131,11 @@ abstract class HomeActivity : AppActivity(), MavericksView {
         }
 
         setContent {
+            val context = LocalContext.current
             af.shizuku.core.ui.compose.AppTheme(
-                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(this)
+                darkTheme = androidx.compose.foundation.isSystemInDarkTheme(),
+                dynamicColor = af.shizuku.manager.app.ThemeHelper.isUsingSystemColor(),
+                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(context)
             ) {
                 HomeScreen(
                 isEditMode = isEditMode,

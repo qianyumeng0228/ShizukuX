@@ -46,11 +46,12 @@ class ShizukuTileService : TileService() {
 
         try {
             if (isRunning) {
-                // If running, launch Main Dashboard to manage
-                val intent = Intent(this, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                }
-                startActivityAndCollapse(intent)
+                // Stop Shizuku
+                ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                updateTile()
+                kotlin.runCatching { rikka.shizuku.Shizuku.exit() }
+                ShizukuStateMachine.update()
+                updateTile()
             } else {
                 // Attempt to start silently if root is available
                 if (com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true) {

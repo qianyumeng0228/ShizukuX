@@ -81,7 +81,7 @@ class CrashHandler(private val context: Context, private val defaultHandler: Thr
                 file.writeText(report.toString())
             }
         } catch (e: Exception) {
-            Timber.w(e, "Error writing crash file")
+            android.util.Log.w("CrashHandler", "Error writing crash file: ${e.message}")
         }
     }
 }

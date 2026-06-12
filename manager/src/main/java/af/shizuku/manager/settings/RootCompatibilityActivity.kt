@@ -67,7 +67,7 @@ class RootCompatibilityActivity : AppBarActivity() {
         resolvedSuPath?.let { path ->
             val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
 
-            // Only show the automated setup card if we are actually rooted.
+            // Only show the automated setup card if we are rooted.
             // For ADB users, this card is irrelevant and confusing.
             binding.globalSetupCard.isVisible = isRoot
 

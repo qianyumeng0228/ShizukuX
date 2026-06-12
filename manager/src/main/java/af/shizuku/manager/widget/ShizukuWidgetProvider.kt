@@ -23,7 +23,11 @@ class ShizukuWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
+        try {
+            super.onReceive(context, intent)
+        } catch (e: Exception) {
+            // Ignore NPEs from OEM AppWidgetManager implementations (e.g., restricted profiles)
+        }
         // Refresh all widgets on server state changes or other events
         try {
             val manager: AppWidgetManager? = context.getSystemService(Context.APPWIDGET_SERVICE) as? AppWidgetManager

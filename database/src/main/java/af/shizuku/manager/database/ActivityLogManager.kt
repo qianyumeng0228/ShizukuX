@@ -91,13 +91,17 @@ object ActivityLogManager {
                     delay(50)
                 }
 
-                database = ActivityLogDatabase.getInstance(context)
-                dao = database?.activityLogDao()
-
-                retentionCount = settings.getActivityLogRetention()
-
-                loadFromDatabase()
-                cleanupOldRecords()
+                try {
+                    database = ActivityLogDatabase.getInstance(context)
+                    dao = database?.activityLogDao()
+                    retentionCount = settings.getActivityLogRetention()
+                    loadFromDatabase()
+                    cleanupOldRecords()
+                } catch (e: Exception) {
+                    Timber.tag(TAG).e(e, "Failed to initialize ActivityLog database")
+                    database = null
+                    dao = null
+                }
 
                 Timber.tag(TAG).d("ActivityLogManager initialized")
             } catch (e: Exception) {
