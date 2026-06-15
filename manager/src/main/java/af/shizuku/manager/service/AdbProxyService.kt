@@ -43,18 +43,20 @@ class AdbProxyService : Service() {
         private const val TIMEOUT_MS = 30_000 // 30s per command
 
         private fun execShellCommand(cmd: Array<String>): Boolean {
-            return if (Shizuku.pingBinder()) {
-                try {
+            // Entire body in try-catch: pingBinder() can throw IllegalStateException on some
+            // vendor binder states (race between connected check and actual call).
+            return try {
+                if (Shizuku.pingBinder()) {
                     val p = Shizuku.newProcess(cmd, null, null)
                     val success = p.waitFor() == 0
                     p.destroy()
                     success
-                } catch (e: Exception) { false }
-            } else if (com.topjohnwu.superuser.Shell.getShell().isRoot) {
-                com.topjohnwu.superuser.Shell.cmd(*cmd).exec().isSuccess
-            } else {
-                false
-            }
+                } else if (com.topjohnwu.superuser.Shell.getShell().isRoot) {
+                    com.topjohnwu.superuser.Shell.cmd(*cmd).exec().isSuccess
+                } else {
+                    false
+                }
+            } catch (e: Exception) { false }
         }
 
         /** Configures adbd TCP mode via Shizuku or Root. */
