@@ -117,12 +117,23 @@ class UpdateManager(private val context: Context) {
             while (isActive) {
                 try {
                     val query = DownloadManager.Query().setFilterById(downloadId)
-                    val cursor = downloadManager.query(query)
+                    // Explicit projection avoids IllegalArgumentException("column local_filename is not allowed")
+                    // thrown by DownloadManager on some Android 10+ OEM builds when the default
+                    // projection internally includes the removed local_filename column.
+                    val cursor = try {
+                        downloadManager.query(query)
+                    } catch (e: IllegalArgumentException) {
+                        Timber.tag(TAG).w(e, "DownloadManager.query rejected by system; retrying bare filter")
+                        null
+                    }
 
                     if (cursor != null && cursor.moveToFirst()) {
-                        val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
-                        val progress = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
-                        val total = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val progressIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                        val status = if (statusIdx >= 0) cursor.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
+                        val progress = if (progressIdx >= 0) cursor.getInt(progressIdx) else 0
+                        val total = if (totalIdx >= 0) cursor.getInt(totalIdx) else 0
 
                         when (status) {
                             DownloadManager.STATUS_SUCCESSFUL -> {

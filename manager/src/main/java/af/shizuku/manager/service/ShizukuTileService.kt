@@ -1,7 +1,9 @@
 package af.shizuku.manager.service
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.PowerManager
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
@@ -63,11 +65,21 @@ class ShizukuTileService : TileService() {
                             updateTile()
                         }
                 } else {
-                    // Fallback to UI for ADB pairing/start
-                    val intent = Intent("af.shizuku.manager.action.START_SERVICE").apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    // Fallback to UI for ADB pairing/start.
+                    // Android 14+ removed startActivityAndCollapse(Intent); must use PendingIntent.
+                    val intent = Intent(this, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
-                    startActivityAndCollapse(intent)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        val pending = PendingIntent.getActivity(
+                            this, 0, intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                        startActivityAndCollapse(pending)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        startActivityAndCollapse(intent)
+                    }
                 }
             }
         } catch (e: Exception) {

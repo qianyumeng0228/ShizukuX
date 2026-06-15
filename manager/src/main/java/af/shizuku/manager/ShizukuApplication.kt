@@ -238,7 +238,14 @@ class ShizukuApplication : Application(), Configuration.Provider {
 
         if (ShizukuSettings.getWatchdog()) {
             WatchdogService.start(this)
-            af.shizuku.manager.worker.WatchdogWorker.schedule(this)
+            val userManagerWatchdog = getSystemService(Context.USER_SERVICE) as? UserManager
+            if (userManagerWatchdog == null || userManagerWatchdog.isUserUnlocked) {
+                try {
+                    af.shizuku.manager.worker.WatchdogWorker.schedule(this)
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to schedule WatchdogWorker in direct boot")
+                }
+            }
         }
 
         try {
