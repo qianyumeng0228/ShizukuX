@@ -2,6 +2,8 @@ package af.shizuku.manager.service
 
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import af.shizuku.manager.utils.LiveActivityNotificationManager
 import af.shizuku.manager.utils.ShizukuStateMachine
@@ -19,19 +21,48 @@ class ShizukuLiveService : Service() {
             ShizukuStateMachine.asFlow().collect { state ->
                 val isRunning = state == ShizukuStateMachine.State.RUNNING
                 if (isRunning) {
-                    LiveActivityNotificationManager.show(this@ShizukuLiveService, "System Bridge Active")
+                    val notif = LiveActivityNotificationManager.buildNotification(
+                        this@ShizukuLiveService, "System Bridge Active"
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        startForeground(LiveActivityNotificationManager.NOTIFICATION_ID, notif,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                    } else {
+                        startForeground(LiveActivityNotificationManager.NOTIFICATION_ID, notif)
+                    }
                 } else {
-                    LiveActivityNotificationManager.dismiss(this@ShizukuLiveService)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        stopForeground(true)
+                    }
                 }
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Run as foreground service to ensure system persistence
-        val state = ShizukuStateMachine.get()
-        if (state == ShizukuStateMachine.State.RUNNING) {
-            LiveActivityNotificationManager.show(this, "System Bridge Active")
+        // startForeground() must be called within 5s of startForegroundService().
+        // Use current state for the initial notification; the flow in onCreate() will keep it updated.
+        val isRunning = ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
+        val notif = LiveActivityNotificationManager.buildNotification(
+            this, if (isRunning) "System Bridge Active" else "Monitoring..."
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(LiveActivityNotificationManager.NOTIFICATION_ID, notif,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(LiveActivityNotificationManager.NOTIFICATION_ID, notif)
+        }
+        // If not running, remove the foreground notification immediately — service stays alive silently.
+        if (!isRunning) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
         }
         return START_STICKY
     }

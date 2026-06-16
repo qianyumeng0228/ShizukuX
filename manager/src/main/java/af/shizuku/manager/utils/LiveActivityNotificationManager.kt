@@ -12,12 +12,11 @@ import af.shizuku.manager.MainActivity
 
 object LiveActivityNotificationManager {
     private const val CHANNEL_ID = "live_activity_channel"
-    private const val NOTIFICATION_ID = 9999
+    const val NOTIFICATION_ID = 9999
 
-    fun show(context: Context, status: String) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-
+    private fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "ShizukuX Live Status",
@@ -28,12 +27,14 @@ object LiveActivityNotificationManager {
             }
             manager.createNotificationChannel(channel)
         }
+    }
 
+    fun buildNotification(context: Context, status: String): android.app.Notification {
+        ensureChannel(context)
         val pendingIntent = PendingIntentCompat.getActivity(
             context, 0, Intent(context, MainActivity::class.java), 0, false
         )
-
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_server_ok_24)
             .setContentTitle("ShizukuX Active")
             .setContentText(status)
@@ -44,8 +45,11 @@ object LiveActivityNotificationManager {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
+    }
 
-        manager.notify(NOTIFICATION_ID, notification)
+    fun show(context: Context, status: String) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.notify(NOTIFICATION_ID, buildNotification(context, status))
     }
 
     fun dismiss(context: Context) {

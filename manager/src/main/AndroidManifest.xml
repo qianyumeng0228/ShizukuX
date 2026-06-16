@@ -276,7 +276,13 @@
             android:name=".service.ShizukuLiveService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="specialUse" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Displays a persistent status notification while the Shizuku bridge is active.
+                    The service monitors the Shizuku binder state and shows or hides the notification accordingly.
+                    It runs silently in the background when Shizuku is not active." />
+        </service>
 
         <receiver
             android:name=".receiver.BinderRequestReceiver"

@@ -373,9 +373,16 @@ class ShizukuApplication : Application(), Configuration.Provider {
             initializeManagers()
             if (ShizukuSettings.getWatchdog()) {
                 try {
-                    startService(Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java))
+                    // startForegroundService() is required on API 26+ to start from background;
+                    // plain startService() throws BackgroundServiceStartNotAllowedException on API 31+.
+                    val liveServiceIntent = Intent(this, af.shizuku.manager.service.ShizukuLiveService::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(liveServiceIntent)
+                    } else {
+                        startService(liveServiceIntent)
+                    }
                 } catch (e: Exception) {
-                    android.util.Log.w("ShizukuApplication", "Failed to start ShizukuLiveService in background", e)
+                    android.util.Log.w("ShizukuApplication", "Failed to start ShizukuLiveService", e)
                 }
             }
         } catch (e: Throwable) {
