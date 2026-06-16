@@ -922,6 +922,12 @@
 
     <!-- Pairing fallback (Issue #204) -->
     <string name="toast_pair_notifications_required">Notifications are blocked — using manual pairing. Go to Developer Options → Wireless debugging → Pair device with pairing code to get your code, then enter it here.</string>
+    <string name="dialog_notif_permission_title">Notifications Required</string>
+    <string name="dialog_notif_permission_message">The pairing code is delivered in a notification. Allow ShizukuX to post notifications to complete ADB pairing.</string>
+    <string name="dialog_notif_permission_allow">Allow Notifications</string>
+    <string name="dialog_notif_permission_manual">Pair Manually</string>
+    <string name="dialog_notif_permission_open_settings">Open Settings</string>
+    <string name="dialog_notif_permission_denied">Notification permission denied. You can enable it in Settings or pair manually.</string>
     <!-- Remote App DB Sync -->
     <string name="remote_db_sync_channel_name">App Database Updates</string>
 

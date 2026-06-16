@@ -1,6 +1,7 @@
 package af.shizuku.manager.home
 import timber.log.Timber
 
+import android.Manifest
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.Intent
@@ -14,8 +15,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import af.shizuku.manager.Helps
@@ -48,6 +51,8 @@ class StartWirelessAdbViewHolder(
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
+        private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
+
         fun creator(scope: CoroutineScope, homeModel: HomeViewModel): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
@@ -181,17 +186,37 @@ class StartWirelessAdbViewHolder(
         val channelEnabled = channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
 
         if (!notificationsEnabled || !channelEnabled) {
-            // Notifications blocked: skip the tutorial and use the in-app manual pairing
-            // dialog as an immediate fallback. Users can enter IP/port/code shown in
-            // Developer Options → Wireless debugging → Pair device with pairing code.
-            Toast.makeText(
-                context,
-                context.getString(R.string.toast_pair_notifications_required),
-                Toast.LENGTH_LONG
-            ).show()
-            val activity = context.asActivity<FragmentActivity>()
-            if (activity != null) {
-                AdbPairDialogFragment().show(activity.supportFragmentManager)
+            val activity = context.asActivity<FragmentActivity>() ?: return
+            // On API 33+ the notification permission may simply not have been requested yet —
+            // show a dialog so the user can grant it in-place rather than dig into Settings.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                MaterialAlertDialogBuilder(context)
+                    .setTitle(R.string.dialog_notif_permission_title)
+                    .setMessage(R.string.dialog_notif_permission_message)
+                    .setPositiveButton(R.string.dialog_notif_permission_allow) { _, _ ->
+                        ActivityCompat.requestPermissions(
+                            activity,
+                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                            NOTIF_PERMISSION_REQUEST_CODE
+                        )
+                    }
+                    .setNegativeButton(R.string.dialog_notif_permission_manual) { _, _ ->
+                        AdbPairDialogFragment().show(activity.supportFragmentManager)
+                    }
+                    .show()
+            } else {
+                // Notifications disabled at system/channel level — open settings or manual pair
+                MaterialAlertDialogBuilder(context)
+                    .setTitle(R.string.dialog_notif_permission_title)
+                    .setMessage(R.string.dialog_notif_permission_message)
+                    .setPositiveButton(R.string.dialog_notif_permission_open_settings) { _, _ ->
+                        af.shizuku.manager.utils.SettingsPage.Notifications.NotificationSettings.launch(context)
+                    }
+                    .setNegativeButton(R.string.dialog_notif_permission_manual) { _, _ ->
+                        AdbPairDialogFragment().show(activity.supportFragmentManager)
+                    }
+                    .show()
             }
             return
         }

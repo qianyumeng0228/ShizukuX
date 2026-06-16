@@ -1,19 +1,23 @@
 package af.shizuku.manager.adb
 import af.shizuku.manager.R
 
+import android.Manifest
 import android.app.AppOpsManager
 import android.app.ForegroundServiceStartNotAllowedException
 import android.app.NotificationManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import timber.log.Timber
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.AppConstants
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.databinding.AdbPairingTutorialActivityBinding
@@ -29,6 +33,18 @@ class AdbPairingTutorialActivity : AppBarActivity() {
 
     private var notificationEnabled: Boolean = false
 
+    // Registered unconditionally (required before onStart); only invoked on API 33+.
+    private val notifPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (!granted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS)) {
+            // Permanently denied — guide user to settings
+            Toast.makeText(this, R.string.dialog_notif_permission_denied, Toast.LENGTH_LONG).show()
+            SettingsPage.Notifications.NotificationSettings.launch(this)
+        }
+        // onResume() re-checks enabled state and starts service if now granted
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,11 +84,25 @@ class AdbPairingTutorialActivity : AppBarActivity() {
             }
 
             notificationOptions.setOnClickListener {
-                SettingsPage.Notifications.NotificationSettings.launch(context)
+                requestOrOpenNotificationSettings()
             }
         }
     }
 
+    private fun requestOrOpenNotificationSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                // Show rationale then request — or just request directly if first time
+                notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+            // Permission is granted but notifications are blocked at the channel level
+        }
+        // Pre-API 33 or channel-level block: open notification settings
+        SettingsPage.Notifications.NotificationSettings.launch(this)
+    }
 
     private fun syncNotificationEnabled() {
         binding.apply {
