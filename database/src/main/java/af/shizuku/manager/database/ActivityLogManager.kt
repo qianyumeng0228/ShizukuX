@@ -163,7 +163,7 @@ object ActivityLogManager {
         
         synchronized(records) {
             if (records.size >= retentionCount) {
-                records.removeLast()
+                records.removeAt(records.size - 1)
             }
             records.add(0, record)
             _logs.value = records.toList()

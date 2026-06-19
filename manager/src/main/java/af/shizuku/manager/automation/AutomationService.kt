@@ -13,7 +13,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.net.wifi.WifiManager
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import timber.log.Timber
@@ -86,17 +85,14 @@ class AutomationService : Service() {
 
     private fun checkNetworkState() {
         try {
-            val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val info = wifiManager.connectionInfo
-            val ssid = info?.ssid?.removeSurrounding("\"")
-
             val activeNetwork = connectivityManager.activeNetwork
             val caps = connectivityManager.getNetworkCapabilities(activeNetwork)
             val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-
-            AutomationEngine.dispatchEvent(NetworkEvent(isWifi, if (isWifi) ssid else null), applicationContext)
+            // WifiManager.getConnectionInfo() is deprecated since API 31 and throws SecurityException
+            // on some OEM builds even with ACCESS_WIFI_STATE declared. SSID is intentionally omitted.
+            AutomationEngine.dispatchEvent(NetworkEvent(isWifi, null), applicationContext)
         } catch (e: Exception) {
-            Timber.tag("AutomationService").e(e, "Failed to check network state")
+            Timber.tag("AutomationService").w(e, "Failed to check network state")
         }
     }
 

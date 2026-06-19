@@ -53,7 +53,7 @@ abstract class AppBarActivity : AppActivity() {
                 Timber.tag("AppBarActivity").w("Toolbar or container not found in layout.")
             }
         } catch (e: Exception) {
-            Timber.tag("AppBarActivity").e(e, "Failed to initialize toolbar")
+            Timber.tag("AppBarActivity").w(e, "Failed to initialize toolbar")
         }
     }
 
