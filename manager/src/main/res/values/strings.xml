@@ -630,6 +630,8 @@
     <string name="dialog_stop_message">Shizuku service will be stopped.</string>
 
     <!-- Notification -->
+    <string name="notification_channel_automation">Automation service</string>
+    <string name="notification_automation_title">Automation running</string>
     <string name="notification_channel_service_status">Service start status</string>
     <string name="notification_service_starting">Shizuku service is starting…</string>
     <string name="notification_service_start_failed">Start Shizuku service failed.</string>

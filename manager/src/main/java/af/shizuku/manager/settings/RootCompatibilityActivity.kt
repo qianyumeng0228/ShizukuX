@@ -65,7 +65,7 @@ class RootCompatibilityActivity : AppBarActivity() {
         resolvedSuPath = resolveSuPath()
 
         resolvedSuPath?.let { path ->
-            val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
+            val isRoot = try { Shizuku.pingBinder() && Shizuku.getUid() == 0 } catch (e: Exception) { false }
 
             // Only show the automated setup card if we are rooted.
             // For ADB users, this card is irrelevant and confusing.
@@ -334,7 +334,7 @@ class RootCompatibilityActivity : AppBarActivity() {
 
                 holder.binding.suMagicSetup.isVisible = isInstalled
                 if (isInstalled) {
-                    val isRoot = Shizuku.pingBinder() && Shizuku.getUid() == 0
+                    val isRoot = try { Shizuku.pingBinder() && Shizuku.getUid() == 0 } catch (e: Exception) { false }
                     holder.binding.suMagicSetup.alpha = if (isRoot) 1.0f else 0.5f
 
                     holder.binding.suMagicSetup.setContent {

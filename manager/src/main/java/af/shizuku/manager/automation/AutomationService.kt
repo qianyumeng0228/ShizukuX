@@ -1,7 +1,10 @@
 package af.shizuku.manager.automation
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -11,8 +14,10 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.WifiManager
+import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.*
 import timber.log.Timber
+import af.shizuku.manager.R
 
 class AutomationService : Service() {
 
@@ -37,6 +42,11 @@ class AutomationService : Service() {
         }
     }
 
+    companion object {
+        private const val NOTIFICATION_CHANNEL_ID = "automation_service"
+        private const val NOTIFICATION_ID = 1001
+    }
+
     override fun onCreate() {
         super.onCreate()
         Timber.tag("AutomationService").d("Service created")
@@ -48,6 +58,30 @@ class AutomationService : Service() {
         connectivityManager.registerNetworkCallback(request, networkCallback)
 
         startForegroundAppMonitor()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        startForegroundCompat()
+        return START_STICKY
+    }
+
+    private fun startForegroundCompat() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                NOTIFICATION_CHANNEL_ID,
+                getString(R.string.notification_channel_automation),
+                NotificationManager.IMPORTANCE_MIN
+            ).apply { setShowBadge(false) }
+            val nm = getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_system_icon)
+            .setContentTitle(getString(R.string.notification_automation_title))
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setSilent(true)
+            .build()
+        startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun checkNetworkState() {

@@ -47,21 +47,34 @@ abstract class ActivityLogDatabase : RoomDatabase() {
         }
 
         private fun buildDatabase(context: Context): ActivityLogDatabase {
-            val storageContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                context.createDeviceProtectedStorageContext()
-            } else {
-                context
+            // Try device-protected storage first so logs survive direct boot.
+            // Fall back to regular app storage if the directory can't be created
+            // (happens on some devices where createDeviceProtectedStorageContext()
+            // maps back to credential-encrypted storage that isn't yet accessible).
+            val candidates = buildList {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    add(context.createDeviceProtectedStorageContext())
+                }
+                add(context.applicationContext)
             }
-            val dbFile = storageContext.getDatabasePath(DATABASE_NAME)
-            val parent = dbFile.parentFile
-            if (parent != null && !parent.exists()) {
-                parent.mkdirs()
+
+            for (ctx in candidates) {
+                val dbFile = ctx.getDatabasePath(DATABASE_NAME)
+                val parent = dbFile.parentFile
+                if (parent != null && !parent.exists()) {
+                    parent.mkdirs()
+                }
+                if (parent == null || parent.exists()) {
+                    return Room.databaseBuilder(ctx, ActivityLogDatabase::class.java, dbFile.absolutePath)
+                        .fallbackToDestructiveMigration()
+                        .build()
+                }
+                Timber.tag("ActivityLogDatabase").w("mkdirs failed for ${parent?.absolutePath}, trying next context")
             }
-            return Room.databaseBuilder(
-                storageContext,
-                ActivityLogDatabase::class.java,
-                dbFile.absolutePath
-            )
+
+            // Last resort: in-memory database so the app never crashes due to storage issues
+            Timber.tag("ActivityLogDatabase").e("All storage contexts failed; falling back to in-memory database")
+            return Room.inMemoryDatabaseBuilder(context.applicationContext, ActivityLogDatabase::class.java)
                 .fallbackToDestructiveMigration()
                 .build()
         }

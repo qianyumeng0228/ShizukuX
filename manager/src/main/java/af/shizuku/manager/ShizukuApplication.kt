@@ -250,9 +250,14 @@ class ShizukuApplication : Application(), Configuration.Provider {
 
         try {
             af.shizuku.manager.automation.registerDefaultRules()
-            Intent(this, af.shizuku.manager.automation.AutomationService::class.java).also { startService(it) }
+            val automationIntent = Intent(this, af.shizuku.manager.automation.AutomationService::class.java)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                startForegroundService(automationIntent)
+            } else {
+                startService(automationIntent)
+            }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to start AutomationService")
+            Timber.w(e, "Failed to start AutomationService")
         }
 
         Shizuku.addLogListener { appName, packageName, action ->

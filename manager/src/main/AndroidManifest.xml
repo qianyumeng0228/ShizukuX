@@ -398,7 +398,8 @@
 
         <service
             android:name="af.shizuku.manager.automation.AutomationService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>
