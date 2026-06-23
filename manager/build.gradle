@@ -45,6 +45,19 @@ android {
     signingConfigs {
         sign {}
     }
+    flavorDimensions = ["distribution"]
+    productFlavors {
+        shizukuplus {
+            dimension = "distribution"
+            applicationId = "af.shizuku.plus.api"
+            resValue "string", "app_name", "ShizukuX"
+        }
+        dropin {
+            dimension = "distribution"
+            applicationId = "moe.shizuku.privileged.api"
+            resValue "string", "app_name", "Shizuku"
+        }
+    }
     buildTypes {
         debug {
             signingConfig = signingConfigs.sign

@@ -126,60 +126,76 @@ jobs:
           echo "$VERSION" > version.txt
           echo "versionName=${VERSION}" >> $GITHUB_OUTPUT
 
-          if [ "$IS_DEBUG" = "true" ]; then
-            CMD="./gradlew :manager:assembleDebug"
-            APK_DIR="manager/build/outputs/apk/debug"
-            ARTIFACT_NAME="shizukuplus-debug.apk"
-          else
-            # Only exclude Sentry tasks if we aren't going to upload them later
-            CMD="./gradlew :manager:assembleRelease $ARGS"
-            APK_DIR="manager/build/outputs/apk/release"
-            ARTIFACT_NAME="shizukuplus.apk"
-          fi
-
           export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
-          eval $CMD --stacktrace --info -x uploadSentryProguardMappingsRelease -x uploadSentryNativeSymbolsForRelease -x sentryUploadSourceBundleRelease -x :manager:lint
-          
-          FILE=$(find "$APK_DIR" -name "*.apk" -type f | head -1)
-          if [ -z "$FILE" ]; then
-            echo "Error: No APK found in $APK_DIR"
-            exit 1
-          fi
-          
-          # Verify if signed
-          if [ "$IS_DEBUG" = "false" ]; then
-            if ! unzip -l "$FILE" | grep -q "META-INF/.*\.RSA"; then
-              echo "WARNING: Release APK appears to be UNSIGNED!"
-              # Attempt to sign if key.jks exists (failsafe using apksigner for v2+ support)
-              if [ -f "key.jks" ]; then
-                echo "Attempting manual signing failsafe with apksigner..."
-                BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
-                $ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner sign --ks key.jks \
-                  --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
-                  --ks-key-alias "${{ secrets.KEYSTORE_ALIAS }}" \
-                  --key-pass "pass:${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" \
-                  "$FILE"
+
+          if [ "$IS_DEBUG" = "true" ]; then
+            CMD="./gradlew :manager:assembleShizukuplusDebug"
+            eval $CMD --stacktrace --info -x :manager:lint
+            FILE=$(find manager/build/outputs/apk/shizukuplus/debug -name "*.apk" -type f | head -1)
+            [ -z "$FILE" ] && { echo "Error: No debug APK found"; exit 1; }
+            RENAMED="$(dirname "$FILE")/shizukuplus-debug.apk"
+            mv "$FILE" "$RENAMED"
+            echo "artifactName=shizukuplus-debug.apk" >> $GITHUB_OUTPUT
+            echo "filePath=${RENAMED}" >> $GITHUB_OUTPUT
+          else
+            CMD="./gradlew :manager:assembleShizukuplusRelease :manager:assembleDropinRelease $ARGS"
+            eval $CMD --stacktrace --info \
+              -x uploadSentryProguardMappingsRelease \
+              -x uploadSentryNativeSymbolsForRelease \
+              -x sentryUploadSourceBundleRelease \
+              -x :manager:lint
+
+            sign_apk() {
+              local FILE="$1"
+              if ! unzip -l "$FILE" | grep -q "META-INF/.*\.RSA"; then
+                echo "WARNING: APK appears unsigned: $FILE"
+                if [ -f "key.jks" ]; then
+                  BUILD_TOOLS_VERSION=$(ls $ANDROID_HOME/build-tools | sort -V | tail -n 1)
+                  $ANDROID_HOME/build-tools/$BUILD_TOOLS_VERSION/apksigner sign --ks key.jks \
+                    --ks-pass "pass:${{ secrets.KEYSTORE_PASSWORD }}" \
+                    --ks-key-alias "${{ secrets.KEYSTORE_ALIAS }}" \
+                    --key-pass "pass:${{ secrets.KEYSTORE_ALIAS_PASSWORD }}" \
+                    "$FILE"
+                fi
               fi
-            fi
+            }
+
+            PLUS_FILE=$(find manager/build/outputs/apk/shizukuplus/release -name "*.apk" -type f | head -1)
+            DROPIN_FILE=$(find manager/build/outputs/apk/dropin/release -name "*.apk" -type f | head -1)
+            [ -z "$PLUS_FILE" ] && { echo "Error: No ShizukuPlus APK found"; exit 1; }
+            [ -z "$DROPIN_FILE" ] && { echo "Error: No drop-in APK found"; exit 1; }
+
+            sign_apk "$PLUS_FILE"
+            sign_apk "$DROPIN_FILE"
+
+            PLUS_RENAMED="$(dirname "$PLUS_FILE")/shizukuplus.apk"
+            DROPIN_RENAMED="$(dirname "$DROPIN_FILE")/shizuku-dropin.apk"
+            mv "$PLUS_FILE" "$PLUS_RENAMED"
+            mv "$DROPIN_FILE" "$DROPIN_RENAMED"
+
+            echo "artifactName=shizukuplus.apk" >> $GITHUB_OUTPUT
+            echo "filePath=${PLUS_RENAMED}" >> $GITHUB_OUTPUT
+            echo "dropinPath=${DROPIN_RENAMED}" >> $GITHUB_OUTPUT
           fi
-
-          RENAMED="$(dirname "$FILE")/$ARTIFACT_NAME"
-          mv "$FILE" "$RENAMED"
-
-          echo "artifactName=${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
-          echo "filePath=${RENAMED}" >> $GITHUB_OUTPUT
 
       - name: Upload Sentry Debug Symbols
         if: ${{ env.SENTRY_AUTH_TOKEN != '' && env.IS_DEBUG == 'false' }}
         continue-on-error: true
         run: |
-          ./gradlew :manager:uploadSentryProguardMappingsRelease :manager:uploadSentryNativeSymbolsForRelease
+          ./gradlew :manager:uploadSentryProguardMappingsShizukuplusRelease :manager:uploadSentryNativeSymbolsForShizukuplusRelease
 
-      - name: Upload Artifact
+      - name: Upload ShizukuPlus Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.buildWithGradle.outputs.artifactName }}
           path: ${{ steps.buildWithGradle.outputs.filePath }}
+
+      - name: Upload Drop-in Artifact
+        if: ${{ steps.buildWithGradle.outputs.dropinPath != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shizuku-dropin.apk
+          path: ${{ steps.buildWithGradle.outputs.dropinPath }}
 
       - name: Upload Version File
         uses: actions/upload-artifact@v4
@@ -289,10 +305,17 @@ jobs:
           git tag "$TAG_NAME" -m "Release version $VERSION"
           git push origin "$TAG_NAME"
 
-      - name: Download Artifact
+      - name: Download ShizukuPlus Artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.artifactName }}
+          path: files
+
+      - name: Download Drop-in Artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: shizuku-dropin.apk
           path: files
 
       - name: Generate Release Notes
@@ -362,6 +385,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG_NAME="${VERSION}"
-          APK_FILE=$(find files -name "*.apk" -type f | head -1)
-          # Always create a full release as requested
-          gh release create "$TAG_NAME" "$APK_FILE" --title "$VERSION" --notes-file release_notes.md
+          APK_FILES=$(find files -name "*.apk" -type f | sort)
+          # Both ShizukuPlus and drop-in APKs are attached to the release
+          gh release create "$TAG_NAME" $APK_FILES --title "$VERSION" --notes-file release_notes.md
