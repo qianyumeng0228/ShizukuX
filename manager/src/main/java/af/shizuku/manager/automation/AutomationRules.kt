@@ -11,7 +11,9 @@ class NetworkFirewallRule : AutomationRule {
     override fun evaluate(event: AutomationEvent, context: Context): Boolean {
         if (event is NetworkEvent) {
             val safeNetworks = setOf("HomeWiFi", "WorkNetwork")
-            val isCurrentlySafe = event.isWifiConnected && safeNetworks.contains(event.ssid)
+            // ssid may be null when SSID detection is unavailable (e.g. no ACCESS_FINE_LOCATION).
+            // A null ssid is treated as unknown/untrusted — never matches the safe-network set.
+            val isCurrentlySafe = event.isWifiConnected && event.ssid != null && safeNetworks.contains(event.ssid)
             if (isCurrentlySafe != isSafeNetwork) {
                 isSafeNetwork = isCurrentlySafe
                 return true

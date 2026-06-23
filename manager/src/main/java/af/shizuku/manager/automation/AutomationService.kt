@@ -43,12 +43,16 @@ class AutomationService : Service() {
 
     companion object {
         private const val NOTIFICATION_CHANNEL_ID = "automation_service"
-        private const val NOTIFICATION_ID = 1001
+        // 1001/1002 are taken by WatchdogService — use a distinct ID to avoid foreground-token conflicts
+        private const val NOTIFICATION_ID = 1003
     }
 
     override fun onCreate() {
         super.onCreate()
         Timber.tag("AutomationService").d("Service created")
+        // Call startForeground() before any work so the 5-second foreground-service deadline
+        // imposed by startForegroundService() is met even if network callback registration is slow.
+        startForegroundCompat()
         connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
         val request = NetworkRequest.Builder()
@@ -60,6 +64,8 @@ class AutomationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // startForeground() is idempotent; calling it here too keeps the notification current
+        // if the service is restarted (START_STICKY) after being killed.
         startForegroundCompat()
         return START_STICKY
     }

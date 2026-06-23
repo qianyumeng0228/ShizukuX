@@ -83,6 +83,9 @@ class AppViewHolder(private val binding: AppListItemBinding) :
 
     private var loadIconJob: Job? = null
     private var grantedLoadJob: Job? = null
+    // Incremented on every bind; coroutines capture the value at launch and check it on Main
+    // to detect whether the ViewHolder was rebound before their withContext(Main) block runs.
+    private var bindGeneration: Int = 0
 
     // ----- Long-press: reads Settings to decide menu vs. direct action -----
 
@@ -346,12 +349,16 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             // Load granted state off the main thread to avoid blocking during scrolling
             switchWidget.isEnabled = false
             grantedLoadJob?.cancel()
+            val gen = ++bindGeneration
             grantedLoadJob = CoroutineScope(Dispatchers.IO).launch {
                 val granted = AuthorizationManager.granted(capturedPackage, appInfo.uid)
                 val isPlusMissing = AuthorizationManager.isPlusApiSupported(capturedData) &&
                         !ShizukuSettings.isCustomApiEnabled()
                 withContext(Dispatchers.Main) {
-                    if (adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                    // Guard against a rebound ViewHolder: adapterPosition alone doesn't catch
+                    // the case where the holder was recycled and rebound to a new item at the
+                    // same position before this continuation ran.
+                    if (gen == bindGeneration && adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                         switchWidget.isChecked = granted
                         if (!isPlusMissing) switchWidget.isEnabled = true
                     }
@@ -397,10 +404,11 @@ class AppViewHolder(private val binding: AppListItemBinding) :
         val appInfo = ai ?: return
         val capturedPackage = packageName
         grantedLoadJob?.cancel()
+        val gen = ++bindGeneration
         grantedLoadJob = CoroutineScope(Dispatchers.IO).launch {
             val granted = AuthorizationManager.granted(capturedPackage, appInfo.uid)
             withContext(Dispatchers.Main) {
-                if (adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                if (gen == bindGeneration && adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
                     switchWidget.isChecked = granted
                 }
             }

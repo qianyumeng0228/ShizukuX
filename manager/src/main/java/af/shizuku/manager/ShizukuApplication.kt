@@ -257,7 +257,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 startService(automationIntent)
             }
         } catch (e: Exception) {
-            Timber.w(e, "Failed to start AutomationService")
+            Timber.e(e, "Failed to start AutomationService")
         }
 
         Shizuku.addLogListener { appName, packageName, action ->
