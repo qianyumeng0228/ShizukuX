@@ -173,6 +173,15 @@ jobs:
             mv "$PLUS_FILE" "$PLUS_RENAMED"
             mv "$DROPIN_FILE" "$DROPIN_RENAMED"
 
+            # Also collect the compat stub APK (built by copyCompatApkRelease as a dependency)
+            COMPAT_FILE=$(find compat/build/outputs/apk/release -name "*.apk" -type f | head -1)
+            if [ -n "$COMPAT_FILE" ]; then
+              sign_apk "$COMPAT_FILE"
+              COMPAT_RENAMED="$(dirname "$COMPAT_FILE")/shizuku-compat.apk"
+              mv "$COMPAT_FILE" "$COMPAT_RENAMED"
+              echo "compatPath=${COMPAT_RENAMED}" >> $GITHUB_OUTPUT
+            fi
+
             echo "artifactName=shizukuplus.apk" >> $GITHUB_OUTPUT
             echo "filePath=${PLUS_RENAMED}" >> $GITHUB_OUTPUT
             echo "dropinPath=${DROPIN_RENAMED}" >> $GITHUB_OUTPUT
@@ -196,6 +205,13 @@ jobs:
         with:
           name: shizuku-dropin.apk
           path: ${{ steps.buildWithGradle.outputs.dropinPath }}
+
+      - name: Upload Compat Stub Artifact
+        if: ${{ steps.buildWithGradle.outputs.compatPath != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: shizuku-compat.apk
+          path: ${{ steps.buildWithGradle.outputs.compatPath }}
 
       - name: Upload Version File
         uses: actions/upload-artifact@v4
@@ -316,6 +332,13 @@ jobs:
         continue-on-error: true
         with:
           name: shizuku-dropin.apk
+          path: files
+
+      - name: Download Compat Stub Artifact
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: shizuku-compat.apk
           path: files
 
       - name: Generate Release Notes
