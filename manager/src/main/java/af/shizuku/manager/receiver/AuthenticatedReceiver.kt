@@ -30,7 +30,7 @@ abstract class AuthenticatedReceiver : BroadcastReceiver() {
                 R.string.notification_auth_missing_title,
                 R.string.notification_auth_missing_message
             )
-        } else if (authToken != expectedToken) {
+        } else if (!java.security.MessageDigest.isEqual(authToken.toByteArray(), expectedToken.toByteArray())) {
             context.notify(
                 R.string.notification_auth_invalid_title,
                 R.string.notification_auth_invalid_message

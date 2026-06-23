@@ -41,7 +41,8 @@ class UpdateManager(private val context: Context) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
     private val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Main + job)
     private var downloadId: Long = -1
     private var monitorJob: Job? = null
 
@@ -255,13 +256,19 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Install APK directly (for auto-install when enabled)
+     * Install APK directly (for auto-install when enabled).
+     * Must be called from a background coroutine — Shell.getShell() blocks until a shell is ready.
      */
-    fun installApk(file: File) {
+    suspend fun installApk(file: File) {
         try {
-            if (com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()) {
+            val isRootOrShizuku = withContext(Dispatchers.IO) {
+                com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()
+            }
+            if (isRootOrShizuku) {
                 Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
-                val result = com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
+                val result = withContext(Dispatchers.IO) {
+                    com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
+                }
                 if (result.isSuccess) {
                     Timber.tag(TAG).i("Silent install successful")
                     return
@@ -308,6 +315,14 @@ class UpdateManager(private val context: Context) {
         } else {
             true
         }
+    }
+
+    /**
+     * Cancel ongoing downloads and coroutines. Call when the owner is done with this manager.
+     */
+    fun cancel() {
+        monitorJob?.cancel()
+        job.cancel()
     }
 
     /**

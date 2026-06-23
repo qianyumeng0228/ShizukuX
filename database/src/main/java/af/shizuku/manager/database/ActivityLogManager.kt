@@ -285,7 +285,7 @@ object ActivityLogManager {
         
         scope.launch {
             try {
-                Timber.tag(TAG).w("Autofixing corrupted database: \${e.message}")
+                Timber.tag(TAG).w("Autofixing corrupted database: ${e.message}")
                 
                 ActivityLogDatabase.resetInstance()
                 database = null

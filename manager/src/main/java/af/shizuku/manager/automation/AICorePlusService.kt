@@ -26,12 +26,14 @@ class AICorePlusService : AccessibilityService() {
     }
 
     companion object {
-        var instance: AICorePlusService? = null
+        // WeakReference prevents leaking the AccessibilityService across reconnects
+        private var _instance: java.lang.ref.WeakReference<AICorePlusService>? = null
+        val instance: AICorePlusService? get() = _instance?.get()
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
+        _instance = java.lang.ref.WeakReference(this)
         Timber.d("AICorePlusService connected")
         registerBridge()
     }
@@ -54,8 +56,12 @@ class AICorePlusService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        instance = null
         Timber.d("AICorePlusService interrupted")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _instance = null
     }
 
     /**
@@ -179,11 +185,15 @@ class AICorePlusService : AccessibilityService() {
     fun simulateText(text: String): Boolean {
         if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false
         val rootNode = rootInActiveWindow ?: return false
-        val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT) ?: return false
+        val focusedNode = rootNode.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        rootNode.recycle()
+        focusedNode ?: return false
         val arguments = android.os.Bundle().apply {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
         }
-        return focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+        val result = focusedNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+        focusedNode.recycle()
+        return result
     }
 
     /**
