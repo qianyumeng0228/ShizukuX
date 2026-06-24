@@ -140,9 +140,12 @@ jobs:
           else
             CMD="./gradlew :manager:assembleShizukuplusRelease :manager:assembleDropinRelease $ARGS"
             eval $CMD --stacktrace --info \
-              -x uploadSentryProguardMappingsRelease \
-              -x uploadSentryNativeSymbolsForRelease \
-              -x sentryUploadSourceBundleRelease \
+              -x uploadSentryProguardMappingsShizukuplusRelease \
+              -x uploadSentryProguardMappingsDropinRelease \
+              -x uploadSentryNativeSymbolsForShizukuplusRelease \
+              -x uploadSentryNativeSymbolsForDropinRelease \
+              -x sentryUploadSourceBundleShizukuplusRelease \
+              -x sentryUploadSourceBundleDropinRelease \
               -x :manager:lint
 
             sign_apk() {
