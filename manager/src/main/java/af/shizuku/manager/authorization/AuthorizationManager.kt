@@ -56,7 +56,10 @@ object AuthorizationManager {
                 for (pi in allPackages) {
                     if (BuildConfig.APPLICATION_ID == pi.packageName) continue
                     if (pi.applicationInfo?.metaData?.getBoolean("af.shizuku.client.V3_SUPPORT") != true) continue
-                    if (pi.requestedPermissions?.contains(Manifest.permission.API_V23) != true) continue
+                    val perms = pi.requestedPermissions
+                    if (perms?.contains(Manifest.permission.API_V23) != true &&
+                        perms?.contains(ServerConstants.PERMISSION_LEGACY) != true &&
+                        perms?.contains(ServerConstants.PERMISSION_ORIGINAL) != true) continue
                     packages.add(pi)
                 }
             } else {

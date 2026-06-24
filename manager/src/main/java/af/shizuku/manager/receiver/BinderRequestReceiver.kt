@@ -11,7 +11,14 @@ class BinderRequestReceiver : AuthenticatedReceiver() {
             return
         }
 
-        super. onReceive(context, intent)
+        // Legacy clients (pre-v11) broadcast REQUEST_BINDER without an auth token.
+        // The modern BinderSender mechanism handles binder delivery automatically via ContentProvider,
+        // so just silently skip unauthenticated broadcasts instead of showing a confusing notification.
+        if (intent.getStringExtra("auth") == null) {
+            return
+        }
+
+        super.onReceive(context, intent)
     }
 
     override fun onAuthenticated(context: Context, intent: Intent) {
