@@ -182,11 +182,21 @@ afterEvaluate {
         rename { "compat.apk" }
     }
     
+    // Wire compat and shell for both the generic pre-build hooks (single-flavor builds)
+    // and the flavor-specific hooks produced when product flavors are configured.
     tasks.findByName("preReleaseBuild")?.dependsOn("copyCompatApkRelease")
     tasks.findByName("preReleaseBuild")?.dependsOn(":shell:assembleRelease")
-    
+
     tasks.findByName("preDebugBuild")?.dependsOn("copyCompatApkDebug")
     tasks.findByName("preDebugBuild")?.dependsOn(":shell:assembleDebug")
+
+    android.productFlavors.each { flavor ->
+        def name = flavor.name.capitalize()
+        tasks.findByName("pre${name}ReleaseBuild")?.dependsOn("copyCompatApkRelease")
+        tasks.findByName("pre${name}ReleaseBuild")?.dependsOn(":shell:assembleRelease")
+        tasks.findByName("pre${name}DebugBuild")?.dependsOn("copyCompatApkDebug")
+        tasks.findByName("pre${name}DebugBuild")?.dependsOn(":shell:assembleDebug")
+    }
 }
 
 

@@ -268,13 +268,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         isManager = MANAGER_APPLICATION_ID.equals(requestPackageName);
 
-        if (clientManager.findClient(callingUid, callingPid) == null) {
-            synchronized (this) {
+        synchronized (this) {
+            ClientRecord existing = clientManager.findClient(callingUid, callingPid);
+            if (existing == null) {
                 clientRecord = clientManager.addClient(callingUid, callingPid, application, requestPackageName, apiVersion);
-            }
-            if (clientRecord == null) {
-                LOGGER.w("Add client failed");
-                return;
+                if (clientRecord == null) {
+                    LOGGER.w("Add client failed");
+                    return;
+                }
+            } else {
+                clientRecord = existing;
             }
         }
 
