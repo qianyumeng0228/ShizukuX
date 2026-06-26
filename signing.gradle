@@ -10,8 +10,16 @@ if (ksFile.canRead()) {
         android.signingConfigs.sign.keyPassword props["KEYSTORE_ALIAS_PASSWORD"]
     }
 } else {
-    android.signingConfigs.sign.storeFile = android.signingConfigs.debug.storeFile
-    android.signingConfigs.sign.storePassword = android.signingConfigs.debug.storePassword
-    android.signingConfigs.sign.keyAlias = android.signingConfigs.debug.keyAlias
-    android.signingConfigs.sign.keyPassword = android.signingConfigs.debug.keyPassword
+    // Fall back to the Android SDK debug keystore when no signing.properties is present.
+    // Guard against the file not existing: on fresh CI runners ANDROID_USER_HOME may point
+    // to a non-standard path (e.g. ~/.config/.android/) where the keystore hasn't been
+    // generated yet.  Leaving storeFile = null produces an unsigned build, which is fine
+    // for lint runs and local development.
+    def debugStore = android.signingConfigs.debug.storeFile
+    if (debugStore != null && debugStore.exists()) {
+        android.signingConfigs.sign.storeFile = debugStore
+        android.signingConfigs.sign.storePassword = android.signingConfigs.debug.storePassword
+        android.signingConfigs.sign.keyAlias = android.signingConfigs.debug.keyAlias
+        android.signingConfigs.sign.keyPassword = android.signingConfigs.debug.keyPassword
+    }
 }

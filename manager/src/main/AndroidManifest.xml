@@ -389,6 +389,11 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
+        <!-- ADB Pairing Tutorial (full-screen pairing flow for API 30+) -->
+        <activity
+            android:name=".adb.AdbPairingTutorialActivity"
+            android:exported="false" />
+
         <!-- Fake ADB Server -->
         <activity
             android:name=".adb.FakeAdbPairingActivity"

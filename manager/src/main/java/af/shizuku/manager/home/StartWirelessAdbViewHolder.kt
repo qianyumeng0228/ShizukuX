@@ -1,7 +1,5 @@
 package af.shizuku.manager.home
-import timber.log.Timber
 
-import android.Manifest
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.Intent
@@ -15,15 +13,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import androidx.core.app.ActivityCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
+import af.shizuku.manager.adb.AdbPairingTutorialActivity
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartWirelessAdbBinding
@@ -50,8 +48,6 @@ class StartWirelessAdbViewHolder(
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
-        private const val NOTIF_PERMISSION_REQUEST_CODE = 1001
-
         fun creator(scope: CoroutineScope, homeModel: HomeViewModel): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
@@ -176,64 +172,11 @@ class StartWirelessAdbViewHolder(
             context.showAccessibilityDialog()
             return
         }
-
-        // Check if notifications are enabled — the pairing service posts the pairing code
-        // as a notification. If notifications are blocked, the Pair button appears to do
-        // nothing because the notification never shows (issue #204).
-        val nm = context.getSystemService(android.app.NotificationManager::class.java)
-        val notificationsEnabled = nm.areNotificationsEnabled()
-        val channel = nm.getNotificationChannel(af.shizuku.manager.adb.AdbPairingService.NOTIFICATION_CHANNEL)
-        val channelEnabled = channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
-
-        if (!notificationsEnabled || !channelEnabled) {
-            val activity = context.asActivity<FragmentActivity>() ?: return
-            // On API 33+ the notification permission may simply not have been requested yet —
-            // show a dialog so the user can grant it in-place rather than dig into Settings.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                activity.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.dialog_notif_permission_title)
-                    .setMessage(R.string.dialog_notif_permission_message)
-                    .setPositiveButton(R.string.dialog_notif_permission_allow) { _, _ ->
-                        ActivityCompat.requestPermissions(
-                            activity,
-                            arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                            NOTIF_PERMISSION_REQUEST_CODE
-                        )
-                    }
-                    .setNegativeButton(R.string.dialog_notif_permission_manual) { _, _ ->
-                        AdbPairDialogFragment().show(activity.supportFragmentManager)
-                    }
-                    .show()
-            } else {
-                // Notifications disabled at system/channel level — open settings or manual pair
-                MaterialAlertDialogBuilder(context)
-                    .setTitle(R.string.dialog_notif_permission_title)
-                    .setMessage(R.string.dialog_notif_permission_message)
-                    .setPositiveButton(R.string.dialog_notif_permission_open_settings) { _, _ ->
-                        af.shizuku.manager.utils.SettingsPage.Notifications.NotificationSettings.launch(context)
-                    }
-                    .setNegativeButton(R.string.dialog_notif_permission_manual) { _, _ ->
-                        AdbPairDialogFragment().show(activity.supportFragmentManager)
-                    }
-                    .show()
-            }
-            return
-        }
-        val serviceIntent = af.shizuku.manager.adb.AdbPairingService.startIntent(context)
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
-            }
-            af.shizuku.manager.utils.SettingsHelper.launchOrHighlightWirelessDebugging(context)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to start AdbPairingService")
-            val activity = context.asActivity<FragmentActivity>()
-            if (activity != null) {
-                AdbPairDialogFragment().show(activity.supportFragmentManager)
-            }
-        }
+        // AdbPairingTutorialActivity provides a dedicated pairing flow: it starts the pairing
+        // service, shows step-by-step instructions, handles notification permission, and
+        // auto-dismisses once Shizuku is running.
+        val activity = context.asActivity<FragmentActivity>() ?: return
+        val intent = Intent(context, AdbPairingTutorialActivity::class.java)
+        activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
     }
 }
