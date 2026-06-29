@@ -3,6 +3,7 @@ package af.shizuku.manager.settings
 import android.content.Context
 import android.content.res.XmlResourceParser
 import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
 import org.xmlpull.v1.XmlPullParser
 
 object SettingsSearchEngine {
@@ -17,6 +18,10 @@ object SettingsSearchEngine {
     )
 
     private var indexedItems: List<SettingItem>? = null
+
+    fun reset() {
+        indexedItems = null
+    }
 
     private val screens = mapOf(
         R.xml.settings_shizuku_plus to "af.shizuku.manager.settings.ShizukuPlusSettingsFragment",
@@ -80,8 +85,10 @@ object SettingsSearchEngine {
         val items = indexedItems ?: return emptyList()
         if (query.isBlank()) return emptyList()
         val q = query.trim().lowercase()
+        val devUnlocked = ShizukuSettings.isVectorEnabled()
 
         return items.filter { item ->
+            if (!devUnlocked && item.fragmentClass == "af.shizuku.manager.settings.DeveloperOptionsFragment") return@filter false
             item.title.lowercase().contains(q) ||
             (item.summary != null && item.summary.lowercase().contains(q)) ||
             (item.category != null && item.category.lowercase().contains(q))

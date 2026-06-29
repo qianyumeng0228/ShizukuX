@@ -11,7 +11,9 @@ import af.shizuku.manager.R
 class ThemeDelegateImpl : ThemeDelegate {
     override fun getThemeKey(context: Context): String {
         val customAccent = ShizukuSettings.getPreferences().getString("custom_accent", "DEFAULT")
-        return ThemeHelper.getTheme(context) + ThemeHelper.isUsingSystemColor() + customAccent
+        return ThemeHelper.getTheme(context) + ThemeHelper.isUsingSystemColor() + customAccent +
+            ShizukuSettings.isExpressiveShapesEnabled() + ShizukuSettings.getShapeStyle() +
+            ShizukuSettings.getIconStyle()
     }
 
     override fun isUsingSystemColor(): Boolean {

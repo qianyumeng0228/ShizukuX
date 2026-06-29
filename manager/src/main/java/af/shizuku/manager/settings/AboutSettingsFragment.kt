@@ -38,6 +38,9 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         setPreferencesFromResource(R.xml.settings_about, rootKey)
         val context = requireContext()
 
+        // Show the developer options entry only when already unlocked.
+        findPreference<Preference>("nav_developer_options")?.isVisible = ShizukuSettings.isVectorEnabled()
+
         // 1. Setup Version with developer mode Easter Egg
         findPreference<Preference>("version")?.apply {
             summary = BuildConfig.VERSION_NAME
@@ -50,6 +53,8 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                 versionClickCount++
                 if (versionClickCount >= 7) {
                     ShizukuSettings.setVectorEnabled(true)
+                    SettingsSearchEngine.reset()
+                    findPreference<Preference>("nav_developer_options")?.isVisible = true
                     Toast.makeText(context, R.string.settings_developer_options_revealed, Toast.LENGTH_SHORT).show()
                     versionClickCount = 0
                 } else if (versionClickCount > 2) {

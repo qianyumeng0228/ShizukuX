@@ -77,6 +77,14 @@
             android:summary="@string/settings_open_source_licenses_summary"
             android:icon="@drawable/ic_article_24" />
 
+        <Preference
+            android:key="nav_developer_options"
+            android:title="@string/settings_developer_options"
+            android:summary="@string/settings_developer_options_summary"
+            android:icon="@drawable/ic_terminal_24"
+            android:fragment="af.shizuku.manager.settings.DeveloperOptionsFragment"
+            android:visible="false" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

@@ -2,6 +2,7 @@ package af.shizuku.manager.settings
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.preference.Preference
@@ -34,8 +35,12 @@ class UiSettingsHeaderPreference @JvmOverloads constructor(
         val isExpressive = ShizukuSettings.isExpressiveShapesEnabled()
 
         val density = context.resources.displayMetrics.density
-        // Use surface container color for contrast
-        val accentColor = android.graphics.Color.LTGRAY
+        val tv = TypedValue()
+        val accentColor = if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimaryContainer, tv, true)) {
+            tv.data
+        } else {
+            android.graphics.Color.LTGRAY
+        }
 
         // Draw asymmetrical or rounded shapes dynamically
         fun applyShape(container: FrameLayout?, isDroplet: Boolean, isLeaf: Boolean) {

@@ -170,14 +170,20 @@ afterEvaluate {
     
     tasks.register("copyCompatApkRelease", Copy) {
         dependsOn ":compat:assembleRelease"
-        from "${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/release/compat-release-unsigned.apk"
+        // Use fileTree so we match both compat-release.apk (signed) and compat-release-unsigned.apk.
+        // The hardcoded filename was the root cause of the compat stub never being bundled on CI (#293).
+        from fileTree("${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/release") {
+            include "*.apk"
+        }
         into "src/main/assets"
         rename { "compat.apk" }
     }
-    
+
     tasks.register("copyCompatApkDebug", Copy) {
         dependsOn ":compat:assembleDebug"
-        from "${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/debug/compat-debug.apk"
+        from fileTree("${project(':compat').layout.buildDirectory.get().asFile}/outputs/apk/debug") {
+            include "*.apk"
+        }
         into "src/main/assets"
         rename { "compat.apk" }
     }
