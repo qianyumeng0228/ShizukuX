@@ -11,7 +11,9 @@ idea.module {
 
 def getGitCommitCount() {
     try {
-        return Integer.parseInt("git rev-list --count HEAD".execute([], project.rootDir).text.trim())
+        // Pass null (not []) so the subprocess inherits the parent process environment (including PATH).
+        // Passing an empty list strips env vars and prevents git from being found in non-standard PATH setups.
+        return Integer.parseInt("git rev-list --count HEAD".execute((List) null, project.rootDir).text.trim())
     } catch (Exception ignored) {
         return 0
     }

@@ -158,7 +158,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                 onHelpClick = {
                     MaterialAlertDialogBuilder(this)
                         .setTitle(R.string.settings_shizuku_plus_features)
-                        .setMessage(R.string.help_general_plus_summary)
+                        .setMessage(getString(R.string.help_general_plus_summary).toHtml())
                         .setPositiveButton(android.R.string.ok, null)
                         .show()
                 },
@@ -200,6 +200,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                 if (status.isRunning && !wasRunning && ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     recyclerView.post {
                         val view = recyclerView
+                        if (!view.isAttachedToWindow) return@post
                         val statusCard = view.findViewHolderForAdapterPosition(0)?.itemView
                         val cx = view.width / 2
                         val cy = statusCard?.let { it.top + it.height / 2 } ?: 100

@@ -71,10 +71,7 @@ Items carried forward from previous sessions that have not yet been committed.
 
 Things discussed or sketched that we never formally decided to build.
 
-- **Context7 integration for dev sessions** — Use the `mcp__claude_ai_Context7__query-docs` tool
-  at the start of sessions involving Android API questions (Lifecycle, WindowManager, Mavericks,
-  Sentry SDK changes) rather than relying on training data. Particularly useful for Mavericks
-  version differences and Sentry 8.x migration quirks.
+- [x] **Context7 integration for dev sessions** — Context7 MCP is active and documented in the shizukuplus skill. Use `mcp__claude_ai_Context7__query-docs` for Mavericks, Sentry 8.x, Lifecycle edge cases. Done 2026-06-26.
 
 - **Jetpack Compose re-migration** — Compose was fully migrated then reverted (`25d796d4` revert
   of `749d72a6`) due to instability. If Compose is reconsidered, start with a single isolated
@@ -88,6 +85,22 @@ Things discussed or sketched that we never formally decided to build.
 ---
 
 ## Session History (newest first)
+
+### 2026-06-26 — Claude Code (Sonnet 4.6)
+**Done:**
+- Recovered lost `CLAUDE.md` from `AI_DEVLOG.md` after device reset — all 14 crash rules and key files map restored.
+- Created `CLAUDE.md` in project root with full critical crash rules, build commands, key files, and open verification items.
+- Installed 10 Android skills globally (`~/.claude/skills/`): android-dev, android-debugging, android-gradle-logic, gradle-build-performance, koin, kotlin-coroutines, android-testing, compose (+ crash playbook + state-management references), android-data-layer, kotlin-flows.
+- Created `~/.claude/skills/shizukuplus/SKILL.md` — deep project skill auto-loaded when working in this repo.
+- Created `.claude/agents/build-doctor.md` — specialized agent for diagnosing and fixing build failures with a known-error lookup table.
+- Added XML layout validation hook to `~/.claude/settings.json` — catches malformed layout XML immediately on edit (the SAXParseException class of CI failures).
+- Added `android-adb` MCP server config (CursorTouch android-mcp, Python) — pending pip install completion; provides ADB device control, UI hierarchy inspection, shell commands.
+- Updated global `~/.claude/CLAUDE.md` with PRoot/Android constraints for all sessions.
+- Fixed Claude Code setup: removed npm wrapper, NVM lazy-load, PATH order, TMPDIR/SSL_CERT_FILE/DBUS env vars, auto-updates enabled.
+
+**Open:**
+- android-mcp: `watchfiles` needs Maturin/Rust (unavailable in PRoot pip). Install from **Termux shell** (outside PRoot): `pip install android-mcp`. Then add to `~/.claude/settings.json`: `"mcpServers": {"android-adb": {"command": "/data/data/com.termux/files/usr/bin/python3", "args": ["-m", "android_mcp"]}}`
+- Consider adding `rcosteira79/android-skills` via `/plugin marketplace add rcosteira79/android-skills` for automatic plugin management
 
 ### 2026-05-19 — Gemini CLI
 **Commits:** (this session)

@@ -51,6 +51,10 @@
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
 
+# Keep Room-generated database implementations. Room discovers these via reflection
+# (Class.getDeclaredConstructor()) and R8 strips them without this rule (#293, #288).
+-keep class * extends androidx.room.RoomDatabase { <init>(); }
+
 -assumenosideeffects class android.util.Log {
     public static *** d(...);
 }
