@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="ShizukuX">
+    <PreferenceCategory android:title="Capabilities">
 
-        <Preference
+        <af.shizuku.manager.settings.PlusNavPreference
             android:key="nav_shizuku_plus"
             android:title="Feature Hub"
             android:summary="Manage exclusive Plus capabilities"
             android:icon="@drawable/ic_bolt_24"
             android:fragment="af.shizuku.manager.settings.ShizukuPlusSettingsFragment" />
 
-        <Preference
+        <af.shizuku.manager.settings.PlusNavPreference
             android:key="nav_root_integration"
             android:title="Root &amp; Compatibility"
             android:summary="SU bridge and rootless integration"
@@ -19,7 +20,7 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Interface">
+    <PreferenceCategory android:title="Personalization">
 
         <Preference
             android:key="nav_personalization"
@@ -30,14 +31,14 @@
 
         <Preference
             android:key="nav_app_management"
-            android:title="App Permissions"
-            android:summary="Manage authorized applications"
+            android:title="App Interactions"
+            android:summary="Gestures, long-press actions, and install verification"
             android:icon="@drawable/ic_devices_24"
             android:fragment="af.shizuku.manager.settings.AppManagementSettingsFragment" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Service">
+    <PreferenceCategory android:title="System">
 
         <Preference
             android:key="nav_behavior"

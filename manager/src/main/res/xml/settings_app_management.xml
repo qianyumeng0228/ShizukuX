@@ -75,9 +75,16 @@
         <SwitchPreferenceCompat
             android:key="verify_apk_virustotal"
             android:title="VirusTotal Scan"
-            android:summary="Scan APK hashes against VirusTotal before installation. Requires network."
+            android:summary="Scan APK hashes against VirusTotal before installation. Requires API key."
             android:defaultValue="false"
             android:icon="@drawable/ic_update_24" />
+
+        <Preference
+            android:key="virustotal_api_key_manage"
+            android:title="@string/verify_virustotal_key_title"
+            android:summary="@string/verify_api_key_hint"
+            android:icon="@drawable/ic_code_24"
+            android:dependency="verify_apk_virustotal" />
 
         <SwitchPreferenceCompat
             android:key="verify_apk_pithus"
@@ -85,6 +92,13 @@
             android:summary="Check hashes against Pithus to detect malware traits."
             android:defaultValue="false"
             android:icon="@drawable/ic_admin_panel_settings_24" />
+
+        <Preference
+            android:key="pithus_api_key_manage"
+            android:title="@string/verify_pithus_key_title"
+            android:summary="@string/verify_api_key_hint"
+            android:icon="@drawable/ic_code_24"
+            android:dependency="verify_apk_pithus" />
 
     </PreferenceCategory>
 

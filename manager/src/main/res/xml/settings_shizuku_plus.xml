@@ -8,28 +8,102 @@
     <af.shizuku.manager.settings.DiagnosticsDashboardPreference
         android:key="diagnostics_dashboard" />
 
+    <!-- Core toggle: must be enabled for most Plus features to function -->
+    <af.shizuku.manager.settings.PlusFeaturePreference
+        android:key="custom_api_enabled"
+        android:title="@string/settings_enhanced_api"
+        android:summary="@string/settings_enhanced_api_summary"
+        android:icon="@drawable/ic_code_24"
+        android:defaultValue="true"
+        app:badgeType="plus" />
+
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus_cloud_sync"
-        android:title="Cloud Sync &amp; Backup"
+        android:key="category_connectivity"
+        android:title="Networking &amp; Connectivity"
         android:defaultValue="false">
 
-        <Preference
-            android:key="backup_settings"
-            android:title="Backup Settings"
-            android:summary="Export your configurations and enhancements securely using Biometric encryption."
-            android:icon="@drawable/ic_folder_24" />
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="network_governor_plus_enabled"
+            android:title="DNS Governor"
+            android:summary="@string/settings_network_governor_plus_summary"
+            android:icon="@drawable/ic_lan_24"
+            android:defaultValue="true"
+            app:infoTitle="@string/help_network_governor_plus_title"
+            app:infoDetail="@string/help_network_governor_plus_detail"
+            app:badgeType="plus" />
 
-        <Preference
-            android:key="restore_settings"
-            android:title="Restore Settings"
-            android:summary="Restore your configurations from an encrypted backup."
-            android:icon="@drawable/ic_install_24" />
+        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
+            android:key="network_governor_plus_diagram" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="binder_firewall_enabled"
+            android:title="@string/settings_binder_firewall"
+            android:summary="@string/settings_binder_firewall_summary"
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false"
+            app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
+            android:key="binder_firewall_diagram" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="continuity_bridge_enabled"
+            android:title="Continuity Bridge"
+            android:summary="@string/settings_continuity_bridge_summary"
+            android:icon="@drawable/ic_devices_24"
+            android:defaultValue="true"
+            app:infoTitle="@string/help_continuity_bridge_title"
+            app:infoDetail="@string/help_continuity_bridge_detail"
+            app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
+            android:key="continuity_bridge_diagram" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus_framework"
-        android:title="Core Framework"
+        android:key="category_system"
+        android:title="System &amp; Performance"
+        android:defaultValue="false">
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="activity_manager_plus_enabled"
+            android:title="Process Control"
+            android:summary="@string/settings_activity_manager_plus_summary"
+            android:icon="@drawable/ic_bolt_24"
+            android:defaultValue="true"
+            app:infoTitle="@string/help_activity_manager_plus_title"
+            app:infoDetail="@string/help_activity_manager_plus_detail"
+            app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="shell_interceptor_enabled"
+            android:title="Shell Accelerator"
+            android:summary="@string/settings_shell_interceptor_summary"
+            android:icon="@drawable/ic_terminal_24"
+            android:defaultValue="true"
+            app:infoTitle="@string/help_shell_interceptor_title"
+            app:infoDetail="@string/help_shell_interceptor_detail"
+            app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="avf_manager_enabled"
+            android:title="VM Manager"
+            android:summary="@string/settings_avf_manager_summary"
+            android:icon="@drawable/ic_server_24"
+            android:defaultValue="true"
+            app:infoTitle="@string/help_avf_manager_title"
+            app:infoDetail="@string/help_avf_manager_detail"
+            app:badgeType="plus" />
+
+        <af.shizuku.manager.settings.VMManagerDiagramPreference
+            android:key="vm_manager_diagram" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_security"
+        android:title="Security &amp; Access"
         android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
@@ -78,14 +152,6 @@
         </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
         <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="custom_api_enabled"
-            android:title="@string/settings_enhanced_api"
-            android:summary="@string/settings_enhanced_api_summary"
-            android:icon="@drawable/ic_code_24"
-            android:defaultValue="true"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="shadow_binder_enabled"
             android:title="@string/settings_shadow_binder"
             android:summary="@string/settings_shadow_binder_summary"
@@ -106,59 +172,8 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus_system"
-        android:title="System Management"
-        android:defaultValue="false">
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="activity_manager_plus_enabled"
-            android:title="Process Control"
-            android:summary="@string/settings_activity_manager_plus_summary"
-            android:icon="@drawable/ic_bolt_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_activity_manager_plus_title"
-            app:infoDetail="@string/help_activity_manager_plus_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="network_governor_plus_enabled"
-            android:title="DNS Governor"
-            android:summary="@string/settings_network_governor_plus_summary"
-            android:icon="@drawable/ic_lan_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_network_governor_plus_title"
-            app:infoDetail="@string/help_network_governor_plus_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
-            android:key="network_governor_plus_diagram" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="binder_firewall_enabled"
-            android:title="@string/settings_binder_firewall"
-            android:summary="@string/settings_binder_firewall_summary"
-            android:icon="@drawable/ic_shield_24"
-            android:defaultValue="false"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
-            android:key="binder_firewall_diagram" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="shell_interceptor_enabled"
-            android:title="Shell Accelerator"
-            android:summary="@string/settings_shell_interceptor_summary"
-            android:icon="@drawable/ic_terminal_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_shell_interceptor_title"
-            app:infoDetail="@string/help_shell_interceptor_detail"
-            app:badgeType="plus" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus_advanced"
-        android:title="Advanced Capabilities"
+        android:key="category_storage"
+        android:title="Storage &amp; Files"
         android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
@@ -174,38 +189,24 @@
         <af.shizuku.manager.settings.StorageBridgeDiagramPreference
             android:key="storage_proxy_diagram" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="avf_manager_enabled"
-            android:title="VM Manager"
-            android:summary="@string/settings_avf_manager_summary"
-            android:icon="@drawable/ic_server_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_avf_manager_title"
-            app:infoDetail="@string/help_avf_manager_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.VMManagerDiagramPreference
-            android:key="vm_manager_diagram" />
-
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus_intelligence"
-        android:title="Intelligence &amp; Continuity"
+        android:key="category_backup"
+        android:title="Backup &amp; Restore"
         android:defaultValue="false">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="continuity_bridge_enabled"
-            android:title="Continuity Bridge"
-            android:summary="@string/settings_continuity_bridge_summary"
-            android:icon="@drawable/ic_devices_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_continuity_bridge_title"
-            app:infoDetail="@string/help_continuity_bridge_detail"
-            app:badgeType="plus" />
+        <Preference
+            android:key="backup_settings"
+            android:title="Backup Settings"
+            android:summary="Export your configurations and enhancements securely using Biometric encryption."
+            android:icon="@drawable/ic_folder_24" />
 
-        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
-            android:key="continuity_bridge_diagram" />
+        <Preference
+            android:key="restore_settings"
+            android:title="Restore Settings"
+            android:summary="Restore your configurations from an encrypted backup."
+            android:icon="@drawable/ic_install_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

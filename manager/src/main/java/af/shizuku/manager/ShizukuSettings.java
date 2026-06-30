@@ -111,6 +111,10 @@ public class ShizukuSettings {
         public static final String KEY_SWIPE_RIGHT_ACTION = "swipe_right_action";
         public static final String KEY_SWIPE_LEFT_ACTION = "swipe_left_action";
 
+        // APK verification API keys (ShizukuX additions)
+        public static final String KEY_VIRUSTOTAL_API_KEY = "virustotal_api_key";
+        public static final String KEY_PITHUS_API_KEY = "pithus_api_key";
+
         public static final String KEY_EXPRESSIVE_SHAPES = "expressive_shapes";
         public static final String KEY_SENTRY_LIMIT_REACHED = "sentry_limit_reached";
         public static final String KEY_EXPRESSIVE_ANIMATIONS = "expressive_animations";
@@ -368,6 +372,22 @@ public class ShizukuSettings {
     public static String getSwipeLeftAction() {
         SharedPreferences p = getPreferences();
         return p == null ? "app_info" : p.getString(Keys.KEY_SWIPE_LEFT_ACTION, "app_info");
+    }
+
+    public static String getVirusTotalApiKey() {
+        return getPreferences().getString(Keys.KEY_VIRUSTOTAL_API_KEY, "");
+    }
+
+    public static void setVirusTotalApiKey(String key) {
+        getPreferences().edit().putString(Keys.KEY_VIRUSTOTAL_API_KEY, key).apply();
+    }
+
+    public static String getPithusApiKey() {
+        return getPreferences().getString(Keys.KEY_PITHUS_API_KEY, "");
+    }
+
+    public static void setPithusApiKey(String key) {
+        getPreferences().edit().putString(Keys.KEY_PITHUS_API_KEY, key).apply();
     }
 
     public static boolean showTerminalHome() {

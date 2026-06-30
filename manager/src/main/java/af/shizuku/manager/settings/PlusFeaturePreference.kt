@@ -1,6 +1,13 @@
 package af.shizuku.manager.settings
 
 import android.content.Context
+import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.BackgroundColorSpan
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
+import android.text.style.StyleSpan
 import android.util.AttributeSet
 import android.widget.TextView
 import androidx.preference.PreferenceViewHolder
@@ -42,6 +49,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
 
         titleView?.apply {
             isSingleLine = false
+            if (badgeType != 0) applyBadge(this)
         }
 
         summaryView?.apply {
@@ -54,6 +62,39 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
             if (integrationPackage != null) launchIntegration() else showHelp()
             true
         }
+    }
+
+    private fun applyBadge(titleView: TextView) {
+        val (badgeLabel, bgColor, fgColor) = when (badgeType) {
+            1 -> Triple(
+                "PLUS",
+                resolveColor(com.google.android.material.R.attr.colorPrimary, 0xFF6750A4.toInt()),
+                resolveColor(com.google.android.material.R.attr.colorOnPrimary, 0xFFFFFFFF.toInt())
+            )
+            2 -> Triple(
+                "ROOT",
+                0xFFB71C1C.toInt(),
+                0xFFFFFFFF.toInt()
+            )
+            3 -> Triple(
+                "EXP",
+                resolveColor(com.google.android.material.R.attr.colorTertiary, 0xFF7D5260.toInt()),
+                resolveColor(com.google.android.material.R.attr.colorOnTertiary, 0xFFFFFFFF.toInt())
+            )
+            else -> return
+        }
+        val original = titleView.text
+        val spannable = SpannableStringBuilder(original).apply {
+            append("  ")
+            val start = length
+            append(" $badgeLabel ")
+            val end = length
+            setSpan(BackgroundColorSpan(bgColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(ForegroundColorSpan(fgColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(RelativeSizeSpan(0.65f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            setSpan(StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        titleView.text = spannable
     }
 
     private fun launchIntegration() {

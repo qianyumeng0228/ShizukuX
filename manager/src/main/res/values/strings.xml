@@ -996,4 +996,13 @@
 
     <string name="settings_help">Help</string>
     <string name="settings_adb_category">ADB Management</string>
+
+    <!-- APK verification API key strings -->
+    <string name="verify_virustotal_key_title">VirusTotal API Key</string>
+    <string name="verify_virustotal_key_required">An API key is required to use VirusTotal scanning</string>
+    <string name="verify_pithus_key_title">Pithus API Key (Optional)</string>
+    <string name="verify_pithus_key_configured">Check hashes against Pithus to detect malware traits · API key configured</string>
+    <string name="verify_pithus_default_summary">Check hashes against Pithus to detect malware traits.</string>
+    <string name="verify_api_key_hint">Tap to enter API key</string>
+    <string name="verify_api_key_configured">API key saved · tap to update</string>
 </resources>
