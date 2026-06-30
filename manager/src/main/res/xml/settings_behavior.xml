@@ -53,7 +53,7 @@
             android:title="@string/settings_live_activity"
             android:summary="@string/settings_live_activity_summary"
             android:icon="@drawable/ic_bolt_24"
-            android:defaultValue="false" />
+            android:defaultValue="true" />
 
     </PreferenceCategory>
 
