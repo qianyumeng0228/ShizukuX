@@ -1,6 +1,7 @@
 package af.shizuku.manager.settings
 import af.shizuku.manager.activitylog.ActivityLogActivity
 
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
 import androidx.preference.Preference
@@ -9,11 +10,13 @@ import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.ktx.setComponentEnabled
 import android.widget.Toast
 import timber.log.Timber
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.BuildConfig
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,7 +92,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
         setupTroubleshootingPreferences()
 
         findPreference<Preference>("reset_adb_keys")?.setOnPreferenceClickListener {
-            com.google.android.material.dialog.MaterialAlertDialogBuilder(context)
+            MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.settings_reset_adb_keys)
                 .setMessage(R.string.settings_reset_adb_keys_summary)
                 .setPositiveButton(R.string.settings_reset_adb_keys) { _, _ ->
@@ -108,6 +111,38 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
             true
+        }
+
+        val launcherAlias = ComponentName(context, "${context.packageName}.LauncherAlias")
+        findPreference<TwoStatePreference>("stealth_mode")?.apply {
+            isChecked = ShizukuSettings.isStealthModeEnabled()
+            setOnPreferenceChangeListener { pref, newValue ->
+                val enable = newValue as Boolean
+                if (enable) {
+                    MaterialAlertDialogBuilder(context)
+                        .setTitle("Enable Stealth Mode?")
+                        .setMessage(
+                            "The app icon will be removed from your launcher.\n\n" +
+                            "You can still open the app from the Shizuku notification. " +
+                            "Disable stealth mode via ADB to restore the icon:\n\n" +
+                            "adb shell pm enable ${context.packageName}/.LauncherAlias"
+                        )
+                        .setPositiveButton("Enable") { _, _ ->
+                            context.packageManager.setComponentEnabled(launcherAlias, false)
+                            ShizukuSettings.setStealthModeEnabled(true)
+                            (pref as? TwoStatePreference)?.isChecked = true
+                        }
+                        .setNegativeButton(android.R.string.cancel) { _, _ ->
+                            (pref as? TwoStatePreference)?.isChecked = false
+                        }
+                        .show()
+                    false
+                } else {
+                    context.packageManager.setComponentEnabled(launcherAlias, true)
+                    ShizukuSettings.setStealthModeEnabled(false)
+                    true
+                }
+            }
         }
     }
 

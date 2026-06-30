@@ -84,17 +84,22 @@
             android:name=".MainActivity"
             android:banner="@mipmap/banner"
             android:exported="true"
-            android:theme="@style/Theme.App.Starting">
+            android:theme="@style/Theme.App.Starting" />
+
+        <!-- Toggleable launcher alias — disabled by stealth mode -->
+        <activity-alias
+            android:name=".LauncherAlias"
+            android:targetActivity=".MainActivity"
+            android:enabled="true"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
-        </activity>
+        </activity-alias>
 
         <!-- Activity Aliases to fix broken shortcuts / task stack restoration -->
         <activity-alias
