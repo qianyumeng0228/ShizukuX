@@ -101,6 +101,13 @@ public class ShizukuSettings {
 
         // Long-press action toggles (ShizukuX additions)
         public static final String KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED = "samsung_system_uid_escalation_enabled";
+        public static final String KEY_SOFTWARE_KEYSTORE_FALLBACK_ENABLED = "software_keystore_fallback_enabled";
+        public static final String KEY_OVERLAY_FS_PROXY_ENABLED = "overlay_fs_proxy_enabled";
+        public static final String KEY_ROOT_KERNEL_GHOSTING_ENABLED = "root_kernel_ghosting_enabled";
+        public static final String KEY_ROOT_PARTITION_GHOSTING_ENABLED = "root_partition_ghosting_enabled";
+        public static final String KEY_ROOT_POWER_GHOSTING_ENABLED = "root_power_ghosting_enabled";
+        public static final String KEY_BOOTLOADER_FLASH_OTA_ENABLED = "bootloader_flash_ota_enabled";
+        public static final String KEY_BOOTLOADER_FASTBOOTD_REBOOT_ENABLED = "bootloader_fastbootd_reboot_enabled";
         public static final String KEY_KEEP_SU_APP = "keep_su_app";
         public static final String KEY_LP_OPEN_APP = "lp_open_app";
         public static final String KEY_LP_APP_INFO = "lp_app_info";
@@ -262,7 +269,38 @@ public class ShizukuSettings {
     }
 
     public static boolean isSoftwareKeystoreFallbackEnabled() {
-        return getPreferences().getBoolean("software_keystore_fallback_enabled", false);
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_SOFTWARE_KEYSTORE_FALLBACK_ENABLED, false);
+    }
+
+    public static boolean isOverlayFsProxyEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_OVERLAY_FS_PROXY_ENABLED, false);
+    }
+
+    public static boolean isRootKernelGhostingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_KERNEL_GHOSTING_ENABLED, false);
+    }
+
+    public static boolean isRootPartitionGhostingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_PARTITION_GHOSTING_ENABLED, false);
+    }
+
+    public static boolean isRootPowerGhostingEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ROOT_POWER_GHOSTING_ENABLED, false);
+    }
+
+    public static boolean isBootloaderFlashOtaEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_BOOTLOADER_FLASH_OTA_ENABLED, false);
+    }
+
+    public static boolean isBootloaderFastbootdRebootEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_BOOTLOADER_FASTBOOTD_REBOOT_ENABLED, false);
     }
 
     public static boolean getStartOnBoot(Context context) {
@@ -856,6 +894,14 @@ public class ShizukuSettings {
                 service.updatePlusFeatureEnabled("binder_logging", isBinderLoggingEnabled());
                 service.updatePlusFeatureEnabled("shadow_binder", isShadowBinderEnabled());
                 service.setPlusSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
+                service.updatePlusFeatureEnabled("samsung_system_uid_escalation", isSamsungSystemUidEscalationEnabled());
+                service.updatePlusFeatureEnabled("software_keystore_fallback", isSoftwareKeystoreFallbackEnabled());
+                service.updatePlusFeatureEnabled("overlay_fs_proxy", isOverlayFsProxyEnabled());
+                service.updatePlusFeatureEnabled("root_kernel_ghosting", isRootKernelGhostingEnabled());
+                service.updatePlusFeatureEnabled("root_partition_ghosting", isRootPartitionGhostingEnabled());
+                service.updatePlusFeatureEnabled("root_power_ghosting", isRootPowerGhostingEnabled());
+                service.updatePlusFeatureEnabled("bootloader_flash_ota", isBootloaderFlashOtaEnabled());
+                service.updatePlusFeatureEnabled("bootloader_fastbootd_reboot", isBootloaderFastbootdRebootEnabled());
 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {
