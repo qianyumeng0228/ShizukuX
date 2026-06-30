@@ -125,6 +125,10 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
 
         // Preset SU Path Picker helper
         val suPathPref = findPreference<androidx.preference.EditTextPreference>("custom_su_path")
+        suPathPref?.setOnPreferenceChangeListener { _, _ ->
+            ShizukuSettings.syncAllPlusFeaturesToServer()
+            true
+        }
         suPathPref?.setOnPreferenceClickListener {
             val presets = arrayOf(
                 "Default (Auto-detect)",

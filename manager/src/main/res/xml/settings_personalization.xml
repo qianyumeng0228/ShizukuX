@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Color &amp; Theme">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_color_theme"
+        android:title="Color &amp; Theme"
+        android:defaultValue="true">
 
         <af.shizuku.manager.settings.IntegerSimpleMenuPreference
             android:entries="@array/night_mode"
@@ -31,9 +34,12 @@
             android:entryValues="@array/custom_accents_values"
             android:icon="@drawable/ic_palette_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Shape &amp; Icon Style">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_shape_style"
+        android:title="Shape &amp; Icon Style"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="expressive_shapes"
@@ -61,9 +67,12 @@
             android:entryValues="@array/icon_styles_value"
             android:icon="@drawable/ic_monochrome" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Motion">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_motion"
+        android:title="Motion"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="expressive_animations"
@@ -82,7 +91,7 @@
             android:dependency="expressive_animations"
             android:icon="@drawable/ic_bolt_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_home_screen"
