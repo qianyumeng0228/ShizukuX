@@ -1,13 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_plus"
-        android:title="ShizukuX Power Tools"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="ShizukuX">
 
         <Preference
             android:key="nav_shizuku_plus"
@@ -18,31 +12,21 @@
 
         <Preference
             android:key="nav_root_integration"
-            android:title="Compatibility &amp; Root"
+            android:title="Root &amp; Compatibility"
             android:summary="SU bridge and rootless integration"
             android:icon="@drawable/ic_shield_24"
             android:fragment="af.shizuku.manager.settings.RootIntegrationSettingsFragment" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_personalization"
-        android:title="Appearance"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Interface">
 
         <Preference
             android:key="nav_personalization"
             android:title="Appearance"
-            android:summary="Theme, corners, shapes, and home layout customizer"
+            android:summary="Theme, shapes, icons, motion, and home layout"
             android:icon="@drawable/ic_palette_24"
             android:fragment="af.shizuku.manager.settings.PersonalizationSettingsFragment" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_management"
-        android:title="Management"
-        android:defaultValue="true">
 
         <Preference
             android:key="nav_app_management"
@@ -51,41 +35,35 @@
             android:icon="@drawable/ic_devices_24"
             android:fragment="af.shizuku.manager.settings.AppManagementSettingsFragment" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_system"
-        android:title="System"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Service">
 
         <Preference
             android:key="nav_behavior"
-            android:title="Behavior"
-            android:summary="Start on boot and background stability"
+            android:title="Startup &amp; Behavior"
+            android:summary="Boot options, watchdog, and network"
             android:icon="@drawable/ic_settings_suggest_24"
             android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
 
         <Preference
             android:key="nav_advanced"
-            android:title="Advanced"
-            android:summary="Diagnostics, logs, and troubleshooting"
+            android:title="Advanced &amp; Diagnostics"
+            android:summary="Logs, ADB tools, and troubleshooting"
             android:icon="@drawable/ic_terminal_24"
             android:fragment="af.shizuku.manager.settings.AdvancedSettingsFragment" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_about"
-        android:title="About"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="About">
 
         <Preference
             android:key="nav_about"
             android:title="About"
-            android:summary="Version info, open-source licenses, and update options"
+            android:summary="Version, licenses, and updates"
             android:icon="@drawable/ic_info_24"
             android:fragment="af.shizuku.manager.settings.AboutSettingsFragment" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

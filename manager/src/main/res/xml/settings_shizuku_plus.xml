@@ -11,7 +11,7 @@
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_cloud_sync"
         android:title="Cloud Sync &amp; Backup"
-        android:defaultValue="true">
+        android:defaultValue="false">
 
         <Preference
             android:key="backup_settings"
@@ -27,11 +27,10 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <!-- Framework: core delegation and master Plus switch -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_framework"
         android:title="Core Framework"
-        android:defaultValue="true">
+        android:defaultValue="false">
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="dhizuku_mode"
@@ -54,7 +53,7 @@
             android:key="category_dhizuku_admin"
             android:title="Device Owner Tools"
             android:dependency="dhizuku_mode"
-            android:defaultValue="true">
+            android:defaultValue="false">
 
             <SwitchPreferenceCompat
                 android:key="dhizuku_disable_screencap"
@@ -97,9 +96,6 @@
         <af.shizuku.manager.settings.ShadowBinderDiagramPreference
             android:key="shadow_binder_diagram" />
 
-        <af.shizuku.manager.settings.ShadowBinderDiagramPreference
-            android:key="shadow_binder_diagram" />
-
         <af.shizuku.manager.settings.AppPickerPreference
             android:key="shadow_binder_hidden_packages"
             android:title="@string/settings_shadow_binder_hidden_packages"
@@ -109,7 +105,6 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <!-- System Management: performance, networking, and firewall -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_system"
         android:title="System Management"
@@ -138,9 +133,6 @@
         <af.shizuku.manager.settings.DNSGovernorDiagramPreference
             android:key="network_governor_plus_diagram" />
 
-        <af.shizuku.manager.settings.DNSGovernorDiagramPreference
-            android:key="network_governor_plus_diagram" />
-
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="binder_firewall_enabled"
             android:title="@string/settings_binder_firewall"
@@ -148,9 +140,6 @@
             android:icon="@drawable/ic_shield_24"
             android:defaultValue="false"
             app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.BinderFirewallDiagramPreference
-            android:key="binder_firewall_diagram" />
 
         <af.shizuku.manager.settings.BinderFirewallDiagramPreference
             android:key="binder_firewall_diagram" />
@@ -167,7 +156,6 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <!-- Advanced Capabilities: storage, VMs, and UI tweaks -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_advanced"
         android:title="Advanced Capabilities"
@@ -186,11 +174,6 @@
         <af.shizuku.manager.settings.StorageBridgeDiagramPreference
             android:key="storage_proxy_diagram" />
 
-        <af.shizuku.manager.settings.StorageBridgeDiagramPreference
-            android:key="storage_proxy_diagram" />
-
-
-
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="avf_manager_enabled"
             android:title="VM Manager"
@@ -206,13 +189,10 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <!-- Intelligence & Continuity -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_plus_intelligence"
         android:title="Intelligence &amp; Continuity"
         android:defaultValue="false">
-
-
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="continuity_bridge_enabled"
@@ -223,9 +203,6 @@
             app:infoTitle="@string/help_continuity_bridge_title"
             app:infoDetail="@string/help_continuity_bridge_detail"
             app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
-            android:key="continuity_bridge_diagram" />
 
         <af.shizuku.manager.settings.ContinuityBridgeDiagramPreference
             android:key="continuity_bridge_diagram" />
@@ -262,9 +239,6 @@
         <af.shizuku.manager.settings.ThemingBridgeDiagramPreference
             android:key="overlay_manager_plus_diagram" />
 
-        <af.shizuku.manager.settings.ThemingBridgeDiagramPreference
-            android:key="overlay_manager_plus_diagram" />
-
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="ai_core_plus_enabled"
             android:title="AI Bridge &amp; NPU (Experimental)"
@@ -274,9 +248,6 @@
             app:infoTitle="@string/help_ai_core_plus_title"
             app:infoDetail="@string/help_ai_core_plus_detail"
             app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.AICoreBridgeDiagramPreference
-            android:key="ai_core_plus_diagram" />
 
         <af.shizuku.manager.settings.AICoreBridgeDiagramPreference
             android:key="ai_core_plus_diagram" />

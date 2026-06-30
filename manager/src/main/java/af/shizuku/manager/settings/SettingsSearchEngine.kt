@@ -25,12 +25,11 @@ object SettingsSearchEngine {
 
     private val screens = mapOf(
         R.xml.settings_shizuku_plus to "af.shizuku.manager.settings.ShizukuPlusSettingsFragment",
-        R.xml.settings_ui to "af.shizuku.manager.settings.UISettingsFragment",
+        R.xml.settings_personalization to "af.shizuku.manager.settings.PersonalizationSettingsFragment",
         R.xml.settings_behavior to "af.shizuku.manager.settings.BehaviorSettingsFragment",
         R.xml.settings_advanced to "af.shizuku.manager.settings.AdvancedSettingsFragment",
         R.xml.settings_developer_options to "af.shizuku.manager.settings.DeveloperOptionsFragment",
         R.xml.settings_root_integration to "af.shizuku.manager.settings.RootIntegrationSettingsFragment",
-        R.xml.settings_home_visibility to "af.shizuku.manager.settings.HomeVisibilitySettingsFragment",
         R.xml.settings_app_management to "af.shizuku.manager.settings.AppManagementSettingsFragment",
         R.xml.settings_update to "af.shizuku.manager.settings.UpdateSettingsFragment",
         R.xml.settings_about to "af.shizuku.manager.settings.AboutSettingsFragment"

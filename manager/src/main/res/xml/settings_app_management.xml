@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_swipe"
-        android:title="@string/settings_category_swipe"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Swipe Gestures">
 
         <rikka.preference.SimpleMenuPreference
             android:key="swipe_right_action"
@@ -24,12 +21,9 @@
             android:summary="%s"
             android:icon="@drawable/ic_swipe_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_long_press"
-        android:title="@string/settings_category_long_press"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Long Press Actions">
 
         <Preference
             android:key="lp_category_info"
@@ -60,41 +54,38 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_visibility_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_verified_install"
-        android:title="Verified Installation (Third-Party APKs)"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Verified Installation">
 
         <SwitchPreferenceCompat
             android:key="verify_apk_local"
             android:title="Local Signature Matching"
-            android:summary="Verify updates mathematically match the installed app's signature. Fast and 100% offline."
+            android:summary="Verify updates match the installed app's signature. Fast and fully offline."
             android:defaultValue="true"
             android:icon="@drawable/ic_shield_24" />
 
         <SwitchPreferenceCompat
             android:key="verify_apk_fdroid"
-            android:title="F-Droid / IzzyOnDroid Offline Index"
-            android:summary="Verify APK hashes locally against trusted open-source metadata. Enabled by default for privacy."
+            android:title="F-Droid / IzzyOnDroid Index"
+            android:summary="Verify APK hashes locally against trusted open-source metadata."
             android:defaultValue="true"
             android:icon="@drawable/ic_folder_24" />
 
         <SwitchPreferenceCompat
             android:key="verify_apk_virustotal"
-            android:title="VirusTotal Integration"
-            android:summary="Scan third-party APK hashes against the VirusTotal API before installation. Requires network."
+            android:title="VirusTotal Scan"
+            android:summary="Scan APK hashes against VirusTotal before installation. Requires network."
             android:defaultValue="false"
             android:icon="@drawable/ic_update_24" />
-            
+
         <SwitchPreferenceCompat
             android:key="verify_apk_pithus"
             android:title="Pithus Threat Intel"
-            android:summary="Check hashes against Pithus (open-source MobSF aggregator) to detect malware traits."
+            android:summary="Check hashes against Pithus to detect malware traits."
             android:defaultValue="false"
             android:icon="@drawable/ic_admin_panel_settings_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

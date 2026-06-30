@@ -4,10 +4,7 @@
     <af.shizuku.manager.settings.HomeLayoutSimulatorPreference
         android:key="home_layout_simulator" />
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_home_cards"
-        android:title="@string/settings_category_home_cards"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Home Cards">
 
         <SwitchPreferenceCompat
             android:key="show_terminal_home"
@@ -40,12 +37,9 @@
             android:icon="@drawable/ic_baseline_link_24"
             android:defaultValue="false" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_activity_log"
-        android:title="@string/settings_category_activity_log"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Activity Log">
 
         <SwitchPreferenceCompat
             android:key="show_activity_log_home"
@@ -53,12 +47,9 @@
             android:icon="@drawable/ic_article_24"
             android:defaultValue="true" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_database"
-        android:title="@string/settings_category_database"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="App Database">
 
         <Preference
             android:key="update_app_database"
@@ -66,6 +57,6 @@
             android:summary="@string/settings_update_app_database_summary"
             android:icon="@drawable/ic_autorenew" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

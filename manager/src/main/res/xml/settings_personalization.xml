@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Section 2: Appearance & Theme -->
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_theme"
-        android:title="Theme &amp; Colors"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Color &amp; Theme">
 
         <af.shizuku.manager.settings.IntegerSimpleMenuPreference
             android:entries="@array/night_mode"
@@ -29,20 +24,16 @@
 
         <rikka.preference.SimpleMenuPreference
             android:key="custom_accent"
-            android:title="Custom Color Accent"
-            android:summary="Choose a premium color accent when system dynamic color is off"
+            android:title="Custom Accent Color"
+            android:summary="Choose a color when Dynamic Color is off"
             android:defaultValue="DEFAULT"
             android:entries="@array/custom_accents"
             android:entryValues="@array/custom_accents_values"
             android:icon="@drawable/ic_palette_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <!-- Section 3: Material 3 Expressive Controls -->
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:title="@string/settings_expressive_title"
-        android:key="category_expressive"
-        android:defaultValue="false">
+    <PreferenceCategory android:title="Shape &amp; Icon Style">
 
         <SwitchPreferenceCompat
             android:key="expressive_shapes"
@@ -54,7 +45,7 @@
         <rikka.preference.SimpleMenuPreference
             android:key="shape_style"
             android:title="@string/settings_shape_style"
-            android:summary="@string/settings_shape_style_summary"
+            android:summary="%s"
             android:defaultValue="zen"
             android:entries="@array/shape_styles"
             android:entryValues="@array/shape_styles_value"
@@ -64,11 +55,15 @@
         <rikka.preference.SimpleMenuPreference
             android:key="icon_style"
             android:title="@string/settings_icon_style"
-            android:summary="@string/settings_icon_style_summary"
+            android:summary="%s"
             android:defaultValue="standard"
             android:entries="@array/icon_styles"
             android:entryValues="@array/icon_styles_value"
             android:icon="@drawable/ic_monochrome" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Motion">
 
         <SwitchPreferenceCompat
             android:key="expressive_animations"
@@ -80,20 +75,16 @@
         <rikka.preference.SimpleMenuPreference
             android:key="animation_intensity"
             android:title="@string/settings_animation_intensity"
-            android:summary="@string/settings_animation_intensity_summary"
+            android:summary="%s"
             android:defaultValue="2"
             android:entries="@array/animation_intensities"
             android:entryValues="@array/animation_intensities_value"
             android:dependency="expressive_animations"
             android:icon="@drawable/ic_bolt_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <!-- Section 4: Home Layout Customizer -->
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_home_layout"
-        android:title="Dashboard Layout Builder"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Home Screen">
 
         <af.shizuku.manager.settings.HomeLayoutSimulatorPreference
             android:key="home_layout_simulator" />
@@ -123,25 +114,21 @@
             android:defaultValue="false" />
 
         <SwitchPreferenceCompat
+            android:key="show_activity_log_home"
+            android:title="@string/settings_show_activity_log_home"
+            android:icon="@drawable/ic_article_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
             android:key="companion_mode"
             android:title="@string/settings_companion_mode"
             android:summary="@string/settings_companion_mode_summary"
             android:icon="@drawable/ic_baseline_link_24"
             android:defaultValue="false" />
 
-        <SwitchPreferenceCompat
-            android:key="show_activity_log_home"
-            android:title="@string/settings_show_activity_log_home"
-            android:icon="@drawable/ic_article_24"
-            android:defaultValue="true" />
+    </PreferenceCategory>
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <!-- Section 5: Regional & System Options -->
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_language"
-        android:title="Language &amp; Translation"
-        android:defaultValue="false">
+    <PreferenceCategory android:title="Language">
 
         <rikka.preference.SimpleMenuPreference
             android:defaultValue="SYSTEM"
@@ -155,6 +142,6 @@
             android:title="@string/settings_translation"
             android:icon="@drawable/ic_outline_translate_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

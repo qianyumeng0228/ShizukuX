@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_automatic"
-        android:title="@string/settings_category_automatic"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Startup &amp; Recovery">
 
         <SwitchPreferenceCompat
             android:key="start_on_boot"
@@ -21,16 +18,13 @@
         <SwitchPreferenceCompat
             android:key="auto_reconnect_mdns"
             android:title="Intelligent Auto-Reconnect"
-            android:summary="Run a lightweight mDNS network listener to automatically rebind the Shizuku server if the ADB daemon drops on sleep/doze. Enabled by default."
+            android:summary="Run a lightweight mDNS listener to automatically rebind the server if the ADB daemon drops on sleep or doze."
             android:defaultValue="true"
             android:icon="@drawable/ic_server_restart" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_network"
-        android:title="@string/settings_category_network"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Network">
 
         <SwitchPreferenceCompat
             android:key="tcp_mode"
@@ -44,12 +38,9 @@
             android:icon="@drawable/ic_lan_24"
             android:inputType="number" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_behavior_advanced"
-        android:title="@string/settings_category_advanced"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Advanced">
 
         <SwitchPreferenceCompat
             android:key="auto_disable_usb_debugging"
@@ -64,6 +55,6 @@
             android:icon="@drawable/ic_bolt_24"
             android:defaultValue="false" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>

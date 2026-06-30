@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_diagnostics"
-        android:title="@string/settings_diagnostics_category"
-        android:defaultValue="true">
+    <PreferenceCategory android:title="Diagnostics">
 
         <Preference
             android:key="service_doctor"
@@ -14,7 +11,7 @@
 
         <SwitchPreferenceCompat
             android:key="diagnostics_enabled"
-            android:title="Enable Settings Diagnostics"
+            android:title="Settings Diagnostics"
             android:summary="Scan configurations for conflicts and anomalies proactively"
             android:icon="@drawable/ic_warning_24"
             android:defaultValue="true" />
@@ -37,12 +34,10 @@
             android:title="@string/settings_update_app_database"
             android:summary="@string/settings_update_app_database_summary"
             android:icon="@drawable/ic_autorenew" />
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_adb_management"
-        android:title="@string/settings_adb_category"
-        android:defaultValue="true">
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="ADB Tools">
 
         <SwitchPreferenceCompat
             android:key="stealth_mode"
@@ -62,22 +57,24 @@
             android:title="@string/settings_reset_adb_keys"
             android:summary="@string/settings_reset_adb_keys_summary"
             android:icon="@drawable/ic_autorenew" />
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <Preference
-        android:key="help"
-        android:title="@string/settings_help"
-        android:icon="@drawable/ic_help_outline_24" />
+    </PreferenceCategory>
 
-    <Preference
-        android:key="report_bug"
-        android:title="@string/settings_report_bug"
-        android:icon="@drawable/ic_warning_24" />
+    <PreferenceCategory android:title="Help &amp; Support">
 
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_troubleshooting"
-        android:title="Troubleshooting"
-        android:defaultValue="false">
+        <Preference
+            android:key="help"
+            android:title="@string/settings_help"
+            android:icon="@drawable/ic_help_outline_24" />
+
+        <Preference
+            android:key="report_bug"
+            android:title="@string/settings_report_bug"
+            android:icon="@drawable/ic_warning_24" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Troubleshooting">
 
         <SwitchPreferenceCompat
             android:key="companion_fallback"
@@ -92,6 +89,6 @@
             android:summary="@string/home_companion_description"
             android:icon="@drawable/ic_baseline_link_24" />
 
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+    </PreferenceCategory>
 
 </PreferenceScreen>
