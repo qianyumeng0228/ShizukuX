@@ -68,18 +68,18 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
         val (badgeLabel, bgColor, fgColor) = when (badgeType) {
             1 -> Triple(
                 "PLUS",
-                resolveColor(com.google.android.material.R.attr.colorPrimary, 0xFF6750A4.toInt()),
-                resolveColor(com.google.android.material.R.attr.colorOnPrimary, 0xFFFFFFFF.toInt())
+                resolveColor(com.google.android.material.R.attr.colorPrimaryContainer, 0xFFE8DEF8.toInt()),
+                resolveColor(com.google.android.material.R.attr.colorOnPrimaryContainer, 0xFF21005D.toInt())
             )
             2 -> Triple(
                 "ROOT",
-                0xFFB71C1C.toInt(),
-                0xFFFFFFFF.toInt()
+                resolveColor(com.google.android.material.R.attr.colorErrorContainer, 0xFFFFDAD6.toInt()),
+                resolveColor(com.google.android.material.R.attr.colorOnErrorContainer, 0xFF410002.toInt())
             )
             3 -> Triple(
                 "EXP",
-                resolveColor(com.google.android.material.R.attr.colorTertiary, 0xFF7D5260.toInt()),
-                resolveColor(com.google.android.material.R.attr.colorOnTertiary, 0xFFFFFFFF.toInt())
+                resolveColor(com.google.android.material.R.attr.colorTertiaryContainer, 0xFFFFD8E4.toInt()),
+                resolveColor(com.google.android.material.R.attr.colorOnTertiaryContainer, 0xFF31111D.toInt())
             )
             else -> return
         }

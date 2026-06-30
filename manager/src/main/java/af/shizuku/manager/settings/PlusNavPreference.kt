@@ -13,7 +13,6 @@ import android.util.TypedValue
 import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
-import af.shizuku.manager.R
 
 class PlusNavPreference(context: Context, attrs: AttributeSet?) : Preference(context, attrs) {
 
@@ -26,10 +25,10 @@ class PlusNavPreference(context: Context, attrs: AttributeSet?) : Preference(con
 
     private fun applyPlusBadge(titleView: TextView) {
         val tv = TypedValue()
-        val bgColor = if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimary, tv, true)) tv.data
-                      else 0xFF6750A4.toInt()
-        val fgColor = if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimary, tv, true)) tv.data
-                      else 0xFFFFFFFF.toInt()
+        val bgColor = if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorPrimaryContainer, tv, true)) tv.data
+                      else 0xFFE8DEF8.toInt()
+        val fgColor = if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnPrimaryContainer, tv, true)) tv.data
+                      else 0xFF21005D.toInt()
         val original = titleView.text
         val spannable = SpannableStringBuilder(original).apply {
             append("  ")
