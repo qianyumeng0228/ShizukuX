@@ -137,6 +137,7 @@ public class ShizukuSettings {
         public static final String KEY_COMPANION_MODE = "companion_mode";
         public static final String KEY_COMPANION_FALLBACK = "companion_fallback";
         public static final String KEY_LIVE_ACTIVITY_ENABLED = "live_activity_enabled";
+        public static final String KEY_AUTO_RECONNECT_MDNS = "auto_reconnect_mdns";
         public static final String KEY_STEALTH_MODE = "stealth_mode";
     }
 
@@ -967,5 +968,10 @@ public class ShizukuSettings {
     public static void setLiveActivityEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_LIVE_ACTIVITY_ENABLED, enable).apply();
+    }
+
+    public static boolean isAutoReconnectMdnsEnabled() {
+        SharedPreferences p = getPreferences();
+        return p == null || p.getBoolean(Keys.KEY_AUTO_RECONNECT_MDNS, true);
     }
 }

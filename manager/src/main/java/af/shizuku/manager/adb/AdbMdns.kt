@@ -9,6 +9,7 @@ import android.os.Looper
 import timber.log.Timber
 import kotlinx.coroutines.*
 import androidx.annotation.RequiresApi
+import af.shizuku.manager.ShizukuSettings
 import androidx.lifecycle.Observer
 import java.io.IOException
 import java.net.InetSocketAddress
@@ -80,7 +81,7 @@ class AdbMdns(
         ) {
             serviceName = resolvedService.serviceName
             observer.onChanged(resolvedService.port)
-        } else if (running && attempts < 5 && !restartScheduled) {
+        } else if (running && ShizukuSettings.isAutoReconnectMdnsEnabled() && attempts < 5 && !restartScheduled) {
             attempts++
             restartScheduled = true
             val delayMs = attempts * 1000L

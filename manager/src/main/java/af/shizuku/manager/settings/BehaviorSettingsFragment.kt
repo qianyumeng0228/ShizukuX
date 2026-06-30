@@ -1,5 +1,6 @@
 package af.shizuku.manager.settings
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -12,6 +13,7 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.app.SnackbarHelper
+import af.shizuku.manager.service.ShizukuLiveService
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 
@@ -158,6 +160,19 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                 }
                 false
             }
+        }
+
+        findPreference<TwoStatePreference>(KEY_LIVE_ACTIVITY_ENABLED)?.setOnPreferenceChangeListener { _, newValue ->
+            val enable = newValue as Boolean
+            val ctx = requireContext()
+            val svcIntent = Intent(ctx, ShizukuLiveService::class.java)
+            if (enable) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) ctx.startForegroundService(svcIntent)
+                else ctx.startService(svcIntent)
+            } else {
+                ctx.stopService(svcIntent)
+            }
+            true
         }
     }
 
