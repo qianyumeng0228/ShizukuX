@@ -13,6 +13,7 @@ import android.util.TypedValue
 import android.widget.TextView
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
+import af.shizuku.manager.R
 
 class PlusNavPreference(context: Context, attrs: AttributeSet?) : Preference(context, attrs) {
 
