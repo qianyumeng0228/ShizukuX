@@ -2,26 +2,33 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <SwitchPreferenceCompat
-        android:key="adb_proxy_enabled"
-        android:title="@string/settings_adb_proxy"
-        android:summary="@string/settings_adb_proxy_summary"
-        android:icon="@drawable/ic_wadb_24"
-        android:defaultValue="false" />
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_adb_connection"
+        android:title="ADB Connection"
+        android:defaultValue="true">
 
-    <SwitchPreferenceCompat
-        android:key="on_device_adb_tcp"
-        android:title="@string/settings_on_device_adb_tcp"
-        android:summary="@string/settings_on_device_adb_tcp_summary"
-        android:icon="@drawable/ic_adb_24"
-        android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="adb_proxy_enabled"
+            android:title="@string/settings_adb_proxy"
+            android:summary="@string/settings_adb_proxy_summary"
+            android:icon="@drawable/ic_wadb_24"
+            android:defaultValue="false" />
 
-    <SwitchPreferenceCompat
-        android:key="force_start_wadb"
-        android:title="@string/settings_force_start_wadb"
-        android:summary="@string/settings_force_start_wadb_summary"
-        android:icon="@drawable/ic_server_restart"
-        android:defaultValue="false" />
+        <SwitchPreferenceCompat
+            android:key="on_device_adb_tcp"
+            android:title="@string/settings_on_device_adb_tcp"
+            android:summary="@string/settings_on_device_adb_tcp_summary"
+            android:icon="@drawable/ic_adb_24"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
+            android:key="force_start_wadb"
+            android:title="@string/settings_force_start_wadb"
+            android:summary="@string/settings_force_start_wadb_summary"
+            android:icon="@drawable/ic_server_restart"
+            android:defaultValue="false" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_su_bridge"
@@ -49,16 +56,16 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <Preference
-        android:key="root_compatibility_hub"
-        android:title="@string/settings_root_integration_hub"
-        android:summary="@string/settings_root_integration_hub_summary"
-        android:icon="@drawable/ic_admin_panel_settings_24" />
-
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_root_modules"
         android:title="Rootless Bridges"
         android:defaultValue="true">
+
+        <Preference
+            android:key="root_compatibility_hub"
+            android:title="@string/settings_root_integration_hub"
+            android:summary="@string/settings_root_integration_hub_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="root_build_prop_redirect_enabled"

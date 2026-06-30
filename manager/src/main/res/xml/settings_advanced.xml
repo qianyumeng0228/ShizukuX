@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Diagnostics">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_diagnostics"
+        android:title="Diagnostics"
+        android:defaultValue="true">
 
         <Preference
             android:key="service_doctor"
@@ -35,9 +38,12 @@
             android:summary="@string/settings_update_app_database_summary"
             android:icon="@drawable/ic_autorenew" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="ADB Tools">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_adb_tools"
+        android:title="ADB Tools"
+        android:defaultValue="false">
 
         <SwitchPreferenceCompat
             android:key="stealth_mode"
@@ -58,9 +64,12 @@
             android:summary="@string/settings_reset_adb_keys_summary"
             android:icon="@drawable/ic_autorenew" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Help &amp; Support">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_help"
+        android:title="Help &amp; Recovery"
+        android:defaultValue="false">
 
         <Preference
             android:key="help"
@@ -71,10 +80,6 @@
             android:key="report_bug"
             android:title="@string/settings_report_bug"
             android:icon="@drawable/ic_warning_24" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Troubleshooting">
 
         <SwitchPreferenceCompat
             android:key="companion_fallback"
@@ -89,6 +94,6 @@
             android:summary="@string/home_companion_description"
             android:icon="@drawable/ic_baseline_link_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

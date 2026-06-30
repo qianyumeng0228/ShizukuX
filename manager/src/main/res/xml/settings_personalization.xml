@@ -84,7 +84,10 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Home Screen">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_home_screen"
+        android:title="Home Screen"
+        android:defaultValue="true">
 
         <af.shizuku.manager.settings.HomeLayoutSimulatorPreference
             android:key="home_layout_simulator" />
@@ -126,9 +129,12 @@
             android:icon="@drawable/ic_baseline_link_24"
             android:defaultValue="false" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Language">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_language"
+        android:title="Language"
+        android:defaultValue="false">
 
         <rikka.preference.SimpleMenuPreference
             android:defaultValue="SYSTEM"
@@ -142,6 +148,6 @@
             android:title="@string/settings_translation"
             android:icon="@drawable/ic_outline_translate_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

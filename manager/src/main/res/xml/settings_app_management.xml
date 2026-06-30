@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Swipe Gestures">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_swipe"
+        android:title="Swipe Gestures"
+        android:defaultValue="true">
 
         <rikka.preference.SimpleMenuPreference
             android:key="swipe_right_action"
@@ -21,9 +24,12 @@
             android:summary="%s"
             android:icon="@drawable/ic_swipe_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Long Press Actions">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_long_press"
+        android:title="Long Press Actions"
+        android:defaultValue="true">
 
         <Preference
             android:key="lp_category_info"
@@ -54,9 +60,12 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_visibility_24" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Verified Installation">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_verified_install"
+        android:title="Verified Installation"
+        android:defaultValue="false">
 
         <SwitchPreferenceCompat
             android:key="verify_apk_local"
@@ -100,6 +109,6 @@
             android:icon="@drawable/ic_code_24"
             android:dependency="verify_apk_pithus" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

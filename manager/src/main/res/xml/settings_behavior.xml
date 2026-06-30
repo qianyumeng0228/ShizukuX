@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Startup &amp; Recovery">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_startup"
+        android:title="Startup &amp; Recovery"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="start_on_boot"
@@ -22,9 +25,12 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_server_restart" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Network">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_network"
+        android:title="Network"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="tcp_mode"
@@ -38,9 +44,12 @@
             android:icon="@drawable/ic_lan_24"
             android:inputType="number" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
-    <PreferenceCategory android:title="Advanced">
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_activity"
+        android:title="Activity &amp; Status"
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="auto_disable_usb_debugging"
@@ -55,6 +64,6 @@
             android:icon="@drawable/ic_bolt_24"
             android:defaultValue="true" />
 
-    </PreferenceCategory>
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>
