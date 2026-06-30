@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.content.BroadcastReceiver
@@ -86,7 +87,13 @@ class AutomationService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
             .build()
-        startForeground(NOTIFICATION_ID, notification)
+        // API 34+ requires the 3-param form when foregroundServiceType is declared in the manifest.
+        // FOREGROUND_SERVICE_TYPE_DATA_SYNC is available since API 29.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     private fun checkNetworkState() {
