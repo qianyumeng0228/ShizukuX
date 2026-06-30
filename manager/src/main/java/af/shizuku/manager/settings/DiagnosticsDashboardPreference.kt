@@ -1,6 +1,8 @@
 package af.shizuku.manager.settings
 
 import android.app.admin.DevicePolicyManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -112,24 +114,39 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                         }
                     }
                     "shadow_binder_no_apps" -> {
-                        // Triggers highlight/navigation to the app picker
-                        val parentFragment = (context as? androidx.fragment.app.FragmentActivity)
-                            ?.supportFragmentManager?.findFragmentById(R.id.fragment_container)
-                        if (parentFragment is ShizukuPlusSettingsFragment) {
-                            parentFragment.findPreference<Preference>("shadow_binder_hidden_packages")?.let {
-                                parentFragment.onPreferenceTreeClick(it)
-                            }
+                        val activity = context as? androidx.fragment.app.FragmentActivity
+                        val frag = activity?.supportFragmentManager
+                            ?.findFragmentById(R.id.fragment_container)
+                        val opened = if (frag is ShizukuPlusSettingsFragment) {
+                            frag.findPreference<Preference>("shadow_binder_hidden_packages")?.let {
+                                frag.onPreferenceTreeClick(it)
+                            } != null
+                        } else false
+                        if (!opened) {
+                            Toast.makeText(
+                                context,
+                                "Go to Feature Hub → Security & Access → Shadow Binder to select apps",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                     "dhizuku_not_owner" -> {
-                        // Deep link back into setting picker
-                        val parentFragment = (context as? androidx.fragment.app.FragmentActivity)
-                            ?.supportFragmentManager?.findFragmentById(R.id.fragment_container)
-                        if (parentFragment is ShizukuPlusSettingsFragment) {
-                            parentFragment.findPreference<Preference>("dhizuku_mode")?.let {
-                                parentFragment.onPreferenceTreeClick(it)
+                        val cmd = "adb shell dpm set-device-owner " +
+                            "${context.packageName}/.admin.DhizukuAdminReceiver"
+                        MaterialAlertDialogBuilder(context)
+                            .setTitle("Set Up Device Owner")
+                            .setMessage(
+                                "Dhizuku Mode requires this app to be the Device Owner.\n\n" +
+                                "Run this command from your PC (USB debugging must be enabled):\n\n" +
+                                cmd
+                            )
+                            .setPositiveButton("Copy Command") { _, _ ->
+                                val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                cm.setPrimaryClip(ClipData.newPlainText("dpm command", cmd))
+                                Toast.makeText(context, "Command copied", Toast.LENGTH_SHORT).show()
                             }
-                        }
+                            .setNegativeButton("Dismiss", null)
+                            .show()
                     }
                 }
             }
