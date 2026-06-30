@@ -133,16 +133,24 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
         val typedValue = android.util.TypedValue()
         val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorTertiaryContainer
         val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnTertiaryContainer
-        context.theme.resolveAttribute(okColorAttr, typedValue, true)
-        val bgColor = if (typedValue.type != android.util.TypedValue.TYPE_NULL) typedValue.data else {
-            context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceContainerHigh, typedValue, true)
-            typedValue.data
+
+        fun resolveColor(attr: Int, fallbackAttr: Int, hardcodedFallback: Int): Int {
+            context.theme.resolveAttribute(attr, typedValue, true)
+            if (typedValue.type != android.util.TypedValue.TYPE_NULL && typedValue.data != 0) return typedValue.data
+            context.theme.resolveAttribute(fallbackAttr, typedValue, true)
+            return if (typedValue.type != android.util.TypedValue.TYPE_NULL && typedValue.data != 0) typedValue.data else hardcodedFallback
         }
-        context.theme.resolveAttribute(onColorAttr, typedValue, true)
-        val textColor = if (typedValue.type != android.util.TypedValue.TYPE_NULL) typedValue.data else {
-            context.theme.resolveAttribute(com.google.android.material.R.attr.colorOnSurface, typedValue, true)
-            typedValue.data
-        }
+
+        val bgColor = resolveColor(
+            okColorAttr,
+            com.google.android.material.R.attr.colorSurfaceContainerHigh,
+            if (ok) 0xFFE8EAF6.toInt() else 0xFFE8F5E9.toInt()
+        )
+        val textColor = resolveColor(
+            onColorAttr,
+            com.google.android.material.R.attr.colorOnSurface,
+            0xFF1A1C1E.toInt()
+        )
 
         cardView.setCardBackgroundColor(bgColor)
 
