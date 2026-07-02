@@ -254,6 +254,42 @@
             android:key="ai_core_plus_diagram" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="ai_core_master_enabled"
+            android:title="AI Core Master"
+            android:summary="Enable privileged AI operations: NPU scheduling and window hierarchy access"
+            android:icon="@drawable/ic_integration_instructions_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_plus_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="npu_acceleration_enabled"
+            android:title="NPU Acceleration"
+            android:summary="Delegate AI inference tasks to the device Neural Processing Unit when available"
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_master_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="native_window_crawler_enabled"
+            android:title="Window Hierarchy Crawler"
+            android:summary="Allow AI automation to read the active window view hierarchy without Accessibility Services"
+            android:icon="@drawable/ic_code_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_master_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
+            android:key="ai_core_experimental_enabled"
+            android:title="Experimental AI Automation"
+            android:summary="Enable gesture simulation, pixel capture, and text injection for AI-driven automation"
+            android:icon="@drawable/ic_science_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_plus_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="software_keystore_fallback_enabled"
             android:title="Software KeyStore Fallback"
             android:summary="[RISKY] Allows caching the ADB RSA Private Key encrypted with a software-based static AES key if your device's hardware KeyStore fails (e.g., Samsung Knox). Reduces pairing prompts but decreases security."

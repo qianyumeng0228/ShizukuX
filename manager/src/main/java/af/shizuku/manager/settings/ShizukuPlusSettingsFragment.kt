@@ -239,6 +239,10 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "storage_proxy_enabled" to "storage_proxy",
             "continuity_bridge_enabled" to "continuity_bridge",
             "ai_core_plus_enabled" to "ai_core_plus",
+            "ai_core_master_enabled" to "ai_core_master",
+            "npu_acceleration_enabled" to "npu_acceleration",
+            "native_window_crawler_enabled" to "native_window_crawler",
+            "ai_core_experimental_enabled" to "ai_core_experimental",
             "window_manager_plus_enabled" to "window_manager_plus",
             "overlay_manager_plus_enabled" to "overlay_manager_plus",
             "network_governor_plus_enabled" to "network_governor_plus",
@@ -259,6 +263,10 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         val experimentalKeys = setOf(
             "avf_manager_enabled",
             "ai_core_plus_enabled",
+            "ai_core_master_enabled",
+            "npu_acceleration_enabled",
+            "native_window_crawler_enabled",
+            "ai_core_experimental_enabled",
             "vector_enabled",
             "experimental_root_compat",
             "spoof_device_enabled",
@@ -326,6 +334,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         ShizukuSettings.syncAllPlusFeaturesToServer()
                         activity?.runOnUiThread {
                             findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
+                            updatePlusFeatureDependency("ai_core_plus_enabled", true)
                             notifyDiagramForKey("ai_core_plus_enabled")
                             findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                         }
@@ -501,6 +510,12 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("storage_proxy_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("continuity_bridge_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
+        val aiCorePlusEnabled = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+        updatePreferenceDependency("ai_core_master_enabled", aiCorePlusEnabled, hideDisabled)
+        updatePreferenceDependency("ai_core_experimental_enabled", aiCorePlusEnabled, hideDisabled)
+        val aiCoreMasterEnabled = ShizukuSettings.isAiCoreMasterEnabled() && aiCorePlusEnabled
+        updatePreferenceDependency("npu_acceleration_enabled", aiCoreMasterEnabled, hideDisabled)
+        updatePreferenceDependency("native_window_crawler_enabled", aiCoreMasterEnabled, hideDisabled)
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
@@ -546,10 +561,24 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
     private fun updatePlusFeatureDependency(prefKey: String, newValue: Boolean) {
         val hideDisabled = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
+        val customApiEnabled = ShizukuSettings.isCustomApiEnabled()
         when (prefKey) {
             "window_manager_plus_enabled" -> {
-                // overlay_manager_plus_enabled depends on window_manager_plus_enabled
-                updatePreferenceDependency("overlay_manager_plus_enabled", newValue && ShizukuSettings.isCustomApiEnabled(), hideDisabled)
+                updatePreferenceDependency("overlay_manager_plus_enabled", newValue && customApiEnabled, hideDisabled)
+            }
+            "ai_core_plus_enabled" -> {
+                val active = newValue && customApiEnabled
+                updatePreferenceDependency("ai_core_master_enabled", active, hideDisabled)
+                updatePreferenceDependency("ai_core_experimental_enabled", active, hideDisabled)
+                val masterActive = ShizukuSettings.isAiCoreMasterEnabled() && active
+                updatePreferenceDependency("npu_acceleration_enabled", masterActive, hideDisabled)
+                updatePreferenceDependency("native_window_crawler_enabled", masterActive, hideDisabled)
+            }
+            "ai_core_master_enabled" -> {
+                val aiCorePlusActive = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+                val active = newValue && aiCorePlusActive
+                updatePreferenceDependency("npu_acceleration_enabled", active, hideDisabled)
+                updatePreferenceDependency("native_window_crawler_enabled", active, hideDisabled)
             }
         }
     }

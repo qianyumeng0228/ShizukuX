@@ -35,11 +35,14 @@ class AdbPairingService : Service() {
         private const val retryRequestId = 3
         private const val launchRequestId = 4
         private const val startRequestId = 5
+        private const val dialogRequestId = 6
         private const val startAction = "start"
         private const val stopAction = "stop"
         private const val replyAction = "reply"
+        internal const val dialogReplyAction = "dialog_reply"
         private const val remoteInputResultKey = "paring_code"
         private const val portKey = "port_number"
+        internal const val dialogCodeKey = "dialog_code"
 
         fun startIntent(context: Context): Intent {
             return Intent(context, AdbPairingService::class.java).setAction(startAction)
@@ -51,6 +54,13 @@ class AdbPairingService : Service() {
 
         private fun replyIntent(context: Context, port: Int): Intent {
             return Intent(context, AdbPairingService::class.java).setAction(replyAction).putExtra(portKey, port)
+        }
+
+        fun dialogReplyIntent(context: Context, port: Int, code: String): Intent {
+            return Intent(context, AdbPairingService::class.java)
+                .setAction(dialogReplyAction)
+                .putExtra(portKey, port)
+                .putExtra(dialogCodeKey, code)
         }
     }
 
@@ -94,6 +104,15 @@ class AdbPairingService : Service() {
                 val port = intent.getIntExtra(portKey, -1)
                 if (port != -1) {
                     onInput(code.toString(), port)
+                } else {
+                    onStart()
+                }
+            }
+            dialogReplyAction -> {
+                val code = intent.getStringExtra(dialogCodeKey) ?: ""
+                val port = intent.getIntExtra(portKey, -1)
+                if (port != -1 && code.isNotEmpty()) {
+                    onInput(code, port)
                 } else {
                     onStart()
                 }
@@ -358,6 +377,25 @@ class AdbPairingService : Service() {
     }
 
     private fun createInputNotification(port: Int): Notification {
+        if (ShizukuSettings.getLegacyPairing()) {
+            val dialogIntent = Intent(this, AdbPairingDialogActivity::class.java)
+                .putExtra(portKey, port)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            val contentIntent = PendingIntent.getActivity(
+                this, dialogRequestId + port, dialogIntent,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                else PendingIntent.FLAG_UPDATE_CURRENT
+            )
+            return Notification.Builder(this, NOTIFICATION_CHANNEL)
+                .setColor(getColor(R.color.notification))
+                .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))
+                .setContentText(getString(R.string.notification_adb_pairing_input_paring_code))
+                .setSmallIcon(R.drawable.ic_system_icon)
+                .setContentIntent(contentIntent)
+                .setAutoCancel(false)
+                .build()
+        }
         return Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
             .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))

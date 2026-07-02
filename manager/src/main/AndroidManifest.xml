@@ -400,6 +400,14 @@
             android:name=".adb.AdbPairingTutorialActivity"
             android:exported="false" />
 
+        <!-- Legacy pairing: dialog-based code entry instead of notification RemoteInput -->
+        <activity
+            android:name=".adb.AdbPairingDialogActivity"
+            android:theme="@style/Theme.App.DialogHost"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <!-- Fake ADB Server -->
         <activity
             android:name=".adb.FakeAdbPairingActivity"
