@@ -344,7 +344,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     private boolean isFeatureEnabled(String key) {
         if (featureEnabledMap.containsKey(key)) return featureEnabledMap.get(key);
-        if (!key.endsWith("_enabled") && featureEnabledMap.containsKey(key + "_enabled")) return featureEnabledMap.get(key + "_enabled");
+        // The manager and the server don't always agree on whether a feature key carries the
+        // "_enabled" suffix. Normalize in BOTH directions so a caller checking "foo_enabled"
+        // still resolves a value the manager synced as "foo" (and vice versa).
+        if (key.endsWith("_enabled")) {
+            String stripped = key.substring(0, key.length() - "_enabled".length());
+            if (featureEnabledMap.containsKey(stripped)) return featureEnabledMap.get(stripped);
+        } else if (featureEnabledMap.containsKey(key + "_enabled")) {
+            return featureEnabledMap.get(key + "_enabled");
+        }
         return featureEnabledMap.getOrDefault(key, false);
     }
 
