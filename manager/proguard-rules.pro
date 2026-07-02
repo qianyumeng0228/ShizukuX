@@ -4,6 +4,22 @@
     native <methods>;
 }
 
+# Keep the CREATOR field on every Parcelable. Android's default ProGuard config
+# normally supplies this, but the manager module REPLACES the defaults
+# (build.gradle: proguardFiles = ["proguard-rules.pro"]), so R8 was stripping
+# CREATOR from obfuscated Parcelables and crashing binder IPC on service start
+# with "BadParcelableException: ... no CREATOR" (#298, Android 12).
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator CREATOR;
+}
+
+# Enums reconstructed by name across Parcel/IPC also lose values()/valueOf()
+# when the defaults are dropped; keep them for the same reason.
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {
 	public static void check*(...);
 	public static void throw*(...);
