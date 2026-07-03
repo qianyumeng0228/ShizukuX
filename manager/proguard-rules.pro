@@ -29,7 +29,15 @@
     ** requireNonNull(...);
 }
 
+# All three BinderContainer variants cross the process boundary by class name in
+# the sendBinder Bundle (server -> manager/client). Keep every one's name AND its
+# CREATOR intact; keeping only af.shizuku.api left the other two strippable (#298).
 -keepnames class af.shizuku.api.BinderContainer
+-keepnames class rikka.shizuku.BinderContainer
+-keepnames class moe.shizuku.api.BinderContainer
+-keep class af.shizuku.api.BinderContainer { *; }
+-keep class rikka.shizuku.BinderContainer { *; }
+-keep class moe.shizuku.api.BinderContainer { *; }
 
 # Missing class android.app.IProcessObserver$Stub
 # Missing class android.app.IUidObserver$Stub
