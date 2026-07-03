@@ -155,8 +155,15 @@ class HomeAdapter(
                             addItem(AutomationViewHolder.CREATOR, null, id)
                         ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
                             addItem(LearnMoreViewHolder.CREATOR, null, id)
-                        ID_COMPANION -> if (isEditMode || ShizukuSettings.isCompanionModeEnabled())
-                            addItem(ShizukuCompanionViewHolder.CREATOR, Pair(companionInstalled, compatHubInstalled), id)
+                        ID_COMPANION -> {
+                            // The compat hub is what lets third-party apps detect ShizukuX, so surface
+                            // this card whenever it still needs action — the hub isn't installed yet, or
+                            // stock Shizuku is present and conflicts — not only when companion mode is on.
+                            // Otherwise (hub installed, no conflict) it stays opt-in via companion mode.
+                            val needsAction = !compatHubInstalled || companionInstalled
+                            if (isEditMode || ShizukuSettings.isCompanionModeEnabled() || needsAction)
+                                addItem(ShizukuCompanionViewHolder.CREATOR, Pair(companionInstalled, compatHubInstalled), id)
+                        }
                     }
                 }
 
