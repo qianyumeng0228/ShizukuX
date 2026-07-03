@@ -419,6 +419,36 @@
             android:name="af.shizuku.manager.automation.AutomationService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- AICore+ automation accessibility service. Restored: a modularity refactor
+             (af6eca73) accidentally dropped this declaration, hiding it from Android's
+             Accessibility settings (#305). -->
+        <service
+            android:name=".automation.AICorePlusService"
+            android:label="@string/aicore_plus_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_automation" />
+        </service>
+
+        <!-- ADB pairing code auto-detection accessibility service (enabled on demand
+             during pairing). Also dropped by af6eca73; restored alongside AICore+. -->
+        <service
+            android:name=".adb.AdbPairingAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
     </application>
 
 </manifest>
