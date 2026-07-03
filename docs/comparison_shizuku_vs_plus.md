@@ -14,6 +14,12 @@ ShizukuX is a comprehensive enhancement of the foundational Shizuku project. Whi
 ### Unified Backend
 Unlike the original which relies primarily on `shizuku_server` started via ADB, ShizukuX integrates **Dhizuku Mode**. This allows the ShizukuX manager itself to be set as a **Device Owner**, providing a permanent, rootless anchor for system privileges that survives reboots (on supported configurations).
 
+### Compatibility Layer (Package Detection & Binder Delivery)
+ShizukuX installs under its own application ID (`af.shizuku.plus.api`) so it can coexist with stock Shizuku, but Shizuku-aware apps traditionally look for the fixed `moe.shizuku.privileged.api` package. ShizukuX bridges this with two independent layers:
+
+*   **Detection:** a bundled **Compat Hub** companion (the `compat` module, package `moe.shizuku.privileged.api`) satisfies third-party `isInstalled` checks and relays legacy `REQUEST_BINDER` broadcasts to the real manager. The alternative **drop-in** flavor installs directly as `moe.shizuku.privileged.api`.
+*   **Delivery:** the service hands the privileged binder to each authorized app via a ContentProvider `sendBinder` call, carrying `BinderContainer` parcels for all three API namespaces (`af.shizuku`, `rikka.shizuku`, `moe.shizuku`). Both the compat hub and this handshake must succeed for an app to see ShizukuX as "running."
+
 ## 2. The Plus API Ecosystem
 
 ShizukuX goes beyond simple shell execution by exposing stable, version-agnostic bridges to internal Android system services.

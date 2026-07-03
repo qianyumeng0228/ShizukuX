@@ -25,7 +25,7 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 *   **In-App Changelogs**: Instantly view what's new after an update without leaving the app.
 *   **Bulk Management**: Multi-select apps to grant/revoke permissions or hide them in one tap.
 *   **Activity Log**: Audit trail of API calls and `su` bridge commands, complete with app icons and real-time dispatch.
-*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Granular Module Control** (AdAway, Magisk Mocking, Auto-Grant, etc.).
+*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Granular Module Control** (Magisk Mocking, Auto-Grant, File Interceptor, etc.).
 *   **Universal SU Automation**: One-tap 'Magic Setup' to configure all installed root apps to use the ShizukuX SU Bridge.
 *   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues (now optimized for Samsung Auto Blocker on S22 Ultra).
 *   **Integrated Feature Guides**: Every "Plus" feature now includes a dedicated **Information Icon** and detailed technical "About" guide to help users master advanced integrations.
@@ -64,6 +64,17 @@ Everything in ShizukuX is optional. Use the **Plus Features** category in Settin
 *   Individual Plus APIs (AVF, Storage, Intelligence, etc.)
 *   Home screen card visibility
 *   Activity Logging
+
+## 🔌 Third-Party App Compatibility
+
+ShizukuX installs under its own package (`af.shizuku.plus.api`) so it can coexist with stock Shizuku. Because most Shizuku-aware apps look specifically for the `moe.shizuku.privileged.api` package, ShizukuX ships a lightweight **Compat Hub** — a tiny companion app that registers that package name and forwards binder/permission requests to ShizukuX.
+
+**If third-party apps don't detect ShizukuX:**
+1. Start the ShizukuX service (ADB or root).
+2. On the home screen, use the **Compat Hub** card to install the companion (it's bundled in the app; installation goes through the running service, so start the service first).
+3. Re-open the third-party app — it should now detect Shizuku and receive the service binder.
+
+Alternatively, install the **drop-in** build, which registers as `moe.shizuku.privileged.api` directly (do not install it alongside stock Shizuku).
 
 ## ☑️ Requirements
 
