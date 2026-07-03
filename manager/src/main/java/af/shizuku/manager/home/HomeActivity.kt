@@ -109,7 +109,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                         ?.alpha(0f)
                         ?.scaleX(0.8f)
                         ?.scaleY(0.8f)
-                        ?.setDuration(220)
+                        ?.setDuration(ShizukuSettings.scaledAnimationDuration(220))
                         ?.setInterpolator(android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f))
                         ?.withEndAction { provider.remove() }
                         ?.start()
@@ -213,7 +213,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                             androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
 
                         android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
-                            duration = if (EnvironmentUtils.isOneUi8()) 800 else 600
+                            duration = ShizukuSettings.scaledAnimationDuration(if (EnvironmentUtils.isOneUi8()) 800L else 600L)
                             this.interpolator = interpolator
                             start()
                         }
@@ -353,7 +353,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                             ?.scaleX(1.04f)
                             ?.scaleY(1.04f)
                             ?.translationZ(16f)
-                            ?.setDuration(200)
+                            ?.setDuration(ShizukuSettings.scaledAnimationDuration(200))
                             ?.setInterpolator(android.view.animation.DecelerateInterpolator())
                             ?.start()
                     }
@@ -372,7 +372,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                         .scaleX(1f)
                         .scaleY(1f)
                         .translationZ(0f)
-                        .setDuration(250)
+                        .setDuration(ShizukuSettings.scaledAnimationDuration(250))
                         .setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
                         .start()
                 }
@@ -418,7 +418,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                             .scaleX(1f)
                             .scaleY(1f)
                             .alpha(1f)
-                            .setDuration(400)
+                            .setDuration(ShizukuSettings.scaledAnimationDuration(400))
                             .setInterpolator(androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f))
                             .start()
                     }
@@ -431,7 +431,7 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                         .scaleX(1f)
                         .scaleY(1f)
                         .alpha(1f)
-                        .setDuration(300)
+                        .setDuration(ShizukuSettings.scaledAnimationDuration(300))
                         .setInterpolator(android.view.animation.DecelerateInterpolator())
                         .start()
                 }

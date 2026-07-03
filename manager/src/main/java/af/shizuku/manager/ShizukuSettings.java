@@ -190,6 +190,26 @@ public class ShizukuSettings {
         }
     }
 
+    /**
+     * Multiplier applied to expressive animation durations based on the "Animation Intensity"
+     * setting (0=None, 1=Subtle, 2=Standard, 3=Expressive). Standard (the default) is 1.0, so
+     * existing durations are unchanged unless the user opts into a different intensity.
+     */
+    public static float getAnimationDurationScale() {
+        switch (getAnimationIntensity()) {
+            case 0: return 0.4f;
+            case 1: return 0.7f;
+            case 3: return 1.35f;
+            case 2:
+            default: return 1.0f;
+        }
+    }
+
+    /** Scales an animation duration (ms) by the current animation-intensity multiplier. */
+    public static long scaledAnimationDuration(long baseMs) {
+        return Math.max(1L, (long) (baseMs * getAnimationDurationScale()));
+    }
+
     public static SharedPreferences getPreferences() {
         return sPreferences;
     }
