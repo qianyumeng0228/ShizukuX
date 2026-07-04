@@ -6,7 +6,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -184,15 +183,19 @@ fun SettingsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchResultItem(
     item: SettingsSearchEngine.SettingItem,
     onClick: () -> Unit
 ) {
+    // Use Material3's clickable Card overload rather than Modifier.clickable: the latter reads
+    // LocalIndication, and on Android 16 / Compose Foundation 1.7+ that threw
+    // "clickable only supports IndicationNodeFactory instances provided to LocalIndication"
+    // when a legacy Indication was in scope, crashing settings search (#309 / SHIZUKUPLUS-72).
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(
