@@ -84,7 +84,12 @@ class ShizukuCompanionViewHolder(
                     }
                 }
             } else {
-                val dir = v.context.cacheDir ?: v.context.filesDir ?: return@setOnClickListener
+                // Must be on external storage, not the app's private cache/files dir: `pm install`
+                // runs via a shell process spawned by Shizuku.newProcess (UID 2000) or root, neither
+                // of which can read /data/user/0/<pkg>/... due to per-app UID sandboxing on internal
+                // storage. getExternalFilesDir is readable by shell/root and is the same location
+                // UpdateManager/UpdateInstaller already use successfully for APK installs.
+                val dir = v.context.getExternalFilesDir(null) ?: v.context.cacheDir ?: v.context.filesDir ?: return@setOnClickListener
                 val tmpApk = java.io.File(dir, "compat.apk")
                 try {
                     v.context.assets.open("compat.apk").use { input ->
