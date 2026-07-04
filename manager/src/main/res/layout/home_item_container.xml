@@ -32,12 +32,14 @@
         android:alpha="0.30"
         android:visibility="gone" />
 
-    <!-- Remove button: shown in edit mode, top-right corner -->
+    <!-- Remove/add button: shown in edit mode, top-end corner (same edge as the drag
+         handle below it, so a single end-padding reservation in HomeEditMode clears both
+         instead of the button overlapping card icon/title on the start edge). -->
     <ImageButton
         android:id="@+id/remove_btn"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_gravity="top|start"
+        android:layout_gravity="top|end"
         android:layout_margin="4dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_close_24"

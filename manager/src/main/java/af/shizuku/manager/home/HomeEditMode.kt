@@ -59,8 +59,11 @@ object HomeEditMode {
 
         val res = binding.cardContent.resources
         val base = res.getDimensionPixelSize(R.dimen.card_content_padding)
-        val handleClearance = if (isActive)
-            (40 * res.displayMetrics.density).toInt() else 0
-        binding.cardContent.updatePaddingRelative(end = base + handleClearance)
+        // remove_btn (48dp + 4dp margin either side = 56dp) and drag_handle (40dp) now both
+        // sit on the end edge; reserve clearance for the wider of the two so content never
+        // sits under either.
+        val overlayClearance = if (isActive)
+            (56 * res.displayMetrics.density).toInt() else 0
+        binding.cardContent.updatePaddingRelative(end = base + overlayClearance)
     }
 }
