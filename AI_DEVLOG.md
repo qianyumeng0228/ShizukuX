@@ -86,6 +86,15 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-07-04 (cont'd 2) — Claude Code (Sonnet 5) [PRoot ShizukuPlus, d66b3105]
+
+**Commits:** `bbed21fc`, `61575465`
+
+**Done (further Compat Hub + UI enhancement pass):**
+- **Compat Hub card refresh/busy-state/dedup** (`bbed21fc`) — install/disable ran in a fire-and-forget coroutine with no callback into the view model, so the card kept showing the stale action until the user left Home and returned (onResume() was the only reload() trigger). Gave `ShizukuCompanionViewHolder` a `creator(scope, homeModel)` (matching `StartWirelessAdbViewHolder`'s existing pattern — the creator must be instantiated once at the `HomeAdapter` level, not per `updateData()` call, or RecyclerView view-type pooling breaks) and call `homeModel.reload()` when the pm command finishes. Also disabled the button with an "Installing…"/"Disabling…" label during the ~1-2s operation to prevent double-taps, and extracted the duplicated Shizuku-then-root fallback into one `runPrivilegedCommand()` helper.
+- **ANR risk in "Fix Conflict" button** (`61575465`, `StartStockShizukuViewHolder`) — `Shell.cmd(cmd).exec()` (synchronous) was called directly from the main-thread click listener; su attach can be slow enough to jank or ANR. Moved to a background coroutine, matching the project's existing convention of keeping privileged IPC off the main thread.
+- Audited all other Home ViewHolders for the same two patterns (main-thread shell/Shizuku calls, missing busy-state) — only these two files run privileged shell commands in `home/`, both now fixed.
+
 ### 2026-07-04 (cont'd) — Claude Code (Sonnet 5) [PRoot ShizukuPlus, d66b3105]
 
 **Commits:** `8d3dbe69`, `2afb39b6`, `c90f1f2d`, `878b0bcd`, `5c3dfc5c`
