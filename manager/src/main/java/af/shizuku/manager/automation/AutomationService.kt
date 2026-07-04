@@ -7,9 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -24,7 +22,9 @@ class AutomationService : Service() {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
-    private lateinit var connectivityManager: ConnectivityManager
+    private var connectivityManager: ConnectivityManager? = null
+    private var callbackRegistered = false
+    private var isForeground = false
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
@@ -51,27 +51,43 @@ class AutomationService : Service() {
     override fun onCreate() {
         super.onCreate()
         Timber.tag("AutomationService").d("Service created")
-        // Call startForeground() before any work so the 5-second foreground-service deadline
-        // imposed by startForegroundService() is met even if network callback registration is slow.
-        startForegroundCompat()
-        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        // Promote to foreground before any work so the 5-second startForegroundService() deadline
+        // is met. If the platform refuses (background-start restriction, FGS time-limit, type
+        // validation), bail out gracefully instead of crashing — see SHIZUKUPLUS-6H/6M/6G/6V.
+        if (!ensureForeground()) {
+            stopSelf()
+            return
+        }
 
-        val request = NetworkRequest.Builder()
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .build()
-        connectivityManager.registerNetworkCallback(request, networkCallback)
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        connectivityManager = cm
+        if (cm != null) {
+            try {
+                val request = NetworkRequest.Builder()
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .build()
+                cm.registerNetworkCallback(request, networkCallback)
+                callbackRegistered = true
+            } catch (e: Exception) {
+                Timber.tag("AutomationService").w(e, "Failed to register network callback")
+            }
+        }
 
         startForegroundAppMonitor()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // startForeground() is idempotent; calling it here too keeps the notification current
-        // if the service is restarted (START_STICKY) after being killed.
-        startForegroundCompat()
+        // Keep the notification current if the service is restarted (START_STICKY) after being
+        // killed. If foregrounding is refused now, stop rather than risk a "did not start in
+        // time" system crash.
+        if (!isForeground && !ensureForeground()) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         return START_STICKY
     }
 
-    private fun startForegroundCompat() {
+    private fun ensureForeground(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
@@ -87,22 +103,37 @@ class AutomationService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
             .build()
-        // API 34+ requires the 3-param form when foregroundServiceType is declared in the manifest.
-        // FOREGROUND_SERVICE_TYPE_DATA_SYNC is available since API 29.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-            startForeground(NOTIFICATION_ID, notification)
+        return try {
+            // specialUse (not dataSync): this is an indefinite context monitor. dataSync FGS has a
+            // 6h/day time budget and a must-stop-in-time requirement on Android 15+, which crashed
+            // the service with ForegroundServiceStartNotAllowedException / DidNotStopInTime
+            // (SHIZUKUPLUS-6H/6G) and failed type validation (SHIZUKUPLUS-6M). specialUse has no
+            // such limit; the type is declared in the manifest and backed by
+            // FOREGROUND_SERVICE_SPECIAL_USE.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
+            isForeground = true
+            true
+        } catch (e: Throwable) {
+            // ForegroundServiceStartNotAllowedException (started from background) and friends are
+            // not fatal here — the monitor simply won't run this session.
+            Timber.tag("AutomationService").w(e, "startForeground refused; stopping service")
+            false
         }
     }
 
     private fun checkNetworkState() {
+        val cm = connectivityManager ?: return
         try {
-            val activeNetwork = connectivityManager.activeNetwork
-            val caps = connectivityManager.getNetworkCapabilities(activeNetwork)
+            val activeNetwork = cm.activeNetwork
+            val caps = cm.getNetworkCapabilities(activeNetwork)
             val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
             // WifiManager.getConnectionInfo() is deprecated since API 31 and throws SecurityException
-            // on some OEM builds even with ACCESS_WIFI_STATE declared. SSID is intentionally omitted.
+            // on some OEM builds even with ACCESS_WIFI_STATE declared (SHIZUKUPLUS-50). SSID is
+            // intentionally omitted; getNetworkCapabilities needs no wifi permission.
             AutomationEngine.dispatchEvent(NetworkEvent(isWifi, null), applicationContext)
         } catch (e: Exception) {
             Timber.tag("AutomationService").w(e, "Failed to check network state")
@@ -148,7 +179,13 @@ class AutomationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        connectivityManager.unregisterNetworkCallback(networkCallback)
+        if (callbackRegistered) {
+            try {
+                connectivityManager?.unregisterNetworkCallback(networkCallback)
+            } catch (e: Exception) {
+                Timber.tag("AutomationService").w(e, "Failed to unregister network callback")
+            }
+        }
         job.cancel()
     }
 }

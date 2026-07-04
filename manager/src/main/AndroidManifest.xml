@@ -418,7 +418,17 @@
         <service
             android:name="af.shizuku.manager.automation.AutomationService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Context-aware automation engine. Monitors Wi-Fi connectivity and the
+                    foreground app so user-defined automation rules (e.g. auto-start the Shizuku bridge
+                    on a trusted network) can react in real time. This must run continuously in the
+                    background for the duration the user keeps automation enabled; dataSync's 6-hour
+                    daily budget would silently stop it. It performs no constant polling beyond a light
+                    foreground-app check and reacts to system network callbacks, so battery impact is
+                    minimal, and it is toggleable via settings." />
+        </service>
 
         <!-- AICore+ automation accessibility service. Restored: a modularity refactor
              (af6eca73) accidentally dropped this declaration, hiding it from Android's
