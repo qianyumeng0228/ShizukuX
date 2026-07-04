@@ -33,4 +33,15 @@ abstract class AppActivity : MaterialActivity() {
         }
         return true
     }
+
+    /**
+     * [recreate] tears down and rebuilds the window; combined with the Explode
+     * enter/exit transitions requested above, that produces a visible black flash
+     * (the outgoing window is gone before the incoming one has drawn its first frame).
+     * Disabling window animations for the duration of the relaunch avoids it.
+     */
+    fun recreateWithoutTransition() {
+        window.setWindowAnimations(0)
+        recreate()
+    }
 }

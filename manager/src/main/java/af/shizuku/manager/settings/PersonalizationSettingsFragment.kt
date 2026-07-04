@@ -51,7 +51,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                     if (ShizukuSettings.getNightMode() != value) {
                         AppCompatDelegate.setDefaultNightMode(value)
                         syncDependentVisibility()
-                        activity?.recreate()
+                        (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
                     }
                 }
                 true
@@ -65,7 +65,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                 isChecked = ThemeHelper.isBlackNightTheme(context)
                 setOnPreferenceChangeListener { _, _ ->
                     if (ResourceUtils.isNightMode(context.resources.configuration))
-                        activity?.recreate()
+                        (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
                     true
                 }
             }
@@ -80,7 +80,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                     if (value is Boolean) {
                         if (ThemeHelper.isUsingSystemColor() != value) {
                             customAccentPreference.isEnabled = !value
-                            activity?.recreate()
+                            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
                         }
                     }
                     true
@@ -98,7 +98,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                     if (prefs.getString("custom_accent", "DEFAULT") != newValue) {
                         prefs.edit().putString("custom_accent", newValue).apply()
                         summary = getCustomAccentSummary(newValue)
-                        activity?.recreate()
+                        (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
                     }
                 }
                 true
@@ -113,27 +113,27 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         animationIntensityPreference = requireNotNull(findPreference(KEY_ANIMATION_INTENSITY))
 
         expressiveShapesPreference.setOnPreferenceChangeListener { _, _ ->
-            activity?.recreate()
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }
 
         shapeStylePreference.setOnPreferenceChangeListener { _, _ ->
-            activity?.recreate()
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }
 
         iconStylePreference.setOnPreferenceChangeListener { _, _ ->
-            activity?.recreate()
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }
 
         expressiveAnimationsPreference.setOnPreferenceChangeListener { _, _ ->
-            activity?.recreate()
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }
 
         animationIntensityPreference.setOnPreferenceChangeListener { _, _ ->
-            activity?.recreate()
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }
 
@@ -178,7 +178,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                     Locale.forLanguageTag(newValue)
                 }
                 LocaleDelegate.defaultLocale = locale
-                activity?.recreate()
+                (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             }
             true
         }
