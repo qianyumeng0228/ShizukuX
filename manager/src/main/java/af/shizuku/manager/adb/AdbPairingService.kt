@@ -178,7 +178,7 @@ class AdbPairingService : Service() {
             val host = "127.0.0.1"
 
             val key = try {
-                AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
+                AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
             } catch (e: Throwable) {
                 Timber.e("failed to load or create AdbKey", e)
                 return@launch
