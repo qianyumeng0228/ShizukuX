@@ -131,6 +131,9 @@ fun SettingsScreen(
                         post { onContainerCreated() }
                     }
                 },
+                update = { view ->
+                    view.visibility = if (isSearchActive) android.view.View.GONE else android.view.View.VISIBLE
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding())
