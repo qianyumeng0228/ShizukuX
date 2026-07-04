@@ -274,23 +274,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "samsung_system_uid_escalation_enabled"
         )
 
-        fun notifyDiagramForKey(prefKey: String) {
-            val diagramKey = when (prefKey) {
-                "storage_proxy_enabled" -> "storage_proxy_diagram"
-                "shadow_binder_enabled" -> "shadow_binder_diagram"
-                "binder_firewall_enabled" -> "binder_firewall_diagram"
-                "avf_manager_enabled" -> "vm_manager_diagram"
-                "ai_core_plus_enabled" -> "ai_core_plus_diagram"
-                "continuity_bridge_enabled" -> "continuity_bridge_diagram"
-                "network_governor_plus_enabled" -> "network_governor_plus_diagram"
-                "overlay_manager_plus_enabled" -> "overlay_manager_plus_diagram"
-                else -> null
-            }
-            if (diagramKey != null) {
-                findPreference<Preference>(diagramKey)?.let { it.isVisible = false; it.isVisible = true }
-            }
-        }
-
         plusKeys.forEach { (prefKey, featureName) ->
             findPreference<TwoStatePreference>(prefKey)?.setOnPreferenceChangeListener { _, newValue ->
                 val enabled = newValue as? Boolean ?: false
@@ -301,7 +284,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         // parent+child snapshot (disabling a parent force-unchecks children).
                         updatePlusFeatureDependency(prefKey, true)
                         ShizukuSettings.syncAllPlusFeaturesToServer()
-                        notifyDiagramForKey(prefKey)
                         findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                     }
                     false // Handle manually after dialog
@@ -309,7 +291,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                     preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, enabled)?.apply()
                     updatePlusFeatureDependency(prefKey, enabled)
                     ShizukuSettings.syncAllPlusFeaturesToServer()
-                    notifyDiagramForKey(prefKey)
                     findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                     true
                 }
@@ -338,7 +319,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         activity?.runOnUiThread {
                             findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
                             updatePlusFeatureDependency("ai_core_plus_enabled", true)
-                            notifyDiagramForKey("ai_core_plus_enabled")
                             findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
                         }
                     }, { _ -> /* Ignore or show toast */ })
@@ -352,7 +332,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             // (not on ai_core_plus), so they must be false in prefs before the sync runs.
             updatePlusFeatureDependency("ai_core_plus_enabled", enabled)
             ShizukuSettings.syncAllPlusFeaturesToServer()
-            notifyDiagramForKey("ai_core_plus_enabled")
             findPreference<Preference>("plus_status_dashboard")?.let { it.isVisible = false; it.isVisible = true }
             true
         }
