@@ -1,68 +1,20 @@
 package af.shizuku.manager.settings
 
-import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.preference.Preference
 import androidx.preference.TwoStatePreference
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ShizukuSettings.Keys.*
-import af.shizuku.manager.utils.SettingsBackupManager
 import af.shizuku.manager.utils.CrashHandler
 import af.shizuku.manager.utils.CrashReporter
 import af.shizuku.manager.utils.CustomTabsHelper
 
 class DeveloperOptionsFragment : BaseSettingsFragment() {
-
-    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri: Uri? ->
-        if (uri == null) return@registerForActivityResult
-        lifecycleScope.launch(Dispatchers.IO) {
-            val ctx = context ?: return@launch
-            try {
-                val json = SettingsBackupManager.export(ctx)
-                ctx.contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
-                launch(Dispatchers.Main) {
-                    Toast.makeText(ctx, R.string.settings_export_success, Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                launch(Dispatchers.Main) {
-                    Toast.makeText(ctx, R.string.settings_export_failed, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
-
-    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri == null) return@registerForActivityResult
-        lifecycleScope.launch(Dispatchers.IO) {
-            val ctx = context ?: return@launch
-            try {
-                val json = ctx.contentResolver.openInputStream(uri)?.bufferedReader()?.readText() ?: ""
-                val ok = SettingsBackupManager.import(ctx, json)
-                launch(Dispatchers.Main) {
-                    if (ok) {
-                        Toast.makeText(ctx, R.string.settings_import_success, Toast.LENGTH_LONG).show()
-                        ShizukuSettings.syncAllPlusFeaturesToServer()
-                    } else {
-                        Toast.makeText(ctx, R.string.settings_import_failed, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            } catch (e: Exception) {
-                launch(Dispatchers.Main) {
-                    Toast.makeText(ctx, R.string.settings_import_failed, Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_developer_options, rootKey)
@@ -101,18 +53,6 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
         findPreference<rikka.preference.SimpleMenuPreference>(KEY_SPOOF_TARGET)?.setOnPreferenceChangeListener { _, v ->
             ShizukuSettings.setSpoofTarget(if (v == "auto") "auto" else v as String)
             ShizukuSettings.syncAllPlusFeaturesToServer()
-            true
-        }
-
-        // Export Settings
-        findPreference<Preference>("export_settings")?.setOnPreferenceClickListener {
-            exportLauncher.launch("shizuku_plus_settings.json")
-            true
-        }
-
-        // Import Settings
-        findPreference<Preference>("import_settings")?.setOnPreferenceClickListener {
-            importLauncher.launch(arrayOf("application/json", "text/plain"))
             true
         }
 
