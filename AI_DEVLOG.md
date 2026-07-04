@@ -86,6 +86,20 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-07-04 (cont'd) — Claude Code (Sonnet 5) [PRoot ShizukuPlus, d66b3105]
+
+**Commits:** `8d3dbe69`, `2afb39b6`, `c90f1f2d`, `878b0bcd`, `5c3dfc5c`
+
+**Done (user-reported UI/UX + new GitHub issues):**
+- **Removed 9 redundant flowchart "diagram" preferences** (`8d3dbe69`) — DNS Governor, Binder Firewall, Continuity Bridge, VM Manager, Shadow Binder, Storage Bridge, Theming Bridge, AI Bridge, SU Bridge. Each just duplicated the toggle already above it and had hardcoded light-theme colors. Left the two status/diagnostics dashboards (different: aggregate + actionable warnings, not 1:1 duplicates).
+- **Appearance settings flashing black on change** (`2afb39b6`) — `AppActivity` requests `Window.FEATURE_ACTIVITY_TRANSITIONS` + Explode transitions; every appearance/behavior toggle called `activity?.recreate()` directly, causing a black flash during the window teardown/rebuild. Added `AppActivity.recreateWithoutTransition()` (zeroes window animations first) and routed all ~11 call sites through it.
+- **Home edit-mode X/+ button overlapped card content** (`c90f1f2d`) — `remove_btn` sat top|start, the same corner as every card's own icon/title. Moved to top|end (same edge as the drag handle) and widened the reserved end-clearance to fit both.
+- **Verified card-spacing report via pixel analysis** — installed netpbm/libjpeg-turbo in the PRoot sandbox to decode a user-provided screenshot and measure exact gaps; found one real 8px-vs-40px gap anomaly, but the RecyclerView spacing math (`addItemSpacing`/`addEdgeSpacing` in HomeActivity) is symmetric by construction — most likely a transient animation-frame artifact, not a persistent layout bug. Flagged back to user rather than guessing a fix.
+- **Compat Hub install failure** (`878b0bcd`, #314, also root cause of new symptoms on #298) — `pm install` runs via a shell process (Shizuku/root) that can't read the app's private cache dir due to per-app UID sandboxing; the extracted compat.apk was written there instead of external storage. Fixed to match the working pattern already used by UpdateManager/UpdateInstaller.
+- **Backup Settings password/PIN/pattern bug** (`5c3dfc5c`, #315) — `BiometricLock` hardcoded a "Use PIN/Pattern" negative-button label that (a) was wrong for password-locked devices and (b) didn't actually work as a fallback at all — tapping it just canceled with an error. Switched to `setAllowedAuthenticators(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)`, which correctly prompts for whatever credential is configured. Also removed `notifyDiagramForKey()`, dead code left by the diagram-widget removal.
+- **GitHub comments** posted on #314, #315, #298 (cross-referencing the #314 fix as the root cause of a new report there with logs/screenshots).
+- **Sandbox note:** no PIL/ImageMagick preinstalled; `apt-get install imagemagick` failed on an unrelated `libcups2` 404, but `apt-get install --no-install-recommends libjpeg-turbo-progs netpbm` succeeded and `djpeg -pnm` + a small Python PNM parser was enough to do precise pixel-level screenshot analysis without any GUI tooling.
+
 ### 2026-07-04 — Claude Code (Sonnet 5) [PRoot ShizukuPlus, d66b3105]
 
 **Commits:** `0a1e7737`, `27667aeb`, `4febe299`
