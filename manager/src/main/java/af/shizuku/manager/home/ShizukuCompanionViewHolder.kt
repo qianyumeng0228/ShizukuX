@@ -1,32 +1,67 @@
 package af.shizuku.manager.home
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeShizukuCompanionBinding
+import af.shizuku.manager.migration.MigrationHelper
 import af.shizuku.manager.utils.StockShizukuCompat
-import android.content.Intent
-import android.net.Uri
-import android.view.View
-import android.widget.Toast
-import rikka.shizuku.Shizuku
-import rikka.recyclerview.BaseViewHolder
-import rikka.recyclerview.BaseViewHolder.Creator
+import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import rikka.recyclerview.BaseViewHolder
+import rikka.recyclerview.BaseViewHolder.Creator
+import rikka.shizuku.Shizuku
+
 class ShizukuCompanionViewHolder(
     private val binding: HomeShizukuCompanionBinding,
     private val containerBinding: HomeItemContainerBinding,
+    private val scope: CoroutineScope,
+    private val homeModel: HomeViewModel,
 ) : BaseViewHolder<Pair<Boolean, Boolean>>(containerBinding.root) {
 
     companion object {
-        val CREATOR = Creator<Pair<Boolean, Boolean>> { inflater: LayoutInflater, parent: ViewGroup? ->
-            val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
-            val inner = HomeShizukuCompanionBinding.inflate(inflater, outer.cardContent, true)
-            ShizukuCompanionViewHolder(inner, outer)
+        fun creator(scope: CoroutineScope, homeModel: HomeViewModel): Creator<Pair<Boolean, Boolean>> {
+            return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
+                val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
+                val inner = HomeShizukuCompanionBinding.inflate(inflater, outer.cardContent, true)
+                ShizukuCompanionViewHolder(inner, outer, scope, homeModel)
+            }
+        }
+    }
+
+    /**
+     * Runs [cmd] via Shizuku if available, falling back to root. Returns true on success.
+     * Centralizes the Shizuku-then-root fallback so install/disable don't duplicate it.
+     */
+    private suspend fun runPrivilegedCommand(cmd: String): Boolean {
+        return if (Shizuku.pingBinder()) {
+            try {
+                val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+                val success = process.waitFor() == 0
+                process.destroy()
+                success
+            } catch (e: Exception) {
+                false
+            }
+        } else if (MigrationHelper.isRootAvailable()) {
+            try {
+                Shell.cmd(cmd).exec().isSuccess
+            } catch (e: Exception) {
+                false
+            }
+        } else {
+            false
         }
     }
 
@@ -43,44 +78,16 @@ class ShizukuCompanionViewHolder(
         binding.button1.setOnClickListener { v ->
             val companionInstalled = data?.first ?: false
             if (companionInstalled) {
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    val cmd = "pm disable-user --user 0 ${StockShizukuCompat.PACKAGE}"
-                    if (Shizuku.pingBinder()) {
-                        try {
-                            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-                            val success = process.waitFor() == 0
-                            process.destroy()
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                if (success) {
-                                    Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
-                        try {
-                            val result = com.topjohnwu.superuser.Shell.cmd(cmd).exec()
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                if (result.isSuccess) {
-                                    Toast.makeText(v.context, R.string.companion_disable_success, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                            Toast.makeText(v.context, R.string.companion_disable_failure, Toast.LENGTH_SHORT).show()
-                        }
+                setBusy(v.context, R.string.companion_action_disabling)
+                scope.launch {
+                    val success = runPrivilegedCommand("pm disable-user --user 0 ${StockShizukuCompat.PACKAGE}")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            v.context,
+                            if (success) R.string.companion_disable_success else R.string.companion_disable_failure,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        homeModel.reload()
                     }
                 }
             } else {
@@ -97,49 +104,21 @@ class ShizukuCompanionViewHolder(
                             input.copyTo(output)
                         }
                     }
-                } catch(e: Exception) {
+                } catch (e: Exception) {
                     Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
                     return@setOnClickListener
                 }
-                
-                val cmd = "pm install -r ${tmpApk.absolutePath}"
-                kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                    if (Shizuku.pingBinder()) {
-                        try {
-                            val process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-                            val success = process.waitFor() == 0
-                            process.destroy()
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                if (success) {
-                                    Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
-                        try {
-                            val result = com.topjohnwu.superuser.Shell.cmd(cmd).exec()
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                if (result.isSuccess) {
-                                    Toast.makeText(v.context, R.string.compat_hub_install_success, Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        } catch (e: Exception) {
-                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                            Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                        }
+
+                setBusy(v.context, R.string.compat_hub_installing)
+                scope.launch {
+                    val success = runPrivilegedCommand("pm install -r ${tmpApk.absolutePath}")
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            v.context,
+                            if (success) R.string.compat_hub_install_success else R.string.compat_hub_install_fail,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        homeModel.reload()
                     }
                 }
             }
@@ -149,6 +128,12 @@ class ShizukuCompanionViewHolder(
             intent.data = Uri.parse("package:${StockShizukuCompat.PACKAGE}")
             v.context.startActivity(intent)
         }
+    }
+
+    /** Disables the action button and shows a busy label so a slow pm call can't be double-tapped. */
+    private fun setBusy(context: Context, labelRes: Int) {
+        binding.button1.isEnabled = false
+        binding.button1.text = context.getString(labelRes)
     }
 
     override fun onBind() {

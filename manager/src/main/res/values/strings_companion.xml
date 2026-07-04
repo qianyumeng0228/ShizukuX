@@ -6,12 +6,14 @@
     <string name="companion_action_uninstall">Uninstall Stock</string>
     <string name="companion_disable_success">Stock Shizuku has been disabled successfully.</string>
     <string name="companion_disable_failure">Failed to disable Stock Shizuku. Ensure ShizukuX is running or use ADB manually.</string>
-    
+    <string name="companion_action_disabling">Disabling…</string>
+
     <string name="compat_hub_installed_title">Compat Hub Installed</string>
     <string name="compat_hub_installed_desc">Third-party apps (like SwiftBackup) will now seamlessly detect ShizukuX.</string>
     <string name="compat_hub_missing_title">Compat Hub Required</string>
     <string name="compat_hub_missing_desc">Third-party apps that explicitly check for stock Shizuku will not detect ShizukuX. Install the lightweight Compat Hub to allow apps to detect ShizukuX.</string>
     <string name="compat_hub_install_btn">Install Compat Hub</string>
+    <string name="compat_hub_installing">Installing…</string>
     <string name="compat_hub_install_success">Compat Hub installed successfully!</string>
     <string name="compat_hub_install_fail">Failed to install. Ensure ShizukuX or Root is active.</string>
 </resources>

@@ -52,6 +52,7 @@ class HomeAdapter(
     }
 
     private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope, homeModel)
+    private val companionCreator = ShizukuCompanionViewHolder.creator(scope, homeModel)
 
     var isDragging = false
     private var isUpdating = false
@@ -162,7 +163,7 @@ class HomeAdapter(
                             // Otherwise (hub installed, no conflict) it stays opt-in via companion mode.
                             val needsAction = !compatHubInstalled || companionInstalled
                             if (isEditMode || ShizukuSettings.isCompanionModeEnabled() || needsAction)
-                                addItem(ShizukuCompanionViewHolder.CREATOR, Pair(companionInstalled, compatHubInstalled), id)
+                                addItem(companionCreator, Pair(companionInstalled, compatHubInstalled), id)
                         }
                     }
                 }
