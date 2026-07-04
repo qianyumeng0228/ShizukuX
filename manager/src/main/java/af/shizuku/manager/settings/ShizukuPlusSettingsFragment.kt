@@ -434,7 +434,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         val context = context ?: return
         MaterialAlertDialogBuilder(context)
             .setTitle(R.string.settings_shizuku_plus_features)
-            .setMessage(androidx.core.text.HtmlCompat.fromHtml(getString(R.string.help_general_plus_summary), androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY))
+            .setMessage(getString(R.string.help_general_plus_summary).toHtml())
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }

@@ -100,18 +100,14 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             viewModel.setSearch(text?.toString() ?: "")
         }
 
-        // Filter chips
-        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_all).setOnCheckedChangeListener { _, checked ->
-            if (checked) viewModel.setFilter(FilterState.ALL)
-        }
-        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_granted).setOnCheckedChangeListener { _, checked ->
-            if (checked) viewModel.setFilter(FilterState.GRANTED)
-        }
-        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_denied).setOnCheckedChangeListener { _, checked ->
-            if (checked) viewModel.setFilter(FilterState.DENIED)
-        }
-        rootView.findViewById<com.google.android.material.chip.Chip>(R.id.chip_hidden).setOnCheckedChangeListener { _, checked ->
-            if (checked) viewModel.setFilter(FilterState.HIDDEN)
+        rootView.findViewById<com.google.android.material.chip.ChipGroup>(R.id.filter_chip_group).setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
+            when (checkedIds.first()) {
+                R.id.chip_all -> viewModel.setFilter(FilterState.ALL)
+                R.id.chip_granted -> viewModel.setFilter(FilterState.GRANTED)
+                R.id.chip_denied -> viewModel.setFilter(FilterState.DENIED)
+                R.id.chip_hidden -> viewModel.setFilter(FilterState.HIDDEN)
+            }
         }
 
         viewModel.packages.observe(this) {
