@@ -4,6 +4,8 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.core.content.asActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -39,12 +41,20 @@ class StartStockShizukuViewHolder(
         if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
             val starterCmd = af.shizuku.manager.starter.Starter.internalCommand
             val cmd = "am force-stop moe.shizuku.privileged.api && am force-stop af.shizuku.plus.api && nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 &"
-            try {
-                com.topjohnwu.superuser.Shell.cmd(cmd).exec()
-                val activity = v.context.asActivity<android.app.Activity>() ?: return
-                android.widget.Toast.makeText(activity, "Restarting via Root...", android.widget.Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                // Ignore
+            val activity = v.context.asActivity<android.app.Activity>() ?: return
+            start.isEnabled = false
+            // Shell.cmd().exec() runs the su/shell invocation synchronously; on the calling
+            // (main) thread that risks jank or an ANR if root takes a moment to attach.
+            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                try {
+                    com.topjohnwu.superuser.Shell.cmd(cmd).exec()
+                } catch (e: Exception) {
+                    // Ignore
+                }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    start.isEnabled = true
+                    android.widget.Toast.makeText(activity, "Restarting via Root...", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         } else {
             val activity = v.context.asActivity<android.app.Activity>() ?: return
