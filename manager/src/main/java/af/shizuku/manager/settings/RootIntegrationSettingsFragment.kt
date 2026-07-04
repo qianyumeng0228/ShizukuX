@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.ShizukuSettings.Keys.KEY_COMPANION_FALLBACK
 import af.shizuku.manager.service.AdbProxyService
+import af.shizuku.manager.utils.StockShizukuCompat
 import moe.shizuku.server.IShizukuService
 import rikka.shizuku.Shizuku
 
@@ -36,6 +38,21 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
             if (!bootloaderUnlocked) {
                 // Optionally remove it completely
                 preferenceScreen.removePreference(bootloaderCategory)
+            }
+        }
+
+        findPreference<TwoStatePreference>(KEY_COMPANION_FALLBACK)?.apply {
+            isChecked = ShizukuSettings.isCompanionFallbackEnabled()
+            setOnPreferenceChangeListener { _, newValue ->
+                if (newValue is Boolean) ShizukuSettings.setCompanionFallbackEnabled(newValue)
+                true
+            }
+        }
+        findPreference<Preference>("launch_stock_shizuku")?.apply {
+            isVisible = StockShizukuCompat.isInstalled(requireContext())
+            setOnPreferenceClickListener {
+                StockShizukuCompat.launch(it.context)
+                true
             }
         }
 

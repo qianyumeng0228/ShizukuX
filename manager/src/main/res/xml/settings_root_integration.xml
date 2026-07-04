@@ -31,6 +31,26 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_stock_shizuku_compat"
+        android:title="Stock Shizuku Compatibility"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="companion_fallback"
+            android:title="@string/settings_companion_fallback"
+            android:summary="@string/settings_companion_fallback_summary"
+            android:icon="@drawable/ic_medical_services_24"
+            android:defaultValue="true" />
+
+        <Preference
+            android:key="launch_stock_shizuku"
+            android:title="@string/home_companion_open"
+            android:summary="@string/home_companion_description"
+            android:icon="@drawable/ic_baseline_link_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_su_bridge"
         android:title="SU Bridge Configuration"
         android:defaultValue="true">

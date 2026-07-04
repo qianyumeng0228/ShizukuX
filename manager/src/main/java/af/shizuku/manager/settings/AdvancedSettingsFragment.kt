@@ -21,8 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.database.AppContextManager
-
-import af.shizuku.manager.utils.StockShizukuCompat
 import androidx.preference.TwoStatePreference
 
 class AdvancedSettingsFragment : BaseSettingsFragment() {
@@ -89,8 +87,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        setupTroubleshootingPreferences()
-
         findPreference<Preference>("reset_adb_keys")?.setOnPreferenceClickListener {
             MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.settings_reset_adb_keys)
@@ -142,23 +138,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                     ShizukuSettings.setStealthModeEnabled(false)
                     true
                 }
-            }
-        }
-    }
-
-    private fun setupTroubleshootingPreferences() {
-        findPreference<TwoStatePreference>(KEY_COMPANION_FALLBACK)?.apply {
-            isChecked = ShizukuSettings.isCompanionFallbackEnabled()
-            setOnPreferenceChangeListener { _, newValue ->
-                if (newValue is Boolean) ShizukuSettings.setCompanionFallbackEnabled(newValue)
-                true
-            }
-        }
-        findPreference<Preference>("launch_stock_shizuku")?.apply {
-            isVisible = StockShizukuCompat.isInstalled(requireContext())
-            setOnPreferenceClickListener {
-                StockShizukuCompat.launch(it.context)
-                true
             }
         }
     }

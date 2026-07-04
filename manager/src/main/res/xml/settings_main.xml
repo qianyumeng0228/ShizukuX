@@ -14,7 +14,7 @@
         <af.shizuku.manager.settings.PlusNavPreference
             android:key="nav_root_integration"
             android:title="Root &amp; Compatibility"
-            android:summary="SU bridge and rootless integration"
+            android:summary="ADB connection, SU bridge, rootless integration, and stock Shizuku compatibility"
             android:icon="@drawable/ic_shield_24"
             android:fragment="af.shizuku.manager.settings.RootIntegrationSettingsFragment" />
 
@@ -25,7 +25,7 @@
         <Preference
             android:key="nav_personalization"
             android:title="Appearance"
-            android:summary="Theme, shapes, icons, motion, and home layout"
+            android:summary="Theme, shapes, icons, motion, home layout, and language"
             android:icon="@drawable/ic_palette_24"
             android:fragment="af.shizuku.manager.settings.PersonalizationSettingsFragment" />
 
@@ -43,7 +43,7 @@
         <Preference
             android:key="nav_behavior"
             android:title="Startup &amp; Behavior"
-            android:summary="Boot options, watchdog, and network"
+            android:summary="Boot options, watchdog, network, and activity status"
             android:icon="@drawable/ic_settings_suggest_24"
             android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
 
