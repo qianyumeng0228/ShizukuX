@@ -8,13 +8,28 @@ import rikka.material.app.MaterialActivity
 
 abstract class AppActivity : MaterialActivity() {
 
+    companion object {
+        // recreate() doesn't go through the normal Intent/ActivityOptions handshake that
+        // drives a scene transition, so the incoming instance's enter transition never gets
+        // played/completed and its content stays invisible - a black screen until the user
+        // backs out. setWindowAnimations(0) in recreateWithoutTransition() only suppresses
+        // the legacy window-animation style, not FEATURE_ACTIVITY_TRANSITIONS, so this flag is
+        // the only thing that actually skips content transitions on relaunch. Protected (not
+        // private) because AppBarActivity sets its own MaterialSharedAxis transitions and must
+        // honor the same suppression - see AppBarActivity.onCreate().
+        protected var suppressTransitionOnCreate = false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
-        try {
-            window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
-            window.enterTransition = android.transition.Explode()
-            window.exitTransition = android.transition.Explode()
-        } catch (_: Exception) {
+        if (!suppressTransitionOnCreate) {
+            try {
+                window.requestFeature(Window.FEATURE_ACTIVITY_TRANSITIONS)
+                window.enterTransition = android.transition.Explode()
+                window.exitTransition = android.transition.Explode()
+            } catch (_: Exception) {
+            }
         }
+        suppressTransitionOnCreate = false
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
     }
@@ -36,11 +51,14 @@ abstract class AppActivity : MaterialActivity() {
 
     /**
      * [recreate] tears down and rebuilds the window; combined with the Explode
-     * enter/exit transitions requested above, that produces a visible black flash
-     * (the outgoing window is gone before the incoming one has drawn its first frame).
-     * Disabling window animations for the duration of the relaunch avoids it.
+     * enter/exit transitions requested in onCreate, the incoming instance's enter
+     * transition never resolves (recreate() skips the ActivityOptions handshake that
+     * normally drives it), leaving the screen black until the user backs out. Suppressing
+     * the transitions on the next onCreate, plus disabling the legacy window animation,
+     * avoids it.
      */
     fun recreateWithoutTransition() {
+        suppressTransitionOnCreate = true
         window.setWindowAnimations(0)
         recreate()
     }

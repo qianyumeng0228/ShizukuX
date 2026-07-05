@@ -23,12 +23,18 @@ abstract class AppBarActivity : AppActivity() {
     protected var toolbar: Toolbar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val axis = MaterialSharedAxis.X
-        window.enterTransition = MaterialSharedAxis(axis, true)
-        window.exitTransition = MaterialSharedAxis(axis, false)
-        window.reenterTransition = MaterialSharedAxis(axis, false)
-        window.returnTransition = MaterialSharedAxis(axis, true)
-        
+        // Same recreate()-vs-content-transition hazard as AppActivity's Explode() transitions
+        // (see its companion object comment) - must honor the same suppression flag or a
+        // recreateWithoutTransition() call from any AppBarActivity subclass gets a black
+        // screen stuck behind these MaterialSharedAxis transitions instead.
+        if (!suppressTransitionOnCreate) {
+            val axis = MaterialSharedAxis.X
+            window.enterTransition = MaterialSharedAxis(axis, true)
+            window.exitTransition = MaterialSharedAxis(axis, false)
+            window.reenterTransition = MaterialSharedAxis(axis, false)
+            window.returnTransition = MaterialSharedAxis(axis, true)
+        }
+
         super.onCreate(savedInstanceState)
         super.setContentView(getLayoutId())
     }
