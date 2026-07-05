@@ -93,7 +93,19 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     public static ApplicationInfo getManagerApplicationInfo() {
-        return PackageManagerApis.getApplicationInfoNoThrow(MANAGER_APPLICATION_ID, 0, 0);
+        ApplicationInfo ai = PackageManagerApis.getApplicationInfoNoThrow(MANAGER_APPLICATION_ID, 0, 0);
+        if (ai != null) return ai;
+
+        // MANAGER_APPLICATION_ID defaults to the Plus flavor's id. On a Drop-In-only install that
+        // lookup finds nothing, so fall back to the Drop-In id and, if found, correct the constant
+        // so every other usage in this class (binder sending, permission grants, isManager checks,
+        // the request-permission broadcast, ...) resolves to whichever flavor is actually running.
+        ApplicationInfo dropinAi = PackageManagerApis.getApplicationInfoNoThrow(ServerConstants.DROPIN_APPLICATION_ID, 0, 0);
+        if (dropinAi != null) {
+            MANAGER_APPLICATION_ID = ServerConstants.DROPIN_APPLICATION_ID;
+            return dropinAi;
+        }
+        return null;
     }
 
     @SuppressWarnings({"FieldCanBeLocal"})
@@ -1416,7 +1428,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             return;
         }
 
-        Intent intent = new Intent(ServerConstants.REQUEST_PERMISSION_ACTION)
+        Intent intent = new Intent(ServerConstants.getRequestPermissionAction())
                 .setPackage(MANAGER_APPLICATION_ID)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NEW_DOCUMENT)
                 .putExtra("uid", callingUid)
