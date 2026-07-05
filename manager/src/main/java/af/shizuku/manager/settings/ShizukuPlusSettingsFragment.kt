@@ -16,6 +16,7 @@ import rikka.html.text.toHtml
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.security.BiometricLock
+import androidx.biometric.BiometricPrompt
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import rikka.shizuku.Shizuku
 import moe.shizuku.server.IShizukuService
@@ -37,41 +38,53 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         if (uri == null) return@registerForActivityResult
         val ctx = requireContext()
         val lock = BiometricLock(requireActivity())
-        lock.authenticate(onSuccess = {
-            try {
-                val cipher = CryptoUtils.getCipherForEncryption()
-                val payload = BackupRestoreManager.createBackupPayload(ctx, cipher)
-                ctx.contentResolver.openOutputStream(uri)?.use { os ->
-                    OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+        try {
+            // Must be init'd and wrapped in a CryptoObject *before* authenticating — see
+            // BiometricLock.authenticate for why a cipher created after the prompt never works.
+            val cipher = CryptoUtils.getCipherForEncryption()
+            lock.authenticate(onSuccess = { crypto ->
+                try {
+                    val payload = BackupRestoreManager.createBackupPayload(ctx, crypto?.cipher ?: cipher)
+                    ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                        OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+                    }
+                    Toast.makeText(ctx, "Backup exported successfully", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
-                Toast.makeText(ctx, "Backup exported successfully", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(ctx, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }, onError = { errCode ->
-            Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
-        })
+            }, onError = { errCode ->
+                Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
+            }, crypto = BiometricPrompt.CryptoObject(cipher))
+        } catch (e: Exception) {
+            Toast.makeText(ctx, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private val restoreBackupLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri == null) return@registerForActivityResult
         val ctx = requireContext()
         val lock = BiometricLock(requireActivity())
-        lock.authenticate(onSuccess = {
-            try {
-                val payload = ctx.contentResolver.openInputStream(uri)?.use { `is` ->
-                    InputStreamReader(`is`, Charsets.UTF_8).readText()
-                } ?: return@authenticate
-                BackupRestoreManager.restoreFromPayload(ctx, payload) { iv ->
-                    CryptoUtils.getCipherForDecryption(iv)
+        try {
+            val payload = ctx.contentResolver.openInputStream(uri)?.use { `is` ->
+                InputStreamReader(`is`, Charsets.UTF_8).readText()
+            } ?: return@registerForActivityResult
+            // The decrypt cipher needs the backup's IV, so it must be built (and authenticated)
+            // up front, same reasoning as the encrypt path above.
+            val iv = BackupRestoreManager.extractIv(payload)
+            val cipher = CryptoUtils.getCipherForDecryption(iv)
+            lock.authenticate(onSuccess = { crypto ->
+                try {
+                    BackupRestoreManager.restoreFromPayload(ctx, payload, crypto?.cipher ?: cipher)
+                    Toast.makeText(ctx, "Backup restored successfully. Please restart the app.", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
                 }
-                Toast.makeText(ctx, "Backup restored successfully. Please restart the app.", Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                Toast.makeText(ctx, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
-            }
-        }, onError = { errCode ->
-            Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
-        })
+            }, onError = { errCode ->
+                Toast.makeText(ctx, "Authentication failed ($errCode)", Toast.LENGTH_SHORT).show()
+            }, crypto = BiometricPrompt.CryptoObject(cipher))
+        } catch (e: Exception) {
+            Toast.makeText(ctx, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {

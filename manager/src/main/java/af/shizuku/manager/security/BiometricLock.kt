@@ -12,12 +12,16 @@ class BiometricLock(private val activity: FragmentActivity) {
     private val allowedAuthenticators =
         BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL
 
-    fun authenticate(onSuccess: () -> Unit, onError: (Int) -> Unit) {
+    fun authenticate(
+        onSuccess: (BiometricPrompt.CryptoObject?) -> Unit,
+        onError: (Int) -> Unit,
+        crypto: BiometricPrompt.CryptoObject? = null
+    ) {
         val executor = ContextCompat.getMainExecutor(activity)
         val biometricPrompt = BiometricPrompt(activity, executor,
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    onSuccess()
+                    onSuccess(result.cryptoObject)
                 }
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     onError(errorCode)
@@ -37,7 +41,17 @@ class BiometricLock(private val activity: FragmentActivity) {
             .setAllowedAuthenticators(allowedAuthenticators)
             .build()
 
-        biometricPrompt.authenticate(promptInfo)
+        // The backup key requires per-operation authentication (no validity duration set), so a
+        // Cipher created after the prompt succeeds is never actually authorized — doFinal() then
+        // throws UserNotAuthenticatedException (with a null message). The cipher must be init'd
+        // and wrapped in a CryptoObject *before* authenticating; the platform then binds this
+        // exact operation to the authentication and hands back the now-usable cipher via
+        // result.cryptoObject.
+        if (crypto != null) {
+            biometricPrompt.authenticate(promptInfo, crypto)
+        } else {
+            biometricPrompt.authenticate(promptInfo)
+        }
     }
 
     fun canAuthenticate(context: Context): Boolean {

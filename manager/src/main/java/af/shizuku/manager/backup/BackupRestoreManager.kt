@@ -21,12 +21,15 @@ object BackupRestoreManager {
         return backupJson.toString()
     }
 
-    fun restoreFromPayload(context: Context, payload: String, cipherProvider: (ByteArray) -> Cipher) {
+    fun extractIv(payload: String): ByteArray {
         val backupJson = JSONObject(payload)
-        val iv = Base64.decode(backupJson.getString("iv"), Base64.NO_WRAP)
+        return Base64.decode(backupJson.getString("iv"), Base64.NO_WRAP)
+    }
+
+    fun restoreFromPayload(context: Context, payload: String, cipher: Cipher) {
+        val backupJson = JSONObject(payload)
         val data = Base64.decode(backupJson.getString("data"), Base64.NO_WRAP)
 
-        val cipher = cipherProvider(iv)
         val decryptedBytes = cipher.doFinal(data)
         val jsonString = String(decryptedBytes, Charsets.UTF_8)
 
