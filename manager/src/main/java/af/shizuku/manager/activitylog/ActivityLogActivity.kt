@@ -35,7 +35,10 @@ class ActivityLogFragment : Fragment() {
         val binding = af.shizuku.core.ui.databinding.AppsActivityBinding.inflate(inflater, container, false)
 
         emptyStateView = binding.emptyStateView
-        emptyStateView.setIcon(R.drawable.ic_empty_log_24)
+        // ic_empty_log_24 is a generic document glyph unrelated to "activity log" as a concept;
+        // ic_history_24 is the same icon already used to represent this feature elsewhere
+        // (Settings > Advanced, Settings > About), so the empty state now matches.
+        emptyStateView.setIcon(R.drawable.ic_history_24)
         emptyStateView.setTitle(getString(R.string.empty_state_title_activity_log_empty))
         emptyStateView.setDescription(getString(R.string.empty_state_description_activity_log_empty))
         emptyStateView.hideActionButton()

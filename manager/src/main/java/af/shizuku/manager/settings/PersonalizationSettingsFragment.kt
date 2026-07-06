@@ -30,6 +30,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
     private lateinit var expressiveShapesPreference: TwoStatePreference
     private lateinit var expressiveAnimationsPreference: TwoStatePreference
     private lateinit var iconStylePreference: ListPreference
+    private lateinit var iconColorModePreference: Preference
     private lateinit var shapeStylePreference: ListPreference
     private lateinit var animationIntensityPreference: ListPreference
 
@@ -109,8 +110,13 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         expressiveShapesPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_SHAPES))
         expressiveAnimationsPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_ANIMATIONS))
         iconStylePreference = requireNotNull(findPreference(KEY_ICON_STYLE))
+        iconColorModePreference = requireNotNull(findPreference(KEY_ICON_COLOR_MODE))
         shapeStylePreference = requireNotNull(findPreference(KEY_SHAPE_STYLE))
         animationIntensityPreference = requireNotNull(findPreference(KEY_ANIMATION_INTENSITY))
+
+        // Only meaningful for the Two-Tone icon style - recreate() (triggered by iconStylePreference's
+        // own listener below) recalculates this fresh from the persisted value on every style change.
+        iconColorModePreference.isVisible = iconStylePreference.value == "twotone"
 
         expressiveShapesPreference.setOnPreferenceChangeListener { _, _ ->
             (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
@@ -123,6 +129,11 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         }
 
         iconStylePreference.setOnPreferenceChangeListener { _, _ ->
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
+            true
+        }
+
+        iconColorModePreference.setOnPreferenceChangeListener { _, _ ->
             (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
             true
         }

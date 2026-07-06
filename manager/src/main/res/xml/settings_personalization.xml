@@ -67,6 +67,15 @@
             android:entryValues="@array/icon_styles_value"
             android:icon="@drawable/ic_monochrome" />
 
+        <rikka.preference.SimpleMenuPreference
+            android:key="icon_color_mode"
+            android:title="@string/settings_icon_color_mode"
+            android:summary="%s"
+            android:defaultValue="uniform"
+            android:entries="@array/icon_color_modes"
+            android:entryValues="@array/icon_color_modes_value"
+            android:icon="@drawable/ic_palette_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

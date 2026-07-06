@@ -126,6 +126,7 @@ public class ShizukuSettings {
         public static final String KEY_SENTRY_LIMIT_REACHED = "sentry_limit_reached";
         public static final String KEY_EXPRESSIVE_ANIMATIONS = "expressive_animations";
         public static final String KEY_ICON_STYLE = "icon_style";
+        public static final String KEY_ICON_COLOR_MODE = "icon_color_mode";
         public static final String KEY_SHAPE_STYLE = "shape_style";
         public static final String KEY_ANIMATION_INTENSITY = "animation_intensity";
 
@@ -176,6 +177,10 @@ public class ShizukuSettings {
 
     public static String getIconStyle() {
         return getPreferences().getString(Keys.KEY_ICON_STYLE, "standard");
+    }
+
+    public static String getIconColorMode() {
+        return getPreferences().getString(Keys.KEY_ICON_COLOR_MODE, "uniform");
     }
 
     public static String getShapeStyle() {

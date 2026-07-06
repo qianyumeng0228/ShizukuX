@@ -7,9 +7,12 @@ import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
 import androidx.preference.PreferenceGroup
+import com.google.android.material.color.MaterialColors
+import com.google.android.material.color.utilities.Hct
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.themeColor
+import kotlin.math.abs
 
 object IconStyleHelper {
 
@@ -23,34 +26,142 @@ object IconStyleHelper {
         }
     }
 
-    fun current(): Style = Style.fromKey(ShizukuSettings.getIconStyle())
+    enum class ColorMode(val key: String) {
+        NONE("none"),
+        UNIFORM("uniform"),
+        PER_ICON("per_icon");
 
-    fun applyToTree(context: Context, group: PreferenceGroup, style: Style = current()) {
+        companion object {
+            fun fromKey(key: String?): ColorMode = values().firstOrNull { it.key == key } ?: UNIFORM
+        }
+    }
+
+    // Evenly-spaced hue slots a per-icon color is picked from, keeping tone/chroma fixed to the
+    // theme's own primary so varied hues still read as "this app's palette" rather than random.
+    private const val HUE_SLOTS = 12
+
+    fun current(): Style = Style.fromKey(ShizukuSettings.getIconStyle())
+    fun currentColorMode(): ColorMode = ColorMode.fromKey(ShizukuSettings.getIconColorMode())
+
+    fun applyToTree(
+        context: Context,
+        group: PreferenceGroup,
+        style: Style = current(),
+        colorMode: ColorMode = currentColorMode()
+    ) {
         for (i in 0 until group.preferenceCount) {
             val pref = group.getPreference(i)
             if (pref is PreferenceGroup) {
-                applyToTree(context, pref, style)
+                applyToTree(context, pref, style, colorMode)
             }
             pref.icon?.let { original ->
-                pref.icon = stylize(context, original, style)
+                pref.icon = stylize(context, original, style, colorMode, seedKey = pref.key)
             }
         }
     }
 
-    fun stylize(context: Context, original: Drawable, style: Style = current()): Drawable {
+    fun stylize(
+        context: Context,
+        original: Drawable,
+        style: Style = current(),
+        colorMode: ColorMode = currentColorMode(),
+        seedKey: String? = null
+    ): Drawable {
         val mutable = original.mutate()
         return when (style) {
             Style.STANDARD -> tinted(mutable, resolveColor(context, R.attr.colorPrimary))
             Style.OUTLINED -> tinted(mutable, resolveColor(context, R.attr.colorOnSurfaceVariant))
             Style.TWO_TONE -> {
-                val bg = GradientDrawable().apply {
-                    shape = GradientDrawable.OVAL
-                    setColor(resolveColor(context, R.attr.colorPrimaryContainer))
-                }
-                val fg = tinted(mutable, resolveColor(context, R.attr.colorOnPrimaryContainer))
+                val (bgColor, fgColor) = twoToneColors(context, colorMode, seedKey)
+                val bg = pillBackground(context, bgColor)
+                val fg = tinted(mutable, fgColor)
                 val padding = (4 * context.resources.displayMetrics.density).toInt()
                 LayerDrawable(arrayOf(bg, InsetDrawable(fg, padding)))
             }
+        }
+    }
+
+    /**
+     * Resolves the Two-Tone background/foreground colors for the given mode.
+     * - NONE: neutral surface tones, no hue - a plain monochrome pill.
+     * - UNIFORM: the theme's own primary container pair, same for every icon (previous behavior).
+     * - PER_ICON: a distinct hue per icon, derived from the theme's primary HCT tone/chroma so
+     *   the varied palette still reads as "this app's colors" rather than arbitrary hues, then
+     *   harmonized toward primary and run through Material's color-role derivation for correct
+     *   contrast in both light and dark themes. Mirrors Material Color Utilities' recommended
+     *   pattern (Hct hue-rotation + MaterialColors.harmonize/getColorRoles) rather than a
+     *   hand-picked fixed palette - see IconStyleHelper's audit notes.
+     */
+    private fun twoToneColors(context: Context, colorMode: ColorMode, seedKey: String?): Pair<Int, Int> {
+        return when (colorMode) {
+            ColorMode.NONE ->
+                resolveColor(context, R.attr.colorSurfaceVariant) to resolveColor(context, R.attr.colorOnSurfaceVariant)
+            ColorMode.UNIFORM ->
+                resolveColor(context, R.attr.colorPrimaryContainer) to resolveColor(context, R.attr.colorOnPrimaryContainer)
+            ColorMode.PER_ICON -> {
+                val primary = resolveColor(context, R.attr.colorPrimary)
+                val slot = if (seedKey.isNullOrEmpty()) 0 else abs(seedKey.hashCode()) % HUE_SLOTS
+                val baseHct = Hct.fromInt(primary)
+                val hue = (baseHct.hue + slot * (360.0 / HUE_SLOTS)) % 360.0
+                val seedColor = Hct.from(hue, baseHct.chroma, baseHct.tone).toInt()
+                val harmonized = MaterialColors.harmonize(seedColor, primary)
+                val roles = MaterialColors.getColorRoles(context, harmonized)
+                roles.accentContainer to roles.onAccentContainer
+            }
+        }
+    }
+
+    /**
+     * The Two-Tone pill's background shape, following the same "app personality" dial as
+     * container corners (see ThemeDelegateImpl's shape_style overlays) instead of always being
+     * a plain circle - "zen" keeps an asymmetric leaf/droplet look, others use progressively
+     * more/less rounded rectangles. Falls back to a plain circle when expressive shapes are off.
+     */
+    private fun pillBackground(context: Context, color: Int): Drawable {
+        if (!ShizukuSettings.isExpressiveShapesEnabled()) {
+            return GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(color)
+            }
+        }
+        return when (ShizukuSettings.getShapeStyle()) {
+            "zen" -> leafDrawable(context, color)
+            "classic" -> GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 2 * context.resources.displayMetrics.density
+                setColor(color)
+            }
+            "squircle" -> GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 14 * context.resources.displayMetrics.density
+                setColor(color)
+            }
+            else -> GradientDrawable().apply { // "modern"
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 8 * context.resources.displayMetrics.density
+                setColor(color)
+            }
+        }
+    }
+
+    /**
+     * An asymmetric "leaf/droplet" pill: three tight corners, one wide corner.
+     * cornerRadii values are in pixels (unlike cornerRadius's dp-friendly single value used
+     * elsewhere in this file's other branches), hence the explicit density multiplication here.
+     */
+    private fun leafDrawable(context: Context, color: Int): Drawable {
+        val density = context.resources.displayMetrics.density
+        val tight = 4f * density
+        val wide = 20f * density
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadii = floatArrayOf(
+                tight, tight, // top-left
+                wide, wide,   // top-right
+                tight, tight, // bottom-right
+                tight, tight  // bottom-left
+            )
+            setColor(color)
         }
     }
 
