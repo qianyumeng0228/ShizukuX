@@ -134,7 +134,6 @@ abstract class HomeActivity : AppActivity(), MavericksView {
             val context = LocalContext.current
             af.shizuku.core.ui.compose.AppTheme(
                 darkTheme = androidx.compose.foundation.isSystemInDarkTheme(),
-                dynamicColor = af.shizuku.manager.app.ThemeHelper.isUsingSystemColor(),
                 isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(context)
             ) {
                 HomeScreen(
