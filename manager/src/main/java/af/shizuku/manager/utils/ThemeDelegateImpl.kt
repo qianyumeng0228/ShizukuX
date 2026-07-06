@@ -43,6 +43,22 @@ class ThemeDelegateImpl : ThemeDelegate {
             }
         }
 
+        if (!ShizukuSettings.isExpressiveShapesEnabled()) {
+            // shape_style's preference entry is UI-disabled while expressive_shapes is off, so
+            // it doesn't apply here regardless of its stored value - flatten to plain Material3.
+            theme.applyStyle(R.style.ThemeOverlay_Shapes_Standard, true)
+        } else {
+            val shapeStyleRes = when (ShizukuSettings.getShapeStyle()) {
+                "modern" -> R.style.ThemeOverlay_Shape_Modern
+                "classic" -> R.style.ThemeOverlay_Shape_Classic
+                "squircle" -> R.style.ThemeOverlay_Shape_Squircle
+                else -> 0 // "zen" (default): keep the base Material3Expressive corner scale
+            }
+            if (shapeStyleRes != 0) {
+                theme.applyStyle(shapeStyleRes, true)
+            }
+        }
+
         theme.applyStyle(ThemeHelper.getThemeStyleRes(context), true)
     }
 }

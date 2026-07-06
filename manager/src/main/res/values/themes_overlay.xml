@@ -71,4 +71,103 @@
         <item name="colorOnPrimaryContainer">#E1F5FE</item>
     </style>
 
+    <!--
+        Shape Style overlays (settings key "shape_style", gated on "expressive_shapes").
+        "zen" (the default) applies neither - it keeps whatever corner scale the base
+        Theme.Material3Expressive.* theme already provides, preserving today's look.
+        Standard Material 3 corner-radius scale reference: xs=4dp, s=8dp, m=12dp, l=16dp, xl=28dp.
+    -->
+    <style name="ShapeAppearance.Modern.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+    <style name="ShapeAppearance.Modern.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.Modern.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="ShapeAppearance.Modern.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="ShapeAppearance.Modern.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+    <style name="ThemeOverlay.Shape.Modern">
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Modern.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Modern.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Modern.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Modern.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Modern.Corner.ExtraLarge</item>
+    </style>
+
+    <!-- Classic (Material 2): flatter, boxier corners, no "Full"/pill shapes. -->
+    <style name="ShapeAppearance.Classic.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">0dp</item>
+    </style>
+    <style name="ShapeAppearance.Classic.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+    <style name="ShapeAppearance.Classic.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+    <style name="ShapeAppearance.Classic.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.Classic.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ThemeOverlay.Shape.Classic">
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Classic.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Classic.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Classic.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Classic.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Classic.Corner.ExtraLarge</item>
+    </style>
+
+    <!-- Organic (Squircle): generously rounded, continuous-looking corners throughout. -->
+    <style name="ShapeAppearance.Squircle.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="ShapeAppearance.Squircle.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    <style name="ShapeAppearance.Squircle.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+    <style name="ShapeAppearance.Squircle.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+    <style name="ShapeAppearance.Squircle.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">36dp</item>
+    </style>
+    <style name="ThemeOverlay.Shape.Squircle">
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Squircle.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Squircle.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Squircle.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Squircle.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Squircle.Corner.ExtraLarge</item>
+    </style>
+
+    <!--
+        Expressive Shapes toggle (settings key "expressive_shapes"), when turned OFF: flattens
+        the app back to plain Material3 (non-Expressive) corner treatment regardless of shape_style,
+        since shape_style's own preference entry is disabled/irrelevant while this is off.
+    -->
+    <style name="ThemeOverlay.Shapes.Standard" parent="ThemeOverlay.Shape.Modern"/>
+
 </resources>
