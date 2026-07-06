@@ -212,8 +212,8 @@ class HomeAdapter(
         view.animate()
             .alpha(1f)
             .translationY(0f)
-            .setDuration(400)
-            .setStartDelay(position * 50L)
+            .setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(400))
+            .setStartDelay(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(position * 50L))
             .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
             .start()
     }

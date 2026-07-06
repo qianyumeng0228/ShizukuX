@@ -160,12 +160,12 @@ class OnboardingActivity : AppActivity() {
         iconRight.translationX = 0f
         iconRight.animate()
             .translationX(shift)
-            .setDuration(350)
+            .setDuration(ShizukuSettings.scaledAnimationDuration(350))
             .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
             .withEndAction {
                 iconRight.animate()
                     .translationX(0f)
-                    .setDuration(250)
+                    .setDuration(ShizukuSettings.scaledAnimationDuration(250))
                     .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                     .start()
             }.start()
@@ -174,12 +174,12 @@ class OnboardingActivity : AppActivity() {
         iconLeft.postDelayed({
             iconLeft.animate()
                 .translationX(-shift)
-                .setDuration(350)
+                .setDuration(ShizukuSettings.scaledAnimationDuration(350))
                 .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .withEndAction {
                     iconLeft.animate()
                         .translationX(0f)
-                        .setDuration(250)
+                        .setDuration(ShizukuSettings.scaledAnimationDuration(250))
                         .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                         .start()
                 }.start()

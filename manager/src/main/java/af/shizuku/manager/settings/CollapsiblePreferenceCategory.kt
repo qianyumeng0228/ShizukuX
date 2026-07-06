@@ -51,7 +51,7 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
             // Animate arrow with M3E spring-style motion
             arrow?.animate()
                 ?.rotation(if (expanded) 180f else 0f)
-                ?.setDuration(300)
+                ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(300))
                 ?.setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
                 ?.start()
         }

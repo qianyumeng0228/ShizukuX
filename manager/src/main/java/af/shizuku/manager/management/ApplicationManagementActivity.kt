@@ -405,7 +405,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             v.translationY = v.height.toFloat()
             v.animate()
                 .translationY(0f)
-                .setDuration(350)
+                .setDuration(ShizukuSettings.scaledAnimationDuration(350))
                 .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .start()
 
@@ -414,12 +414,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             iconRight.postDelayed({
                 iconRight.animate()
                     .translationX(dpToPx(18f))
-                    .setDuration(350)
+                    .setDuration(ShizukuSettings.scaledAnimationDuration(350))
                     .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                     .withEndAction {
                         iconRight.animate()
                             .translationX(0f)
-                            .setDuration(250)
+                            .setDuration(ShizukuSettings.scaledAnimationDuration(250))
                             .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                             .start()
                     }.start()
@@ -430,12 +430,12 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             iconLeft.postDelayed({
                 iconLeft.animate()
                     .translationX(-dpToPx(18f))
-                    .setDuration(350)
+                    .setDuration(ShizukuSettings.scaledAnimationDuration(350))
                     .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                     .withEndAction {
                         iconLeft.animate()
                             .translationX(0f)
-                            .setDuration(250)
+                            .setDuration(ShizukuSettings.scaledAnimationDuration(250))
                             .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                             .start()
                     }.start()
@@ -446,7 +446,7 @@ class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks 
             hint.animate()
                 .translationY(hint.height.toFloat())
                 .alpha(0f)
-                .setDuration(280)
+                .setDuration(ShizukuSettings.scaledAnimationDuration(280))
                 .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .withEndAction { (hint.parent as? ViewGroup)?.removeView(hint) }
                 .start()

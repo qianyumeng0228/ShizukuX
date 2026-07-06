@@ -90,7 +90,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
                                 requireContext().theme.resolveAttribute(R.attr.colorPrimaryContainer, tintColor, true)
                                 itemView.setBackgroundColor(tintColor.data)
                                 itemView.animate()
-                                    .setDuration(1200)
+                                    .setDuration(ShizukuSettings.scaledAnimationDuration(1200))
                                     .alpha(1.0f)
                                     .withEndAction {
                                         itemView.background = defaultBg

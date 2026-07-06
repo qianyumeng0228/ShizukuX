@@ -26,7 +26,9 @@ object MotionUtils {
                     v?.let { HapticUtils.tap(it) }
                     springAnimX.cancel()
                     springAnimY.cancel()
-                    v?.animate()?.scaleX(scale)?.scaleY(scale)?.setDuration(100)?.start()
+                    v?.animate()?.scaleX(scale)?.scaleY(scale)
+                        ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(100))
+                        ?.start()
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     springAnimX.start()

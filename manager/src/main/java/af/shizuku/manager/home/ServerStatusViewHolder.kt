@@ -95,7 +95,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
                             ?.scaleX(1.015f)
                             ?.scaleY(1.015f)
                             ?.translationZ(6f)
-                            ?.setDuration(150)
+                            ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(150))
                             ?.setInterpolator(android.view.animation.DecelerateInterpolator())
                             ?.start()
                         true
@@ -105,7 +105,7 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
                             ?.scaleX(1f)
                             ?.scaleY(1f)
                             ?.translationZ(0f)
-                            ?.setDuration(150)
+                            ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(150))
                             ?.setInterpolator(android.view.animation.AccelerateInterpolator())
                             ?.start()
                         true

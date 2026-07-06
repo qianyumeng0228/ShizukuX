@@ -260,7 +260,7 @@ class RootCompatibilityActivity : AppBarActivity() {
                 .alpha(1f)
                 .scaleX(1f)
                 .scaleY(1f)
-                .setDuration(500)
+                .setDuration(ShizukuSettings.scaledAnimationDuration(500))
                 .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
                 .start()
 
