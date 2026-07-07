@@ -32,6 +32,7 @@ import af.shizuku.manager.receiver.NotifCancelReceiver
 import af.shizuku.manager.starter.StarterActivity
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.IconStyleHelper
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.content.asActivity
 import rikka.html.text.HtmlCompat
@@ -78,6 +79,8 @@ class StartWirelessAdbViewHolder(
             }
         }
     }
+
+    private val originalIcon = binding.icon.drawable
 
     init {
         containerBinding.root.applySpringTouch()
@@ -164,6 +167,7 @@ class StartWirelessAdbViewHolder(
 
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_start_wireless_adb")
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

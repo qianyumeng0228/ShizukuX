@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
 import android.graphics.drawable.LayerDrawable
+import android.widget.ImageView
 import androidx.preference.PreferenceGroup
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.color.utilities.Hct
@@ -81,6 +82,38 @@ object IconStyleHelper {
         }
     }
 
+    // The 12dp CardIcon/CardIcon.Droplet style used, so a plain Standard/Outlined vector still
+    // renders at its native ~24dp size centered in the 48dp Home card icon slot.
+    private const val CARD_ICON_PADDING_DP = 12
+
+    /**
+     * Applies the current icon style/color-mode/shape to a Home-screen card's 48dp icon slot.
+     * Those cards previously always used a fixed two-tone "droplet" pill via the CardIcon.Droplet
+     * XML style, ignoring the Personalization icon settings entirely. This clears that hardcoded
+     * background/tint so [stylize] fully controls the result, and swaps the ImageView's own
+     * padding per style: Two-Tone's pill needs to fill the whole slot (stylize's own InsetDrawable
+     * already provides the icon-to-pill breathing room), while Standard/Outlined need the
+     * original 12dp padding so the bare vector isn't stretched to fill the whole 48dp box.
+     *
+     * [original] must be the icon's untouched, freshly-inflated drawable - callers should capture
+     * it once (e.g. in a ViewHolder's init block) rather than reading it back from the ImageView,
+     * since after the first call the ImageView holds the already-styled result.
+     */
+    fun applyToCardIcon(
+        imageView: ImageView,
+        original: Drawable,
+        seedKey: String,
+        style: Style = current(),
+        colorMode: ColorMode = currentColorMode()
+    ) {
+        val context = imageView.context
+        imageView.background = null
+        imageView.imageTintList = null
+        val padding = if (style == Style.TWO_TONE) 0 else (CARD_ICON_PADDING_DP * context.resources.displayMetrics.density).toInt()
+        imageView.setPadding(padding, padding, padding, padding)
+        imageView.setImageDrawable(stylize(context, original, style, colorMode, seedKey))
+    }
+
     /**
      * Resolves the Two-Tone background/foreground colors for the given mode.
      * - NONE: neutral surface tones, no hue - a plain monochrome pill.
@@ -116,8 +149,13 @@ object IconStyleHelper {
      * container corners (see ThemeDelegateImpl's shape_style overlays) instead of always being
      * a plain circle - "zen" keeps an asymmetric leaf/droplet look, others use progressively
      * more/less rounded rectangles. Falls back to a plain circle when expressive shapes are off.
+     *
+     * Public so status-driven icons (e.g. ServerStatusViewHolder, StartStockShizukuViewHolder)
+     * that must keep their own semantic ok/error color logic instead of the user's color-mode
+     * setting can still share the same shape, rather than reaching for the static
+     * shape_droplet_background drawable directly and drifting out of sync with shape_style.
      */
-    private fun pillBackground(context: Context, color: Int): Drawable {
+    fun pillBackground(context: Context, color: Int): Drawable {
         if (!ShizukuSettings.isExpressiveShapesEnabled()) {
             return GradientDrawable().apply {
                 shape = GradientDrawable.OVAL

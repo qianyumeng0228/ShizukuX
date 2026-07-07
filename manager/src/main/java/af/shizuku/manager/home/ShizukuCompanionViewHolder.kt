@@ -13,6 +13,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeShizukuCompanionBinding
 import af.shizuku.manager.migration.MigrationHelper
+import af.shizuku.manager.utils.IconStyleHelper
 import af.shizuku.manager.utils.StockShizukuCompat
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.CoroutineScope
@@ -64,6 +65,8 @@ class ShizukuCompanionViewHolder(
             false
         }
     }
+
+    private val originalIcon = binding.icon.drawable
 
     init {
         containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
@@ -161,5 +164,6 @@ class ShizukuCompanionViewHolder(
             binding.button2.visibility = View.GONE
         }
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_shizuku_companion")
     }
 }

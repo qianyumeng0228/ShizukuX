@@ -13,6 +13,7 @@ import af.shizuku.manager.databinding.HomeTerminalBinding
 import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.shell.ShellTutorialActivity
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
@@ -49,10 +50,12 @@ class TerminalViewHolder(
     }
 
     private inline val summary get() = binding.text2
+    private val originalIcon = binding.icon.drawable
 
     override fun onBind() {
         val context = itemView.context
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_terminal")
         if (!data.isRunning) {
             containerBinding.root.isEnabled = false
             summary.text =

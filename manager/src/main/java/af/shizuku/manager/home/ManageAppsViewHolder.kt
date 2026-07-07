@@ -14,6 +14,7 @@ import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.management.ApplicationManagementActivity
 import af.shizuku.manager.model.ServiceStatus
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
@@ -39,10 +40,11 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
     private inline val title get() = binding.text1
     private inline val summary get() = binding.text2
     private inline val iconView get() = binding.icon
+    private val originalIcon = binding.icon.drawable
 
     override fun onBind() {
         val context = itemView.context
-        iconView.setBackgroundResource(R.drawable.shape_droplet_background)
+        IconStyleHelper.applyToCardIcon(iconView, originalIcon, "home_manage_apps")
 
         if (!data.first.isRunning) {
             itemView.isEnabled = false

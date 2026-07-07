@@ -10,6 +10,7 @@ import rikka.core.content.asActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartRootBinding
+import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.utils.StockShizukuCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
@@ -73,7 +74,13 @@ class StartStockShizukuViewHolder(
         binding.text1.text = "The original Shizuku server is running in the background. It is incompatible with ShizukuX and blocks it from starting."
         binding.icon.setImageResource(R.drawable.ic_warning_24)
 
-        // Use a warning color for the icon if possible
-        binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.RED)
+        // Proper Material error-container two-tone instead of a hardcoded Color.RED tint on the
+        // default secondary/tertiary-container pill, so this warning reads correctly in both
+        // light/dark themes and shares the same shape as every other Two-Tone icon in the app.
+        val context = binding.icon.context
+        val errorContainer = context.themeColor(com.google.android.material.R.attr.colorErrorContainer)
+        val onErrorContainer = context.themeColor(com.google.android.material.R.attr.colorOnErrorContainer)
+        binding.icon.background = af.shizuku.manager.utils.IconStyleHelper.pillBackground(context, errorContainer)
+        binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(onErrorContainer)
     }
 }

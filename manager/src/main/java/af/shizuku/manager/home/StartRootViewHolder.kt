@@ -15,6 +15,7 @@ import af.shizuku.manager.databinding.HomeStartRootBinding
 import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.starter.StarterActivity
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
@@ -38,6 +39,7 @@ class StartRootViewHolder(
     private inline val restart get() = binding.button2
 
     private var lottieAvailable: Boolean? = null
+    private val originalIcon = binding.icon.drawable
 
     init {
         containerBinding.root.applySpringTouch()
@@ -72,6 +74,7 @@ class StartRootViewHolder(
 
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_start_root")
         start.isEnabled = true
         restart.isEnabled = true
         val isRunning = data == true

@@ -20,13 +20,14 @@ import af.shizuku.manager.databinding.HomeAutomationBottomSheetBinding
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.core.util.ClipboardUtils
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
 class AutomationViewHolder(
-    binding: HomeAutomationBinding,
+    private val binding: HomeAutomationBinding,
     private val containerBinding: HomeItemContainerBinding,
 ) : BaseViewHolder<Any?>(containerBinding.root) {
     companion object {
@@ -43,6 +44,8 @@ class AutomationViewHolder(
         val input: TextInputEditText,
         val initText: String
     )
+
+    private val originalIcon = binding.icon.drawable
 
     init {
         containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
@@ -130,6 +133,7 @@ class AutomationViewHolder(
 
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_automation")
     }
 
     private fun getIntentAction(buttonId: Int): String =

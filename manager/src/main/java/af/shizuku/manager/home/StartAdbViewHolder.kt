@@ -15,6 +15,7 @@ import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartAdbBinding
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.starter.Starter
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.core.util.ClipboardUtils
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
@@ -23,7 +24,7 @@ import rikka.recyclerview.BaseViewHolder.Creator
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
 
 class StartAdbViewHolder(
-    binding: HomeStartAdbBinding,
+    private val binding: HomeStartAdbBinding,
     private val containerBinding: HomeItemContainerBinding,
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
@@ -88,8 +89,10 @@ class StartAdbViewHolder(
 
     }
 
+    private val originalIcon = binding.icon.drawable
+
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
-        itemView.findViewById<View>(android.R.id.icon)?.setBackgroundResource(R.drawable.shape_droplet_background)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_start_adb")
     }
 }

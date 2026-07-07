@@ -10,11 +10,12 @@ import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeLearnMoreBinding
 import af.shizuku.manager.utils.CustomTabsHelper
+import af.shizuku.manager.utils.IconStyleHelper
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
 class LearnMoreViewHolder(
-    binding: HomeLearnMoreBinding,
+    private val binding: HomeLearnMoreBinding,
     private val containerBinding: HomeItemContainerBinding,
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
@@ -25,6 +26,8 @@ class LearnMoreViewHolder(
             LearnMoreViewHolder(inner, outer)
         }
     }
+
+    private val originalIcon = binding.icon.drawable
 
     init {
         containerBinding.root.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.HOME.get()) }
@@ -41,5 +44,6 @@ class LearnMoreViewHolder(
 
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
+        IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_learn_more")
     }
 }
