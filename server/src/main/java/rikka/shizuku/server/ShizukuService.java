@@ -290,7 +290,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             if (existing == null) {
                 clientRecord = clientManager.addClient(callingUid, callingPid, application, requestPackageName, apiVersion);
                 if (clientRecord == null) {
-                    LOGGER.w("Add client failed");
+                    LOGGER.e("Add client failed");
                     return;
                 }
             } else {
@@ -328,7 +328,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 PermissionManagerApis.grantRuntimePermission(MANAGER_APPLICATION_ID,
                         WRITE_SECURE_SETTINGS, UserHandleCompat.getUserId(callingUid));
             } catch (Throwable e) {
-                LOGGER.w(e, "grant WRITE_SECURE_SETTINGS");
+                LOGGER.e(e, "grant WRITE_SECURE_SETTINGS");
             }
         }
         try {
@@ -438,7 +438,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 TRANSACTION_getPackageUid = f3.getInt(null);
             } catch (Exception ignore) {}
         } catch (Throwable t) {
-            LOGGER.w(t, "Shadow: Failed to dynamically look up IPackageManager transaction codes");
+            LOGGER.e(t, "Shadow: Failed to dynamically look up IPackageManager transaction codes");
         }
     }
 
@@ -605,7 +605,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         
         // Catastrophic Command Interceptor (Storage Safety)
         if (isCatastrophicCommand(cmd)) {
-            LOGGER.w("Catastrophic command blocked from execution by %s: %s", callingPkg, String.join(" ", cmd));
+            LOGGER.e("Catastrophic command blocked from execution by %s: %s", callingPkg, String.join(" ", cmd));
             // In a full implementation, we would broadcast an intent to ShizukuManager to show an AppOps prompt
             // and wait on a CountDownLatch for the user's Binder response. 
             // For now, we instantly block to guarantee safety.
@@ -639,7 +639,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 Runtime.getRuntime().exec(new String[]{"cp", sourcePath, proxyPath}).waitFor();
                             }
                         } catch (Exception e) {
-                            LOGGER.w(e, "SUBridge: failed to prepare proxy file for " + target);
+                            LOGGER.e(e, "SUBridge: failed to prepare proxy file for " + target);
                         }
                         
                         cmd[i] = cmd[i].replace(target, proxyPath);
@@ -792,11 +792,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (exitCode == 0) {
                             return newProcessInternal(cmd, env, dir);
                         } else {
-                            LOGGER.w("SUBridge: iptables exited with error (" + exitCode + "), returning mock success");
+                            LOGGER.e("SUBridge: iptables exited with error (" + exitCode + "), returning mock success");
                             return newProcessInternal(new String[]{"true"}, env, dir);
                         }
                     } catch (Exception e) {
-                        LOGGER.w("SUBridge: iptables exec failed, returning mock success");
+                        LOGGER.e("SUBridge: iptables exec failed, returning mock success");
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
                 } else if (baseCmd.equals("pm") && cmd.length > 1 && cmd[1].equals("list") && String.join(" ", cmd).contains("packages")) {
@@ -1189,7 +1189,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         LOGGER.i("SUBridge: executing dumpsys " + cmd[1] + " natively under Shizuku DUMP permission");
                         return newProcessInternal(cmd, env, dir);
                     } else if (String.join(" ", cmd).contains("MASTER_CLEAR") || String.join(" ", cmd).contains("wipe_data") || (baseCmd.equals("sm") && cmd.length > 1 && cmd[1].equals("format"))) {
-                        LOGGER.w("SUBridge: Intercepted highly destructive command! Ghosting success to prevent data wipe: " + String.join(" ", cmd));
+                        LOGGER.e("SUBridge: Intercepted highly destructive command! Ghosting success to prevent data wipe: " + String.join(" ", cmd));
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     } else if (baseCmd.equals("chattr")) {
                         LOGGER.i("SUBridge: mocking chattr immutability applied");
@@ -1505,13 +1505,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     try {
                         PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
                     } catch (Throwable e) {
-                        LOGGER.w("grantRuntimePermission failed for " + permToGrant);
+                        LOGGER.e("grantRuntimePermission failed for " + permToGrant);
                     }
                 } else {
                     try {
                         PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
                     } catch (Throwable e) {
-                        LOGGER.w("revokeRuntimePermission failed for " + permToGrant);
+                        LOGGER.e("revokeRuntimePermission failed for " + permToGrant);
                     }
                 }
             }
@@ -1603,13 +1603,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     try {
                         PermissionManagerApis.grantRuntimePermission(packageName, permToGrant, userId);
                     } catch (Throwable e) {
-                        LOGGER.w("grantRuntimePermission failed for " + permToGrant);
+                        LOGGER.e("grantRuntimePermission failed for " + permToGrant);
                     }
                 } else {
                     try {
                         PermissionManagerApis.revokeRuntimePermission(packageName, permToGrant, userId);
                     } catch (Throwable e) {
-                        LOGGER.w("revokeRuntimePermission failed for " + permToGrant);
+                        LOGGER.e("revokeRuntimePermission failed for " + permToGrant);
                     }
                     onPermissionRevoked(packageName);
                 }
@@ -1891,7 +1891,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 LOGGER.i("send binder to user app %s in user %d", packageName, userId);
                 return true;
             } else {
-                LOGGER.w("failed to send binder to user app %s in user %d", packageName, userId);
+                LOGGER.e("failed to send binder to user app %s in user %d", packageName, userId);
                 return false;
             }
         } catch (Throwable tr) {
@@ -1973,7 +1973,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         ApplicationInfo ai = PackageManagerApis.getApplicationInfoNoThrow(packageName, 0, 0);
         if (ai == null) {
-            LOGGER.w("elevateApp: Package not found: " + packageName);
+            LOGGER.e("elevateApp: Package not found: " + packageName);
             return;
         }
 
@@ -1997,7 +1997,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     try {
                         setMode.invoke(service, op, uid, packageName, 0); // 0 = MODE_ALLOWED
                     } catch (Exception e) {
-                        LOGGER.w(e, "Plus: Failed to set AppOps mode %d for uid %d", op, uid);
+                        LOGGER.e(e, "Plus: Failed to set AppOps mode %d for uid %d", op, uid);
                     }
                 }
             }

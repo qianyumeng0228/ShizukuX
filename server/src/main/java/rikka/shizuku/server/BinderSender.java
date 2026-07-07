@@ -161,7 +161,7 @@ public class BinderSender {
                     else
                         granted = ActivityManagerApis.checkPermission(PERMISSION_MANAGER, pid, uid) == PackageManager.PERMISSION_GRANTED;
                 } catch (Throwable e) {
-                    LOGGER.w("checkPermission failed for manager");
+                    LOGGER.e("checkPermission failed for manager");
                 }
 
                 if (granted) {

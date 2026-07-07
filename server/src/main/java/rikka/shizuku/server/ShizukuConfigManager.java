@@ -57,7 +57,7 @@ public class ShizukuConfigManager extends ConfigManager {
         try {
             config = GSON_IN.fromJson(new InputStreamReader(stream), ShizukuConfig.class);
         } catch (Throwable tr) {
-            LOGGER.w(tr, "load config");
+            LOGGER.e(tr, "load config");
         } finally {
             try {
                 stream.close();
@@ -75,7 +75,7 @@ public class ShizukuConfigManager extends ConfigManager {
             try {
                 stream = ATOMIC_FILE.startWrite();
             } catch (IOException e) {
-                LOGGER.w("failed to write state: " + e);
+                LOGGER.e("failed to write state: " + e);
                 return;
             }
 
@@ -86,7 +86,7 @@ public class ShizukuConfigManager extends ConfigManager {
                 ATOMIC_FILE.finishWrite(stream);
                 LOGGER.v("config saved");
             } catch (Throwable tr) {
-                LOGGER.w(tr, "can't save %s, restoring backup.", ATOMIC_FILE.getBaseFile());
+                LOGGER.e(tr, "can't save %s, restoring backup.", ATOMIC_FILE.getBaseFile());
                 ATOMIC_FILE.failWrite(stream);
             }
         }
