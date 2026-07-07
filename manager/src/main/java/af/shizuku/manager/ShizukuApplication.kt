@@ -93,6 +93,12 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 options.isAttachScreenshot = false
                 options.isAttachViewHierarchy = false
 
+                // Selective exception: still capture a screenshot for the specific class of
+                // bug where one is actually worth the quota cost (UI-rendering/theme crashes,
+                // e.g. the black-screen recreate() bug) - gated by an allowlist so it only
+                // fires for those, not every event. See SelectiveScreenshotEventProcessor.
+                options.addEventProcessor(af.shizuku.manager.utils.SelectiveScreenshotEventProcessor())
+
                 // Breadcrumbs are bundled into the event itself (not separately billed), so
                 // keep them for context. isEnableUserInteractionTracing and
                 // isEnableAutoActivityLifecycleTracing generate performance "transaction"
@@ -355,6 +361,10 @@ class ShizukuApplication : Application(), Configuration.Provider {
             ShizukuSettings.setSentryLimitReached(false)
             ShizukuSettings.setLastSeenVersion(currentCode)
         }
+
+        // Track the foreground Activity so a crash captured on a background thread can still
+        // find "what was on screen" for SelectiveScreenshotEventProcessor.
+        af.shizuku.manager.utils.ForegroundActivityTracker.register(this)
 
         // 2. Initialize Sentry FIRST to catch all crashes including early startup failures
         initializeSentryEarly()
