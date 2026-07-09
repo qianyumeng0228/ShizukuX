@@ -108,6 +108,12 @@ class ShellTutorialActivity : AppBarActivity() {
 
         binding.header.apply {
             headerIcon.setImageResource(R.drawable.ic_terminal_24)
+            // Same seedKey as the originating Home card (TerminalViewHolder) so the
+            // shared-element transition into this screen doesn't snap the icon's shape/color
+            // back to the static droplet default mid-animation.
+            af.shizuku.manager.utils.IconStyleHelper.applyToCardIcon(
+                headerIcon, headerIcon.drawable, "home_terminal"
+            )
             headerIcon.transitionName = "icon_terminal"
             headerTitle.setText(R.string.home_terminal_title)
         }

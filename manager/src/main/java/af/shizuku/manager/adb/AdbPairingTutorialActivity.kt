@@ -60,6 +60,12 @@ class AdbPairingTutorialActivity : AppBarActivity() {
 
         binding.header.apply {
             headerIcon.setImageResource(R.drawable.ic_wadb_24)
+            // Same seedKey as the originating Home card (StartWirelessAdbViewHolder) so a
+            // shared-element transition into this screen doesn't visibly snap the icon's
+            // shape/color back to the static droplet default mid-animation.
+            af.shizuku.manager.utils.IconStyleHelper.applyToCardIcon(
+                headerIcon, headerIcon.drawable, "home_start_wireless_adb"
+            )
             headerIcon.transitionName = "icon_wireless_adb"
             headerTitle.setText(R.string.home_wireless_adb_title)
         }

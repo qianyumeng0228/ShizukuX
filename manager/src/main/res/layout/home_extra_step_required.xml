@@ -8,12 +8,10 @@
     <ImageView
         android:id="@android:id/icon"
         style="@style/CardIcon.Droplet"
-        android:backgroundTint="?colorOnErrorContainer"
         android:duplicateParentState="true"
         android:importantForAccessibility="yes"
         android:contentDescription="@string/accessibility_icon_warning"
         android:src="@drawable/ic_warning_24"
-        android:tint="?colorErrorContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

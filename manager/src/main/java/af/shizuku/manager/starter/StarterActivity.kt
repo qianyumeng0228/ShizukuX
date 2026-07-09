@@ -56,6 +56,12 @@ class StarterActivity : AppBarActivity() {
         val isRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, false)
         binding.header.apply {
             headerIcon.setImageResource(if (isRoot) R.drawable.ic_root_24 else R.drawable.ic_adb_24)
+            // Same seedKey as the originating Home card (StartRootViewHolder/StartAdbViewHolder)
+            // so the shared-element transition into this screen doesn't snap the icon's
+            // shape/color back to the static droplet default mid-animation.
+            af.shizuku.manager.utils.IconStyleHelper.applyToCardIcon(
+                headerIcon, headerIcon.drawable, if (isRoot) "home_start_root" else "home_start_adb"
+            )
             headerIcon.transitionName = if (isRoot) "icon_root" else "icon_adb"
             headerTitle.setText(if (isRoot) R.string.home_root_title else R.string.home_adb_title)
         }
