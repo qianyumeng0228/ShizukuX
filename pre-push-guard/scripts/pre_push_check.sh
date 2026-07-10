@@ -219,6 +219,47 @@ else
     echo -e "${COLOR_YELLOW}SKIP${COLOR_RESET} (xmllint not found)"
 fi
 
+# 18. Appcompat-owned attrs referenced through the material R class.
+# With non-transitive R classes (mandatory on current AGP), com.google.android.material.R
+# no longer re-exports appcompat's attrs, so these references fail to compile in CI.
+echo -n "[18/19] Checking for appcompat attrs read via material R... "
+APPCOMPAT_ATTRS="colorPrimary|colorPrimaryDark|colorAccent|colorError|colorControlNormal|colorControlActivated|colorControlHighlight|colorButtonNormal"
+WRONG_R=$(grep -rnE "material\.R\.attr\.($APPCOMPAT_ATTRS)\b" --include="*.kt" --include="*.java" manager/src core/ 2>/dev/null)
+if [ ! -z "$WRONG_R" ]; then
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (use androidx.appcompat.R.attr for these)"
+    echo "$WRONG_R"
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+fi
+
+# 19. Styles with an implicit (dotted-name) parent that is neither defined in the
+# project nor a recognizable library style - aapt2 fails resource linking on these.
+echo -n "[19/19] Checking implicit style parents resolve... "
+STYLE_PARENTS=$(python3 - <<'PYEOF'
+import re, glob
+defined, implicit = set(), []
+for f in glob.glob('manager/src/main/res/values*/*.xml') + glob.glob('core/*/src/main/res/values*/*.xml'):
+    for m in re.finditer(r'<style\s+name="([^"]+)"(?:\s+parent="([^"]*)")?', open(f, encoding='utf-8').read()):
+        name, parent = m.group(1), m.group(2)
+        defined.add(name)
+        if parent is None and '.' in name:
+            implicit.append((f, name))
+# Library prefixes whose styles exist in dependencies, not project res.
+LIB = re.compile(r'^(Theme|ThemeOverlay\.Material3|ShapeAppearance\.(Material3|M3)|Widget|TextAppearance|Base|Platform|Preference|PreferenceThemeOverlay|Animation|MaterialAlertDialog|CollapsingToolbar)([.$]|$)')
+for f, name in implicit:
+    parent = name.rsplit('.', 1)[0]
+    if parent not in defined and not LIB.match(parent) and not LIB.match(name):
+        print(f'{f}: "{name}" implicitly inherits undefined style "{parent}"')
+PYEOF
+)
+if [ ! -z "$STYLE_PARENTS" ]; then
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (declare the parent style or set an explicit parent=\"\")"
+    echo "$STYLE_PARENTS"
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+fi
 
 # 17. Dry-Run Build Validation
 echo -n "[17/17] Validating Gradle build configuration (dry-run)... "
