@@ -12,8 +12,14 @@ ERRORS=0
 
 echo -e "${COLOR_YELLOW}Running ShizukuX Pre-Push Guard...${COLOR_RESET}"
 
+STEP=0
+step() {
+    STEP=$((STEP+1))
+    echo -n "[$STEP] $1... "
+}
+
 # 1. Check CMake Version
-echo -n "[1/6] Checking CMake version... "
+step "Checking CMake version"
 CMAKE_FILE="manager/src/main/jni/CMakeLists.txt"
 if [ -f "$CMAKE_FILE" ]; then
     VERSION=$(grep "cmake_minimum_required" "$CMAKE_FILE" | grep -o "[0-9.]*")
@@ -28,7 +34,7 @@ else
 fi
 
 # 2. Check Java/Kotlin Interop (BuildUtils.INSTANCE)
-echo -n "[2/6] Checking Java/Kotlin Interop (INSTANCE)... "
+step "Checking Java/Kotlin Interop (INSTANCE)"
 INTEROP_FAIL=$(grep -rn "BuildUtils\." server/src/main/java | grep -v "BuildUtils.INSTANCE" | grep ".java:")
 if [ ! -z "$INTEROP_FAIL" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET}"
@@ -39,7 +45,7 @@ else
 fi
 
 # 3. Check for Duplicate Strings
-echo -n "[3/6] Checking for duplicate resource keys... "
+step "Checking for duplicate resource keys"
 STRINGS_FILE="manager/src/main/res/values/strings.xml"
 if [ -f "$STRINGS_FILE" ]; then
     DUPLICATES=$(grep -o "name=\"[^\"]*\"" "$STRINGS_FILE" | sort | uniq -d)
@@ -55,7 +61,7 @@ else
 fi
 
 # 4. Check for Missing R Imports in Kotlin
-echo -n "[4/6] Checking for missing R imports in Kotlin... "
+step "Checking for missing R imports in Kotlin"
 # Find Kotlin files using R but not importing af.shizuku.manager.R
 # Specifically look for R.layout, R.id, etc. and ignore android.R
 MISSING_R=$(grep -rl "[^a-zA-Z.]R\.[a-z]" manager/src/main/java --include="*.kt" | xargs grep -L "import af.shizuku.manager.R" | grep -v "android.R")
@@ -68,7 +74,7 @@ else
 fi
 
 # 5. Check for Ambiguous Bundle Imports
-echo -n "[5/6] Checking for ambiguous Bundle imports... "
+step "Checking for ambiguous Bundle imports"
 AMBIGUOUS_BUNDLE=$(grep -rl --exclude-dir={.ai,.git} "import android.os.Bundle" . | xargs grep -c "import android.os.Bundle" | grep -v ":1$" | grep -v ":0$")
 if [ ! -z "$AMBIGUOUS_BUNDLE" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET}"
@@ -79,7 +85,7 @@ else
 fi
 
 # 6. Check for Missing Coroutine Imports
-echo -n "[6/9] Checking for missing Coroutine imports... "
+step "Checking for missing Coroutine imports"
 # Files using 'launch {' without importing kotlinx.coroutines.launch or kotlinx.coroutines.*
 MISSING_LAUNCH=$(grep -rl "launch {" manager/src/main/java --include="*.kt" | xargs grep -L -e "import kotlinx.coroutines.launch" -e "import kotlinx.coroutines.\*" 2>/dev/null)
 if [ ! -z "$MISSING_LAUNCH" ]; then
@@ -96,7 +102,7 @@ else
 fi
 
 # 7. Check for Missing lifecycleScope Imports
-echo -n "[7/9] Checking for missing lifecycleScope imports... "
+step "Checking for missing lifecycleScope imports"
 MISSING_LIFECYCLESCOPE=$(grep -rl "lifecycleScope" manager/src/main/java --include="*.kt" | xargs grep -L "import androidx.lifecycle.lifecycleScope" 2>/dev/null)
 if [ ! -z "$MISSING_LIFECYCLESCOPE" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET}"
@@ -107,7 +113,7 @@ else
 fi
 
 # 8. Check for Misplaced Imports (Syntax Error Prevention)
-echo -n "[8/9] Checking for misplaced imports in Kotlin... "
+step "Checking for misplaced imports in Kotlin"
 # This checks if the word 'import ' appears after 'class ' or 'object ' in the same file
 MISPLACED_IMPORTS=$(awk 'FNR==1 {flag=0} /^import / {if(flag) print FILENAME ":" FNR} /^(class|object|interface) / {flag=1}' $(find manager/src/main/java -name "*.kt" -type f -not -path "*/.*"))
 if [ ! -z "$MISPLACED_IMPORTS" ]; then
@@ -119,7 +125,7 @@ else
 fi
 
 # 9. Check Submodule Sync Status
-echo -n "[9/9] Checking submodule remote sync status... "
+step "Checking submodule remote sync status"
 if [ -d "api/.git" ]; then
     cd api
     # Check if we are in CI (CI=true is standard in GH Actions)
@@ -143,7 +149,7 @@ else
 fi
 
 # 10. Check for Hardcoded Package Names in XML (AAPT Errors)
-echo -n "[10/12] Checking for hardcoded package names in XML resources... "
+step "Checking for hardcoded package names in XML resources"
 HARDCODED_PKG=$(grep -rn "af.shizuku.plus.api:" manager/src/main/res --include="*.xml" 2>/dev/null)
 if [ ! -z "$HARDCODED_PKG" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Avoid hardcoding the package name in resources)"
@@ -154,7 +160,7 @@ else
 fi
 
 # 11. Check for Unresolved colorPrimary in Kotlin
-echo -n "[11/12] Checking for unresolved colorPrimary... "
+step "Checking for unresolved colorPrimary"
 # Sometimes colorPrimary is used directly without R.attr or context.getColor
 COLOR_PRIMARY=$(grep -rn "\bcolorPrimary\b" manager/src/main/java --include="*.kt" | grep -v "R.attr" | grep -v "R.color" | grep -v "var " | grep -v "val ")
 if [ ! -z "$COLOR_PRIMARY" ]; then
@@ -165,7 +171,7 @@ else
 fi
 
 # 12. Check for printStackTrace leftovers
-echo -n "[12/14] Checking for printStackTrace leftovers... "
+step "Checking for printStackTrace leftovers"
 STACK_TRACE=$(grep -rn --exclude-dir={.ai,.git} "printStackTrace" . | grep ".kt:\|.java:")
 if [ ! -z "$STACK_TRACE" ]; then
     echo -e "${COLOR_YELLOW}WARN${COLOR_RESET} (Use loge or Log.e instead)"
@@ -178,7 +184,7 @@ fi
 # 13. Check for stale package paths in JNI C++ files
 # After a package rename, FindClass() calls in JNI_OnLoad must be updated.
 # A stale path causes RegisterNatives to SIGABRT the process on launch.
-echo -n "[13/14] Checking for stale JNI class paths (moe/shizuku)... "
+step "Checking for stale JNI class paths (moe/shizuku)"
 STALE_JNI=$(grep -rn "moe/shizuku" manager/src/main/jni/ 2>/dev/null)
 if [ ! -z "$STALE_JNI" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Old package path found in JNI — update FindClass() calls to af/shizuku/...)"
@@ -189,7 +195,7 @@ else
 fi
 
 # 14. Check that JniSmokeTest exists (guards against accidental deletion)
-echo -n "[14/14] Checking JniSmokeTest exists... "
+step "Checking JniSmokeTest exists"
 SMOKE_TEST="manager/src/androidTest/java/af/shizuku/manager/JniSmokeTest.kt"
 if [ ! -f "$SMOKE_TEST" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (JniSmokeTest.kt is missing — do not delete the JNI smoke test)"
@@ -199,7 +205,7 @@ else
 fi
 
 # 15. XML well-formedness check on layout files
-echo -n "[15/15] Checking layout XML well-formedness... "
+step "Checking layout XML well-formedness"
 if command -v xmllint >/dev/null 2>&1; then
     XML_ERRORS=""
     for f in manager/src/main/res/layout/*.xml; do
@@ -222,7 +228,7 @@ fi
 # 18. Appcompat-owned attrs referenced through the material R class.
 # With non-transitive R classes (mandatory on current AGP), com.google.android.material.R
 # no longer re-exports appcompat's attrs, so these references fail to compile in CI.
-echo -n "[18/19] Checking for appcompat attrs read via material R... "
+step "Checking for appcompat attrs read via material R"
 APPCOMPAT_ATTRS="colorPrimary|colorPrimaryDark|colorAccent|colorError|colorControlNormal|colorControlActivated|colorControlHighlight|colorButtonNormal"
 WRONG_R=$(grep -rnE "material\.R\.attr\.($APPCOMPAT_ATTRS)\b" --include="*.kt" --include="*.java" manager/src core/ 2>/dev/null)
 if [ ! -z "$WRONG_R" ]; then
@@ -235,7 +241,7 @@ fi
 
 # 19. Styles with an implicit (dotted-name) parent that is neither defined in the
 # project nor a recognizable library style - aapt2 fails resource linking on these.
-echo -n "[19/19] Checking implicit style parents resolve... "
+step "Checking implicit style parents resolve"
 STYLE_PARENTS=$(python3 - <<'PYEOF'
 import re, glob
 defined, implicit = set(), []
@@ -261,8 +267,43 @@ else
     echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
 fi
 
+# 20. Large tracked files - committed binaries/logs bloat every clone (122MB of CI
+# logs and an 80MB ktlint binary have slipped in before). Sizes come from the git
+# object DB, not the filesystem, so this stays fast on slow storage.
+step "Checking for tracked files over 5MB"
+BIG_FILES=$(paste <(git ls-files -s | grep -v '^160000' | awk '{print $4}') \
+                  <(git ls-files -s | grep -v '^160000' | awk '{print $2}' | git cat-file --batch-check='%(objectsize)' 2>/dev/null) \
+            | awk '$2 > 5242880 {printf "  %s (%.1f MB)\n", $1, $2/1048576}')
+if [ ! -z "$BIG_FILES" ]; then
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (do not commit large binaries/logs)"
+    echo "$BIG_FILES"
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+fi
+
+# 21. Sentry manual-init guard - removing this meta-data reintroduces the
+# double-init crash (Sentry auto-init + manual init in ShizukuApplication).
+step "Checking Sentry auto-init stays disabled"
+if grep -q 'android:name="io.sentry.auto-init" android:value="false"' manager/src/main/AndroidManifest.xml; then
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+else
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (io.sentry.auto-init=false meta-data missing from manager manifest)"
+    ERRORS=$((ERRORS + 1))
+fi
+
+# 22. Mavericks ProGuard keeps - R8 strips companion factories without these,
+# crashing release builds at runtime.
+step "Checking Mavericks ProGuard keep rules exist"
+if grep -q 'MavericksViewModelFactory' manager/proguard-rules.pro && grep -q 'extends com.airbnb.mvrx.MavericksViewModel' manager/proguard-rules.pro; then
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+else
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Mavericks keep rules missing from manager/proguard-rules.pro)"
+    ERRORS=$((ERRORS + 1))
+fi
+
 # 17. Dry-Run Build Validation
-echo -n "[17/17] Validating Gradle build configuration (dry-run)... "
+step "Validating Gradle build configuration (dry-run)"
 if [ -n "${SKIP_GRADLE_CHECK:-}" ]; then
     echo -e "${COLOR_YELLOW}SKIP${COLOR_RESET} (SKIP_GRADLE_CHECK set)"
 elif ./gradlew assembleDebug --dry-run >/dev/null 2>&1; then

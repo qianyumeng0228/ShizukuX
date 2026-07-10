@@ -33,3 +33,4 @@ build_app.log
 build_failure.log
 check.log
 smoke-test.log
+ktlint

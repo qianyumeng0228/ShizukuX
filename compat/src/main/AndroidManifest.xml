@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="moe.shizuku.privileged.api">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
 
     <!-- This app exists solely to spoof the package name so apps like SwiftBackup pass their isInstalled checks. -->
