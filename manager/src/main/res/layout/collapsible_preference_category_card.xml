@@ -10,7 +10,8 @@
     android:paddingVertical="14dp"
     android:background="?android:attr/selectableItemBackground"
     android:clickable="true"
-    android:focusable="true">
+    android:focusable="true"
+    android:tag="category_header">
 
     <TextView
         android:id="@android:id/title"

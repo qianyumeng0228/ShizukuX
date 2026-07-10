@@ -21,7 +21,7 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     protected val density = context.resources.displayMetrics.density
 
     init {
-        cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerLow)
+        cardPaint.color = context.themeColor(R.attr.colorSurfaceContainerHigh)
         dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
         dividerPaint.strokeWidth = 1f * density
     }
