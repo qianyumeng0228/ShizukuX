@@ -26,3 +26,10 @@ jules-mcp.sh
 # Local MCP config
 .jules-key
 jules-mcp.sh
+
+# Downloaded CI/build logs
+build_error*.log
+build_app.log
+build_failure.log
+check.log
+smoke-test.log
