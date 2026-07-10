@@ -222,7 +222,9 @@ fi
 
 # 17. Dry-Run Build Validation
 echo -n "[17/17] Validating Gradle build configuration (dry-run)... "
-if ./gradlew assembleDebug --dry-run >/dev/null 2>&1; then
+if [ -n "${SKIP_GRADLE_CHECK:-}" ]; then
+    echo -e "${COLOR_YELLOW}SKIP${COLOR_RESET} (SKIP_GRADLE_CHECK set)"
+elif ./gradlew assembleDebug --dry-run >/dev/null 2>&1; then
     echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
 else
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Gradle build configuration failed. Run ./gradlew assembleDebug for details)"
