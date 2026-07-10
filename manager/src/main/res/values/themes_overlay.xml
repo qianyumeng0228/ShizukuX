@@ -101,6 +101,8 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">28dp</item>
     </style>
+    <style name="ThemeOverlay.Shape" parent=""/>
+
     <style name="ThemeOverlay.Shape.Modern">
         <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Modern.Corner.ExtraSmall</item>
         <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Modern.Corner.Small</item>
