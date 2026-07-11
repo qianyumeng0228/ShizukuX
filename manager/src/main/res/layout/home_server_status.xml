@@ -18,9 +18,19 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintVertical_bias="0.5" />
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <!--
+      Vertical LinearLayout for text/chip content.
+      Using LinearLayout instead of a nested ConstraintLayout means layout_marginTop
+      on child views is always honoured, and the status dot in the title row reliably
+      aligns with the first line of text regardless of font scale.
+      (The inner ConstraintLayout approach caused overlap on Nothing 4a / Android 16
+      with large font scale because marginTop on a top+bottom-constrained view is
+      ignored — issue #271.)
+    -->
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_marginStart="@dimen/m3e_spacing_large"
         android:layout_marginEnd="16dp"
         android:duplicateParentState="true"
@@ -29,46 +39,50 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <View
-            android:id="@+id/status_indicator"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:layout_marginTop="6dp"
-            android:background="@drawable/shape_status_indicator"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@android:id/text1"
-            app:layout_constraintBottom_toBottomOf="@android:id/text1" />
-
-        <TextView
-            android:id="@android:id/text1"
-            style="@style/CardTitle"
-            android:layout_width="0dp"
+        <!-- Status dot + title on one horizontal row, gravity=center_vertical
+             so the dot always optically aligns with the text cap-height. -->
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:duplicateParentState="true"
-            app:layout_constraintStart_toEndOf="@id/status_indicator"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Running (version 10)" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:duplicateParentState="true">
+
+            <View
+                android:id="@+id/status_indicator"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_marginEnd="12dp"
+                android:background="@drawable/shape_status_indicator" />
+
+            <TextView
+                android:id="@android:id/text1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?textAppearanceTitleLarge"
+                android:textColor="?colorOnSurface"
+                android:lineSpacingExtra="1sp"
+                android:duplicateParentState="true"
+                tools:text="Running (version 10)" />
+
+        </LinearLayout>
 
         <TextView
             android:id="@android:id/text2"
-            style="@style/CardSummary.Brief"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:duplicateParentState="true"
-            app:layout_constraintStart_toStartOf="@android:id/text1"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@android:id/text1" />
+            android:layout_marginTop="4dp"
+            android:textAppearance="?textAppearanceLabelLarge"
+            android:textColor="?colorOnSurfaceVariant"
+            android:lineSpacingExtra="1sp"
+            android:duplicateParentState="true" />
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/status_chips"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:layout_constraintStart_toStartOf="@android:id/text1"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@android:id/text2">
+            android:layout_marginTop="8dp">
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/btn_activity_log"
@@ -98,10 +112,8 @@
             android:text="@string/sentry_offline_notice_button"
             android:visibility="gone"
             android:textColor="?colorError"
-            app:layout_constraintStart_toStartOf="@android:id/text1"
-            app:layout_constraintTop_toBottomOf="@id/status_chips"
             tools:visibility="visible" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
