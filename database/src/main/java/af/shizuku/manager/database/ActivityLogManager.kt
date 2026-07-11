@@ -97,7 +97,7 @@ object ActivityLogManager {
                 }
 
                 try {
-                    database = ActivityLogDatabase.getInstance(context)
+                    database = ActivityLogDatabase.getInstance(storageContext)
                     dao = database?.activityLogDao()
                     retentionCount = settings.getActivityLogRetention()
                     loadFromDatabase()
@@ -320,30 +320,13 @@ object ActivityLogManager {
                 
                 try {
                     dbFile.parentFile?.let { parent ->
-                        if (!parent.exists()) {
-                            parent.mkdirs()
-                        }
+                        if (!parent.exists()) parent.mkdirs()
                     }
-                } catch (e: Exception) {
-                    Timber.tag(TAG).e(e, "Failed to create database directory")
+                } catch (ex: Exception) {
+                    Timber.tag(TAG).e(ex, "Failed to create database directory during recovery")
                 }
 
-                // Attempt Programmatic SQLite .recover
-                try {
-                    val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", "sqlite3 \${corruptedBackup.absolutePath} '.recover' | sqlite3 \${dbFile.absolutePath}"))
-                    val exitCode = process.waitFor()
-                    if (exitCode == 0 && dbFile.exists() && dbFile.length() > 0) {
-                        recoverySuccessful = true
-                        Timber.tag(TAG).i("Successfully recovered corrupted database via sqlite3 CLI!")
-                    } else {
-                        // Cleanup failed partial recovery
-                        if (dbFile.exists()) dbFile.delete()
-                    }
-                } catch (e: Exception) {
-                    Timber.tag(TAG).w(e, "sqlite3 binary not available for automatic recovery.")
-                }
-                
-                database = ActivityLogDatabase.getInstance(context)
+                database = ActivityLogDatabase.getInstance(storageContext)
                 dao = database?.activityLogDao()
                 
                 if (recoverySuccessful) {

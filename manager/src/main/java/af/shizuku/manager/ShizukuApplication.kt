@@ -163,6 +163,27 @@ class ShizukuApplication : Application(), Configuration.Provider {
                         return@setBeforeSend null
                     }
 
+                    // 4. Drop FileNotFoundException for last_crash.txt — this file simply
+                    // doesn't exist on fresh installs or after a cache clear, and reading
+                    // it without a prior exists() check is expected behaviour in the crash
+                    // reporter. Not an actionable bug.
+                    if (throwable is java.io.FileNotFoundException &&
+                        throwable.message?.contains("last_crash") == true) {
+                        return@setBeforeSend null
+                    }
+
+                    // 5. Drop BackgroundServiceStartNotAllowedException / IllegalStateException
+                    // thrown when the OS refuses to start ShizukuLiveService from background.
+                    // These are caught at the call-site; Sentry captures them via the global
+                    // uncaught handler before our catch block in older SDK versions. They are
+                    // expected on API 31+ when the app is backgrounded.
+                    val simpleName = throwable?.javaClass?.simpleName ?: ""
+                    if (simpleName == "BackgroundServiceStartNotAllowedException" ||
+                        (throwable is IllegalStateException &&
+                            throwable.message?.contains("startForegroundService") == true)) {
+                        return@setBeforeSend null
+                    }
+
                     // Add build config info to events
                     event.setTag("version_name", BuildConfig.VERSION_NAME)
                     event.setTag("version_code", BuildConfig.VERSION_CODE.toString())

@@ -367,13 +367,18 @@ abstract class HomeActivity : AppActivity(), MavericksView {
                 super.clearView(rv, vh)
                 adapter.isDragging = false
                 if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    vh.itemView.animate()
-                        .scaleX(1f)
-                        .scaleY(1f)
-                        .translationZ(0f)
-                        .setDuration(ShizukuSettings.scaledAnimationDuration(250))
-                        .setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
-                        .start()
+                    // Guard against NPE: animate() returns null when the view is
+                    // no longer attached to a window (OEM/Android 15+ nullability
+                    // contract violation observed in crash reports).
+                    if (vh.itemView.isAttachedToWindow) {
+                        vh.itemView.animate()
+                            ?.scaleX(1f)
+                            ?.scaleY(1f)
+                            ?.translationZ(0f)
+                            ?.setDuration(ShizukuSettings.scaledAnimationDuration(250))
+                            ?.setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
+                            ?.start()
+                    }
                 }
                 adapter.persistCardOrder()
                 adapter.updateData()

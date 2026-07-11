@@ -72,7 +72,7 @@ object SettingsSearchEngine {
                     eventType = parser.next()
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                android.util.Log.w("SettingsSearchEngine", "Failed to index preferences from XML", e)
             }
         }
         indexedItems = items

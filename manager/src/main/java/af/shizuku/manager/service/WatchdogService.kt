@@ -51,14 +51,24 @@ class WatchdogService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
-        // Create notification channel before startForeground() to avoid InvalidForegroundServiceTypeException
+
+        // Create notification channel before startForeground() to avoid
+        // InvalidForegroundServiceTypeException. Wrapped in try-catch so that
+        // a null/restricted NotificationManager never prevents startForeground()
+        // from being called (which would cause ForegroundServiceDidNotStartInTimeException).
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(
-                NotificationChannel(WATCHDOG_CHANNEL_ID, "Watchdog", NotificationManager.IMPORTANCE_LOW)
-            )
+            try {
+                val nm = getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+                nm?.createNotificationChannel(
+                    NotificationChannel(WATCHDOG_CHANNEL_ID, "Watchdog", NotificationManager.IMPORTANCE_LOW)
+                )
+            } catch (e: Exception) {
+                Timber.tag(TAG).w(e, "Failed to create watchdog notification channel")
+            }
         }
 
+        // Must be called within 5s of startForegroundService(); do it before any
+        // coroutine work so that a heavy initialisation path can never delay it.
         startForegroundSafely()
 
         job = scope.launch {
@@ -90,7 +100,6 @@ class WatchdogService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        startForegroundSafely()
         return START_STICKY
     }
 

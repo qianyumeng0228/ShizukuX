@@ -28,7 +28,7 @@ class FakeAdbPairingActivity : Activity() {
             try {
                 latch.await()
             } catch (e: InterruptedException) {
-                e.printStackTrace()
+                Thread.currentThread().interrupt()
             }
             return currentResult.get()
         }
