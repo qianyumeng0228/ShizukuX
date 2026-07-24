@@ -105,8 +105,11 @@ class AutomationViewHolder(
                         .setMessage(R.string.home_automation_regenerate_token_message)
                         .setNegativeButton(android.R.string.cancel, null)
                         .setPositiveButton(android.R.string.ok, { _, _ ->
-                            val authToken = ShizukuSettings.generateAuthToken()
-                            extrasEditText.setText(authToken)
+                            val newToken = ShizukuSettings.generateAuthToken()
+                            // Must match the initial extras format (line seeding extrasEditText):
+                            // "auth:" + encrypted token. Writing the raw token produced a value the
+                            // AuthenticatedReceiver couldn't verify, so a copied automation failed.
+                            extrasEditText.setText("auth:" + af.shizuku.manager.utils.IntentCrypto.encrypt(newToken))
                         })
                         .show()
                 }

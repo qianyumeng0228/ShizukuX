@@ -2,6 +2,8 @@
     <string name="server_uptime">Server Uptime</string>
     <string name="active_connections">Active Connections</string>
     <string name="server_memory_usage">Server Memory Usage</string>
+    <string name="server_memory_uncapped">Uncapped</string>
+    <string name="server_clients_connected">%1$d applications connected</string>
 
     <!-- To translators: you can leave your here -->
     <string name="translation_contributors">thejaustin</string>
@@ -504,8 +506,6 @@
     <string name="su_bridge_description">Provide root access to apps that don\'t support Shizuku by creating a custom \'su\' binary.</string>
     <string name="su_bridge_suggested_apps">Suggested Apps</string>
     <string name="su_bridge_suggested_apps_desc">These apps support custom SU paths. Point them to your exported \'su\' script.</string>
-    <string name="su_bridge_active_sessions">Active Sessions</string>
-    <string name="su_bridge_active_sessions_empty">No active root sessions detected.</string>
     <string name="su_bridge_global_config_title">Global Configuration</string>
     <string name="su_bridge_global_config_desc">Set a custom path for the SU bridge script. Apps will execute this path when requesting root.</string>
     <string name="su_bridge_setup_all">Setup All</string>

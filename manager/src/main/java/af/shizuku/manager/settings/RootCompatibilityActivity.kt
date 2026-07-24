@@ -29,7 +29,9 @@ import coil3.load
 import coil3.request.crossfade
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.core.ui.AppBarActivity
@@ -159,8 +161,9 @@ class RootCompatibilityActivity : AppBarActivity() {
 
         recyclerView = binding.suggestedAppsList
         recyclerView.layoutManager = LinearLayoutManager(this)
-        adapter = CategorizedSuggestedAppsAdapter(buildItems())
+        adapter = CategorizedSuggestedAppsAdapter(emptyList())
         recyclerView.adapter = adapter
+        refreshList()
 
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
@@ -213,13 +216,27 @@ class RootCompatibilityActivity : AppBarActivity() {
     }
 
     private fun refreshList() {
-        adapter.updateItems(buildItems())
+        // getInstalledPackages(GET_PERMISSIONS) enumerates every app's permission set; on devices
+        // with many apps that's a multi-hundred-ms main-thread stall (ANR risk). Build off-thread.
+        lifecycleScope.launch {
+            val items = withContext(Dispatchers.IO) { buildItems() }
+            if (isFinishing || isDestroyed) return@launch
+            adapter.updateItems(items)
+        }
     }
 
 
     private fun resolveSuPath(): String? {
         return af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath("su")
     }
+
+    private fun isPackageInstalled(pkg: String): Boolean =
+        try {
+            packageManager.getPackageInfo(pkg, 0)
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
 
     private fun copyToClipboard(text: String) {
         val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -276,10 +293,12 @@ class RootCompatibilityActivity : AppBarActivity() {
     private inner class CategorizedSuggestedAppsAdapter(items: List<ListItem>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         private val items = items.toMutableList()
+        private var lastAnimatedPosition = -1
 
         fun updateItems(newItems: List<ListItem>) {
             items.clear()
             items.addAll(newItems)
+            lastAnimatedPosition = -1
             notifyDataSetChanged()
         }
 
@@ -301,17 +320,31 @@ class RootCompatibilityActivity : AppBarActivity() {
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = items[position]
 
-            // M3E Expressive Animation: Scale and Fade Entrance for items
-            holder.itemView.alpha = 0f
-            holder.itemView.scaleX = 0.96f
-            holder.itemView.scaleY = 0.96f
-            holder.itemView.animate()
-                .alpha(1f)
-                .scaleX(1f)
-                .scaleY(1f)
-                .setDuration(ShizukuSettings.scaledAnimationDuration(500))
-                .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
-                .start()
+            // Resting alpha: suggested apps that aren't installed are dimmed as a "not installed"
+            // cue. Compute it up front so the entrance animation lands on it — animating to a fixed
+            // 1f would clobber the dim (uninstalled apps rendered fully opaque).
+            val restAlpha = if (item is ListItem.App && !isPackageInstalled(item.packageName)) 0.5f else 1f
+
+            // M3E Expressive Animation: Scale and Fade Entrance. Only animate the first time each
+            // position scrolls into view — replaying on every bind makes items flash while scrolling.
+            holder.itemView.animate().cancel()
+            if (position > lastAnimatedPosition) {
+                lastAnimatedPosition = position
+                holder.itemView.alpha = 0f
+                holder.itemView.scaleX = 0.96f
+                holder.itemView.scaleY = 0.96f
+                holder.itemView.animate()
+                    .alpha(restAlpha)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(ShizukuSettings.scaledAnimationDuration(500))
+                    .setInterpolator(android.view.animation.PathInterpolator(0.2f, 0f, 0f, 1f))
+                    .start()
+            } else {
+                holder.itemView.alpha = restAlpha
+                holder.itemView.scaleX = 1f
+                holder.itemView.scaleY = 1f
+            }
 
             if (holder is HeaderViewHolder && item is ListItem.Header) {
                 holder.binding.title.text = item.title
@@ -418,7 +451,6 @@ class RootCompatibilityActivity : AppBarActivity() {
                     holder.binding.icon.load(info.loadIcon(pm)) {
                         crossfade(true)
                     }
-                    holder.itemView.alpha = 1.0f
 
                     if (metadata == null) {
                         holder.binding.appContext.text = getString(R.string.su_bridge_installed_root_app)
@@ -443,7 +475,6 @@ class RootCompatibilityActivity : AppBarActivity() {
                     holder.binding.icon.load(R.drawable.ic_system_icon) {
                         crossfade(true)
                     }
-                    holder.itemView.alpha = 0.5f
 
                     if (metadata == null) {
                         holder.binding.appContext.text = getString(R.string.su_bridge_suggested_root_app)

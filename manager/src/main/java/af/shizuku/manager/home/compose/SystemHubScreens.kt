@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -27,8 +28,9 @@ import coil3.compose.AsyncImage
 
 @Composable
 fun ServerMetricsScreen() {
+    val context = LocalContext.current
     var uptimeText by remember { mutableStateOf("00:00:00") }
-    var clientCountText by remember { mutableStateOf("0 applications connected") }
+    var clientCountText by remember { mutableStateOf(context.getString(R.string.server_clients_connected, 0)) }
     var memoryProgress by remember { mutableFloatStateOf(0f) }
     var memoryDetails by remember { mutableStateOf("0 MB / 0 MB") }
 
@@ -55,7 +57,7 @@ fun ServerMetricsScreen() {
                     uptimeText = if (days > 0) String.format("%dd %02d:%02d:%02d", days, hours, minutes, seconds)
                     else String.format("%02d:%02d:%02d", hours, minutes, seconds)
                     
-                    clientCountText = "${stats.getInt("client_count")} applications connected"
+                    clientCountText = context.getString(R.string.server_clients_connected, stats.getInt("client_count"))
                     
                     val maxRaw = stats.getLong("mem_max")
                     val total = stats.getLong("mem_total")
@@ -71,7 +73,7 @@ fun ServerMetricsScreen() {
                         val gb = mb / 1024
                         if (gb > 0) "$gb GB" else if (mb > 0) "$mb MB" else "$kb KB"
                     }
-                    val maxStr = if (maxRaw == Long.MAX_VALUE) "Uncapped" else formatSize(max)
+                    val maxStr = if (maxRaw == Long.MAX_VALUE) context.getString(R.string.server_memory_uncapped) else formatSize(max)
                     memoryDetails = "${formatSize(used)} / $maxStr (Max Allowed)"
                 }
             } catch (e: Exception) {
@@ -87,14 +89,14 @@ fun ServerMetricsScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        MetricCard(title = "Server Uptime", value = uptimeText)
-        MetricCard(title = "Active Connections", value = clientCountText)
+        MetricCard(title = stringResource(R.string.server_uptime), value = uptimeText)
+        MetricCard(title = stringResource(R.string.active_connections), value = clientCountText)
         Card(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Text("Server Memory Usage", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.server_memory_usage), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(16.dp))
                 LinearProgressIndicator(
                     progress = { memoryProgress },

@@ -22,7 +22,6 @@ import af.shizuku.core.ui.EmptyStateView
 import af.shizuku.manager.databinding.ItemActivityLogBinding
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.database.ActivityLogRecord
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
@@ -79,7 +78,10 @@ class ActivityLogFragment : Fragment() {
 
     internal class LogViewHolder(private val binding: ItemActivityLogBinding) : RecyclerView.ViewHolder(binding.root) {
         companion object {
-            private val dateFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            // Include the date, not just the time: logs persist across days and a bare "HH:mm:ss"
+            // makes yesterday's entry indistinguishable from today's. MEDIUM/MEDIUM is locale-aware.
+            private val dateFormat = java.text.DateFormat.getDateTimeInstance(
+                java.text.DateFormat.MEDIUM, java.text.DateFormat.MEDIUM, Locale.getDefault())
             fun create(parent: ViewGroup) = LogViewHolder(ItemActivityLogBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
 

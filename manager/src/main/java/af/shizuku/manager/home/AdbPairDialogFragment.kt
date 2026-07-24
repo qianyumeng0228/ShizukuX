@@ -51,6 +51,11 @@ class AdbPairDialogFragment : DialogFragment() {
             setPositiveButton(android.R.string.ok, null)
             setNeutralButton(R.string.development_settings, null)
         }
+        // Fresh dialog session (not a config-change recreation): clear any terminal result left in
+        // the activity-scoped ViewModel from a previous open, so the observer below doesn't get the
+        // stale value redelivered and instantly dismiss (past success) or flash a stale failure.
+        if (savedInstanceState == null) viewModel.reset()
+
         val dialog = builder.create()
         dialog.setCanceledOnTouchOutside(false)
         dialog.setOnShowListener { onDialogShow(dialog) }
@@ -144,23 +149,28 @@ class AdbPairDialogFragment : DialogFragment() {
             }
         }
 
-        viewModel.result.observe(this) {
-            if (it == null) {
-                dismissAllowingStateLoss()
-            } else {
-                binding.progress.isVisible = false
-                binding.status.isVisible = true
-                binding.status.text = getString(R.string.adb_pairing_status_failed)
-                when (it) {
-                    is ConnectException -> {
-                        binding.port.error = context.getString(R.string.cannot_connect_port)
-                    }
-                    is AdbInvalidPairingCodeException -> {
-                        binding.pairingCode.error = context.getString(R.string.paring_code_is_wrong)
-                    }
-                    is AdbKeyException -> {
-                        Toast.makeText(context, context.getString(R.string.adb_error_key_store), Toast.LENGTH_LONG)
-                            .apply { setGravity(Gravity.CENTER, 0, 0) }.show()
+        viewModel.result.observe(this) { state ->
+            when (state) {
+                is PairingState.Idle -> {
+                    // Fresh session — nothing to show yet.
+                }
+                is PairingState.Success -> dismissAllowingStateLoss()
+                is PairingState.Failure -> {
+                    binding.progress.isVisible = false
+                    binding.status.isVisible = true
+                    binding.status.text = getString(R.string.adb_pairing_status_failed)
+                    when (val error = state.error) {
+                        is ConnectException -> {
+                            binding.port.error = context.getString(R.string.cannot_connect_port)
+                        }
+                        is AdbInvalidPairingCodeException -> {
+                            binding.pairingCode.error = context.getString(R.string.paring_code_is_wrong)
+                        }
+                        is AdbKeyException -> {
+                            Toast.makeText(context, context.getString(R.string.adb_error_key_store), Toast.LENGTH_LONG)
+                                .apply { setGravity(Gravity.CENTER, 0, 0) }.show()
+                        }
+                        else -> Unit
                     }
                 }
             }
@@ -177,13 +187,19 @@ class AdbPairDialogFragment : DialogFragment() {
     }
 }
 
+sealed class PairingState {
+    object Idle : PairingState()
+    object Success : PairingState()
+    data class Failure(val error: Throwable) : PairingState()
+}
+
 @SuppressLint("NewApi")
 class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private val appContext = getApplication<Application>().applicationContext
 
-    private val _result = MutableLiveData<Throwable?>()
-    val result = _result as LiveData<Throwable?>
+    private val _result = MutableLiveData<PairingState>(PairingState.Idle)
+    val result = _result as LiveData<PairingState>
 
     private val _port = MutableLiveData<Int>()
     val port = _port as LiveData<Int>
@@ -209,7 +225,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Throwable) {
                 Timber.e("failed to load or create AdbKey", e)
                 _isPairing.postValue(false)
-                _result.postValue(AdbKeyException(e))
+                _result.postValue(PairingState.Failure(AdbKeyException(e)))
                 return@launch
             }
 
@@ -217,15 +233,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 start()
             }.onFailure {
                 _isPairing.postValue(false)
-                _result.postValue(it)
+                _result.postValue(PairingState.Failure(it))
                 Timber.e("adb pairing failed", it)
             }.onSuccess {
                 _isPairing.postValue(false)
                 if (it) {
-                    _result.postValue(null)
+                    _result.postValue(PairingState.Success)
                 }
             }
         }
+    }
+
+    /** Clears terminal state so a reopened dialog starts fresh (see AdbPairDialogFragment). */
+    fun reset() {
+        _result.value = PairingState.Idle
+        _isPairing.value = false
     }
 
     override fun onCleared() {

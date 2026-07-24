@@ -47,8 +47,8 @@
 
     <ImageButton
         android:id="@+id/run_button"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_marginStart="8dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_outline_play_arrow_24"
