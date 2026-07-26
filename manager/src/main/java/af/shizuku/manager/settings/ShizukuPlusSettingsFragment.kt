@@ -12,6 +12,7 @@ import androidx.preference.Preference
 import androidx.preference.TwoStatePreference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.html.text.toHtml
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
@@ -226,31 +227,41 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             val packagesStr = newValue as? String ?: ""
             val packagesList = if (packagesStr.isBlank()) emptyList() else packagesStr.split(",").map { it.trim() }
             val ctx = context ?: return@setOnPreferenceChangeListener false
-            try {
-                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-                val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
-                val pm = ctx.packageManager
-                val installed = pm.getInstalledPackages(0).map { it.packageName }.toSet()
+            // getInstalledPackages() + setPackagesSuspended() are both real IPCs (PackageManager /
+            // DevicePolicyManager); do them off the main thread rather than blocking this
+            // preference-change callback like the now-fixed RootCompatibilityActivity.buildItems().
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                    val admin = ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
+                    val pm = ctx.packageManager
+                    val installed = pm.getInstalledPackages(0).map { it.packageName }.toSet()
 
-                // Clear any existing suspensions first
-                val toUnsuspend = installed.toMutableList()
-                dpm.setPackagesSuspended(admin, toUnsuspend.toTypedArray(), false)
+                    // Clear any existing suspensions first
+                    val toUnsuspend = installed.toMutableList()
+                    dpm.setPackagesSuspended(admin, toUnsuspend.toTypedArray(), false)
 
-                // Set chosen suspensions
-                if (packagesList.isNotEmpty()) {
-                    val toSuspend = packagesList.filter { installed.contains(it) }
-                    val failed = dpm.setPackagesSuspended(admin, toSuspend.toTypedArray(), true)
-                    if (failed.isNotEmpty()) {
-                        Toast.makeText(ctx, "Failed to freeze: ${failed.joinToString()}", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(ctx, "Frozen ${toSuspend.size} applications", Toast.LENGTH_SHORT).show()
+                    // Set chosen suspensions
+                    var message: String? = null
+                    if (packagesList.isNotEmpty()) {
+                        val toSuspend = packagesList.filter { installed.contains(it) }
+                        val failed = dpm.setPackagesSuspended(admin, toSuspend.toTypedArray(), true)
+                        message = if (failed.isNotEmpty()) {
+                            "Failed to freeze: ${failed.joinToString()}"
+                        } else {
+                            "Frozen ${toSuspend.size} applications"
+                        }
+                    }
+                    withContext(Dispatchers.Main) {
+                        message?.let { Toast.makeText(ctx, it, Toast.LENGTH_SHORT).show() }
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(ctx, "Failed: Device Owner privileges required", Toast.LENGTH_LONG).show()
                     }
                 }
-                true
-            } catch (e: Exception) {
-                Toast.makeText(ctx, "Failed: Device Owner privileges required", Toast.LENGTH_LONG).show()
-                false
             }
+            true
         }
 
         val customApiPref = requireNotNull(findPreference<TwoStatePreference>(KEY_CUSTOM_API_ENABLED))

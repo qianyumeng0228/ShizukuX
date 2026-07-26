@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.widget.SearchView
 import androidx.preference.Preference
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -88,7 +89,7 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
         }
 
         private fun applyFilters() {
-            filteredItems = allItems.filter { item ->
+            val newItems = allItems.filter { item ->
                 val matchesSearch = currentQuery.isEmpty() ||
                     item.label.contains(currentQuery, ignoreCase = true) ||
                     item.packageName.contains(currentQuery, ignoreCase = true)
@@ -97,7 +98,20 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
 
                 matchesSearch && matchesSystem
             }
-            notifyDataSetChanged()
+            // This runs on every keystroke (200ms debounce) against the full installed-app list -
+            // notifyDataSetChanged() rebound every visible row (icon reload + all) on each one.
+            // DiffUtil only touches rows that actually entered/left/moved in the filtered result.
+            val oldItems = filteredItems
+            val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+                override fun getOldListSize() = oldItems.size
+                override fun getNewListSize() = newItems.size
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int) =
+                    oldItems[oldItemPosition].packageName == newItems[newItemPosition].packageName
+                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
+                    oldItems[oldItemPosition].isChecked == newItems[newItemPosition].isChecked
+            })
+            filteredItems = newItems
+            diff.dispatchUpdatesTo(this)
         }
 
         fun isEmpty() = filteredItems.isEmpty()

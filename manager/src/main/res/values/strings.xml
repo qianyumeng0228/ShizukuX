@@ -204,6 +204,7 @@
     <string name="home_automation_bottom_sheet_label_extras">Extras</string>
     <string name="home_automation_regenerate_token">Regenerate token?</string>
     <string name="home_automation_regenerate_token_message">You will need to reconfigure your intents with the new token.</string>
+    <string name="home_automation_token_encrypt_failed">Failed to secure the token — try again</string>
 
     <!-- Home - Learn more -->
     <string name="home_learn_more_title">Developer guide</string>

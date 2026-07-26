@@ -32,7 +32,9 @@ object IntentCrypto {
         keyStore.getKey(ALIAS, null) as SecretKey
     }
 
-    fun encrypt(data: String): String {
+    // Fail closed, not open: returning the raw input on failure previously meant a KeyStore/cipher
+    // error could silently place a plaintext auth token where an encrypted one was expected.
+    fun encrypt(data: String): String? {
         return try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             cipher.init(Cipher.ENCRYPT_MODE, key)
@@ -43,14 +45,14 @@ object IntentCrypto {
             System.arraycopy(encrypted, 0, combined, iv.size, encrypted.size)
             Base64.encodeToString(combined, Base64.NO_WRAP)
         } catch (e: Exception) {
-            data // fallback
+            null
         }
     }
 
-    fun decrypt(data: String): String {
+    fun decrypt(data: String): String? {
         return try {
             val combined = Base64.decode(data, Base64.NO_WRAP)
-            if (combined.size < IV_LENGTH) return data
+            if (combined.size < IV_LENGTH) return null
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val iv = combined.copyOfRange(0, IV_LENGTH)
             val encrypted = combined.copyOfRange(IV_LENGTH, combined.size)
@@ -58,7 +60,7 @@ object IntentCrypto {
             cipher.init(Cipher.DECRYPT_MODE, key, spec)
             String(cipher.doFinal(encrypted))
         } catch (e: Exception) {
-            data // fallback
+            null
         }
     }
 }

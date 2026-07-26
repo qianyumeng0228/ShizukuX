@@ -15,13 +15,17 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import coil3.load
-import coil3.request.crossfade
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import af.shizuku.core.ui.EmptyStateView
 import af.shizuku.manager.databinding.ItemActivityLogBinding
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.database.ActivityLogRecord
+import af.shizuku.manager.utils.AppIconCache
 import java.util.Date
 import java.util.Locale
 
@@ -85,24 +89,37 @@ class ActivityLogFragment : Fragment() {
             fun create(parent: ViewGroup) = LogViewHolder(ItemActivityLogBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
 
+        private var lookupJob: Job? = null
+
         fun bind(record: ActivityLogRecord) {
             val context = binding.root.context
             val pm = context.packageManager
-
-            try {
-                val ai = pm.getApplicationInfo(record.packageName, 0)
-                binding.appName.text = ai.loadLabel(pm)
-                binding.icon.load(ai.loadIcon(pm)) {
-                    crossfade(true)
-                }
-            } catch (e: Exception) {
-                binding.appName.text = record.appName.ifEmpty { record.packageName }
-                binding.icon.load(R.drawable.ic_system_icon)
-            }
+            val capturedPackage = record.packageName
 
             binding.packageName.text = record.packageName
             binding.action.text = record.action
             binding.timestamp.text = dateFormat.format(Date(record.timestamp))
+
+            // Fallback shown immediately; replaced once the (cached, off-main-thread) lookup below
+            // resolves. pm.getApplicationInfo() is a real IPC and loadIcon() a synchronous decode -
+            // doing both inline on bind (as this used to) stalls the UI thread on every scroll, and
+            // handing an already-decoded Drawable to Coil defeats its own async/caching pipeline.
+            // AppIconCache (used elsewhere for the same lookup) avoids both problems.
+            binding.appName.text = record.appName.ifEmpty { record.packageName }
+            binding.icon.setTag(R.id.tag_app_icon_package, null)
+            binding.icon.load(R.drawable.ic_system_icon)
+
+            lookupJob?.cancel()
+            lookupJob = CoroutineScope(Dispatchers.IO).launch {
+                val ai = try { pm.getApplicationInfo(capturedPackage, 0) } catch (e: Exception) { null } ?: return@launch
+                val label = AppIconCache.getLabel(context, ai)
+                withContext(Dispatchers.Main) {
+                    if (binding.packageName.text == capturedPackage) {
+                        binding.appName.text = label
+                        AppIconCache.loadIconBitmapAsync(context, ai, ai.uid / 100000, binding.icon)
+                    }
+                }
+            }
         }
     }
 }

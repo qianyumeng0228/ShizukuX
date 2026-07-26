@@ -83,6 +83,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
 
     private var loadIconJob: Job? = null
     private var grantedLoadJob: Job? = null
+    private var nameLoadJob: Job? = null
     // Incremented on every bind; coroutines capture the value at launch and check it on Main
     // to detect whether the ViewHolder was rebound before their withContext(Main) block runs.
     private var bindGeneration: Int = 0
@@ -328,14 +329,28 @@ class AppViewHolder(private val binding: AppListItemBinding) :
         val capturedPackage = packageName
         val capturedData = data
 
+        // Bump once per bind so both async lookups below (name/user-info and granted-state)
+        // share one generation and are invalidated together on rebind/recycle.
+        val gen = ++bindGeneration
+
         val userId = UserHandleCompat.getUserId(appInfo.uid)
         val appLabel = AppIconCache.getLabel(context, appInfo)
 
-        name.text = if (userId != UserHandleCompat.myUserId()) {
-            val userInfo = ShizukuSystemApis.getUserInfo(userId)
-            "$appLabel - ${userInfo.name} ($userId)"
+        nameLoadJob?.cancel()
+        if (userId != UserHandleCompat.myUserId()) {
+            // Fallback shown immediately; getUserInfo() can trigger a blocking
+            // UserManagerApis.getUsers() binder call on a cache miss, so resolve it off-thread.
+            name.text = appLabel
+            nameLoadJob = CoroutineScope(Dispatchers.IO).launch {
+                val userInfo = ShizukuSystemApis.getUserInfo(userId)
+                withContext(Dispatchers.Main) {
+                    if (gen == bindGeneration && adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                        name.text = "$appLabel - ${userInfo.name} ($userId)"
+                    }
+                }
+            }
         } else {
-            appLabel
+            name.text = appLabel
         }
 
         val appsAdapter = adapter as AppsAdapter
@@ -349,7 +364,6 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             // Load granted state off the main thread to avoid blocking during scrolling
             switchWidget.isEnabled = false
             grantedLoadJob?.cancel()
-            val gen = ++bindGeneration
             grantedLoadJob = CoroutineScope(Dispatchers.IO).launch {
                 val granted = AuthorizationManager.granted(capturedPackage, appInfo.uid)
                 val isPlusMissing = AuthorizationManager.isPlusApiSupported(capturedData) &&
@@ -418,5 +432,6 @@ class AppViewHolder(private val binding: AppListItemBinding) :
     override fun onRecycle() {
         loadIconJob?.cancel()
         grantedLoadJob?.cancel()
+        nameLoadJob?.cancel()
     }
 }

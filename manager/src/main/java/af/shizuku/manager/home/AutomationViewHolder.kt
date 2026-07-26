@@ -60,6 +60,10 @@ class AutomationViewHolder(
             val context = v.context
             val authToken = af.shizuku.manager.ShizukuSettings.getAuthToken()
             val encryptedToken = af.shizuku.manager.utils.IntentCrypto.encrypt(authToken)
+            if (encryptedToken == null) {
+                Toast.makeText(context, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
             val sheetBinding = HomeAutomationBottomSheetBinding.inflate(
                 LayoutInflater.from(context)
@@ -109,7 +113,12 @@ class AutomationViewHolder(
                             // Must match the initial extras format (line seeding extrasEditText):
                             // "auth:" + encrypted token. Writing the raw token produced a value the
                             // AuthenticatedReceiver couldn't verify, so a copied automation failed.
-                            extrasEditText.setText("auth:" + af.shizuku.manager.utils.IntentCrypto.encrypt(newToken))
+                            val newEncryptedToken = af.shizuku.manager.utils.IntentCrypto.encrypt(newToken)
+                            if (newEncryptedToken == null) {
+                                Toast.makeText(context, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
+                            } else {
+                                extrasEditText.setText("auth:$newEncryptedToken")
+                            }
                         })
                         .show()
                 }

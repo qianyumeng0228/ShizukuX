@@ -21,7 +21,11 @@ object ShellBinderRequestHandler {
             val rawToken = intent.getStringExtra("auth")
             val authToken = if (rawToken != null) af.shizuku.manager.utils.IntentCrypto.decrypt(rawToken) else null
             val expectedToken = ShizukuSettings.getAuthToken()
-            if (authToken != expectedToken) {
+            // Constant-time compare: this gates handing the live Shizuku binder to the caller, so a
+            // length/early-exit-dependent compare would leak a timing side-channel on the token.
+            if (authToken == null ||
+                !java.security.MessageDigest.isEqual(authToken.toByteArray(), expectedToken.toByteArray())
+            ) {
                 return false
             }
         }

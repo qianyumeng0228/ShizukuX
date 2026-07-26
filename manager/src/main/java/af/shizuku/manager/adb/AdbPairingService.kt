@@ -299,10 +299,9 @@ class AdbPairingService : Service() {
             this,
             stopRequestId,
             stopIntent(this),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_IMMUTABLE
-            else
-                0
+            // FLAG_IMMUTABLE has existed since API 23; there's no reason to leave these mutable
+            // pre-S like the >= S gate previously did.
+            PendingIntent.FLAG_IMMUTABLE
         )
 
         Notification.Action.Builder(
@@ -318,10 +317,9 @@ class AdbPairingService : Service() {
             this,
             retryRequestId,
             startIntent(this),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_IMMUTABLE
-            else
-                0
+            // FLAG_IMMUTABLE has existed since API 23; there's no reason to leave these mutable
+            // pre-S like the >= S gate previously did.
+            PendingIntent.FLAG_IMMUTABLE
         )
 
         Notification.Action.Builder(

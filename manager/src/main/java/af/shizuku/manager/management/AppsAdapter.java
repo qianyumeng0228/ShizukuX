@@ -91,11 +91,13 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
 
             @Override
             public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-                Object oldItem = oldList.get(oldItemPosition);
-                Object newItem = newList.get(newItemPosition);
-                if (oldItem instanceof PackageInfo && newItem instanceof PackageInfo) {
-                    return false; // Force re-bind to update switch state
-                }
+                // Switch/enhancement-badge state isn't derived from PackageInfo at all - it's
+                // loaded asynchronously in AppViewHolder.onBind() and re-pushed via an explicit
+                // notifyItemChanged() right after any grant/revoke/enhancement change (see
+                // AppViewHolder.onClick/onLongClick). Forcing this false unconditionally used to
+                // rebind (and restart icon + granted-state binder lookups for) every visible row
+                // on every updateData() call - including ones fired by search/filter keystrokes
+                // where most rows' underlying PackageInfo hadn't changed at all.
                 return areItemsTheSame(oldItemPosition, newItemPosition);
             }
         });

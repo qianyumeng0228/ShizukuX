@@ -68,6 +68,10 @@ class DhizukuProvider : ContentProvider() {
 
             if (code == FIRST_CALL_TRANSACTION + 10) { // TRANSACT_CODE_REMOTE_BINDER
                 data.enforceInterface("com.rosan.dhizuku.server")
+                // Unlike the interface-token check above, this doesn't verify caller identity - without
+                // isCallerAuthorized() any installed app could relay an arbitrary transact() call through
+                // this process's identity onto a binder of its own choosing (confused-deputy).
+                if (!isCallerAuthorized()) return false
                 val targetBinder = data.readStrongBinder()
                 val targetCode = data.readInt()
                 val targetFlags = data.readInt()

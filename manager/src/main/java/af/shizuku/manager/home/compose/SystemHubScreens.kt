@@ -1,6 +1,5 @@
 package af.shizuku.manager.home.compose
 
-import android.content.pm.PackageManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,19 +11,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import af.shizuku.manager.R
 import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.database.ActivityLogRecord
+import af.shizuku.manager.utils.AppIconCache
 import rikka.shizuku.Shizuku
 import timber.log.Timber
-import java.text.SimpleDateFormat
 import java.util.*
-import coil3.compose.AsyncImage
 
 @Composable
 fun ServerMetricsScreen() {
@@ -128,9 +131,11 @@ fun MetricCard(title: String, value: String) {
 @Composable
 fun ActivityLogScreen() {
     val logs by ActivityLogManager.logs.collectAsState(initial = emptyList())
-    val dateFormat = remember { SimpleDateFormat("HH:mm:ss", Locale.getDefault()) }
-    val context = LocalContext.current
-    val pm = context.packageManager
+    // Include the date, not just the time - logs persist across days (matches the RecyclerView
+    // implementation of this same screen in ActivityLogActivity.kt).
+    val dateFormat = remember {
+        java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.MEDIUM, Locale.getDefault())
+    }
 
     if (logs.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -147,29 +152,51 @@ fun ActivityLogScreen() {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(logs, key = { it.timestamp.toString() + it.packageName }) { record ->
-                var appName = record.appName.ifEmpty { record.packageName }
-                var iconModel: Any = R.drawable.ic_system_icon
-                try {
-                    val ai = pm.getApplicationInfo(record.packageName, 0)
-                    appName = ai.loadLabel(pm).toString()
-                    iconModel = ai.loadIcon(pm)
-                } catch (e: Exception) {}
-
-                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    AsyncImage(
-                        model = iconModel,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(appName, style = MaterialTheme.typography.titleMedium)
-                        Text(record.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(record.action, style = MaterialTheme.typography.bodyMedium)
-                    }
-                    Text(dateFormat.format(Date(record.timestamp)), style = MaterialTheme.typography.labelSmall)
-                }
+                ActivityLogRow(record, dateFormat)
             }
         }
+    }
+}
+
+@Composable
+private fun ActivityLogRow(record: ActivityLogRecord, dateFormat: java.text.DateFormat) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    var appName by remember(record.packageName) { mutableStateOf(record.appName.ifEmpty { record.packageName }) }
+    var iconBitmap by remember(record.packageName) {
+        mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null)
+    }
+
+    // pm.getApplicationInfo() is a real IPC and loadIcon() a synchronous decode - doing both inline
+    // during composition (as this screen used to) blocks the UI thread on every scroll/recompose,
+    // and handing an already-decoded Drawable to AsyncImage defeated its own caching pipeline.
+    // AppIconCache (used by the RecyclerView version of this same screen) is already cached+async.
+    LaunchedEffect(record.packageName) {
+        val pm = context.packageManager
+        val sizePx = with(density) { 40.dp.roundToPx() }
+        val ai = withContext(Dispatchers.IO) {
+            try { pm.getApplicationInfo(record.packageName, 0) } catch (e: Exception) { null }
+        } ?: return@LaunchedEffect
+        appName = AppIconCache.getLabel(context, ai)
+        val bitmap = withContext(Dispatchers.IO) {
+            AppIconCache.getOrLoadBitmap(context, ai, ai.uid / 100000, sizePx)
+        }
+        if (bitmap != null) iconBitmap = bitmap.asImageBitmap()
+    }
+
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        val bitmap = iconBitmap
+        if (bitmap != null) {
+            Image(bitmap = bitmap, contentDescription = null, modifier = Modifier.size(40.dp))
+        } else {
+            Icon(painterResource(R.drawable.ic_system_icon), contentDescription = null, modifier = Modifier.size(40.dp))
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(appName, style = MaterialTheme.typography.titleMedium)
+            Text(record.packageName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(record.action, style = MaterialTheme.typography.bodyMedium)
+        }
+        Text(dateFormat.format(Date(record.timestamp)), style = MaterialTheme.typography.labelSmall)
     }
 }
