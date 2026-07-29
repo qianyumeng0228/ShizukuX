@@ -485,6 +485,10 @@
             android:theme="@style/Theme.App.DialogHost">
             <intent-filter>
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_SETTING" />
+                <!-- Required so hosts that launch the config screen via an implicit intent (which
+                     auto-adds CATEGORY_DEFAULT) can resolve this activity; without it those hosts
+                     can't open the plugin's settings at all. -->
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
@@ -504,6 +508,8 @@
             android:theme="@style/Theme.App.DialogHost">
             <intent-filter>
                 <action android:name="com.twofortyfouram.locale.intent.action.EDIT_CONDITION" />
+                <!-- See EDIT_SETTING above: DEFAULT lets implicit-launch hosts resolve this. -->
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 
