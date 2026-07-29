@@ -29,8 +29,10 @@ import androidx.core.view.MenuProvider
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.activity.result.contract.ActivityResultContracts
 import af.shizuku.manager.backup.BackupRestoreManager
+import af.shizuku.manager.backup.BackupKeyUnavailableException
 import af.shizuku.manager.backup.CryptoUtils
 import android.security.keystore.KeyPermanentlyInvalidatedException
+import javax.crypto.AEADBadTagException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
@@ -48,6 +50,15 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 "encryption key was created, which permanently invalidates it by design. " +
                 if (prefix == "Restore failed") "This backup can no longer be decrypted."
                 else "Please try again to generate a new key."
+        // The key was destroyed (uninstall/reinstall or cleared data) — explain, don't show a raw error (#370).
+        is BackupKeyUnavailableException -> "$prefix: ${e.message}"
+        // A valid key exists but can't authenticate this ciphertext: the backup was made by a
+        // different install, is corrupt, or was tampered with. GCM's tag check is exactly what
+        // catches that — surface it as a clear cause instead of "AEADBadTagException" (#370).
+        is AEADBadTagException ->
+            "$prefix: this backup could not be decrypted. It was most likely created by a different " +
+                "installation of ShizukuX — backups are encrypted per-install and can't be restored " +
+                "after reinstalling or clearing the app's data."
         else -> "$prefix: ${e.message ?: e.javaClass.simpleName}"
     }
 

@@ -91,9 +91,26 @@ object CryptoUtils {
         return cipher
     }
 
+    private fun keyExists(userAuthRequired: Boolean): Boolean = try {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
+        keyStore.load(null)
+        keyStore.containsAlias(keyAlias(userAuthRequired))
+    } catch (e: Exception) {
+        false
+    }
+
     fun getCipherForDecryption(iv: ByteArray, userAuthRequired: Boolean): Cipher {
         val cipher = Cipher.getInstance(TRANSFORMATION)
         val spec = GCMParameterSpec(128, iv)
+        // If the key alias is gone (the app was uninstalled/reinstalled, or its data was cleared),
+        // getOrCreateSecretKey would silently MINT A BRAND-NEW key. Decryption would then fail deep
+        // inside doFinal() with an opaque AEADBadTagException AND leave a useless orphan key behind
+        // (#370). Detect the missing key up front and throw a clear, catchable error instead: a
+        // hardware-backed keystore key is non-exportable and destroyed on uninstall, so a backup can
+        // genuinely only be restored by the same installation that made it.
+        if (!keyExists(userAuthRequired)) {
+            throw BackupKeyUnavailableException()
+        }
         // No auto-regeneration here: an invalidated key's material is gone for good, so a fresh
         // key could never decrypt ciphertext written under the old one. Let it throw - the
         // caller shows KeyPermanentlyInvalidatedException with a message explaining the backup
@@ -102,3 +119,14 @@ object CryptoUtils {
         return cipher
     }
 }
+
+/**
+ * Thrown when a settings backup can't be decrypted because its AndroidKeyStore key no longer exists
+ * on this device (typically after uninstall/reinstall or clearing app data). Distinct from
+ * AEADBadTagException so the UI can explain the real cause rather than showing a raw crypto error.
+ */
+class BackupKeyUnavailableException : java.security.GeneralSecurityException(
+    "The encryption key for this backup no longer exists on this device. Settings backups are " +
+        "encrypted with a hardware-backed key that is destroyed when ShizukuX is uninstalled or its " +
+        "data is cleared, so a backup can only be restored by the installation that created it."
+)
