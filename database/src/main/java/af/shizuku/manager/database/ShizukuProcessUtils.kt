@@ -32,8 +32,13 @@ object ShizukuProcessUtils {
         }
         return try {
             val process = Shizuku.newProcess(cmd, null, null)
-            val out = StringBuilder()
-            val err = StringBuilder()
+            // StringBuffer (not StringBuilder) on purpose: the drain threads append() while the
+            // caller thread may read toString() on the join-timeout path below. StringBuffer's
+            // per-method synchronization makes that concurrent access safe (a torn read of a
+            // StringBuilder can throw AIOOBE / return corrupt text); worst case here is a partial
+            // but well-formed snapshot, which the "may be truncated" warning already covers.
+            val out = StringBuffer()
+            val err = StringBuffer()
             val outT = Thread {
                 try {
                     process.inputStream.bufferedReader().use { out.append(it.readText()) }
