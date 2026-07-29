@@ -683,6 +683,9 @@
     <string name="grant_dialog_button_allow_always">Allow all the time</string>
     <string name="grant_dialog_button_deny">"Deny"</string>
 
+    <string name="shell_consent_dialog_title">A shell client (such as rish or adb) is requesting privileged Shizuku access.\n\nOnly allow this if you just ran a shell command yourself. The app requesting access cannot be identified.</string>
+    <string name="shell_consent_button_allow">Allow</string>
+
     <!-- Starter -->
     <string name="starter">Starter</string>
     <string name="starting_root_shell" translatable="false">Starting root shell…</string>

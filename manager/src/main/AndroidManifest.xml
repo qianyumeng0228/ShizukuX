@@ -250,6 +250,11 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".legacy.ShellConsentActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/GrantPermissions" />
+        <activity
             android:name=".legacy.LegacyIsNotSupportedActivity"
             android:excludeFromRecents="true"
             android:exported="true"

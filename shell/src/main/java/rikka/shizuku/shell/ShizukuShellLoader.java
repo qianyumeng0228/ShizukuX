@@ -166,7 +166,7 @@ public class ShizukuShellLoader {
                         "Request timeout. The connection between the current app (%1$s) and Shizuku app may be blocked by your system. " +
                                 "Please disable all battery optimization features for both current app (%1$s) and Shizuku app.",
                         packageName)
-        ), 5000);
+        ), 15000);
 
         Looper.loop();
         System.exit(0);

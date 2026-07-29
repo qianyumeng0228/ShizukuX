@@ -45,8 +45,12 @@ object ShellBinderRequestHandler {
         val data = Parcel.obtain()
         val reply = Parcel.obtain()
         try {
-            data.writeInterfaceToken("rikka.shizuku.IShizukuService")
+            // Must match ShizukuShellLoader.receiverBinder.onTransact exactly: it reads
+            // readStrongBinder() then readString() with no enforceInterface() call, so a
+            // leading writeInterfaceToken() here gets misread as the binder slot and an
+            // omitted sourceDir NPEs the client at onBinderReceived's sourceDir.substring().
             data.writeStrongBinder(shizukuBinder)
+            data.writeString(context.applicationInfo.sourceDir)
             binder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
             return true
         } catch (e: Exception) {
