@@ -28,8 +28,12 @@ if [ -z "$RISH_APPLICATION_ID" ]; then
   _i=0
   while [ -n "$_pid" ] && [ "$_pid" != "0" ] && [ "$_i" -lt 8 ]; do
     _name=$(cat "/proc/$_pid/cmdline" 2>/dev/null | tr '\0' '\n' | head -n 1 | sed 's/:.*//')
+    # A package id is dotted and has NO slash. Skip slash-bearing paths/binaries first, then match on
+    # one-or-more dots so two-segment packages like com.termux resolve (the old *.*.* required three
+    # segments and silently failed for them - #368/#372).
     case "$_name" in
-      *.*.*) export RISH_APPLICATION_ID="$_name"; break ;;
+      */*) : ;;
+      *.*) export RISH_APPLICATION_ID="$_name"; break ;;
     esac
     _pid=$(grep -a '^PPid:' "/proc/$_pid/status" 2>/dev/null | sed 's/[^0-9]//g')
     _i=$((_i + 1))
