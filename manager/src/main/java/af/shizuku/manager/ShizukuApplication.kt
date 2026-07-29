@@ -62,9 +62,28 @@ class ShizukuApplication : Application(), Configuration.Provider {
         private const val MAX_SENTRY_EVENTS_PER_SESSION = 100
     }
 
+    // WorkManager's own internal background thread (e.g. ForceStopRunnable's Room queries) can
+    // throw on an unrecoverable device condition (observed: full-disk SQLiteFullException, which
+    // WorkManager converts to an IllegalStateException) entirely inside library code, with no
+    // ShizukuPlus frames in the stack. Without a custom TaskExecutor to catch it here, that
+    // reaches the process-wide uncaught-exception handler and kills the whole app.
+    private val workManagerTaskExecutor: java.util.concurrent.Executor by lazy {
+        val delegate = java.util.concurrent.Executors.newFixedThreadPool(4)
+        java.util.concurrent.Executor { command ->
+            delegate.execute {
+                try {
+                    command.run()
+                } catch (t: Throwable) {
+                    Timber.e(t, "WorkManager task threw on internal executor")
+                }
+            }
+        }
+    }
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
+            .setTaskExecutor(workManagerTaskExecutor)
             .build()
 
     override fun attachBaseContext(base: Context) {

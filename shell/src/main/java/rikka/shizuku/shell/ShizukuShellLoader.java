@@ -16,6 +16,7 @@ import android.system.Os;
 import android.text.TextUtils;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -122,11 +123,12 @@ public class ShizukuShellLoader {
             cls.getDeclaredMethod("main", String[].class, String.class, IBinder.class, Handler.class)
                     .invoke(null, args, callingPackage, binder, handler);
         } catch (ClassNotFoundException tr) {
-            LOGGER.log(Level.SEVERE, "Class not found. Make sure you have Shizuku v12.0.0 or above installed.", tr);
-            System.exit(1);
+            abort("Class not found. Make sure you have Shizuku v12.0.0 or above installed.: " + tr, tr);
         } catch (Throwable tr) {
-            LOGGER.log(Level.SEVERE, "Failed to load shell class", tr);
-            System.exit(1);
+            // invoke() wraps the target method's own exceptions in InvocationTargetException,
+            // whose toString()/message carry nothing useful - unwrap to the real cause.
+            Throwable cause = (tr instanceof InvocationTargetException && tr.getCause() != null) ? tr.getCause() : tr;
+            abort("Failed to load shell class: " + cause, cause);
         }
     }
 
@@ -156,8 +158,7 @@ public class ShizukuShellLoader {
         try {
             requestForBinder();
         } catch (Throwable tr) {
-            LOGGER.log(Level.SEVERE, "Failed to request binder", tr);
-            System.exit(1);
+            abort("Failed to request binder: " + tr, tr);
         }
 
         handler.postDelayed(() -> abort(
@@ -172,7 +173,15 @@ public class ShizukuShellLoader {
     }
 
     private static void abort(String message) {
+        System.err.println(message);
         LOGGER.severe(message);
+        System.exit(1);
+    }
+
+    private static void abort(String message, Throwable tr) {
+        System.err.println(message);
+        tr.printStackTrace();
+        LOGGER.log(Level.SEVERE, message, tr);
         System.exit(1);
     }
 }

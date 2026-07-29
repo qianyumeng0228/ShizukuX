@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.management.AppsViewModel
+import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.common.util.UserHandleCompat
 import af.shizuku.manager.R
@@ -53,12 +54,23 @@ class HomeAdapter(
 
     private val startWadbCreator = StartWirelessAdbViewHolder.creator(scope, homeModel)
     private val companionCreator = ShizukuCompanionViewHolder.creator(scope, homeModel)
+    private val startStockCreator = StartStockShizukuViewHolder.creator(scope)
 
     var isDragging = false
     private var isUpdating = false
     private var lastUpdateDataTime = 0L
     private var pendingUpdate = false
     private val animatedIds = HashSet<Long>()
+
+    // Cached inputs from the last successful updateData() render, so moveItem() can rebuild the
+    // adapter's real backing list synchronously mid-drag instead of only reordering cardOrder.
+    private var lastRenderStatus: ServiceStatus? = null
+    private var lastRenderGrantedCount: Int = 0
+    private var lastRenderIsEditMode: Boolean = false
+    private var lastRenderCompanionInstalled: Boolean = false
+    private var lastRenderCompatHubInstalled: Boolean = false
+    private var lastRenderIsOriginalShizukuRunning: Boolean = false
+    private var lastRenderHidden: Set<String> = emptySet()
 
     /**
      * Callback to notify when the empty state should be shown/hidden.
@@ -127,10 +139,6 @@ class HomeAdapter(
                 return@launch
             }
 
-            val adbPermission = status.permission
-            val running = status.isRunning
-            val isPrimaryUser = UserHandleCompat.myUserId() == 0
-            val rootRestart = running && status.uid == 0
             val hidden = ShizukuSettings.getHiddenHomeCards()
 
             withContext(Dispatchers.Main) {
@@ -138,49 +146,19 @@ class HomeAdapter(
                     isUpdating = false
                     return@withContext
                 }
-                clear()
 
-                // Fixed cards
-                var fixedCardCount = 0
-                addItem(ServerStatusViewHolder.CREATOR, status, ID_STATUS); fixedCardCount++
-                if (isOriginalShizukuRunning) {
-                    addItem(StartStockShizukuViewHolder.CREATOR, null, ID_START_VIA_STOCK); fixedCardCount++
-                }
-                if (adbPermission) {
-                    addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS); fixedCardCount++
-                }
-                if (running && !adbPermission) {
-                    addItem(AdbPermissionLimitedViewHolder.CREATOR, status, ID_ADB_PERMISSION_LIMITED); fixedCardCount++
-                }
+                lastRenderStatus = status
+                lastRenderGrantedCount = grantedCount
+                lastRenderIsEditMode = isEditMode
+                lastRenderCompanionInstalled = companionInstalled
+                lastRenderCompatHubInstalled = compatHubInstalled
+                lastRenderIsOriginalShizukuRunning = isOriginalShizukuRunning
+                lastRenderHidden = hidden
 
-                // Draggable cards
-                cardOrder.forEach { id ->
-                    val isHidden = id.toString() in hidden
-                    if (isHidden && !isEditMode) return@forEach
-                    when (id) {
-                        ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
-                            addItem(TerminalViewHolder.CREATOR, status, id)
-                        ID_START_ROOT -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled())))
-                            addItem(StartRootViewHolder.CREATOR, rootRestart, id)
-                        ID_START_WADB -> if (isEditMode || (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0)))
-                            addItem(startWadbCreator, null, id)
-                        ID_START_ADB -> if (isEditMode || (isPrimaryUser && ShizukuSettings.showStartAdbHome()))
-                            addItem(StartAdbViewHolder.CREATOR, null, id)
-                        ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
-                            addItem(AutomationViewHolder.CREATOR, null, id)
-                        ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
-                            addItem(LearnMoreViewHolder.CREATOR, null, id)
-                        ID_COMPANION -> {
-                            // The compat hub is what lets third-party apps detect ShizukuX, so surface
-                            // this card whenever it still needs action — the hub isn't installed yet, or
-                            // stock Shizuku is present and conflicts — not only when companion mode is on.
-                            // Otherwise (hub installed, no conflict) it stays opt-in via companion mode.
-                            val needsAction = !compatHubInstalled || companionInstalled
-                            if (isEditMode || ShizukuSettings.isCompanionModeEnabled() || needsAction)
-                                addItem(companionCreator, Pair(companionInstalled, compatHubInstalled), id)
-                        }
-                    }
-                }
+                val fixedCardCount = rebuildItems(
+                    status, grantedCount, isEditMode, companionInstalled, compatHubInstalled,
+                    isOriginalShizukuRunning, hidden
+                )
 
                 notifyDataSetChanged()
 
@@ -190,6 +168,72 @@ class HomeAdapter(
                 isUpdating = false
             }
         }
+    }
+
+    /**
+     * Clears and repopulates the adapter's backing item list in cardOrder sequence. Must run on
+     * the main thread. Returns the number of fixed (non-draggable) cards added. Does not call
+     * notifyDataSetChanged()/notifyItemMoved() — callers are responsible for the right notify.
+     */
+    private fun rebuildItems(
+        status: ServiceStatus,
+        grantedCount: Int,
+        isEditMode: Boolean,
+        companionInstalled: Boolean,
+        compatHubInstalled: Boolean,
+        isOriginalShizukuRunning: Boolean,
+        hidden: Set<String>
+    ): Int {
+        val adbPermission = status.permission
+        val running = status.isRunning
+        val isPrimaryUser = UserHandleCompat.myUserId() == 0
+        val rootRestart = running && status.uid == 0
+
+        clear()
+
+        // Fixed cards
+        var fixedCardCount = 0
+        addItem(ServerStatusViewHolder.CREATOR, status, ID_STATUS); fixedCardCount++
+        if (isOriginalShizukuRunning) {
+            addItem(startStockCreator, null, ID_START_VIA_STOCK); fixedCardCount++
+        }
+        if (adbPermission) {
+            addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS); fixedCardCount++
+        }
+        if (running && !adbPermission) {
+            addItem(AdbPermissionLimitedViewHolder.CREATOR, status, ID_ADB_PERMISSION_LIMITED); fixedCardCount++
+        }
+
+        // Draggable cards
+        cardOrder.forEach { id ->
+            val isHidden = id.toString() in hidden
+            if (isHidden && !isEditMode) return@forEach
+            when (id) {
+                ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
+                    addItem(TerminalViewHolder.CREATOR, status, id)
+                ID_START_ROOT -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled())))
+                    addItem(StartRootViewHolder.CREATOR, rootRestart, id)
+                ID_START_WADB -> if (isEditMode || (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0)))
+                    addItem(startWadbCreator, null, id)
+                ID_START_ADB -> if (isEditMode || (isPrimaryUser && ShizukuSettings.showStartAdbHome()))
+                    addItem(StartAdbViewHolder.CREATOR, null, id)
+                ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
+                    addItem(AutomationViewHolder.CREATOR, null, id)
+                ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
+                    addItem(LearnMoreViewHolder.CREATOR, null, id)
+                ID_COMPANION -> {
+                    // The compat hub is what lets third-party apps detect ShizukuX, so surface
+                    // this card whenever it still needs action — the hub isn't installed yet, or
+                    // stock Shizuku is present and conflicts — not only when companion mode is on.
+                    // Otherwise (hub installed, no conflict) it stays opt-in via companion mode.
+                    val needsAction = !compatHubInstalled || companionInstalled
+                    if (isEditMode || ShizukuSettings.isCompanionModeEnabled() || needsAction)
+                        addItem(companionCreator, Pair(companionInstalled, compatHubInstalled), id)
+                }
+            }
+        }
+
+        return fixedCardCount
     }
 
     override fun onBindViewHolder(holder: BaseViewHolder<*>, position: Int) {
@@ -238,6 +282,16 @@ class HomeAdapter(
         if (fromIdx >= 0 && toIdx >= 0) {
             cardOrder.removeAt(fromIdx)
             cardOrder.add(toIdx, fromId)
+        }
+        // notifyItemMoved requires the backing list to already reflect the new order (stable IDs
+        // are on); rebuild it synchronously here rather than relying on updateData(), which is
+        // gated by isDragging during the drag gesture.
+        val status = lastRenderStatus
+        if (status != null) {
+            rebuildItems(
+                status, lastRenderGrantedCount, lastRenderIsEditMode, lastRenderCompanionInstalled,
+                lastRenderCompatHubInstalled, lastRenderIsOriginalShizukuRunning, lastRenderHidden
+            )
         }
         notifyItemMoved(fromPos, toPos)
     }

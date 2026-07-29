@@ -55,7 +55,7 @@ object RootCompatHelper {
                 prefsEntry != null && isShizukuRoot() -> {
                     // Root Shizuku (UID 0) can directly edit another app's shared_prefs.
                     val (prefsFile, prefsKey) = prefsEntry
-                    val escapedPath = escapeSed(escapeShellSingleQuote(suPath))
+                    val escapedPath = escapeShellSingleQuote(escapeSed(suPath))
                     val escapedKey  = escapeSed(prefsKey)
                     val target = "/data/data/$packageName/shared_prefs/$prefsFile.xml"
                     // Replace existing value or append if key is absent

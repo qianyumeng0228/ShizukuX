@@ -116,19 +116,29 @@ class ShizukuCompanionViewHolder(
                 // UpdateManager/UpdateInstaller already use successfully for APK installs.
                 val dir = v.context.getExternalFilesDir(null) ?: v.context.cacheDir ?: v.context.filesDir ?: return@setOnClickListener
                 val tmpApk = java.io.File(dir, "compat.apk")
-                try {
-                    v.context.assets.open("compat.apk").use { input ->
-                        tmpApk.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
-                    return@setOnClickListener
-                }
 
                 setBusy(v.context, R.string.compat_hub_installing)
                 scope.launch {
+                    val extracted = withContext(Dispatchers.IO) {
+                        try {
+                            v.context.assets.open("compat.apk").use { input ->
+                                tmpApk.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            true
+                        } catch (e: Exception) {
+                            false
+                        }
+                    }
+                    if (!extracted) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+                            homeModel.reload()
+                        }
+                        return@launch
+                    }
+
                     val tmpPath = "/data/local/tmp/compat.apk"
                     val success = runPrivilegedCommand("cp '${tmpApk.absolutePath}' '$tmpPath' && chmod 644 '$tmpPath' && pm install -r '$tmpPath' && rm '$tmpPath'")
                     try {

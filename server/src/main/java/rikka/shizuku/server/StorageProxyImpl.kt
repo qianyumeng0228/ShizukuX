@@ -38,7 +38,9 @@ class StorageProxyImpl : IStorageProxy.Stub() {
             val readSide = pipe[0]
             val writeSide = pipe[1]
             
-            val cmd = arrayOf("sh", "-c", "cat \"$path\" > /proc/self/fd/${writeSide.fd}")
+            // Pass path as a positional arg ($1), not interpolated into the script text,
+            // so shell metacharacters in path can't break out of the quoted argument.
+            val cmd = arrayOf("sh", "-c", "cat \"\$1\" > /proc/self/fd/${writeSide.fd}", "sh", path)
             Runtime.getRuntime().exec(cmd)
             
             // The shell process will exit once cat is done. 

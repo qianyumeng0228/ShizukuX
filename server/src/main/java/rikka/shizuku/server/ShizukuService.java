@@ -609,7 +609,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                      packageName.equals("eu.chainfire.supersu"))) || isShizukuSpoof) {
                      
                     LOGGER.i("Shadow: Spoofing package presence from IPackageManager call for %s (code %d)", packageName, code);
-                    reply.writeNoException();
                     try {
                         android.content.pm.PackageInfo info = new android.content.pm.PackageInfo();
                         info.packageName = packageName;
@@ -619,14 +618,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         info.applicationInfo.packageName = packageName;
                         info.applicationInfo.sourceDir = "/data/app/" + packageName + "-mocked/base.apk";
                         info.applicationInfo.flags = android.content.pm.ApplicationInfo.FLAG_SYSTEM;
-                        
+
                         if (code == TRANSACTION_getPackageInfo) {
+                            reply.writeNoException();
                             reply.writeTypedObject(info, 1);
                             return true;
                         } else if (code == TRANSACTION_getApplicationInfo) {
+                            reply.writeNoException();
                             reply.writeTypedObject(info.applicationInfo, 1);
                             return true;
                         } else if (code == TRANSACTION_getPackageUid) {
+                            reply.writeNoException();
                             reply.writeInt(10000); // Mock UID
                             return true;
                         }
@@ -932,8 +934,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     return newProcessInternal(new String[]{"true"}, env, dir);
                 } else if ((baseCmd.equals("iptables") || baseCmd.equals("ip6tables") || baseCmd.endsWith("/iptables") || baseCmd.endsWith("/ip6tables")) && isFeatureEnabled("root_iptables_mocking")) {
                     LOGGER.i("SUBridge: executing and mocking iptables command -> " + String.join(" ", cmd));
+                    java.lang.Process p = null;
                     try {
-                        java.lang.Process p = Runtime.getRuntime().exec(cmd);
+                        p = Runtime.getRuntime().exec(cmd);
                         int exitCode = p.waitFor();
                         if (exitCode == 0) {
                             return newProcessInternal(cmd, env, dir);
@@ -944,12 +947,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     } catch (Exception e) {
                         LOGGER.e("SUBridge: iptables exec failed, returning mock success");
                         return newProcessInternal(new String[]{"true"}, env, dir);
+                    } finally {
+                        if (p != null) p.destroy();
                     }
                 } else if (baseCmd.equals("pm") && cmd.length > 1 && cmd[1].equals("list") && String.join(" ", cmd).contains("packages")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking pm list packages to include Magisk");
+                        java.lang.Process p = null;
                         try {
-                            java.lang.Process p = Runtime.getRuntime().exec(cmd);
+                            p = Runtime.getRuntime().exec(cmd);
                             java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()));
                             java.lang.StringBuilder sb = new java.lang.StringBuilder();
                             String line;
@@ -960,6 +966,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(new String[]{"echo", sb.toString().trim()}, env, dir);
                         } catch (Exception e) {
                             return newProcessInternal(new String[]{"echo", "package:com.topjohnwu.magisk"}, env, dir);
+                        } finally {
+                            if (p != null) p.destroy();
                         }
                     }
                 } else if (baseCmd.equals("pm") && cmd.length > 2 && cmd[1].equals("path") && cmd[2].equals("com.topjohnwu.magisk")) {
@@ -2134,6 +2142,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public void elevateApp(String packageName) {
         enforceCallingPermission("elevateApp");
         if (packageName == null || packageName.isEmpty()) return;
+
+        ClientRecord caller = clientManager.findClient(Binder.getCallingUid(), Binder.getCallingPid());
+        if (caller == null || !packageName.equals(caller.packageName)) {
+            LOGGER.e("elevateApp: caller may only elevate its own package, requested: " + packageName);
+            return;
+        }
 
         ApplicationInfo ai = Android17Compat.getApplicationInfo(packageName, 0, 0);
         if (ai == null) {

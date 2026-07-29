@@ -4,6 +4,7 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import rikka.core.content.asActivity
@@ -18,13 +19,16 @@ import rikka.recyclerview.BaseViewHolder.Creator
 class StartStockShizukuViewHolder(
     private val binding: HomeStartRootBinding,
     private val containerBinding: HomeItemContainerBinding,
+    private val scope: CoroutineScope,
 ) : BaseViewHolder<Boolean>(containerBinding.root) {
 
     companion object {
-        val CREATOR = Creator<Boolean> { inflater: LayoutInflater, parent: ViewGroup? ->
-            val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
-            val inner = HomeStartRootBinding.inflate(inflater, outer.cardContent, true)
-            StartStockShizukuViewHolder(inner, outer)
+        fun creator(scope: CoroutineScope): Creator<Boolean> {
+            return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
+                val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
+                val inner = HomeStartRootBinding.inflate(inflater, outer.cardContent, true)
+                StartStockShizukuViewHolder(inner, outer, scope)
+            }
         }
     }
 
@@ -46,7 +50,7 @@ class StartStockShizukuViewHolder(
             start.isEnabled = false
             // Shell.cmd().exec() runs the su/shell invocation synchronously; on the calling
             // (main) thread that risks jank or an ANR if root takes a moment to attach.
-            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            scope.launch(kotlinx.coroutines.Dispatchers.IO) {
                 try {
                     com.topjohnwu.superuser.Shell.cmd(cmd).exec()
                 } catch (e: Exception) {
