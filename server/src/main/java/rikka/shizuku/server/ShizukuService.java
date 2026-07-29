@@ -1080,7 +1080,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         String perm = cmd[3];
                         if (perm.contains("WRITE_SECURE_SETTINGS") || perm.contains("DUMP") || perm.contains("PACKAGE_USAGE_STATS")) {
                             try {
-                                Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm});
+                                // waitFor() reaps the child (and lets the grant land before we
+                                // report success); without it each call leaks a zombie + its fds.
+                                Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm}).waitFor();
                                 return newProcessInternal(new String[]{"true"}, env, dir);
                             } catch (Exception e) {
                                 LOGGER.e("SUBridge: pm grant failed", e);
@@ -2163,9 +2165,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 }
             }
-            // Also try to grant WRITE_SECURE_SETTINGS and DUMP directly via shell
-            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.WRITE_SECURE_SETTINGS"});
-            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.DUMP"});
+            // Also try to grant WRITE_SECURE_SETTINGS and DUMP directly via shell.
+            // waitFor() reaps the child; without it each call leaks a zombie process + its fds.
+            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.WRITE_SECURE_SETTINGS"}).waitFor();
+            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.DUMP"}).waitFor();
         } catch (Exception e) {
             LOGGER.e(e, "Plus: AppOps elevation failed for " + packageName);
         }
