@@ -1050,7 +1050,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     if (isFeatureEnabled("root_file_interceptor")) {
                         LOGGER.i("SUBridge: injecting permission-preservation flags for sensitive file operation");
                         java.util.List<String> newCmd = new java.util.ArrayList<>(java.util.Arrays.asList(cmd));
-                        if (baseCmd.equals("cp") || baseCmd.equals("mv")) {
+                        // Only cp takes these flags. mv rejects both -p and --preserve=all (it would
+                        // die with "invalid option"), and it already preserves mode/owner/timestamps
+                        // by default — so injecting them here used to BREAK every intercepted mv. tar
+                        // likewise gets nothing injected and passes through unchanged.
+                        if (baseCmd.equals("cp")) {
                             if (!newCmd.contains("-p")) newCmd.add(1, "-p"); // preserve permissions
                             if (!newCmd.contains("--preserve=all")) newCmd.add(1, "--preserve=all");
                         }
