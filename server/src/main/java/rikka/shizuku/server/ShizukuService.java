@@ -321,7 +321,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     private boolean isManagerAppId(int appId) {
-        return appId == managerAppId || (secondaryManagerAppId != -1 && appId == secondaryManagerAppId);
+        int cleanAppId = UserHandleCompat.getAppId(appId);
+        int cleanManagerAppId = UserHandleCompat.getAppId(managerAppId);
+        int cleanSecondaryAppId = secondaryManagerAppId != -1 ? UserHandleCompat.getAppId(secondaryManagerAppId) : -1;
+        return cleanAppId == cleanManagerAppId || (cleanSecondaryAppId != -1 && cleanAppId == cleanSecondaryAppId);
     }
 
     // Re-resolve the manager (and secondary flavor) uids at most once every few seconds, to recover
