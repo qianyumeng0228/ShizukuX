@@ -175,7 +175,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
     private fun isDeviceOwnerActive(ctx: Context): Boolean {
         return try {
             val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-            dpm.isDeviceOwnerApp(ctx.packageName)
+            dpm.isDeviceOwnerApp(ctx.packageName) || dpm.isProfileOwnerApp(ctx.packageName)
         } catch (e: Exception) {
             false
         }

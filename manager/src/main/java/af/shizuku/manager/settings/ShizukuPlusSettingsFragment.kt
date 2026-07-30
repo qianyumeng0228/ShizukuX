@@ -430,7 +430,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     private fun isDeviceOwnerActive(ctx: Context): Boolean {
         return try {
             val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-            dpm.isDeviceOwnerApp(ctx.packageName)
+            dpm.isDeviceOwnerApp(ctx.packageName) || dpm.isProfileOwnerApp(ctx.packageName)
         } catch (e: Exception) {
             false
         }
@@ -445,7 +445,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             getString(R.string.dhizuku_status_not_set)
         val baseSummary = getString(R.string.settings_dhizuku_mode_summary)
         pref.summary = "$statusLine\n\n$baseSummary"
-        // Show/hide the Clear Device Owner button based on active status
+        // Show/hide the Clear Owner button based on active status
         findPreference<Preference>("clear_device_owner")?.isVisible = active
     }
 
@@ -463,7 +463,12 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     private fun clearDeviceOwner(ctx: Context) {
         try {
             val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-            dpm.clearDeviceOwnerApp(ctx.packageName)
+            if (dpm.isDeviceOwnerApp(ctx.packageName)) {
+                dpm.clearDeviceOwnerApp(ctx.packageName)
+            } else if (dpm.isProfileOwnerApp(ctx.packageName)) {
+                val admin = android.content.ComponentName(ctx, af.shizuku.manager.admin.DhizukuAdminReceiver::class.java)
+                dpm.clearProfileOwner(admin)
+            }
             Toast.makeText(ctx, R.string.dhizuku_clear_owner_success, Toast.LENGTH_LONG).show()
             // Refresh the UI to reflect the change
             val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
