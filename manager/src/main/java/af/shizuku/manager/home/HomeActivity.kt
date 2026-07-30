@@ -80,6 +80,14 @@ open class HomeActivity : AppActivity(), MavericksView {
     // reappear on every state refresh while the user hasn't restarted yet.
     private var versionSkewSnackbarShown = false
 
+    // Tracks the service's running state across successive serviceStatus updates so the
+    // "just started" celebratory animation below can detect a real transition. Must be a plain
+    // field, not read back from homeModel's state inside the same onEach callback that just
+    // committed the new status — by then withState() would already see the *new* value, not
+    // the one before this particular update. Null until the first Success is observed, so the
+    // animation doesn't fire on cold start just because the service happened to already be running.
+    private var wasServiceRunning: Boolean? = null
+
     private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
         when (state) {
             ShizukuStateMachine.State.RUNNING -> {
@@ -193,7 +201,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                         .setPositiveButton(android.R.string.ok, null)
                         .show()
                 },
-                onRestoreHomeCards = { HomeEditMode.enter() },
+                onRestoreHomeCards = { adapter.restoreAllCards() },
                 recyclerViewProvider = { ctx, paddingValues ->
                     val density = ctx.resources.displayMetrics.density
                     recyclerView.apply {
@@ -222,13 +230,13 @@ open class HomeActivity : AppActivity(), MavericksView {
         homeModel.onEach(HomeState::serviceStatus) {
             if (it is Success) {
                 val status = it.invoke()
-                val wasRunning = adapter.itemCount > 0 && (adapter.getItemId(0) == HomeAdapter.ID_STATUS) &&
-                                (withState(homeModel) { s -> s.serviceStatus.invoke()?.isRunning == true })
+                val previouslyRunning = wasServiceRunning
+                wasServiceRunning = status.isRunning
 
                 adapter.updateData()
                 ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
 
-                if (status.isRunning && !wasRunning && ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                if (status.isRunning && previouslyRunning == false && ShizukuSettings.isExpressiveAnimationsEnabled()) {
                     recyclerView.post {
                         val view = recyclerView
                         if (!view.isAttachedToWindow) return@post

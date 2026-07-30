@@ -84,7 +84,6 @@ class StartStockShizukuViewHolder(
         val context = binding.icon.context
         val errorContainer = context.themeColor(com.google.android.material.R.attr.colorErrorContainer)
         val onErrorContainer = context.themeColor(com.google.android.material.R.attr.colorOnErrorContainer)
-        binding.icon.background = af.shizuku.manager.utils.IconStyleHelper.pillBackground(context, errorContainer)
-        binding.icon.imageTintList = android.content.res.ColorStateList.valueOf(onErrorContainer)
+        af.shizuku.manager.utils.IconStyleHelper.applyToStatusCardIcon(binding.icon, pillColor = errorContainer, tintColor = onErrorContainer)
     }
 }

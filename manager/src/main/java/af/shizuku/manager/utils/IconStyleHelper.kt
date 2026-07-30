@@ -203,6 +203,22 @@ object IconStyleHelper {
         }
     }
 
+    /**
+     * Applies a semantic status pill (server ok/error, ADB-permission-limited warning,
+     * incompatible-server warning) — these always render as a Two-Tone-style pill regardless of
+     * the user's icon Style setting, since muting an error/warning to Standard/Outlined would lose
+     * the color signal. Still routes the shape through [pillBackground] so it follows shape_style,
+     * and clears the ImageView's static 12dp `CardIcon.Droplet` XML padding to 0 - without this,
+     * these pills render visibly smaller/off-center than every Style-driven card's Two-Tone pill,
+     * which gets 0 padding via [applyToCardIcon].
+     */
+    fun applyToStatusCardIcon(imageView: ImageView, pillColor: Int, tintColor: Int) {
+        val context = imageView.context
+        imageView.background = pillBackground(context, pillColor)
+        imageView.imageTintList = ColorStateList.valueOf(tintColor)
+        imageView.setPadding(0, 0, 0, 0)
+    }
+
     private fun tinted(drawable: Drawable, color: Int): Drawable {
         drawable.setTintList(ColorStateList.valueOf(color))
         return drawable

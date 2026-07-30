@@ -53,6 +53,33 @@ object AppIconCache {
         }
     }
 
+    /**
+     * Drops every cached bitmap/label for [packageName] — call on
+     * ACTION_PACKAGE_REMOVED/REPLACED/CHANGED, otherwise an app that changes its icon on update
+     * keeps showing the old one for as long as the LRU happens to hold it.
+     */
+    fun invalidate(packageName: String) {
+        lruCache.snapshot().keys
+            .filter { it.first == packageName }
+            .forEach { lruCache.remove(it) }
+        labelCache.remove(packageName)
+    }
+
+    /**
+     * Reacts to system memory pressure (see ComponentCallbacks2). This cache is sized to a
+     * quarter of max heap and otherwise never shrinks on its own, so without this hook it can
+     * itself become a contributor to the low-memory condition it should be backing off from.
+     */
+    fun trimMemory(level: Int) {
+        if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE ||
+            level == android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) {
+            lruCache.evictAll()
+            labelCache.evictAll()
+        } else if (level >= android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) {
+            lruCache.trimToSize(lruCache.size() / 2)
+        }
+    }
+
     fun getLabel(context: Context, info: ApplicationInfo): String {
         val cached = labelCache[info.packageName]
         if (cached != null) return cached
@@ -95,7 +122,16 @@ object AppIconCache {
                             info: ApplicationInfo, userId: Int,
                             view: ImageView): Job {
         val packageName = info.packageName
-        val size = view.measuredWidth.let { if (it > 0) it else context.resources.getDimensionPixelSize(R.dimen.default_app_icon_size) }
+        // Prefer the ImageView's declared layout_width: LayoutInflater bakes a fixed dp size
+        // into LayoutParams synchronously at inflate time, before any measure pass, so it's
+        // reliable on a view's very first bind - unlike measuredWidth, which is still 0 at that
+        // point. This project's three call sites use three different fixed icon sizes (48dp/
+        // 40dp/32dp); measuredWidth==0 on first bind used to fall back to one shared default
+        // regardless of which layout was actually being bound, decoding+caching the wrong-size
+        // bitmap for two of the three, then redoing the work at the real size on the next bind.
+        val size = view.layoutParams?.width?.takeIf { it > 0 }
+            ?: view.measuredWidth.takeIf { it > 0 }
+            ?: context.resources.getDimensionPixelSize(R.dimen.default_app_icon_size)
 
         // Tag the view with the current package being loaded to handle recycling
         view.setTag(R.id.tag_app_icon_package, packageName)

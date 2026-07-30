@@ -21,6 +21,12 @@ object MotionUtils {
         }
 
         setOnTouchListener { v, event ->
+            // Unlike every other animation/haptic call site in the app, this touch feedback
+            // used to fire unconditionally on every card tap, ignoring the user's Expressive
+            // Animations toggle.
+            if (!af.shizuku.manager.ShizukuSettings.isExpressiveAnimationsEnabled()) {
+                return@setOnTouchListener false
+            }
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     v?.let { HapticUtils.tap(it) }

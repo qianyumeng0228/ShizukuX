@@ -95,14 +95,16 @@ class HomeAdapter(
     }
 
     /**
-     * Restores a card by removing it from the hidden list.
+     * Restores every hidden card at once. Wired to the "Restore cards" button on the
+     * all-cards-hidden empty state, whose copy promises "Go to Settings to restore them" / a
+     * bulk restore - it previously only called HomeEditMode.enter(), which doesn't unhide
+     * anything on its own and left the user to un-hide each card individually via its "+"
+     * toggle, contradicting what the button said it would do.
      */
-    fun restoreCard(cardId: Long) {
-        val hidden = ShizukuSettings.getHiddenHomeCards().toMutableSet()
-        if (hidden.remove(cardId.toString())) {
-            ShizukuSettings.setHiddenHomeCards(hidden)
-            updateData()
-        }
+    fun restoreAllCards() {
+        if (ShizukuSettings.getHiddenHomeCards().isEmpty()) return
+        ShizukuSettings.setHiddenHomeCards(emptySet())
+        updateData()
     }
 
     override fun onCreateCreatorPool(): IndexCreatorPool = IndexCreatorPool()

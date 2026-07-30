@@ -13,7 +13,7 @@ class ThemeDelegateImpl : ThemeDelegate {
         val customAccent = ShizukuSettings.getPreferences().getString("custom_accent", "DEFAULT")
         return ThemeHelper.getTheme(context) + ThemeHelper.isUsingSystemColor() + customAccent +
             ShizukuSettings.isExpressiveShapesEnabled() + ShizukuSettings.getShapeStyle() +
-            ShizukuSettings.getIconStyle()
+            ShizukuSettings.getIconStyle() + ShizukuSettings.getIconColorMode()
     }
 
     override fun isUsingSystemColor(): Boolean {

@@ -355,6 +355,41 @@ class ShizukuApplication : Application(), Configuration.Provider {
     }
 
     /**
+     * Keeps AppIconCache honest: trims it under memory pressure (it's sized to 1/4 of max heap
+     * and never shrinks on its own otherwise) and drops entries for apps that update/uninstall
+     * so a changed icon doesn't keep showing the stale cached one.
+     */
+    private fun registerIconCacheMaintenance() {
+        registerComponentCallbacks(object : android.content.ComponentCallbacks2 {
+            override fun onTrimMemory(level: Int) {
+                af.shizuku.manager.utils.AppIconCache.trimMemory(level)
+            }
+            override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {}
+            @Deprecated("Deprecated in Java", ReplaceWith("onTrimMemory"))
+            override fun onLowMemory() {
+                af.shizuku.manager.utils.AppIconCache.trimMemory(android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE)
+            }
+        })
+
+        val packageChangeReceiver = object : android.content.BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val packageName = intent.data?.schemeSpecificPart ?: return
+                af.shizuku.manager.utils.AppIconCache.invalidate(packageName)
+            }
+        }
+        val filter = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addDataScheme("package")
+        }
+        // Never unregistered — this is an Application-scoped singleton, same lifetime as the process.
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, packageChangeReceiver, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+    }
+
+    /**
      * Initialize settings and managers
      */
     private fun initializeManagers() {
@@ -523,6 +558,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     .build()
             )
         }
+
+        registerIconCacheMaintenance()
 
         // 5. Initialize settings and managers
         try {

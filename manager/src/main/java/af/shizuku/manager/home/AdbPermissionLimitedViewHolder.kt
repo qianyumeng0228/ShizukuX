@@ -1,6 +1,5 @@
 package af.shizuku.manager.home
 
-import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +35,6 @@ class AdbPermissionLimitedViewHolder(private val binding: HomeExtraStepRequiredB
         val context = binding.icon.context
         val onErrorContainer = context.themeColor(com.google.android.material.R.attr.colorOnErrorContainer)
         val errorContainer = context.themeColor(com.google.android.material.R.attr.colorErrorContainer)
-        binding.icon.background = IconStyleHelper.pillBackground(context, onErrorContainer)
-        binding.icon.imageTintList = ColorStateList.valueOf(errorContainer)
+        IconStyleHelper.applyToStatusCardIcon(binding.icon, pillColor = onErrorContainer, tintColor = errorContainer)
     }
 }

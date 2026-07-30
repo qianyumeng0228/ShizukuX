@@ -19,6 +19,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.FileProvider
 import io.sentry.Sentry
 import af.shizuku.manager.home.HomeActivity
+import af.shizuku.manager.ShizukuSettings
 import java.io.File
 import kotlinx.coroutines.*
 
@@ -32,11 +33,6 @@ class UpdateManager(private val context: Context) {
         private const val NOTIFICATION_CHANNEL_ID = "update_channel"
         private const val NOTIFICATION_ID = 1001
         private const val DOWNLOAD_ID_PREF = "update_download_id"
-
-        /**
-         * Action for download complete broadcast
-         */
-        const val ACTION_DOWNLOAD_COMPLETE = "af.shizuku.manager.action.DOWNLOAD_COMPLETE"
     }
 
     private val notificationManager = NotificationManagerCompat.from(context)
@@ -77,10 +73,16 @@ class UpdateManager(private val context: Context) {
             file.delete()
         }
 
+        // Old update APKs are never referenced again once a newer one starts downloading.
+        cleanup()
+
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle(context.getString(R.string.update_downloading_title))
             .setDescription(context.getString(R.string.update_downloading_description, versionName))
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            // HIDDEN, not VISIBLE_NOTIFY_COMPLETED — monitorDownload() already drives our own
+            // progress/install notifications; VISIBLE_NOTIFY_COMPLETED would show a second,
+            // redundant system download notification alongside them.
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
             .setDestinationUri(Uri.fromFile(file))
             .setAllowedOverMetered(true)
             .setAllowedOverRoaming(true)
@@ -122,7 +124,7 @@ class UpdateManager(private val context: Context) {
                     // thrown by DownloadManager on some Android 10+ OEM builds when the default
                     // projection internally includes the removed local_filename column.
                     val cursor = try {
-                        downloadManager.query(query)
+                        withContext(Dispatchers.IO) { downloadManager.query(query) }
                     } catch (e: IllegalArgumentException) {
                         Timber.tag(TAG).w(e, "DownloadManager.query rejected by system; retrying bare filter")
                         null
@@ -133,8 +135,8 @@ class UpdateManager(private val context: Context) {
                         val progressIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
                         val totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                         val status = if (statusIdx >= 0) cursor.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
-                        val progress = if (progressIdx >= 0) cursor.getInt(progressIdx) else 0
-                        val total = if (totalIdx >= 0) cursor.getInt(totalIdx) else 0
+                        val progress = if (progressIdx >= 0) cursor.getLong(progressIdx) else 0L
+                        val total = if (totalIdx >= 0) cursor.getLong(totalIdx) else 0L
 
                         when (status) {
                             DownloadManager.STATUS_SUCCESSFUL -> {
@@ -153,8 +155,9 @@ class UpdateManager(private val context: Context) {
                                 // Waiting for network
                             }
                             DownloadManager.STATUS_RUNNING -> {
-                                // Update progress notification
-                                val percent = if (total > 0) (progress * 100 / total) else 0
+                                // Update progress notification. progress/total are Long — an
+                                // Int (progress * 100) would overflow for any file over ~21.4MB.
+                                val percent = if (total > 0) (progress * 100 / total).toInt() else 0
                                 updateProgressNotification(percent, versionName)
                             }
                         }
@@ -192,8 +195,17 @@ class UpdateManager(private val context: Context) {
         // Remove progress notification
         notificationManager.cancel(NOTIFICATION_ID)
 
-        // Show install notification
-        showInstallNotification(file, versionName)
+        if (ShizukuSettings.isAutoInstallEnabled()) {
+            scope.launch {
+                if (!installApk(file)) {
+                    // installApk only returns false on an unexpected failure before it could
+                    // even hand off to the system installer — fall back to the manual prompt.
+                    showInstallNotification(file, versionName)
+                }
+            }
+        } else {
+            showInstallNotification(file, versionName)
+        }
     }
 
     /**
@@ -284,8 +296,10 @@ class UpdateManager(private val context: Context) {
     /**
      * Install APK directly (for auto-install when enabled).
      * Must be called from a background coroutine — Shell.getShell() blocks until a shell is ready.
+     * @return true if a silent install succeeded or the system installer was handed off to,
+     *   false only if an unexpected failure happened before either could occur.
      */
-    suspend fun installApk(file: File) {
+    suspend fun installApk(file: File): Boolean {
         try {
             val isRootOrShizuku = withContext(Dispatchers.IO) {
                 com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()
@@ -297,12 +311,12 @@ class UpdateManager(private val context: Context) {
                 }
                 if (result.isSuccess) {
                     Timber.tag(TAG).i("Silent install successful")
-                    return
+                    return true
                 } else {
                     Timber.tag(TAG).w("Silent install failed (likely signature mismatch): ${result.out}")
                     if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
                         Timber.tag(TAG).i("Force-update background script initiated to handle signature mismatch")
-                        return
+                        return true
                     }
                 }
             }
@@ -321,9 +335,11 @@ class UpdateManager(private val context: Context) {
 
             context.startActivity(installIntent)
             Timber.tag(TAG).d("Install intent launched for: ${file.absolutePath}")
+            return true
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to launch install intent")
             Sentry.captureException(e)
+            return false
         }
     }
 
