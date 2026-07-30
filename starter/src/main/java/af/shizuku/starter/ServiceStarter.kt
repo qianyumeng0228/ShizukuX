@@ -97,6 +97,15 @@ object ServiceStarter {
             provider = ActivityManagerApis.getContentProviderExternal(name, userId, null, name)
             if (provider == null) {
                 Log.e(TAG, "provider is null $name $userId")
+
+                // The manager's process may have just been killed (OEM background-kill) and be
+                // mid-restart, in which case AMS can transiently return null instead of waiting
+                // and starting it. Give it one retry after a short delay before giving up, same
+                // as the dead-binder path below already does.
+                if (retry) {
+                    delay(1000)
+                    return@withContext sendBinder(binder, token, false)
+                }
                 return@withContext false
             }
             if (!provider.asBinder().pingBinder()) {
