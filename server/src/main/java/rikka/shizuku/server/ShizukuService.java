@@ -526,14 +526,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // 17 = reboot, 18 = shutdown
             if (code == 17 || code == 18) isBlocked = true;
         } else if ("android.app.IActivityManager".equals(descriptor)) {
-            // 50/78 = forceStopPackage, 61 = clearApplicationUserData, 103 = killBackgroundProcesses
-            // Codes vary by API version, using common ones as heuristic
+            // Common heuristic for dangerous power/app actions
             if (code == 50 || code == 61 || code == 78 || code == 103) isBlocked = true;
-        } else if ("android.content.pm.IPackageManager".equals(descriptor)) {
-            // 26 = deletePackage, 13 = installPackage
-            if (code == 26 || code == 13) isBlocked = true;
         }
-        
+
         // Dynamic policy from settings
         String blockedDescriptors = plusSettingsMap.get("firewall_blocked_descriptors");
         if (blockedDescriptors != null && !blockedDescriptors.isEmpty()) {
