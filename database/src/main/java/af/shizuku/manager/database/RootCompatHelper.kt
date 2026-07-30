@@ -27,12 +27,14 @@ object RootCompatHelper {
     // Apps that store their SU path in shared_prefs; only reachable with UID 0 (root Shizuku).
     // Format: package → Pair(prefs file basename, XML key name)
     private val ROOT_PREFS_APPS = mapOf(
-        "com.keramidas.TitaniumBackup" to Pair("TitaniumBackup-preferences", "suCommand"),
+        "com.keramidas.TitaniumBackup"    to Pair("TitaniumBackup-preferences", "suCommand"),
         "com.speedsoftware.rootexplorer" to Pair("RootExplorer", "SuCommandLine"),
         "pl.solidexplorer2"              to Pair("SolidExplorer2", "su_binary_path"),
         "com.ghisler.android.TotalCommander" to Pair("tcandroid3", "supath"),
         "com.jrummy.root.browserfree"    to Pair("es_preferences", "su_path"),
-        "com.estrongs.android.pop"       to Pair("es_preferences", "su_path")
+        "com.estrongs.android.pop"       to Pair("es_preferences", "su_path"),
+        "com.github.machiav3lli.backup"  to Pair("com.github.machiav3lli.backup_preferences", "custom_su_path"),
+        "org.swift.backup"               to Pair("org.swift.backup_preferences", "su_path")
     )
 
     /**
