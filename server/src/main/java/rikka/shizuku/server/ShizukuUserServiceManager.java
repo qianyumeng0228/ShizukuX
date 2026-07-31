@@ -35,7 +35,8 @@ public class ShizukuUserServiceManager extends UserServiceManager {
         return ServiceStarter.commandForUserService(
                 appProcess,
                 ShizukuService.getManagerApplicationInfo().sourceDir,
-                token, packageName, classname, processNameSuffix, callingUid, debug);
+                token, packageName, classname, processNameSuffix, callingUid, debug,
+                ServerConstants.MANAGER_APPLICATION_ID);
     }
 
     @Override

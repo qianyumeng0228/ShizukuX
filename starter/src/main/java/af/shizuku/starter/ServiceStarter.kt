@@ -16,6 +16,14 @@ object ServiceStarter {
     private const val TAG = "ShizukuServiceStarter"
     private const val EXTRA_BINDER = "af.shizuku.plus.api.intent.extra.BINDER"
 
+    // Fallback only: used if a caller built the command line without --manager= (e.g. an
+    // out-of-date server binary). The real value is always passed explicitly below because this
+    // process is spawned fresh via app_process and can't see the server's runtime-resolved
+    // ServerConstants.MANAGER_APPLICATION_ID (which flips to the Drop-In id when that's the
+    // flavor actually installed) - hardcoding the Plus id here made every UserService start fail
+    // with "provider is null" on Drop-In-only installs (#371).
+    private const val DEFAULT_MANAGER_PACKAGE_NAME = "af.shizuku.plus.api"
+
     val DEBUG_ARGS: String by lazy {
         val sdk = Build.VERSION.SDK_INT
         when {
@@ -27,7 +35,7 @@ object ServiceStarter {
 
     private const val USER_SERVICE_CMD_FORMAT = "(CLASSPATH='%s' %s%s /system/bin " +
             "--nice-name='%s' af.shizuku.starter.ServiceStarter " +
-            "--token='%s' --package='%s' --class='%s' --uid=%d%s)&"
+            "--token='%s' --package='%s' --class='%s' --uid=%d --manager='%s'%s)&"
 
     @JvmStatic
     @Volatile
@@ -42,19 +50,22 @@ object ServiceStarter {
         classname: String,
         processNameSuffix: String,
         callingUid: Int,
-        debug: Boolean
+        debug: Boolean,
+        managerPackageName: String
     ): String {
         // Sanitize single quotes to prevent shell injection escapes
         val safePackageName = packageName.replace("'", "'\\''")
         val safeClassname = classname.replace("'", "'\\''")
         val safeProcessNameSuffix = processNameSuffix.replace("'", "'\\''")
-        
+        val safeManagerPackageName = managerPackageName.replace("'", "'\\''")
+
         val processName = "$safePackageName:$safeProcessNameSuffix"
         return String.format(
             Locale.ENGLISH, USER_SERVICE_CMD_FORMAT,
             managerApkPath, appProcess, if (debug) " $DEBUG_ARGS" else "",
             processName,
-            token, safePackageName, safeClassname, callingUid, if (debug) " --debug-name=$processName" else ""
+            token, safePackageName, safeClassname, callingUid, safeManagerPackageName,
+            if (debug) " --debug-name=$processName" else ""
         )
     }
 
@@ -74,9 +85,12 @@ object ServiceStarter {
 
         val service = result.first
         val token = result.second
+        val managerPackageName = args.firstOrNull { it.startsWith("--manager=") }
+            ?.substring("--manager=".length)
+            ?: DEFAULT_MANAGER_PACKAGE_NAME
 
         runBlocking {
-            if (!sendBinder(service, token)) {
+            if (!sendBinder(service, token, managerPackageName)) {
                 System.exit(1)
             }
         }
@@ -87,8 +101,12 @@ object ServiceStarter {
         Log.i(TAG, "service exited")
     }
 
-    private suspend fun sendBinder(binder: IBinder, token: String, retry: Boolean = true): Boolean = withContext(Dispatchers.IO) {
-        val packageName = "af.shizuku.plus.api"
+    private suspend fun sendBinder(
+        binder: IBinder,
+        token: String,
+        packageName: String,
+        retry: Boolean = true
+    ): Boolean = withContext(Dispatchers.IO) {
         val name = "$packageName.shizuku"
         val userId = 0
         var provider: IContentProvider? = null
@@ -104,7 +122,7 @@ object ServiceStarter {
                 // as the dead-binder path below already does.
                 if (retry) {
                     delay(1000)
-                    return@withContext sendBinder(binder, token, false)
+                    return@withContext sendBinder(binder, token, packageName, false)
                 }
                 return@withContext false
             }
@@ -115,7 +133,7 @@ object ServiceStarter {
                     ActivityManagerApis.forceStopPackageNoThrow(packageName, userId)
                     Log.e(TAG, "kill $packageName in user $userId and try again")
                     delay(1000)
-                    return@withContext sendBinder(binder, token, false)
+                    return@withContext sendBinder(binder, token, packageName, false)
                 }
                 return@withContext false
             }
