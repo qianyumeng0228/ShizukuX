@@ -64,6 +64,14 @@
     public static void main(java.lang.String[], java.lang.String, android.os.IBinder, android.os.Handler);
 }
 
+# Entrance of "plus" shell (rish's "plus" command) - loaded reflectively by
+# ShizukuShellLoader the same way as Shell above, but had no keep rule of its own,
+# so R8 stripped it and every "sh plus" invocation failed with
+# ClassNotFoundException on af.shizuku.manager.shell.PlusShell (#377).
+-keep class af.shizuku.manager.shell.PlusShell {
+    public static void main(java.lang.String[], java.lang.String, android.os.IBinder, android.os.Handler);
+}
+
 # Keep settings fragments instantiated by name via reflection in PreferenceFragmentCompat
 -keep public class af.shizuku.manager.settings.** extends androidx.fragment.app.Fragment {
     public <init>();
