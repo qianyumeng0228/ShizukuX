@@ -1,8 +1,14 @@
 package af.shizuku.manager.receiver
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.ShellBinderRequestHandler
@@ -10,6 +16,11 @@ import af.shizuku.manager.utils.IntentCrypto
 import java.security.MessageDigest
 
 class BinderRequestReceiver : BroadcastReceiver() {
+
+    companion object {
+        private const val CHANNEL_ID = "shell_consent"
+        private const val NOTIFICATION_ID = 1451
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != "rikka.shizuku.intent.action.REQUEST_BINDER" &&
@@ -36,17 +47,57 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // only if there's a live callback binder to reply to - otherwise there's nothing
         // to grant access to.
         if (intent.getBundleExtra("data")?.getBinder("binder") != null) {
-            context.startActivity(
-                Intent(context, ShellConsentActivity::class.java).apply {
-                    // putExtras() only copies the extras Bundle, not the action string -
-                    // ShellBinderRequestHandler.handleRequest gates on intent.action matching
-                    // REQUEST_BINDER, so it must be carried over explicitly or the forwarded
-                    // request silently fails that check.
-                    action = intent.action
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-                    putExtras(intent)
-                }
+            // A manifest-registered BroadcastReceiver has no visible UI, so a direct
+            // startActivity() here is exactly the pattern Android's background-activity-start
+            // (BAL) restrictions are designed to block - on modern OEM builds (e.g. Samsung
+            // One UI) it is silently dropped, ShellConsentActivity never appears, and
+            // ShizukuShellLoader's 15s timeout fires with a misleading "may be blocked by your
+            // system / disable battery optimization" message (#377). Route through a
+            // notification instead: tapping it is a user-initiated foreground action and is
+            // exempt from BAL, so the consent dialog reliably shows up.
+            postConsentNotification(context, intent)
+        }
+    }
+
+    private fun postConsentNotification(context: Context, intent: Intent) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            nm.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.notification_channel_shell_consent),
+                    NotificationManager.IMPORTANCE_HIGH
+                )
             )
         }
+
+        val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
+            // putExtras() only copies the extras Bundle, not the action string -
+            // ShellBinderRequestHandler.handleRequest gates on intent.action matching
+            // REQUEST_BINDER, so it must be carried over explicitly or the forwarded
+            // request silently fails that check.
+            action = intent.action
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
+            putExtras(intent)
+        }
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            0,
+            consentIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_system_icon)
+            .setContentTitle(context.getString(R.string.notification_shell_consent_title))
+            .setContentText(context.getString(R.string.notification_shell_consent_text))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        nm.notify(NOTIFICATION_ID, notification)
     }
 }

@@ -673,6 +673,9 @@
     <string name="notification_auth_missing_message">Add the “auth” extra to your intent. You can find your token by tapping “View intents” in the app.</string>
     <string name="notification_auth_invalid_title">Invalid auth token</string>
     <string name="notification_auth_invalid_message">Make sure the token in your intent matches the one shown under “View intents” in the app.</string>
+    <string name="notification_channel_shell_consent">Shell access requests</string>
+    <string name="notification_shell_consent_title">Shell access request</string>
+    <string name="notification_shell_consent_text">Tap to review a request for privileged Shizuku access from a shell client (such as rish or adb).</string>
 
     <!-- Permission related, appears in system permission UI -->
     <string name="permission_group_label" translatable="false">Shizuku</string>
