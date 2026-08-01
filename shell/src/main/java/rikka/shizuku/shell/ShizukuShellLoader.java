@@ -29,6 +29,9 @@ public class ShizukuShellLoader {
 
     private static final Logger LOGGER = Logger.getLogger("ShizukuShellLoader");
 
+    private static final String PLUS_APPLICATION_ID = "af.shizuku.plus.api";
+    private static final String DROPIN_APPLICATION_ID = "moe.shizuku.privileged.api";
+
     private static String[] args;
     private static String callingPackage;
     private static Handler handler;
@@ -53,6 +56,24 @@ public class ShizukuShellLoader {
         }
     };
 
+    // This process is spawned fresh via app_process by the "rish"/"plus" shell scripts, in the
+    // calling app's own UID - it has no way to see the server's runtime-resolved
+    // ServerConstants.MANAGER_APPLICATION_ID, so it must independently work out which flavor is
+    // actually installed. Same class of bug as #371's ServiceStarter.kt fix: a hardcoded
+    // "af.shizuku.plus.api" here means REQUEST_BINDER never reaches anyone on a Drop-In-only
+    // install, since Intent.setPackage() silently drops the broadcast when that package isn't
+    // present (rish then just times out after 15s with a misleading "connection may be blocked"
+    // message).
+    private static String resolveManagerPackageName() {
+        if (PackageManagerApis.getApplicationInfoNoThrow(PLUS_APPLICATION_ID, 0, 0) != null) {
+            return PLUS_APPLICATION_ID;
+        }
+        if (PackageManagerApis.getApplicationInfoNoThrow(DROPIN_APPLICATION_ID, 0, 0) != null) {
+            return DROPIN_APPLICATION_ID;
+        }
+        return PLUS_APPLICATION_ID;
+    }
+
     private static void requestForBinder() throws RemoteException {
         Bundle data = new Bundle();
         data.putBinder("binder", receiverBinder);
@@ -60,7 +81,7 @@ public class ShizukuShellLoader {
         String authToken = System.getenv("SHIZUKU_TOKEN");
 
         Intent intent = new Intent("rikka.shizuku.intent.action.REQUEST_BINDER")
-                .setPackage("af.shizuku.plus.api")
+                .setPackage(resolveManagerPackageName())
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
                 .putExtra("data", data);
 

@@ -467,6 +467,18 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
         }
         try {
+            // Guards against Android's Cached Apps Freezer (12+): if requestPackageName backgrounds
+            // between firing attachApplication and us processing it, this reentrant callback into its
+            // own (now possibly-frozen) process can silently fail - "sent binder code 1 ... to frozen
+            // apps and got error -74" (see #371). The temp allowlist exempts the UID from Doze AND
+            // clears OomAdjuster's freeze state (SHOULD_NOT_FREEZE_REASON_UID_ALLOWLISTED), so the
+            // same call already used before sendBinderToUserApp doubles as a freezer guard here.
+            DeviceIdleControllerApis.addPowerSaveTempWhitelistApp(requestPackageName, 30 * 1000,
+                    UserHandleCompat.getUserId(callingUid), 316/* PowerExemptionManager#REASON_SHELL */, "shell");
+        } catch (Throwable e) {
+            LOGGER.w(e, "Failed to add %s to power save temp whitelist before bindApplication", requestPackageName);
+        }
+        try {
             // Normal path: IShizukuApplication is now moe.shizuku.server.IShizukuApplication, matching
             // what rikka clients implement, so this transacts under the descriptor they expect.
             application.bindApplication(reply);
