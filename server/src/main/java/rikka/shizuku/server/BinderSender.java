@@ -20,9 +20,12 @@ import java.util.List;
 import kotlin.collections.ArraysKt;
 import rikka.hidden.compat.ActivityManagerApis;
 import rikka.hidden.compat.PackageManagerApis;
+import rikka.hidden.compat.UserManagerApis;
 import af.shizuku.common.compat.Android17Compat;
+import af.shizuku.common.compat.InstalledPackagesCompat;
 import rikka.hidden.compat.adapter.ProcessObserverAdapter;
 import rikka.hidden.compat.adapter.UidObserverAdapter;
+import rikka.shizuku.server.util.HandlerUtil;
 import rikka.shizuku.server.util.Logger;
 
 public class BinderSender {
@@ -222,6 +225,65 @@ public class BinderSender {
             } catch (Throwable tr) {
                 LOGGER.e(tr, "registerUidObserver");
             }
+        }
+
+        // The observers above only fire on a *transition* (foreground, uid active/idle/cached,
+        // process died). A client that was already running - and possibly already frozen - at
+        // the moment the server (re)starts never produces one of those transitions on its own,
+        // so it would otherwise sit waiting indefinitely for the next unrelated state change
+        // (see #371). Do one delayed catch-up pass instead: HandlerUtil's main handler needs the
+        // rest of ShizukuService's startup to finish setting it up first (setMainHandler runs
+        // earlier in the same constructor), so defer slightly rather than run inline here.
+        HandlerUtil.getMainHandler().postDelayed(BinderSender::catchUpAlreadyRunningClients, 2000);
+    }
+
+    // AOSP's ActivityManager.PROCESS_STATE_NONEXISTENT (frameworks/base ProcessStateEnum.aidl) -
+    // used as an integer literal rather than a symbolic import since this exact constant name
+    // isn't confirmed present in the dev.rikka.hidden:compat stub surface this module already
+    // depends on for the sibling PROCESS_STATE_UNKNOWN constant above.
+    private static final int PROCESS_STATE_NONEXISTENT = 20;
+
+    /**
+     * Re-delivers the Shizuku binder to every already-authorized client that's already running
+     * (including cached/frozen) at server-start time, rather than relying solely on the next
+     * foreground/uid-transition event to trigger it (#371). Deliberately checks each candidate's
+     * live process state first via {@link ActivityManagerApis#getPackageProcessState} instead of
+     * unconditionally calling {@link #sendBinder} for every package that declares the Shizuku
+     * permission - the latter would resolve a ContentProvider that isn't published yet and can
+     * force-start the app's process, turning a "catch up already-running clients" pass into
+     * "launch every authorized app on every server boot."
+     */
+    private static void catchUpAlreadyRunningClients() {
+        try {
+            for (int userId : UserManagerApis.getUserIdsNoThrow()) {
+                for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
+                    if (pi == null || pi.applicationInfo == null || pi.requestedPermissions == null) continue;
+
+                    if (!ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER) &&
+                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION) &&
+                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) &&
+                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL)) {
+                        continue;
+                    }
+
+                    int state;
+                    try {
+                        state = ActivityManagerApis.getPackageProcessState(pi.packageName, userId, "com.android.shell");
+                    } catch (Throwable e) {
+                        // Can't confirm it's actually running - skip rather than risk force-starting it.
+                        continue;
+                    }
+                    if (state < 0 || state >= PROCESS_STATE_NONEXISTENT) continue;
+
+                    try {
+                        sendBinder(pi.applicationInfo.uid, -1);
+                    } catch (Throwable e) {
+                        LOGGER.w(e, "catch-up sendBinder failed for uid %d", pi.applicationInfo.uid);
+                    }
+                }
+            }
+        } catch (Throwable tr) {
+            LOGGER.e(tr, "catchUpAlreadyRunningClients failed");
         }
     }
 }
