@@ -28,14 +28,15 @@ MAJORS = [
     (2129, "v13.6.0.r2129", "Android 17 (SDK 37) support"),
     (2139, "v13.6.0.r2139", "Stock-client compatibility (App-Ops / OptiDroid / Obtainium)"),
     (2149, "v13.6.0.r2149", "SU Bridge — root features for third-party apps on non-root"),
+    (2202, "v13.6.0.r2202", "Cached Apps Freezer fix — third-party apps reliably detect ShizukuX"),
 ]
 
 HEADLINE_REV, HEADLINE_TAG, _ = MAJORS[-1]
-HEADLINE_DESC = ("SU Bridge now works with third-party root apps — apps like Swift Backup that gate "
-                 "features behind root can use their root-only features on non-rooted devices by "
-                 "pointing their custom-su path at ShizukuX. Fixes the long-standing caller-identity "
-                 "bug so the bridge authenticates as the *calling* app, not ShizukuX itself, and "
-                 "deploys the wrapper to an exec-permitted location.")
+HEADLINE_DESC = ("Third-party apps that ShizukuX grants permissions to (WifiList, App Ops, Hail, "
+                 "Tasker, and others) now reliably detect and connect to the service. Closed the "
+                 "last gap in the Cached Apps Freezer guard: a UserService's very first connect "
+                 "callback could be silently dropped if the client app was frozen in the background "
+                 "while its process was still starting.")
 MAJOR_REVS = {m[0] for m in MAJORS}
 
 

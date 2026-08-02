@@ -360,8 +360,8 @@ jobs:
           # build the headline major == the era major, so a single callout is correct here. When you
           # bump this, also re-run scripts/backfill_majors.py (add the new major to its MAJORS list)
           # so older release pages show BOTH this headline and the major of their own era.
-          MAJOR_RELEASE="v13.6.0.r2149"
-          MAJOR_DESC="SU Bridge now works with third-party root apps — apps like Swift Backup can use their root-only features on non-rooted devices by pointing their custom-su path at ShizukuX (the bridge now authenticates as the calling app, fixing the long-standing caller-identity bug, and deploys to an exec-permitted location)."
+          MAJOR_RELEASE="v13.6.0.r2202"
+          MAJOR_DESC="Third-party apps that ShizukuX grants permissions to (WifiList, App Ops, Hail, Tasker, and others) now reliably detect and connect to the service. Closed the last gap in the Cached Apps Freezer guard: a UserService's very first connect callback could be silently dropped if the client app was frozen in the background while its process was still starting."
 
           # Most recent CRITICAL FIX to spotlight — a distinct, lower tier from MAJOR_RELEASE
           # above: not new capability, but a regression severe enough that users on the
