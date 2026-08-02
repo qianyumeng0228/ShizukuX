@@ -35,6 +35,7 @@ public class ShizukuShellLoader {
     private static String[] args;
     private static String callingPackage;
     private static Handler handler;
+    private static Runnable timeoutCallback;
 
     private static final Binder receiverBinder = new Binder() {
 
@@ -128,6 +129,10 @@ public class ShizukuShellLoader {
     }
 
     private static void onBinderReceived(IBinder binder, String sourceDir) {
+        if (timeoutCallback != null) {
+            handler.removeCallbacks(timeoutCallback);
+        }
+
         var base = sourceDir.substring(0, sourceDir.lastIndexOf('/'));
         String librarySearchPath = base + "/lib/" + VMRuntimeHidden.getRuntime().vmInstructionSet();
         String systemLibrarySearchPath = System.getProperty("java.library.path");
@@ -182,12 +187,21 @@ public class ShizukuShellLoader {
             abort("Failed to request binder: " + tr, tr);
         }
 
-        handler.postDelayed(() -> abort(
+        timeoutCallback = () -> abort(
                 String.format(
                         "Request timeout. The connection between the current app (%1$s) and Shizuku app may be blocked by your system. " +
                                 "Please disable all battery optimization features for both current app (%1$s) and Shizuku app.",
                         packageName)
-        ), 15000);
+        );
+        // 15s was sized for the consent dialog launching directly (see the commit that introduced
+        // this value). Since then, the dialog is routed through a notification the user has to
+        // notice, open, and tap first to dodge Android's background-activity-launch restrictions
+        // (#377) - that extra human step can easily eat the whole budget on its own, so a fully
+        // successful, on-time consent grant can still race this timer and lose (#377, still timing
+        // out after the notification/consent flow itself works). 90s gives real margin for that
+        // flow; onBinderReceived() above cancels this the moment the binder actually arrives, so a
+        // fast path isn't slowed down, only the failure path waits longer before giving up.
+        handler.postDelayed(timeoutCallback, 90000);
 
         Looper.loop();
         System.exit(0);
