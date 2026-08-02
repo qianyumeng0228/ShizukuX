@@ -1,10 +1,12 @@
 package af.shizuku.manager.home
 import af.shizuku.core.ui.EmptyStateView
 
+import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
@@ -17,6 +19,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import com.airbnb.mvrx.MavericksView
 import com.airbnb.mvrx.viewModel
@@ -73,6 +76,14 @@ open class HomeActivity : AppActivity(), MavericksView {
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
     private var versionClickCount = 0
+
+    // Registered unconditionally (required before onStart); only invoked on API 33+. The
+    // shell-consent notification (#377) silently no-ops without this permission, reproducing
+    // the original BAL timeout with no visible cause - request it once here so every user gets
+    // asked regardless of which flow (root/ADB/PC) they use to start the service.
+    private val notifPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* Nothing to do either way: system handles permanently-denied dialog suppression. */ }
 
     // Removed getLayoutId
 
@@ -314,6 +325,8 @@ open class HomeActivity : AppActivity(), MavericksView {
             }
         }
 
+        requestNotificationPermissionIfNeeded()
+
         // Check for updates on app startup (if enabled)
         checkForUpdates()
 
@@ -552,6 +565,14 @@ open class HomeActivity : AppActivity(), MavericksView {
 
     private fun checkServerStatus() {
         homeModel.reload()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ShizukuSettings.hasRequestedHomeNotificationPermission()) return
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        ShizukuSettings.setRequestedHomeNotificationPermission(true)
+        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onDestroy() {

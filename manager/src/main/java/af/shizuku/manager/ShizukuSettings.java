@@ -132,6 +132,7 @@ public class ShizukuSettings {
 
         // Migration (ShizukuX additions)
         public static final String KEY_MIGRATION_OFFERED = "migration_offered";
+        public static final String KEY_HOME_NOTIF_PERMISSION_REQUESTED = "home_notif_permission_requested";
 
         // Auto Update (ShizukuX additions)
         public static final String KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled";
@@ -186,6 +187,19 @@ public class ShizukuSettings {
 
     public static void setSentryLimitReached(boolean reached) {
         getPreferences().edit().putBoolean(Keys.KEY_SENTRY_LIMIT_REACHED, reached).apply();
+    }
+
+    // Only the ADB pairing tutorial flow used to request POST_NOTIFICATIONS, so users who
+    // set up the service via root/PC mode or a pre-existing ADB pairing never granted it -
+    // silently breaking the #377 shell-consent notification (NotificationManager.notify()
+    // no-ops without the permission on API 33+, reproducing the original BAL timeout with
+    // no visible cause). Home screen now requests it once for every user regardless of flow.
+    public static boolean hasRequestedHomeNotificationPermission() {
+        return getPreferences().getBoolean(Keys.KEY_HOME_NOTIF_PERMISSION_REQUESTED, false);
+    }
+
+    public static void setRequestedHomeNotificationPermission(boolean requested) {
+        getPreferences().edit().putBoolean(Keys.KEY_HOME_NOTIF_PERMISSION_REQUESTED, requested).apply();
     }
 
     public static boolean isExpressiveShapesEnabled() {

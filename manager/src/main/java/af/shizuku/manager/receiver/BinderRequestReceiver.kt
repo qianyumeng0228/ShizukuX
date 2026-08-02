@@ -14,6 +14,7 @@ import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 import af.shizuku.manager.utils.IntentCrypto
 import java.security.MessageDigest
+import timber.log.Timber
 
 class BinderRequestReceiver : BroadcastReceiver() {
 
@@ -61,6 +62,17 @@ class BinderRequestReceiver : BroadcastReceiver() {
 
     private fun postConsentNotification(context: Context, intent: Intent) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            // notify() below would silently no-op without this - same symptom as the original
+            // BAL-blocked startActivity (#377) with no visible cause. Home screen now requests
+            // POST_NOTIFICATIONS proactively, but log this so a still-blocked case is diagnosable
+            // instead of reproducing the exact same "mysteriously still times out" report.
+            Timber.tag("BinderRequestReceiver").w(
+                "Notifications disabled for %s - shell consent request will silently fail to display",
+                context.packageName
+            )
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             nm.createNotificationChannel(
