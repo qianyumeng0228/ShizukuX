@@ -187,6 +187,13 @@ public class ShizukuShellLoader {
             abort("Failed to request binder: " + tr, tr);
         }
 
+        // The 90s failure-path budget below (see the comment on the postDelayed call) covers a
+        // genuine wait for a human to notice and tap the consent notification, but prints nothing
+        // while it's waiting - which reads identically to a hang for a setup that's actually
+        // broken (dialog never displayed, wrong flavor installed, etc). One line up front at least
+        // tells the caller what it's blocked on.
+        System.err.println("Waiting for Shizuku authorization... check your notifications.");
+
         timeoutCallback = () -> abort(
                 String.format(
                         "Request timeout. The connection between the current app (%1$s) and Shizuku app may be blocked by your system. " +

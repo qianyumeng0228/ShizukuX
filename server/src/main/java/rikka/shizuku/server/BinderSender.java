@@ -234,7 +234,15 @@ public class BinderSender {
         // (see #371). Do one delayed catch-up pass instead: HandlerUtil's main handler needs the
         // rest of ShizukuService's startup to finish setting it up first (setMainHandler runs
         // earlier in the same constructor), so defer slightly rather than run inline here.
-        HandlerUtil.getMainHandler().postDelayed(BinderSender::catchUpAlreadyRunningClients, 2000);
+        //
+        // The pass itself does a synchronous IPC per candidate package and shouldn't run on
+        // HandlerUtil's shared main handler - that's the same handler UserServiceRecord's and
+        // ClientRecord's new 300ms freeze-delivery retries are posted on, and queuing behind this
+        // loop would blow past their intended delay. Only the scheduling wait uses that handler;
+        // the actual work runs on its own one-shot thread.
+        HandlerUtil.getMainHandler().postDelayed(
+                () -> new Thread(BinderSender::catchUpAlreadyRunningClients, "ShizukuCatchUp").start(),
+                2000);
     }
 
     // AOSP's ActivityManager.PROCESS_STATE_NONEXISTENT (frameworks/base ProcessStateEnum.aidl) -
@@ -256,6 +264,17 @@ public class BinderSender {
     private static void catchUpAlreadyRunningClients() {
         try {
             for (int userId : UserManagerApis.getUserIdsNoThrow()) {
+                // dev.rikka.hidden:compat's getPackageProcessState() only queries AMS for userId 0
+                // on API < 26 (Build.VERSION_CODES.O); for any other user on those versions it
+                // unconditionally returns PROCESS_STATE_TOP, which always passes the liveness check
+                // below regardless of whether the package is actually running. That would defeat
+                // the whole point of the check on a pre-Oreo device with a secondary/work-profile
+                // user, force-starting every declaring app there instead of just already-running
+                // ones - so skip the catch-up pass for non-primary users in that combination.
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O && userId != 0) {
+                    continue;
+                }
+
                 for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
                     if (pi == null || pi.applicationInfo == null || pi.requestedPermissions == null) continue;
 
