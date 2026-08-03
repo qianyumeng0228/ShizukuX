@@ -4,8 +4,11 @@ import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import io.noties.markwon.Markwon
 import af.shizuku.manager.R
 import timber.log.Timber
 
@@ -32,30 +35,29 @@ class ChangelogDialogFragment : DialogFragment() {
 
         /**
          * GitHub release notes are Markdown meant for a web page. For a short dialog, drop the
-         * "Recent Releases" rollup table/links (useful on GitHub, noisy here) and strip heading
-         * markers so "### 💥 Crash & Stability Fixes" reads as plain text instead of raw Markdown.
+         * "Recent Releases" rollup table/links (useful on GitHub, noisy here) - the rest is
+         * rendered as real Markdown by Markwon below rather than regex-stripped to plain text,
+         * so bold/italic/code/list formatting actually shows up instead of literal `**`/`_`/`` ` ``.
          */
         private fun formatForDialog(rawNotes: String): String =
-            rawNotes.substringBefore("## 📦 Recent Releases")
-                .trim()
-                .lineSequence()
-                .joinToString("\n") { it.replace(Regex("^#+\\s*"), "") }
-                .trim()
+            rawNotes.substringBefore("## 📦 Recent Releases").trim()
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val rawNotes = arguments?.getString(ARG_NOTES)
         val tagName = arguments?.getString(ARG_TAG_NAME) ?: ""
+        val markwon = Markwon.create(requireContext())
 
-        val message = try {
+        val message: CharSequence = try {
             rawNotes?.let { formatForDialog(it) }?.takeIf { it.isNotBlank() }
+                ?.let { markwon.toMarkdown(it) }
                 ?: getString(R.string.changelog_fallback_message)
         } catch (e: Exception) {
             Timber.w(e, "Failed to format release notes for dialog")
             getString(R.string.changelog_fallback_message)
         }
 
-        return MaterialAlertDialogBuilder(requireContext())
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.changelog_title)
             .setMessage(message)
             .setPositiveButton(R.string.changelog_close, null)
@@ -68,5 +70,15 @@ class ChangelogDialogFragment : DialogFragment() {
                 }
             }
             .create()
+
+        // Bold/italic/headings/code/lists render from the Spanned message above with no extra
+        // work, but a tappable Markdown link needs a movement method on the message TextView -
+        // AlertDialog's default one has none, so set it once the view actually exists.
+        dialog.setOnShowListener {
+            dialog.findViewById<TextView>(android.R.id.message)?.movementMethod =
+                LinkMovementMethod.getInstance()
+        }
+
+        return dialog
     }
 }

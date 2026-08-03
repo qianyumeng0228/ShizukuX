@@ -40,6 +40,7 @@ coil = "3.4.0"
 koin = "4.0.2"
 serialization = "1.8.0"
 lottie = "6.6.2"
+markwon = "4.6.2"
 mavericks = "3.0.9"
 spotless = "6.25.0"
 kotestJunit5 = "5.9.1"
@@ -105,6 +106,7 @@ coil-network = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", versi
 koin-android = { group = "io.insert-koin", name = "koin-android", version.ref = "koin" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 lottie = { group = "com.airbnb.android", name = "lottie", version.ref = "lottie" }
+markwon-core = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 leakcanary = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 rikkax-appcompat = { group = "dev.rikka.rikkax.appcompat", name = "appcompat", version.ref = "rikkax-appcompat" }

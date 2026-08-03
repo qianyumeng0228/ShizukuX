@@ -49,6 +49,7 @@ import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
 import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.EnvironmentUtils
+import io.noties.markwon.Markwon
 import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
@@ -639,8 +640,15 @@ open class HomeActivity : AppActivity(), MavericksView {
             if (updateInfo.publishedAt.isNotEmpty())
                 "Published: ${UpdateChecker.formatPublishedDate(updateInfo.publishedAt)}"
             else ""
-        dialogView.findViewById<TextView>(R.id.update_release_notes).text =
-            updateInfo.releaseNotes.ifEmpty { getString(R.string.update_no_release_notes) }
+        // updateInfo.releaseNotes is the raw GitHub release body (Markdown) - render it instead
+        // of dumping it as plain text, which showed literal "**", "###", "|...|" table syntax
+        // and bracketed links to users. Drop the "Recent Releases" rollup (table/links meant for
+        // the GitHub page, not a compact popup) the same way ChangelogDialogFragment does.
+        val notesBody = updateInfo.releaseNotes
+            .substringBefore("## 📦 Recent Releases")
+            .trim()
+            .ifEmpty { getString(R.string.update_no_release_notes) }
+        Markwon.create(this).setMarkdown(dialogView.findViewById(R.id.update_release_notes), notesBody)
 
         val openReleases = {
             startActivity(
