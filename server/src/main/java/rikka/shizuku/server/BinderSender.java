@@ -198,7 +198,7 @@ public class BinderSender {
             } else if (ArraysKt.contains(pi.requestedPermissions, PERMISSION) ||
                        ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) ||
                        ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL)) {
-                return ShizukuService.sendBinderToUserApp(sShizukuService, packageName, userId);
+                return ShizukuService.sendBinderToUserAppWithRetry(sShizukuService, packageName, userId);
             }
         }
         return true;

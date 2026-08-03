@@ -483,26 +483,52 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // what rikka clients implement, so this transacts under the descriptor they expect.
             application.bindApplication(reply);
         } catch (Throwable e) {
-            // Belt-and-suspenders fallback, kept from when this interface lived under af.shizuku.server
-            // and the descriptor mismatched: re-send bindApplication by hand-writing the moe token.
-            // Should no longer be reached for descriptor reasons now that the AIDL package matches.
-            LOGGER.w("attachApplication via current descriptor failed, trying legacy descriptor for " + requestPackageName);
-            try {
-                Parcel data = Parcel.obtain();
-                try {
-                    data.writeInterfaceToken("moe.shizuku.server.IShizukuApplication");
-                    // 1 = bindApplication(Bundle)
-                    data.writeInt(1);
-                    reply.writeToParcel(data, 0);
-                    application.asBinder().transact(1, data, null, IBinder.FLAG_ONEWAY);
-                    LOGGER.i("Successfully sent bindApplication via legacy descriptor to " + requestPackageName);
-                } finally {
-                    data.recycle();
-                }
-            } catch (Throwable e2) {
-                LOGGER.e(e2, "attachApplication legacy also failed for " + requestPackageName);
-            }
+            // The whitelist call above only *requests* an unfreeze - it doesn't guarantee the freeze
+            // state has actually cleared before this reentrant call runs in the same call stack, so
+            // the very first attempt can still lose the race (#371). Retry on the same backoff used
+            // for ClientRecord.dispatchRequestPermissionResult / UserServiceRecord.broadcastBinderReceived
+            // before falling through to the legacy-descriptor path, which is a rare last resort, not
+            // the primary recovery mechanism.
+            LOGGER.w(e, "bindApplication failed for %s, scheduling retry", requestPackageName);
+            scheduleBindApplicationRetry(application, reply, requestPackageName, 0);
         }
+    }
+
+    private static final long[] BIND_APPLICATION_RETRY_DELAYS_MS = {300, 1000, 3000};
+
+    private static void scheduleBindApplicationRetry(IShizukuApplication application, Bundle reply,
+                                                       String requestPackageName, int attempt) {
+        HandlerUtil.getMainHandler().postDelayed(() -> {
+            try {
+                application.bindApplication(reply);
+            } catch (Throwable retryError) {
+                if (attempt + 1 < BIND_APPLICATION_RETRY_DELAYS_MS.length) {
+                    LOGGER.w(retryError, "Retry %d failed for bindApplication to %s, scheduling next retry", attempt + 1, requestPackageName);
+                    scheduleBindApplicationRetry(application, reply, requestPackageName, attempt + 1);
+                } else {
+                    // Belt-and-suspenders fallback, kept from when this interface lived under
+                    // af.shizuku.server and the descriptor mismatched: re-send bindApplication by
+                    // hand-writing the moe token. Should no longer be reached for descriptor reasons
+                    // now that the AIDL package matches - only exercised once backoff is exhausted.
+                    LOGGER.w("All bindApplication retries failed for %s, trying legacy descriptor", requestPackageName);
+                    try {
+                        Parcel data = Parcel.obtain();
+                        try {
+                            data.writeInterfaceToken("moe.shizuku.server.IShizukuApplication");
+                            // 1 = bindApplication(Bundle)
+                            data.writeInt(1);
+                            reply.writeToParcel(data, 0);
+                            application.asBinder().transact(1, data, null, IBinder.FLAG_ONEWAY);
+                            LOGGER.i("Successfully sent bindApplication via legacy descriptor to " + requestPackageName);
+                        } finally {
+                            data.recycle();
+                        }
+                    } catch (Throwable e2) {
+                        LOGGER.e(e2, "attachApplication legacy also failed for " + requestPackageName);
+                    }
+                }
+            }
+        }, BIND_APPLICATION_RETRY_DELAYS_MS[attempt]);
     }
 
     private final java.util.Map<String, Boolean> featureEnabledMap = new java.util.concurrent.ConcurrentHashMap<>();
@@ -1937,7 +1963,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             packages
                 .parallel()
                 .forEach(pi -> {
-                    sendBinderToUserApp(binder, pi.packageName, userId);
+                    sendBinderToUserAppWithRetry(binder, pi.packageName, userId);
                 });
             LOGGER.i("sent binders");
         } catch (Throwable tr) {
@@ -2089,6 +2115,43 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 }
             }
         }
+    }
+
+    // sendBinderToManager() (above) has always force-stopped + retried once on failure - "for
+    // unknown reason, sometimes this could happen" per its own long-standing comment. Every
+    // ordinary client (Hail, App Ops, WifiList, Tasker, ...) is delivered through the exact same
+    // sendBinderToUserApp() via BinderSender.sendBinder()/ShizukuService.sendBinderToClient(),
+    // and used to get this same treatment - upstream RikkaApps/Shizuku still has it - until
+    // 827e1d27 ("improve startup speed") relocated the kill-and-retry exclusively into the
+    // manager-only overloads and left this call site with no recovery at all (#371). A
+    // provider.asBinder().pingBinder() failure ("provider is dead") is exactly what a frozen
+    // target's ContentProvider binder looks like from the caller's side (a synchronous ping to a
+    // Cached-Apps-Frozen process gets BR_FROZEN_REPLY, not a normal reply) - force-stopping lets
+    // AMS restart the app fully unfrozen instead of racing the freezer a second time in place.
+    static boolean sendBinderToUserAppWithRetry(Binder binder, String packageName, int userId) {
+        boolean success = sendBinderToUserApp(binder, packageName, userId);
+        if (!success) {
+            try {
+                LOGGER.e("kill %s in user %d and try again", packageName, userId);
+                ActivityManagerApis.forceStopPackageNoThrow(packageName, userId);
+
+                HandlerUtil.getMainHandler().postDelayed(() -> {
+                    try {
+                        boolean retrySuccess = sendBinderToUserApp(binder, packageName, userId);
+                        if (retrySuccess) {
+                            LOGGER.i("retry succeeded for %s in user %d", packageName, userId);
+                        } else {
+                            LOGGER.w("retry failed for %s in user %d", packageName, userId);
+                        }
+                    } catch (Throwable tr) {
+                        LOGGER.w(tr, "retry failed for %s in user %d", packageName, userId);
+                    }
+                }, 1000);
+            } catch (Throwable tr) {
+                LOGGER.e(tr, "kill failed for %s in user %d", packageName, userId);
+            }
+        }
+        return success;
     }
 
     // ------ Sui only ------
