@@ -1,6 +1,5 @@
 package af.shizuku.manager.legacy
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.lifecycle.lifecycleScope
@@ -11,6 +10,7 @@ import kotlinx.coroutines.withContext
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
+import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 import af.shizuku.manager.utils.Logger.LOGGER
 
@@ -24,16 +24,29 @@ class ShellConsentActivity : AppActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val requestIntent = intent
-        if (requestIntent.getBundleExtra("data")?.getBinder("binder") == null) {
+        // Take the callback binder eagerly to avoid a TOCTOU between existence-check and use.
+        // BinderRequestReceiver stores it in PendingConsentStore and passes the key here so the
+        // binder survives the PendingIntent round-trip without being embedded in the extras
+        // (Android 15+/API 35 does not reliably deliver IBinder objects in PendingIntent extras,
+        // #387). The legacy fallback reads directly from the intent extras for any code path that
+        // doesn't go through a PendingIntent (e.g. an auth-token fast path).
+        val consentKey = intent.getStringExtra(PendingConsentStore.EXTRA_CONSENT_KEY)
+        val callbackBinder = if (consentKey != null) {
+            PendingConsentStore.take(consentKey)
+        } else {
+            intent.getBundleExtra("data")?.getBinder("binder")
+        }
+
+        if (callbackBinder == null) {
+            // Binder is gone (rish timed out and died before the user tapped the notification).
             finish()
             return
         }
 
-        showConsentDialog(requestIntent)
+        showConsentDialog(callbackBinder)
     }
 
-    private fun showConsentDialog(requestIntent: Intent) {
+    private fun showConsentDialog(callbackBinder: android.os.IBinder) {
         val binding = ConfirmationDialogBinding.inflate(layoutInflater).apply {
             title.text = getString(R.string.shell_consent_dialog_title)
             button1.text = getString(R.string.shell_consent_button_allow)
@@ -48,13 +61,13 @@ class ShellConsentActivity : AppActivity() {
         dialog.setCanceledOnTouchOutside(false)
 
         binding.button1.setOnClickListener {
-            // handleRequest does a synchronous binder transact - keep it off Main.
+            // deliverBinder does a synchronous binder transact - keep it off Main.
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        ShellBinderRequestHandler.handleRequest(this@ShellConsentActivity, requestIntent, false)
+                        ShellBinderRequestHandler.deliverBinder(this@ShellConsentActivity, callbackBinder)
                     } catch (e: Exception) {
-                        LOGGER.w(e, "ShellConsentActivity: handleRequest failed")
+                        LOGGER.w(e, "ShellConsentActivity: deliverBinder failed")
                     }
                 }
                 if (!isFinishing && !isDestroyed) dialog.dismiss()

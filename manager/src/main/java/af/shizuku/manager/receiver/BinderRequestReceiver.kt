@@ -7,10 +7,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.legacy.ShellConsentActivity
+import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 import af.shizuku.manager.utils.IntentCrypto
 import java.security.MessageDigest
@@ -37,7 +39,7 @@ class BinderRequestReceiver : BroadcastReceiver() {
             MessageDigest.isEqual(authToken.toByteArray(), expectedToken.toByteArray())
 
         if (authValid) {
-            ShellBinderRequestHandler.handleRequest(context, intent, true)
+            ShellBinderRequestHandler.handleRequest(context, intent, requireAuth = true)
             return
         }
 
@@ -47,7 +49,8 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // Ask the user for one-time consent instead of silently dropping the request, but
         // only if there's a live callback binder to reply to - otherwise there's nothing
         // to grant access to.
-        if (intent.getBundleExtra("data")?.getBinder("binder") != null) {
+        val callbackBinder = intent.getBundleExtra("data")?.getBinder("binder")
+        if (callbackBinder != null) {
             // A manifest-registered BroadcastReceiver has no visible UI, so a direct
             // startActivity() here is exactly the pattern Android's background-activity-start
             // (BAL) restrictions are designed to block - on modern OEM builds (e.g. Samsung
@@ -56,11 +59,15 @@ class BinderRequestReceiver : BroadcastReceiver() {
             // system / disable battery optimization" message (#377). Route through a
             // notification instead: tapping it is a user-initiated foreground action and is
             // exempt from BAL, so the consent dialog reliably shows up.
-            postConsentNotification(context, intent)
+            //
+            // Android 15+ (API 35) does not reliably preserve IBinder objects embedded in
+            // PendingIntent extras — the binder arrives null when the notification fires (#387).
+            // Store it in PendingConsentStore and pass only a lightweight key in the intent.
+            postConsentNotification(context, intent, callbackBinder)
         }
     }
 
-    private fun postConsentNotification(context: Context, intent: Intent) {
+    private fun postConsentNotification(context: Context, intent: Intent, callbackBinder: IBinder) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
         if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) {
@@ -84,6 +91,14 @@ class BinderRequestReceiver : BroadcastReceiver() {
             )
         }
 
+        // Store the callback binder in-memory. Android 15+ (API 35) does not reliably
+        // deliver IBinder objects through PendingIntent extras — the binder arrives null when
+        // ShellConsentActivity reads it (#387). We pass only the key; the activity takes the
+        // live binder from PendingConsentStore eagerly in onCreate.
+        // put() returns null when the binder is already dead — don't show a notification that
+        // can't possibly deliver anything.
+        val consentKey = PendingConsentStore.put(callbackBinder) ?: return
+
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
             // putExtras() only copies the extras Bundle, not the action string -
             // ShellBinderRequestHandler.handleRequest gates on intent.action matching
@@ -91,11 +106,17 @@ class BinderRequestReceiver : BroadcastReceiver() {
             // request silently fails that check.
             action = intent.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-            putExtras(intent)
+            // Do NOT copy the original 'data' bundle: it carries the IBinder, and on Android 15+
+            // (API 35) embedding an IBinder in a PendingIntent may be rejected by the system (#387).
+            // The only extras we need are the action (set above) and the consent key below.
+            putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
         }
+        // Use the key's hash as the requestCode so concurrent consent requests each get their
+        // own PendingIntent slot. FLAG_UPDATE_CURRENT with a shared requestCode=0 would stomp
+        // a previous request's extras, handing the wrong binder to the already-shown notification.
         val contentIntent = PendingIntent.getActivity(
             context,
-            0,
+            consentKey.hashCode(),
             consentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

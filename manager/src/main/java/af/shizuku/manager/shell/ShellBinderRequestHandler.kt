@@ -11,6 +11,12 @@ import af.shizuku.manager.ShizukuSettings
 
 object ShellBinderRequestHandler {
 
+    /**
+     * Handles a REQUEST_BINDER broadcast directly (auth-token fast path).
+     * Extracts the callback binder from the intent extras and delivers the Shizuku binder to it.
+     * Not used by the notification consent flow — that path calls [deliverBinder] directly with
+     * a pre-taken binder from [PendingConsentStore].
+     */
     fun handleRequest(context: Context, intent: Intent, requireAuth: Boolean = false): Boolean {
         if (intent.action != "rikka.shizuku.intent.action.REQUEST_BINDER" &&
             intent.action != "${context.packageName}.intent.action.REQUEST_BINDER") {
@@ -30,7 +36,18 @@ object ShellBinderRequestHandler {
             }
         }
 
-        val binder = intent.getBundleExtra("data")?.getBinder("binder") ?: return false
+        val callbackBinder = intent.getBundleExtra("data")?.getBinder("binder") ?: return false
+        return deliverBinder(context, callbackBinder)
+    }
+
+    /**
+     * Delivers the Shizuku server binder to [callbackBinder] (the rish process's receiver).
+     * The callback binder is already resolved by the caller — either taken from
+     * [PendingConsentStore] (notification consent path) or extracted directly from intent extras
+     * (auth-token fast path). This avoids any store interaction and is safe to call even if the
+     * store entry was already consumed.
+     */
+    fun deliverBinder(context: Context, callbackBinder: IBinder): Boolean {
         val shizukuBinder = try {
             Shizuku.getBinder()
         } catch (e: Exception) {
@@ -51,7 +68,7 @@ object ShellBinderRequestHandler {
             // omitted sourceDir NPEs the client at onBinderReceived's sourceDir.substring().
             data.writeStrongBinder(shizukuBinder)
             data.writeString(context.applicationInfo.sourceDir)
-            binder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
+            callbackBinder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
             return true
         } catch (e: Exception) {
             LOGGER.w(e, "transact")
