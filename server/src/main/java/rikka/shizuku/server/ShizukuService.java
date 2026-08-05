@@ -2131,10 +2131,19 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     static boolean sendBinderToUserAppWithRetry(Binder binder, String packageName, int userId) {
         boolean success = sendBinderToUserApp(binder, packageName, userId);
         if (!success) {
+            boolean killed = false;
             try {
                 LOGGER.e("kill %s in user %d and try again", packageName, userId);
                 ActivityManagerApis.forceStopPackageNoThrow(packageName, userId);
-
+                killed = true;
+            } catch (Throwable tr) {
+                // forceStopPackageNoThrow is a NoThrow wrapper but can still throw RuntimeException
+                // (SecurityException, DeadObjectException) if AMS is in a bad state. If it does,
+                // postDelayed must not be silently swallowed by the same catch — the retry would
+                // never fire and the app would be left permanently without a binder.
+                LOGGER.e(tr, "kill failed for %s in user %d", packageName, userId);
+            }
+            if (killed) {
                 HandlerUtil.getMainHandler().postDelayed(() -> {
                     try {
                         boolean retrySuccess = sendBinderToUserApp(binder, packageName, userId);
@@ -2147,8 +2156,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         LOGGER.w(tr, "retry failed for %s in user %d", packageName, userId);
                     }
                 }, 1000);
-            } catch (Throwable tr) {
-                LOGGER.e(tr, "kill failed for %s in user %d", packageName, userId);
             }
         }
         return success;

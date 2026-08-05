@@ -648,7 +648,9 @@ open class HomeActivity : AppActivity(), MavericksView {
             .substringBefore("## 📦 Recent Releases")
             .trim()
             .ifEmpty { getString(R.string.update_no_release_notes) }
-        Markwon.create(this).setMarkdown(dialogView.findViewById(R.id.update_release_notes), notesBody)
+        val releaseNotesView = dialogView.findViewById<TextView>(R.id.update_release_notes)
+        Markwon.create(this).setMarkdown(releaseNotesView, notesBody)
+        releaseNotesView?.movementMethod = LinkMovementMethod.getInstance()
 
         val openReleases = {
             startActivity(
