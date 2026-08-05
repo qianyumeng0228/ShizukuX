@@ -253,6 +253,7 @@
             android:name=".legacy.ShellConsentActivity"
             android:excludeFromRecents="true"
             android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:theme="@style/GrantPermissions" />
         <activity
             android:name=".legacy.LegacyIsNotSupportedActivity"

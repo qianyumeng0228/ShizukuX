@@ -1,5 +1,7 @@
 package af.shizuku.manager.shell
 
+import android.app.NotificationManager
+import android.content.Context
 import android.os.IBinder
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -26,15 +28,25 @@ object PendingConsentStore {
      * Stores [binder] and returns a key to retrieve it later, or null if [binder] is already
      * dead (linkToDeath threw). Callers should not post the consent notification when null is
      * returned — the requesting process is gone and there is nobody to send the grant to.
+     *
+     * When the caller dies (rish timed out), the death recipient auto-removes the entry and
+     * cancels the notification ([context] is used for that cancellation only).
      */
-    fun put(binder: IBinder): String? {
+    fun put(binder: IBinder, context: Context): String? {
         val key = UUID.randomUUID().toString()
         store[key] = binder
         return try {
             // Auto-remove if the caller dies (rish timed out / was killed).
-            binder.linkToDeath({ store.remove(key) }, 0)
+            // Also cancel the pending consent notification so it doesn't linger in the shade
+            // after rish is already gone — the user tapping a stale notification would open
+            // ShellConsentActivity, get null from take(), and see the dialog silently dismiss.
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            binder.linkToDeath({
+                store.remove(key)
+                nm?.cancel(key.hashCode())
+            }, 0)
             key
-        } catch (_: Exception) {
+        } catch (_: android.os.RemoteException) {
             // linkToDeath throws RemoteException when the binder is already dead.
             // Remove the entry and return null so the caller skips notification posting.
             store.remove(key)

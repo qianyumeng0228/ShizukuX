@@ -22,7 +22,6 @@ class BinderRequestReceiver : BroadcastReceiver() {
 
     companion object {
         private const val CHANNEL_ID = "shell_consent"
-        private const val NOTIFICATION_ID = 1451
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -97,26 +96,21 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // live binder from PendingConsentStore eagerly in onCreate.
         // put() returns null when the binder is already dead — don't show a notification that
         // can't possibly deliver anything.
-        val consentKey = PendingConsentStore.put(callbackBinder) ?: return
+        val consentKey = PendingConsentStore.put(callbackBinder, context) ?: return
 
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
-            // putExtras() only copies the extras Bundle, not the action string -
-            // ShellBinderRequestHandler.handleRequest gates on intent.action matching
-            // REQUEST_BINDER, so it must be carried over explicitly or the forwarded
-            // request silently fails that check.
-            action = intent.action
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-            // Do NOT copy the original 'data' bundle: it carries the IBinder, and on Android 15+
-            // (API 35) embedding an IBinder in a PendingIntent may be rejected by the system (#387).
-            // The only extras we need are the action (set above) and the consent key below.
             putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
         }
-        // Use the key's hash as the requestCode so concurrent consent requests each get their
-        // own PendingIntent slot. FLAG_UPDATE_CURRENT with a shared requestCode=0 would stomp
-        // a previous request's extras, handing the wrong binder to the already-shown notification.
+        // Use the key's hash as both the PendingIntent requestCode and the notification ID so
+        // concurrent consent requests each get their own slot in the shade. A shared ID would
+        // let a second nm.notify() silently replace the first notification — the first request's
+        // binder would be orphaned with no UI to deliver it. The death recipient in
+        // PendingConsentStore cancels the notification if rish times out before the user taps.
+        val notificationId = consentKey.hashCode()
         val contentIntent = PendingIntent.getActivity(
             context,
-            consentKey.hashCode(),
+            notificationId,
             consentIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -131,6 +125,6 @@ class BinderRequestReceiver : BroadcastReceiver() {
             .setContentIntent(contentIntent)
             .build()
 
-        nm.notify(NOTIFICATION_ID, notification)
+        nm.notify(notificationId, notification)
     }
 }
