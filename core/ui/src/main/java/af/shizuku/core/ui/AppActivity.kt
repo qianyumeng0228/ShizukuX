@@ -67,7 +67,13 @@ abstract class AppActivity : MaterialActivity() {
             // hardware-rendered (RenderNode-backed) Compose layers. Adding as a sibling inside
             // android.R.id.content doesn't work for Compose activities — Compose's hardware
             // rendering composites above software-canvas siblings regardless of z-order.
-            drawable.setBounds(0, 0, decorView.width, decorView.height)
+            //
+            // Use snapshot dimensions rather than decorView.width/height: onPostCreate() fires
+            // before the first Choreographer layout pass (which doesn't run until after onResume),
+            // so decorView.width/height are both 0 on the freshly-created Activity instance.
+            // The bitmap was captured with the correct window dimensions, so reusing them here
+            // guarantees a full-screen cover regardless of when layout completes.
+            drawable.setBounds(0, 0, snapshot.width, snapshot.height)
             decorView.overlay.add(drawable)
             decorView.post {
                 // ObjectAnimator instead of View.animate(): we're fading a Drawable, not a View.
@@ -118,7 +124,6 @@ abstract class AppActivity : MaterialActivity() {
      * deferred until the capture completes (typically < 1 frame / ~16ms).
      */
     fun recreateWithoutTransition() {
-        suppressTransitionOnCreate = true
         window.setWindowAnimations(0)
         recreateSnapshot?.let { if (!it.isRecycled) it.recycle() }
 
@@ -126,21 +131,39 @@ abstract class AppActivity : MaterialActivity() {
             val view = window.decorView
             if (view.width > 0 && view.height > 0) {
                 val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-                android.view.PixelCopy.request(window, bitmap, { result ->
-                    recreateSnapshot = if (result == android.view.PixelCopy.SUCCESS) {
-                        bitmap
-                    } else {
-                        bitmap.recycle()
-                        null
-                    }
-                    recreate()
-                }, Handler(Looper.getMainLooper()))
-                return
+                try {
+                    // PixelCopy.request() can throw synchronously (e.g. when the window surface
+                    // is invalid during an in-progress transition). Catch and fall through to the
+                    // sync path so recreate() still happens and suppressTransitionOnCreate stays
+                    // consistent — a missing snapshot means a brief black flash, not a crash.
+                    android.view.PixelCopy.request(window, bitmap, { result ->
+                        val captured = if (result == android.view.PixelCopy.SUCCESS) bitmap else {
+                            bitmap.recycle()
+                            null
+                        }
+                        if (!isFinishing) {
+                            recreateSnapshot = captured
+                            // Set flag here rather than before request(): the ~1-frame async gap
+                            // between the call site and this callback is a window where any other
+                            // AppActivity.onCreate() could silently consume and clear the flag,
+                            // leaving the actual recreated instance with transitions enabled.
+                            suppressTransitionOnCreate = true
+                            recreate()
+                        } else {
+                            captured?.recycle()
+                        }
+                    }, Handler(Looper.getMainLooper()))
+                    return
+                } catch (_: Exception) {
+                    bitmap.recycle()
+                    // fall through to synchronous recreate below
+                }
             }
-            // View not laid out yet (shouldn't happen mid-session, but fall through)
+            // View not yet laid out or PixelCopy threw — skip snapshot, do a plain recreate.
         } else {
             recreateSnapshot = captureWindowSnapshot()
         }
+        suppressTransitionOnCreate = true
         recreate()
     }
 
