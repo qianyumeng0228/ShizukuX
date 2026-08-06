@@ -57,7 +57,12 @@ class AdbMdns(
         restartJob?.cancel()
         mdnsScope.cancel()
         if (registered) {
-            nsdManager.stopServiceDiscovery(listener)
+            try {
+                nsdManager.stopServiceDiscovery(listener)
+            } catch (e: IllegalArgumentException) {
+                Timber.tag(TAG).e(e, "listener not registered when stopping service discovery")
+            }
+            registered = false
         }
     }
 
@@ -99,7 +104,13 @@ class AdbMdns(
             val delayMs = attempts * 1000L
             restartJob = mdnsScope.launch {
                 delay(delayMs)
-                if (registered) nsdManager.stopServiceDiscovery(listener)
+                if (registered) {
+                    try {
+                        nsdManager.stopServiceDiscovery(listener)
+                    } catch (e: IllegalArgumentException) {
+                        Timber.tag(TAG).e(e, "listener not registered when restarting service discovery")
+                    }
+                }
                 delay(100L)
                 if (!registered) nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
                 restartScheduled = false

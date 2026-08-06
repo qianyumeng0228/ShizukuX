@@ -270,9 +270,13 @@ class AboutSettingsFragment : BaseSettingsFragment() {
     }
 
     private fun openReleasesPage() {
-        startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_URL))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        try {
+            startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(RELEASES_URL))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (e: android.content.ActivityNotFoundException) {
+            Timber.w(e, "No activity found to handle releases URL")
+        }
     }
 }
