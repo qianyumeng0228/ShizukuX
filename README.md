@@ -2,6 +2,8 @@
 
 # ShizukuX
 
+[Latest Version is Semi-Functional... fixes in progress]
+
 An enhanced version of [Shizuku](https://github.com/RikkaApps/Shizuku) built on top of [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku), with quality-of-life improvements, backported optimizations, and exclusive Plus APIs.
 
 Shizuku lets normal apps use system-level APIs directly via a privileged process started with adb or root. ShizukuX keeps full compatibility while adding features for power users and developers.
