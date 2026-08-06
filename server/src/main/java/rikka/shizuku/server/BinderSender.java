@@ -304,9 +304,20 @@ public class BinderSender {
                     if (state < 0 || state >= PROCESS_STATE_NONEXISTENT) continue;
 
                     try {
-                        sendBinder(pi.applicationInfo.uid, -1);
+                        if (ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
+                            // sendBinderToManager has its own force-stop + retry path.
+                            ShizukuService.sendBinderToManager(sShizukuService, userId);
+                        } else {
+                            // Use the retry variant here: the catch-up pass fires once at server
+                            // startup, so force-stopping a frozen app is safe (unlike the live
+                            // observer path which can interrupt in-flight operations).
+                            boolean sent = ShizukuService.sendBinderToUserAppWithRetry(sShizukuService, pi.packageName, userId);
+                            if (!sent) {
+                                LOGGER.w("catch-up delivery still failed for %s in user %d after retry", pi.packageName, userId);
+                            }
+                        }
                     } catch (Throwable e) {
-                        LOGGER.w(e, "catch-up sendBinder failed for uid %d", pi.applicationInfo.uid);
+                        LOGGER.w(e, "catch-up sendBinder failed for %s in user %d", pi.packageName, userId);
                     }
                 }
             }

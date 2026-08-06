@@ -4,7 +4,10 @@ import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Spannable
 import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
+import android.view.MotionEvent
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -19,6 +22,23 @@ import timber.log.Timber
  * formats and displays it, so it stays usable even if notes couldn't be fetched (offline).
  */
 class ChangelogDialogFragment : DialogFragment() {
+
+    // LinkMovementMethod consumes every touch event (including scroll gestures), which prevents the
+    // parent AlertDialog ScrollView from scrolling. This subclass only intercepts DOWN/UP events
+    // that land on a ClickableSpan — all other events fall through so the dialog can still scroll.
+    private object LinkOnlyMovementMethod : LinkMovementMethod() {
+        override fun onTouchEvent(widget: TextView, buffer: Spannable, event: MotionEvent): Boolean {
+            val action = event.actionMasked
+            if (action != MotionEvent.ACTION_DOWN && action != MotionEvent.ACTION_UP) return false
+            val x = (event.x - widget.totalPaddingLeft + widget.scrollX).toInt()
+            val y = (event.y - widget.totalPaddingTop + widget.scrollY).toInt()
+            val layout = widget.layout ?: return false
+            val line = layout.getLineForVertical(y)
+            val offset = layout.getOffsetForHorizontal(line, x.toFloat())
+            return buffer.getSpans(offset, offset, ClickableSpan::class.java).isNotEmpty() &&
+                super.onTouchEvent(widget, buffer, event)
+        }
+    }
 
     companion object {
         const val TAG = "ChangelogDialogFragment"
@@ -76,7 +96,7 @@ class ChangelogDialogFragment : DialogFragment() {
         // AlertDialog's default one has none, so set it once the view actually exists.
         dialog.setOnShowListener {
             dialog.findViewById<TextView>(android.R.id.message)?.movementMethod =
-                LinkMovementMethod.getInstance()
+                LinkOnlyMovementMethod
         }
 
         return dialog
