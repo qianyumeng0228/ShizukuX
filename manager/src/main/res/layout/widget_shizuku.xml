@@ -17,6 +17,7 @@
         android:backgroundTint="?colorPrimaryContainer"
         android:padding="10dp"
         android:src="@drawable/ic_server_ok_24"
+        android:importantForAccessibility="no"
         android:tint="?colorOnPrimaryContainer" />
 
     <LinearLayout

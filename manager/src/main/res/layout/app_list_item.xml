@@ -18,7 +18,7 @@
         android:id="@android:id/icon"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:contentDescription="@null"
+        android:importantForAccessibility="no"
         tools:src="@drawable/ic_launcher" />
 
     <com.google.android.material.checkbox.MaterialCheckBox
