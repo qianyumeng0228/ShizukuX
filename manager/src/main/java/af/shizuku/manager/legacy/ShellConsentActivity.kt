@@ -44,19 +44,24 @@ class ShellConsentActivity : AppActivity() {
     }
 
     private fun showConsentDialog(callbackBinder: android.os.IBinder, callingPackage: String?) {
-        // Resolve the UID here from PackageManager rather than trusting an extras-provided value,
+        // Resolve ApplicationInfo from PackageManager rather than trusting the extras directly,
         // so a spoofed broadcast can't grant a different UID than the named package actually has.
-        val callingUid = callingPackage?.let { pkg ->
+        // Also derive the human-readable app label here — the dialog should show "Talkman is
+        // requesting…" not "com.nirenr.talkman is requesting…" (#398).
+        val appInfo = callingPackage?.let { pkg ->
             try {
-                packageManager.getApplicationInfo(pkg, 0).uid
+                packageManager.getApplicationInfo(pkg, 0)
             } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
                 null
             }
         }
+        val callingUid = appInfo?.uid
+        val appLabel = appInfo?.let { packageManager.getApplicationLabel(it).toString() }
+            ?: callingPackage  // fallback to package ID if the lookup fails
 
         val binding = ConfirmationDialogBinding.inflate(layoutInflater).apply {
-            if (callingPackage != null) {
-                title.text = getString(R.string.shell_consent_dialog_title_identified, callingPackage)
+            if (appLabel != null) {
+                title.text = getString(R.string.shell_consent_dialog_title_identified, appLabel)
                 // button1 keeps its layout-default "Allow all the time" text
             } else {
                 title.text = getString(R.string.shell_consent_dialog_title)
