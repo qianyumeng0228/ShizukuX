@@ -11,6 +11,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
@@ -50,6 +51,22 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // to grant access to.
         val callbackBinder = intent.getBundleExtra("data")?.getBinder("binder")
         if (callbackBinder != null) {
+            // Fast path: if the caller is already permanently authorized, skip the consent
+            // notification and deliver directly (#398 — "Allow always" was not persisting
+            // because this check was absent; every new rish process re-prompted even though
+            // AuthorizationManager.grant() had already been stored for that UID).
+            val callingPackage = intent.getStringExtra("callingPackage")
+            if (callingPackage != null) {
+                try {
+                    val callingUid = context.packageManager.getApplicationInfo(callingPackage, 0).uid
+                    if (AuthorizationManager.granted(callingPackage, callingUid)) {
+                        ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
+                        return
+                    }
+                } catch (_: Exception) {
+                    // Check failed — fall through to the notification consent path below.
+                }
+            }
             // A manifest-registered BroadcastReceiver has no visible UI, so a direct
             // startActivity() here is exactly the pattern Android's background-activity-start
             // (BAL) restrictions are designed to block - on modern OEM builds (e.g. Samsung
