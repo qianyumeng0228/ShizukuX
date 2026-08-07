@@ -116,6 +116,12 @@ class BinderRequestReceiver : BroadcastReceiver() {
         val consentKey = PendingConsentStore.put(callbackBinder, context) ?: return
 
         val callingPackage = intent.getStringExtra("callingPackage")
+        val appLabel = callingPackage?.let { pkg ->
+            try {
+                val info = context.packageManager.getApplicationInfo(pkg, 0)
+                context.packageManager.getApplicationLabel(info).toString()
+            } catch (_: Exception) { null }
+        }
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
@@ -134,10 +140,19 @@ class BinderRequestReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val notifTitle = if (appLabel != null)
+            context.getString(R.string.notification_shell_consent_title_identified, appLabel)
+        else
+            context.getString(R.string.notification_shell_consent_title)
+        val notifText = if (appLabel != null)
+            context.getString(R.string.notification_shell_consent_text_identified)
+        else
+            context.getString(R.string.notification_shell_consent_text)
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_system_icon)
-            .setContentTitle(context.getString(R.string.notification_shell_consent_title))
-            .setContentText(context.getString(R.string.notification_shell_consent_text))
+            .setContentTitle(notifTitle)
+            .setContentText(notifText)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
