@@ -263,6 +263,18 @@ public class ShizukuConfigManager extends ConfigManager {
         }
     }
 
+    public List<Integer> getAllowedUids() {
+        synchronized (this) {
+            List<Integer> result = new ArrayList<>();
+            for (ShizukuConfig.PackageEntry entry : config.packages) {
+                if ((entry.flags & ConfigManager.FLAG_ALLOWED) != 0) {
+                    result.add(entry.uid);
+                }
+            }
+            return result;
+        }
+    }
+
     private void updateLocked(int uid, List<String> packages, int mask, int values) {
         ShizukuConfig.PackageEntry entry = findLocked(uid);
         if (entry == null) {

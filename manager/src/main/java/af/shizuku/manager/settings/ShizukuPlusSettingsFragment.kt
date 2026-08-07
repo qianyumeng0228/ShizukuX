@@ -62,6 +62,20 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         else -> "$prefix: ${e.message ?: e.javaClass.simpleName}"
     }
 
+    private val createPlainBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        try {
+            val payload = BackupRestoreManager.createPlainBackupPayload(ctx)
+            ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+            }
+            Toast.makeText(ctx, "Plain backup exported. Keep this file private — it is not encrypted.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(ctx, "Backup failed: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private val createBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri == null) return@registerForActivityResult
         val ctx = requireContext()
@@ -112,6 +126,17 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             val payload = ctx.contentResolver.openInputStream(uri)?.use { `is` ->
                 InputStreamReader(`is`, Charsets.UTF_8).readText()
             } ?: return@registerForActivityResult
+
+            // Auto-detect format: plain (v2) backups skip encryption entirely.
+            if (!BackupRestoreManager.isEncrypted(payload)) {
+                try {
+                    BackupRestoreManager.restoreFromPlainPayload(ctx, payload)
+                    Toast.makeText(ctx, "Backup restored successfully. Please restart the app.", Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, "Restore failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+                return@registerForActivityResult
+            }
 
             val iv = BackupRestoreManager.extractIv(payload)
 
@@ -292,13 +317,22 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         val backupSettingsPref = findPreference<Preference>("backup_settings")
         backupSettingsPref?.setOnPreferenceClickListener {
             val dateStr = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
-            // Some ROMs ship no Storage Access Framework document UI, so launching the picker throws
-            // ActivityNotFoundException (SHIZUKUPLUS-82). Fail with a message instead of crashing.
-            try {
-                createBackupLauncher.launch("ShizukuPlus_Settings_$dateStr.json")
-            } catch (e: android.content.ActivityNotFoundException) {
-                Toast.makeText(requireContext(), "No file manager app found to save the backup", Toast.LENGTH_LONG).show()
-            }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Export backup")
+                .setItems(arrayOf(
+                    "Encrypted (recommended)",
+                    "Plain text — for testing across reinstalls"
+                )) { _, which ->
+                    try {
+                        when (which) {
+                            0 -> createBackupLauncher.launch("ShizukuPlus_Settings_$dateStr.json")
+                            1 -> createPlainBackupLauncher.launch("ShizukuPlus_Settings_plain_$dateStr.json")
+                        }
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        Toast.makeText(requireContext(), "No file manager app found to save the backup", Toast.LENGTH_LONG).show()
+                    }
+                }
+                .show()
             true
         }
 

@@ -137,6 +137,43 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         Android17Compat.grantRuntimePermission(packageName, permName, userId);
     }
 
+    // Re-grants the OS-level runtime permission for every already-authorized app on each server
+    // start. Prior to the 741df2f4 fix (2026-07-19), grantRuntimePermission silently failed because
+    // no installed package defined moe.shizuku.manager.permission.API_V23 — so apps authorized
+    // before that date have a ConfigManager entry but no OS grant. This is idempotent (re-granting
+    // an already-granted permission is a no-op), so it's safe to run unconditionally on startup.
+    private void migratePermissionGrants() {
+        List<Integer> allowedUids = configManager.getAllowedUids();
+        if (allowedUids.isEmpty()) return;
+        LOGGER.i("migratePermissionGrants: checking %d authorized UIDs", allowedUids.size());
+        int migrated = 0;
+        for (int uid : allowedUids) {
+            int userId = UserHandleCompat.getUserId(uid);
+            for (String packageName : PackageManagerApis.getPackagesForUidNoThrow(uid)) {
+                PackageInfo pi = Android17Compat.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS, userId);
+                if (pi == null || pi.requestedPermissions == null) continue;
+
+                String permToGrant = null;
+                if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
+                    permToGrant = PERMISSION;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL)) {
+                    permToGrant = ServerConstants.PERMISSION_ORIGINAL;
+                } else if (ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY)) {
+                    permToGrant = ServerConstants.PERMISSION_LEGACY;
+                }
+                if (permToGrant == null) continue;
+
+                try {
+                    Android17Compat.grantRuntimePermission(packageName, permToGrant, userId);
+                    migrated++;
+                } catch (Throwable e) {
+                    LOGGER.w(e, "migratePermissionGrants: grant failed for %s (%s)", packageName, permToGrant);
+                }
+            }
+        }
+        LOGGER.i("migratePermissionGrants: granted/refreshed %d permission(s)", migrated);
+    }
+
     private void revokeRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
         try {
             PermissionManagerApis.revokeRuntimePermission(packageName, permName, userId);
@@ -282,6 +319,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         });
 
         mainHandler.post(() -> {
+            migratePermissionGrants();
             sendBinderToClient();
             sendBinderToManager();
         });
