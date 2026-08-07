@@ -494,7 +494,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
     }
 
-    private static final long[] BIND_APPLICATION_RETRY_DELAYS_MS = {300, 1000, 3000};
+    // Mirrors UserServiceRecord.RETRY_DELAYS_MS — see that declaration for the rationale.
+    private static final long[] BIND_APPLICATION_RETRY_DELAYS_MS = {300, 1000, 3000, 9000};
 
     private static void scheduleBindApplicationRetry(IShizukuApplication application, Bundle reply,
                                                        String requestPackageName, int attempt) {
@@ -1959,11 +1960,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                               ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL))
                 .filter(pi -> runningPackages.contains(pi.packageName));
 
+            // NOT sendBinderToUserAppWithRetry: the same force-stop hazard that caused the
+            // PackageInstaller NPE on the live observer path (#386) applies here too — an app
+            // could be mid-PackageInstaller session when the server restarts. The 2-second
+            // delayed catchUpAlreadyRunningClients() pass in BinderSender is the appropriate
+            // place for force-stop retries; by that point the server is stable and any
+            // in-flight session from before the restart is already broken.
             LOGGER.i("sending binders");
             packages
                 .parallel()
                 .forEach(pi -> {
-                    sendBinderToUserAppWithRetry(binder, pi.packageName, userId);
+                    sendBinderToUserApp(binder, pi.packageName, userId);
                 });
             LOGGER.i("sent binders");
         } catch (Throwable tr) {
@@ -2144,16 +2151,32 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 LOGGER.e(tr, "kill failed for %s in user %d", packageName, userId);
             }
             if (killed) {
+                // Two retries: 1s after force-stop (app may not have fully restarted yet on slow
+                // devices), then 4s more (5s total) as a final attempt. A single 1s retry was
+                // enough for most AOSP devices but missed the tail of slow-restart OEM builds
+                // where the process hasn't finished cold-starting in 1s.
                 HandlerUtil.getMainHandler().postDelayed(() -> {
                     try {
                         boolean retrySuccess = sendBinderToUserApp(binder, packageName, userId);
                         if (retrySuccess) {
-                            LOGGER.i("retry succeeded for %s in user %d", packageName, userId);
+                            LOGGER.i("retry #1 succeeded for %s in user %d", packageName, userId);
                         } else {
-                            LOGGER.w("retry failed for %s in user %d", packageName, userId);
+                            LOGGER.w("retry #1 failed for %s in user %d, scheduling retry #2", packageName, userId);
+                            HandlerUtil.getMainHandler().postDelayed(() -> {
+                                try {
+                                    boolean retry2Success = sendBinderToUserApp(binder, packageName, userId);
+                                    if (retry2Success) {
+                                        LOGGER.i("retry #2 succeeded for %s in user %d", packageName, userId);
+                                    } else {
+                                        LOGGER.w("retry #2 failed for %s in user %d", packageName, userId);
+                                    }
+                                } catch (Throwable tr2) {
+                                    LOGGER.w(tr2, "retry #2 failed for %s in user %d", packageName, userId);
+                                }
+                            }, 4000);
                         }
                     } catch (Throwable tr) {
-                        LOGGER.w(tr, "retry failed for %s in user %d", packageName, userId);
+                        LOGGER.w(tr, "retry #1 failed for %s in user %d", packageName, userId);
                     }
                 }, 1000);
             }

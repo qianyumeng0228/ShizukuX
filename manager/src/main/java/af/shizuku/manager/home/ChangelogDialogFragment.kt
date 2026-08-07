@@ -55,12 +55,18 @@ class ChangelogDialogFragment : DialogFragment() {
 
         /**
          * GitHub release notes are Markdown meant for a web page. For a short dialog, drop the
-         * "Recent Releases" rollup table/links (useful on GitHub, noisy here) - the rest is
-         * rendered as real Markdown by Markwon below rather than regex-stripped to plain text,
-         * so bold/italic/code/list formatting actually shows up instead of literal `**`/`_`/`` ` ``.
+         * "Recent Releases" rollup table/links (useful on GitHub, noisy here) and strip trailing
+         * short git commit hashes (e.g. " (a95d0130)") from bullet lines — they appear in the
+         * auto-generated release body but add nothing for end users. The rest is rendered as real
+         * Markdown by Markwon so bold/italic/code/list formatting shows up instead of literal
+         * `**`/`_`/`` ` ``.
          */
+        private val COMMIT_HASH_SUFFIX = Regex("""\s+\([0-9a-f]{7,8}\)$""", RegexOption.MULTILINE)
+
         private fun formatForDialog(rawNotes: String): String =
-            rawNotes.substringBefore("## 📦 Recent Releases").trim()
+            rawNotes.substringBefore("## 📦 Recent Releases")
+                .replace(COMMIT_HASH_SUFFIX, "")
+                .trim()
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

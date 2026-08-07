@@ -203,10 +203,10 @@ public class BinderSender {
                 // when a transient pingBinder() false-positive hit here - "Failed to install update:
                 // ...IPackageInstaller.asBinder() on a null object reference" after the app got
                 // force-stopped out from under an in-flight PackageInstaller session). Force-stopping
-                // is only safe where the target can't plausibly be mid-operation - the startup
-                // catch-up below (sendBinderToClient), not this constantly-firing live path. The
-                // existing #319 handling (un-cache on failure so a later event retries) is the safety
-                // net here.
+                // is reserved for the 2-second delayed catchUpAlreadyRunningClients() pass below —
+                // that window ensures server startup is complete and any pre-restart session is
+                // already broken, making force-stop safe. The existing #319 handling (un-cache on
+                // failure so a later event retries) is the safety net for this live path.
                 return ShizukuService.sendBinderToUserApp(sShizukuService, packageName, userId);
             }
         }

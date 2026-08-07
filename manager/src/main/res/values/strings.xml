@@ -687,6 +687,7 @@
     <string name="grant_dialog_button_deny">"Deny"</string>
 
     <string name="shell_consent_dialog_title">A shell client (such as rish or adb) is requesting privileged Shizuku access.\n\nOnly allow this if you just ran a shell command yourself. The app requesting access cannot be identified.</string>
+    <string name="shell_consent_dialog_title_identified">%s is requesting privileged Shizuku shell access.\n\nOnly allow this if you just ran a shell command yourself.</string>
     <string name="shell_consent_button_allow">Allow</string>
 
     <!-- Starter -->

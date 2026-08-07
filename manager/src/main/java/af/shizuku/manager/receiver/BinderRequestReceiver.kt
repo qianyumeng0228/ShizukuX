@@ -98,9 +98,11 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // can't possibly deliver anything.
         val consentKey = PendingConsentStore.put(callbackBinder, context) ?: return
 
+        val callingPackage = intent.getStringExtra("callingPackage")
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
+            callingPackage?.let { putExtra("callingPackage", it) }
         }
         // Use the key's hash as both the PendingIntent requestCode and the notification ID so
         // concurrent consent requests each get their own slot in the shade. A shared ID would

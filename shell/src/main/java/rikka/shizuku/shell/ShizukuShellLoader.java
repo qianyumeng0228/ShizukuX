@@ -90,6 +90,10 @@ public class ShizukuShellLoader {
             intent.putExtra("auth", authToken);
         }
 
+        if (!TextUtils.isEmpty(callingPackage)) {
+            intent.putExtra("callingPackage", callingPackage);
+        }
+
         IBinder amBinder = ServiceManager.getService("activity");
         IActivityManager am;
         if (Build.VERSION.SDK_INT >= 26) {

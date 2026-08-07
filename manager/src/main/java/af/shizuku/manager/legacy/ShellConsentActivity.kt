@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.R
+import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
@@ -38,13 +39,29 @@ class ShellConsentActivity : AppActivity() {
             return
         }
 
-        showConsentDialog(callbackBinder)
+        val callingPackage = intent.getStringExtra("callingPackage")
+        showConsentDialog(callbackBinder, callingPackage)
     }
 
-    private fun showConsentDialog(callbackBinder: android.os.IBinder) {
+    private fun showConsentDialog(callbackBinder: android.os.IBinder, callingPackage: String?) {
+        // Resolve the UID here from PackageManager rather than trusting an extras-provided value,
+        // so a spoofed broadcast can't grant a different UID than the named package actually has.
+        val callingUid = callingPackage?.let { pkg ->
+            try {
+                packageManager.getApplicationInfo(pkg, 0).uid
+            } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+                null
+            }
+        }
+
         val binding = ConfirmationDialogBinding.inflate(layoutInflater).apply {
-            title.text = getString(R.string.shell_consent_dialog_title)
-            button1.text = getString(R.string.shell_consent_button_allow)
+            if (callingPackage != null) {
+                title.text = getString(R.string.shell_consent_dialog_title_identified, callingPackage)
+                // button1 keeps its layout-default "Allow all the time" text
+            } else {
+                title.text = getString(R.string.shell_consent_dialog_title)
+                button1.text = getString(R.string.shell_consent_button_allow)
+            }
             button3.text = getString(R.string.grant_dialog_button_deny)
         }
 
@@ -60,6 +77,12 @@ class ShellConsentActivity : AppActivity() {
             lifecycleScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
+                        // Grant permanent authorization before delivering the binder.
+                        // Shell.java's attachApplication() then sees allowed=true and
+                        // skips the redundant second consent dialog (#391).
+                        if (callingPackage != null && callingUid != null) {
+                            AuthorizationManager.grant(callingPackage, callingUid)
+                        }
                         ShellBinderRequestHandler.deliverBinder(this@ShellConsentActivity, callbackBinder)
                     } catch (e: Exception) {
                         LOGGER.w(e, "ShellConsentActivity: deliverBinder failed")
