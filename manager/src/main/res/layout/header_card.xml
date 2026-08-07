@@ -16,6 +16,7 @@
         android:layout_height="64dp"
         android:layout_marginBottom="16dp"
         android:scaleType="centerInside"
+        android:importantForAccessibility="no"
         tools:src="@drawable/ic_root_24" />
 
     <TextView

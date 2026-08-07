@@ -308,12 +308,18 @@ public class BinderSender {
                             // sendBinderToManager has its own force-stop + retry path.
                             ShizukuService.sendBinderToManager(sShizukuService, userId);
                         } else {
-                            // Use the retry variant here: the catch-up pass fires once at server
-                            // startup, so force-stopping a frozen app is safe (unlike the live
-                            // observer path which can interrupt in-flight operations).
-                            boolean sent = ShizukuService.sendBinderToUserAppWithRetry(sShizukuService, pi.packageName, userId);
+                            // NOT sendBinderToUserAppWithRetry: although this pass runs once at
+                            // server startup, force-stopping a client app is never safe here — the
+                            // live observer path may have already delivered the binder in the 2 s
+                            // window before this thread runs, and the app could be mid-operation
+                            // (e.g. an active PackageInstaller session in MT Manager, Morphe, or
+                            // LSPatch). Force-stopping kills that session and causes the
+                            // IPackageInstaller.asBinder() NPE reported in #394/#386/#380/#381.
+                            // Apps frozen at server-start will get the binder naturally the next
+                            // time they foreground and the process-state observer fires.
+                            boolean sent = ShizukuService.sendBinderToUserApp(sShizukuService, pi.packageName, userId);
                             if (!sent) {
-                                LOGGER.w("catch-up delivery still failed for %s in user %d after retry", pi.packageName, userId);
+                                LOGGER.w("catch-up delivery failed for %s in user %d (frozen? will retry on next state transition)", pi.packageName, userId);
                             }
                         }
                     } catch (Throwable e) {
