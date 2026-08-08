@@ -16,6 +16,7 @@ import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
 import af.shizuku.manager.shell.ShellConsentActionReceiver
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.IntentCrypto
 import java.security.MessageDigest
 import timber.log.Timber
@@ -61,6 +62,11 @@ class BinderRequestReceiver : BroadcastReceiver() {
                 try {
                     val callingUid = context.packageManager.getApplicationInfo(callingPackage, 0).uid
                     if (AuthorizationManager.granted(callingPackage, callingUid)) {
+                        val appLabel = try {
+                            val info = context.packageManager.getApplicationInfo(callingPackage, 0)
+                            context.packageManager.getApplicationLabel(info).toString()
+                        } catch (_: Exception) { callingPackage }
+                        ActivityLogManager.log(appLabel, callingPackage, "Shell: binder delivered (pre-authorized)")
                         ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
                         return
                     }
@@ -123,6 +129,7 @@ class BinderRequestReceiver : BroadcastReceiver() {
                 context.packageManager.getApplicationLabel(info).toString()
             } catch (_: Exception) { null }
         }
+        ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: consent requested")
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)

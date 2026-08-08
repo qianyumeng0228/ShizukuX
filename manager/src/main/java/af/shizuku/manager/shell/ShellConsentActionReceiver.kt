@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.authorization.AuthorizationManager
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.utils.Logger.LOGGER
 
 /**
@@ -39,14 +40,18 @@ class ShellConsentActionReceiver : BroadcastReceiver() {
                 val pending = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
+                        var appLabel = callingPackage
                         if (callingPackage != null) {
                             val callingUid = try {
-                                context.packageManager.getApplicationInfo(callingPackage, 0).uid
+                                val info = context.packageManager.getApplicationInfo(callingPackage, 0)
+                                appLabel = context.packageManager.getApplicationLabel(info).toString()
+                                info.uid
                             } catch (_: Exception) { null }
                             if (callingUid != null) {
                                 AuthorizationManager.grant(callingPackage, callingUid)
                             }
                         }
+                        ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: allowed always (notification)")
                         ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
                     } catch (e: Exception) {
                         LOGGER.w(e, "ShellConsentActionReceiver: deliver failed")
@@ -57,6 +62,14 @@ class ShellConsentActionReceiver : BroadcastReceiver() {
             }
             ACTION_DENY -> {
                 // callbackBinder was taken from the store and discarded — rish will time out.
+                val callingPackage = intent.getStringExtra("callingPackage")
+                val appLabel = callingPackage?.let {
+                    try {
+                        val info = context.packageManager.getApplicationInfo(it, 0)
+                        context.packageManager.getApplicationLabel(info).toString()
+                    } catch (_: Exception) { it }
+                }
+                ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: denied (notification)")
             }
         }
     }

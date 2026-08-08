@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.authorization.AuthorizationManager
+import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
@@ -88,6 +89,7 @@ class ShellConsentActivity : AppActivity() {
                         if (callingPackage != null && callingUid != null) {
                             AuthorizationManager.grant(callingPackage, callingUid)
                         }
+                        ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: allowed always (dialog)")
                         ShellBinderRequestHandler.deliverBinder(this@ShellConsentActivity, callbackBinder)
                     } catch (e: Exception) {
                         LOGGER.w(e, "ShellConsentActivity: deliverBinder failed")
@@ -97,6 +99,7 @@ class ShellConsentActivity : AppActivity() {
             }
         }
         binding.button3.setOnClickListener {
+            ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: denied (dialog)")
             dialog.dismiss()
         }
 
