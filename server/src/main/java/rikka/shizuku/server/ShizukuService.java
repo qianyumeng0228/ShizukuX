@@ -411,8 +411,18 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (isManagerAppId(UserHandleCompat.getAppId(callingUid))) {
             return true;
         }
-        if (clientRecord == null && checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
-            return true;
+        if (clientRecord == null) {
+            if (checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
+                return true;
+            }
+            // Also allow if the UID was explicitly authorized via the shell consent flow.
+            // Apps that don't declare a Shizuku permission in their manifest (e.g. Termux)
+            // never receive grantRuntimePermission(), so checkCallingPermission() always returns
+            // DENIED for them even after the user tapped "Allow". Checking configManager flags
+            // directly bridges this gap without touching OS permission state.
+            if ((getFlagsForUidInternal(callingUid, ConfigManager.MASK_PERMISSION, false) & ConfigManager.FLAG_ALLOWED) == ConfigManager.FLAG_ALLOWED) {
+                return true;
+            }
         }
         return false;
     }
