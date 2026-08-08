@@ -141,10 +141,14 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
         viewModel.load()
 
         recyclerView.adapter = adapter
+        recyclerView.clipToPadding = false
 
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
-            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, systemBars.bottom)
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(bars.left, v.paddingTop, bars.right, bars.bottom)
             insets
         }
 

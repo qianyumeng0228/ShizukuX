@@ -152,14 +152,15 @@ class RootCompatibilityActivity : AppBarActivity() {
             binding.deviceIdentitySpoofed.setTextColor(MaterialColors.getColor(this, R.attr.colorOnSurfaceVariant, Color.GRAY))
         }
 
-        val scrollView = binding.suggestedAppsList.parent?.parent as? View ?: rootView
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
+        recyclerView = binding.suggestedAppsList
+        recyclerView.clipToPadding = false
+        ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, view.paddingTop, bars.right, bars.bottom)
             insets
         }
-
-        recyclerView = binding.suggestedAppsList
         recyclerView.layoutManager = LinearLayoutManager(this)
         adapter = CategorizedSuggestedAppsAdapter(emptyList())
         recyclerView.adapter = adapter

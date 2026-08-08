@@ -54,10 +54,12 @@ class ServiceDoctorActivity : AppBarActivity() {
 
         tipsTextView = binding.tipsText
 
-        val scrollView = binding.checkList.parent?.parent as? View ?: rootView
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
+        binding.checkList.clipToPadding = false
+        ViewCompat.setOnApplyWindowInsetsListener(binding.checkList) { view, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, view.paddingTop, bars.right, bars.bottom)
             insets
         }
 

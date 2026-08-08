@@ -47,8 +47,10 @@ class ActivityLogFragment : Fragment() {
         emptyStateView.hideActionButton()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.list) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(view.paddingLeft, view.paddingTop, view.paddingRight, systemBars.bottom)
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, view.paddingTop, bars.right, bars.bottom)
             insets
         }
 

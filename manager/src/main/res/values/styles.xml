@@ -104,7 +104,7 @@
         <item name="endIconDrawable">@drawable/ic_copy</item>
         <item name="hintTextColor">?colorOnSurfaceVariant</item>
         <item name="prefixTextColor">?colorOnSurfaceVariant</item>
-        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.Material3.Corner.Medium</item>
+        <item name="shapeAppearanceOverlay">?attr/shapeAppearanceCornerMedium</item>
     </style>
 
     <style name="GrantPermissionsButtons">

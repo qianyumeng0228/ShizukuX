@@ -84,7 +84,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:background="?attr/colorSurfaceVariant"
+                    android:background="?attr/colorSurfaceContainerHighest"
                     android:padding="8dp"
                     android:text="/storage/emulated/0/..."
                     android:textAppearance="?textAppearanceLabelMedium"

@@ -5,6 +5,12 @@
     <af.shizuku.manager.settings.DiagnosticsDashboardPreference
         android:key="diagnostics_dashboard" />
 
+    <SwitchPreferenceCompat
+        android:key="hide_disabled_plus_features"
+        android:title="@string/hide_disabled_plus_features"
+        android:summary="@string/hide_disabled_plus_features_summary"
+        android:defaultValue="false" />
+
     <!-- Core toggle: must be enabled for most Plus features to function -->
     <af.shizuku.manager.settings.PlusFeaturePreference
         android:key="custom_api_enabled"
@@ -269,39 +275,6 @@
             android:icon="@drawable/ic_shield_24"
             android:defaultValue="false"
             app:severityBadge="risky" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="vector_enabled"
-            android:title="@string/settings_vector_experimental"
-            android:summary="@string/settings_vector_summary"
-            android:icon="@drawable/ic_code_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="experimental_root_compat"
-            android:title="@string/settings_experimental_root_experimental"
-            android:summary="@string/settings_experimental_root_summary"
-            android:icon="@drawable/ic_science_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <af.shizuku.manager.settings.PlusFeaturePreference
-            android:key="spoof_device_enabled"
-            android:title="@string/settings_spoof_device_experimental"
-            android:summary="@string/settings_spoof_device_summary"
-            android:icon="@drawable/ic_smartphone_24"
-            android:defaultValue="false"
-            app:badgeType="experimental" />
-
-        <rikka.preference.SimpleMenuPreference
-            android:key="spoof_target"
-            android:title="@string/settings_spoof_target"
-            android:entries="@array/spoof_targets"
-            android:entryValues="@array/spoof_targets_values"
-            android:defaultValue="pixel_8_pro"
-            android:summary="%s"
-            android:icon="@drawable/ic_smartphone_24" />
 
         <af.shizuku.manager.settings.PlusFeaturePreference
             android:key="samsung_system_uid_escalation_enabled"

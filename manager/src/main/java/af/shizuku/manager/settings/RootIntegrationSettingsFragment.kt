@@ -92,7 +92,6 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
             if (newValue is Boolean) {
                 preferenceManager.sharedPreferences?.edit()?.putBoolean("su_bridge_enabled", newValue)?.apply()
                 ShizukuSettings.syncAllPlusFeaturesToServer()
-                findPreference<Preference>("su_bridge_diagram")?.let { it.isVisible = false; it.isVisible = true }
             }
             true
         }

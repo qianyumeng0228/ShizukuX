@@ -370,13 +370,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "overlay_manager_plus_enabled" to "overlay_manager_plus",
             "network_governor_plus_enabled" to "network_governor_plus",
             "activity_manager_plus_enabled" to "activity_manager_plus",
-            "root_magisk_mocking_enabled" to "root_magisk_mocking",
-            "root_auto_grant_enabled" to "root_auto_grant",
-            "root_file_interceptor_enabled" to "root_file_interceptor",
-            "root_busybox_mocking_enabled" to "root_busybox_mocking",
-            "vector_enabled" to "vector",
-            "experimental_root_compat" to "experimental_root",
-            "spoof_device_enabled" to "spoof_device",
             "shadow_binder_enabled" to "shadow_binder",
             "binder_firewall_enabled" to "binder_firewall",
             "binder_logging_enabled" to "binder_logging",
@@ -385,7 +378,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         )
         val experimentalKeys = setOf(
             "avf_manager_enabled",
-            "ai_core_plus_enabled",
             "ai_core_master_enabled",
             "npu_acceleration_enabled",
             "native_window_crawler_enabled",
@@ -626,15 +618,6 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
-
-        // Root Compat modules
-        updatePreferenceDependency("root_magisk_mocking_enabled", customApiEnabled, hideDisabled)
-        updatePreferenceDependency("root_auto_grant_enabled", customApiEnabled, hideDisabled)
-        updatePreferenceDependency("root_file_interceptor_enabled", customApiEnabled, hideDisabled)
-        updatePreferenceDependency("root_busybox_mocking_enabled", customApiEnabled, hideDisabled)
-
-        // Category visibility
-        findPreference<Preference>("category_root_compat")?.isVisible = customApiEnabled || !hideDisabled
 
         // These also depend on window_manager_plus_enabled
         val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled

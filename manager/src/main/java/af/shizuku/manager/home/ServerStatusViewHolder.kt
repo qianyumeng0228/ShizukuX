@@ -130,26 +130,20 @@ class ServerStatusViewHolder(private val binding: HomeServerStatusBinding, root:
             activity.startActivity(android.content.Intent(activity, SystemHubActivity::class.java))
         }
 
-        val typedValue = android.util.TypedValue()
-        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorTertiaryContainer
-        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnTertiaryContainer
+        val okColorAttr = if (ok) com.google.android.material.R.attr.colorPrimaryContainer else com.google.android.material.R.attr.colorErrorContainer
+        val onColorAttr = if (ok) com.google.android.material.R.attr.colorOnPrimaryContainer else com.google.android.material.R.attr.colorOnErrorContainer
 
-        fun resolveColor(attr: Int, fallbackAttr: Int, hardcodedFallback: Int): Int {
-            context.theme.resolveAttribute(attr, typedValue, true)
-            if (typedValue.type != android.util.TypedValue.TYPE_NULL && typedValue.data != 0) return typedValue.data
-            context.theme.resolveAttribute(fallbackAttr, typedValue, true)
-            return if (typedValue.type != android.util.TypedValue.TYPE_NULL && typedValue.data != 0) typedValue.data else hardcodedFallback
-        }
-
-        val bgColor = resolveColor(
-            okColorAttr,
-            com.google.android.material.R.attr.colorSurfaceContainerHigh,
-            if (ok) 0xFFE8EAF6.toInt() else 0xFFE8F5E9.toInt()
+        val bgColor = com.google.android.material.color.MaterialColors.getColor(
+            context, okColorAttr,
+            com.google.android.material.color.MaterialColors.getColor(
+                context, com.google.android.material.R.attr.colorSurfaceContainerHigh, android.graphics.Color.TRANSPARENT
+            )
         )
-        val textColor = resolveColor(
-            onColorAttr,
-            com.google.android.material.R.attr.colorOnSurface,
-            0xFF1A1C1E.toInt()
+        val textColor = com.google.android.material.color.MaterialColors.getColor(
+            context, onColorAttr,
+            com.google.android.material.color.MaterialColors.getColor(
+                context, com.google.android.material.R.attr.colorOnSurface, android.graphics.Color.BLACK
+            )
         )
 
         cardView.setCardBackgroundColor(bgColor)

@@ -50,7 +50,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/dialog_adb_pairing_paring_code"
             android:visibility="gone"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
+            app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerMedium"
             tools:visibility="visible">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -71,7 +71,7 @@
             android:layout_height="wrap_content"
             android:hint="@string/dialog_adb_port"
             android:visibility="gone"
-            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
+            app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerMedium"
             tools:visibility="visible">
 
             <com.google.android.material.textfield.TextInputEditText

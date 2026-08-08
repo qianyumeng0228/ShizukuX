@@ -51,8 +51,11 @@ abstract class AppBarActivity : AppActivity() {
                 setSupportActionBar(toolbar)
 
                 androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
-                    val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-                    v.setPadding(0, systemBars.top, 0, 0)
+                    val bars = insets.getInsets(
+                        androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                        androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+                    )
+                    v.setPadding(bars.left, bars.top, bars.right, 0)
                     insets
                 }
             } else {

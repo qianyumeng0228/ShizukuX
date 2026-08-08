@@ -75,6 +75,11 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        findPreference<TwoStatePreference>(KEY_ENABLE_ACTIVITY_LOG)?.setOnPreferenceChangeListener { _, _ ->
+            ShizukuSettings.syncAllPlusFeaturesToServer()
+            true
+        }
+
         findPreference<Preference>("scripting")?.setOnPreferenceClickListener {
             startActivity(Intent(context, af.shizuku.manager.scripting.ScriptingActivity::class.java))
             true
