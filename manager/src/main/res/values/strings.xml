@@ -677,7 +677,9 @@
     <string name="notification_shell_consent_title">Shell access request</string>
     <string name="notification_shell_consent_title_identified">%s is requesting shell access</string>
     <string name="notification_shell_consent_text">Tap to review a request for privileged Shizuku access from a shell client (such as rish or adb).</string>
-    <string name="notification_shell_consent_text_identified">Tap to review — only allow if you just ran a shell command.</string>
+    <string name="notification_shell_consent_text_identified">Only allow if you just ran a shell command.</string>
+    <string name="notification_shell_consent_action_allow">Allow always</string>
+    <string name="notification_shell_consent_action_deny">Deny</string>
 
     <!-- Permission related, appears in system permission UI -->
     <string name="permission_group_label" translatable="false">Shizuku</string>

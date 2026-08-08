@@ -15,6 +15,7 @@ import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
+import af.shizuku.manager.shell.ShellConsentActionReceiver
 import af.shizuku.manager.utils.IntentCrypto
 import java.security.MessageDigest
 import timber.log.Timber
@@ -149,6 +150,27 @@ class BinderRequestReceiver : BroadcastReceiver() {
         else
             context.getString(R.string.notification_shell_consent_text)
 
+        // Action intents: explicit component + exported=false keeps these internal.
+        // Strings (consentKey, callingPackage) survive PendingIntent serialization safely;
+        // the live binder stays in PendingConsentStore and is fetched inside the receiver.
+        val allowIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 1,
+            Intent(ShellConsentActionReceiver.ACTION_ALLOW, null, context, ShellConsentActionReceiver::class.java).apply {
+                putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
+                callingPackage?.let { putExtra("callingPackage", it) }
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val denyIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 2,
+            Intent(ShellConsentActionReceiver.ACTION_DENY, null, context, ShellConsentActionReceiver::class.java).apply {
+                putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_system_icon)
             .setContentTitle(notifTitle)
@@ -157,6 +179,8 @@ class BinderRequestReceiver : BroadcastReceiver() {
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)
+            .addAction(0, context.getString(R.string.notification_shell_consent_action_allow), allowIntent)
+            .addAction(0, context.getString(R.string.notification_shell_consent_action_deny), denyIntent)
             .build()
 
         nm.notify(notificationId, notification)

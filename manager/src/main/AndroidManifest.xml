@@ -344,6 +344,15 @@
         </receiver>
 
         <receiver
+            android:name=".shell.ShellConsentActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="af.shizuku.plus.ACTION_SHELL_CONSENT_ALLOW" />
+                <action android:name="af.shizuku.plus.ACTION_SHELL_CONSENT_DENY" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".receiver.BootCompleteReceiver"
             android:enabled="true"
             android:exported="true"
