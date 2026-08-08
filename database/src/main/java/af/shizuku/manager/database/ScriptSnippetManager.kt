@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import timber.log.Timber
 
 /** Result of running a saved snippet through the privileged shell channel. */
 data class ScriptRunResult(val exitCode: Int, val stdout: String, val stderr: String)
@@ -26,11 +27,11 @@ object ScriptSnippetManager {
     fun getAll(): Flow<List<ScriptSnippetRoom>> =
         requireNotNull(dao) { "ScriptSnippetManager not initialized" }.getAll()
 
-    suspend fun save(id: Long?, title: String, script: String): Long = withContext(Dispatchers.IO) {
+    suspend fun save(id: Long?, title: String, script: String, autoRun: Boolean = false): Long = withContext(Dispatchers.IO) {
         val d = requireNotNull(dao) { "ScriptSnippetManager not initialized" }
         val now = System.currentTimeMillis()
         if (id == null) {
-            d.insert(ScriptSnippetRoom(title = title, script = script, createdAt = now, updatedAt = now))
+            d.insert(ScriptSnippetRoom(title = title, script = script, autoRun = autoRun, createdAt = now, updatedAt = now))
         } else {
             val existing = d.getById(id)
             d.update(
@@ -38,11 +39,24 @@ object ScriptSnippetManager {
                     id = id,
                     title = title,
                     script = script,
+                    autoRun = autoRun,
                     createdAt = existing?.createdAt ?: now,
                     updatedAt = now
                 )
             )
             id
+        }
+    }
+
+    suspend fun runAutoRunSnippets() = withContext(Dispatchers.IO) {
+        val d = requireNotNull(dao) { "ScriptSnippetManager not initialized" }
+        val snippets = d.getAutoRun()
+        for (snippet in snippets) {
+            try {
+                run(snippet.script)
+            } catch (e: Exception) {
+                Timber.e(e, "Auto-run snippet '${snippet.title}' failed")
+            }
         }
     }
 

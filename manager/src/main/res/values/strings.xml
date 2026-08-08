@@ -1062,6 +1062,8 @@
     <string name="scripting_delete_title">Delete snippet?</string>
     <string name="scripting_delete_message">“%1$s” will be permanently deleted.</string>
     <string name="scripting_delete">Delete</string>
+    <string name="scripting_auto_run_label">Auto-run on service start</string>
+    <string name="scripting_auto_run_badge_desc">Auto-runs on service start</string>
 
     <!-- Tasker/Locale automation plugin (#6) -->
     <string name="automation_plugin_action_label">ShizukuX Service</string>

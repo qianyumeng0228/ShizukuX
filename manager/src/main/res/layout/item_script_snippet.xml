@@ -45,11 +45,20 @@
 
     </LinearLayout>
 
+    <ImageView
+        android:id="@+id/auto_run_badge"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_marginStart="4dp"
+        android:src="@drawable/ic_autorenew"
+        android:contentDescription="@string/scripting_auto_run_badge_desc"
+        android:visibility="gone" />
+
     <ImageButton
         android:id="@+id/run_button"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="4dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_outline_play_arrow_24"
         android:contentDescription="@string/scripting_run" />

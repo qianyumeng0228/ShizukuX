@@ -30,6 +30,12 @@ import af.shizuku.manager.di.appModule
 import af.shizuku.manager.worker.RemoteDbSyncWorker
 import android.os.UserManager
 import com.airbnb.mvrx.Mavericks
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -396,6 +402,14 @@ class ShizukuApplication : Application(), Configuration.Provider {
         ActivityLogManager.initialize(this, ActivityLogSettingsImpl())
         af.shizuku.manager.database.ScriptSnippetManager.initialize(this)
         af.shizuku.manager.plugin.PlusFeatureRegistry.register(af.shizuku.manager.scripting.ScriptingFeatureModule)
+
+        // Run auto-run snippets each time the Shizuku service transitions to RUNNING.
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+            ShizukuStateMachine.asFlow()
+                .distinctUntilChanged()
+                .filter { it == ShizukuStateMachine.State.RUNNING }
+                .collect { af.shizuku.manager.database.ScriptSnippetManager.runAutoRunSnippets() }
+        }
         AppContextManager.initialize(AppContextSettingsImpl())
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())

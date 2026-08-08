@@ -11,6 +11,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Toast
@@ -132,11 +133,19 @@ class ScriptingFragment : Fragment() {
             minLines = 4
             existing?.let { setText(it.script) }
         }
+        val autoRunCheck = CheckBox(ctx).apply {
+            text = getString(R.string.scripting_auto_run_label)
+            isChecked = existing?.autoRun ?: false
+        }
         val container = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp16, dp16 / 2, dp16, 0)
+            setPadding(dp16, dp16 / 2, dp16, dp16 / 2)
             addView(titleInput)
             addView(scriptInput, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = dp16 / 2 })
+            addView(autoRunCheck, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { topMargin = dp16 / 2 })
@@ -153,7 +162,7 @@ class ScriptingFragment : Fragment() {
                     return@setPositiveButton
                 }
                 viewLifecycleOwner.lifecycleScope.launch {
-                    ScriptSnippetManager.save(existing?.id, title, script)
+                    ScriptSnippetManager.save(existing?.id, title, script, autoRunCheck.isChecked)
                 }
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -212,6 +221,7 @@ class ScriptingFragment : Fragment() {
         fun bind(snippet: ScriptSnippetRoom) {
             binding.title.text = snippet.title
             binding.scriptPreview.text = snippet.script.lineSequence().firstOrNull().orEmpty()
+            binding.autoRunBadge.visibility = if (snippet.autoRun) View.VISIBLE else View.GONE
             binding.runButton.setOnClickListener { onRun(snippet) }
             binding.root.setOnClickListener { onEdit(snippet) }
             binding.root.setOnLongClickListener { onLongPress(snippet); true }

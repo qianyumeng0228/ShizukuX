@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
 import timber.log.Timber
 
 /**
@@ -18,6 +19,7 @@ internal fun <T : RoomDatabase> buildRoomDatabaseWithStorageFallback(
     databaseName: String,
     klass: Class<T>,
     logTag: String,
+    vararg migrations: Migration,
 ): T {
     val candidates = buildList {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -35,6 +37,7 @@ internal fun <T : RoomDatabase> buildRoomDatabaseWithStorageFallback(
         if (parent == null || parent.exists()) {
             return Room.databaseBuilder(ctx, klass, databaseName)
                 .fallbackToDestructiveMigration()
+                .apply { if (migrations.isNotEmpty()) addMigrations(*migrations) }
                 .build()
         }
         Timber.tag(logTag).w("mkdirs failed for ${parent.absolutePath}, trying next context")

@@ -28,4 +28,7 @@ interface ScriptSnippetDao {
 
     @Query("SELECT * FROM script_snippets WHERE id = :id")
     fun getById(id: Long): ScriptSnippetRoom?
+
+    @Query("SELECT * FROM script_snippets WHERE autoRun = 1 ORDER BY updatedAt ASC")
+    fun getAutoRun(): List<ScriptSnippetRoom>
 }

@@ -22,6 +22,7 @@ data class ScriptSnippetRoom(
     val id: Long = 0,
     val title: String,
     val script: String,
+    val autoRun: Boolean = false,
     val createdAt: Long,
     val updatedAt: Long
 )
