@@ -7,8 +7,8 @@
 
     <SwitchPreferenceCompat
         android:key="hide_disabled_plus_features"
-        android:title="@string/hide_disabled_plus_features"
-        android:summary="@string/hide_disabled_plus_features_summary"
+        android:title="@string/settings_hide_disabled_plus_features"
+        android:summary="@string/settings_hide_disabled_plus_features_summary"
         android:defaultValue="false" />
 
     <!-- Core toggle: must be enabled for most Plus features to function -->
