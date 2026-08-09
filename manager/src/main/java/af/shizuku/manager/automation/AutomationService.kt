@@ -63,8 +63,12 @@ class AutomationService : Service() {
         connectivityManager = cm
         if (cm != null) {
             try {
+                // TRANSPORT_WIFI covers normal wireless ADB; TRANSPORT_ETHERNET covers RNDIS/USB-
+                // tethering connections used on devices like Samsung XCover 7 (#403). Both trigger
+                // checkNetworkState() so NetworkFirewallRule and AdbStartWorker react to either.
                 val request = NetworkRequest.Builder()
                     .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
                     .build()
                 cm.registerNetworkCallback(request, networkCallback)
                 callbackRegistered = true
@@ -130,10 +134,14 @@ class AutomationService : Service() {
         try {
             val activeNetwork = cm.activeNetwork
             val caps = cm.getNetworkCapabilities(activeNetwork)
-            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-            // WifiManager.getConnectionInfo() is deprecated since API 31 and throws SecurityException
-            // on some OEM builds even with ACCESS_WIFI_STATE declared (SHIZUKUPLUS-50). SSID is
-            // intentionally omitted; getNetworkCapabilities needs no wifi permission.
+            // Count Ethernet (RNDIS/USB tethering, common on Samsung XCover, Zebra, Honeywell
+            // ruggedized devices) as a valid ADB transport alongside WiFi (#403).
+            // WifiManager.getConnectionInfo() is deprecated since API 31 and throws
+            // SecurityException on some OEM builds even with ACCESS_WIFI_STATE declared
+            // (SHIZUKUPLUS-50). SSID is intentionally omitted; getNetworkCapabilities needs
+            // no wifi permission.
+            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
+                    caps?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true
             AutomationEngine.dispatchEvent(NetworkEvent(isWifi, null), applicationContext)
         } catch (e: Exception) {
             Timber.tag("AutomationService").w(e, "Failed to check network state")
