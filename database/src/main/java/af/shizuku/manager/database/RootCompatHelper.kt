@@ -173,9 +173,11 @@ object RootCompatHelper {
     private fun streamToPrivilegedFile(bytes: ByteArray, path: String, mode: String): Boolean {
         if (!Shizuku.pingBinder()) return false
         val escaped = escapeShellSingleQuote(path)
-        // outputStream is the child's stdin; writing then closing sends EOF so `cat` completes.
+        // rm -f first: a prior deploy may have left the file as read-only (444 for the dex),
+        // and `cat >` would fail with EACCES even for the file's own owner. outputStream is
+        // the child's stdin; writing then closing sends EOF so `cat` completes.
         val result = ShizukuProcessUtils.runPrivilegedCapture(
-            arrayOf("sh", "-c", "cat > '$escaped' && chmod $mode '$escaped'"),
+            arrayOf("sh", "-c", "rm -f '$escaped' && cat > '$escaped' && chmod $mode '$escaped'"),
             joinTimeoutMs = 500,
             writeStdin = { it.use { stream -> stream.write(bytes) } }
         )
