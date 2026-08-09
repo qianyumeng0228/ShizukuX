@@ -59,23 +59,35 @@ object ShellBinderRequestHandler {
             return false
         }
 
-        val data = Parcel.obtain()
-        val reply = Parcel.obtain()
-        try {
-            // Must match ShizukuShellLoader.receiverBinder.onTransact exactly: it reads
-            // readStrongBinder() then readString() with no enforceInterface() call, so a
-            // leading writeInterfaceToken() here gets misread as the binder slot and an
-            // omitted sourceDir NPEs the client at onBinderReceived's sourceDir.substring().
-            data.writeStrongBinder(shizukuBinder)
-            data.writeString(context.applicationInfo.sourceDir)
-            callbackBinder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
-            return true
-        } catch (e: Exception) {
-            LOGGER.w(e, "transact")
-            return false
-        } finally {
-            data.recycle()
-            reply.recycle()
+        // The rish app_process may be frozen by Android's Cached Apps Freezer if the caller was
+        // backgrounded while waiting for the consent notification. A frozen-process ONEWAY transact
+        // returns an error immediately (BR_FROZEN_REPLY) rather than queuing. Retry with short
+        // delays to give the system time to unfreeze the process (typically <1 s after the freeze
+        // is lifted by the user foregrounding the caller or by normal OS scheduling).
+        val retryDelaysMs = longArrayOf(0L, 200L, 600L, 1500L)
+        var lastException: Exception? = null
+        for (delayMs in retryDelaysMs) {
+            if (delayMs > 0) Thread.sleep(delayMs)
+            val data = Parcel.obtain()
+            val reply = Parcel.obtain()
+            try {
+                // Must match ShizukuShellLoader.receiverBinder.onTransact exactly: it reads
+                // readStrongBinder() then readString() with no enforceInterface() call, so a
+                // leading writeInterfaceToken() here gets misread as the binder slot and an
+                // omitted sourceDir NPEs the client at onBinderReceived's sourceDir.substring().
+                data.writeStrongBinder(shizukuBinder)
+                data.writeString(context.applicationInfo.sourceDir)
+                callbackBinder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
+                return true
+            } catch (e: Exception) {
+                LOGGER.w(e, "transact attempt failed (delay was ${delayMs}ms)")
+                lastException = e
+            } finally {
+                data.recycle()
+                reply.recycle()
+            }
         }
+        LOGGER.w(lastException, "transact: all attempts failed")
+        return false
     }
 }

@@ -2,6 +2,7 @@ package af.shizuku.manager.legacy
 
 import android.os.Bundle
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
@@ -79,13 +80,15 @@ class ShellConsentActivity : AppActivity() {
         dialog.setCanceledOnTouchOutside(false)
 
         binding.button1.setOnClickListener {
-            // deliverBinder does a synchronous binder transact - keep it off Main.
+            // deliverBinder does synchronous binder transacts with retries - keep it off Main.
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
+                val delivered = withContext(Dispatchers.IO) {
                     try {
-                        // Grant permanent authorization before delivering the binder.
-                        // Shell.java's attachApplication() then sees allowed=true and
-                        // skips the redundant second consent dialog (#391).
+                        // Grant permanent authorization before delivering the binder so that
+                        // Shell.java's attachApplication() sees allowed=true and skips the
+                        // redundant second consent dialog (#391). Grant is persisted even if
+                        // delivery fails below - the next rish invocation then hits the fast
+                        // path in BinderRequestReceiver and succeeds without another dialog.
                         if (callingPackage != null && callingUid != null) {
                             AuthorizationManager.grant(callingPackage, callingUid)
                         }
@@ -93,7 +96,18 @@ class ShellConsentActivity : AppActivity() {
                         ShellBinderRequestHandler.deliverBinder(this@ShellConsentActivity, callbackBinder)
                     } catch (e: Exception) {
                         LOGGER.w(e, "ShellConsentActivity: deliverBinder failed")
+                        false
                     }
+                }
+                if (!delivered && !isFinishing && !isDestroyed) {
+                    // Delivery failed even after retries: the rish process was frozen by Android's
+                    // Cached Apps Freezer while waiting. Authorization is saved — rish will connect
+                    // automatically on the next invocation without another prompt.
+                    Toast.makeText(
+                        this@ShellConsentActivity,
+                        getString(R.string.shell_consent_retry_hint),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 if (!isFinishing && !isDestroyed) dialog.dismiss()
             }
