@@ -46,8 +46,9 @@ object HomeEditMode {
             binding.cardContent.alpha = 0.45f
             binding.dragHandle.alpha = 0.35f // Fade drag handle even more
             binding.removeBtn.setImageResource(R.drawable.ic_add_24)
-            val activeColor = binding.root.context.getColor(R.color.system_accent1_600)
-            binding.removeBtn.imageTintList = android.content.res.ColorStateList.valueOf(activeColor)
+            val primaryTint = android.util.TypedValue()
+            binding.root.context.theme.resolveAttribute(R.attr.colorPrimary, primaryTint, true)
+            binding.removeBtn.imageTintList = android.content.res.ColorStateList.valueOf(primaryTint.data)
         } else {
             binding.cardContent.alpha = 1.0f
             binding.dragHandle.alpha = 0.85f // Restore original drag handle alpha

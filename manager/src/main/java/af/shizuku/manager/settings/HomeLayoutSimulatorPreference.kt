@@ -72,16 +72,19 @@ class HomeLayoutSimulatorPreference @JvmOverloads constructor(
         block ?: return
         eye ?: return
 
+        val tv = android.util.TypedValue()
         if (isVisible) {
             block.setBackgroundResource(R.drawable.shape_node_active)
             block.alpha = 1.0f
             eye.setImageResource(R.drawable.ic_visibility_24)
-            eye.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.DKGRAY)
+            context.theme.resolveAttribute(R.attr.colorOnSurface, tv, true)
+            eye.imageTintList = android.content.res.ColorStateList.valueOf(tv.data)
         } else {
             block.setBackgroundResource(R.drawable.shape_node_inactive)
             block.alpha = 0.5f
             eye.setImageResource(R.drawable.ic_visibility_off_24)
-            eye.imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.system_neutral_outline))
+            context.theme.resolveAttribute(R.attr.colorOutline, tv, true)
+            eye.imageTintList = android.content.res.ColorStateList.valueOf(tv.data)
         }
     }
 }
