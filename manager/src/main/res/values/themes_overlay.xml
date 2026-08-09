@@ -233,6 +233,14 @@
         <item name="textAppearanceHeadlineLarge">@style/TextAppearance.OneUI.HeadlineLarge</item>
         <item name="textAppearanceTitleLarge">@style/TextAppearance.OneUI.TitleLarge</item>
         <item name="textAppearanceTitleMedium">@style/TextAppearance.OneUI.TitleMedium</item>
+        <!-- Preference screens: bold blue category headers + One UI item padding.
+             The rikka library already sets listPreferredItemPadding* to 24dp/16dp and
+             category title color to ?colorPrimary (Samsung Blue), so those are free. -->
+        <item name="preferenceTheme">@style/AppTheme.PreferenceThemeOverlay.OneUI</item>
+        <!-- Explicit padding assertion (rikka's ThemeOverlay.Rikka.Material3.Preference
+             sets these but isn't guaranteed to be applied when we apply at overlay level) -->
+        <item name="android:listPreferredItemPaddingStart">24dp</item>
+        <item name="android:listPreferredItemPaddingEnd">16dp</item>
     </style>
 
     <style name="ThemeOverlay.OneUI.Dark" parent="ThemeOverlay.OneUI">

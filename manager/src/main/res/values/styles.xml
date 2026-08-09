@@ -142,4 +142,20 @@
         <item name="layout">@layout/preference_empty</item>
     </style>
 
+    <!--
+        One UI preference theme overlay — applied when oneui_theme_enabled is on.
+        The rikka library already defaults category titles to ?colorPrimary (which is Samsung
+        Blue in ThemeOverlay.OneUI) and item padding to 24dp/16dp via listPreferredItemPadding*.
+        This overlay layers bolder, slightly-spaced category text on top to complete the look.
+    -->
+    <style name="AppTheme.PreferenceThemeOverlay.OneUI" parent="@style/AppTheme.PreferenceThemeOverlay">
+        <item name="preferenceCategoryTitleTextAppearance">@style/TextAppearance.OneUI.CategoryTitle</item>
+    </style>
+
+    <style name="TextAppearance.OneUI.CategoryTitle" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
 </resources>

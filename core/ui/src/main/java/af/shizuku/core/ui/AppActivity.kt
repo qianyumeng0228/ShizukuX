@@ -48,6 +48,17 @@ abstract class AppActivity : MaterialActivity() {
             } catch (_: Exception) {
             }
         }
+        // Suppress the NEW window's enter animation/transition when this is a theme-change
+        // recreate(). recreateWithoutTransition() already called window.setWindowAnimations(0)
+        // on the OLD window to kill its exit animation, but the new window inherits the theme's
+        // windowAnimationStyle — which on some API levels still plays an enter animation and
+        // leaves the window black until the user navigates away. Suppressing it here on the
+        // new window ensures a clean, animation-free replacement.
+        if (suppressTransitionOnCreate) {
+            window.setWindowAnimations(0)
+            @Suppress("DEPRECATION")
+            overridePendingTransition(0, 0)
+        }
         suppressTransitionOnCreate = false
         // Read directly from shared prefs to avoid a cross-module dependency on manager's
         // ShizukuSettings. Keys must match ShizukuSettings.Keys constants.
@@ -59,6 +70,18 @@ abstract class AppActivity : MaterialActivity() {
             window.setBackgroundBlurRadius(30)
         }
         super.onCreate(savedInstanceState)
+        // Theme-change flash fix: immediately replace the new theme's android:windowBackground with
+        // the captured screenshot. The window background is drawn from the very first pixel before
+        // any view content, so this eliminates the 1-2 frame white/black flash that appears between
+        // the old activity tearing down and onPostCreate()'s decor-overlay being added. Without this,
+        // the new theme's background color flickers visible on preference-screen theme changes.
+        // The window background is restored to the real theme drawable in onPostCreate()'s animation
+        // end callback, after which it no longer matters (view content covers it).
+        recreateSnapshot?.let { s ->
+            if (!s.isRecycled) {
+                window.setBackgroundDrawable(android.graphics.drawable.BitmapDrawable(resources, s))
+            }
+        }
     }
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
@@ -91,6 +114,16 @@ abstract class AppActivity : MaterialActivity() {
                     addListener(object : AnimatorListenerAdapter() {
                         override fun onAnimationEnd(animation: android.animation.Animator) {
                             decorView.overlay.remove(drawable)
+                            // Restore the actual theme window background. onCreate() replaced it
+                            // with the snapshot bitmap to mask the flash; now the real content is
+                            // visible we can put the theme drawable back. Must happen before
+                            // snapshot.recycle() or the stale BitmapDrawable would hold a ref
+                            // to the recycled bitmap.
+                            val ta = this@AppActivity.obtainStyledAttributes(
+                                intArrayOf(android.R.attr.windowBackground)
+                            )
+                            window.setBackgroundDrawable(ta.getDrawable(0))
+                            ta.recycle()
                             if (!snapshot.isRecycled) snapshot.recycle()
                         }
                     })
@@ -99,6 +132,9 @@ abstract class AppActivity : MaterialActivity() {
             }
         } catch (_: Throwable) {
             decorView.overlay.remove(drawable)
+            val ta = this.obtainStyledAttributes(intArrayOf(android.R.attr.windowBackground))
+            window.setBackgroundDrawable(ta.getDrawable(0))
+            ta.recycle()
             if (!snapshot.isRecycled) snapshot.recycle()
         }
     }
