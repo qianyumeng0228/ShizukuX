@@ -185,4 +185,80 @@
     -->
     <style name="ThemeOverlay.Shapes.Standard" parent="ThemeOverlay.Shape.Modern"/>
 
+    <!--
+        One UI style theme overlay (settings key "oneui_theme_enabled").
+        Applies Samsung One UI design language: Galaxy Blue accent (#0381FE), extra-large rounded
+        corners, and heavier typography. Intentionally does NOT override dynamic color when the
+        user has dynamic color enabled — the overlay is applied BEFORE the dynamic-color overlay
+        so Monet still wins on API 31+.
+    -->
+    <style name="ShapeAppearance.OneUI.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">6dp</item>
+    </style>
+    <style name="ShapeAppearance.OneUI.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="ShapeAppearance.OneUI.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">18dp</item>
+    </style>
+    <style name="ShapeAppearance.OneUI.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">26dp</item>
+    </style>
+    <style name="ShapeAppearance.OneUI.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">36dp</item>
+    </style>
+
+    <style name="ThemeOverlay.OneUI" parent="">
+        <!-- Samsung Galaxy Blue -->
+        <item name="colorPrimary">#0381FE</item>
+        <item name="colorPrimaryContainer">#D5EAFF</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#001E3A</item>
+        <item name="colorSecondary">#4A90D9</item>
+        <item name="colorSecondaryContainer">#D9ECFF</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorOnSecondaryContainer">#001E3A</item>
+        <!-- One UI signature extra-large corners -->
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.OneUI.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.OneUI.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.OneUI.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.OneUI.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.OneUI.Corner.ExtraLarge</item>
+        <!-- Bolder headline typography (One UI "SamsungOne" look) -->
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.OneUI.HeadlineLarge</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.OneUI.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.OneUI.TitleMedium</item>
+    </style>
+
+    <style name="ThemeOverlay.OneUI.Dark" parent="ThemeOverlay.OneUI">
+        <!-- Slightly lighter blue for dark-mode contrast (WCAG AA on dark surfaces) -->
+        <item name="colorPrimary">#3A8BFF</item>
+        <item name="colorPrimaryContainer">#003B79</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorOnPrimaryContainer">#D5EAFF</item>
+        <item name="colorSecondary">#7AB4F5</item>
+        <item name="colorSecondaryContainer">#003366</item>
+        <item name="colorOnSecondary">#001E3A</item>
+        <item name="colorOnSecondaryContainer">#D9ECFF</item>
+    </style>
+
+    <style name="TextAppearance.OneUI.HeadlineLarge" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:textSize">38sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">-0.01</item>
+    </style>
+    <style name="TextAppearance.OneUI.TitleLarge" parent="TextAppearance.Material3.TitleLarge">
+        <item name="android:textSize">26sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.OneUI.TitleMedium" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
 </resources>

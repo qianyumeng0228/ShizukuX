@@ -22,6 +22,19 @@
     <string name="settings_animation_intensity">Animation Intensity</string>
     <string name="settings_animation_intensity_summary">Adjust the speed and "bounciness" of UI transitions</string>
 
+    <!-- UI Settings - Display -->
+    <string name="settings_display_category">Display</string>
+    <string name="settings_edge_to_edge">Edge-to-Edge Layout</string>
+    <string name="settings_edge_to_edge_summary">Extend content behind system bars. Disable if system bars overlap important controls</string>
+    <string name="settings_blur_ui">Frosted Glass Effect</string>
+    <string name="settings_blur_ui_summary">Apply blur and translucency to dialogs and the top bar. Best on Android 12+</string>
+
+    <!-- UI Settings - One UI Theme -->
+    <string name="settings_oneui_theme">One UI Style</string>
+    <string name="settings_oneui_theme_summary">Match Samsung One UI\'s design language — Samsung Blue accent, large rounded corners, and bold typography</string>
+    <string name="settings_one_handed_mode">One-Handed Mode</string>
+    <string name="settings_one_handed_mode_summary">Shift interactive content toward the bottom of the screen for comfortable thumb reach</string>
+
     <string-array name="icon_styles">
         <item>Standard (Filled)</item>
         <item>Outlined</item>

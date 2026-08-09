@@ -129,6 +129,10 @@ public class ShizukuSettings {
         public static final String KEY_ICON_COLOR_MODE = "icon_color_mode";
         public static final String KEY_SHAPE_STYLE = "shape_style";
         public static final String KEY_ANIMATION_INTENSITY = "animation_intensity";
+        public static final String KEY_EDGE_TO_EDGE = "edge_to_edge_enabled";
+        public static final String KEY_BLUR_UI = "blur_ui_enabled";
+        public static final String KEY_ONEUI_THEME = "oneui_theme_enabled";
+        public static final String KEY_ONE_HANDED_MODE = "one_handed_mode";
 
         // Migration (ShizukuX additions)
         public static final String KEY_MIGRATION_OFFERED = "migration_offered";
@@ -220,6 +224,22 @@ public class ShizukuSettings {
 
     public static String getShapeStyle() {
         return getPreferences().getString(Keys.KEY_SHAPE_STYLE, "zen");
+    }
+
+    public static boolean isEdgeToEdgeEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_EDGE_TO_EDGE, true);
+    }
+
+    public static boolean isBlurUiEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_BLUR_UI, false);
+    }
+
+    public static boolean isOneUiThemeEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_ONEUI_THEME, false);
+    }
+
+    public static boolean isOneHandedModeEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_ONE_HANDED_MODE, false);
     }
 
     public static int getAnimationIntensity() {

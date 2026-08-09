@@ -22,6 +22,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.runtime.getValue
 import af.shizuku.core.ui.compose.Button
 import af.shizuku.core.ui.compose.ButtonSize
+import af.shizuku.manager.ShizukuSettings
+import androidx.compose.ui.platform.LocalConfiguration
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,28 +72,41 @@ fun HomeScreen(
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    scrolledContainerColor = if (ShizukuSettings.isBlurUiEnabled())
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+                    else
+                        MaterialTheme.colorScheme.surfaceContainer
                 ),
                 scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
+        // One-handed mode: add top padding equal to 28% of screen height so home cards
+        // sit in the lower, thumb-reachable zone. clipToPadding=false on the RecyclerView
+        // ensures the content is still scrollable into the full height.
+        val oneHandedExtraTopDp = if (ShizukuSettings.isOneHandedModeEnabled())
+            (LocalConfiguration.current.screenHeightDp * 0.28f).dp
+        else 0.dp
+        val adjustedPadding = PaddingValues(
+            top = innerPadding.calculateTopPadding() + oneHandedExtraTopDp,
+            bottom = innerPadding.calculateBottomPadding()
+        )
         AnimatedGradientBackground {
             Box(
                 modifier = Modifier.fillMaxSize()
             ) {
             if (showEmptyState) {
-                Box(modifier = Modifier.padding(innerPadding)) {
+                Box(modifier = Modifier.padding(adjustedPadding)) {
                     HomeEmptyState(onRestoreHomeCards)
                 }
             } else {
                 AndroidView(
-                    factory = { context -> 
-                        recyclerViewProvider(context, innerPadding).also { rv ->
+                    factory = { context ->
+                        recyclerViewProvider(context, adjustedPadding).also { rv ->
                             (rv.parent as? android.view.ViewGroup)?.removeView(rv)
                         }
                     },
-                    update = { view -> recyclerViewProvider(view.context, innerPadding) },
+                    update = { view -> recyclerViewProvider(view.context, adjustedPadding) },
                     modifier = Modifier.fillMaxSize()
                 )
             }

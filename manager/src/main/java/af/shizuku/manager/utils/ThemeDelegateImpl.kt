@@ -13,7 +13,8 @@ class ThemeDelegateImpl : ThemeDelegate {
         val customAccent = ShizukuSettings.getPreferences().getString("custom_accent", "DEFAULT")
         return ThemeHelper.getTheme(context) + ThemeHelper.isUsingSystemColor() + customAccent +
             ShizukuSettings.isExpressiveShapesEnabled() + ShizukuSettings.getShapeStyle() +
-            ShizukuSettings.getIconStyle() + ShizukuSettings.getIconColorMode()
+            ShizukuSettings.getIconStyle() + ShizukuSettings.getIconColorMode() +
+            ShizukuSettings.isOneUiThemeEnabled()
     }
 
     override fun isUsingSystemColor(): Boolean {
@@ -57,6 +58,14 @@ class ThemeDelegateImpl : ThemeDelegate {
             if (shapeStyleRes != 0) {
                 theme.applyStyle(shapeStyleRes, true)
             }
+        }
+
+        // One UI theme overlay — applied before dynamic color so Monet still wins on API 31+.
+        // The dark variant uses a lighter blue to maintain WCAG contrast on dark surfaces.
+        if (ShizukuSettings.isOneUiThemeEnabled()) {
+            val isNight = context.resources.configuration.isNight()
+            val oneUiStyle = if (isNight) R.style.ThemeOverlay_OneUI_Dark else R.style.ThemeOverlay_OneUI
+            theme.applyStyle(oneUiStyle, true)
         }
 
         theme.applyStyle(ThemeHelper.getThemeStyleRes(context), true)

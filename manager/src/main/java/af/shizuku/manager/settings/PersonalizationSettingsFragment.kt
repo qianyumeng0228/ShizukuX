@@ -35,6 +35,9 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
     private lateinit var iconColorModePreference: Preference
     private lateinit var shapeStylePreference: ListPreference
     private lateinit var animationIntensityPreference: ListPreference
+    private lateinit var edgeToEdgePreference: TwoStatePreference
+    private lateinit var blurUiPreference: TwoStatePreference
+    private lateinit var oneUiThemePreference: TwoStatePreference
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_personalization, rootKey)
@@ -177,6 +180,28 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
                 if (newValue is Boolean) ShizukuSettings.setCompanionModeEnabled(newValue)
                 true
             }
+        }
+
+        // 3. Display settings (edge-to-edge, blur)
+        edgeToEdgePreference = requireNotNull(findPreference(KEY_EDGE_TO_EDGE))
+        edgeToEdgePreference.isChecked = ShizukuSettings.isEdgeToEdgeEnabled()
+        edgeToEdgePreference.setOnPreferenceChangeListener { _, _ ->
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
+            true
+        }
+
+        blurUiPreference = requireNotNull(findPreference(KEY_BLUR_UI))
+        blurUiPreference.isChecked = ShizukuSettings.isBlurUiEnabled()
+        blurUiPreference.setOnPreferenceChangeListener { _, _ ->
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
+            true
+        }
+
+        oneUiThemePreference = requireNotNull(findPreference(KEY_ONEUI_THEME))
+        oneUiThemePreference.isChecked = ShizukuSettings.isOneUiThemeEnabled()
+        oneUiThemePreference.setOnPreferenceChangeListener { _, _ ->
+            (activity as? af.shizuku.core.ui.AppActivity)?.recreateWithoutTransition()
+            true
         }
 
         // 4. Language & System

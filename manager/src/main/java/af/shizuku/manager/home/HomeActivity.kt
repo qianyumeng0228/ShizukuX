@@ -173,7 +173,14 @@ open class HomeActivity : AppActivity(), MavericksView {
             }
         }
         super.onCreate(savedInstanceState)
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        // AppActivity.onCreate already called enableEdgeToEdge() when E2E is on; this mirrors
+        // that guard so the two calls stay consistent.
+        if (ShizukuSettings.isEdgeToEdgeEnabled()) {
+            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        }
+        if (ShizukuSettings.isBlurUiEnabled() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            window.setBackgroundBlurRadius(30)
+        }
 
         var showEmptyState by mutableStateOf(false)
         var isEditMode by mutableStateOf(HomeEditMode.isActive)

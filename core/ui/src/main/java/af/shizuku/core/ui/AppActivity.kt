@@ -49,7 +49,15 @@ abstract class AppActivity : MaterialActivity() {
             }
         }
         suppressTransitionOnCreate = false
-        enableEdgeToEdge()
+        // Read directly from shared prefs to avoid a cross-module dependency on manager's
+        // ShizukuSettings. Keys must match ShizukuSettings.Keys constants.
+        val prefs = getSharedPreferences("${packageName}_preferences", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("edge_to_edge_enabled", true)) {
+            enableEdgeToEdge()
+        }
+        if (prefs.getBoolean("blur_ui_enabled", false) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            window.setBackgroundBlurRadius(30)
+        }
         super.onCreate(savedInstanceState)
     }
 

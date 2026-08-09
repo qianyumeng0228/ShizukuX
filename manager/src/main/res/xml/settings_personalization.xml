@@ -34,6 +34,21 @@
             android:entryValues="@array/custom_accents_values"
             android:icon="@drawable/ic_palette_24" />
 
+        <SwitchPreferenceCompat
+            android:key="oneui_theme_enabled"
+            android:title="@string/settings_oneui_theme"
+            android:summary="@string/settings_oneui_theme_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_palette_24" />
+
+        <SwitchPreferenceCompat
+            android:key="one_handed_mode"
+            android:title="@string/settings_one_handed_mode"
+            android:summary="@string/settings_one_handed_mode_summary"
+            android:defaultValue="false"
+            android:dependency="oneui_theme_enabled"
+            android:icon="@drawable/ic_settings_suggest_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
@@ -99,6 +114,27 @@
             android:entryValues="@array/animation_intensities_value"
             android:dependency="expressive_animations"
             android:icon="@drawable/ic_bolt_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_display"
+        android:title="@string/settings_display_category"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="edge_to_edge_enabled"
+            android:title="@string/settings_edge_to_edge"
+            android:summary="@string/settings_edge_to_edge_summary"
+            android:defaultValue="true"
+            android:icon="@drawable/ic_window_24" />
+
+        <SwitchPreferenceCompat
+            android:key="blur_ui_enabled"
+            android:title="@string/settings_blur_ui"
+            android:summary="@string/settings_blur_ui_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_palette_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
