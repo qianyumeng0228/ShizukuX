@@ -302,6 +302,31 @@ else
     ERRORS=$((ERRORS + 1))
 fi
 
+# 23. XML settings string reference integrity - each @string/foo in settings_*.xml must
+# have a <string name="foo"> entry in strings.xml. aapt2 only catches this at
+# resource-link time (too late for the pre-push guard unless Gradle runs).
+step "Checking settings XML string references resolve"
+MISSING_STRINGS=$(python3 - <<'PYEOF'
+import re, glob
+strings_xml = open('manager/src/main/res/values/strings.xml', encoding='utf-8').read()
+defined = set(re.findall(r'<string name="([^"]+)"', strings_xml))
+missing = []
+for f in glob.glob('manager/src/main/res/xml/settings_*.xml'):
+    for ref in re.findall(r'@string/([^"\'>\s]+)', open(f, encoding='utf-8').read()):
+        if ref not in defined:
+            missing.append(f'  {f}: @string/{ref}')
+for line in sorted(set(missing)):
+    print(line)
+PYEOF
+)
+if [ ! -z "$MISSING_STRINGS" ]; then
+    echo -e "${COLOR_RED}FAIL${COLOR_RESET} (missing string resource references)"
+    echo "$MISSING_STRINGS"
+    ERRORS=$((ERRORS + 1))
+else
+    echo -e "${COLOR_GREEN}PASS${COLOR_RESET}"
+fi
+
 # 17. Dry-Run Build Validation
 step "Validating Gradle build configuration (dry-run)"
 if [ -n "${SKIP_GRADLE_CHECK:-}" ]; then
