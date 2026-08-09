@@ -188,9 +188,9 @@
     <!--
         One UI style theme overlay (settings key "oneui_theme_enabled").
         Applies Samsung One UI design language: Galaxy Blue accent (#0381FE), extra-large rounded
-        corners, and heavier typography. Intentionally does NOT override dynamic color when the
-        user has dynamic color enabled — the overlay is applied BEFORE the dynamic-color overlay
-        so Monet still wins on API 31+.
+        corners, and heavier typography. Applied after the dynamic-color and shape overlays, so
+        Samsung Blue wins over Monet when this is on. Users who prefer their wallpaper color
+        should leave One UI mode off.
     -->
     <style name="ShapeAppearance.OneUI.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
         <item name="cornerFamily">rounded</item>
