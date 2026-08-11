@@ -538,7 +538,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // before falling through to the legacy-descriptor path, which is a rare last resort, not
             // the primary recovery mechanism.
             LOGGER.w(e, "bindApplication failed for %s, scheduling retry", requestPackageName);
-            scheduleBindApplicationRetry(application, reply, requestPackageName, 0);
+            scheduleBindApplicationRetry(application, reply, requestPackageName, UserHandleCompat.getUserId(callingUid), 0);
         }
     }
 
@@ -546,14 +546,23 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private static final long[] BIND_APPLICATION_RETRY_DELAYS_MS = {300, 1000, 3000, 9000};
 
     private static void scheduleBindApplicationRetry(IShizukuApplication application, Bundle reply,
-                                                       String requestPackageName, int attempt) {
+                                                       String requestPackageName, int userId, int attempt) {
         HandlerUtil.getMainHandler().postDelayed(() -> {
+            // Re-apply the whitelist on each retry: the initial addPowerSaveTempWhitelistApp()
+            // in attachApplication() may have been called while the process was still frozen,
+            // and some OEM schedulers (Xiaomi/Samsung) need the signal refreshed to actually
+            // clear the freeze state by retry time.
+            try {
+                DeviceIdleControllerApis.addPowerSaveTempWhitelistApp(requestPackageName, 30 * 1000,
+                        userId, 316, "shell");
+            } catch (Throwable ignored) {
+            }
             try {
                 application.bindApplication(reply);
             } catch (Throwable retryError) {
                 if (attempt + 1 < BIND_APPLICATION_RETRY_DELAYS_MS.length) {
                     LOGGER.w(retryError, "Retry %d failed for bindApplication to %s, scheduling next retry", attempt + 1, requestPackageName);
-                    scheduleBindApplicationRetry(application, reply, requestPackageName, attempt + 1);
+                    scheduleBindApplicationRetry(application, reply, requestPackageName, userId, attempt + 1);
                 } else {
                     // Belt-and-suspenders fallback, kept from when this interface lived under
                     // af.shizuku.server and the descriptor mismatched: re-send bindApplication by
