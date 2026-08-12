@@ -66,26 +66,29 @@ object ShellBinderRequestHandler {
         // is lifted by the user foregrounding the caller or by normal OS scheduling).
         val retryDelaysMs = longArrayOf(0L, 200L, 600L, 1500L)
         var lastException: Exception? = null
-        for (delayMs in retryDelaysMs) {
-            if (delayMs > 0) Thread.sleep(delayMs)
-            val data = Parcel.obtain()
-            val reply = Parcel.obtain()
-            try {
+        // Obtain once; reset and re-write on each retry to avoid repeated pool hits.
+        val data = Parcel.obtain()
+        try {
+            for (delayMs in retryDelaysMs) {
+                if (delayMs > 0) Thread.sleep(delayMs)
                 // Must match ShizukuShellLoader.receiverBinder.onTransact exactly: it reads
                 // readStrongBinder() then readString() with no enforceInterface() call, so a
                 // leading writeInterfaceToken() here gets misread as the binder slot and an
                 // omitted sourceDir NPEs the client at onBinderReceived's sourceDir.substring().
+                data.setDataPosition(0)
                 data.writeStrongBinder(shizukuBinder)
                 data.writeString(context.applicationInfo.sourceDir)
-                callbackBinder.transact(IBinder.FIRST_CALL_TRANSACTION, data, reply, IBinder.FLAG_ONEWAY)
-                return true
-            } catch (e: Exception) {
-                LOGGER.w(e, "transact attempt failed (delay was ${delayMs}ms)")
-                lastException = e
-            } finally {
-                data.recycle()
-                reply.recycle()
+                // ONEWAY — binder driver never writes into reply; null avoids unnecessary pool hit.
+                try {
+                    callbackBinder.transact(IBinder.FIRST_CALL_TRANSACTION, data, null, IBinder.FLAG_ONEWAY)
+                    return true
+                } catch (e: Exception) {
+                    LOGGER.w(e, "transact attempt failed (delay was ${delayMs}ms)")
+                    lastException = e
+                }
             }
+        } finally {
+            data.recycle()
         }
         LOGGER.w(lastException, "transact: all attempts failed")
         return false

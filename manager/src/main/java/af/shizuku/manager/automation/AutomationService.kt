@@ -140,8 +140,9 @@ class AutomationService : Service() {
             // SecurityException on some OEM builds even with ACCESS_WIFI_STATE declared
             // (SHIZUKUPLUS-50). SSID is intentionally omitted; getNetworkCapabilities needs
             // no wifi permission.
-            val isWifi = caps?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true ||
-                    caps?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true
+            val isWifi = caps != null &&
+                    (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                     caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
             AutomationEngine.dispatchEvent(NetworkEvent(isWifi, null), applicationContext)
         } catch (e: Exception) {
             Timber.tag("AutomationService").w(e, "Failed to check network state")

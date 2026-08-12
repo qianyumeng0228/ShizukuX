@@ -9,6 +9,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.authorization.AuthorizationManager
@@ -41,7 +44,15 @@ class BinderRequestReceiver : BroadcastReceiver() {
             MessageDigest.isEqual(authToken.toByteArray(), expectedToken.toByteArray())
 
         if (authValid) {
-            ShellBinderRequestHandler.handleRequest(context, intent, requireAuth = true)
+            // deliverBinder() may Thread.sleep() up to 2.3 s on freeze-retry — move off main thread.
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    ShellBinderRequestHandler.handleRequest(context, intent, requireAuth = true)
+                } finally {
+                    pending.finish()
+                }
+            }
             return
         }
 
@@ -67,7 +78,14 @@ class BinderRequestReceiver : BroadcastReceiver() {
                             context.packageManager.getApplicationLabel(info).toString()
                         } catch (_: Exception) { callingPackage }
                         ActivityLogManager.log(appLabel, callingPackage, "Shell: binder delivered (pre-authorized)")
-                        ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
+                        val pending = goAsync()
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
+                            } finally {
+                                pending.finish()
+                            }
+                        }
                         return
                     }
                 } catch (_: Exception) {
