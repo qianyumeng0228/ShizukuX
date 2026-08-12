@@ -37,19 +37,22 @@ class ShellConsentActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             ACTION_ALLOW -> {
                 val callingPackage = intent.getStringExtra("callingPackage")
+                val intentCallingUid = intent.getIntExtra("callingUid", -1).takeIf { it >= 0 }
                 val pending = goAsync()
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
                         var appLabel = callingPackage
-                        if (callingPackage != null) {
-                            val callingUid = try {
+                        // Prefer PM-derived UID (verifies package ownership); fall back to
+                        // the UID from the intent (set by ShizukuShellLoader, #391).
+                        val callingUid = if (callingPackage != null) {
+                            try {
                                 val info = context.packageManager.getApplicationInfo(callingPackage, 0)
                                 appLabel = context.packageManager.getApplicationLabel(info).toString()
                                 info.uid
-                            } catch (_: Exception) { null }
-                            if (callingUid != null) {
-                                AuthorizationManager.grant(callingPackage, callingUid)
-                            }
+                            } catch (_: Exception) { intentCallingUid }
+                        } else intentCallingUid
+                        if (callingUid != null) {
+                            AuthorizationManager.grant(callingPackage ?: "", callingUid)
                         }
                         ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: allowed always (notification)")
                         ShellBinderRequestHandler.deliverBinder(context, callbackBinder)

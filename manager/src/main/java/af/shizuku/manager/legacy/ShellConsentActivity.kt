@@ -42,10 +42,11 @@ class ShellConsentActivity : AppActivity() {
         }
 
         val callingPackage = intent.getStringExtra("callingPackage")
-        showConsentDialog(callbackBinder, callingPackage)
+        val intentCallingUid = intent.getIntExtra("callingUid", -1).takeIf { it >= 0 }
+        showConsentDialog(callbackBinder, callingPackage, intentCallingUid)
     }
 
-    private fun showConsentDialog(callbackBinder: android.os.IBinder, callingPackage: String?) {
+    private fun showConsentDialog(callbackBinder: android.os.IBinder, callingPackage: String?, intentCallingUid: Int?) {
         // Resolve ApplicationInfo from PackageManager rather than trusting the extras directly,
         // so a spoofed broadcast can't grant a different UID than the named package actually has.
         // Also derive the human-readable app label here — the dialog should show "Talkman is
@@ -57,7 +58,9 @@ class ShellConsentActivity : AppActivity() {
                 null
             }
         }
-        val callingUid = appInfo?.uid
+        // Prefer PM-derived UID; fall back to the UID from ShizukuShellLoader (#391 —
+        // classic rish_shizuku.dex omits callingPackage, or PM lookup unavailable on device).
+        val callingUid = appInfo?.uid ?: intentCallingUid
         val appLabel = appInfo?.let { packageManager.getApplicationLabel(it).toString() }
             ?: callingPackage  // fallback to package ID if the lookup fails
 

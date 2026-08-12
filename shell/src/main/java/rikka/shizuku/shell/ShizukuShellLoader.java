@@ -93,6 +93,10 @@ public class ShizukuShellLoader {
         if (!TextUtils.isEmpty(callingPackage)) {
             intent.putExtra("callingPackage", callingPackage);
         }
+        // Always include the UID. Receivers use this when PackageManager.getApplicationInfo()
+        // is unavailable (e.g. classic rish_shizuku.dex omits callingPackage, or PM lookup
+        // fails). This UID is authoritative: this process runs as the caller's UID.
+        intent.putExtra("callingUid", Os.getuid());
 
         IBinder amBinder = ServiceManager.getService("activity");
         IActivityManager am;

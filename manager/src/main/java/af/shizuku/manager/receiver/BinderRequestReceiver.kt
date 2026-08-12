@@ -69,27 +69,33 @@ class BinderRequestReceiver : BroadcastReceiver() {
             // because this check was absent; every new rish process re-prompted even though
             // AuthorizationManager.grant() had already been stored for that UID).
             val callingPackage = intent.getStringExtra("callingPackage")
-            if (callingPackage != null) {
-                try {
-                    val callingUid = context.packageManager.getApplicationInfo(callingPackage, 0).uid
-                    if (AuthorizationManager.granted(callingPackage, callingUid)) {
-                        val appLabel = try {
-                            val info = context.packageManager.getApplicationInfo(callingPackage, 0)
-                            context.packageManager.getApplicationLabel(info).toString()
-                        } catch (_: Exception) { callingPackage }
-                        ActivityLogManager.log(appLabel, callingPackage, "Shell: binder delivered (pre-authorized)")
-                        val pending = goAsync()
-                        CoroutineScope(Dispatchers.IO).launch {
-                            try {
-                                ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
-                            } finally {
-                                pending.finish()
-                            }
+            // intentCallingUid is set by ShizukuShellLoader (Os.getuid()) — authoritative
+            // fallback when PackageManager.getApplicationInfo() is unavailable (e.g. classic
+            // rish_shizuku.dex omits callingPackage, or PM lookup fails on some devices #391).
+            val intentCallingUid = intent.getIntExtra("callingUid", -1).takeIf { it >= 0 }
+            // Prefer PM-derived UID (verifies callingPackage ownership); fall back to intent UID.
+            val effectiveUid: Int? = if (callingPackage != null) {
+                try { context.packageManager.getApplicationInfo(callingPackage, 0).uid }
+                catch (_: Exception) { intentCallingUid }
+            } else intentCallingUid
+
+            if (effectiveUid != null) {
+                if (AuthorizationManager.granted(callingPackage ?: "", effectiveUid)) {
+                    val appLabel = callingPackage?.let {
+                        try { context.packageManager.getApplicationLabel(
+                                context.packageManager.getApplicationInfo(it, 0)).toString()
+                        } catch (_: Exception) { it }
+                    } ?: effectiveUid.toString()
+                    ActivityLogManager.log(appLabel, callingPackage ?: "", "Shell: binder delivered (pre-authorized)")
+                    val pending = goAsync()
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
+                        } finally {
+                            pending.finish()
                         }
-                        return
                     }
-                } catch (_: Exception) {
-                    // Check failed — fall through to the notification consent path below.
+                    return
                 }
             }
             // A manifest-registered BroadcastReceiver has no visible UI, so a direct
@@ -104,11 +110,11 @@ class BinderRequestReceiver : BroadcastReceiver() {
             // Android 15+ (API 35) does not reliably preserve IBinder objects embedded in
             // PendingIntent extras — the binder arrives null when the notification fires (#387).
             // Store it in PendingConsentStore and pass only a lightweight key in the intent.
-            postConsentNotification(context, intent, callbackBinder)
+            postConsentNotification(context, intent, callbackBinder, intentCallingUid)
         }
     }
 
-    private fun postConsentNotification(context: Context, intent: Intent, callbackBinder: IBinder) {
+    private fun postConsentNotification(context: Context, intent: Intent, callbackBinder: IBinder, intentCallingUid: Int? = null) {
         val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
         if (!androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) {
@@ -141,17 +147,22 @@ class BinderRequestReceiver : BroadcastReceiver() {
         val consentKey = PendingConsentStore.put(callbackBinder, context) ?: return
 
         val callingPackage = intent.getStringExtra("callingPackage")
+        // appLabel: try PM lookup; fall back to package name; then UID string (#391 — some
+        // devices/callers can't be resolved via PM but the package name is still display-useful).
         val appLabel = callingPackage?.let { pkg ->
             try {
                 val info = context.packageManager.getApplicationInfo(pkg, 0)
                 context.packageManager.getApplicationLabel(info).toString()
-            } catch (_: Exception) { null }
+            } catch (_: Exception) { pkg }
         }
         ActivityLogManager.log(appLabel ?: "Shell", callingPackage ?: "", "Shell: consent requested")
         val consentIntent = Intent(context, ShellConsentActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
             putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
             callingPackage?.let { putExtra("callingPackage", it) }
+            // Pass callingUid so ShellConsentActivity can grant authorization even when
+            // PackageManager.getApplicationInfo() fails (e.g. classic rish_shizuku.dex, #391).
+            intentCallingUid?.let { putExtra("callingUid", it) }
         }
         // Use the key's hash as both the PendingIntent requestCode and the notification ID so
         // concurrent consent requests each get their own slot in the shade. A shared ID would
@@ -176,14 +187,15 @@ class BinderRequestReceiver : BroadcastReceiver() {
             context.getString(R.string.notification_shell_consent_text)
 
         // Action intents: explicit component + exported=false keeps these internal.
-        // Strings (consentKey, callingPackage) survive PendingIntent serialization safely;
-        // the live binder stays in PendingConsentStore and is fetched inside the receiver.
+        // Strings (consentKey, callingPackage, callingUid) survive PendingIntent serialization
+        // safely; the live binder stays in PendingConsentStore and is fetched inside the receiver.
         val allowIntent = PendingIntent.getBroadcast(
             context,
             notificationId + 1,
             Intent(ShellConsentActionReceiver.ACTION_ALLOW, null, context, ShellConsentActionReceiver::class.java).apply {
                 putExtra(PendingConsentStore.EXTRA_CONSENT_KEY, consentKey)
                 callingPackage?.let { putExtra("callingPackage", it) }
+                intentCallingUid?.let { putExtra("callingUid", it) }
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
