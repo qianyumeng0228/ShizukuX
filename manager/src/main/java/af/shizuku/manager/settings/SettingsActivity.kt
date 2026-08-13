@@ -15,6 +15,11 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
 
     private var currentTitle by mutableStateOf("")
     private var searchResults by mutableStateOf<List<SettingsSearchEngine.SettingItem>>(emptyList())
+    var themeVersion by mutableStateOf(0)
+
+    fun onThemeChanged() {
+        themeVersion++
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,8 +30,10 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
         currentTitle = getString(R.string.settings_title)
 
         setContent {
+            val tv = themeVersion
             af.shizuku.core.ui.compose.AppTheme(
-                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(this)
+                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(this),
+                themeVersion = tv
             ) {
                 SettingsScreen(
                     title = currentTitle,
