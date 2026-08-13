@@ -50,75 +50,115 @@ fun SettingsScreen(
         onSearchQueryChanged("")
     }
 
+    val isOneUi = af.shizuku.manager.ShizukuSettings.isOneUiThemeEnabled()
+    val isOneHanded = af.shizuku.manager.ShizukuSettings.isOneHandedModeEnabled()
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
+    val extraTopPadding = if (isOneHanded) {
+        (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.28f).dp
+    } else 0.dp
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    if (isSearchActive) {
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { 
-                                searchQuery = it
-                                onSearchQueryChanged(it)
-                            },
-                            placeholder = { Text("Search settings…") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
+            if (isOneUi && !isSearchActive) {
+                LargeTopAppBar(
+                    title = {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold
                             ),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { /* Handle search if needed */ })
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        LaunchedEffect(Unit) {
-                            focusRequester.requestFocus()
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { onNavigateUp() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_back_24),
+                                contentDescription = "Back"
+                            )
                         }
-                    } else {
-                        Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (isSearchActive) {
-                            isSearchActive = false
-                            searchQuery = ""
-                            onSearchQueryChanged("")
-                        } else {
-                            onNavigateUp()
-                        }
-                    }) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_back_24),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    if (!isSearchActive) {
+                    },
+                    actions = {
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_search_24),
                                 contentDescription = "Search"
                             )
                         }
-                    } else if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { 
-                            searchQuery = ""
-                            onSearchQueryChanged("")
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        if (isSearchActive) {
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { 
+                                    searchQuery = it
+                                    onSearchQueryChanged(it)
+                                },
+                                placeholder = { Text("Search settings…") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent
+                                ),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(onSearch = { /* Handle search */ })
+                            )
+                            LaunchedEffect(Unit) {
+                                focusRequester.requestFocus()
+                            }
+                        } else {
+                            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (isSearchActive) {
+                                isSearchActive = false
+                                searchQuery = ""
+                                onSearchQueryChanged("")
+                            } else {
+                                onNavigateUp()
+                            }
                         }) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_close_24),
-                                contentDescription = "Clear"
+                                painter = painterResource(R.drawable.ic_back_24),
+                                contentDescription = "Back"
                             )
                         }
+                    },
+                    actions = {
+                        if (!isSearchActive) {
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_search_24),
+                                    contentDescription = "Search"
+                                )
+                            }
+                        } else if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { 
+                                searchQuery = ""
+                                onSearchQueryChanged("")
+                            }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_close_24),
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
@@ -136,7 +176,10 @@ fun SettingsScreen(
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = innerPadding.calculateTopPadding(), bottom = innerPadding.calculateBottomPadding())
+                    .padding(
+                        top = innerPadding.calculateTopPadding() + extraTopPadding,
+                        bottom = innerPadding.calculateBottomPadding()
+                    )
             )
 
             // Search Overlay

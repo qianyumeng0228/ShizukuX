@@ -55,6 +55,10 @@ abstract class AppActivity : MaterialActivity() {
         // leaves the window black until the user navigates away. Suppressing it here on the
         // new window ensures a clean, animation-free replacement.
         if (suppressTransitionOnCreate) {
+            window.enterTransition = null
+            window.exitTransition = null
+            window.reenterTransition = null
+            window.returnTransition = null
             window.setWindowAnimations(0)
             @Suppress("DEPRECATION")
             overridePendingTransition(0, 0)
