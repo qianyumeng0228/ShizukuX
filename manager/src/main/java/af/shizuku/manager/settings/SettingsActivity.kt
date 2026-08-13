@@ -2,7 +2,6 @@ package af.shizuku.manager.settings
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.*
 import androidx.fragment.app.Fragment
 import androidx.preference.Preference
