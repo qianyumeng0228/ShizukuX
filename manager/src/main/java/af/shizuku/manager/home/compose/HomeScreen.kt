@@ -89,7 +89,7 @@ fun HomeScreen(
         else 0.dp
         val adjustedPadding = PaddingValues(
             top = innerPadding.calculateTopPadding() + oneHandedExtraTopDp,
-            bottom = innerPadding.calculateBottomPadding()
+            bottom = innerPadding.calculateBottomPadding() + 72.dp
         )
         AnimatedGradientBackground {
             Box(
