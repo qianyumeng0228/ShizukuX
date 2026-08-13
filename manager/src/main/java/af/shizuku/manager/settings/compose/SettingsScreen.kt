@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import af.shizuku.manager.R
 import af.shizuku.manager.settings.SettingsSearchEngine
@@ -72,8 +73,11 @@ fun SettingsScreen(
                     title = {
                         Text(
                             text = title,
+                            // Samsung OneUI 6/7 uses W800 (ExtraBold) for the large expanded header
                             style = MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 28.sp,
+                                letterSpacing = (-0.5).sp
                             ),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -95,6 +99,17 @@ fun SettingsScreen(
                             )
                         }
                     },
+                    // Samsung OneUI: transparent container until scrolled, then subtle surface tint
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = Color.Transparent,
+                        scrolledContainerColor = if (af.shizuku.manager.ShizukuSettings.isBlurUiEnabled())
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                        else
+                            MaterialTheme.colorScheme.surfaceContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
                     scrollBehavior = scrollBehavior
                 )
             } else {
