@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import af.shizuku.core.ui.compose.Button
 import af.shizuku.core.ui.compose.ButtonSize
 import af.shizuku.manager.ShizukuSettings
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.graphicsLayer
 
 @OptIn(ExperimentalMaterial3Api::class)

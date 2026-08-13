@@ -1,8 +1,10 @@
 package af.shizuku.manager.settings.compose
 
-import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -17,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,9 +58,12 @@ fun SettingsScreen(
     val isOneHanded = af.shizuku.manager.ShizukuSettings.isOneHandedModeEnabled()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val extraTopPadding = if (isOneHanded) {
-        (androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp * 0.28f).dp
-    } else 0.dp
+    // Samsung OneUI one-handed mode: scale entire settings panel to 75%, anchored to bottom-right.
+    val oneHandedScale by animateFloatAsState(
+        targetValue = if (isOneHanded) 0.75f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "settingsOneHandedScale"
+    )
 
     Scaffold(
         topBar = {
@@ -162,7 +169,7 @@ fun SettingsScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
-            // Fragment Container for Preferences
+            // Fragment Container for Preferences — apply Samsung OneUI one-handed scale+pivot transform
             AndroidView(
                 factory = { context ->
                     FrameLayout(context).apply {
@@ -176,8 +183,13 @@ fun SettingsScreen(
                 },
                 modifier = Modifier
                     .fillMaxSize()
+                    .graphicsLayer(
+                        scaleX = oneHandedScale,
+                        scaleY = oneHandedScale,
+                        transformOrigin = TransformOrigin(1f, 1f)
+                    )
                     .padding(
-                        top = innerPadding.calculateTopPadding() + extraTopPadding,
+                        top = innerPadding.calculateTopPadding(),
                         bottom = innerPadding.calculateBottomPadding()
                     )
             )
