@@ -104,8 +104,8 @@ object UpdateChecker {
     }
 
     private fun checkViaApi(channel: String): CheckResult {
-        val json: JSONObject = if (channel == "dev") {
-            val arr = fetchJson("$RELEASES_URL?per_page=1") as? JSONArray
+        val json: JSONObject = if (channel == "dev" || channel == "beta") {
+            val arr = fetchJson("$RELEASES_URL?per_page=5") as? JSONArray
             arr?.optJSONObject(0) ?: return CheckResult.UpToDate
         } else {
             fetchJson(LATEST_URL) as? JSONObject ?: return CheckResult.UpToDate
@@ -113,15 +113,29 @@ object UpdateChecker {
 
         val tagName = json.getString("tag_name")
         val versionName = tagName.removePrefix("v")
-        val isPrerelease = json.getBoolean("prerelease")
+        val isPrerelease = json.optBoolean("prerelease", false)
         val releaseNotes = json.optString("body", "")
-        val publishedAt = json.getString("published_at")
+        val publishedAt = json.optString("published_at", "")
 
         val assets = json.getJSONArray("assets")
-        val downloadUrl = (0 until assets.length())
+        val isDropIn = BuildConfig.APPLICATION_ID == "moe.shizuku.privileged.api"
+        val apkAssets = (0 until assets.length())
             .map { assets.getJSONObject(it) }
-            .firstOrNull { it.getString("name").endsWith(".apk") }
-            ?.getString("browser_download_url")
+            .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
+
+        val targetAsset = if (isDropIn) {
+            apkAssets.firstOrNull { 
+                val name = it.getString("name")
+                name.contains("Drop-In", ignoreCase = true) || name.contains("dropin", ignoreCase = true)
+            }
+        } else {
+            apkAssets.firstOrNull { 
+                val name = it.getString("name")
+                !name.contains("Drop-In", ignoreCase = true) && !name.contains("dropin", ignoreCase = true)
+            }
+        } ?: apkAssets.firstOrNull()
+
+        val downloadUrl = targetAsset?.getString("browser_download_url")
             ?: return CheckResult.UpToDate
 
         val versionCode = parseVersionCode(versionName)
