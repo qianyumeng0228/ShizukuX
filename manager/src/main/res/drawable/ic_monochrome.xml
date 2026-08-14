@@ -4,8 +4,24 @@
     android:viewportWidth="432"
     android:viewportHeight="432"
     android:tint="?attr/colorControlNormal">
+    <!-- Hexagon ring, cat silhouette, and Plus badge are kept as distinct
+         non-overlapping shapes here (unlike the old single evenOdd path)
+         because merging them produced an illegible blob once the OS
+         re-tints this layer to a single flat color for Themed Icons. -->
     <path
         android:fillColor="@android:color/white"
         android:fillType="evenOdd"
-        android:pathData="M 216, 132 A 84,84 0 1 1 215.99,132 Z M 72.04,219.37 C 73.74,293.50 131.46,353.79 204.53,359.55 C 211.94,353.93 218.44,345.77 223.81,334.54 C 230.52,320.49 233.57,305.63 233.32,291.05 C 249.34,280.34 257.46,261.07 262.18,240.25 C 245.55,233.14 228.34,228.79 212.06,231.89 C 203.18,220.76 191.71,211.41 178.01,204.86 C 164.31,198.30 149.83,195.25 135.59,195.33 C 127.78,180.72 113.59,170.06 97.61,161.58 C 84.38,178.33 74.47,196.75 76.19,215.94 C 74.78,217.04 73.39,218.18 72.04,219.37 ZM 178.36,279.29 C 179.91,276.06 183.78,274.68 187.01,276.23 C 190.24,277.77 191.60,281.65 190.06,284.88 C 188.51,288.11 184.64,289.47 181.41,287.93 C 178.18,286.38 176.82,282.52 178.36,279.29 ZM 108.17,245.73 C 109.71,242.50 113.59,241.13 116.82,242.67 C 120.05,244.22 121.41,248.09 119.86,251.32 C 118.32,254.55 114.45,255.92 111.22,254.37 C 107.99,252.83 106.63,248.96 108.17,245.73 Z M 255,120 h 18 v 39 h 39 v 18 h -39 v 39 h -18 v -39 h -39 v -18 h 39 z" />
+        android:pathData="M 216.0,117.0 L 292.2,161.0 L 292.2,249.0 L 216.0,293.0 L 139.8,249.0 L 139.8,161.0 Z M 150.2,167.0 L 150.2,243.0 L 216.0,281.0 L 281.8,243.0 L 281.8,167.0 L 216.0,129.0 Z" />
+    <group
+        android:translateX="0"
+        android:translateY="432"
+        android:scaleX="0.1"
+        android:scaleY="-0.1">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M1023 2626 c-97 -105 -182 -257 -183 -327 0 -23 -8 -29 -60 -48 -217 -79 -484 -367 -557 -599 -49 -157 -19 -288 104 -461 145 -202 475 -456 726 -556 206 -82 493 -138 722 -139 l141 -1 76 38 c156 77 292 273 354 512 31 117 43 332 25 428 -10 57 -10 60 20 104 76 110 154 307 161 407 3 39 2 40 -43 57 -100 38 -261 48 -393 24 l-79 -14 -61 43 c-127 91 -352 184 -452 187 -49 2 -50 3 -68 45 -29 70 -90 158 -155 223 -68 68 -176 151 -196 151 -7 0 -44 -33 -82 -74z" />
+    </group>
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M 334,56 h 20 v 30 h 30 v 20 h -30 v 30 h -20 v -30 h -30 v -20 h 30 z" />
 </vector>
