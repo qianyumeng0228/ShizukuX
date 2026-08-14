@@ -201,7 +201,7 @@ fun SettingsScreen(
                     .graphicsLayer(
                         scaleX = oneHandedScale,
                         scaleY = oneHandedScale,
-                        transformOrigin = TransformOrigin(1f, 1f)
+                        transformOrigin = TransformOrigin(0.5f, 1f)
                     )
                     .padding(
                         top = innerPadding.calculateTopPadding(),
