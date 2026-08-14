@@ -182,6 +182,7 @@ class UpdateManager(private val context: Context) {
             .setContentText(context.getString(R.string.update_downloading_progress, versionName, progress))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
+            .setOnlyAlertOnce(true)
             .setProgress(100, progress, false)
             .build()
 
@@ -301,24 +302,39 @@ class UpdateManager(private val context: Context) {
      */
     suspend fun installApk(file: File): Boolean {
         try {
-            val isRootOrShizuku = withContext(Dispatchers.IO) {
-                com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()
-            }
-            if (isRootOrShizuku) {
-                Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
-                val result = withContext(Dispatchers.IO) {
-                    com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
+            // Shell.getShell()/pingBinder() are blocking calls that can wedge forever if a
+            // root prompt is ignored or the Shizuku binder is stuck — without a timeout the
+            // download just hangs with no install notification ever shown (never falls
+            // through to the system installer below).
+            val silentInstallHandled = withTimeoutOrNull(5000) {
+                val isRootOrShizuku = withContext(Dispatchers.IO) {
+                    com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()
                 }
-                if (result.isSuccess) {
-                    Timber.tag(TAG).i("Silent install successful")
-                    return true
-                } else {
-                    Timber.tag(TAG).w("Silent install failed (likely signature mismatch): ${result.out}")
-                    if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
-                        Timber.tag(TAG).i("Force-update background script initiated to handle signature mismatch")
-                        return true
+                if (isRootOrShizuku) {
+                    Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
+                    val result = withContext(Dispatchers.IO) {
+                        com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
                     }
+                    if (result.isSuccess) {
+                        Timber.tag(TAG).i("Silent install successful")
+                        true
+                    } else {
+                        Timber.tag(TAG).w("Silent install failed (likely signature mismatch): ${result.out}")
+                        if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
+                            Timber.tag(TAG).i("Force-update background script initiated to handle signature mismatch")
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                } else {
+                    false
                 }
+            }
+            if (silentInstallHandled == null) {
+                Timber.tag(TAG).w("Silent install attempt timed out; falling back to system installer")
+            } else if (silentInstallHandled) {
+                return true
             }
 
             val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
