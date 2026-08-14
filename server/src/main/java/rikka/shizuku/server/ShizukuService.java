@@ -892,7 +892,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         // Global Magisk Environment Variable Injection
         if (isFeatureEnabled("root_magisk_mocking")) {
             if (env == null) {
-                env = new String[]{"MAGISK_VER=26.4", "MAGISK_VER_CODE=26400"};
+                // A null env is supposed to inherit the server process's environment (BOOTCLASSPATH,
+                // ANDROID_DATA, ANDROID_ROOT, etc.) — replacing it outright with just the two Magisk
+                // vars strips that boot env, so any child spawning app_process (e.g. a UserService)
+                // dies instantly with "ANDROID_DATA environment variable unset" (#410).
+                java.util.List<String> envList = new java.util.ArrayList<>();
+                for (java.util.Map.Entry<String, String> entry : System.getenv().entrySet()) {
+                    envList.add(entry.getKey() + "=" + entry.getValue());
+                }
+                envList.add("MAGISK_VER=26.4");
+                envList.add("MAGISK_VER_CODE=26400");
+                env = envList.toArray(new String[0]);
             } else {
                 java.util.List<String> envList = new java.util.ArrayList<>(java.util.Arrays.asList(env));
                 envList.add("MAGISK_VER=26.4");
@@ -1011,10 +1021,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             // Dynamic Shell Function Injection for Deep Root Spoofing
             if (isFeatureEnabled("su_bridge") && (baseCmd.equals("sh") || baseCmd.endsWith("/sh")) && cmd.length >= 3 && (cmd[1].equals("-c") || cmd[1].equals("--command"))) {
                 String originalScript = cmd[2];
-                if (!originalScript.startsWith("id() {")) {
-                    String mockHeader = "id() { if [ \"$1\" = \"-u\" ] || [ \"$1\" = \"-g\" ] || [ \"$1\" = \"-G\" ]; then echo 0; elif [ \"$1\" = \"-Z\" ]; then echo \"u:r:su:s0\"; else echo \"uid=0(root) gid=0(root) groups=0(root)\"; fi; }; " +
-                                        "whoami() { echo root; }; " +
-                                        "magisk() { if [ \"$1\" = \"-v\" ] || [ \"$1\" = \"--version\" ]; then echo \"26.4:MAGISKSU\"; elif [ \"$1\" = \"-V\" ]; then echo 26400; else echo \"Magisk v26.4 (26400) - ShizukuX Bridge Mode\"; fi; }; " +
+                if (!originalScript.startsWith("magisk() {")) {
+                    String mockHeader = "magisk() { if [ \"$1\" = \"-v\" ] || [ \"$1\" = \"--version\" ]; then echo \"26.4:MAGISKSU\"; elif [ \"$1\" = \"-V\" ]; then echo 26400; else echo \"Magisk v26.4 (26400) - ShizukuX Bridge Mode\"; fi; }; " +
                                         "su() { if [ \"$1\" = \"-v\" ] || [ \"$1\" = \"--version\" ]; then echo \"26.4:MAGISKSU\"; elif [ \"$1\" = \"-V\" ]; then echo 26400; elif [ \"$1\" = \"-c\" ]; then shift; eval \"$@\"; else eval \"$@\"; fi; }; " +
                                         "getenforce() { echo Permissive; }; ";
                     cmd[2] = mockHeader + originalScript;
