@@ -241,7 +241,11 @@ class ServiceDoctorActivity : AppBarActivity() {
                                 // is a blocking IPC round-trip, so it must run off Main or it ANRs
                                 // (SHIZUKUPLUS-7H/7P).
                                 withContext(Dispatchers.IO) {
+                                    // Shizuku.newProcess() is a Java platform type - it can return null
+                                    // at runtime (e.g. binder died mid-call) despite Kotlin not flagging
+                                    // it as nullable, which NPEs on p.waitFor() (Sentry SHIZUKUPLUS-8K/8M).
                                     val p = Shizuku.newProcess(arrayOf("device_config", "put", "activity_manager", "max_phantom_processes", "2147483647"), null, null)
+                                        ?: throw IllegalStateException("Shizuku returned a null remote process for newProcess()")
                                     try {
                                         p.waitFor()
                                     } finally {
