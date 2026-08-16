@@ -109,6 +109,11 @@ class ShizukuCompanionViewHolder(
                 // self as already occupying the role), but this is the hard stop that actually
                 // prevents the destructive install regardless of how this click was reached.
                 Toast.makeText(v.context, R.string.compat_hub_install_fail, Toast.LENGTH_SHORT).show()
+            } else if (StockShizukuCompat.isPackageOccupiedByDifferentSigner(v.context)) {
+                // #412: pm install -r always fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE here
+                // (opaquely, before this check existed) - something else, e.g. genuine stock
+                // Shizuku, already occupies moe.shizuku.privileged.api with a different cert.
+                Toast.makeText(v.context, R.string.compat_hub_install_signature_conflict, Toast.LENGTH_LONG).show()
             } else {
                 // Must be on external storage, not the app's private cache/files dir: `pm install`
                 // runs via a shell process spawned by Shizuku.newProcess (UID 2000) or root, neither
