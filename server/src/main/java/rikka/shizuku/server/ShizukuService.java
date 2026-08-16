@@ -838,11 +838,19 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     @Override
     public IRemoteProcess newProcess(String[] cmd, String[] env, String dir) {
+        // Every branch below this point (SU-bridge mocking, build.prop redirection, iptables/pm
+        // interception) executes real, privileged Runtime.exec() side effects on `cmd` before
+        // ever reaching newProcessInternal()'s own enforceCallingPermission("newProcess") check —
+        // an unauthorized caller could trigger real root mkdir/cp/iptables/pm execution purely by
+        // having a live binder reference, with the permission check only gating the *return value*.
+        // Enforce here, first, so no caller-supplied cmd is ever inspected/executed pre-authorization.
+        enforceCallingPermission("newProcess");
+
         int callingUid = Binder.getCallingUid();
         int callingPid = Binder.getCallingPid();
         ClientRecord caller = clientManager.findClient(callingUid, callingPid);
         String callingPkg = (caller != null) ? caller.packageName : "unknown";
-        
+
         // Catastrophic Command Interceptor (Storage Safety)
         if (isCatastrophicCommand(cmd)) {
             LOGGER.e("Catastrophic command blocked from execution by %s: %s", callingPkg, String.join(" ", cmd));
@@ -1950,8 +1958,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (isFeatureEnabled("binder_logging")) {
             LOGGER.i("Binder transaction: code=%d, calling uid=%d, flags=%d", code, Binder.getCallingUid(), flags);
         }
+        // enforceInterface() only validates the AIDL descriptor token, not caller identity — every
+        // branch here additionally needs enforceCallingPermission(), matching every other exposed
+        // method in Service.java. Without it, any process with a live IShizukuService binder could
+        // read the full installed-package list (getApplications) or, worst case, receive the raw
+        // DevicePolicyManager system binder (getDhizukuBinder) with zero authorization.
         if (code == ServerConstants.BINDER_TRANSACTION_getApplications) {
             data.enforceInterface(ShizukuApiConstants.BINDER_DESCRIPTOR);
+            enforceCallingPermission("getApplications");
             int userId = data.readInt();
             ParcelableListSlice<PackageInfo> result = getApplications(userId);
             reply.writeNoException();
@@ -1959,11 +1973,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             return true;
         } else if (code == ServerConstants.BINDER_TRANSACTION_isCustomApiEnabled) {
             data.enforceInterface(ShizukuApiConstants.BINDER_DESCRIPTOR);
+            enforceCallingPermission("isCustomApiEnabled");
             reply.writeNoException();
             reply.writeInt(1); // ShizukuX server always has it enabled at server level if running
             return true;
         } else if (code == ServerConstants.BINDER_TRANSACTION_getDhizukuBinder) {
             data.enforceInterface(ShizukuApiConstants.BINDER_DESCRIPTOR);
+            enforceCallingPermission("getDhizukuBinder");
             // In ShizukuX, we share the DevicePolicyManager binder if Dhizuku mode is "active"
             // (The manager app controls this via settings, but the server just provides the binder if asked)
             IBinder dpm = ServiceManager.getService(Context.DEVICE_POLICY_SERVICE);
@@ -1972,6 +1988,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             return true;
         } else if (code == ServerConstants.BINDER_TRANSACTION_getServerPatchVersion) {
             data.enforceInterface(ShizukuApiConstants.BINDER_DESCRIPTOR);
+            enforceCallingPermission("getServerPatchVersion");
             reply.writeNoException();
             reply.writeInt(ShizukuApiConstants.SERVER_PATCH_VERSION);
             return true;
