@@ -146,8 +146,14 @@ class UpdateManager(private val context: Context) {
                                 break
                             }
                             DownloadManager.STATUS_FAILED -> {
+                                // COLUMN_REASON holds a DownloadManager.ERROR_* code when
+                                // STATUS_FAILED - without it "Download failed" (SHIZUKUPLUS-8H)
+                                // gives no way to tell insufficient-storage, HTTP errors, and
+                                // unresumable transfers apart.
+                                val reasonIdx = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
+                                val reason = if (reasonIdx >= 0) cursor.getInt(reasonIdx) else -1
                                 cursor.close()
-                                Timber.tag(TAG).e("Download failed")
+                                Timber.tag(TAG).e("Download failed (reason=$reason)")
                                 showDownloadErrorNotification()
                                 break
                             }
