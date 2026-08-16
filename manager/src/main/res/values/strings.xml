@@ -1090,4 +1090,10 @@
     <string name="automation_plugin_condition_title">ShizukuX service running</string>
     <string name="automation_plugin_condition_description">This condition is satisfied whenever the ShizukuX service is running.</string>
     <string name="automation_plugin_condition_blurb">ShizukuX service is running</string>
+
+    <string name="cd_navigate_back">Back</string>
+    <string name="cd_settings_search">Search</string>
+    <string name="cd_settings_search_clear">Clear</string>
+    <string name="settings_search_hint">Search settings…</string>
+    <string name="settings_search_empty_state">No settings found</string>
 </resources>
