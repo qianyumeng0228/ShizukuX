@@ -116,7 +116,15 @@ object CrashReporter {
             parent.mkdirs()
         }
         if (parent == null || parent.exists()) {
-            file.writeText(report)
+            try {
+                file.writeText(report)
+            } catch (e: Exception) {
+                // cacheDir may be unwritable (full disk, storage mount race); don't crash
+                // the app while it's trying to report a crash.
+                return
+            }
+        } else {
+            return
         }
 
         val uri = androidx.core.content.FileProvider.getUriForFile(
