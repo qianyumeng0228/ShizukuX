@@ -189,11 +189,16 @@ class ServiceDoctorActivity : AppBarActivity() {
                 ))
             }
 
-            // Samsung Device Care / Always sleeping apps
+            // Samsung Device Care / Always sleeping apps. ok=false (not true) is deliberate: this
+            // can't actually detect whether the app is on the Sleeping Apps list (no public API for
+            // that), so it always needs manual review - showing it as a passing green checkmark
+            // (as it did before) contradicted its own "Review" text and hid the exact setting behind
+            // #415 (Samsung freezing the process on screen-lock, watchdog can't recover a frozen
+            // process because the freeze kills it too).
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_samsung_battery_protection),
                 getString(R.string.doctor_status_review) + " (Check Sleeping Apps)",
-                true,
+                false,
                 onFix = { SettingsPage.Samsung.BackgroundUsageLimits.launch(this) }
             ))
 
