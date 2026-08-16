@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.legacy.ShellConsentActivity
 import af.shizuku.manager.shell.PendingConsentStore
 import af.shizuku.manager.shell.ShellBinderRequestHandler
@@ -64,40 +63,26 @@ class BinderRequestReceiver : BroadcastReceiver() {
         // to grant access to.
         val callbackBinder = intent.getBundleExtra("data")?.getBinder("binder")
         if (callbackBinder != null) {
-            // Fast path: if the caller is already permanently authorized, skip the consent
-            // notification and deliver directly (#398 — "Allow always" was not persisting
-            // because this check was absent; every new rish process re-prompted even though
-            // AuthorizationManager.grant() had already been stored for that UID).
-            val callingPackage = intent.getStringExtra("callingPackage")
-            // intentCallingUid is set by ShizukuShellLoader (Os.getuid()) — authoritative
-            // fallback when PackageManager.getApplicationInfo() is unavailable (e.g. classic
-            // rish_shizuku.dex omits callingPackage, or PM lookup fails on some devices #391).
+            // SECURITY: there used to be a "fast path" here that trusted intent-supplied
+            // callingPackage/callingUid extras to silently auto-deliver the live Shizuku binder
+            // for already-authorized callers, skipping the consent notification (added for #398).
+            // Broadcast Intent extras carry NO verified sender identity - Binder.getCallingUid()
+            // is not meaningful in onReceive() for a plain sendBroadcast(), and this action
+            // (rikka.shizuku.intent.action.REQUEST_BINDER) is the public, unauthenticated part of
+            // Shizuku's client API that any app on the device can send. That fast path let ANY
+            // installed app claim callingPackage="<any already-authorized package>" and supply
+            // its OWN callbackBinder, resolve that package's real (public) UID via
+            // PackageManager, pass AuthorizationManager.granted() using someone else's real grant,
+            // and receive the live, full-privilege Shizuku service binder directly into its own
+            // process - a complete, silent, zero-interaction privilege escalation requiring only
+            // that ANY app on the device had ever been authorized (an extremely common state).
+            // There is no reliable way to verify broadcast sender identity here, so every
+            // unauthenticated request now always requires explicit user consent via the
+            // notification below - the #398 UX convenience (silently skipping the prompt for
+            // already-approved callers) cannot be safely restored without a different mechanism
+            // that doesn't trust spoofable Intent extras (e.g. verifying identity inside a real
+            // AIDL transaction on the server, which does have a trustworthy Binder.getCallingUid()).
             val intentCallingUid = intent.getIntExtra("callingUid", -1).takeIf { it >= 0 }
-            // Prefer PM-derived UID (verifies callingPackage ownership); fall back to intent UID.
-            val effectiveUid: Int? = if (callingPackage != null) {
-                try { context.packageManager.getApplicationInfo(callingPackage, 0).uid }
-                catch (_: Exception) { intentCallingUid }
-            } else intentCallingUid
-
-            if (effectiveUid != null) {
-                if (AuthorizationManager.granted(callingPackage ?: "", effectiveUid)) {
-                    val appLabel = callingPackage?.let {
-                        try { context.packageManager.getApplicationLabel(
-                                context.packageManager.getApplicationInfo(it, 0)).toString()
-                        } catch (_: Exception) { it }
-                    } ?: effectiveUid.toString()
-                    ActivityLogManager.log(appLabel, callingPackage ?: "", "Shell: binder delivered (pre-authorized)")
-                    val pending = goAsync()
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            ShellBinderRequestHandler.deliverBinder(context, callbackBinder)
-                        } finally {
-                            pending.finish()
-                        }
-                    }
-                    return
-                }
-            }
             // A manifest-registered BroadcastReceiver has no visible UI, so a direct
             // startActivity() here is exactly the pattern Android's background-activity-start
             // (BAL) restrictions are designed to block - on modern OEM builds (e.g. Samsung
