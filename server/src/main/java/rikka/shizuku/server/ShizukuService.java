@@ -1698,10 +1698,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
 @android.annotation.SuppressLint("NewApi")
     public void showPermissionConfirmation(int requestCode, @NonNull ClientRecord clientRecord, int callingUid, int callingPid, int userId) {
+        // ai may be null for a caller PackageManager can't resolve on this device/profile (same
+        // class of PM-lookup gap already worked around for the shell-consent path, #391) - that
+        // used to make this method bail silently, leaving the client's requestPermission() call
+        // hanging forever with no dispatch and no error. Fall through with a null ApplicationInfo;
+        // the intent always carries clientRecord.packageName (client-supplied but harmless here -
+        // it's a display label only, callingUid is what's actually authorized) so
+        // RequestPermissionActivity can still show a real "callingPackage/uid is requesting..."
+        // dialog instead of dropping the request.
         ApplicationInfo ai = Android17Compat.getApplicationInfo(clientRecord.packageName, 0, userId);
-        if (ai == null) {
-            return;
-        }
 
         PackageInfo pi = Android17Compat.getPackageInfo(MANAGER_APPLICATION_ID, 0, userId);
         UserInfo userInfo = UserManagerApis.getUserInfo(userId);
@@ -1720,7 +1725,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 .putExtra("uid", callingUid)
                 .putExtra("pid", callingPid)
                 .putExtra("requestCode", requestCode)
-                .putExtra("applicationInfo", ai);
+                .putExtra("callingPackage", clientRecord.packageName);
+        if (ai != null) {
+            intent.putExtra("applicationInfo", ai);
+        }
         ActivityManagerApis.startActivityNoThrow(intent, null, isWorkProfileUser ? 0 : userId);
     }
 
