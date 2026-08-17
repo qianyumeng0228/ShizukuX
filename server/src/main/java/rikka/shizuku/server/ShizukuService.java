@@ -411,18 +411,28 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (isManagerAppId(UserHandleCompat.getAppId(callingUid))) {
             return true;
         }
-        if (clientRecord == null) {
-            if (checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            }
-            // Also allow if the UID was explicitly authorized via the shell consent flow.
-            // Apps that don't declare a Shizuku permission in their manifest (e.g. Termux)
-            // never receive grantRuntimePermission(), so checkCallingPermission() always returns
-            // DENIED for them even after the user tapped "Allow". Checking configManager flags
-            // directly bridges this gap without touching OS permission state.
-            if ((getFlagsForUidInternal(callingUid, ConfigManager.MASK_PERMISSION, false) & ConfigManager.FLAG_ALLOWED) == ConfigManager.FLAG_ALLOWED) {
-                return true;
-            }
+        // Already-attached clients (e.g. rish, after a successful attachApplication()) have a
+        // non-null ClientRecord whose `allowed` flag is the authoritative "user granted access"
+        // signal - set during attachApplication from the config entry, or later via the shell
+        // consent flow's AuthorizationManager.grant(). This must be checked independently of the
+        // clientRecord == null branch below: that branch's fallbacks (OS permission check,
+        // config-flag bridge) exist for callers enforceCallingPermission() is invoked on BEFORE
+        // they've attached, and skip entirely once clientRecord is non-null - which left every
+        // attached-and-authorized non-manager caller (rish included) hitting the final `return
+        // false` and getting a silent SecurityException out of newProcess() (#391 follow-up).
+        if (clientRecord != null) {
+            return clientRecord.allowed;
+        }
+        if (checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        }
+        // Also allow if the UID was explicitly authorized via the shell consent flow.
+        // Apps that don't declare a Shizuku permission in their manifest (e.g. Termux)
+        // never receive grantRuntimePermission(), so checkCallingPermission() always returns
+        // DENIED for them even after the user tapped "Allow". Checking configManager flags
+        // directly bridges this gap without touching OS permission state.
+        if ((getFlagsForUidInternal(callingUid, ConfigManager.MASK_PERMISSION, false) & ConfigManager.FLAG_ALLOWED) == ConfigManager.FLAG_ALLOWED) {
+            return true;
         }
         return false;
     }
