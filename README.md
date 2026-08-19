@@ -20,6 +20,11 @@ Get the latest release from [GitHub Releases](https://github.com/thejaustin/Shiz
 
 ## 🐛 Recent Fixes
 
+### Critical Stability Fixes (r2287)
+- **Launch crash on some OEM builds** ([#422](https://github.com/thejaustin/ShizukuPlus/issues/422)): a notification icon carrying a theme-attribute tint (`android:tint="?attr/..."`) could fail to resolve in the system's own theme context, crashing the app with `RemoteServiceException: Couldn't create icon StatusBarIcon` (observed on Samsung OneUI 3.1/Android 11). Fixed 4 affected icons and added an automated regression check (`scripts/dev/check-notification-icons.sh` + a JUnit test) so it can't silently reappear.
+- **Dev/Beta update channel silently matched Stable** ([#407](https://github.com/thejaustin/ShizukuPlus/issues/407)): the channel picker fetched the newest release by creation date instead of its `prerelease` flag, and CI never actually marked dev/beta builds as GitHub prereleases in the first place — both are now fixed, so the channel setting has real effect again.
+- **SU Bridge self-test failure messages were generic** ([#402](https://github.com/thejaustin/ShizukuPlus/issues/402)): now shows the actual deploy failure reason (exit code/stderr) instead of a one-size-fits-all message.
+
 ### Critical Server Fixes
 - **`attachApplication` binder regression** (commits `8fbe5e47`, `c702a5c`): Fixed a dead-code bug in `Service.onTransact()` where `attachApplication` (binder code 17) was in an unreachable `else` block. This caused ALL API v13+ clients (Morphe, InstallerX, Droid-ify, ObtainX, Obtainium, Termux rish, MT Manager) to fail with `PackageInstaller.asBinder() NullPointerException` or `Not an attached client`.
 - **Shell consent persistence** (commit `9f2c01e8`): Shell clients (rish) were always re-prompted even after `Allow always`. Fixed by propagating `callingUid` through the consent intent chain via `Os.getuid()` in `ShizukuShellLoader`.

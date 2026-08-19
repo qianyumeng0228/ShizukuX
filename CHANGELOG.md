@@ -2,6 +2,15 @@
 
 All notable changes to ShizukuPlus are documented here.
 
+## [v13.6.0.r2287]
+
+### 🐛 Bug Fixes
+
+#### Manager App (UI)
+- **Fixed a launch crash on some OEM builds** (observed on Samsung OneUI 3.1/Android 11): notification icons that used a theme-attribute tint (`android:tint="?attr/..."`) could fail to render in the system's own theme context, throwing `RemoteServiceException: Couldn't create icon StatusBarIcon` and crashing the app outright. Found and fixed 4 affected icons (`AutomationService`'s foreground notification plus 3 others reused across update/wireless-ADB notifications). Added `scripts/dev/check-notification-icons.sh` (wired into `scripts/dev/lint.sh`) and a JUnit regression test so this class of bug can't silently reappear. ([#422](https://github.com/thejaustin/ShizukuPlus/issues/422))
+- **Fixed Update channel: Dev/Beta channel silently tracking the same release as Stable.** This is a regression of the earlier r2248-era fix below — `checkViaApi()` picked the newest release *by creation date* instead of by its `prerelease` flag, so once a stable release was cut, the dev/beta channel converged on it too. Also fixed the underlying CI bug: `gh release create` computed `IS_PRERELEASE` for the build flavor but never passed `--prerelease` to the release itself, so every published release was `prerelease: false` regardless of channel. ([#407](https://github.com/thejaustin/ShizukuPlus/issues/407))
+- **SU Bridge self-test now shows the actual deploy failure reason** (exit code/stderr) instead of a generic "could not deploy" message — the detail was already being captured to logcat but never reached the dialog users actually see/report. ([#402](https://github.com/thejaustin/ShizukuPlus/issues/402))
+
 ## [Unreleased / Build r2248+]
 
 ### 🐛 Bug Fixes
