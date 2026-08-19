@@ -33,8 +33,16 @@ object RootCompatHelper {
         "com.ghisler.android.TotalCommander" to Pair("tcandroid3", "supath"),
         "com.jrummy.root.browserfree"    to Pair("es_preferences", "su_path"),
         "com.estrongs.android.pop"       to Pair("es_preferences", "su_path"),
-        "com.github.machiav3lli.backup"  to Pair("com.github.machiav3lli.backup_preferences", "custom_su_path"),
-        "org.swiftapps.swiftbackup"      to Pair("org.swiftapps.swiftbackup_preferences", "su_path")
+        "com.github.machiav3lli.backup"  to Pair("com.github.machiav3lli.backup_preferences", "custom_su_path")
+        // Swift Backup (org.swiftapps.swiftbackup) intentionally has no entry here: reverse-
+        // engineering its 5.1.0 APK found it never reads a custom su-binary path from its own
+        // SharedPreferences - root access goes through libsu's Shell.Builder, which just invokes
+        // plain PATH-resolved "su". There is no su_path/custom_su/suCommand-style key anywhere in
+        // its bytecode for this (or any prior) entry to have matched, so autoSetup() correctly
+        // falls through to the "no automatic path" branch for it. It IS a genuine Shizuku client
+        // (own rikka.shizuku.ShizukuProvider at authority org.swiftapps.swiftbackup.shizuku,
+        // package-agnostic binder handshake) - point users at its own Settings > grant-permissions
+        // flow ("Grant with Root or Shizuku") instead of SU Bridge auto-setup for this app.
     )
 
     /**
