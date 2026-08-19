@@ -106,7 +106,18 @@ object UpdateChecker {
     private fun checkViaApi(channel: String): CheckResult {
         val json: JSONObject = if (channel == "dev" || channel == "beta") {
             val arr = fetchJson("$RELEASES_URL?per_page=5") as? JSONArray
-            arr?.optJSONObject(0) ?: return CheckResult.UpToDate
+            // Dev/beta channel must track the newest *prerelease* build, not simply the newest
+            // release entry overall. Index 0 is whichever release was created most recently
+            // regardless of its "prerelease" flag, so as soon as a stable release is cut after a
+            // dev build, index 0 silently becomes that stable release and the dev channel starts
+            // resolving to the exact same release as the stable channel's /releases/latest — the
+            // user's channel choice stops making any difference. Explicitly prefer the newest
+            // entry flagged prerelease=true within the fetched page, falling back to index 0 only
+            // if none of the recent releases are marked as a prerelease.
+            val prerelease = (0 until (arr?.length() ?: 0))
+                .map { arr!!.getJSONObject(it) }
+                .firstOrNull { it.optBoolean("prerelease", false) }
+            prerelease ?: arr?.optJSONObject(0) ?: return CheckResult.UpToDate
         } else {
             fetchJson(LATEST_URL) as? JSONObject ?: return CheckResult.UpToDate
         }
