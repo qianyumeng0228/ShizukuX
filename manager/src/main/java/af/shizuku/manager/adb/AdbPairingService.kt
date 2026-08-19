@@ -245,7 +245,7 @@ class AdbPairingService : Service() {
             NOTIFICATION_ID,
             Notification.Builder(this, NOTIFICATION_CHANNEL)
                 .setColor(getColor(R.color.notification))
-                .setSmallIcon(R.drawable.ic_system_icon)
+                .setSmallIcon(R.drawable.ic_notification_icon)
                 .setContentTitle(title)
                 .setContentText(text)
                 .apply {
@@ -375,7 +375,7 @@ class AdbPairingService : Service() {
     private val searchingNotification by unsafeLazy {
         Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(getString(R.string.notification_adb_pairing_searching_for_service_title))
             .addAction(stopNotificationAction)
             .build()
@@ -396,7 +396,7 @@ class AdbPairingService : Service() {
                 .setColor(getColor(R.color.notification))
                 .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))
                 .setContentText(getString(R.string.notification_adb_pairing_input_paring_code))
-                .setSmallIcon(R.drawable.ic_system_icon)
+                .setSmallIcon(R.drawable.ic_notification_icon)
                 .setContentIntent(contentIntent)
                 .setAutoCancel(false)
                 .build()
@@ -404,7 +404,7 @@ class AdbPairingService : Service() {
         return Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
             .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .addAction(replyNotificationAction(port))
             .build()
     }
@@ -413,7 +413,7 @@ class AdbPairingService : Service() {
         Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
             .setContentTitle(getString(R.string.notification_adb_pairing_working_title))
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .build()
     }
 

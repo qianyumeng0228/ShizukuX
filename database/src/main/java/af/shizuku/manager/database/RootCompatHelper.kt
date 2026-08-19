@@ -143,8 +143,16 @@ object RootCompatHelper {
      * root and ADB mode without the shell needing to read the app's private files. Returns the
      * /data/local/tmp/su path on success, or null on failure.
      */
-    suspend fun deployBridgeToTmp(context: Context): String? = withContext(Dispatchers.IO) {
-        if (!isShizukuAvailable()) return@withContext null
+    /** Result of [deployBridgeToTmp]: [suPath] is the deployed `su` path on success; [failureDetail]
+     *  carries the exit code/stderr of whichever asset write failed, for callers (like [selfTest])
+     *  that need to show *why* the deploy failed instead of a generic message. */
+    data class DeployResult(val suPath: String?, val failureDetail: String? = null)
+
+    suspend fun deployBridgeToTmp(context: Context): String? =
+        deployBridgeToTmpDetailed(context).suPath
+
+    suspend fun deployBridgeToTmpDetailed(context: Context): DeployResult = withContext(Dispatchers.IO) {
+        if (!isShizukuAvailable()) return@withContext DeployResult(null, "Shizuku binder not available")
         val dir = "/data/local/tmp"
         // asset name -> octal mode (scripts executable; dex read-only for app_process on A14+)
         val files = listOf(
@@ -161,14 +169,15 @@ object RootCompatHelper {
                     // Previously logged with no detail (SHIZUKUPLUS-8A/8G/8D) — exitCode/stderr are
                     // needed to tell noexec-mount, EACCES-on-readonly-remount, and Shizuku-died-mid-
                     // write apart, none of which have the same fix.
-                    Timber.e("deployBridgeToTmp: failed to write $dir/$name (exit=${result.exitCode}, stderr=${result.stderr.take(500)})")
-                    return@withContext null
+                    val detail = "failed to write $dir/$name (exit=${result.exitCode}, stderr=${result.stderr.take(500)})"
+                    Timber.e("deployBridgeToTmp: $detail")
+                    return@withContext DeployResult(null, detail)
                 }
             }
-            "$dir/su"
+            DeployResult("$dir/su")
         } catch (e: Exception) {
             Timber.e(e, "deployBridgeToTmp failed")
-            null
+            DeployResult(null, e.message ?: e.javaClass.simpleName)
         }
     }
 
@@ -212,9 +221,12 @@ object RootCompatHelper {
             return@withContext BridgeSelfTest(false,
                 "Shizuku isn't connected. Start the Shizuku service from the home screen, then try again.")
         }
-        val tmpSu = deployBridgeToTmp(context)
+        val deployResult = deployBridgeToTmpDetailed(context)
+        val tmpSu = deployResult.suPath
             ?: return@withContext BridgeSelfTest(false,
-                "❌ Could not deploy the bridge to /data/local/tmp.\n\nMake sure the Shizuku service is running, then retry.")
+                "❌ Could not deploy the bridge to /data/local/tmp.\n\n" +
+                    (deployResult.failureDetail?.let { "Reason: $it\n\n" } ?: "") +
+                    "Make sure the Shizuku service is running, then retry.")
         val tmpDir = tmpSu.substringBeforeLast('/')
 
         // Probe A — deploy check + true privilege, via Shizuku.

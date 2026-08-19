@@ -77,7 +77,7 @@ class ShellRequestHandlerActivity : MaterialActivity() {
             .setContentText(messageStr)
             .setContentIntent(launchPendingIntent)
             .setAutoCancel(true)
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .build()
 
         nm.notify(NOTIFICATION_ID, notification)

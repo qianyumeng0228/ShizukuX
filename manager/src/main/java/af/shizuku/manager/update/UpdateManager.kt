@@ -189,7 +189,7 @@ class UpdateManager(private val context: Context) {
      */
     private fun updateProgressNotification(progress: Int, versionName: String) {
         val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.update_downloading_title))
             .setContentText(context.getString(R.string.update_downloading_progress, versionName, progress))
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -246,14 +246,14 @@ class UpdateManager(private val context: Context) {
             )
 
             val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_system_icon)
+                .setSmallIcon(R.drawable.ic_notification_icon)
                 .setContentTitle(context.getString(R.string.update_ready_title))
                 .setContentText(context.getString(R.string.update_ready_description, versionName))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .addAction(
-                    R.drawable.ic_system_icon,
+                    R.drawable.ic_notification_icon,
                     context.getString(R.string.update_install_now),
                     pendingIntent
                 )
@@ -296,7 +296,7 @@ class UpdateManager(private val context: Context) {
      */
     private fun showDownloadErrorNotification() {
         val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.update_download_failed_title))
             .setContentText(context.getString(R.string.update_download_failed_message))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

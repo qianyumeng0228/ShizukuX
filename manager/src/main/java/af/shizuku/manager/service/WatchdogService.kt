@@ -152,7 +152,7 @@ class WatchdogService : Service() {
 
         return NotificationCompat.Builder(this, WATCHDOG_CHANNEL_ID)
             .setContentTitle(getString(R.string.watchdog_running))
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentIntent(launchPendingIntent)
             .addAction(
                 R.drawable.ic_close_24,
@@ -191,7 +191,7 @@ class WatchdogService : Service() {
         val builder = NotificationCompat.Builder(this, channelId)
             .setContentTitle(getString(R.string.watchdog_shizuku_crashed_title))
             .setContentText(getString(R.string.watchdog_shizuku_crashed_text))
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentIntent(learnMorePendingIntent)
             .setAutoCancel(true)
             .addAction(0, getString(R.string.watchdog_shizuku_crashed_action_report_manually), reportPendingIntent)

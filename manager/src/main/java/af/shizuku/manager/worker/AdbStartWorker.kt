@@ -222,7 +222,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         )
 
         val notification = nb
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.wadb_error_title))
             .setContentText(msgNotif)
             .setContentIntent(pendingIntent)

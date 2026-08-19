@@ -35,7 +35,7 @@ object LiveActivityNotificationManager {
             context, 0, Intent(context, MainActivity::class.java), 0, false
         )
         return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_server_ok_24)
+            .setSmallIcon(R.drawable.ic_notification_server_ok_24)
             .setContentTitle("ShizukuX Active")
             .setContentText(status)
             .setContentIntent(pendingIntent)

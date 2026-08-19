@@ -105,12 +105,12 @@ object ShizukuReceiverStarter {
         if (msg != null) nb.setContentText(msg)
 
         return nb
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.wadb_notification_title))
             .setOngoing(true)
             .setSilent(true)
-            .addAction(R.drawable.ic_server_restart, context.getString(R.string.wadb_notification_attempt_now), attemptNowPendingIntent)
-            .addAction(R.drawable.ic_close_24, context.getString(android.R.string.cancel), cancelPendingIntent)
+            .addAction(R.drawable.ic_notification_server_restart, context.getString(R.string.wadb_notification_attempt_now), attemptNowPendingIntent)
+            .addAction(R.drawable.ic_notification_close_24, context.getString(android.R.string.cancel), cancelPendingIntent)
             .setDeleteIntent(restorePendingIntent)
             .setContentIntent(wifiPendingIntent)
             .build()
@@ -192,7 +192,7 @@ object ShizukuReceiverStarter {
         val msg = context.getString(R.string.wadb_permission_error_notification_content)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.wadb_permission_error_notification_title))
             .setContentText(msg)
             .setSilent(true)

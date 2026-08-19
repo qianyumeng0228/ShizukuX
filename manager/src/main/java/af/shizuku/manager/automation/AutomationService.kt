@@ -102,7 +102,7 @@ class AutomationService : Service() {
             nm.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_system_icon)
+            .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(getString(R.string.notification_automation_title))
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
