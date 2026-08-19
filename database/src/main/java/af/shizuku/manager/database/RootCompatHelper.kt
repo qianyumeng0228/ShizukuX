@@ -34,7 +34,7 @@ object RootCompatHelper {
         "com.jrummy.root.browserfree"    to Pair("es_preferences", "su_path"),
         "com.estrongs.android.pop"       to Pair("es_preferences", "su_path"),
         "com.github.machiav3lli.backup"  to Pair("com.github.machiav3lli.backup_preferences", "custom_su_path"),
-        "org.swift.backup"               to Pair("org.swift.backup_preferences", "su_path")
+        "org.swiftapps.swiftbackup"      to Pair("org.swiftapps.swiftbackup_preferences", "su_path")
     )
 
     /**
