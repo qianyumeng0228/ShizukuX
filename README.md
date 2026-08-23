@@ -1,5 +1,7 @@
 <div align="center">
 
+[ DEVELOPMENT PAUSED. I got a new phone (S22U → S26U) recently and am in the process of setting up my development environment on this device! I'll be back soon! Please keep submitting issues you're experiencing, and feel free to open pull requests if you think you can help improve the codebase as well! I'm looking for contributors and collaborators to keep the vision alive and stabilize the project, so feel free to reach out! ]
+
 # ShizukuX
 
 The advanced privileged-process manager for Android.
