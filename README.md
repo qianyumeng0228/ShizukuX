@@ -2,9 +2,7 @@
 
 [ DEVELOPMENT PAUSED ]
 
-I got a new phone (S22U → S26U) recently and am in the process of setting up my development environment on this device! 
-
-I'll be back soon! 
+I got a new phone (S22U → S26U) recently and am in the process of setting up my development environment on this device! I'll be back soon! 
 
 Please keep submitting issues you're experiencing, and feel free to open pull requests if you think you can help improve the codebase as well! 
 
