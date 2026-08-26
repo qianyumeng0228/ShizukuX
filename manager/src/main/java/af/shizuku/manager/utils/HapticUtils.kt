@@ -1,5 +1,6 @@
 package af.shizuku.manager.utils
 
+import af.shizuku.manager.ShizukuSettings
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
@@ -15,7 +16,12 @@ object HapticUtils {
     // normally VIBRATE-exempt system haptic path, and throw a SecurityException
     // if the VIBRATE permission isn't held. Haptics are decorative, never worth
     // crashing over, so every call goes through this guard.
+    //
+    // The dedicated haptic-feedback setting is checked once here so every call
+    // site is governed by a single flag, instead of ad-hoc per-call-site checks
+    // of unrelated toggles (e.g. expressive animations).
     private inline fun safeHaptic(view: View, constant: Int) {
+        if (!ShizukuSettings.isHapticFeedbackEnabled()) return
         try {
             view.performHapticFeedback(constant)
         } catch (e: SecurityException) {
