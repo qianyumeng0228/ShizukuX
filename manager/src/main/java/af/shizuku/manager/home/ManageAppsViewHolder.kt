@@ -22,10 +22,10 @@ import rikka.recyclerview.BaseViewHolder.Creator
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
 
 class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root: View) :
-    BaseViewHolder<Pair<ServiceStatus, Int>>(root), View.OnClickListener {
+    BaseViewHolder<Pair<ServiceStatus, Int?>>(root), View.OnClickListener {
 
     companion object {
-        val CREATOR = Creator<Pair<ServiceStatus, Int>> { inflater: LayoutInflater, parent: ViewGroup? ->
+        val CREATOR = Creator<Pair<ServiceStatus, Int?>> { inflater: LayoutInflater, parent: ViewGroup? ->
             val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
             val inner = HomeManageAppsItemBinding.inflate(inflater, outer.cardContent, true)
             ManageAppsViewHolder(inner, outer.root)
@@ -55,11 +55,16 @@ class ManageAppsViewHolder(private val binding: HomeManageAppsItemBinding, root:
             )
         } else {
             itemView.isEnabled = true
-            title.text = context.resources.getQuantityString(
-                R.plurals.home_app_management_authorized_apps_count,
-                data.second,
-                data.second
-            )
+            val count = data.second
+            title.text = if (count == null) {
+                context.getString(R.string.home_app_management_title)
+            } else {
+                context.resources.getQuantityString(
+                    R.plurals.home_app_management_authorized_apps_count,
+                    count,
+                    count
+                )
+            }
             summary.text = context.getString(R.string.home_app_management_view_authorized_apps)
         }
     }

@@ -65,7 +65,7 @@ class HomeAdapter(
     // Cached inputs from the last successful updateData() render, so moveItem() can rebuild the
     // adapter's real backing list synchronously mid-drag instead of only reordering cardOrder.
     private var lastRenderStatus: ServiceStatus? = null
-    private var lastRenderGrantedCount: Int = 0
+    private var lastRenderGrantedCount: Int? = null
     private var lastRenderIsEditMode: Boolean = false
     private var lastRenderCompanionInstalled: Boolean = false
     private var lastRenderCompatHubInstalled: Boolean = false
@@ -179,7 +179,7 @@ class HomeAdapter(
      */
     private fun rebuildItems(
         status: ServiceStatus,
-        grantedCount: Int,
+        grantedCount: Int?,
         isEditMode: Boolean,
         companionInstalled: Boolean,
         compatHubInstalled: Boolean,
