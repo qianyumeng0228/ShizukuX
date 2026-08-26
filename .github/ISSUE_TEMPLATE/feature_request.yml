@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest a feature or improvement for ShizukuPlus
-labels: [enhancement]
+labels: ["type: enhancement"]
 body:
   - type: checkboxes
     id: check
