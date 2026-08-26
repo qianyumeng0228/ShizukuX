@@ -772,6 +772,26 @@
     <string name="settings_category_material_you">Material You</string>
     <string name="settings_category_language">Language</string>
     <string name="settings_category_appearance">Appearance</string>
+    <string name="settings_main_category_capabilities">Capabilities</string>
+    <string name="settings_main_category_personalization">Personalization</string>
+    <string name="settings_main_category_system">System</string>
+    <string name="settings_main_nav_feature_hub_title">Feature Hub</string>
+    <string name="settings_main_nav_feature_hub_summary">Manage exclusive Plus capabilities</string>
+    <string name="settings_main_nav_root_compat_title">Root &amp; Compatibility</string>
+    <string name="settings_main_nav_root_compat_summary">ADB connection, SU bridge, rootless integration, and stock Shizuku compatibility</string>
+    <string name="settings_main_nav_appearance_summary">Theme, shapes, icons, motion, home layout, and language</string>
+    <string name="settings_main_nav_app_interactions_title">App Interactions</string>
+    <string name="settings_main_nav_app_interactions_summary">Gestures, long-press actions, and install verification</string>
+    <string name="settings_main_nav_startup_behavior_title">Startup &amp; Behavior</string>
+    <string name="settings_main_nav_startup_behavior_summary">Boot options, watchdog, network, and activity status</string>
+    <string name="settings_main_nav_advanced_diagnostics_title">Advanced &amp; Diagnostics</string>
+    <string name="settings_main_nav_advanced_diagnostics_summary">Logs, ADB tools, and troubleshooting</string>
+    <string name="settings_main_nav_about_summary">Version, licenses, and updates</string>
+    <string name="settings_accent_violet_applied">Midnight Violet applied</string>
+    <string name="settings_accent_green_applied">Forest Green applied</string>
+    <string name="settings_accent_crimson_applied">Crimson Rose applied</string>
+    <string name="settings_accent_ocean_applied">Deep Ocean applied</string>
+    <string name="settings_accent_default_applied">Standard Blue (Default)</string>
     <string name="settings_category_advanced">Advanced</string>
 
     <string name="settings_nav_behavior_summary">Start on boot, Watchdog, and TCP mode</string>
