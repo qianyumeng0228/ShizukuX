@@ -10,11 +10,24 @@ import android.view.View
  */
 object HapticUtils {
 
+    // Some OEM skins (confirmed on HyperOS/MIUI - #SHIZUKUPLUS-8E) route
+    // View.performHapticFeedback through their own vibrator stack instead of the
+    // normally VIBRATE-exempt system haptic path, and throw a SecurityException
+    // if the VIBRATE permission isn't held. Haptics are decorative, never worth
+    // crashing over, so every call goes through this guard.
+    private inline fun safeHaptic(view: View, constant: Int) {
+        try {
+            view.performHapticFeedback(constant)
+        } catch (e: SecurityException) {
+            // Swallow - see comment above.
+        }
+    }
+
     /**
      * Standard click feedback (vibration)
      */
     fun tap(view: View) {
-        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+        safeHaptic(view, HapticFeedbackConstants.KEYBOARD_TAP)
     }
 
     /**
@@ -22,9 +35,9 @@ object HapticUtils {
      */
     fun success(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+            safeHaptic(view, HapticFeedbackConstants.CONFIRM)
         } else {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            safeHaptic(view, HapticFeedbackConstants.LONG_PRESS)
         }
     }
 
@@ -33,9 +46,9 @@ object HapticUtils {
      */
     fun error(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.REJECT)
+            safeHaptic(view, HapticFeedbackConstants.REJECT)
         } else {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            safeHaptic(view, HapticFeedbackConstants.LONG_PRESS)
         }
     }
 
@@ -44,9 +57,9 @@ object HapticUtils {
      */
     fun tick(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-            view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            safeHaptic(view, HapticFeedbackConstants.CLOCK_TICK)
         } else {
-            view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+            safeHaptic(view, HapticFeedbackConstants.VIRTUAL_KEY)
         }
     }
 
@@ -55,9 +68,9 @@ object HapticUtils {
      */
     fun gestureStart(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_START)
+            safeHaptic(view, HapticFeedbackConstants.GESTURE_START)
         } else {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            safeHaptic(view, HapticFeedbackConstants.LONG_PRESS)
         }
     }
 
@@ -66,7 +79,7 @@ object HapticUtils {
      */
     fun gestureThreshold(view: View) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            view.performHapticFeedback(HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE)
+            safeHaptic(view, HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE)
         } else {
             tick(view)
         }
@@ -76,6 +89,6 @@ object HapticUtils {
      * Heavy "thud" feedback for significant UI events
      */
     fun heavyClick(view: View) {
-        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+        safeHaptic(view, HapticFeedbackConstants.LONG_PRESS)
     }
 }
