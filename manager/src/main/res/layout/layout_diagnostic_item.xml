@@ -35,7 +35,7 @@
             android:minWidth="0dp"
             android:paddingHorizontal="8dp"
             android:paddingVertical="4dp"
-            android:text="Dismiss"
+            android:text="@string/diagnostics_dismiss"
             android:textColor="?colorOnErrorContainer"
             android:textSize="12sp" />
     </LinearLayout>

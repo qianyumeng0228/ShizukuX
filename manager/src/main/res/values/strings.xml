@@ -425,6 +425,21 @@
     <string name="settings_plus_app_setup_title">Setup Integration</string>
     <string name="settings_plus_app_open">Open App</string>
     <string name="settings_plus_learn_more">Learn more</string>
+    <string name="settings_plus_feature_help_enable">Enable feature</string>
+    <string name="settings_plus_feature_help_close">Close</string>
+    <string name="diagnostics_dismiss">Dismiss</string>
+    <string name="diagnostics_warning_dhizuku_not_owner">Dhizuku Mode is enabled but the Device Owner component is not active. Tap to resolve.</string>
+    <string name="diagnostics_warning_shadow_binder_no_apps">Shadow Binder is enabled but no apps are selected to hide. Tap to select.</string>
+    <string name="diagnostics_warning_battery_optimization">Battery optimization is active. Shizuku may be killed in the background. Tap to exempt.</string>
+    <string name="diagnostics_battery_settings_open_failed">Could not open battery settings</string>
+    <string name="diagnostics_shadow_binder_navigate_hint">Go to Feature Hub → Security &amp; Access → Shadow Binder to select apps</string>
+    <string name="diagnostics_device_owner_setup_title">Set Up Device Owner</string>
+    <string name="diagnostics_device_owner_setup_message">Dhizuku Mode requires this app to be the Device Owner.\n\nRun this command from your PC (USB debugging must be enabled):\n\n%1$s</string>
+    <string name="diagnostics_copy_command">Copy Command</string>
+    <string name="diagnostics_command_copied">Command copied</string>
+    <string name="diagnostics_disable_title">Disable Diagnostics?</string>
+    <string name="diagnostics_disable_message">This will hide the diagnostic warning panel. You can re-enable it anytime from advanced settings.</string>
+    <string name="diagnostics_disable_confirm">Disable</string>
     <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Plus features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (af.shizuku.plus.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
 
     <!-- Detailed Help Strings -->
@@ -793,6 +808,8 @@
     <string name="accessibility_button_restart">Restart button</string>
     <string name="accessibility_button_view_command">View command button</string>
     <string name="accessibility_button_view_guide">View guide button</string>
+    <string name="accessibility_state_expanded">Expanded</string>
+    <string name="accessibility_state_collapsed">Collapsed</string>
     <string name="accessibility_button_view_intents">View intents button</string>
     <string name="accessibility_button_pairing">Pairing button</string>
     <string name="accessibility_button_developer_options">Developer options button</string>

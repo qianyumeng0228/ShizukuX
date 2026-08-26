@@ -56,7 +56,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
             activeWarnings.add(
                 WarningItem(
                     id = "dhizuku_not_owner",
-                    message = "Dhizuku Mode is enabled but the Device Owner component is not active. Tap to resolve."
+                    message = context.getString(R.string.diagnostics_warning_dhizuku_not_owner)
                 )
             )
         }
@@ -66,7 +66,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
             activeWarnings.add(
                 WarningItem(
                     id = "shadow_binder_no_apps",
-                    message = "Shadow Binder is enabled but no apps are selected to hide. Tap to select."
+                    message = context.getString(R.string.diagnostics_warning_shadow_binder_no_apps)
                 )
             )
         }
@@ -76,7 +76,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
             activeWarnings.add(
                 WarningItem(
                     id = "battery_optimization",
-                    message = "Battery optimization is active. Shizuku may be killed in the background. Tap to exempt."
+                    message = context.getString(R.string.diagnostics_warning_battery_optimization)
                 )
             )
         }
@@ -112,7 +112,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                                 context.startActivity(intent)
                             } catch (anfe: Exception) {
-                                Toast.makeText(context, "Could not open battery settings", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.diagnostics_battery_settings_open_failed, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
@@ -128,7 +128,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                         if (!opened) {
                             Toast.makeText(
                                 context,
-                                "Go to Feature Hub → Security & Access → Shadow Binder to select apps",
+                                R.string.diagnostics_shadow_binder_navigate_hint,
                                 Toast.LENGTH_LONG
                             ).show()
                         }
@@ -137,18 +137,14 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                         val cmd = "adb shell dpm set-device-owner " +
                             "${context.packageName}/.admin.DhizukuAdminReceiver"
                         MaterialAlertDialogBuilder(context)
-                            .setTitle("Set Up Device Owner")
-                            .setMessage(
-                                "Dhizuku Mode requires this app to be the Device Owner.\n\n" +
-                                "Run this command from your PC (USB debugging must be enabled):\n\n" +
-                                cmd
-                            )
-                            .setPositiveButton("Copy Command") { _, _ ->
+                            .setTitle(R.string.diagnostics_device_owner_setup_title)
+                            .setMessage(context.getString(R.string.diagnostics_device_owner_setup_message, cmd))
+                            .setPositiveButton(R.string.diagnostics_copy_command) { _, _ ->
                                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 cm.setPrimaryClip(ClipData.newPlainText("dpm command", cmd))
-                                Toast.makeText(context, "Command copied", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, R.string.diagnostics_command_copied, Toast.LENGTH_SHORT).show()
                             }
-                            .setNegativeButton("Dismiss", null)
+                            .setNegativeButton(R.string.diagnostics_dismiss, null)
                             .show()
                     }
                 }
@@ -164,13 +160,13 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
 
         btnDisable?.setOnClickListener {
             MaterialAlertDialogBuilder(context)
-                .setTitle("Disable Diagnostics?")
-                .setMessage("This will hide the diagnostic warning panel. You can re-enable it anytime from advanced settings.")
-                .setPositiveButton("Disable") { _, _ ->
+                .setTitle(R.string.diagnostics_disable_title)
+                .setMessage(R.string.diagnostics_disable_message)
+                .setPositiveButton(R.string.diagnostics_disable_confirm) { _, _ ->
                     sp?.edit()?.putBoolean("diagnostics_enabled", false)?.apply()
                     notifyChanged()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
     }
