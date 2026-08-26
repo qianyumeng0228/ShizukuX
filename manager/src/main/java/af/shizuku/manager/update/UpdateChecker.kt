@@ -117,7 +117,18 @@ object UpdateChecker {
             val prerelease = (0 until (arr?.length() ?: 0))
                 .map { arr!!.getJSONObject(it) }
                 .firstOrNull { it.optBoolean("prerelease", false) }
-            prerelease ?: arr?.optJSONObject(0) ?: return CheckResult.UpToDate
+            val newestOverall = arr?.optJSONObject(0)
+            // ...but a stable release is still a valid, newer build for a Dev/Beta user — a
+            // prerelease cut before the latest stable shouldn't keep them stuck on an older
+            // version just because it's tagged "prerelease". Compare actual version codes and
+            // take whichever is newer, so a fresher stable release "wins" over a stale dev build.
+            val prereleaseCode = prerelease?.let { parseVersionCode(it.optString("tag_name", "").removePrefix("v")) } ?: -1
+            val overallCode = newestOverall?.let { parseVersionCode(it.optString("tag_name", "").removePrefix("v")) } ?: -1
+            when {
+                prerelease != null && prereleaseCode >= overallCode -> prerelease
+                newestOverall != null -> newestOverall
+                else -> return CheckResult.UpToDate
+            }
         } else {
             fetchJson(LATEST_URL) as? JSONObject ?: return CheckResult.UpToDate
         }

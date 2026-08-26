@@ -392,51 +392,38 @@ jobs:
           CRITICAL_RELEASE="v13.6.0.r2153"
           CRITICAL_DESC="Releases r2141–r2152 all shipped the Drop-In build under the Plus APK's filename — anyone who installed \"ShizukuX\" in that window actually got moe.shizuku.privileged.api, which fails to install or update alongside stock Shizuku. Fixed by selecting release assets by verified applicationId instead of directory order."
 
+          # Style: Keep a Changelog's category vocabulary (keepachangelog.com), formatted as
+          # GitHub Release notes in the thedjchi-fork sibling-project style (this fork's closest
+          # lineage precedent), with NewPipe's per-bullet attribution discipline. Security is
+          # promoted to a first-class, always-checked category since this is privileged-process
+          # software - see AI_DEVLOG.md 2026-08-26 for the research this is based on. Ordering:
+          # Security, Breaking, Added, Changed, Fixed, Removed/Deprecated, Other - security-
+          # and-integration-relevant categories first, routine ones last. Empty categories are
+          # omitted entirely rather than printed as "None".
           {
             echo "# ${TAG_NAME}"
             echo
-            
+
             if [ -n "$PREV_TAG" ]; then
               RANGE="${PREV_TAG}..HEAD"
-              echo "## Changes since ${PREV_TAG}"
             else
               RANGE="HEAD"
-              echo "## Recent Changes"
             fi
             echo
 
-            # Categorized Commits
-            FEATS=$(git log "$RANGE" --no-merges --grep="^feat" --pretty=format:"- %s (%h)" || true)
-            if [ -n "$FEATS" ]; then
-              echo "### ✨ New Features"
-              echo "$FEATS"
-              echo
-            fi
+            ALL_COMMITS=$(git log "$RANGE" --no-merges --pretty=format:"- %s (%h)" || true)
 
-            # Split "^fix" commits into crash/stability fixes vs general bug fixes so a
-            # release that closed out Sentry crashes reads differently from routine fixes.
-            ALL_FIXES=$(git log "$RANGE" --no-merges --grep="^fix" --pretty=format:"- %s (%h)" || true)
-            CRASHES=$(printf '%s\n' "$ALL_FIXES" | grep -iE "sentry|crash|anr|SHIZUKUPLUS-[0-9]+" || true)
-            FIXES=$(printf '%s\n' "$ALL_FIXES" | grep -ivE "sentry|crash|anr|SHIZUKUPLUS-[0-9]+" || true)
+            SECURITY=$(printf '%s\n' "$ALL_COMMITS" | grep -iE "^- (fix\(security\)|security)" || true)
+            BREAKING=$(printf '%s\n' "$ALL_COMMITS" | grep -iE "BREAKING" || true)
+            ADDED=$(printf '%s\n' "$ALL_COMMITS" | grep -E "^- feat" | grep -vFf <(printf '%s\n%s' "$SECURITY" "$BREAKING") || true)
+            FIXED=$(printf '%s\n' "$ALL_COMMITS" | grep -E "^- fix" | grep -vFf <(printf '%s\n%s' "$SECURITY" "$BREAKING") || true)
+            OTHER=$(printf '%s\n' "$ALL_COMMITS" | grep -vE "^- (feat|fix)" | grep -vFf <(printf '%s\n%s' "$SECURITY" "$BREAKING") || true)
 
-            if [ -n "$CRASHES" ]; then
-              echo "### 💥 Crash & Stability Fixes"
-              echo "$CRASHES"
-              echo
-            fi
-
-            if [ -n "$FIXES" ]; then
-              echo "### 🐛 Bug Fixes"
-              echo "$FIXES"
-              echo
-            fi
-
-            OTHERS=$(git log "$RANGE" --no-merges --grep="^feat" --grep="^fix" --invert-grep --pretty=format:"- %s (%h)" || true)
-            if [ -n "$OTHERS" ]; then
-              echo "### 🔧 Improvements & Refactors"
-              echo "$OTHERS"
-              echo
-            fi
+            if [ -n "$SECURITY" ]; then echo "### Security"; echo "$SECURITY"; echo; fi
+            if [ -n "$BREAKING" ]; then echo "### Breaking"; echo "$BREAKING"; echo; fi
+            if [ -n "$ADDED" ]; then echo "### Added"; echo "$ADDED"; echo; fi
+            if [ -n "$FIXED" ]; then echo "### Fixed"; echo "$FIXED"; echo; fi
+            if [ -n "$OTHER" ]; then echo "### Other"; echo "$OTHER"; echo; fi
 
             # Surface how many distinct GitHub issues this release touches. Promoting a
             # release to MAJOR_RELEASE (see scripts/backfill_majors.py) stays a deliberate,
