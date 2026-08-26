@@ -1,12 +1,10 @@
 <div align="center">
 
-[ DEVELOPMENT PAUSED ]
+I recently moved development over to a new phone (S22U → S26U) — things are back up and running, but if anything feels slower than usual that's why.
 
-I got a new phone (S22U → S26U) recently and am in the process of setting up my development environment on this device! I'll be back soon! 
+Please keep submitting issues you're experiencing, and feel free to open pull requests if you think you can help improve the codebase!
 
-Please keep submitting issues you're experiencing, and feel free to open pull requests if you think you can help improve the codebase as well! 
-
-I'm looking for contributors and collaborators to keep the vision alive and stabilize the project, so feel free to reach out!
+I'm looking for contributors and collaborators to keep the vision alive and stabilize the project, so feel free to reach out.
 
 # ShizukuX
 
@@ -168,3 +166,4 @@ Full license texts and per-library details: [OPEN_SOURCE_LICENSES.md](OPEN_SOURC
 - Thank you to **Kevinco1** for feedback on root compat app detection issues (#243).
 - Thank you to **aragortsantiago6-beep** and **Scoop2389** (Pixel 9a) and **ConversionRituals** (Xiaomi) for on-device Android 16/17 testing, crash reports, and logs that drove the SDK 37 hidden-API and Local Network Protection compatibility fixes (#317, #323).
 - Thank you to **gmm96** for extensive multi-round logcat debugging across several builds that pinned down the Cached Apps Freezer binder-delivery bug (#371).
+- Thank you to **[odorizzioficial](https://github.com/odorizzioficial)** for the complete Brazilian Portuguese translation (#409), and for the detailed report on the Samsung "Sleeping apps" Watchdog freeze (#415).

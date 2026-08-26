@@ -293,7 +293,11 @@ jobs:
           script: |
             yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
             echo 'org.gradle.caching=true' >> gradle.properties
-            ./gradlew :manager:connectedDebugAndroidTest \
+            # connectedDebugAndroidTest is ambiguous since the Dropin/Shizukuplus flavor split
+            # (candidates: connectedDropinDebugAndroidTest, connectedShizukuplusDebugAndroidTest) -
+            # target the Shizukuplus flavor, the standard build this workflow otherwise treats as
+            # primary (see the Plus-vs-Drop-In asset selection in the release job below).
+            ./gradlew :manager:connectedShizukuplusDebugAndroidTest \
               -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest \
               --stacktrace 2>&1 | tee smoke-test.log
             grep -E "PASSED|FAILED|ERROR" smoke-test.log || true
