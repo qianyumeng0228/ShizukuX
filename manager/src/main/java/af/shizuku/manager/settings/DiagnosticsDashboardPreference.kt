@@ -100,9 +100,12 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                 when (warning.id) {
                     "battery_optimization" -> {
                         try {
-                            val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                            context.startActivity(intent)
+                            // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS shows a direct
+                            // system Allow/Deny dialog for THIS app specifically - no
+                            // searching a 300+ app alphabetical list to find it (that's
+                            // what ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS did here
+                            // before, despite the warning saying "Tap to exempt").
+                            af.shizuku.manager.utils.SettingsHelper.requestIgnoreBatteryOptimizations(context)
                         } catch (e: Exception) {
                             try {
                                 val intent = Intent(Settings.ACTION_SETTINGS)
