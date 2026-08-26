@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Security updates are provided **only** for the following versions of Shizuku:
+Security updates are provided **only** for the following versions of ShizukuX:
 
 | Version | Supported |
 | ------- | --------- |
@@ -16,9 +16,9 @@ Reports affecting unsupported versions may be closed without action.
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Shizuku, please report it **privately** and practice responsible disclosure. [See how](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-a-vulnerability/privately-reporting-a-security-vulnerability).
+If you discover a security vulnerability in ShizukuX, please report it **privately** and practice responsible disclosure. [See how](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-a-vulnerability/privately-reporting-a-security-vulnerability).
 
-Shizuku provides access to **ADB-level and/or root-level privileges**, so security issues may have a high impact.
+ShizukuX provides access to **ADB-level and/or root-level privileges**, so security issues may have a high impact.
 
 When reporting a vulnerability, you may include any of the following:
 
@@ -45,7 +45,7 @@ If the issue does **not** reproduce on the prerelease build, it may already be f
 
 ## Responsible Disclosure
 
-Due to the privileged nature of Shizuku, vulnerabilities may be easily exploitable if disclosed prematurely.
+Due to the privileged nature of ShizukuX, vulnerabilities may be easily exploitable if disclosed prematurely.
 
 Please follow these disclosure guidelines:
 
@@ -60,14 +60,14 @@ This delay allows users adequate time to update and helps reduce the risk of act
 ## What Not to Report
 
 - Issues affecting only unsupported versions
-- Vulnerabilities that require modifying Shizuku itself to be exploitable
+- Vulnerabilities that require modifying ShizukuX itself to be exploitable
 - Reports without any reasonable security impact
 
 ---
 
 ## Bug Bounty
 
-Shizuku does **not** offer a bug bounty or monetary rewards.
+ShizukuX does **not** offer a bug bounty or monetary rewards.
 
 However, **responsible security reporters will be credited in release notes** or other public acknowledgements, at the maintainer's discretion.
 
@@ -75,4 +75,4 @@ However, **responsible security reporters will be credited in release notes** or
 
 ## Acknowledgements
 
-We appreciate the efforts of security researchers and community members who help improve Shizuku's security. Responsible disclosure helps keep users safe and the ecosystem healthy.
+We appreciate the efforts of security researchers and community members who help improve ShizukuX's security. Responsible disclosure helps keep users safe and the ecosystem healthy.

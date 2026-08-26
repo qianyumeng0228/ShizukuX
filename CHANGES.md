@@ -15,7 +15,9 @@ which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizu
 ### Package & Identity
 - Package renamed from `moe.shizuku.privileged.api` to `af.shizuku.plus.api`
 - App name changed to "ShizukuX"
-- Custom launcher icons and branding
+- Custom launcher icons and branding, including a Themed Icons (Material You) monochrome
+  layer scoped to just the plus badge (Android's Themed Icons API re-tints the whole
+  monochrome layer as a single color, so the cat/hexagon are deliberately excluded from it)
 - **Coexistence Fix:** Removed conflicting `moe.shizuku.manager.permission.API_V23` declaration and updated `autoResConfig` namespace to ensure zero-overlap with original Shizuku installations.
 
 ### Architecture
@@ -53,6 +55,11 @@ which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizu
 - Background foreground service that monitors Shizuku state and auto-restarts on crash
 - Exponential backoff: 5s → 10s → 20s → … → 5min cap to prevent battery drain
 - Crash notification with channel-disable action
+- Three-layer recovery model: in-process state-flow listener (`WatchdogService`), a 2-hour
+  `WatchdogWorker` (WorkManager) backstop, and `WatchdogAlarmReceiver` — a 15-minute
+  `AlarmManager` re-arm that survives a full process kill (some OEM freezers, e.g. Samsung
+  One UI's "Sleeping apps", kill the whole app process on screen lock, not just a service).
+  Requires the `SCHEDULE_EXACT_ALARM` permission; falls back to an inexact wake if declined.
 
 ### Update System (`UpdateChecker`, `UpdateManager`)
 - GitHub Releases API integration for OTA updates

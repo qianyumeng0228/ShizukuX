@@ -24,75 +24,47 @@ Shizuku lets normal apps use system-level APIs directly via a privileged process
 
 ## ⬇️ Download
 
-Get the latest release from [GitHub Releases](https://github.com/thejaustin/ShizukuPlus/releases).
-
-## 🐛 Recent Fixes
-
-### Critical Stability Fixes (r2287)
-- **Launch crash on some OEM builds** ([#422](https://github.com/thejaustin/ShizukuPlus/issues/422)): a notification icon carrying a theme-attribute tint (`android:tint="?attr/..."`) could fail to resolve in the system's own theme context, crashing the app with `RemoteServiceException: Couldn't create icon StatusBarIcon` (observed on Samsung OneUI 3.1/Android 11). Fixed 4 affected icons and added an automated regression check (`scripts/dev/check-notification-icons.sh` + a JUnit test) so it can't silently reappear.
-- **Dev/Beta update channel silently matched Stable** ([#407](https://github.com/thejaustin/ShizukuPlus/issues/407)): the channel picker fetched the newest release by creation date instead of its `prerelease` flag, and CI never actually marked dev/beta builds as GitHub prereleases in the first place — both are now fixed, so the channel setting has real effect again.
-- **SU Bridge self-test failure messages were generic** ([#402](https://github.com/thejaustin/ShizukuPlus/issues/402)): now shows the actual deploy failure reason (exit code/stderr) instead of a one-size-fits-all message.
-
-### Critical Server Fixes
-- **`attachApplication` binder regression** (commits `8fbe5e47`, `c702a5c`): Fixed a dead-code bug in `Service.onTransact()` where `attachApplication` (binder code 17) was in an unreachable `else` block. This caused ALL API v13+ clients (Morphe, InstallerX, Droid-ify, ObtainX, Obtainium, Termux rish, MT Manager) to fail with `PackageInstaller.asBinder() NullPointerException` or `Not an attached client`.
-- **Shell consent persistence** (commit `9f2c01e8`): Shell clients (rish) were always re-prompted even after `Allow always`. Fixed by propagating `callingUid` through the consent intent chain via `Os.getuid()` in `ShizukuShellLoader`.
-- **SU bridge dex redeploy** (commit `252d6315`): SU bridge self-test was writing to an already-open file descriptor; fixed by clearing the file before rewriting.
-- **Live activity notification respecting toggle** (commit `252d6315`): `ActivityLogSettingsImpl.showNotification()` didn't check the live-activity setting before posting, so disabling the toggle didn't prevent re-notification on the next logged action.
-
-### Manager App / UI Fixes
-- **Redesigned App Icon**: Added a "Plus" badge in the upper right of the app icon across the board, natively integrating with the original hexagon geometry.
-- **Themed Icon Support**: Implemented a fully vector Material You monochrome icon, enabling the app icon (including the new Plus badge) to respond flawlessly to expressive theme color changes.
-- **Theme change black screen eliminated** (commit `14c529a9`): All appearance settings (accent, icon style, blur, OneUI theme, etc.) now update the UI via Compose recomposition instead of `Activity.recreate()`, eliminating 1-2 second black screens.
-- **Authentic Samsung OneUI one-handed mode**: One-handed mode now scales content to 75% with bottom-center pivot (matching Samsung's actual behavior) instead of the broken top-padding approach. A follow-up fix corrected an initial corner-anchored pivot that squeezed all content into the bottom-right corner.
-- **OneUI Settings header typography** (commit `1c17f3e9`): Settings LargeTopAppBar uses ExtraBold (W800) title at 28sp matching Samsung OneUI 6/7.
-- **Bottom navigation bar overlap** (commits `b5ea9e35`, `ff7bb7d6`, `a49baf00`): Fixed Feature Hub, Settings preferences, Activity Log list, and App search bar all being obscured by the floating bottom nav bar.
-- **Dhizuku Mode setting persistence** (commit `a8251831`): Toggle state now persists immediately.
-- **Update channel respects Dev/Beta** (commit `bbe3ab76`): UpdateChecker now fetches pre-releases when Dev/Beta channel is selected and matches the correct APK asset (Plus vs Drop-In).
-- **"Shizuku is running" status icon**: reverted a garbled server-rack/checkmark redesign back to a clean circle-checkmark glyph.
-- **Update download hang**: silent auto-install via root/Shizuku had no timeout and could wedge forever on a stuck root prompt, leaving the download stuck with no install prompt. Now times out after 5s and falls back to the system installer.
-- **Update progress notification vibration**: progress notification now only alerts once instead of re-buzzing on every progress tick.
-- **Empty logs in manual crash reports** ([#405](https://github.com/thejaustin/ShizukuPlus/issues/405), [#397](https://github.com/thejaustin/ShizukuPlus/issues/397), [#317](https://github.com/thejaustin/ShizukuPlus/issues/317)): the logcat tail filter silenced almost everything; now captures the last 300 unfiltered lines.
+Get the latest release from [GitHub Releases](https://github.com/thejaustin/ShizukuPlus/releases) — see the release notes there for what's changed recently.
 
 ## ✨ ShizukuX Core Features
 
-*   **Universal Privilege Provider**: Combines **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** into a single unified interface.
-*   **OneUI 8+ Theming Fix**: Provides the necessary **Overlay Manager Plus** bridge (using stable **OverlayManagerTransaction** on Android 14+) to allow engines like Hex Installer or Substratum to function on Android 16/17 and OneUI 8+.
-*   **Dhizuku Mode (Integrated Device Owner)**: Share the system `DevicePolicyManager` binder with any app that has Shizuku permissions. ShizukuX can now be set as a **Device Owner** via ADB, providing a unified rootless management platform.
-*   **Customizable Gestures**: Configure swipe left, swipe right, and long-press actions for any app in the management list.
-*   **In-App Changelogs**: Instantly view what's new after an update without leaving the app.
+*   **Universal Privilege Provider**: One interface for **Root**, **ADB Shell**, and **Dhizuku (Device Owner)**.
+*   **OneUI 8+ Theming Fix**: Lets theming engines like Hex Installer or Substratum keep working on Android 16/17 and OneUI 8+.
+*   **Dhizuku Mode**: Share the system Device Owner binder with any app that has Shizuku permissions — set up via ADB, no root needed.
+*   **Customizable Gestures**: Swipe left, swipe right, and long-press actions, configurable per app.
+*   **In-App Changelogs**: See what's new after an update without leaving the app.
 *   **Bulk Management**: Multi-select apps to grant/revoke permissions or hide them in one tap.
-*   **Activity Log**: Audit trail of API calls and `su` bridge commands, complete with app icons and real-time dispatch.
-*   **Root Compatibility Hub**: Dedicated dashboard to configure and manage legacy root apps with **Granular Module Control** (Magisk Mocking, Auto-Grant, File Interceptor, etc.).
-*   **Universal SU Automation**: One-tap 'Magic Setup' to configure all installed root apps to use the ShizukuX SU Bridge.
-*   **Service Doctor**: In-app diagnostic tool to troubleshoot and fix service startup issues (now optimized for Samsung Auto Blocker on S22 Ultra).
-*   **Integrated Feature Guides**: Every "Plus" feature now includes a dedicated **Information Icon** and detailed technical "About" guide to help users master advanced integrations.
-*   **Quick Settings Tile**: Conveniently view and toggle the service status from your notification panel.
+*   **Activity Log**: Audit trail of API calls and `su` bridge commands, with app icons and real-time updates.
+*   **Root Compatibility Hub**: Dashboard for legacy root apps, with granular module control (Magisk mocking, auto-grant, file interceptor, and more).
+*   **Universal SU Automation**: One-tap 'Magic Setup' to point all installed root apps at the ShizukuX SU Bridge.
+*   **Service Doctor**: Diagnoses and fixes service startup issues (Samsung Auto Blocker included).
+*   **Integrated Feature Guides**: Every Plus feature has an info icon with a plain-language explanation of what it does.
+*   **Quick Settings Tile**: Check and toggle the service status from your notification panel.
 
 ## 🚀 Plus API Features
 
-ShizukuX provides exclusive system interfaces for advanced automation and tools:
+ShizukuX provides exclusive system interfaces for advanced automation and tools — none of these exist in stock Shizuku:
 
-*   **AICore+ Automation Bridge**: A privileged `AccessibilityService` proxy for AI-driven automation. Supports XML UI hierarchy dumping and physical input simulation (tap/swipe) without requiring root.
-*   **AVF (Virtual Machine) Manager**: Manage isolated Linux/Microdroid VMs with VirtIO-GPU acceleration.
-*   **Privileged Storage Proxy**: Authenticated access to restricted paths like `/data/data/` or `/data/app/` for backups and file management.
-*   **Device Spoofing (Identity Bridge)**: Project hardware identities of modern flagships (Pixel 9 Pro XL, S24 Ultra, etc.) to bypass device-specific restrictions.
-*   **Intelligence Bridge (AI Core Plus)**: Privileged NPU scheduling and screen context intelligence.
-*   **Window Manager Plus**: Force free-form resizing, manage the system "Bubble Bar," and resilient overlays.
-*   **System Theming Bridge (Overlay Manager Plus)**: Expose privileged overlay management for rootless theming (like Hex Installer).
-*   **Network & DNS Governor**: Manage Private DNS and iptables routing for rootless ad-blockers and firewalls.
-*   **Deep Process Control (Activity Manager Plus)**: Allow advanced process managers to deeply kill apps and set standby buckets.
-*   **Continuity Bridge**: Secure state and task handoff between ShizukuX-enabled devices.
+*   **AICore+ Automation Bridge**: Privileged UI automation (hierarchy dumps, tap/swipe) for AI-driven tools — no root needed. ([added](https://github.com/thejaustin/ShizukuPlus/commit/e9bd1187))
+*   **AVF (Virtual Machine) Manager**: Run isolated Linux/Microdroid VMs with GPU acceleration. ([added](https://github.com/thejaustin/ShizukuPlus/commit/c8e962f6))
+*   **Privileged Storage Proxy**: Authenticated access to restricted paths (`/data/data/`, `/data/app/`) for backups and file management. ([added](https://github.com/thejaustin/ShizukuPlus/commit/c8e962f6))
+*   **Device Spoofing** (*Spoof Device Identity* in Settings): Present a different device identity to bypass device-specific restrictions. ([added](https://github.com/thejaustin/ShizukuPlus/commit/11867f44))
+*   **Intelligence Bridge** (*AI Core Plus*): Privileged NPU scheduling and screen context intelligence. ([added](https://github.com/thejaustin/ShizukuPlus/commit/e9bd1187))
+*   **Window Manager Plus**: Force free-form resizing, manage the Bubble Bar, and resilient overlays. ([added](https://github.com/thejaustin/ShizukuPlus/commit/e9bd1187))
+*   **System Theming Bridge** (*Overlay Manager Plus*): Privileged overlay management for rootless theming (e.g. Hex Installer). ([added](https://github.com/thejaustin/ShizukuPlus/commit/55f6b7c7))
+*   **Network & DNS Governor**: Manage Private DNS and firewall routing for rootless ad-blockers. ([added](https://github.com/thejaustin/ShizukuPlus/commit/55f6b7c7))
+*   **Deep Process Control** (*Activity Manager Plus*): Lets process managers kill apps and set standby buckets more aggressively. ([added](https://github.com/thejaustin/ShizukuPlus/commit/55f6b7c7))
+*   **Continuity Bridge**: Secure state and task handoff between ShizukuX devices. ([added](https://github.com/thejaustin/ShizukuPlus/commit/20cf14f7))
 
 ## 🛠️ Backporting & Optimizations
 
 ShizukuX makes regular Shizuku apps faster and more compatible without any code changes:
 
-*   **Transparent Shell Interceptor**: Intercepts common `pm`, `am`, and `settings` commands and routes them through high-performance native APIs.
-*   **Legacy Compatibility Bridges**:
-    *   **Local ADB Proxy**: Emulates an ADB server on port 15555, allowing legacy apps to use Shizuku privileges without keeping the system Wireless ADB enabled.
-    *   **SU Bridge (su wrapper)**: A Shizuku-backed `su` binary drop-in replacement for non-rooted apps that support custom root paths.
-*   **`plus` CLI Helper**: Adds a privileged command-line utility to the `rish` environment for advanced terminal use.
-*   **Dynamic App Database**: Fetches the latest app descriptions and enhancement suggestions from GitHub to keep the UI up-to-date.
+*   **Transparent Shell Interceptor**: Routes common `pm`, `am`, and `settings` commands through faster native APIs.
+*   **Local ADB Proxy**: Emulates an ADB server on port 15555, so legacy apps can use Shizuku without Wireless ADB staying on.
+*   **SU Bridge**: A Shizuku-backed `su` drop-in for non-rooted apps that support a custom root path.
+*   **`plus` CLI Helper**: A privileged command-line utility, available inside `rish`.
+*   **Dynamic App Database**: Keeps app descriptions and suggestions in the UI up-to-date from GitHub.
 
 ## ⚙️ Modular Control
 

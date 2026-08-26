@@ -2,6 +2,30 @@
 
 All notable changes to ShizukuPlus are documented here.
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+#### Server / Service
+- **Re-verified the shell/rish consent re-implementation (`32382e89`) across every client type** — rish/shell, root/su, normal app clients, and Dhizuku clients each go through their own already-uid-verified path; no remaining spoofing or persistence gap found. Fixes "Allow always" not persisting ([#420](https://github.com/thejaustin/ShizukuPlus/issues/420)) and the underlying re-implementation request ([#416](https://github.com/thejaustin/ShizukuPlus/issues/416)).
+- Fixed a stale code comment in `ShizukuService.checkCallerPermission()` still describing the deleted notification-based shell-consent flow.
+
+#### Manager App (UI)
+- **Fixed authorized-apps count briefly showing "0" on cold start** — `HomeState.grantedAppCount` now starts as `null` (not loaded) instead of `0`, so the home screen shows a loading state instead of a wrong count before the real value arrives. ([#424](https://github.com/thejaustin/ShizukuPlus/issues/424))
+- **Fixed Watchdog unable to recover from a full process freeze** (Samsung One UI "Sleeping apps" and similar OEM freezers kill the entire manager process on screen lock, taking Watchdog down with it) — added an external `AlarmManager`-based re-arm (`WatchdogAlarmReceiver`, every 15 min) that's dispatched by the system rather than anything inside the frozen process, so it can restart the service even after a full process kill. Mitigation, not a complete fix — see the [Watchdog wiki section](https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection#watchdog). ([#415](https://github.com/thejaustin/ShizukuPlus/issues/415), [#417](https://github.com/thejaustin/ShizukuPlus/issues/417))
+- **SU bridge redeploy now also triggers whenever the privileged service starts**, not only on app self-update — covers devices where the service wasn't running yet at update time (Xiaomi/HyperOS, Samsung One UI). Follow-up to [#423](https://github.com/thejaustin/ShizukuPlus/issues/423) (`9dba4bd3`).
+- **Compat Hub install failures now show a specific reason** for insufficient storage and unsupported CPU architecture, on top of the existing signing-conflict detection. Follow-up to [#412](https://github.com/thejaustin/ShizukuPlus/issues/412).
+- **Update download failure notifications now distinguish cause** (insufficient storage, interrupted/unresumable transfer, network/HTTP error) instead of one generic "download failed" message. Follow-up to [#414](https://github.com/thejaustin/ShizukuPlus/issues/414).
+- Fixed two dead in-app help links pointing at wiki pages that no longer exist (`wiki/Setup`, `wiki/Supported-apps`) — now point at real pages/sections.
+
+### ✨ Enhancements
+
+#### UI / UX
+- **App icon plus badge repositioned** to match the intended design and separated back out into its own semi-transparent overlay layer (was previously baked into the flattened artwork at the wrong position).
+- **Themed Icons (Material You) now scoped to just the plus badge** rather than the whole icon — the monochrome layer Android re-tints for Themed Icons no longer includes the cat/hexagon, since the platform re-tints the entire monochrome layer as one flat color and there's no way to theme only part of it.
+- **New onboarding step**: "Themed app icon" toggle (defaults on) with a direct link to your launcher's icon-theming settings.
+- **New wiki page: [Permissions](https://github.com/thejaustin/ShizukuPlus/wiki/Permissions)** — every permission ShizukuX requests, mapped to the feature it powers and why.
+
 ## [v13.6.0.r2287]
 
 ### 🐛 Bug Fixes
