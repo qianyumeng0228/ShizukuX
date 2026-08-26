@@ -1,17 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@mipmap/ic_launcher_foreground_base" />
-    <!-- Plus badge position matches shizukuplus.png, the original approved upload (top-right,
-         near the hexagon's upper point) - measured from that flat 512x512 reference (center at
-         63.9%/26.0% of canvas) and mapped onto this 108dp adaptive canvas via the standard
-         72dp-visible-area-centered-in-108dp scaling (canvas = 18 + pct*72 on each axis, since a
-         flat non-adaptive icon's full canvas corresponds to the adaptive icon's visible mask
-         region, not the full bleed canvas) - center (63.99, 36.71). This mapping is what keeps
-         it inside the 66dp/33dp-radius safe zone that OEM launcher/notification-icon
-         compositors crop to; copying the reference's pixel coordinates directly (as an earlier
-         version of this file did) placed it almost entirely outside that circle instead. Size
-         (14.25dp bounding box) matches shizuku_plus_final_icon.png, which used the same
-         proportions. -->
+    <!-- The cat+hexagon art below (ic_launcher_foreground_base / ic_launcher_background) is
+         upstream RikkaApps/Shizuku's original artwork, unmodified - the only intentional
+         difference from upstream's icon is this plus badge. Position was measured directly from
+         upstream's ic_launcher_background.png (hexagon bounding box x:134-311, y:145-303 in its
+         native 432-unit/4x scale, i.e. 33.5-77.75, 36.25-75.75 at this file's 108-unit scale):
+         placed over the hexagon's upper-right shoulder, center (71.25, 42.5), radius ~21dp from
+         canvas center (54,54) - inside the 66dp/33dp-radius adaptive-icon safe zone that OEM
+         launcher/notification-icon compositors crop to. -->
     <item>
         <vector
             android:width="108dp"
@@ -20,7 +17,7 @@
             android:viewportHeight="108">
             <path
                 android:fillColor="#B3FFFFFF"
-                android:pathData="M 62.21,29.59 h 3.56 v 5.34 h 5.34 v 3.56 h -5.34 v 5.34 h -3.56 v -5.34 h -5.34 v -3.56 h 5.34 z" />
+                android:pathData="M 69.47,35.38 h 3.56 v 5.34 h 5.34 v 3.56 h -5.34 v 5.34 h -3.56 v -5.34 h -5.34 v -3.56 h 5.34 z" />
         </vector>
     </item>
 </layer-list>
