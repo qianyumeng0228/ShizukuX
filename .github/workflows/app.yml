@@ -337,16 +337,24 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create Release Tag
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
         run: |
           TAG_NAME="${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # The default GITHUB_TOKEN can't push ANY ref (including a plain tag) once the
+          # commit history it's reachable from touches .github/workflows/ - there is no
+          # "workflows" permission key that can be granted to it, only a PAT with the
+          # `workflow` scope can push past that restriction. Use RELEASE_PAT (repo + workflow
+          # scope) for this push specifically instead of relying on origin's checkout auth.
+          PUSH_URL="https://x-access-token:${RELEASE_PAT}@github.com/${{ github.repository }}.git"
           if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
             git tag -d "$TAG_NAME"
-            git push origin ":refs/tags/$TAG_NAME" || true
+            git push "$PUSH_URL" ":refs/tags/$TAG_NAME" || true
           fi
           git tag "$TAG_NAME" -m "Release version $VERSION"
-          git push origin "$TAG_NAME"
+          git push "$PUSH_URL" "$TAG_NAME"
 
       - name: Download ShizukuPlus Artifact
         uses: actions/download-artifact@v4
