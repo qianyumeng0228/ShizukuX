@@ -413,8 +413,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
         // Already-attached clients (e.g. rish, after a successful attachApplication()) have a
         // non-null ClientRecord whose `allowed` flag is the authoritative "user granted access"
-        // signal - set during attachApplication from the config entry, or later via the shell
-        // consent flow's AuthorizationManager.grant(). This must be checked independently of the
+        // signal - set during attachApplication from the config entry, or later via
+        // RequestPermissionActivity's result being dispatched back through
+        // dispatchPermissionConfirmationResult() (record.allowed = allowed). This must be
+        // checked independently of the
         // clientRecord == null branch below: that branch's fallbacks (OS permission check,
         // config-flag bridge) exist for callers enforceCallingPermission() is invoked on BEFORE
         // they've attached, and skip entirely once clientRecord is non-null - which left every
@@ -426,8 +428,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         if (checkCallingPermission() == PackageManager.PERMISSION_GRANTED) {
             return true;
         }
-        // Also allow if the UID was explicitly authorized via the shell consent flow.
-        // Apps that don't declare a Shizuku permission in their manifest (e.g. Termux)
+        // Also allow if the UID was explicitly authorized (persisted grant, checked directly
+        // against config rather than OS permission state). Apps that don't declare a Shizuku
+        // permission in their manifest (e.g. Termux)
         // never receive grantRuntimePermission(), so checkCallingPermission() always returns
         // DENIED for them even after the user tapped "Allow". Checking configManager flags
         // directly bridges this gap without touching OS permission state.
@@ -860,6 +863,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         int callingPid = Binder.getCallingPid();
         ClientRecord caller = clientManager.findClient(callingUid, callingPid);
         String callingPkg = (caller != null) ? caller.packageName : "unknown";
+
+        // Most SU-bridge interceptor branches below already log what they matched/rewrote, but
+        // there was no entry-level log covering every call — so a command that matched NO
+        // interceptor (and just executed as-is) left no trace, making "authorized but appears to
+        // do nothing" reports (#411, #421, #426) undiagnosable from logcat alone. This makes every
+        // call visible regardless of which branch (if any) it hits.
+        LOGGER.d("newProcess: %s -> %s", callingPkg, String.join(" ", cmd));
 
         // Catastrophic Command Interceptor (Storage Safety)
         if (isCatastrophicCommand(cmd)) {

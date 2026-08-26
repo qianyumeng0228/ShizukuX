@@ -184,11 +184,15 @@ class ShizukuCompanionViewHolder(
                         // ignore
                     }
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            v.context,
-                            if (success) R.string.compat_hub_install_success else R.string.compat_hub_install_fail,
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        val messageRes = when {
+                            success -> R.string.compat_hub_install_success
+                            installOutput.contains("INSTALL_FAILED_INSUFFICIENT_STORAGE") ->
+                                R.string.compat_hub_install_fail_storage
+                            installOutput.contains("INSTALL_FAILED_NO_MATCHING_ABIS") ->
+                                R.string.compat_hub_install_fail_abi
+                            else -> R.string.compat_hub_install_fail
+                        }
+                        Toast.makeText(v.context, messageRes, Toast.LENGTH_SHORT).show()
                         homeModel.reload()
                     }
                 }

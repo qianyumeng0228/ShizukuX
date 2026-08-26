@@ -160,7 +160,7 @@ class UpdateManager(private val context: Context) {
                                 val reason = if (reasonIdx >= 0) cursor.getInt(reasonIdx) else -1
                                 cursor.close()
                                 Timber.tag(TAG).e("Download failed (reason=$reason)")
-                                showDownloadErrorNotification()
+                                showDownloadErrorNotification(reason)
                                 break
                             }
                             DownloadManager.STATUS_PAUSED -> {
@@ -292,13 +292,22 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Show error notification
+     * Show error notification. [reason] is a DownloadManager.ERROR_* code (from COLUMN_REASON)
+     * when known — a few documented, OEM-independent codes get distinct, self-diagnosing text
+     * (#414) instead of the generic message.
      */
-    private fun showDownloadErrorNotification() {
+    private fun showDownloadErrorNotification(reason: Int? = null) {
+        val messageRes = when (reason) {
+            DownloadManager.ERROR_INSUFFICIENT_SPACE -> R.string.update_download_failed_storage
+            DownloadManager.ERROR_CANNOT_RESUME -> R.string.update_download_failed_cannot_resume
+            DownloadManager.ERROR_HTTP_DATA_ERROR,
+            DownloadManager.ERROR_UNHANDLED_HTTP_CODE -> R.string.update_download_failed_http
+            else -> R.string.update_download_failed_message
+        }
         val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_icon)
             .setContentTitle(context.getString(R.string.update_download_failed_title))
-            .setContentText(context.getString(R.string.update_download_failed_message))
+            .setContentText(context.getString(messageRes))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .build()
