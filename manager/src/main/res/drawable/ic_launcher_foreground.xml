@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@mipmap/ic_launcher_foreground_base" />
+    <!-- Plus badge center/bounds must stay inside the adaptive-icon safe zone (a 66dp circle
+         centered in this 108dp canvas, i.e. roughly 21-87 on both axes) - some OEM launchers'
+         mask/notification-icon compositors crop hard outside it. An earlier position matching
+         the original flat (non-adaptive) upload pixel-for-pixel put the plus almost entirely
+         outside that circle, so it rendered as a barely-visible sliver on real devices (Samsung
+         One UI notification icon) despite looking correct in an unmasked composite preview.
+         Re-verify any reposition against an actual circular-mask render, not just a flat
+         composite. -->
     <item>
         <vector
             android:width="108dp"
@@ -9,7 +17,7 @@
             android:viewportHeight="108">
             <path
                 android:fillColor="#B3FFFFFF"
-                android:pathData="M 70.45,11.81 h 4.22 v 6.33 h 6.33 v 4.22 h -6.33 v 6.33 h -4.22 v -6.33 h -6.33 v -4.22 h 6.33 z" />
+                android:pathData="M 59.90,27.64 h 2.53 v 3.80 h 3.80 v 2.53 h -3.80 v 3.80 h -2.53 v -3.80 h -3.80 v -2.53 h 3.80 z" />
         </vector>
     </item>
 </layer-list>
