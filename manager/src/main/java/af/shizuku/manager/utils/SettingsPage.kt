@@ -112,6 +112,18 @@ sealed class SettingsPage(
         object AutoBlocker : SettingsPage("android.settings.SECURITY_ADVANCED_SETTINGS") {
             override fun launch(context: Context) {
                 runCatching {
+                    // Auto Blocker moved out of com.android.settings entirely at some point
+                    // after One UI 6, into its own dedicated package - confirmed live on a
+                    // One UI 8/Android 16 S26 Ultra: this lands directly on the exact Auto
+                    // Blocker toggle screen, no permission issues, no fallback needed. The two
+                    // attempts below it (old in-settings action/component) are dead on current
+                    // software but kept for older devices that might still route through them.
+                    val intent = Intent().apply {
+                        setComponent(ComponentName("com.samsung.android.rampart", "com.samsung.android.rampart.ui.MainSettingActivity"))
+                        flags = defaultFlags
+                    }
+                    context.startActivity(intent)
+                }.recoverCatching {
                     val intent = Intent("com.samsung.android.settings.AUTO_BLOCKER").apply {
                         flags = defaultFlags
                     }
@@ -161,22 +173,25 @@ sealed class SettingsPage(
                 }
             }
         }
-        object BackgroundUsageLimits : SettingsPage("com.samsung.android.sm.ACTION_START_APP_POWER_MANAGEMENT_SETTING") {
+        object BackgroundUsageLimits : SettingsPage("com.samsung.android.sm.ACTION_OPEN_CHECKABLE_LISTACTIVITY") {
             override fun launch(context: Context) {
                 runCatching {
-                    // "Sleeping apps" / "Background usage limits" was renamed "App Power
-                    // Management" at some point after One UI 6 and its screen
+                    // The categorized "App Power Management" hub
                     // (.sm.battery.ui.setting.AppPowerManagementActivity) requires
                     // android.permission.READ_SEARCH_INDEXABLES - a protected system
-                    // permission no third-party app (including this one) can hold. Confirmed
-                    // on a real One UI 8/Android 16 S26 Ultra: SecurityException every time,
-                    // not an OEM/OS-version compatibility gap that changes with a different
-                    // component path. Do not "fix" this by trying to deep-link there again -
-                    // it cannot work from an app context. Old ACTION_BACKGROUND_USAGE_LIMITS
-                    // + BackgroundUsageLimitsActivity is ALSO gone (ActivityNotFoundException)
-                    // on this OS version, so there is no working direct deep link left for
-                    // this exact screen; land on the general Battery page instead, where
-                    // "Background usage limits" is one visible tap away.
+                    // permission no third-party app can hold (confirmed via SecurityException
+                    // on a real One UI 8/Android 16 S26 Ultra - don't route through it again).
+                    // But the actual "Sleeping apps" LIST screen underneath it
+                    // (CheckableAppListActivity) has no such guard and opens directly -
+                    // confirmed live on the same device: lands exactly on the Sleeping apps
+                    // list with its "+" add button, no permission error.
+                    val intent = Intent("com.samsung.android.sm.ACTION_OPEN_CHECKABLE_LISTACTIVITY").apply {
+                        setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.usage.CheckableAppListActivity"))
+                        flags = defaultFlags
+                    }
+                    context.startActivity(intent)
+                }.recoverCatching {
+                    // Old One UI action + component, in case an older device still uses it.
                     val intent = Intent("com.samsung.android.sm.ACTION_BACKGROUND_USAGE_LIMITS").apply {
                         setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BackgroundUsageLimitsActivity"))
                         flags = defaultFlags
