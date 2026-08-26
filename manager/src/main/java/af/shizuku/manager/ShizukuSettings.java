@@ -113,6 +113,7 @@ public class ShizukuSettings {
         public static final String KEY_LP_APP_INFO = "lp_app_info";
         public static final String KEY_LP_TOGGLE_PERMISSION = "lp_toggle_permission";
         public static final String KEY_LP_HIDE_FROM_LIST = "lp_hide_from_list";
+        public static final String KEY_THEMED_ICON_WANTED = "themed_icon_wanted";
 
         // Swipe action preferences (ShizukuX additions)
         public static final String KEY_SWIPE_RIGHT_ACTION = "swipe_right_action";
@@ -410,8 +411,10 @@ public class ShizukuSettings {
     public static void setWatchdog(Context context, boolean enable) {
         if (enable) {
             WatchdogService.start(context);
+            af.shizuku.manager.receiver.WatchdogAlarmReceiver.schedule(context);
         } else {
             WatchdogService.stop(context);
+            af.shizuku.manager.receiver.WatchdogAlarmReceiver.cancel(context);
         }
         getPreferences().edit().putBoolean(Keys.KEY_WATCHDOG, enable).apply();
         return;
@@ -626,6 +629,18 @@ public class ShizukuSettings {
     public static void setDhizukuModeEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_DHIZUKU_MODE, enable).apply();
+    }
+
+    /** User's stated preference for themed (Material You) icons — we can't read or set the
+     *  actual per-launcher setting, so this only records intent (defaults to wanted). */
+    public static boolean isThemedIconWanted() {
+        SharedPreferences p = getPreferences();
+        return p == null || p.getBoolean(Keys.KEY_THEMED_ICON_WANTED, true);
+    }
+
+    public static void setThemedIconWanted(boolean wanted) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_THEMED_ICON_WANTED, wanted).apply();
     }
 
     public static boolean isCustomApiEnabled() {

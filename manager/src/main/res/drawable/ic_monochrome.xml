@@ -4,24 +4,15 @@
     android:viewportWidth="432"
     android:viewportHeight="432"
     android:tint="?attr/colorControlNormal">
-    <!-- Hexagon ring, cat silhouette, and Plus badge are kept as distinct
-         non-overlapping shapes here (unlike the old single evenOdd path)
-         because merging them produced an illegible blob once the OS
-         re-tints this layer to a single flat color for Themed Icons. -->
+    <!-- Only the plus badge is exposed to Themed Icons (Android 13+ Material You
+         single-color re-tint). The cat and hexagon are intentionally omitted here:
+         the OS renders this monochrome layer as the *entire* icon when Themed
+         Icons is on, so this is as close as the platform allows to "just the
+         plus is themed" — a full-color cat+hexagon can't coexist with a
+         re-tinted glyph in the same themed-icon render. Position must stay in
+         sync with the plus in drawable/ic_launcher_foreground.xml (scaled 4x:
+         this viewport is 432 units for the same 108dp canvas). -->
     <path
         android:fillColor="@android:color/white"
-        android:fillType="evenOdd"
-        android:pathData="M 216.0,117.0 L 292.2,161.0 L 292.2,249.0 L 216.0,293.0 L 139.8,249.0 L 139.8,161.0 Z M 150.2,167.0 L 150.2,243.0 L 216.0,281.0 L 281.8,243.0 L 281.8,167.0 L 216.0,129.0 Z" />
-    <group
-        android:translateX="0"
-        android:translateY="432"
-        android:scaleX="0.1"
-        android:scaleY="-0.1">
-        <path
-            android:fillColor="@android:color/white"
-            android:pathData="M1023 2626 c-97 -105 -182 -257 -183 -327 0 -23 -8 -29 -60 -48 -217 -79 -484 -367 -557 -599 -49 -157 -19 -288 104 -461 145 -202 475 -456 726 -556 206 -82 493 -138 722 -139 l141 -1 76 38 c156 77 292 273 354 512 31 117 43 332 25 428 -10 57 -10 60 20 104 76 110 154 307 161 407 3 39 2 40 -43 57 -100 38 -261 48 -393 24 l-79 -14 -61 43 c-127 91 -352 184 -452 187 -49 2 -50 3 -68 45 -29 70 -90 158 -155 223 -68 68 -176 151 -196 151 -7 0 -44 -33 -82 -74z" />
-    </group>
-    <path
-        android:fillColor="@android:color/white"
-        android:pathData="M 334,56 h 20 v 30 h 30 v 20 h -30 v 30 h -20 v -30 h -30 v -20 h 30 z" />
+        android:pathData="M 281.81,47.25 h 16.88 v 25.31 h 25.31 v 16.88 h -25.31 v 25.31 h -16.88 v -25.31 h -25.31 v -16.88 h 25.31 z" />
 </vector>

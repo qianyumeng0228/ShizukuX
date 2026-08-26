@@ -317,6 +317,15 @@ class OnboardingActivity : AppActivity() {
                     ShizukuSettings.setCustomApiEnabled(checked)
                 }
             }
+            binding.switchThemedIcon.apply {
+                isChecked = ShizukuSettings.isThemedIconWanted()
+                setOnCheckedChangeListener { _, checked ->
+                    ShizukuSettings.setThemedIconWanted(checked)
+                }
+            }
+            binding.btnThemedIconSettings.setOnClickListener {
+                af.shizuku.manager.utils.SettingsPage.ThemedIcons.launch(this@OnboardingActivity)
+            }
         }
     }
 

@@ -93,6 +93,21 @@ sealed class SettingsPage(
     object InternetPanel : SettingsPage(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
     object Accessibility : SettingsPage(Settings.ACTION_ACCESSIBILITY_SETTINGS)
 
+    // Themed (Material You) icons has no dedicated Settings.ACTION_* — it's a per-launcher
+    // toggle (Pixel Launcher's "Wallpaper & style", One UI Home, Nova, etc. each store and
+    // surface it differently), so there's no page we can reliably deep-link into. This just
+    // gets the user as close as AOSP guarantees: the Home app picker/settings entry point.
+    object ThemedIcons : SettingsPage(Settings.ACTION_HOME_SETTINGS) {
+        override fun launch(context: Context) {
+            runCatching {
+                super.launch(context)
+            }.recoverCatching {
+                val intent = Intent(Settings.ACTION_SETTINGS).apply { flags = defaultFlags }
+                context.startActivity(intent)
+            }.onFailure { Timber.w(it, "Unable to open any Settings page for themed icons") }
+        }
+    }
+
     object Samsung {
         object AutoBlocker : SettingsPage("android.settings.SECURITY_ADVANCED_SETTINGS") {
             override fun launch(context: Context) {

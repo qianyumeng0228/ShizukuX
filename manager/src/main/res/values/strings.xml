@@ -398,6 +398,9 @@
     <string name="dhizuku_device_owner_disabled">Dhizuku Device Owner Disabled</string>
     <string name="settings_enhanced_api">ShizukuX Enhanced API</string>
     <string name="settings_enhanced_api_summary">Enable advanced system interfaces for power users. Required for all exclusive ShizukuX features.</string>
+    <string name="settings_themed_icon">Themed app icon</string>
+    <string name="settings_themed_icon_summary">Use a Material You tinted version of the ShizukuX icon when your launcher supports themed icons.</string>
+    <string name="settings_themed_icon_open_settings">Open icon settings</string>
     <string name="settings_shell_interceptor">Shell Accelerator</string>
     <string name="settings_shell_interceptor_summary">Accelerate shell commands via native APIs. Improves performance for MacroDroid and Tasker tasks.</string>
     <string name="settings_avf_manager">Virtual Machine Manager (AVF)</string>
@@ -863,6 +866,9 @@
     <string name="update_install_now">Install now</string>
     <string name="update_download_failed_title">Download failed</string>
     <string name="update_download_failed_message">Failed to download the update. Please try again.</string>
+    <string name="update_download_failed_storage">Not enough free storage to download the update.</string>
+    <string name="update_download_failed_cannot_resume">The download couldn\'t resume after being interrupted. Please try again.</string>
+    <string name="update_download_failed_http">A network error interrupted the download. Please check your connection and try again.</string>
 
     <!-- Migration Dialog -->
 <string name="migration_dialog_title">Important: Reinstall Required</string>
