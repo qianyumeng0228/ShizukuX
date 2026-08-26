@@ -4,26 +4,16 @@
     android:viewportWidth="432"
     android:viewportHeight="432"
     android:tint="?attr/colorControlNormal">
-    <!-- Hexagon ring, cat silhouette, and Plus badge are kept as distinct non-overlapping
-         shapes (not merged into one path) because merging them produced an illegible blob once
-         the OS re-tints this layer to a single flat color for Themed Icons / notification
-         badges. Full silhouette restored here (not just the plus) so notification-shade icons
-         and the Themed Icons badge still read as the app icon, not a lone glyph. Plus position
-         must stay in sync with drawable/ic_launcher_foreground.xml (scaled 4x: this viewport is
-         432 units for the same 108dp canvas). -->
-    <path
-        android:fillColor="@android:color/white"
-        android:fillType="evenOdd"
-        android:pathData="M 216.0,117.0 L 292.2,161.0 L 292.2,249.0 L 216.0,293.0 L 139.8,249.0 L 139.8,161.0 Z M 150.2,167.0 L 150.2,243.0 L 216.0,281.0 L 281.8,243.0 L 281.8,167.0 L 216.0,129.0 Z" />
-    <group
-        android:translateX="0"
-        android:translateY="432"
-        android:scaleX="0.1"
-        android:scaleY="-0.1">
-        <path
-            android:fillColor="@android:color/white"
-            android:pathData="M1023 2626 c-97 -105 -182 -257 -183 -327 0 -23 -8 -29 -60 -48 -217 -79 -484 -367 -557 -599 -49 -157 -19 -288 104 -461 145 -202 475 -456 726 -556 206 -82 493 -138 722 -139 l141 -1 76 38 c156 77 292 273 354 512 31 117 43 332 25 428 -10 57 -10 60 20 104 76 110 154 307 161 407 3 39 2 40 -43 57 -100 38 -261 48 -393 24 l-79 -14 -61 43 c-127 91 -352 184 -452 187 -49 2 -50 3 -68 45 -29 70 -90 158 -155 223 -68 68 -176 151 -196 151 -7 0 -44 -33 -82 -74z" />
-    </group>
+    <!-- Only the plus badge is exposed to Themed Icons (Android 13+ Material You single-color
+         re-tint) and notification-shade icons. A hand-drawn hexagon+cat reconstruction was tried
+         here and reverted - it was copied from an old commit's coordinates that no longer match
+         the actual flattened icon art (the real cat+hexagon art lives in
+         mipmap/ic_launcher_background.png, which isn't vector data this layer can reuse), so it
+         rendered as a misaligned mess of lines instead of the icon. The OS re-tints this whole
+         layer to one flat color regardless, so a full-color cat+hexagon couldn't have been shown
+         correctly here anyway - this is as close as the platform allows to "just the plus is
+         themed." Position must stay in sync with the plus in drawable/ic_launcher_foreground.xml
+         (scaled 4x: this viewport is 432 units for the same 108dp canvas). -->
     <path
         android:fillColor="@android:color/white"
         android:pathData="M 248.84,118.34 h 14.25 v 21.38 h 21.38 v 14.25 h -21.38 v 21.38 h -14.25 v -21.38 h -21.38 v -14.25 h 21.38 z" />
