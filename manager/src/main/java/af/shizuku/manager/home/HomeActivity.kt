@@ -316,11 +316,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                         duration = Snackbar.LENGTH_LONG,
                         actionText = "Check",
                         action = {
-                            try {
-                                startActivity(Intent("android.settings.SECURITY_ADVANCED_SETTINGS"))
-                            } catch (e: Exception) {
-                                startActivity(Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
-                            }
+                            SettingsPage.Samsung.AutoBlocker.launch(this)
                         }
                     )
                 }
