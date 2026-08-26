@@ -6,12 +6,16 @@ import android.net.Uri
 import af.shizuku.manager.utils.MultiLocaleEntity
 
 object Helps {
-    // Points at Service-Connection (the ADB/root start-flow page) rather than a "Setup" page,
-    // which doesn't exist in the wiki — these used to be dead 404 links.
+    // Points at Service-Connection's "Starting via PC ADB" section specifically — this link is
+    // shown alongside "requires computer connection" copy, so it should land the reader
+    // directly on the PC-adb walkthrough, not the page top (which used to be a dead
+    // "Setup" page 404 before that, and even after fixing it to a real page, this exact
+    // section didn't exist yet — the link resolved but didn't actually answer what the
+    // reader came for).
     val ADB = MultiLocaleEntity().apply {
-        put("zh-CN", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection")
-        put("zh-TW", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection")
-        put("en", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection")
+        put("zh-CN", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection#starting-via-pc-adb")
+        put("zh-TW", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection#starting-via-pc-adb")
+        put("en", "https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection#starting-via-pc-adb")
     }
 
     val ADB_ANDROID11 = MultiLocaleEntity().apply {
