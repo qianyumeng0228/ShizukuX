@@ -181,12 +181,19 @@ sealed class SettingsPage(
                     // android.permission.READ_SEARCH_INDEXABLES - a protected system
                     // permission no third-party app can hold (confirmed via SecurityException
                     // on a real One UI 8/Android 16 S26 Ultra - don't route through it again).
-                    // But the actual "Sleeping apps" LIST screen underneath it
-                    // (CheckableAppListActivity) has no such guard and opens directly -
-                    // confirmed live on the same device: lands exactly on the Sleeping apps
-                    // list with its "+" add button, no permission error.
+                    // But the actual list screen underneath it (CheckableAppListActivity) has
+                    // no such guard and opens directly - confirmed live on the same device.
+                    // This activity backs THREE lists (Sleeping / Deep sleeping / Never
+                    // sleeping apps), selected via the "activity_type" int extra - documented
+                    // by Samsung itself (developer.samsung.com/mobile/app-management.html,
+                    // "Deeplink API"): 0=sleeping, 1=deep sleeping, 2=never sleeping. We want
+                    // "Never sleeping apps" specifically - that's the actual exemption list
+                    // this fix-button's guidance describes, not the default (0) restriction
+                    // list. No per-app-package extra is documented, so this lands on the list,
+                    // not scrolled/highlighted to ShizukuX specifically.
                     val intent = Intent("com.samsung.android.sm.ACTION_OPEN_CHECKABLE_LISTACTIVITY").apply {
                         setComponent(ComponentName("com.samsung.android.lool", "com.samsung.android.sm.battery.ui.usage.CheckableAppListActivity"))
+                        putExtra("activity_type", 2)
                         flags = defaultFlags
                     }
                     context.startActivity(intent)
