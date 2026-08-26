@@ -7,7 +7,7 @@ body:
     attributes:
       label: Before reporting
       options:
-        - label: I read the [wiki](https://github.com/thejaustin/ShizukuPlus/wiki#troubleshooting) and followed all relevant troubleshooting steps
+        - label: I read the [wiki](https://github.com/thejaustin/ShizukuPlus/wiki/ShizukuPlus-Knowledgebase) and followed all relevant troubleshooting steps
           required: true
         - label: I searched through all [issues](https://github.com/thejaustin/ShizukuPlus/issues) and confirmed that this is a new bug
           required: true
