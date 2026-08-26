@@ -43,3 +43,13 @@ Three independent recovery layers, each catching a different failure mode:
 3. **`WatchdogAlarmReceiver`** (`AlarmManager`, every 15min) — the only layer that survives a *full process kill*, since `AlarmManager` callbacks are dispatched by `system_server`, which can cold-start a fresh process. Needed because some OEM battery managers (Samsung One UI's "Sleeping apps" is the known case) freeze/kill the entire manager process on screen lock, not just a service — a dead process can't detect its own death. Requires `SCHEDULE_EXACT_ALARM` (runtime-revocable); falls back to an inexact wake if unavailable. This is a mitigation bounded by the alarm interval, not a complete fix for aggressive OEM freezers.
 
 See the [Permissions wiki page](https://github.com/thejaustin/ShizukuPlus/wiki/Permissions) for the full permission rationale and the [Service Connection wiki page](https://github.com/thejaustin/ShizukuPlus/wiki/Service-Connection#watchdog) for user-facing detail.
+
+---
+
+## 🎨 Adaptive Icon Safe Zone (verification gotcha)
+
+`ic_launcher_foreground.xml` / `ic_launcher_background.png` / `ic_monochrome.xml` render inside a 108dp canvas, but OEM launcher masks and notification-icon compositors only guarantee a **~66dp circle centered in that canvas** (roughly the 21–87dp range on both axes) survives. Content outside it — a badge near a corner, an eye near an edge — gets clipped hard on real devices, sometimes down to an invisible sliver.
+
+**A flat, unmasked composite preview (e.g. `PIL.Image.alpha_composite` with no mask) will not catch this.** It looks perfect in the preview and breaks on-device. Confirmed the hard way: the app icon's plus badge was placed to match a flat, non-adaptive source image pixel-for-pixel, verified only with an unmasked composite, and shipped almost entirely invisible on a real Samsung One UI notification icon.
+
+Before shipping any adaptive-icon content change, render it through an actual circular-mask simulation (crop to a circle of radius `33/108 * canvas_px` centered on the canvas) and check what survives — or verify on a real device. Full-bleed *background* art (a gradient, a large illustration extending to the edges) is fine to let bleed past the safe zone; small *foreground* content (a badge, an icon glyph) is not.

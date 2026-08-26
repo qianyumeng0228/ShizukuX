@@ -17,6 +17,8 @@ All notable changes to ShizukuPlus are documented here.
 - **Compat Hub install failures now show a specific reason** for insufficient storage and unsupported CPU architecture, on top of the existing signing-conflict detection. Follow-up to [#412](https://github.com/thejaustin/ShizukuPlus/issues/412).
 - **Update download failure notifications now distinguish cause** (insufficient storage, interrupted/unresumable transfer, network/HTTP error) instead of one generic "download failed" message. Follow-up to [#414](https://github.com/thejaustin/ShizukuPlus/issues/414).
 - Fixed two dead in-app help links pointing at wiki pages that no longer exist (`wiki/Setup`, `wiki/Supported-apps`) — now point at real pages/sections.
+- **Fixed the app icon's plus badge being almost entirely invisible on real devices** (confirmed via an on-device Samsung One UI notification-icon screenshot) — it was positioned to match the flat, non-adaptive uploaded image pixel-for-pixel, which sits outside the ~66dp/108dp circular safe zone real adaptive-icon mask/notification-icon compositors apply. A flat unmasked preview never caught this. Repositioned the plus to a spot verified against an actual circular-mask simulation; the cat/hexagon stay at their original scale and position.
+- **Dev/Beta update channel could get stuck on a stale prerelease** — it always preferred the newest *prerelease*-flagged release over the newest release overall, even after a newer *stable* release had since been cut. Now compares actual version codes and takes whichever is genuinely newer. (Follow-up to the r2287-era Dev/Beta fix below — same function, a different edge case.)
 
 ### ✨ Enhancements
 
@@ -25,6 +27,11 @@ All notable changes to ShizukuPlus are documented here.
 - **Themed Icons (Material You) now scoped to just the plus badge** rather than the whole icon — the monochrome layer Android re-tints for Themed Icons no longer includes the cat/hexagon, since the platform re-tints the entire monochrome layer as one flat color and there's no way to theme only part of it.
 - **New onboarding step**: "Themed app icon" toggle (defaults on) with a direct link to your launcher's icon-theming settings.
 - **New wiki page: [Permissions](https://github.com/thejaustin/ShizukuPlus/wiki/Permissions)** — every permission ShizukuX requests, mapped to the feature it powers and why.
+
+#### Developer Experience
+- **Release notes restyled** to Keep a Changelog's category vocabulary (Security → Breaking → Added → Fixed → Other), based on researching upstream Shizuku, the thedjchi sibling fork, and NewPipe's conventions.
+- Added `.github/pull_request_template.md` and `CONTRIBUTING.md`.
+- Repo description, topics, and homepage updated on GitHub for discoverability.
 
 ## [v13.6.0.r2287]
 
