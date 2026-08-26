@@ -731,6 +731,7 @@
     <!-- Misc -->
     <string name="dialog_cannot_open_browser_title">Can\'t start browser</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
+    <string name="accessibility_service_label">ShizukuX Pairing Helper</string>
     <string name="accessibility_service_description">Provides pairing support for devices (e.g., TVs and Samsung One UI phones) where notifications or split screen cannot be used easily.\n\nEnables ShizukuX to extract the pairing code from the wireless debugging pairing screen. It will disable itself once the pairing code is found.</string>
 
     <!-- Messages for legacy -->

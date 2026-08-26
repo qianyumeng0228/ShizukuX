@@ -553,6 +553,7 @@
              during pairing). Also dropped by af6eca73; restored alongside AICore+. -->
         <service
             android:name=".adb.AdbPairingAccessibilityService"
+            android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
             android:exported="true">
             <intent-filter>
