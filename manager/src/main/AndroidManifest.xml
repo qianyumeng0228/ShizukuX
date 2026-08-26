@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Best-effort only: runtime-revocable, and code falls back to an inexact wake via
+         canScheduleExactAlarms() if declined/unavailable (see WatchdogAlarmReceiver). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission
@@ -350,6 +353,11 @@
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".receiver.WatchdogAlarmReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
         <receiver
             android:name=".receiver.ManualStartReceiver"

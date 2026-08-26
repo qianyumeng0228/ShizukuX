@@ -35,7 +35,11 @@ class BootCompleteReceiver : BroadcastReceiver() {
             Timber.tag("BootCompleteReceiver").w(e, "Auto-start skipped (service not ready, e.g. direct boot)")
         }
         try {
-            if (ShizukuSettings.getWatchdog()) WatchdogService.start(context)
+            if (ShizukuSettings.getWatchdog()) {
+                WatchdogService.start(context)
+                // Exact alarms don't survive a reboot; re-arm the external watchdog (#415, #417).
+                WatchdogAlarmReceiver.schedule(context)
+            }
         } catch (e: Exception) {
             // startForegroundService can be refused during direct boot / from background — expected.
             Timber.tag("BootCompleteReceiver").w(e, "Watchdog start skipped")

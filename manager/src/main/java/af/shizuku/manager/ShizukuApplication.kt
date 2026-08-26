@@ -410,6 +410,25 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 .filter { it == ShizukuStateMachine.State.RUNNING }
                 .collect { af.shizuku.manager.database.ScriptSnippetManager.runAutoRunSnippets() }
         }
+
+        // Redeploy the SU bridge dex whenever the server comes up, not just on app self-update
+        // (#423 fix, `9dba4bd3`, only covered ACTION_MY_PACKAGE_REPLACED). If the server wasn't
+        // running yet at that point, deployBridgeToTmp() silently no-ops with nothing to retry
+        // it later — common on devices where an OEM freezer (Xiaomi/HyperOS, Samsung "Sleeping
+        // apps") or a dropped wireless-ADB session delays the server past that moment. Cheap and
+        // idempotent to just redeploy on every RUNNING transition.
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+            ShizukuStateMachine.asFlow()
+                .distinctUntilChanged()
+                .filter { it == ShizukuStateMachine.State.RUNNING && ShizukuSettings.isSuBridgeEnabled() }
+                .collect {
+                    try {
+                        af.shizuku.manager.database.RootCompatHelper.deployBridgeToTmp(this@ShizukuApplication)
+                    } catch (e: Exception) {
+                        Timber.tag("ShizukuApplication").w(e, "SU bridge redeploy on service start skipped")
+                    }
+                }
+        }
         AppContextManager.initialize(AppContextSettingsImpl())
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
         AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
@@ -426,6 +445,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 } catch (e: Exception) {
                     Timber.e(e, "Failed to schedule WatchdogWorker in direct boot")
                 }
+                af.shizuku.manager.receiver.WatchdogAlarmReceiver.schedule(this)
             }
         }
 
