@@ -62,7 +62,7 @@
     </string-array>
 
     <string-array name="shape_styles">
-        <item>Zen (Artistic)</item>
+        <item>Zen (Leaf/Droplet)</item>
         <item>Modern (Material 3)</item>
         <item>Classic (Material 2)</item>
         <item>Organic (Squircle)</item>
