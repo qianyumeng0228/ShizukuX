@@ -60,15 +60,11 @@ class ThemeDelegateImpl : ThemeDelegate {
             }
         }
 
-        // One UI theme overlay - applied after dynamic color/custom accent above, so Samsung
-        // Blue intentionally wins over Monet when this toggle is on (see the longer rationale on
-        // ThemeOverlay.OneUI in themes_overlay.xml: users who want their wallpaper color should
-        // just leave this toggle off, rather than it being silently overridden while "on"). The
-        // dark variant uses a lighter blue to maintain WCAG contrast on dark surfaces.
+        // One UI theme overlay is structure-only (shapes/typography, see themes_overlay.xml) -
+        // no color attrs, so it composes with whichever color source (dynamic/custom accent/
+        // default) was applied above instead of competing with it, and needs no day/night variant.
         if (ShizukuSettings.isOneUiThemeEnabled()) {
-            val isNight = context.resources.configuration.isNight()
-            val oneUiStyle = if (isNight) R.style.ThemeOverlay_OneUI_Dark else R.style.ThemeOverlay_OneUI
-            theme.applyStyle(oneUiStyle, true)
+            theme.applyStyle(R.style.ThemeOverlay_OneUI, true)
         }
 
         theme.applyStyle(ThemeHelper.getThemeStyleRes(context), true)

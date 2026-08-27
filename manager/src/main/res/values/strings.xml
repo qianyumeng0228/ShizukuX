@@ -33,7 +33,7 @@
 
     <!-- UI Settings - One UI Theme -->
     <string name="settings_oneui_theme">One UI Style</string>
-    <string name="settings_oneui_theme_summary">Match Samsung One UI\'s design language — Samsung Blue accent, large rounded corners, and bold typography</string>
+    <string name="settings_oneui_theme_summary">Match Samsung One UI\'s design language — large rounded corners and bold typography. Color is unaffected; use Material You or a custom accent above for that.</string>
     <string name="settings_one_handed_mode">One-Handed Mode</string>
     <string name="settings_one_handed_mode_summary">Shift interactive content toward the bottom of the screen for comfortable thumb reach</string>
 
