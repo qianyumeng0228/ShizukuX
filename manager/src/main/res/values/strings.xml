@@ -792,6 +792,10 @@
     <string name="settings_accent_crimson_applied">Crimson Rose applied</string>
     <string name="settings_accent_ocean_applied">Deep Ocean applied</string>
     <string name="settings_accent_default_applied">Standard Blue (Default)</string>
+    <string name="fake_adb_pairing_title">Allow fake ADB connection?</string>
+    <string name="fake_adb_pairing_message">An app is trying to connect to ShizukuX via the Fake Local ADB server.\n\nRSA key fingerprint:\n%1$s</string>
+    <string name="fake_adb_pairing_allow">Allow</string>
+    <string name="fake_adb_pairing_deny">Deny</string>
     <string name="settings_category_advanced">Advanced</string>
 
     <string name="settings_nav_behavior_summary">Start on boot, Watchdog, and TCP mode</string>

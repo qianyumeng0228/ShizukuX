@@ -1,10 +1,11 @@
 package af.shizuku.manager.adb
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import af.shizuku.manager.R
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -40,15 +41,15 @@ class FakeAdbPairingActivity : Activity() {
         val pubKeyStr = intent.getStringExtra("pubKey") ?: ""
         val hash = pubKeyStr.hashCode().toString(16).uppercase()
 
-        AlertDialog.Builder(this)
-            .setTitle("Allow fake ADB connection?")
-            .setMessage("An app is trying to connect to ShizukuX via the Fake Local ADB server.\n\nRSA key fingerprint:\n$hash")
-            .setPositiveButton("Allow") { _, _ ->
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.fake_adb_pairing_title)
+            .setMessage(getString(R.string.fake_adb_pairing_message, hash))
+            .setPositiveButton(R.string.fake_adb_pairing_allow) { _, _ ->
                 currentResult.set(true)
                 currentLatch?.countDown()
                 finish()
             }
-            .setNegativeButton("Deny") { _, _ ->
+            .setNegativeButton(R.string.fake_adb_pairing_deny) { _, _ ->
                 currentResult.set(false)
                 currentLatch?.countDown()
                 finish()
