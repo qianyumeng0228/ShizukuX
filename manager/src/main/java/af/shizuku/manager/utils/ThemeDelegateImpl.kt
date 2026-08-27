@@ -53,6 +53,7 @@ class ThemeDelegateImpl : ThemeDelegate {
                 "modern" -> R.style.ThemeOverlay_Shape_Modern
                 "classic" -> R.style.ThemeOverlay_Shape_Classic
                 "squircle" -> R.style.ThemeOverlay_Shape_Squircle
+                "cut" -> R.style.ThemeOverlay_Shape_Cut
                 else -> 0 // "zen" (default): keep the base Material3Expressive corner scale
             }
             if (shapeStyleRes != 0) {

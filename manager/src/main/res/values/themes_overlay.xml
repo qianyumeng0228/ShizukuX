@@ -178,6 +178,43 @@
         <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Squircle.Corner.ExtraLarge</item>
     </style>
 
+    <!-- Cut (Angular): M3 Expressive's "Embrace Tension" principle (mixing sharp/angular forms
+         with soft/rounded ones) via the CUT corner family (a stable, non-experimental
+         ShapeAppearance attribute) instead of ROUNDED - a genuinely different silhouette from the
+         other three styles, not just a different radius on the same rounded-rect shape. Google's
+         actual M3 Expressive polygon shape library (MaterialShapes - cookie/sunny/clover/pill,
+         see androidx.compose.material3.MaterialShapes) can't be adopted here: it's a Compose-only
+         Canvas/RoundedPolygon renderer with no equivalent in the ShapeAppearanceModel/
+         MaterialCardView system this app's (mostly XML View-based) UI uses, and it's still
+         @ExperimentalMaterial3ExpressiveApi (material3 1.5.0-alpha) besides. -->
+    <style name="ShapeAppearance.Cut.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">4dp</item>
+    </style>
+    <style name="ShapeAppearance.Cut.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    <style name="ShapeAppearance.Cut.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    <style name="ShapeAppearance.Cut.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">18dp</item>
+    </style>
+    <style name="ShapeAppearance.Cut.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">cut</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+    <style name="ThemeOverlay.Shape.Cut">
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Cut.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Cut.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Cut.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Cut.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Cut.Corner.ExtraLarge</item>
+    </style>
+
     <!--
         Expressive Shapes toggle (settings key "expressive_shapes"), when turned OFF: flattens
         the app back to plain Material3 (non-Expressive) corner treatment regardless of shape_style,
