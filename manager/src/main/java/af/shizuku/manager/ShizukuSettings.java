@@ -139,6 +139,9 @@ public class ShizukuSettings {
         // Migration (ShizukuX additions)
         public static final String KEY_MIGRATION_OFFERED = "migration_offered";
         public static final String KEY_HOME_NOTIF_PERMISSION_REQUESTED = "home_notif_permission_requested";
+        // #429: one-time handoff of the legacy custom locale into AppCompat's
+        // per-app-language store (AppCompatDelegate.setApplicationLocales()).
+        public static final String KEY_MIGRATED_APPCOMPAT_LOCALES = "migrated_appcompat_locales";
 
         // Auto Update (ShizukuX additions)
         public static final String KEY_AUTO_UPDATE_ENABLED = "auto_update_enabled";
@@ -624,6 +627,27 @@ public class ShizukuSettings {
             return Locale.getDefault();
         }
         return Locale.forLanguageTag(tag);
+    }
+
+    /** Raw KEY_LANGUAGE value, unlike {@link #getLocale()} this does NOT collapse
+     *  null/"SYSTEM" to {@link Locale#getDefault()} — used by the #429 one-time
+     *  AppCompatDelegate locale migration to tell "never picked anything" apart
+     *  from "explicitly picked System". */
+    public static String getRawLanguageTag() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_LANGUAGE, null) : null;
+    }
+
+    // #429: has the legacy custom locale already been pushed into AppCompat's
+    // own per-app-language store? Runs exactly once, ever.
+    public static boolean hasMigratedToAppCompatLocales() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_MIGRATED_APPCOMPAT_LOCALES, false);
+    }
+
+    public static void setMigratedToAppCompatLocales() {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_MIGRATED_APPCOMPAT_LOCALES, true).apply();
     }
 
     public static boolean isDhizukuModeEnabled() {
