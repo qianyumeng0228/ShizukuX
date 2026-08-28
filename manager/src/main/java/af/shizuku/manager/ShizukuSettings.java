@@ -152,6 +152,7 @@ public class ShizukuSettings {
         public static final String KEY_LAST_SEEN_VERSION = "last_seen_version";
         public static final String KEY_LAST_SEEN_CHANGELOG_VERSION = "last_seen_changelog_version";
         public static final String KEY_SERVER_STARTED_BUILD = "server_started_build";
+        public static final String KEY_LAST_SETTLED_STATE = "last_settled_shizuku_state";
 
         // Companion Mode (ShizukuX additions)
         public static final String KEY_COMPANION_MODE = "companion_mode";
@@ -188,6 +189,22 @@ public class ShizukuSettings {
 
     public static void setServerStartedBuild(int versionCode) {
         getPreferences().edit().putInt(Keys.KEY_SERVER_STARTED_BUILD, versionCode).apply();
+    }
+
+    /**
+     * The last "settled" {@code ShizukuStateMachine.State} (RUNNING/STOPPED/CRASHED) written before
+     * this process exited, or null if never recorded. A freshly cold-started process (e.g. after an
+     * OEM freezer killed the app - #417) has no in-memory record of whether the server was RUNNING
+     * or deliberately STOPPED before the kill; without this, ShizukuStateMachine.update()'s in-memory
+     * default (STOPPED) makes an unexpected death indistinguishable from an intentional stop, so the
+     * watchdog's external re-arm (WatchdogAlarmReceiver) never sees a CRASHED transition to act on.
+     */
+    public static String getLastSettledState() {
+        return getPreferences().getString(Keys.KEY_LAST_SETTLED_STATE, null);
+    }
+
+    public static void setLastSettledState(String stateName) {
+        getPreferences().edit().putString(Keys.KEY_LAST_SETTLED_STATE, stateName).apply();
     }
 
     public static boolean isSentryLimitReached() {
