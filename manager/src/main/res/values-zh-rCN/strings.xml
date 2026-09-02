@@ -983,4 +983,86 @@
         <item quantity="one"><![CDATA[已选择 %d 个应用]]></item>
         <item quantity="other"><![CDATA[已选择 %d 个应用]]></item>
     </plurals>
+    <string name="accessibility_service_label"><![CDATA[ShizukuX 配对助手]]></string>
+    <string name="accessibility_state_collapsed"><![CDATA[已收起]]></string>
+    <string name="accessibility_state_expanded"><![CDATA[已展开]]></string>
+    <string name="dhizuku_allow_access"><![CDATA[允许访问 Dhizuku]]></string>
+    <string name="dhizuku_app_blocked_notice"><![CDATA[应用已被屏蔽，无法使用 Dhizuku 服务]]></string>
+    <string name="dhizuku_app_management_empty"><![CDATA[未找到使用 Dhizuku 权限的应用\n\n应用需在清单中声明 com.rosan.dhizuku.permission.API 才能在此列出。]]></string>
+    <string name="dhizuku_app_management_summary"><![CDATA[管理可访问 Dhizuku（设备所有者）API 的应用]]></string>
+    <string name="dhizuku_app_management_title"><![CDATA[Dhizuku 应用管理]]></string>
+    <string name="dhizuku_block_app"><![CDATA[屏蔽应用]]></string>
+    <string name="dhizuku_unblock_app"><![CDATA[取消屏蔽]]></string>
+    <string name="diagnostics_battery_settings_open_failed"><![CDATA[无法打开电池设置]]></string>
+    <string name="diagnostics_command_copied"><![CDATA[命令已复制]]></string>
+    <string name="diagnostics_copy_command"><![CDATA[复制命令]]></string>
+    <string name="diagnostics_device_owner_setup_message"><![CDATA[Dhizuku 模式需要将本应用设为设备所有者。\n\n请在电脑上运行此命令（必须启用 USB 调试）：\n\n%1$s]]></string>
+    <string name="diagnostics_device_owner_setup_title"><![CDATA[设置设备所有者]]></string>
+    <string name="diagnostics_disable_confirm"><![CDATA[禁用]]></string>
+    <string name="diagnostics_disable_message"><![CDATA[这将隐藏诊断警告面板。您可以随时在高级设置中重新启用。]]></string>
+    <string name="diagnostics_disable_title"><![CDATA[禁用诊断？]]></string>
+    <string name="diagnostics_dismiss"><![CDATA[忽略]]></string>
+    <string name="diagnostics_shadow_binder_navigate_hint"><![CDATA[前往 功能中心 → 安全与访问 → 影子 Binder 选择应用]]></string>
+    <string name="diagnostics_warning_battery_optimization"><![CDATA[电池优化已启用。Shizuku 可能在后台被杀。点击豁免。]]></string>
+    <string name="diagnostics_warning_dhizuku_not_owner"><![CDATA[Dhizuku 模式已启用，但设备所有者组件未激活。点击解决。]]></string>
+    <string name="diagnostics_warning_shadow_binder_no_apps"><![CDATA[影子 Binder 已启用，但未选择要隐藏的应用。点击选择。]]></string>
+    <string name="fake_adb_pairing_allow"><![CDATA[允许]]></string>
+    <string name="fake_adb_pairing_deny"><![CDATA[拒绝]]></string>
+    <string name="fake_adb_pairing_message"><![CDATA[一个应用正尝试通过本地假 ADB 服务器连接 ShizukuX。\n\nRSA 密钥指纹：\n%1$s]]></string>
+    <string name="fake_adb_pairing_title"><![CDATA[允许假 ADB 连接？]]></string>
+    <string name="home_banner_description"><![CDATA[主题横幅]]></string>
+    <string name="settings_accent_crimson_applied"><![CDATA[已应用 绯红玫瑰]]></string>
+    <string name="settings_accent_default_applied"><![CDATA[标准蓝（默认）]]></string>
+    <string name="settings_accent_green_applied"><![CDATA[已应用 森林绿]]></string>
+    <string name="settings_accent_ocean_applied"><![CDATA[已应用 深海蓝]]></string>
+    <string name="settings_accent_violet_applied"><![CDATA[已应用 午夜紫]]></string>
+    <string name="settings_haptic_feedback"><![CDATA[触感反馈]]></string>
+    <string name="settings_haptic_feedback_summary"><![CDATA[点击和手势时振动]]></string>
+    <string name="settings_search_hint"><![CDATA[搜索设置…]]></string>
+    <string-array name="icon_styles">
+        <item>标准（填充）</item>
+        <item>描边</item>
+        <item>双色调</item>
+    </string-array>
+    <string-array name="icon_styles_value">
+        <item>standard</item>
+        <item>outlined</item>
+        <item>twotone</item>
+    </string-array>
+    <string-array name="icon_color_modes">
+        <item>无颜色（单色）</item>
+        <item>所有图标同色</item>
+        <item>每个图标不同颜色</item>
+    </string-array>
+    <string-array name="icon_color_modes_value">
+        <item>none</item>
+        <item>uniform</item>
+        <item>per_icon</item>
+    </string-array>
+    <string-array name="shape_styles">
+        <item>禅意（叶片/水滴）</item>
+        <item>现代（Material 3）</item>
+        <item>经典（Material 2）</item>
+        <item>有机（圆角方形）</item>
+        <item>切角（棱角）</item>
+    </string-array>
+    <string-array name="shape_styles_value">
+        <item>zen</item>
+        <item>modern</item>
+        <item>classic</item>
+        <item>squircle</item>
+        <item>cut</item>
+    </string-array>
+    <string-array name="animation_intensities">
+        <item>无</item>
+        <item>轻微</item>
+        <item>标准</item>
+        <item>表现力</item>
+    </string-array>
+    <string-array name="animation_intensities_value">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+    </string-array>
 </resources>
