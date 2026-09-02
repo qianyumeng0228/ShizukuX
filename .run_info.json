@@ -8,7 +8,7 @@
       "head_branch": "master",
       "head_sha": "4bcec41dce52e470c0e24c12452ebd2e265e1a0d",
       "path": ".github/workflows/app.yml",
-      "display_title": "docs: update README and add Shizuku vs ShizukuX wiki comparison",
+      "display_title": "docs: update README and add Shizuku vs Shizuku+ wiki comparison",
       "run_number": 366,
       "event": "push",
       "status": "completed",
@@ -81,7 +81,7 @@
       "head_commit": {
         "id": "4bcec41dce52e470c0e24c12452ebd2e265e1a0d",
         "tree_id": "c6684071d2577a3908b7386351184386814d2ef5",
-        "message": "docs: update README and add Shizuku vs ShizukuX wiki comparison",
+        "message": "docs: update README and add Shizuku vs Shizuku+ wiki comparison",
         "timestamp": "2026-04-29T00:09:47Z",
         "author": {
           "name": "thejaustin",
@@ -120,7 +120,7 @@
           "site_admin": false
         },
         "html_url": "https://github.com/thejaustin/ShizukuPlus",
-        "description": "ShizukuX — Enhanced fork with UX improvements to the app management screen [Broken ATM]",
+        "description": "Shizuku+ — Enhanced fork with UX improvements to the app management screen [Broken ATM]",
         "fork": false,
         "url": "https://api.github.com/repos/thejaustin/ShizukuPlus",
         "forks_url": "https://api.github.com/repos/thejaustin/ShizukuPlus/forks",
@@ -188,7 +188,7 @@
           "site_admin": false
         },
         "html_url": "https://github.com/thejaustin/ShizukuPlus",
-        "description": "ShizukuX — Enhanced fork with UX improvements to the app management screen [Broken ATM]",
+        "description": "Shizuku+ — Enhanced fork with UX improvements to the app management screen [Broken ATM]",
         "fork": false,
         "url": "https://api.github.com/repos/thejaustin/ShizukuPlus",
         "forks_url": "https://api.github.com/repos/thejaustin/ShizukuPlus/forks",

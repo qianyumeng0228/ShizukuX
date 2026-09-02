@@ -6,7 +6,7 @@ status:	none
 --
 This issue has been resolved in commit https://github.com/thejaustin/ShizukuPlus/commit/09157e52987e6f035c9305dbbba3ead5f974d99e. 
 
-We implemented a **Shadow Binder** spoofing mechanism within the IPC proxy. Now, when a client app queries Android to see if the original Shizuku (`moe.shizuku.privileged.api`) is installed, the ShizukuX root server intercepts the request and safely mocks the `PackageInfo` response. This perfectly bypasses Android 11 Package Visibility restrictions and prevents crashes or unrecognized states in strict third-party apps, without us needing to revert our unique Application ID!
+We implemented a **Shadow Binder** spoofing mechanism within the IPC proxy. Now, when a client app queries Android to see if the original Shizuku (`moe.shizuku.privileged.api`) is installed, the Shizuku+ root server intercepts the request and safely mocks the `PackageInfo` response. This perfectly bypasses Android 11 Package Visibility restrictions and prevents crashes or unrecognized states in strict third-party apps, without us needing to revert our unique Application ID!
 
 *Signoff: Antigravity & thejaustin*
 --
@@ -25,7 +25,7 @@ status:	none
 --
 This issue has been resolved in commit https://github.com/thejaustin/ShizukuPlus/commit/09157e52987e6f035c9305dbbba3ead5f974d99e. 
 
-We implemented a **Shadow Binder** spoofing mechanism within the IPC proxy. Now, when a client app queries Android to see if the original Shizuku (`moe.shizuku.privileged.api`) is installed, the ShizukuX root server intercepts the request and safely mocks the `PackageInfo` response. This perfectly bypasses Android 11 Package Visibility restrictions and prevents crashes or unrecognized states in strict third-party apps, without us needing to revert our unique Application ID!
+We implemented a **Shadow Binder** spoofing mechanism within the IPC proxy. Now, when a client app queries Android to see if the original Shizuku (`moe.shizuku.privileged.api`) is installed, the Shizuku+ root server intercepts the request and safely mocks the `PackageInfo` response. This perfectly bypasses Android 11 Package Visibility restrictions and prevents crashes or unrecognized states in strict third-party apps, without us needing to revert our unique Application ID!
 
 *Signoff: Antigravity & thejaustin*
 --
@@ -42,7 +42,7 @@ association:	none
 edited:	true
 status:	none
 --
-ShizukuX is running
+Shizuku+ is running
 
 Version 13.0, adb Start again to update to version 13.6
 
@@ -57,9 +57,9 @@ status:	none
 --
 This is the same package name compatibility issue described in #206.
 
-Apps that support Shizuku bind to it using the package `moe.shizuku.privileged.api`. ShizukuX is installed as `af.shizuku.manager`, so those apps won't automatically detect it as a valid Shizuku installation.
+Apps that support Shizuku bind to it using the package `moe.shizuku.privileged.api`. Shizuku+ is installed as `af.shizuku.manager`, so those apps won't automatically detect it as a valid Shizuku installation.
 
-**Workaround:** Install stock Shizuku alongside ShizukuX for third-party app compatibility. Grant permissions via ShizukuX for apps that need the extended ShizukuX features. This is a known limitation we're working to address.
+**Workaround:** Install stock Shizuku alongside Shizuku+ for third-party app compatibility. Grant permissions via Shizuku+ for apps that need the extended Shizuku+ features. This is a known limitation we're working to address.
 
 ---
 *Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
@@ -78,14 +78,14 @@ status:	none
 --
 Running both simultaneously is straightforward — they use different package names so there's no conflict:
 
-1. Install stock **Shizuku** from [GitHub](https://github.com/RikkaApps/Shizuku/releases) or Play Store alongside ShizukuX.
+1. Install stock **Shizuku** from [GitHub](https://github.com/RikkaApps/Shizuku/releases) or Play Store alongside Shizuku+.
 2. Start both services (each has its own Start button).
 3. Apps like **SwiftBackup** and **MTManager** will bind to stock Shizuku for standard operations and ask for permission there — grant it in Shizuku's app list.
 
 **For the custom SU path in SwiftBackup / MTManager:**  
-These apps don't use a custom SU path setting — they bind directly to Shizuku's binder. No su path configuration is needed. The Root Compatibility Hub (SU Bridge) in ShizukuX is only for apps that invoke a standalone `su` binary rather than the Shizuku IPC interface.
+These apps don't use a custom SU path setting — they bind directly to Shizuku's binder. No su path configuration is needed. The Root Compatibility Hub (SU Bridge) in Shizuku+ is only for apps that invoke a standalone `su` binary rather than the Shizuku IPC interface.
 
-**Short version:** install stock Shizuku → start it → grant permissions in its app list. SwiftBackup and MTManager will work as normal. Use ShizukuX for any features that require the extended Plus APIs.
+**Short version:** install stock Shizuku → start it → grant permissions in its app list. SwiftBackup and MTManager will work as normal. Use Shizuku+ for any features that require the extended Plus APIs.
 
 ---
 *Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
@@ -95,7 +95,7 @@ association:	none
 edited:	false
 status:	none
 --
-But when TCP mode is enabled for shizuku then same thing is not working for shizukux and tried different port as well
+But when TCP mode is enabled for shizuku then same thing is not working for shizuku+ and tried different port as well
 --
 author:	thejaustin
 association:	owner
@@ -104,15 +104,15 @@ status:	none
 --
 **Update (build 1717+): Companion Mode is now available**
 
-We've shipped a new opt-in feature that makes running Shizuku and ShizukuX together much easier.
+We've shipped a new opt-in feature that makes running Shizuku and Shizuku+ together much easier.
 
 **What's new:**
 - **Settings > Behavior > Companion Mode** — two new toggles:
   - *Show Companion Card* — adds a home screen card showing stock Shizuku's install status with a one-tap **Open** button to switch between apps without digging through your launcher.
-  - *Crash Fallback* — if ShizukuX crashes 3+ times in a row, the crash notification gains an **Open Stock Shizuku** action so you can fall back to stock Shizuku without leaving the notification shade.
+  - *Crash Fallback* — if Shizuku+ crashes 3+ times in a row, the crash notification gains an **Open Stock Shizuku** action so you can fall back to stock Shizuku without leaving the notification shade.
 
 **Why this helps your use case:**
-Apps like SwiftBackup and MTManager bind to  (stock Shizuku's package). Install stock Shizuku, enable the Companion Card, and you can switch between them in one tap instead of hunting through your app drawer. When you need extended Plus features, open ShizukuX; when an app needs to discover standard Shizuku, switch back via the card.
+Apps like SwiftBackup and MTManager bind to  (stock Shizuku's package). Install stock Shizuku, enable the Companion Card, and you can switch between them in one tap instead of hunting through your app drawer. When you need extended Plus features, open Shizuku+; when an app needs to discover standard Shizuku, switch back via the card.
 
 **Both services are truly independent** — starting one doesn't stop the other. You can run both simultaneously and grant app permissions in whichever service is active.
 
@@ -130,10 +130,10 @@ We shipped a Companion Mode that makes running both apps side by side much simpl
 
 **Settings > Behavior > Companion Mode:**
 - *Show Companion Card* — home screen card showing stock Shizuku install status with a one-tap Open button
-- *Crash Fallback* — after 3+ consecutive ShizukuX crashes, the crash notification adds an "Open Stock Shizuku" action
+- *Crash Fallback* — after 3+ consecutive Shizuku+ crashes, the crash notification adds an "Open Stock Shizuku" action
 
 **About the TCP port question:**
-Each service listens on its own ADB port and registers a separate binder. There is no conflict — both can run at the same time on different ports. ShizukuX defaults to port 5555 (configurable in Settings > Behavior); stock Shizuku uses whatever port wireless debugging assigns. If you see the service not detecting after a port change, restart ShizukuX from the home screen.
+Each service listens on its own ADB port and registers a separate binder. There is no conflict — both can run at the same time on different ports. Shizuku+ defaults to port 5555 (configurable in Settings > Behavior); stock Shizuku uses whatever port wireless debugging assigns. If you see the service not detecting after a port change, restart Shizuku+ from the home screen.
 
 ---
 *Co-authored with Claude · claude.ai/claude-code*
@@ -162,7 +162,7 @@ status:	none
 
 This is a false statement. Starting one absolutely stops the other.
 
-That said, I was able to configure Shizuku, configure ShizukuX, go back to Shizuku, and then successfully utilize aShell to hook ShizukuX as Device Owner using the provided command from the ShizukuX Dhizuku Mode toggle tooltip (despite Shizuku being the running service).
+That said, I was able to configure Shizuku, configure Shizuku+, go back to Shizuku, and then successfully utilize aShell to hook Shizuku+ as Device Owner using the provided command from the Shizuku+ Dhizuku Mode toggle tooltip (despite Shizuku being the running service).
 
 Further testing ongoing to see if this truly enables additional control correctly.
 --
@@ -180,11 +180,11 @@ association:	none
 edited:	true
 status:	none
 --
-ShizukuX is running
+Shizuku+ is running
 
 Version 13.0, adb Start again to update to version 13.6
 
-Same issue to me, i followed the suggested steps with official Shizuku app as companion. Actually all the apps are running via WiFi, Not yet tested via TCP, but it would be great if ShizukuX could work independently without the official Shizuku keeped installed. I hope these issues are fixed in the next updates. Anyway, on the Samsung S22 Ultra, even disabling the ADB restriction button doesn't change anything, because ShizukuX believes it's still active even though it isn't. Furthermore, the suggestion to exclude ShizukuX from the 'never suspended apps' list cannot be satisfied because it doesn't appear in the never suspended apps list. Is there anything i can do about this? Thanks
+Same issue to me, i followed the suggested steps with official Shizuku app as companion. Actually all the apps are running via WiFi, Not yet tested via TCP, but it would be great if Shizuku+ could work independently without the official Shizuku keeped installed. I hope these issues are fixed in the next updates. Anyway, on the Samsung S22 Ultra, even disabling the ADB restriction button doesn't change anything, because Shizuku+ believes it's still active even though it isn't. Furthermore, the suggestion to exclude Shizuku+ from the 'never suspended apps' list cannot be satisfied because it doesn't appear in the never suspended apps list. Is there anything i can do about this? Thanks
 --
 author:	Saiylem
 association:	none
@@ -198,7 +198,7 @@ association:	none
 edited:	true
 status:	none
 --
-Well, I've noticed that using the original Shizuku causes too many problems. For example, TCP mode on ShizukuX doesn't work, and you have to boot the normal Shizuku to allow applications to run; otherwise, ShizukuX won't be able to run the extra features. The problem is that the official Shizuku doesn't have TCP or reboot functions like the thedjchi fork. To avoid problems, ShizukuX should work on its own like the mentioned fork, which it currently can't do, so you have to do it manually, which is very annoying.
+Well, I've noticed that using the original Shizuku causes too many problems. For example, TCP mode on Shizuku+ doesn't work, and you have to boot the normal Shizuku to allow applications to run; otherwise, Shizuku+ won't be able to run the extra features. The problem is that the official Shizuku doesn't have TCP or reboot functions like the thedjchi fork. To avoid problems, Shizuku+ should work on its own like the mentioned fork, which it currently can't do, so you have to do it manually, which is very annoying.
 
 This project isn't mature yet; in fact, it's full of issues and those limitations making it not working properly. So, i prefer to use the thedjchi fork version which works very well, at least until this project becomes more mature and concrete. Actually it is currently unusable. What a shame!
 --
@@ -227,9 +227,9 @@ status:	none
 --
 I've reviewed all the comments here and dug into the codebase. You guys were absolutely right on several points, and I've implemented the following fixes to fully resolve this:
 
-1. **Service Collision (SIGKILL):** Saiylem correctly pointed out that starting ShizukuX would aggressively kill the stock Shizuku service, breaking the promised "Companion Mode" independence. I found the culprit: the `starter` binary was hardcoded to search for and kill any `app_process` named `shizuku_server` before starting. I've renamed the ShizukuX backend process to `shizuku_plus_server` throughout the C++ and Java layers. Both services will now peacefully coexist without murdering each other! (Fixed in today's commits).
+1. **Service Collision (SIGKILL):** Saiylem correctly pointed out that starting Shizuku+ would aggressively kill the stock Shizuku service, breaking the promised "Companion Mode" independence. I found the culprit: the `starter` binary was hardcoded to search for and kill any `app_process` named `shizuku_server` before starting. I've renamed the Shizuku+ backend process to `shizuku_plus_server` throughout the C++ and Java layers. Both services will now peacefully coexist without murdering each other! (Fixed in today's commits).
 2. **Device Owner Deactivation:** For the users stuck in Dhizuku Mode (Device Owner), an explicit "Remove Device Owner" button was actually added to the Dhizuku Mode settings panel in a recent patch (Issue #237). You no longer need to factory reset to escape it!
-3. **ADB / TCP Connectivity Limitations:** As AXEN-hub noted, TCP mode issues and the reliance on stock Shizuku for standard apps was a glaring flaw. This has also been completely resolved. I just pushed a massive update (Issue #19) that introduces a **Fake ADB Server on port 15555**. It implements the true ADB wire protocol natively with RSA authentication. Any app that strictly relies on wireless ADB can now just connect to `localhost:15555` and it will pipe directly through ShizukuX. You shouldn't need stock Shizuku as a crutch anymore.
+3. **ADB / TCP Connectivity Limitations:** As AXEN-hub noted, TCP mode issues and the reliance on stock Shizuku for standard apps was a glaring flaw. This has also been completely resolved. I just pushed a massive update (Issue #19) that introduces a **Fake ADB Server on port 15555**. It implements the true ADB wire protocol natively with RSA authentication. Any app that strictly relies on wireless ADB can now just connect to `localhost:15555` and it will pipe directly through Shizuku+. You shouldn't need stock Shizuku as a crutch anymore.
 
 Thank you guys for holding me accountable on these. Everything will be available in the upcoming release.
 
@@ -273,7 +273,7 @@ Csn confirm I have the same results.
 
 Device: motorola moto g play - 2024 (fogona_g)
 Android Version: 14 (API 34)
-ShizukuX Version: v13.6.1.r1710-shizukuplus-prerelease-beta (1710)
+Shizuku+ Version: v13.6.1.r1710-shizukuplus-prerelease-beta (1710)
 
 
 --
@@ -284,8 +284,8 @@ status:	none
 --
 Thanks for the thorough write-up — your hypothesis about the package name is correct.
 
-**Why apps don't detect ShizukuX:**
-Apps bind to Shizuku using the package name `moe.shizuku.privileged.api`. ShizukuX uses `af.shizuku.manager`, so apps that hard-code the original package name won't discover it automatically. This is a known compatibility gap. The recommended workaround for now is to keep stock Shizuku installed alongside ShizukuX if you need broad third-party app support — ShizukuX handles the extended features while stock Shizuku handles discovery.
+**Why apps don't detect Shizuku+:**
+Apps bind to Shizuku using the package name `moe.shizuku.privileged.api`. Shizuku+ uses `af.shizuku.manager`, so apps that hard-code the original package name won't discover it automatically. This is a known compatibility gap. The recommended workaround for now is to keep stock Shizuku installed alongside Shizuku+ if you need broad third-party app support — Shizuku+ handles the extended features while stock Shizuku handles discovery.
 
 **Service timeout (30s TimeoutException):**
 On Android 16 / OneUI 8.0 the ADB handshake timing has changed. We're aware of this and investigating. As a workaround, try starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions).
@@ -302,11 +302,11 @@ status:	none
 --
 Thank you! One quick question, though.
 
-When I install both Shizuku and ShizukuX side by side, I can only start one at a time. If I start Shizuku, ShizukuX says it is not running and apps such as SD Maid SE don't appear to be able to take advantage of the Plus functionality. But if I start ShizukuX, apps do not even discover Shizuku in the first place.
+When I install both Shizuku and Shizuku+ side by side, I can only start one at a time. If I start Shizuku, Shizuku+ says it is not running and apps such as SD Maid SE don't appear to be able to take advantage of the Plus functionality. But if I start Shizuku+, apps do not even discover Shizuku in the first place.
 
-What do you mean by "ShizukuX handles the extended features while stock Shizuku handles discovery"? I am not sure if I am doing something wrong, but it appears that each one overrides the other instead of working in tandem.
+What do you mean by "Shizuku+ handles the extended features while stock Shizuku handles discovery"? I am not sure if I am doing something wrong, but it appears that each one overrides the other instead of working in tandem.
 
-Also, I tried your workaround of "starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions)", but I still could not get ShizukuX to start. Could you explain in more detail please?
+Also, I tried your workaround of "starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions)", but I still could not get Shizuku+ to start. Could you explain in more detail please?
 
 Thank you again for your hard work; I look forward to seeing this project as it continues to mature!
 --
@@ -320,18 +320,18 @@ status:	none
 **How they're meant to coexist:**
 Both apps can run at the same time — they each start a separate privileged server process (`shizuku_server` vs `shizuku_plus_server`) and register separate binders. Starting one does not stop the other.
 
-**Why apps don't "see" ShizukuX automatically:**
-Third-party apps (SD Maid SE, SwiftBackup, etc.) discover Shizuku by connecting to `moe.shizuku.privileged.api` — that's the stock Shizuku package name hard-coded in their binding logic. ShizukuX has a different package name (`af.shizuku.plus.api`), so those apps will never find it through normal discovery. **This isn't a runtime conflict — they're just looking at different packages.**
+**Why apps don't "see" Shizuku+ automatically:**
+Third-party apps (SD Maid SE, SwiftBackup, etc.) discover Shizuku by connecting to `moe.shizuku.privileged.api` — that's the stock Shizuku package name hard-coded in their binding logic. Shizuku+ has a different package name (`af.shizuku.plus.api`), so those apps will never find it through normal discovery. **This isn't a runtime conflict — they're just looking at different packages.**
 
 **What "extended features" actually means:**
-Right now, the "extended features" ShizukuX provides are accessed through the ShizukuX manager UI itself (Overlay Manager Plus, AICore Bridge, Root Compatibility Hub, etc.) — not through existing third-party apps. A third-party app would have to be explicitly coded to use the ShizukuX API to benefit from those features.
+Right now, the "extended features" Shizuku+ provides are accessed through the Shizuku+ manager UI itself (Overlay Manager Plus, AICore Bridge, Root Compatibility Hub, etc.) — not through existing third-party apps. A third-party app would have to be explicitly coded to use the Shizuku+ API to benefit from those features.
 
 **Practical setup:**
 - Start stock Shizuku → grant permissions to SD Maid SE, SwiftBackup, MTManager, etc. inside Shizuku's app list. Those apps work normally.
-- Start ShizukuX → use its manager features (OMP, Watchdog, activity log, etc.).
+- Start Shizuku+ → use its manager features (OMP, Watchdog, activity log, etc.).
 - They run in parallel without interfering.
 
-The "override" behaviour you saw may have been apps not finding stock Shizuku's binder when only ShizukuX was running — which is expected, since they're looking for a different package. Starting both resolves it.
+The "override" behaviour you saw may have been apps not finding stock Shizuku's binder when only Shizuku+ was running — which is expected, since they're looking for a different package. Starting both resolves it.
 
 ---
 *Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
@@ -353,16 +353,16 @@ status:	none
 --
 Okay. I did want to point out, though, that I'm pretty sure Claude was wrong in your previous post. From my experience, and from the info I put in my original issue, both apps **can't** run at the same time, and starting one **does** stop the other.
 
-Also, why do apps have to be hard coded to use the ShizukuX API? I thought the whole purpose of ShizukuX was to be backwards compatible with OG Shizuku, so that developers didn't have to do any additional work to support the fork (unless they wanted to use the exclusive Plus features).
+Also, why do apps have to be hard coded to use the Shizuku+ API? I thought the whole purpose of Shizuku+ was to be backwards compatible with OG Shizuku, so that developers didn't have to do any additional work to support the fork (unless they wanted to use the exclusive Plus features).
 
-**EDIT**: I don't see what the purpose of removing the timeout is, since it still never starts (even after 5 full minutes of sitting on the 'waiting for service' screen). Also, I have tried both `adb tcpip 5555` and Wireless Debugging with the latest version of ShizukuX (v13.6.1.r1734-shizukuplus-prerelease), but neither work yet. I don't think that `adb tcpip 5555` is a "reliable fallback" like you/Claude suggest.
+**EDIT**: I don't see what the purpose of removing the timeout is, since it still never starts (even after 5 full minutes of sitting on the 'waiting for service' screen). Also, I have tried both `adb tcpip 5555` and Wireless Debugging with the latest version of Shizuku+ (v13.6.1.r1734-shizukuplus-prerelease), but neither work yet. I don't think that `adb tcpip 5555` is a "reliable fallback" like you/Claude suggest.
 --
 author:	thecaticorn01
 association:	none
 edited:	false
 status:	none
 --
-Bump - any progress? Tried the latest version of ShizukuX (v13.6.0.r1778) and it still doesn't work. I can't run Shizuku and ShizukuX at the same time no matter what combination of USB/Wireless/TCPIP debugging I use (see above post), so Companion Mode is essentially worthless since no apps can take advantage of Plus features even with both Shizuku and ShizukuX installed.
+Bump - any progress? Tried the latest version of Shizuku+ (v13.6.0.r1778) and it still doesn't work. I can't run Shizuku and Shizuku+ at the same time no matter what combination of USB/Wireless/TCPIP debugging I use (see above post), so Companion Mode is essentially worthless since no apps can take advantage of Plus features even with both Shizuku and Shizuku+ installed.
 --
 author:	thejaustin
 association:	owner
@@ -384,9 +384,9 @@ association:	owner
 edited:	false
 status:	none
 --
-Update: The ShizukuX `Compat Hub` has been successfully implemented and released. It acts as a lightweight standalone dummy package that safely masquerades as the original `moe.shizuku.privileged.api` to satisfy third-party app checks, while forwarding all IPC traffic directly to the ShizukuX backend.
+Update: The Shizuku+ `Compat Hub` has been successfully implemented and released. It acts as a lightweight standalone dummy package that safely masquerades as the original `moe.shizuku.privileged.api` to satisfy third-party app checks, while forwarding all IPC traffic directly to the Shizuku+ backend.
 
-This means you can now safely uninstall the original Shizuku app, keep ShizukuX alongside the Compat Hub, and all legacy apps will continue functioning seamlessly without needing Companion Mode or hardcoded API updates.
+This means you can now safely uninstall the original Shizuku app, keep Shizuku+ alongside the Compat Hub, and all legacy apps will continue functioning seamlessly without needing Companion Mode or hardcoded API updates.
 
 From Antigravity and thejaustin
 --
@@ -395,7 +395,7 @@ association:	owner
 edited:	false
 status:	none
 --
-This compatibility issue has been fully resolved via our shadow binder package spoof. Apps looking for the hardcoded `moe.shizuku.privileged.api` will now seamlessly bind to ShizukuX without any changes required on the developer's end.
+This compatibility issue has been fully resolved via our shadow binder package spoof. Apps looking for the hardcoded `moe.shizuku.privileged.api` will now seamlessly bind to Shizuku+ without any changes required on the developer's end.
 --
 --- ISSUE 205 ---
 author:	thejaustin
@@ -460,7 +460,7 @@ A few things specific to Redmi/MIUI devices:
 
 1. **MIUI restricts ADB over Wi-Fi** in ways other OEMs don't — the service may time out if MIUI's background process killer terminates the ADB process mid-handshake. Try disabling MIUI Optimization (*Developer Options → Disable MIUI Optimization*) before starting the service.
 2. **Update:** The connection timeout has been reduced from 30 s to **15 s** (with one automatic silent retry), and the raw Java exception shown in the terminal has been replaced with a plain-language error dialog and a **Retry** button. Both improvements are live in the latest beta.
-3. If wireless ADB consistently fails, use **Legacy ADB** (connect via USB, run `adb tcpip 5555`, then disconnect and try the port-based option in ShizukuX).
+3. If wireless ADB consistently fails, use **Legacy ADB** (connect via USB, run `adb tcpip 5555`, then disconnect and try the port-based option in Shizuku+).
 
 The error in your screenshots was a raw Java `TimeoutException` stack trace printed to the connection terminal — not a WebView or JavaScript issue. It looked like code because it was a direct exception dump; the fix replaces it with a human-readable message.
 
@@ -485,13 +485,13 @@ status:	none
 --
 @AJ14314 — running both together is straightforward once you know the trick:
 
-1. **Install both apps** — stock Shizuku (`moe.shizuku.privileged.api`) and ShizukuX side by side.
+1. **Install both apps** — stock Shizuku (`moe.shizuku.privileged.api`) and Shizuku+ side by side.
 2. **Start stock Shizuku first** via its own Start button. Apps like SwiftBackup and MTManager will bind to it through the standard `moe.shizuku.privileged.api` package name they expect.
-3. **Start ShizukuX** via its Start button for any app that specifically targets the extended Plus APIs.
+3. **Start Shizuku+** via its Start button for any app that specifically targets the extended Plus APIs.
 
 For SwiftBackup / MTManager specifically — those apps use standard Shizuku, so stock Shizuku is all they need. Grant permission to them inside stock Shizuku's app list.
 
-Custom `su` path settings are in stock Shizuku's settings, not in ShizukuX. ShizukuX doesn't currently expose a custom su path — that's on the roadmap as part of the Root Compatibility Hub.
+Custom `su` path settings are in stock Shizuku's settings, not in Shizuku+. Shizuku+ doesn't currently expose a custom su path — that's on the roadmap as part of the Root Compatibility Hub.
 
 ---
 *Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
@@ -537,7 +537,7 @@ association:	owner
 edited:	false
 status:	none
 --
-@AlexeiCrystal The compatibility issues have now been fully resolved! ShizukuX has been updated to act as a seamless drop-in replacement for stock Shizuku. It now honestly supports both the Original API (used by apps like SwiftBackup) and the Enhanced API natively, without requiring any developer updates from those apps. You can safely install ShizukuX and your existing apps will automatically discover and work with it.
+@AlexeiCrystal The compatibility issues have now been fully resolved! Shizuku+ has been updated to act as a seamless drop-in replacement for stock Shizuku. It now honestly supports both the Original API (used by apps like SwiftBackup) and the Enhanced API natively, without requiring any developer updates from those apps. You can safely install Shizuku+ and your existing apps will automatically discover and work with it.
 
 This was fixed in commit 9b414e03 and will be available in the upcoming release.
 
@@ -548,7 +548,7 @@ association:	owner
 edited:	false
 status:	none
 --
-@AlexeiCrystal Thank you for suggesting the companion app! We have implemented your exact idea by adding a 'Compat Hub' module. When compiled and installed alongside ShizukuX, this dummy app spoofs the original `moe.shizuku.privileged.api` package name, tricking apps like Swift Backup into bypassing their strict `isInstalled` checks, while the Android system handles all the heavy IPC traffic routing natively through ShizukuX. Thank you again for the clever workaround!
+@AlexeiCrystal Thank you for suggesting the companion app! We have implemented your exact idea by adding a 'Compat Hub' module. When compiled and installed alongside Shizuku+, this dummy app spoofs the original `moe.shizuku.privileged.api` package name, tricking apps like Swift Backup into bypassing their strict `isInstalled` checks, while the Android system handles all the heavy IPC traffic routing natively through Shizuku+. Thank you again for the clever workaround!
 
 — From Antigravity and thejaustin
 --

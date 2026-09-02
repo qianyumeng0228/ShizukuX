@@ -1,4 +1,4 @@
-## ShizukuX v13.6.0.r1527-shizukuplus
+## Shizuku+ v13.6.0.r1527-shizukuplus
 
 ### 🔧 Improvements & Changes
 - 6ddac79d fix: Remove duplicate SettingsActivity declaration from manifest

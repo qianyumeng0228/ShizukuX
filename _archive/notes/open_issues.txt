@@ -8,7 +8,7 @@ Csn confirm I have the same results.
 
 Device: motorola moto g play - 2024 (fogona_g)
 Android Version: 14 (API 34)
-ShizukuX Version: v13.6.1.r1710-shizukuplus-prerelease-beta (1710)
+Shizuku+ Version: v13.6.1.r1710-shizukuplus-prerelease-beta (1710)
 
 
 --
@@ -19,8 +19,8 @@ status:	none
 --
 Thanks for the thorough write-up — your hypothesis about the package name is correct.
 
-**Why apps don't detect ShizukuX:**
-Apps bind to Shizuku using the package name `moe.shizuku.privileged.api`. ShizukuX uses `af.shizuku.manager`, so apps that hard-code the original package name won't discover it automatically. This is a known compatibility gap. The recommended workaround for now is to keep stock Shizuku installed alongside ShizukuX if you need broad third-party app support — ShizukuX handles the extended features while stock Shizuku handles discovery.
+**Why apps don't detect Shizuku+:**
+Apps bind to Shizuku using the package name `moe.shizuku.privileged.api`. Shizuku+ uses `af.shizuku.manager`, so apps that hard-code the original package name won't discover it automatically. This is a known compatibility gap. The recommended workaround for now is to keep stock Shizuku installed alongside Shizuku+ if you need broad third-party app support — Shizuku+ handles the extended features while stock Shizuku handles discovery.
 
 **Service timeout (30s TimeoutException):**
 On Android 16 / OneUI 8.0 the ADB handshake timing has changed. We're aware of this and investigating. As a workaround, try starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions).
@@ -37,11 +37,11 @@ status:	none
 --
 Thank you! One quick question, though.
 
-When I install both Shizuku and ShizukuX side by side, I can only start one at a time. If I start Shizuku, ShizukuX says it is not running and apps such as SD Maid SE don't appear to be able to take advantage of the Plus functionality. But if I start ShizukuX, apps do not even discover Shizuku in the first place.
+When I install both Shizuku and Shizuku+ side by side, I can only start one at a time. If I start Shizuku, Shizuku+ says it is not running and apps such as SD Maid SE don't appear to be able to take advantage of the Plus functionality. But if I start Shizuku+, apps do not even discover Shizuku in the first place.
 
-What do you mean by "ShizukuX handles the extended features while stock Shizuku handles discovery"? I am not sure if I am doing something wrong, but it appears that each one overrides the other instead of working in tandem.
+What do you mean by "Shizuku+ handles the extended features while stock Shizuku handles discovery"? I am not sure if I am doing something wrong, but it appears that each one overrides the other instead of working in tandem.
 
-Also, I tried your workaround of "starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions)", but I still could not get ShizukuX to start. Could you explain in more detail please?
+Also, I tried your workaround of "starting the service immediately after enabling Wireless Debugging (before the system applies any background restrictions)", but I still could not get Shizuku+ to start. Could you explain in more detail please?
 
 Thank you again for your hard work; I look forward to seeing this project as it continues to mature!
 --
@@ -55,18 +55,18 @@ status:	none
 **How they're meant to coexist:**
 Both apps can run at the same time — they each start a separate privileged server process (`shizuku_server` vs `shizuku_plus_server`) and register separate binders. Starting one does not stop the other.
 
-**Why apps don't "see" ShizukuX automatically:**
-Third-party apps (SD Maid SE, SwiftBackup, etc.) discover Shizuku by connecting to `moe.shizuku.privileged.api` — that's the stock Shizuku package name hard-coded in their binding logic. ShizukuX has a different package name (`af.shizuku.plus.api`), so those apps will never find it through normal discovery. **This isn't a runtime conflict — they're just looking at different packages.**
+**Why apps don't "see" Shizuku+ automatically:**
+Third-party apps (SD Maid SE, SwiftBackup, etc.) discover Shizuku by connecting to `moe.shizuku.privileged.api` — that's the stock Shizuku package name hard-coded in their binding logic. Shizuku+ has a different package name (`af.shizuku.plus.api`), so those apps will never find it through normal discovery. **This isn't a runtime conflict — they're just looking at different packages.**
 
 **What "extended features" actually means:**
-Right now, the "extended features" ShizukuX provides are accessed through the ShizukuX manager UI itself (Overlay Manager Plus, AICore Bridge, Root Compatibility Hub, etc.) — not through existing third-party apps. A third-party app would have to be explicitly coded to use the ShizukuX API to benefit from those features.
+Right now, the "extended features" Shizuku+ provides are accessed through the Shizuku+ manager UI itself (Overlay Manager Plus, AICore Bridge, Root Compatibility Hub, etc.) — not through existing third-party apps. A third-party app would have to be explicitly coded to use the Shizuku+ API to benefit from those features.
 
 **Practical setup:**
 - Start stock Shizuku → grant permissions to SD Maid SE, SwiftBackup, MTManager, etc. inside Shizuku's app list. Those apps work normally.
-- Start ShizukuX → use its manager features (OMP, Watchdog, activity log, etc.).
+- Start Shizuku+ → use its manager features (OMP, Watchdog, activity log, etc.).
 - They run in parallel without interfering.
 
-The "override" behaviour you saw may have been apps not finding stock Shizuku's binder when only ShizukuX was running — which is expected, since they're looking for a different package. Starting both resolves it.
+The "override" behaviour you saw may have been apps not finding stock Shizuku's binder when only Shizuku+ was running — which is expected, since they're looking for a different package. Starting both resolves it.
 
 ---
 *Co-authored with Claude · [claude.ai/claude-code](https://claude.ai/claude-code)*
@@ -88,16 +88,16 @@ status:	none
 --
 Okay. I did want to point out, though, that I'm pretty sure Claude was wrong in your previous post. From my experience, and from the info I put in my original issue, both apps **can't** run at the same time, and starting one **does** stop the other.
 
-Also, why do apps have to be hard coded to use the ShizukuX API? I thought the whole purpose of ShizukuX was to be backwards compatible with OG Shizuku, so that developers didn't have to do any additional work to support the fork (unless they wanted to use the exclusive Plus features).
+Also, why do apps have to be hard coded to use the Shizuku+ API? I thought the whole purpose of Shizuku+ was to be backwards compatible with OG Shizuku, so that developers didn't have to do any additional work to support the fork (unless they wanted to use the exclusive Plus features).
 
-**EDIT**: I don't see what the purpose of removing the timeout is, since it still never starts (even after 5 full minutes of sitting on the 'waiting for service' screen). Also, I have tried both `adb tcpip 5555` and Wireless Debugging with the latest version of ShizukuX (v13.6.1.r1734-shizukuplus-prerelease), but neither work yet. I don't think that `adb tcpip 5555` is a "reliable fallback" like you/Claude suggest.
+**EDIT**: I don't see what the purpose of removing the timeout is, since it still never starts (even after 5 full minutes of sitting on the 'waiting for service' screen). Also, I have tried both `adb tcpip 5555` and Wireless Debugging with the latest version of Shizuku+ (v13.6.1.r1734-shizukuplus-prerelease), but neither work yet. I don't think that `adb tcpip 5555` is a "reliable fallback" like you/Claude suggest.
 --
 author:	thecaticorn01
 association:	none
 edited:	false
 status:	none
 --
-Bump - any progress? Tried the latest version of ShizukuX (v13.6.0.r1778) and it still doesn't work. I can't run Shizuku and ShizukuX at the same time no matter what combination of USB/Wireless/TCPIP debugging I use (see above post), so Companion Mode is essentially worthless since no apps can take advantage of Plus features even with both Shizuku and ShizukuX installed.
+Bump - any progress? Tried the latest version of Shizuku+ (v13.6.0.r1778) and it still doesn't work. I can't run Shizuku and Shizuku+ at the same time no matter what combination of USB/Wireless/TCPIP debugging I use (see above post), so Companion Mode is essentially worthless since no apps can take advantage of Plus features even with both Shizuku and Shizuku+ installed.
 --
 author:	thejaustin
 association:	owner
@@ -328,12 +328,12 @@ status:	none
 --
 Thanks for the report, and thanks to both of you for your patience.
 
-**Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+**Current status:** Shizuku+ is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
 
 **What to try:**
 1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
 2. Make sure Shizuku itself (the base app) is installed and running first
-3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+3. Grant Shizuku wireless ADB access via Developer Options before launching Shizuku+
 
 **Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
 
@@ -469,13 +469,13 @@ status:	none
 --
 > Thanks for the report, and thanks to both of you for your patience.
 > 
-> **Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+> **Current status:** Shizuku+ is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
 > 
 > **What to try:**
 > 
 > 1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
 > 2. Make sure Shizuku itself (the base app) is installed and running first
-> 3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+> 3. Grant Shizuku wireless ADB access via Developer Options before launching Shizuku+
 > 
 > **Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
 > 
@@ -492,13 +492,13 @@ status:	none
 --
 > > Thanks for the report, and thanks to both of you for your patience.
 > > 
-> > **Current status:** ShizukuX is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
+> > **Current status:** Shizuku+ is primarily developed and tested on a Samsung Galaxy S22 Ultra (One UI). Non-Samsung devices (TCL, Oppo/ColorOS) may encounter issues due to vendor-specific differences in how Android handles privileged operations.
 > > 
 > > **What to try:**
 > > 
 > > 1. Download the latest beta APK from [Releases](https://github.com/thejaustin/ShizukuPlus/releases) — significant stability fixes have shipped since the original report
 > > 2. Make sure Shizuku itself (the base app) is installed and running first
-> > 3. Grant Shizuku wireless ADB access via Developer Options before launching ShizukuX
+> > 3. Grant Shizuku wireless ADB access via Developer Options before launching Shizuku+
 > > 
 > > **Roadmap:** Broader device compatibility (Oppo ColorOS, TCL, etc.) is on the roadmap — the project is expanding beyond Samsung-only.
 > > 
@@ -523,9 +523,9 @@ I apologize for the confusion regarding point #2 in my previous response.
 
 The suggestion that the regular Shizuku app must be running was a technical error in my analysis. I mentioned it because the codebase contains a MigrationHelper that specifically looks for the old 'moe.shizuku' package to migrate user settings. I mistakenly conflated this 'one-time data source for migration' with a persistent 'requirement for setup'.
 
-To clarify: ShizukuX is a full, standalone replacement. 
+To clarify: Shizuku+ is a full, standalone replacement. 
 
-The package rename to 'af.shizuku.plus.api' was done strictly for copyright reasons, and the fork is designed to maintain full compatibility with all existing Shizuku-enabled applications. You do NOT need the original Shizuku app installed for ShizukuX to work or to support your other apps.
+The package rename to 'af.shizuku.plus.api' was done strictly for copyright reasons, and the fork is designed to maintain full compatibility with all existing Shizuku-enabled applications. You do NOT need the original Shizuku app installed for Shizuku+ to work or to support your other apps.
 
 — Claude (AI assistant for @thejaustin)
 --
@@ -568,7 +568,7 @@ status:	none
 > 
 > 
 
-It has to do with the different application IDs and names I was using before. I've got things set up to use the ShizukuX name now, and am working on fixes at the moment that I'll push soon. I'm trying to ensure the app actually functions as separate to Shizuku while still giving the user all the capabilities of the original app. Apps that worked with Shizuku should still work with ShizukuPlus without adding the custom API and currently I think that has been broken, amongst other things. Anyway, you may need to uninstall and reinstall any other versions of ShizukuX you have. I don't personally recognize one of the ones you have.
+It has to do with the different application IDs and names I was using before. I've got things set up to use the Shizuku+ name now, and am working on fixes at the moment that I'll push soon. I'm trying to ensure the app actually functions as separate to Shizuku while still giving the user all the capabilities of the original app. Apps that worked with Shizuku should still work with ShizukuPlus without adding the custom API and currently I think that has been broken, amongst other things. Anyway, you may need to uninstall and reinstall any other versions of Shizuku+ you have. I don't personally recognize one of the ones you have.
 --
 =================
 

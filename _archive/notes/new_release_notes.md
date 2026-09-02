@@ -1,16 +1,16 @@
-## ShizukuX Major Update & Compatibility Fixes
+## Shizuku+ Major Update & Compatibility Fixes
 
 This release rolls up all changes from recent build iterations that suffered from launch crashes (due to ProGuard obfuscation) and compatibility issues (due to package renaming and provider authority conflicts). It represents a stable milestone with **full backwards compatibility** for original Shizuku applications.
 
 ### 🐛 Edit / Crash Release Notes from Previous Builds
 The previous releases (`r1637` through `r1690`) had the following critical issues that are now resolved:
 - **Mavericks ViewModel Crash:** Release builds crashed instantly on launch (`java.lang.IllegalArgumentException`) because ProGuard/R8 was stripping the `HomeViewModel` companion factory. Fixed by adding aggressive `@Keep` annotations to prevent mangling of reflection metadata.
-- ~~**Permission Declaration Conflict:** Previous builds declared the original `moe.shizuku.manager.permission.API_V23` in the manifest. This caused Android to block installation if the original Shizuku was present (or vice-versa) due to a package name overlap in the permission group. This has been removed; ShizukuX now uses its own permission group exclusively.~~
+- ~~**Permission Declaration Conflict:** Previous builds declared the original `moe.shizuku.manager.permission.API_V23` in the manifest. This caused Android to block installation if the original Shizuku was present (or vice-versa) due to a package name overlap in the permission group. This has been removed; Shizuku+ now uses its own permission group exclusively.~~
 - ~~**Provider Authority Conflict:** Previous attempts to support original Shizuku apps by declaring `moe.shizuku.privileged.api.shizuku` in the manifest led to `INSTALL_FAILED_CONFLICTING_PROVIDER` when installed alongside the original app. This conflicting authority has been removed.~~
 - **Sentry Vendor Diagnostic Crash:** Early initialization crashes occurred on devices with strict hidden API restrictions (TCL/Oppo/Samsung) because Sentry was probing `SystemProperties` before the `HiddenApiBypass` was activated. The initialization sequence has been reordered to prevent this.
 
 ### ✨ Highlights Added in this Build
-- **Original Shizuku App Compatibility:** ShizukuX now explicitly delivers service binders directly to the internal ContentProviders of client apps using both the new and the legacy (`rikka.shizuku.intent.extra.BINDER`) intent keys. Apps compiled against the original `moe.shizuku.privileged.api` will work seamlessly.
+- **Original Shizuku App Compatibility:** Shizuku+ now explicitly delivers service binders directly to the internal ContentProviders of client apps using both the new and the legacy (`rikka.shizuku.intent.extra.BINDER`) intent keys. Apps compiled against the original `moe.shizuku.privileged.api` will work seamlessly.
 - **Seamless Auto-Update & Migration:** Added a robust `UpdateInstaller` that detects signature mismatches or package differentiation errors during an update. If a conflict is found, it:
   1. Auto-exports your settings.
   2. Uses a detached Shizuku/Root shell script to uninstall the old app and install the new APK.
@@ -33,7 +33,7 @@ The previous releases (`r1637` through `r1690`) had the following critical issue
 - fix: resolve unresolved references and missing imports (6def31da)
 - fix: resolve XML namespace error in settings_root_integration.xml (30791a7d)
 - fix: resolve BuildConfig.VERSION_CODE compilation error in MainActivity (7ce02c34)
-- docs: update README and add Shizuku vs ShizukuX wiki comparison (4bcec41d)
+- docs: update README and add Shizuku vs Shizuku+ wiki comparison (4bcec41d)
 - feat: Dhizuku Mode DO support, AICore+ bridge, and in-app changelogs (dc9fd15e)
 - docs(devlog): record KSP2/Room constraint and session notes (395b2d6e)
 - fix(ksp): disable KSP2 to restore Room 2.6.1 compatibility (304480f5)
@@ -76,6 +76,6 @@ The previous releases (`r1637` through `r1690`) had the following critical issue
 - fix: use sealed ListItem in Root Compat adapter; sync activity log to server (fbcc1cd7)
 - feat: auto-close terminal and pairing screens when Shizuku is ready (a1dcaf96)
 - fix: shell injection, watchdog backoff, SettingsPage cleanup + CHANGES.md (0d47caba)
-- docs: restore 'whose work makes ShizukuX possible' in acknowledgements (3adccb27)
+- docs: restore 'whose work makes Shizuku+ possible' in acknowledgements (3adccb27)
 - docs: soften tone and fix possessive language in attributions (663f6495)
 - docs: restore Muntashir Akon credit, fix aShell GPL boundary (fbbec7e6)

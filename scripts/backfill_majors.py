@@ -28,11 +28,11 @@ MAJORS = [
     (2129, "v13.6.0.r2129", "Android 17 (SDK 37) support"),
     (2139, "v13.6.0.r2139", "Stock-client compatibility (App-Ops / OptiDroid / Obtainium)"),
     (2149, "v13.6.0.r2149", "SU Bridge — root features for third-party apps on non-root"),
-    (2202, "v13.6.0.r2202", "Cached Apps Freezer fix — third-party apps reliably detect ShizukuX"),
+    (2202, "v13.6.0.r2202", "Cached Apps Freezer fix — third-party apps reliably detect Shizuku+"),
 ]
 
 HEADLINE_REV, HEADLINE_TAG, _ = MAJORS[-1]
-HEADLINE_DESC = ("Third-party apps that ShizukuX grants permissions to (WifiList, App Ops, Hail, "
+HEADLINE_DESC = ("Third-party apps that Shizuku+ grants permissions to (WifiList, App Ops, Hail, "
                  "Tasker, and others) now reliably detect and connect to the service. Closed the "
                  "last gap in the Cached Apps Freezer guard: a UserService's very first connect "
                  "callback could be silently dropped if the client app was frozen in the background "

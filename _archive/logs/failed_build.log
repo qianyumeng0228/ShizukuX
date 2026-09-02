@@ -2154,7 +2154,7 @@ build	Build with Gradle	2026-06-10T10:44:07.1030161Z 1<?xml version="1.0" encodi
 build	Build with Gradle	2026-06-10T10:44:07.1030823Z 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 build	Build with Gradle	2026-06-10T10:44:07.1031464Z 3    package="rikka.shizuku.shell"
 build	Build with Gradle	2026-06-10T10:44:07.1031938Z 4    android:versionCode="1956"
-build	Build with Gradle	2026-06-10T10:44:07.1032408Z 5    android:versionName="ShizukuX 13.6.0.r1956" >
+build	Build with Gradle	2026-06-10T10:44:07.1032408Z 5    android:versionName="Shizuku+ 13.6.0.r1956" >
 build	Build with Gradle	2026-06-10T10:44:07.1033130Z 6
 build	Build with Gradle	2026-06-10T10:44:07.1033404Z 7    <uses-sdk
 build	Build with Gradle	2026-06-10T10:44:07.1033748Z 8        android:minSdkVersion="24"
@@ -13853,7 +13853,7 @@ build	Build with Gradle	2026-06-10T10:45:06.6100035Z 1<?xml version="1.0" encodi
 build	Build with Gradle	2026-06-10T10:45:06.6100709Z 2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
 build	Build with Gradle	2026-06-10T10:45:06.6101394Z 3    package="af.shizuku.plus.api"
 build	Build with Gradle	2026-06-10T10:45:06.6101871Z 4    android:versionCode="1956"
-build	Build with Gradle	2026-06-10T10:45:06.6102361Z 5    android:versionName="ShizukuX 13.6.0.r1956" >
+build	Build with Gradle	2026-06-10T10:45:06.6102361Z 5    android:versionName="Shizuku+ 13.6.0.r1956" >
 build	Build with Gradle	2026-06-10T10:45:06.6103079Z 6
 build	Build with Gradle	2026-06-10T10:45:06.6103412Z 7    <uses-sdk
 build	Build with Gradle	2026-06-10T10:45:06.6103781Z 8        android:minSdkVersion="24"

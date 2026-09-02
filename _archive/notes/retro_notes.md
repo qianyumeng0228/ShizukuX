@@ -1,8 +1,8 @@
-## ShizukuX Enhanced Release
+## Shizuku+ Enhanced Release
 
-This release includes the full suite of ShizukuX enhancements and stability fixes for modern Android devices.
+This release includes the full suite of Shizuku+ enhancements and stability fixes for modern Android devices.
 
-### ✨ ShizukuX Specific Enhancements
+### ✨ Shizuku+ Specific Enhancements
 - **Granular Root Compatibility**: Support for legacy root apps via toggleable modules: **AdAway Hosts Bridge**, **Magisk Mocking**, **Auto-Approval**, **Smart File Interceptor**, and **BusyBox Simulation**.
 - **Advanced AI Intelligence (AICore+)**: XML-based UI hierarchy dumping and physical input simulation (Touch/Swipe/Text) for AI automation.
 - **OneUI 8+ Stability**: Full support for modern Samsung resource injection using the stable `OverlayManagerTransaction` API.
@@ -14,4 +14,4 @@ This release includes the full suite of ShizukuX enhancements and stability fixe
 - **Dhizuku Mode**: Shared system Device Owner privileges for authorized applications.
 - **Service Doctor**: Real-time diagnostics for Wireless ADB and Samsung Auto Blocker troubleshooting.
 
-For documentation on integrating these features, see the [ShizukuX-API](https://github.com/thejaustin/ShizukuPlus-API) repository.
+For documentation on integrating these features, see the [Shizuku+-API](https://github.com/thejaustin/ShizukuPlus-API) repository.
