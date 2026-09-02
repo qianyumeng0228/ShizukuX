@@ -387,7 +387,7 @@ jobs:
           git tag "$TAG_NAME" -m "Release version $VERSION"
           git push "$PUSH_URL" "$TAG_NAME"
 
-      - name: Download ShizukuPlus Artifact
+      - name: Download ShizukuX Artifact
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build.outputs.artifactName }}

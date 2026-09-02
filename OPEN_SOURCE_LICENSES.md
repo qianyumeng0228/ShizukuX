@@ -1,6 +1,6 @@
 # Open Source Licenses
 
-ShizukuX is built on the shoulders of many excellent open-source projects. Full credit and gratitude to every author listed below.
+ShizukuX (formerly Shizuku+) is built on the shoulders of many excellent open-source projects. Full credit and gratitude to every author listed below.
 
 ---
 

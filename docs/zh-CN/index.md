@@ -13,7 +13,7 @@ ShizukuX 是基于 Shizuku 的增强版本，保持对现有 Shizuku 应用的�
 - [Dhizuku 模式](dhizuku-mode.md)：通过 Device Owner 提供更持久的系统权限锚点。
 - [AICore+ 自动化桥](aicore-plus-bridge.md)：面向授权应用的无 Root 辅助功能代理。
 - [Root 兼容中心](root-compatibility-hub.md)：为只支持 `su` 的应用提供 ShizukuX 权限桥接。
-- [Shizuku 与 ShizukuX 对比](../comparison_shizuku_vs_plus.md)：架构差异与 Plus 能力说明。
+- [Shizuku 与 ShizukuX 对比](../comparison_shizuku_vs_shizukux.md)：架构差异与 Plus 能力说明。
 
 ## ShizukuX 有什么不同
 

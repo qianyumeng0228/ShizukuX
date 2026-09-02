@@ -1,78 +1,78 @@
-# Security Policy
+# 安全策略
 
-## Supported Versions
+## 受支持的版本
 
-Security updates are provided **only** for the following versions of ShizukuX:
+安全更新**仅**面向以下 ShizukuX 版本提供：
 
-| Version | Supported |
+| 版本 | 支持情况 |
 | ------- | --------- |
-| Latest stable release | ✅* |
-| Latest debug / prerelease | ✅ |
-| Older versions | ❌ |
+| 最新稳定版 | ✅* |
+| 最新调试版 / 预发布版 | ✅ |
+| 旧版本 | ❌ |
 
-Reports affecting unsupported versions may be closed without action.
-
----
-
-## Reporting a Vulnerability
-
-If you discover a security vulnerability in ShizukuX, please report it **privately** and practice responsible disclosure. [See how](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/report-a-vulnerability/privately-reporting-a-security-vulnerability).
-
-ShizukuX provides access to **ADB-level and/or root-level privileges**, so security issues may have a high impact.
-
-When reporting a vulnerability, you may include any of the following:
-
-- Detailed step-by-step reproduction instructions (including granular or 1-by-2 steps)
-- Screenshots or screen recordings
-- Logs or crash output
-- Proof-of-concept (PoC) code
-- Test applications or scripts demonstrating the issue
-
-Providing detailed information helps us reproduce and fix the issue more efficiently.
+影响不受支持版本的报告可能会在不做处理的情况下直接关闭。
 
 ---
 
-## Testing Before Reporting
+## 报告漏洞
 
-To reduce duplicate reports and false positives, please verify the issue under the following conditions:
+如果你在 ShizukuX 中发现安全漏洞，请**私下**报告，并遵循负责任披露流程。[了解具体方式](https://docs.github.com/zh/code-security/how-tos/report-and-fix-vulnerabilities/report-a-vulnerability/privately-reporting-a-security-vulnerability)。
 
-1. Confirm the issue reproduces on the **latest stable release**
-2. **When possible, also test on the latest prerelease (debug) build**
+ShizukuX 提供 **ADB 级和/或 Root 级权限**，因此安全问题可能产生较高影响。
 
-If the issue does **not** reproduce on the prerelease build, it may already be fixed.
+报告漏洞时，你可以附上以下任意内容：
 
----
+- 详细的分步复现说明（包括精确到 1 步或 2 步的粒度）
+- 截图或屏幕录制
+- 日志或崩溃输出
+- 概念验证（PoC）代码
+- 可复现问题的测试应用或脚本
 
-## Responsible Disclosure
-
-Due to the privileged nature of ShizukuX, vulnerabilities may be easily exploitable if disclosed prematurely.
-
-Please follow these disclosure guidelines:
-
-- Do **not** publicly disclose vulnerability details immediately
-- Wait **at least 1 month after a release containing the fix** before sharing technical details that could reasonably lead to exploitation
-  - This includes exploit write-ups, abuse techniques, code snippets, videos, or tutorials that demonstrate real-world attacks
-
-This delay allows users adequate time to update and helps reduce the risk of active exploitation.
+提供详细信息有助于我们更高效地复现并修复问题。
 
 ---
 
-## What Not to Report
+## 报告前的测试
 
-- Issues affecting only unsupported versions
-- Vulnerabilities that require modifying ShizukuX itself to be exploitable
-- Reports without any reasonable security impact
+为减少重复报告和误报，请在以下条件下验证问题：
 
----
+1. 确认该问题能在**最新稳定版**上复现
+2. **如有可能，同时在最新的预发布（调试）构建上测试**
 
-## Bug Bounty
-
-ShizukuX does **not** offer a bug bounty or monetary rewards.
-
-However, **responsible security reporters will be credited in release notes** or other public acknowledgements, at the maintainer's discretion.
+如果问题在预发布构建上**无法**复现，说明它可能已经被修复。
 
 ---
 
-## Acknowledgements
+## 负责任披露
 
-We appreciate the efforts of security researchers and community members who help improve ShizukuX's security. Responsible disclosure helps keep users safe and the ecosystem healthy.
+鉴于 ShizukuX 的特权性质，漏洞如果过早公开，可能极易被利用。
+
+请遵循以下披露准则：
+
+- **不要**立即公开漏洞细节
+- 在包含修复的版本发布后，至少等待**1 个月**，再分享可能被用于实际攻击的技术细节
+  - 包括漏洞利用文章、滥用技巧、代码片段、视频或演示真实攻击的教程
+
+这段延迟期能让用户有充足时间更新，并降低漏洞被积极利用的风险。
+
+---
+
+## 无需报告的内容
+
+- 仅影响不受支持版本的问题
+- 需要修改 ShizukuX 本身才能被利用的漏洞
+- 没有任何合理安全影响的报告
+
+---
+
+## 漏洞赏金
+
+ShizukuX **不**提供漏洞赏金或金钱奖励。
+
+不过，**负责任的安全报告者将根据维护者的决定，在发布说明或其他公开致谢中被提及**。
+
+---
+
+## 致谢
+
+我们感谢所有帮助提升 ShizukuX 安全性的安全研究员与社区成员。负责任的披露既能保护用户安全，也能让生态保持健康。

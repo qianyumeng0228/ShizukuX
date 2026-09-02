@@ -190,8 +190,8 @@
 ## 🔗 Quick Links
 
 - **Sentry Dashboard:** https://af-developments.sentry.io/projects/shizukuplus/
-- **GitHub Releases:** https://github.com/thejaustin/ShizukuPlus/releases
-- **GitHub Actions:** https://github.com/thejaustin/ShizukuPlus/actions
+- **GitHub Releases:** https://github.com/qianyumeng0228/ShizukuX/releases
+- **GitHub Actions:** https://github.com/qianyumeng0228/ShizukuX/actions
 - **Sentry Issues:** https://af-developments.sentry.io/projects/shizukuplus/issues/
 
 ---

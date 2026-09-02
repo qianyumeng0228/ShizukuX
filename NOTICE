@@ -1,7 +1,23 @@
 ShizukuX
+Copyright 2026 qianyumeng0228
+
+ShizukuX is a rebranded, Chinese-localized derivative of ShizukuPlus
+(https://github.com/qianyumeng0228/ShizukuPlus), which is itself a fork of
+thejaustin/ShizukuPlus and of Shizuku by RikkaApps / thedjchi/Shizuku.
+This project is an independently maintained community fork and is NOT
+affiliated with, endorsed by, or associated with the RikkaApps team, the
+original Shizuku project, thedjchi/Shizuku, or thejaustin/ShizukuPlus.
+All upstream copyright, patent, trademark and attribution notices are
+retained below and remain in full force.
+
+================================================================================
+UPSTREAM BASE (Shizuku+ / ShizukuPlus)
+================================================================================
+
+Shizuku+
 Copyright 2026 thejaustin (Justin Austin)
 
-This product is an enhanced fork of Shizuku by RikkaApps and thedjchi/Shizuku.
+Shizuku+ is an enhanced fork of Shizuku by RikkaApps and thedjchi/Shizuku.
 It includes software developed by the following projects and authors. Each
 library is used in compliance with its respective license terms.
 

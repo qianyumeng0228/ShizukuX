@@ -1,11 +1,33 @@
 # Changes from Upstream
 
-This file documents the significant changes made in ShizukuX relative to its
-upstream sources, as required by the Apache License 2.0 §4(b).
+This file documents the significant changes made in ShizukuX (formerly
+Shizuku+) relative to its upstream sources, as required by the
+Apache License 2.0 §4(b).
 
-## Base: thedjchi/Shizuku → ShizukuX
+## ShizukuX derivative (this project)
 
-ShizukuX is forked from [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku),
+ShizukuX is a rebranded and Chinese-localized derivative of
+[ShizukuPlus](https://github.com/qianyumeng0228/ShizukuPlus)
+(`qianyumeng0228/ShizukuPlus`), which itself continues
+[thejaustin/ShizukuPlus](https://github.com/thejaustin/ShizukuPlus). It is an
+independently maintained community fork and has no affiliation with, and is
+not endorsed by, the upstream maintainers (RikkaApps, thedjchi, thejaustin).
+The changes introduced by ShizukuX on top of ShizukuPlus are:
+
+- Project, repository and app identity renamed from "Shizuku+" to **ShizukuX**
+  (launcher label, in-app strings, user-agent, crash reports, release assets).
+- All user-facing documentation (`README.md`, `docs/`) translated into
+  Simplified Chinese with domain-accurate Android terminology.
+- Product copy localized for Chinese users; original Apache-2.0 notices and
+  upstream attribution are preserved in full (`LICENSE`, `NOTICE`, this file).
+
+Everything listed below under "Shizuku+" documents the changes inherited from
+ShizukuPlus relative to its own upstream (the `thedjchi/Shizuku` fork of
+`RikkaApps/Shizuku`) and remains accurate for ShizukuX.
+
+## Base: thedjchi/Shizuku → Shizuku+ (inherited)
+
+Shizuku+ is forked from [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku),
 which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku).
 
 ---
@@ -14,7 +36,7 @@ which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizu
 
 ### Package & Identity
 - Package renamed from `moe.shizuku.privileged.api` to `af.shizuku.plus.api`
-- App name changed to "ShizukuX"
+- App name changed to "Shizuku+"
 - Custom launcher icons and branding, including a Themed Icons (Material You) monochrome
   layer scoped to just the plus badge (Android's Themed Icons API re-tints the whole
   monochrome layer as a single color, so the cat/hexagon are deliberately excluded from it)

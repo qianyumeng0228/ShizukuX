@@ -2,7 +2,7 @@
     <string name="app_name" translatable="false">ShizukuX</string>
     <!-- To translators: you can leave your here -->
     <string name="translation_contributors">thejaustin</string>
-    <string name="translation_url">https://github.com/thejaustin/ShizukuPlus</string>
+    <string name="translation_url">https://github.com/qianyumeng0228/ShizukuX</string>
     <!-- UI Settings - Expressive -->
     <string name="settings_expressive_title">Expressive Design (M3E)</string>
     <string name="settings_expressive_shapes">Expressive Icon Shapes</string>

@@ -1,11 +1,24 @@
 # Changes from Upstream
 
-This file documents the significant changes made in ShizukuX relative to its
-upstream sources, as required by the Apache License 2.0 §4(b).
+This file documents the significant changes made in ShizukuX (formerly
+Shizuku+) relative to its upstream sources, as required by the
+Apache License 2.0 §4(b).
 
-## Base: thedjchi/Shizuku → ShizukuX
+## ShizukuX derivative (this project)
 
-ShizukuX is forked from [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku),
+ShizukuX is a rebranded and Chinese-localized derivative of
+ShizukuPlus (github.com/qianyumeng0228/ShizukuPlus), which itself continues
+thejaustin/ShizukuPlus. ShizukuX changes on top of ShizukuPlus are:
+
+- Project, repository and app identity renamed from "Shizuku+" to **ShizukuX**.
+- All user-facing documentation translated into Simplified Chinese.
+
+Everything below documents the changes inherited from ShizukuPlus relative to
+its own upstream and remains accurate for ShizukuX.
+
+## Base: thedjchi/Shizuku → Shizuku+ (inherited)
+
+Shizuku+ is forked from [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku),
 which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku).
 
 ---
@@ -14,7 +27,7 @@ which is itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizu
 
 ### Package & Identity
 - Package renamed from `moe.shizuku.privileged.api` to `af.shizuku.plus.api`
-- App name changed to "ShizukuX"
+- App name changed to "Shizuku+"
 - Custom launcher icons and branding
 - **Coexistence Fix:** Removed conflicting `moe.shizuku.manager.permission.API_V23` declaration and updated `autoResConfig` namespace to ensure zero-overlap with original Shizuku installations.
 

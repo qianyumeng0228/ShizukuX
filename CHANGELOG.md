@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to ShizukuPlus are documented here.
+All notable changes to ShizukuX (formerly ShizukuPlus) are documented here.
 
 ## [Unreleased]
 
@@ -26,7 +26,7 @@ All notable changes to ShizukuPlus are documented here.
 - **App icon plus badge repositioned** to match the intended design and separated back out into its own semi-transparent overlay layer (was previously baked into the flattened artwork at the wrong position).
 - **Themed Icons (Material You) now scoped to just the plus badge** rather than the whole icon — the monochrome layer Android re-tints for Themed Icons no longer includes the cat/hexagon, since the platform re-tints the entire monochrome layer as one flat color and there's no way to theme only part of it.
 - **New onboarding step**: "Themed app icon" toggle (defaults on) with a direct link to your launcher's icon-theming settings.
-- **New wiki page: [Permissions](https://github.com/thejaustin/ShizukuPlus/wiki/Permissions)** — every permission ShizukuX requests, mapped to the feature it powers and why.
+- **New wiki page: [Permissions](https://github.com/thejaustin/ShizukuPlus/wiki/Permissions)** — every permission Shizuku+ requests, mapped to the feature it powers and why.
 
 #### Developer Experience
 - **Release notes restyled** to Keep a Changelog's category vocabulary (Security → Breaking → Added → Fixed → Other), based on researching upstream Shizuku, the thedjchi sibling fork, and NewPipe's conventions.
@@ -90,4 +90,4 @@ All notable changes to ShizukuPlus are documented here.
 
 ## [v13.6.0 / r2215]
 
-Initial public release of ShizukuX.
+Initial public release of Shizuku+.
