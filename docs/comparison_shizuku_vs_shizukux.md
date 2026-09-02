@@ -59,4 +59,4 @@ ShizukuX 充当旧版应用的转译层。
 *   **批量管理**：面向管理数百个应用的高级用户打造的工业级权限管理。
 
 ---
-*如需了解如何在自己的应用中集成 Plus API，请参阅[内置 API 模块](https://github.com/qianyumeng0228/ShizukuX/tree/master/api)。如需了解 ShizukuX 请求的每一项权限及其用途，请参阅[权限说明页面](https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/permissions.md)。*
+*如需了解如何在自己的应用中集成 Plus API，请参阅 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)。如需了解 ShizukuX 请求的每一项权限及其用途，请参阅[权限说明页面](https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/permissions.md)。*

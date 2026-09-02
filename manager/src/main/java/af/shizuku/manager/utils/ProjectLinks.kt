@@ -28,7 +28,7 @@ object ProjectLinks {
     const val HELP_ERROR_REFERENCE = "https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/service-connection.md#错误参考"
     const val HELP_WATCHDOG = "https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/knowledgebase.md#shizuku-一直随机停止"
     const val HELP_BOOT = "https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/knowledgebase.md#shizuku-无法开机自启动"
-    const val RISH = "https://github.com/qianyumeng0228/ShizukuX/tree/master/api/rish"
+    const val RISH = "https://github.com/qianyumeng0228/ShizukuX-API/tree/master/rish"
 
     fun releaseTag(tagName: String): String = "$RELEASES/tag/$tagName"
 }

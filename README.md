@@ -95,7 +95,7 @@ ShizukuX 以独立包名（`af.shizuku.plus.api`）安装，可与原版 Shizuku
 ## 📱 开发者指南
 <a name="developer-guide"></a>
 
-关于专属 Plus API 的文档，见[内置的 API 模块](https://github.com/qianyumeng0228/ShizukuX/tree/master/api)。
+关于专属 Plus API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。
 
 ## 🙏 致谢与许可证
 
