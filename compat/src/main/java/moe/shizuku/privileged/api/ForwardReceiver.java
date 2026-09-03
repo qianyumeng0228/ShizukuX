@@ -10,7 +10,7 @@ public class ForwardReceiver extends BroadcastReceiver {
         if ("rikka.shizuku.intent.action.REQUEST_BINDER".equals(intent.getAction())) {
             Intent forward = new Intent(intent);
             forward.setPackage(null);
-            forward.setClassName("af.shizuku.plus.api", "af.shizuku.manager.receiver.BinderRequestReceiver");
+            forward.setClassName("xyz.shizuku.extra.api", "af.shizuku.manager.receiver.BinderRequestReceiver");
             context.sendBroadcast(forward);
         }
     }

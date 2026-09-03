@@ -792,10 +792,10 @@
     <string name="update_download_failed_message"><![CDATA[下载更新失败。请重试。]]></string>
     <!-- Migration Dialog -->
 <string name="migration_dialog_title"><![CDATA[重要：需要重新安装]]></string>
-    <string name="migration_dialog_message"><![CDATA[ShizukuX 已将其包 ID 从 moe.shizuku.privileged.api 更改为 af.shizuku.plus.api。您的旧版本与本版本被视为不同的应用，因此无法直接更新。
+    <string name="migration_dialog_message"><![CDATA[ShizukuX 已将其包 ID 从 moe.shizuku.privileged.api 更改为 xyz.shizuku.extra.api。您的旧版本与本版本被视为不同的应用，因此无法直接更新。
 
 您可以迁移旧版本的设置，然后卸载它。]]></string>
-    <string name="migration_dialog_message_root"><![CDATA[ShizukuX 已将其包 ID 从 moe.shizuku.privileged.api 更改为 af.shizuku.plus.api。您的旧版本与本版本被视为不同的应用，因此无法直接更新。
+    <string name="migration_dialog_message_root"><![CDATA[ShizukuX 已将其包 ID 从 moe.shizuku.privileged.api 更改为 xyz.shizuku.extra.api。您的旧版本与本版本被视为不同的应用，因此无法直接更新。
 
 已获得 root 权限——点击“迁移设置”从旧版本复制设置，然后卸载它。]]></string>
     <string name="migration_migrate_settings"><![CDATA[迁移设置]]></string>

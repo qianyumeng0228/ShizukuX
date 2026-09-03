@@ -25,7 +25,7 @@ The `scripts/pre_push_check.sh` script performs the following:
 -   **Coroutine Contexts**: Verifies that `launch` and `Dispatchers` have their required `kotlinx.coroutines` imports, and that `lifecycleScope` has its `androidx.lifecycle` import.
 -   **Syntax Integrity**: Detects Kotlin files where `import` statements are accidentally placed below the class definition.
 -   **Submodule Sync**: Ensures the local `api` submodule commit actually exists on the remote before allowing a push.
--   **AAPT Errors**: Prevents `Android resource linking failed` by scanning for hardcoded package names (e.g., `af.shizuku.plus.api:`) in XML.
+-   **AAPT Errors**: Prevents `Android resource linking failed` by scanning for hardcoded package names (e.g., `xyz.shizuku.extra.api:`) in XML.
 -   **Theme References**: Warns if `colorPrimary` is used directly in Kotlin without the `R.attr.` prefix.
 -   **Diagnostic Quality**: Flags remaining `` calls.
 

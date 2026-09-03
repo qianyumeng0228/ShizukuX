@@ -16,7 +16,7 @@ public class ForwardActivity extends Activity {
         forward.setPackage(null);
         
         // Target the ShizukuX Manager explicitly
-        forward.setClassName("af.shizuku.plus.api", "af.shizuku.manager.authorization.RequestPermissionActivity");
+        forward.setClassName("xyz.shizuku.extra.api", "af.shizuku.manager.authorization.RequestPermissionActivity");
         
         // Retain any extras
         if (original.getExtras() != null) {

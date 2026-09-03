@@ -8,7 +8,7 @@
         android:shortcutLongLabel="@string/home_wireless_adb_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="af.shizuku.plus.api"
+            android:targetPackage="xyz.shizuku.extra.api"
             android:targetClass="af.shizuku.manager.MainActivity">
             <extra android:name="shortcut_action" android:value="start_wireless_adb" />
         </intent>
@@ -21,7 +21,7 @@
         android:shortcutLongLabel="@string/home_app_management_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="af.shizuku.plus.api"
+            android:targetPackage="xyz.shizuku.extra.api"
             android:targetClass="af.shizuku.manager.management.ApplicationManagementActivity" />
     </shortcut>
     <shortcut
@@ -32,7 +32,7 @@
         android:shortcutLongLabel="@string/home_terminal_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="af.shizuku.plus.api"
+            android:targetPackage="xyz.shizuku.extra.api"
             android:targetClass="af.shizuku.manager.MainActivity">
             <extra android:name="shortcut_action" android:value="open_terminal" />
         </intent>

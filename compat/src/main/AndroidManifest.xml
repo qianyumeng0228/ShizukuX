@@ -3,13 +3,13 @@
 
     <!-- This app spoofs the stock Shizuku package name (moe.shizuku.privileged.api) so third-party
          apps pass their "is Shizuku installed" checks; the real work is handled by the ShizukuX
-         manager (af.shizuku.plus.api). -->
+         manager (xyz.shizuku.extra.api). -->
 
-    <!-- Package visibility (API 30+): the forwards below target af.shizuku.plus.api by explicit
+    <!-- Package visibility (API 30+): the forwards below target xyz.shizuku.extra.api by explicit
          component. Without a <queries> entry that package is invisible on Android 11+, so the
          startActivity()/sendBroadcast() forwards silently fail. -->
     <queries>
-        <package android:name="af.shizuku.plus.api" />
+        <package android:name="xyz.shizuku.extra.api" />
     </queries>
 
     <!-- Define the permission every stock Shizuku-API client is hardcoded to

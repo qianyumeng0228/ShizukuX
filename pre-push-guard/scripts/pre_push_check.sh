@@ -150,7 +150,7 @@ fi
 
 # 10. Check for Hardcoded Package Names in XML (AAPT Errors)
 step "Checking for hardcoded package names in XML resources"
-HARDCODED_PKG=$(grep -rn "af.shizuku.plus.api:" manager/src/main/res --include="*.xml" 2>/dev/null)
+HARDCODED_PKG=$(grep -rn "xyz.shizuku.extra.api:" manager/src/main/res --include="*.xml" 2>/dev/null)
 if [ ! -z "$HARDCODED_PKG" ]; then
     echo -e "${COLOR_RED}FAIL${COLOR_RESET} (Avoid hardcoding the package name in resources)"
     echo "$HARDCODED_PKG"

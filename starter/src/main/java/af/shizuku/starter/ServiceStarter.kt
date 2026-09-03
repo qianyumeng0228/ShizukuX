@@ -14,7 +14,7 @@ import java.util.*
 object ServiceStarter {
 
     private const val TAG = "ShizukuServiceStarter"
-    private const val EXTRA_BINDER = "af.shizuku.plus.api.intent.extra.BINDER"
+    private const val EXTRA_BINDER = "xyz.shizuku.extra.api.intent.extra.BINDER"
 
     // Fallback only: used if a caller built the command line without --manager= (e.g. an
     // out-of-date server binary). The real value is always passed explicitly below because this
@@ -22,7 +22,7 @@ object ServiceStarter {
     // ServerConstants.MANAGER_APPLICATION_ID (which flips to the Drop-In id when that's the
     // flavor actually installed) - hardcoding the Plus id here made every UserService start fail
     // with "provider is null" on Drop-In-only installs (#371).
-    private const val DEFAULT_MANAGER_PACKAGE_NAME = "af.shizuku.plus.api"
+    private const val DEFAULT_MANAGER_PACKAGE_NAME = "xyz.shizuku.extra.api"
 
     val DEBUG_ARGS: String by lazy {
         val sdk = Build.VERSION.SDK_INT

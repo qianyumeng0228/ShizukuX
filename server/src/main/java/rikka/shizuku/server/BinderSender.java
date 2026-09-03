@@ -32,7 +32,7 @@ public class BinderSender {
 
     private static final Logger LOGGER = new Logger("BinderSender");
 
-    private static final String PERMISSION_MANAGER = "af.shizuku.plus.permission.MANAGER";
+    private static final String PERMISSION_MANAGER = "xyz.shizuku.extra.permission.MANAGER";
     private static final String PERMISSION = ServerConstants.PERMISSION;
     private static final String PERMISSION_LEGACY = ServerConstants.PERMISSION_LEGACY;
     private static final String PERMISSION_ORIGINAL = ServerConstants.PERMISSION_ORIGINAL;

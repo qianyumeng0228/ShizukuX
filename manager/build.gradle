@@ -17,7 +17,7 @@ plugins {
 android {
     namespace = "af.shizuku.manager"
     defaultConfig {
-        applicationId = "af.shizuku.plus.api"
+        applicationId = "xyz.shizuku.extra.api"
         versionCode rootProject.ext.versionCode
         versionName rootProject.ext.versionName
         def sentryDsn = project.findProperty('SENTRY_DSN') ?: ''
@@ -63,7 +63,7 @@ android {
     productFlavors {
         shizukux {
             dimension = "distribution"
-            applicationId = "af.shizuku.plus.api"
+            applicationId = "xyz.shizuku.extra.api"
             resValue "string", "app_name", "ShizukuX"
         }
         dropin {
@@ -76,7 +76,7 @@ android {
         debug {
             signingConfig = signingConfigs.sign
             // Debug/test builds install alongside the store build instead of replacing it:
-            // af.shizuku.plus.api -> af.shizuku.plus.api.debug
+            // xyz.shizuku.extra.api -> xyz.shizuku.extra.api.debug
             applicationIdSuffix = ".debug"
             // Dhizuku provider authority is resolved from ${applicationId} in the manifest.
         }

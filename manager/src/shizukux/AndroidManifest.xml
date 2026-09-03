@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- ShizukuX flavor (applicationId af.shizuku.plus.api) CAN be installed alongside stock Shizuku,
+    <!-- ShizukuX flavor (applicationId xyz.shizuku.extra.api) CAN be installed alongside stock Shizuku,
          which owns moe.shizuku.manager.permission.API_V23. If the ShizukuX manager also defined it,
          installing both would fail with -126 INSTALL_FAILED_DUPLICATE_PERMISSION (#316). So ShizukuX
          must NOT define it — the separate Compat Hub (package moe.shizuku.privileged.api, mutually

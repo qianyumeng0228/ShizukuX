@@ -4,7 +4,7 @@ public class ServerConstants {
 
     public static final int MANAGER_APP_NOT_FOUND = 50;
 
-    public static final String PERMISSION = "af.shizuku.plus.permission.API_V23";
+    public static final String PERMISSION = "xyz.shizuku.extra.permission.API_V23";
     public static final String PERMISSION_LEGACY = "af.shizuku.manager.permission.API_V23";
     public static final String PERMISSION_ORIGINAL = "moe.shizuku.manager.permission.API_V23";
 
@@ -13,8 +13,8 @@ public class ServerConstants {
     // corrects it at startup to whichever flavor is actually installed, since a Drop-In-only
     // install would otherwise never find "the manager app" and exit(MANAGER_APP_NOT_FOUND)
     // immediately. Not final so that correction can take effect everywhere this is read.
-    public static String MANAGER_APPLICATION_ID = "af.shizuku.plus.api";
-    public static final String PLUS_APPLICATION_ID = "af.shizuku.plus.api";
+    public static String MANAGER_APPLICATION_ID = "xyz.shizuku.extra.api";
+    public static final String PLUS_APPLICATION_ID = "xyz.shizuku.extra.api";
     public static final String DROPIN_APPLICATION_ID = "moe.shizuku.privileged.api";
 
     // Computed on demand (rather than a constant) because it derives from MANAGER_APPLICATION_ID,

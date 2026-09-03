@@ -45,7 +45,7 @@ class StartStockShizukuViewHolder(
     private fun onStartClicked(v: View) {
         if (af.shizuku.manager.migration.MigrationHelper.isRootAvailable()) {
             val starterCmd = af.shizuku.manager.starter.Starter.internalCommand
-            val cmd = "am force-stop moe.shizuku.privileged.api && am force-stop af.shizuku.plus.api && nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 &"
+            val cmd = "am force-stop moe.shizuku.privileged.api && am force-stop xyz.shizuku.extra.api && nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 &"
             val activity = v.context.asActivity<android.app.Activity>() ?: return
             start.isEnabled = false
             // Shell.cmd().exec() runs the su/shell invocation synchronously; on the calling

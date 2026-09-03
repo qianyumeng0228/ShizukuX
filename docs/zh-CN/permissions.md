@@ -54,7 +54,7 @@ Android 16+ 会把本地回环连接（`127.0.0.1`）和本地 mDNS 发现放到
 
 用于 Root 兼容中心和部分深度进程控制能力，例如识别近期没有获得 Root/Shizuku 授权的应用。它是受保护权限，必须通过特权进程授予或配置 appops 后才能使用。
 
-### `af.shizuku.plus.permission.MANAGER`
+### `xyz.shizuku.extra.permission.MANAGER`
 
 ShizukuX 管理器应用和自己的特权服务进程之间的私有通道。它是签名级权限，只有使用同一签名的 ShizukuX 自身能够使用，其他应用不能伪装成管理器。
 

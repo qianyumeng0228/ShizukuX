@@ -22,7 +22,7 @@ ShizukuX 将 Dhizuku 的核心思路集成到自身架构中，可以把 Shizuku
 
 ```bash
 # ShizukuX 标准构建
-adb shell dpm set-device-owner af.shizuku.plus.api/af.shizuku.manager.admin.DhizukuAdminReceiver
+adb shell dpm set-device-owner xyz.shizuku.extra.api/af.shizuku.manager.admin.DhizukuAdminReceiver
 
 # ShizukuX Drop-In 构建
 adb shell dpm set-device-owner moe.shizuku.privileged.api/af.shizuku.manager.admin.DhizukuAdminReceiver

@@ -66,15 +66,15 @@
         android:label="@string/permission_group_label" />
 
     <permission
-        android:name="af.shizuku.plus.permission.MANAGER"
+        android:name="xyz.shizuku.extra.permission.MANAGER"
         android:protectionLevel="signature" />
-    <uses-permission android:name="af.shizuku.plus.permission.MANAGER" />
+    <uses-permission android:name="xyz.shizuku.extra.permission.MANAGER" />
 
     <!-- NOT flavor-scoped: this permission name is baked in as a literal constant in the
          client-facing api/provider library (ShizukuProvider.PERMISSION) that third-party apps
          compile against, so it must stay stable across flavors. -->
     <permission
-        android:name="af.shizuku.plus.permission.API_V23"
+        android:name="xyz.shizuku.extra.permission.API_V23"
         android:description="@string/permission_description"
         android:icon="@drawable/ic_system_icon"
         android:label="@string/permission_label"
@@ -86,7 +86,7 @@
          (updateFlagsForUid -> grantRuntimePermission), which silently fails unless some installed
          package DEFINES it. Its DEFINITION is flavor-scoped because the flavors have opposite
          constraints:
-           - shizukux (af.shizuku.plus.api) can be installed BESIDE stock Shizuku, which owns this
+           - shizukux (xyz.shizuku.extra.api) can be installed BESIDE stock Shizuku, which owns this
              permission, so defining it here would fail install with -126 duplicate-permission (#316).
              src/shizukux/AndroidManifest.xml removes it; the separate Compat Hub (mutually
              exclusive with stock) is the definer for the ShizukuX flavor.
@@ -278,7 +278,7 @@
             android:name=".legacy.LegacyIsNotSupportedActivity"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:permission="af.shizuku.plus.permission.API_V23"
+            android:permission="xyz.shizuku.extra.permission.API_V23"
             android:theme="@style/GrantPermissions">
             <intent-filter>
                 <action android:name="${applicationId}.intent.action.REQUEST_AUTHORIZATION" />
@@ -430,7 +430,7 @@
         </provider>
 
         <!-- Authority is ${applicationId}.shizuku ONLY here. A content-provider authority is
-             device-unique, so the coexist-with-stock Plus flavor (af.shizuku.plus.api) must NOT claim
+             device-unique, so the coexist-with-stock Plus flavor (xyz.shizuku.extra.api) must NOT claim
              the stock authority moe.shizuku.privileged.api — doing so makes it fail to install
              (INSTALL_FAILED_CONFLICTING_PROVIDER, surfaced as "App not installed") whenever stock
              Shizuku, the Drop-In, or an old moe.shizuku.privileged.api ShizukuX is present. The Drop-In

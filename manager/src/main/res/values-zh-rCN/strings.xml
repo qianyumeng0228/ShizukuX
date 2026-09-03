@@ -520,7 +520,7 @@
     <string name="settings_plus_learn_more"><![CDATA[了解更多]]></string>
     <string name="settings_plus_feature_help_enable">启用功能</string>
     <string name="settings_plus_feature_help_close">关闭</string>
-    <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Plus 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（af.shizuku.plus.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
+    <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Plus 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（xyz.shizuku.extra.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
     <string name="help_dhizuku_title"><![CDATA[关于 Dhizuku 模式]]></string>
     <string name="help_dhizuku_detail"><![CDATA[Dhizuku 允许 Shizuku 与第三方应用共享设备所有者（DevicePolicyManager）权限。这对 Dhizuku Manager 或信息亭模式工具等应用很重要，因为这些应用需要管理系统策略，但又不能成为唯一的设备所有者。]]></string>
     <string name="help_shell_interceptor_title"><![CDATA[关于 Shell 加速器]]></string>
@@ -808,8 +808,8 @@
     <string name="update_download_failed_title"><![CDATA[下载失败]]></string>
     <string name="update_download_failed_message"><![CDATA[下载更新失败。请再试一次。]]></string>
     <string name="migration_dialog_title"><![CDATA[重要提示：需要重新安装]]></string>
-    <string name="migration_dialog_message"><![CDATA[ShizukuX 已将包名从 moe.shizuku.privileged.api 更改为 af.shizuku.plus.api。旧版本和当前版本会被系统视为两个独立的应用，因此无法直接更新。\n\n您可以先从旧版本迁移设置，然后将旧版本卸载。]]></string>
-    <string name="migration_dialog_message_root"><![CDATA[ShizukuX 已将包名从 moe.shizuku.privileged.api 更改为 af.shizuku.plus.api。旧版本和当前版本会被系统视为两个独立的应用，因此无法直接更新。\n\n您可以点按“迁移设置”，使用 Root 权限从旧版本复制设置，然后将旧版本卸载。]]></string>
+    <string name="migration_dialog_message"><![CDATA[ShizukuX 已将包名从 moe.shizuku.privileged.api 更改为 xyz.shizuku.extra.api。旧版本和当前版本会被系统视为两个独立的应用，因此无法直接更新。\n\n您可以先从旧版本迁移设置，然后将旧版本卸载。]]></string>
+    <string name="migration_dialog_message_root"><![CDATA[ShizukuX 已将包名从 moe.shizuku.privileged.api 更改为 xyz.shizuku.extra.api。旧版本和当前版本会被系统视为两个独立的应用，因此无法直接更新。\n\n您可以点按“迁移设置”，使用 Root 权限从旧版本复制设置，然后将旧版本卸载。]]></string>
     <string name="migration_migrate_settings"><![CDATA[迁移设置]]></string>
     <string name="migration_uninstall_old"><![CDATA[卸载旧版本]]></string>
     <string name="migration_dismiss"><![CDATA[稍后处理]]></string>

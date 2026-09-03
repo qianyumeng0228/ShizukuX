@@ -24,7 +24,7 @@ ShizukuX 无法访问 `127.0.0.1` 上的 ADB 端口。最常见原因是网络�
 处理步骤：
 
 1. 打开防火墙、VPN 或广告拦截器设置。
-2. 将 ShizukuX 加入允许列表，标准包名为 `af.shizuku.plus.api`。
+2. 将 ShizukuX 加入允许列表，标准包名为 `xyz.shizuku.extra.api`。
 3. 回到 ShizukuX 再次点击“启动”。
 
 ### 连接屏幕里出现 Java 异常或奇怪代码
@@ -62,7 +62,7 @@ ShizukuX 无法访问 `127.0.0.1` 上的 ADB 端口。最常见原因是网络�
 
 ```bash
 # ShizukuX 标准构建
-adb shell pm grant af.shizuku.plus.api android.permission.WRITE_SECURE_SETTINGS
+adb shell pm grant xyz.shizuku.extra.api android.permission.WRITE_SECURE_SETTINGS
 
 # ShizukuX Drop-In 构建（使用原 Shizuku 包名）
 adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS

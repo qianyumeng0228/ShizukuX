@@ -753,8 +753,8 @@
     <string name="update_download_failed_message">Failed to download the update. Please try again.</string>
     <!-- Migration Dialog -->
 <string name="migration_dialog_title">Important: Reinstall Required</string>
-    <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
-    <string name="migration_dialog_message_root">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nRoot access is available — tap Migrate Settings to copy your settings from the old version, then uninstall it.</string>
+    <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to xyz.shizuku.extra.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
+    <string name="migration_dialog_message_root">ShizukuX changed its package ID from moe.shizuku.privileged.api to xyz.shizuku.extra.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nRoot access is available — tap Migrate Settings to copy your settings from the old version, then uninstall it.</string>
     <string name="migration_migrate_settings">Migrate Settings</string>
     <string name="migration_uninstall_old">Uninstall Old Version</string>
     <string name="migration_dismiss">Dismiss</string>

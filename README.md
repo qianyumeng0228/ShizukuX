@@ -71,7 +71,7 @@ ShizukuX 的一切能力都是可选的。在设置的 **Plus 功能**分类中�
 
 ## 🔌 第三方应用兼容性
 
-ShizukuX 以独立包名（`af.shizuku.plus.api`）安装，可与原版 Shizuku 共存。由于多数 Shizuku 应用只会检测 `moe.shizuku.privileged.api` 这个包名，ShizukuX 内置了一个轻量级 **兼容中心（Compat Hub）**——一个注册该包名的微型伴生应用，负责将 binder/权限请求转发给 ShizukuX。
+ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizuku 共存。由于多数 Shizuku 应用只会检测 `moe.shizuku.privileged.api` 这个包名，ShizukuX 内置了一个轻量级 **兼容中心（Compat Hub）**——一个注册该包名的微型伴生应用，负责将 binder/权限请求转发给 ShizukuX。
 
 **如果第三方应用检测不到 ShizukuX：**
 

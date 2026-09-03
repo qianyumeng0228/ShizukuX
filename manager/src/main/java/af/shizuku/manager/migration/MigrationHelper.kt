@@ -7,7 +7,7 @@ import timber.log.Timber
 
 /**
  * Detects and migrates settings from the old `moe.shizuku.privileged.api` package
- * to the current `af.shizuku.plus.api` package.
+ * to the current `xyz.shizuku.extra.api` package.
  *
  * The applicationId changed, so users cannot do an in-place update — they must uninstall
  * and reinstall. This helper copies the old SharedPreferences file to the current app's

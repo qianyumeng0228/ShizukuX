@@ -15,7 +15,7 @@ ShizukuX（继承自 Shizuku+）是基础 Shizuku 项目的全面增强版。在
 与原版主要依赖通过 ADB 启动的 `shizuku_server` 不同，ShizukuX 集成了 **Dhizuku 模式**。这允许 ShizukuX 管理器本身被设置为**设备所有者**，提供一个无需 Root 的、可持续的系统权限锚点（在支持的配置下），重启后依然生效。
 
 ### 兼容层（包名检测与 Binder 投递）
-ShizukuX 以独立的应用包名（`af.shizuku.plus.api`）安装，可与原版 Shizuku 共存；但 Shizuku 应用传统上只会检测固定的 `moe.shizuku.privileged.api` 包名。ShizukuX 通过两个独立层来解决这个问题：
+ShizukuX 以独立的应用包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizuku 共存；但 Shizuku 应用传统上只会检测固定的 `moe.shizuku.privileged.api` 包名。ShizukuX 通过两个独立层来解决这个问题：
 
 *   **检测**：内置的**兼容中心（Compat Hub）**伴生应用（`compat` 模块，包名 `moe.shizuku.privileged.api`）通过第三方应用的 `isInstalled` 检查，并将旧版 `REQUEST_BINDER` 广播转发给真正的管理器。另一种**直接替换版（drop-in）**则直接以 `moe.shizuku.privileged.api` 安装。
 *   **投递**：服务通过 ContentProvider 的 `sendBinder` 调用，将特权 binder 交付给每个已授权应用，携带覆盖三个 API 命名空间（`af.shizuku`、`rikka.shizuku`、`moe.shizuku`）的 `BinderContainer` 数据包。只有兼容中心与这次握手都成功，应用才会认为 ShizukuX 处于"运行中"。

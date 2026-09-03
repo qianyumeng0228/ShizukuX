@@ -138,7 +138,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
      * starter (manager/src/main/jni/starter.cpp) launches app_process with
      * {@code -Djava.class.path=<manager.apk>} (and {@code -Dshizuku.library.path=<apk dir>/lib/<abi>}),
      * so the APK path is available from the classpath. From a path such as
-     * {@code /data/app/~~xx/af.shizuku.plus.api.debug-abc/base.apk} the package is the parent
+     * {@code /data/app/~~xx/xyz.shizuku.extra.api.debug-abc/base.apk} the package is the parent
      * directory name with everything after the last '-' stripped. Returns null when it cannot be
      * derived reliably.
      */
@@ -2260,7 +2260,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             Bundle extra = new Bundle();
             if (MANAGER_APPLICATION_ID.equals(packageName)) {
-                extra.putParcelable("af.shizuku.plus.api.intent.extra.BINDER", new af.shizuku.api.BinderContainer(binder));
+                extra.putParcelable("xyz.shizuku.extra.api.intent.extra.BINDER", new af.shizuku.api.BinderContainer(binder));
             }
             extra.putParcelable("rikka.shizuku.intent.extra.BINDER", new rikka.shizuku.BinderContainer(binder));
             extra.putParcelable("moe.shizuku.privileged.api.intent.extra.BINDER", new moe.shizuku.api.BinderContainer(binder));

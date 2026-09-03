@@ -544,7 +544,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     }
 
     private fun showDhizukuSetupDialog(ctx: Context) {
-        // applicationId (af.shizuku.plus.api) differs from namespace (af.shizuku.manager),
+        // applicationId (xyz.shizuku.extra.api) differs from namespace (af.shizuku.manager),
         // so the full class name must be explicit rather than using the shorthand dot notation.
         val command = "adb shell dpm set-device-owner " +
             "${ctx.packageName}/af.shizuku.manager.admin.DhizukuAdminReceiver"

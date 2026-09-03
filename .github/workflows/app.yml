@@ -481,7 +481,7 @@ jobs:
 
             echo "## 下载选择"
             echo
-            echo "- 标准版：\`ShizukuX-${TAG_NAME}.apk\`，包名 \`af.shizuku.plus.api\`。推荐大多数用户下载，可与原版 Shizuku 并存。"
+            echo "- 标准版：\`ShizukuX-${TAG_NAME}.apk\`，包名 \`xyz.shizuku.extra.api\`。推荐大多数用户下载，可与原版 Shizuku 并存。"
             echo "- Drop-In 版：\`ShizukuX-Drop-In-${TAG_NAME}.apk\`，包名 \`moe.shizuku.privileged.api\`。用于替换原版 Shizuku，不能与原版 Shizuku 同时安装。"
             echo "- Compat-Hub 兼容中心：\`ShizukuX-Compat-Hub-${TAG_NAME}.apk\`，包名同为 \`moe.shizuku.privileged.api\`。这是轻量兼容辅助包，用于让只检测原版 Shizuku 包名的第三方应用识别 ShizukuX；通常无需手动下载，标准版应用内有安装入口。"
             echo
@@ -530,7 +530,7 @@ jobs:
           # ShizukuX artifact download landed multiple APKs in files/main, so the old
           # `find files/main | head -1` grabbed the Drop-In and published it as the Plus asset —
           # every release r2141..r2152 shipped the Drop-In (moe.shizuku.privileged.api) under BOTH the
-          # Plus and Drop-In names, so the standard af.shizuku.plus.api build (the coexist-with-stock
+          # Plus and Drop-In names, so the standard xyz.shizuku.extra.api build (the coexist-with-stock
           # one) never reached users and wouldn't install alongside stock Shizuku.
           ASSETS=()
           # applicationId of an APK, read from its FileProvider authority (${applicationId}.fileprovider).
@@ -539,12 +539,12 @@ jobs:
             | grep -oE '[a-zA-Z0-9._]+\.fileprovider' | head -1 | sed 's/\.fileprovider$//'; }
           attach() { mv "$1" "files/${2}.apk"; ASSETS+=("files/${2}.apk"); }
 
-          # Plus (standard) — uniquely af.shizuku.plus.api. Fail the release if it's missing.
+          # Plus (standard) — uniquely xyz.shizuku.extra.api. Fail the release if it's missing.
           PLUS_APK=""
           for f in $(find files -name "*.apk" -type f 2>/dev/null); do
-            [ "$(appid_of "$f")" = "af.shizuku.plus.api" ] && { PLUS_APK="$f"; break; }
+            [ "$(appid_of "$f")" = "xyz.shizuku.extra.api" ] && { PLUS_APK="$f"; break; }
           done
-          [ -z "$PLUS_APK" ] && { echo "::error::Standard af.shizuku.plus.api APK missing from build artifacts"; exit 1; }
+          [ -z "$PLUS_APK" ] && { echo "::error::Standard xyz.shizuku.extra.api APK missing from build artifacts"; exit 1; }
           attach "$PLUS_APK" "ShizukuX-${VERSION}"
 
           # Drop-In and the Compat stub BOTH use moe.shizuku.privileged.api. The Drop-In is the full

@@ -11,7 +11,7 @@
 ## 开发环境
 
 - 参与开发**无需本地 Android SDK**——本项目只通过 GitHub Actions（`.github/workflows/app.yml`）构建。如果你有本地 SDK，`./gradlew :manager:assembleRelease` 是验证构建命令。
-- 大部分代码由两个构建 flavor 共享：`Shizukuplus`（`af.shizuku.plus.api`，可与原版 Shizuku 共存）和 `Dropin`（`moe.shizuku.privileged.api`，直接替换原版）。请确认你的改动需要应用到哪个 flavor。
+- 大部分代码由两个构建 flavor 共享：`Shizukuplus`（`xyz.shizuku.extra.api`，可与原版 Shizuku 共存）和 `Dropin`（`moe.shizuku.privileged.api`，直接替换原版）。请确认你的改动需要应用到哪个 flavor。
 - 切勿提交或修改 `key.jks`、`signing.properties` 或任何匹配 `secrets*` 的文件。
 
 ## 提交 PR

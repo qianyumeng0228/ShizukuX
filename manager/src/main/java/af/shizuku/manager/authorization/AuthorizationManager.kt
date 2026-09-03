@@ -71,7 +71,7 @@ object AuthorizationManager {
     }
 
     fun isPlusApiSupported(pi: PackageInfo): Boolean {
-        return pi.applicationInfo?.metaData?.getBoolean("af.shizuku.plus.API") == true
+        return pi.applicationInfo?.metaData?.getBoolean("xyz.shizuku.extra.API") == true
     }
 
     fun granted(packageName: String, uid: Int): Boolean {

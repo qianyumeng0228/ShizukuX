@@ -450,7 +450,7 @@
     <string name="diagnostics_disable_title">Disable Diagnostics?</string>
     <string name="diagnostics_disable_message">This will hide the diagnostic warning panel. You can re-enable it anytime from advanced settings.</string>
     <string name="diagnostics_disable_confirm">Disable</string>
-    <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Plus features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (af.shizuku.plus.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
+    <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Plus features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (xyz.shizuku.extra.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
 
     <!-- Detailed Help Strings -->
     <string name="help_dhizuku_title">About Dhizuku Mode</string>
@@ -935,8 +935,8 @@
 
     <!-- Migration Dialog -->
 <string name="migration_dialog_title">Important: Reinstall Required</string>
-    <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
-    <string name="migration_dialog_message_root">ShizukuX changed its package ID from moe.shizuku.privileged.api to af.shizuku.plus.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nRoot access is available — tap Migrate Settings to copy your settings from the old version, then uninstall it.</string>
+    <string name="migration_dialog_message">ShizukuX changed its package ID from moe.shizuku.privileged.api to xyz.shizuku.extra.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nYou can migrate your settings from the old version and then uninstall it.</string>
+    <string name="migration_dialog_message_root">ShizukuX changed its package ID from moe.shizuku.privileged.api to xyz.shizuku.extra.api. Your old version and this version are treated as separate apps, so a direct update was not possible.\n\nRoot access is available — tap Migrate Settings to copy your settings from the old version, then uninstall it.</string>
     <string name="migration_migrate_settings">Migrate Settings</string>
     <string name="migration_uninstall_old">Uninstall Old Version</string>
     <string name="migration_dismiss">Dismiss</string>
