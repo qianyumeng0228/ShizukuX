@@ -68,7 +68,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
 
     private fun badgeStyleFor(type: Int): Triple<String, Int, Int>? = when (type) {
         1 -> Triple(
-            "PLUS",
+            "EXTRA",
             resolveColor(com.google.android.material.R.attr.colorPrimaryContainer, 0xFFE8DEF8.toInt()),
             resolveColor(com.google.android.material.R.attr.colorOnPrimaryContainer, 0xFF21005D.toInt())
         )

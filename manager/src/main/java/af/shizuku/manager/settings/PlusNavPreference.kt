@@ -34,7 +34,7 @@ class PlusNavPreference(context: Context, attrs: AttributeSet?) : Preference(con
         val spannable = SpannableStringBuilder(original).apply {
             append("  ")
             val start = length
-            append(" PLUS ")
+            append(" EXTRA ")
             val end = length
             setSpan(BackgroundColorSpan(bgColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             setSpan(ForegroundColorSpan(fgColor), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
