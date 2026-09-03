@@ -1,23 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ShizukuX branded launcher foreground: full-bleed ShizukuX artwork
+     (deep-blue square + white fox + purple X). Replaces upstream Shizuku
+     cat+hexagon art and the legacy '+' badge. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:drawable="@mipmap/ic_launcher_foreground_base" />
-    <!-- The cat+hexagon art below (ic_launcher_foreground_base / ic_launcher_background) is
-         upstream RikkaApps/Shizuku's original artwork, unmodified - the only intentional
-         difference from upstream's icon is this plus badge. Position was measured directly from
-         upstream's ic_launcher_background.png (hexagon bounding box x:134-311, y:145-303 in its
-         native 432-unit/4x scale, i.e. 33.5-77.75, 36.25-75.75 at this file's 108-unit scale):
-         placed over the hexagon's upper-right shoulder, center (71.25, 42.5), radius ~21dp from
-         canvas center (54,54) - inside the 66dp/33dp-radius adaptive-icon safe zone that OEM
-         launcher/notification-icon compositors crop to. -->
-    <item>
-        <vector
-            android:width="108dp"
-            android:height="108dp"
-            android:viewportWidth="108"
-            android:viewportHeight="108">
-            <path
-                android:fillColor="#B3FFFFFF"
-                android:pathData="M 69.47,35.38 h 3.56 v 5.34 h 5.34 v 3.56 h -5.34 v 5.34 h -3.56 v -5.34 h -5.34 v -3.56 h 5.34 z" />
-        </vector>
-    </item>
 </layer-list>
