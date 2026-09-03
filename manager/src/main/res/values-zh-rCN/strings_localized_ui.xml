@@ -2,7 +2,7 @@
 <resources>
     <string name="settings_capabilities_category">功能</string>
     <string name="settings_feature_hub_title">功能中心</string>
-    <string name="settings_feature_hub_summary">管理 Plus 专属功能</string>
+    <string name="settings_feature_hub_summary">管理 Extra 专属功能</string>
     <string name="settings_root_compatibility_title">Root 与兼容性</string>
     <string name="settings_root_compatibility_summary">ADB 连接、SU 桥接、无 Root 集成以及原版 Shizuku 兼容性</string>
     <string name="settings_personalization_category">个性化</string>

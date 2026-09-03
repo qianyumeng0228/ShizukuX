@@ -249,9 +249,9 @@
     <string name="app_management_item_summary_requires_plus">* requer a API Avançada do ShizukuX</string>
     <string name="app_management_item_context">Sobre este aplicativo: %s</string>
     <string name="app_management_enhancements">Aprimoramentos</string>
-    <string name="app_management_enhancements_desc">Ative os recursos Plus para este aplicativo para melhorar o desempenho e a compatibilidade.</string>
+    <string name="app_management_enhancements_desc">Ative os recursos Extra para este aplicativo para melhorar o desempenho e a compatibilidade.</string>
     <string name="app_management_badge_enhanced">Aprimorado</string>
-    <string name="app_management_badge_upgrade">Atualização Plus disponível</string>
+    <string name="app_management_badge_upgrade">Atualização Extra disponível</string>
     <string name="app_management_toggle_all">Alternar todos</string>
     <string name="app_management_bulk_grant">Conceder aos selecionados</string>
     <string name="app_management_bulk_revoke">Revogar dos selecionados</string>
@@ -407,7 +407,7 @@
     <string name="settings_plus_app_setup_title">Configurar Integração</string>
     <string name="settings_plus_app_open">Abrir Aplicativo</string>
     <string name="settings_plus_learn_more">Saiba mais</string>
-    <string name="help_general_plus_summary"><![CDATA[<b>Como o ShizukuX funciona com outros aplicativos</b><br><br>O ShizukuX oferece <i>recursos exclusivos Plus</i> (Ponte de Armazenamento, Ponte de IA, Ponte de Personalização) acessíveis por este aplicativo e por qualquer aplicativo de terceiros que use explicitamente a API do ShizukuX (xyz.shizuku.extra.api).<br><br><b>Importante:</b> O ShizukuX é totalmente compatível com a API original do Shizuku. Aplicativos existentes que usam o Shizuku padrão (como SD Maid SE e SwiftBackup) descobrirão e funcionarão automaticamente com o ShizukuX sem qualquer atualização do desenvolvedor.<br><br><b>Usando junto com o Shizuku padrão:</b> Apenas um serviço pode ser executado por vez. O cartão de Complemento na tela inicial facilita a troca caso você ainda tenha o Shizuku padrão instalado, mas é recomendado desinstalar o Shizuku padrão e usar apenas o ShizukuX.]]></string>
+    <string name="help_general_plus_summary"><![CDATA[<b>Como o ShizukuX funciona com outros aplicativos</b><br><br>O ShizukuX oferece <i>recursos exclusivos Extra</i> (Ponte de Armazenamento, Ponte de IA, Ponte de Personalização) acessíveis por este aplicativo e por qualquer aplicativo de terceiros que use explicitamente a API do ShizukuX (xyz.shizuku.extra.api).<br><br><b>Importante:</b> O ShizukuX é totalmente compatível com a API original do Shizuku. Aplicativos existentes que usam o Shizuku padrão (como SD Maid SE e SwiftBackup) descobrirão e funcionarão automaticamente com o ShizukuX sem qualquer atualização do desenvolvedor.<br><br><b>Usando junto com o Shizuku padrão:</b> Apenas um serviço pode ser executado por vez. O cartão de Complemento na tela inicial facilita a troca caso você ainda tenha o Shizuku padrão instalado, mas é recomendado desinstalar o Shizuku padrão e usar apenas o ShizukuX.]]></string>
 
     <!-- Detailed Help Strings -->
     <string name="help_dhizuku_title">Sobre o Modo Dhizuku</string>
@@ -469,8 +469,8 @@
     <string name="help_root_busybox_title">Sobre a Simulação do BusyBox</string>
     <string name="help_root_busybox_detail">O BusyBox é um conjunto de utilitários Unix comum em dispositivos com root. Alguns aplicativos root mais antigos verificam a existência dele antes de executar sua lógica. Este módulo retorna uma resposta simulada de sucesso para o comando "busybox".</string>
 
-    <string name="settings_hide_disabled_plus_features">Ocultar Recursos Plus desativados</string>
-    <string name="settings_hide_disabled_plus_features_summary">Ocultar recursos Plus que não estão disponíveis neste dispositivo ou configuração</string>
+    <string name="settings_hide_disabled_plus_features">Ocultar Recursos Extra desativados</string>
+    <string name="settings_hide_disabled_plus_features_summary">Ocultar recursos Extra que não estão disponíveis neste dispositivo ou configuração</string>
     <string name="settings_vector">Aceleração Vetorial</string>
     <string name="settings_vector_summary">Ativar renderização vetorial acelerada por hardware para melhor desempenho gráfico</string>
     <string name="settings_experimental_root">Compatibilidade Root</string>

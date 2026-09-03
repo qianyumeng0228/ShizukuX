@@ -274,9 +274,9 @@
     <string name="app_management_item_summary_requires_plus">* requires ShizukuX Enhanced API</string>
     <string name="app_management_item_context">About this app: %s</string>
     <string name="app_management_enhancements">Enhancements</string>
-    <string name="app_management_enhancements_desc">Enable Plus features for this app to improve performance and compatibility.</string>
+    <string name="app_management_enhancements_desc">Enable Extra features for this app to improve performance and compatibility.</string>
     <string name="app_management_badge_enhanced">Enhanced</string>
-    <string name="app_management_badge_upgrade">Plus upgrade available</string>
+    <string name="app_management_badge_upgrade">Extra upgrade available</string>
     <string name="app_management_toggle_all">Toggle all</string>
     <string name="app_management_bulk_grant">Grant selected</string>
     <string name="app_management_bulk_revoke">Revoke selected</string>
@@ -450,7 +450,7 @@
     <string name="diagnostics_disable_title">Disable Diagnostics?</string>
     <string name="diagnostics_disable_message">This will hide the diagnostic warning panel. You can re-enable it anytime from advanced settings.</string>
     <string name="diagnostics_disable_confirm">Disable</string>
-    <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Plus features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (xyz.shizuku.extra.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
+    <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Extra features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (xyz.shizuku.extra.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
 
     <!-- Detailed Help Strings -->
     <string name="help_dhizuku_title">About Dhizuku Mode</string>
@@ -512,8 +512,8 @@
     <string name="help_root_busybox_title">About BusyBox Simulation</string>
     <string name="help_root_busybox_detail">BusyBox is a suite of Unix utilities common on rooted devices. Some older root apps check for its existence before running their logic. This module returns a simulated successful response for the \'busybox\' command.</string>
 
-    <string name="settings_hide_disabled_plus_features">Hide disabled Plus Features</string>
-    <string name="settings_hide_disabled_plus_features_summary">Hide Plus features that are not available on this device or configuration</string>
+    <string name="settings_hide_disabled_plus_features">Hide disabled Extra Features</string>
+    <string name="settings_hide_disabled_plus_features_summary">Hide Extra features that are not available on this device or configuration</string>
     <string name="settings_vector">Vector Acceleration</string>
     <string name="settings_vector_summary">Enable hardware-accelerated vector rendering for improved graphics performance</string>
     <string name="settings_experimental_root">Root Compatibility</string>
@@ -794,7 +794,7 @@
     <string name="settings_main_category_personalization">Personalization</string>
     <string name="settings_main_category_system">System</string>
     <string name="settings_main_nav_feature_hub_title">Feature Hub</string>
-    <string name="settings_main_nav_feature_hub_summary">Manage exclusive Plus capabilities</string>
+    <string name="settings_main_nav_feature_hub_summary">Manage exclusive Extra capabilities</string>
     <string name="settings_main_nav_root_compat_title">Root &amp; Compatibility</string>
     <string name="settings_main_nav_root_compat_summary">ADB connection, SU bridge, rootless integration, and stock Shizuku compatibility</string>
     <string name="settings_main_nav_appearance_summary">Theme, shapes, icons, motion, home layout, and language</string>

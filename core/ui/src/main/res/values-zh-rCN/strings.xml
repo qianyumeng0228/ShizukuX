@@ -239,9 +239,9 @@
     <string name="app_management_item_summary_shizuku_aware"><![CDATA[Shizuku 感知：原生支持 Shizuku]]></string>
     <string name="app_management_item_context"><![CDATA[关于此应用：%s]]></string>
     <string name="app_management_enhancements"><![CDATA[增强功能]]></string>
-    <string name="app_management_enhancements_desc"><![CDATA[为此应用启用 Plus 功能以提升性能与兼容性。]]></string>
+    <string name="app_management_enhancements_desc"><![CDATA[为此应用启用 Extra 功能以提升性能与兼容性。]]></string>
     <string name="app_management_badge_enhanced"><![CDATA[已增强]]></string>
-    <string name="app_management_badge_upgrade"><![CDATA[可升级到 Plus]]></string>
+    <string name="app_management_badge_upgrade"><![CDATA[可升级到 Extra]]></string>
     <string name="app_management_toggle_all"><![CDATA[全部切换]]></string>
     <string name="app_management_bulk_grant"><![CDATA[批量授权]]></string>
     <string name="app_management_bulk_revoke"><![CDATA[批量撤销]]></string>
@@ -439,8 +439,8 @@
     <string name="help_root_file_interceptor_detail"><![CDATA[当应用使用标准 shell 将文件复制到 /data/data 时，通常会丢失所有权和 SELinux 上下文。此模块自动添加 --preserve=all 等标志以保持文件完整性并防止应用崩溃。]]></string>
     <string name="help_root_busybox_title"><![CDATA[关于 BusyBox 模拟]]></string>
     <string name="help_root_busybox_detail"><![CDATA[BusyBox 是 root 设备上常见的一套 Unix 工具。一些旧版 root 应用在运行其逻辑前会检查它是否存在。此模块为 “busybox” 命令返回模拟的成功响应。]]></string>
-    <string name="settings_hide_disabled_plus_features"><![CDATA[隐藏已停用的 Plus 功能]]></string>
-    <string name="settings_hide_disabled_plus_features_summary"><![CDATA[隐藏此设备或配置上不可用的 Plus 功能]]></string>
+    <string name="settings_hide_disabled_plus_features"><![CDATA[隐藏已停用的 Extra 功能]]></string>
+    <string name="settings_hide_disabled_plus_features_summary"><![CDATA[隐藏此设备或配置上不可用的 Extra 功能]]></string>
     <string name="settings_vector"><![CDATA[矢量加速]]></string>
     <string name="settings_vector_summary"><![CDATA[启用硬件加速矢量渲染以提升图形性能]]></string>
     <string name="settings_experimental_root"><![CDATA[Root 兼容]]></string>

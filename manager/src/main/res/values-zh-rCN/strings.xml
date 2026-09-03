@@ -422,7 +422,7 @@
     <string name="app_management_item_summary_requires_plus"><![CDATA[* 需要 ShizukuX 增强 API]]></string>
     <string name="app_management_item_context"><![CDATA[应用：%s]]></string>
     <string name="app_management_enhancements"><![CDATA[增强功能]]></string>
-    <string name="app_management_enhancements_desc"><![CDATA[为此应用启用 Plus 功能，以提升性能和兼容性。]]></string>
+    <string name="app_management_enhancements_desc"><![CDATA[为此应用启用 Extra 功能，以提升性能和兼容性。]]></string>
     <string name="app_management_badge_enhanced"><![CDATA[增强型]]></string>
     <string name="app_management_badge_upgrade"><![CDATA[还可升级]]></string>
     <string name="app_management_bulk_grant"><![CDATA[授予所选应用权限]]></string>
@@ -520,7 +520,7 @@
     <string name="settings_plus_learn_more"><![CDATA[了解更多]]></string>
     <string name="settings_plus_feature_help_enable">启用功能</string>
     <string name="settings_plus_feature_help_close">关闭</string>
-    <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Plus 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（xyz.shizuku.extra.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
+    <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Extra 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（xyz.shizuku.extra.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
     <string name="help_dhizuku_title"><![CDATA[关于 Dhizuku 模式]]></string>
     <string name="help_dhizuku_detail"><![CDATA[Dhizuku 允许 Shizuku 与第三方应用共享设备所有者（DevicePolicyManager）权限。这对 Dhizuku Manager 或信息亭模式工具等应用很重要，因为这些应用需要管理系统策略，但又不能成为唯一的设备所有者。]]></string>
     <string name="help_shell_interceptor_title"><![CDATA[关于 Shell 加速器]]></string>
@@ -561,8 +561,8 @@
     <string name="help_root_file_interceptor_detail"><![CDATA[应用使用标准 Shell 将文件复制到 /data/data 时，通常会丢失所有权和 SELinux 上下文。此模块会自动添加 --preserve=all 等参数，维护文件完整性，避免应用崩溃。]]></string>
     <string name="help_root_busybox_title"><![CDATA[关于 BusyBox 模拟]]></string>
     <string name="help_root_busybox_detail"><![CDATA[BusyBox 是一组常见于 Root 设备上的 Unix 工具。一些旧版 Root 应用会在运行前检查它是否存在。此模块会为“busybox”命令返回模拟的成功响应。]]></string>
-    <string name="settings_hide_disabled_plus_features"><![CDATA[隐藏已禁用的 Plus 功能]]></string>
-    <string name="settings_hide_disabled_plus_features_summary"><![CDATA[隐藏此设备或当前配置不可用的 Plus 功能]]></string>
+    <string name="settings_hide_disabled_plus_features"><![CDATA[隐藏已禁用的 Extra 功能]]></string>
+    <string name="settings_hide_disabled_plus_features_summary"><![CDATA[隐藏此设备或当前配置不可用的 Extra 功能]]></string>
     <string name="settings_avf_manager_experimental"><![CDATA[虚拟机管理器（AVF，实验性）]]></string>
     <string name="settings_ai_core_plus_experimental"><![CDATA[智能桥（实验）]]></string>
     <string name="settings_vector_experimental"><![CDATA[矢量加速]]></string>

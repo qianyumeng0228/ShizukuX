@@ -2,7 +2,7 @@
 <resources>
     <string name="settings_capabilities_category">Capabilities</string>
     <string name="settings_feature_hub_title">Feature Hub</string>
-    <string name="settings_feature_hub_summary">Manage exclusive Plus capabilities</string>
+    <string name="settings_feature_hub_summary">Manage exclusive Extra capabilities</string>
     <string name="settings_root_compatibility_title">Root &amp; Compatibility</string>
     <string name="settings_root_compatibility_summary">ADB connection, SU bridge, rootless integration, and stock Shizuku compatibility</string>
     <string name="settings_personalization_category">Personalization</string>

@@ -209,9 +209,9 @@
     <string name="app_management_item_summary_shizuku_aware">Shizuku-aware: Supports Shizuku natively</string>
     <string name="app_management_item_context">About this app: %s</string>
     <string name="app_management_enhancements">Enhancements</string>
-    <string name="app_management_enhancements_desc">Enable Plus features for this app to improve performance and compatibility.</string>
+    <string name="app_management_enhancements_desc">Enable Extra features for this app to improve performance and compatibility.</string>
     <string name="app_management_badge_enhanced">Enhanced</string>
-    <string name="app_management_badge_upgrade">Plus upgrade available</string>
+    <string name="app_management_badge_upgrade">Extra upgrade available</string>
     <string name="app_management_toggle_all">Toggle all</string>
     <string name="app_management_bulk_grant">Grant selected</string>
     <string name="app_management_bulk_revoke">Revoke selected</string>
@@ -405,8 +405,8 @@
     <string name="help_root_file_interceptor_detail">When apps copy files to /data/data using a standard shell, they often lose ownership and SELinux contexts. This module automatically adds flags like --preserve=all to maintain file integrity and prevent app crashes.</string>
     <string name="help_root_busybox_title">About BusyBox Simulation</string>
     <string name="help_root_busybox_detail">BusyBox is a suite of Unix utilities common on rooted devices. Some older root apps check for its existence before running their logic. This module returns a simulated successful response for the \'busybox\' command.</string>
-    <string name="settings_hide_disabled_plus_features">Hide disabled Plus Features</string>
-    <string name="settings_hide_disabled_plus_features_summary">Hide Plus features that are not available on this device or configuration</string>
+    <string name="settings_hide_disabled_plus_features">Hide disabled Extra Features</string>
+    <string name="settings_hide_disabled_plus_features_summary">Hide Extra features that are not available on this device or configuration</string>
     <string name="settings_vector">Vector Acceleration</string>
     <string name="settings_vector_summary">Enable hardware-accelerated vector rendering for improved graphics performance</string>
     <string name="settings_experimental_root">Root Compatibility</string>
