@@ -354,8 +354,8 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 )) { _, which ->
                     try {
                         when (which) {
-                            0 -> createBackupLauncher.launch("ShizukuPlus_Settings_$dateStr.json")
-                            1 -> createPlainBackupLauncher.launch("ShizukuPlus_Settings_plain_$dateStr.json")
+                            0 -> createBackupLauncher.launch("ShizukuX_Settings_$dateStr.json")
+                            1 -> createPlainBackupLauncher.launch("ShizukuX_Settings_plain_$dateStr.json")
                         }
                     } catch (e: android.content.ActivityNotFoundException) {
                         Toast.makeText(requireContext(), R.string.settings_no_file_manager_save, Toast.LENGTH_LONG).show()
@@ -655,11 +655,11 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         try {
             val intent = android.content.Intent("android.app.action.DEVICE_ADMIN_ENABLED")
             val receivers = ctx.packageManager.queryBroadcastReceivers(intent, 0)
-            android.util.Log.d("ShizukuPlusTransfer", "queryBroadcastReceivers returned ${receivers.size} receivers")
+            android.util.Log.d("ShizukuXTransfer", "queryBroadcastReceivers returned ${receivers.size} receivers")
             for (resolveInfo in receivers) {
                 val activityInfo = resolveInfo.activityInfo ?: continue
                 val packageName = activityInfo.packageName
-                android.util.Log.d("ShizukuPlusTransfer", "found receiver: $packageName/${activityInfo.name}")
+                android.util.Log.d("ShizukuXTransfer", "found receiver: $packageName/${activityInfo.name}")
                 if (packageName == pm) continue // skip self
                 if (seenPackages.contains(packageName)) continue // dedupe by package: some apps declare multiple DPC receivers
                 seenPackages.add(packageName)
@@ -672,9 +672,9 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 candidates.add(label to component)
             }
         } catch (e: Exception) {
-            android.util.Log.e("ShizukuPlusTransfer", "Exception scanning", e)
+            android.util.Log.e("ShizukuXTransfer", "Exception scanning", e)
         }
-        android.util.Log.d("ShizukuPlusTransfer", "candidates size: ${candidates.size}")
+        android.util.Log.d("ShizukuXTransfer", "candidates size: ${candidates.size}")
         if (candidates.isEmpty()) {
             Toast.makeText(ctx, R.string.dhizuku_transfer_no_targets, Toast.LENGTH_LONG).show()
             return
