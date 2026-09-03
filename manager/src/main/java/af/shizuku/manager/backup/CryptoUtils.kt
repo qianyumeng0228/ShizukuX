@@ -19,8 +19,8 @@ object CryptoUtils {
     // keys can't be "upgraded" in place, so v2 forces a fresh, device-credential-capable key for
     // everyone. Cost: auth-protected backups made before this fix can't be restored (re-create
     // them); acceptable since that path was largely broken on non-biometric devices anyway.
-    private const val KEY_ALIAS_AUTH = "ShizukuPlusBackupKey_v2"
-    private const val KEY_ALIAS_NO_AUTH = "ShizukuPlusBackupKey_no_auth"
+    private const val KEY_ALIAS_AUTH = "ShizukuXBackupKey_v2"
+    private const val KEY_ALIAS_NO_AUTH = "ShizukuXBackupKey_no_auth"
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val TRANSFORMATION = "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_GCM}/${KeyProperties.ENCRYPTION_PADDING_NONE}"
 

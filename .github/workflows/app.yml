@@ -182,18 +182,18 @@ jobs:
           export GRADLE_OPTS="-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
 
           if [ "$IS_DEBUG" = "true" ]; then
-            CMD="./gradlew :manager:assembleShizukuplusDebug"
+            CMD="./gradlew :manager:assembleShizukuxDebug"
             eval $CMD --stacktrace --info -x :manager:lint
-            FILE=$(find manager/build/outputs/apk/shizukuplus/debug -name "*.apk" -type f | head -1)
+            FILE=$(find manager/build/outputs/apk/shizukux/debug -name "*.apk" -type f | head -1)
             [ -z "$FILE" ] && { echo "Error: No debug APK found"; exit 1; }
-            RENAMED="$(dirname "$FILE")/shizukuplus-debug.apk"
+            RENAMED="$(dirname "$FILE")/shizukux-debug.apk"
             mv "$FILE" "$RENAMED"
-            echo "artifactName=shizukuplus-debug.apk" >> $GITHUB_OUTPUT
+            echo "artifactName=shizukux-debug.apk" >> $GITHUB_OUTPUT
             echo "filePath=${RENAMED}" >> $GITHUB_OUTPUT
           else
-            CMD="./gradlew :manager:assembleShizukuplusRelease :manager:assembleDropinRelease $ARGS"
+            CMD="./gradlew :manager:assembleShizukuxRelease :manager:assembleDropinRelease $ARGS"
             eval $CMD --stacktrace --info \
-              -x uploadSentryProguardMappingsShizukuplusRelease \
+              -x uploadSentryProguardMappingsShizukuxRelease \
               -x uploadSentryProguardMappingsDropinRelease \
               -x :manager:lint
 
@@ -212,15 +212,15 @@ jobs:
               fi
             }
 
-            PLUS_FILE=$(find manager/build/outputs/apk/shizukuplus/release -name "*.apk" -type f | head -1)
+            PLUS_FILE=$(find manager/build/outputs/apk/shizukux/release -name "*.apk" -type f | head -1)
             DROPIN_FILE=$(find manager/build/outputs/apk/dropin/release -name "*.apk" -type f | head -1)
-            [ -z "$PLUS_FILE" ] && { echo "Error: No ShizukuPlus APK found"; exit 1; }
+            [ -z "$PLUS_FILE" ] && { echo "Error: No ShizukuX APK found"; exit 1; }
             [ -z "$DROPIN_FILE" ] && { echo "Error: No drop-in APK found"; exit 1; }
 
             sign_apk "$PLUS_FILE"
             sign_apk "$DROPIN_FILE"
 
-            PLUS_RENAMED="$(dirname "$PLUS_FILE")/shizukuplus.apk"
+            PLUS_RENAMED="$(dirname "$PLUS_FILE")/shizukux.apk"
             DROPIN_RENAMED="$(dirname "$DROPIN_FILE")/shizuku-dropin.apk"
             mv "$PLUS_FILE" "$PLUS_RENAMED"
             mv "$DROPIN_FILE" "$DROPIN_RENAMED"
@@ -234,7 +234,7 @@ jobs:
               echo "compatPath=${COMPAT_RENAMED}" >> $GITHUB_OUTPUT
             fi
 
-            echo "artifactName=shizukuplus.apk" >> $GITHUB_OUTPUT
+            echo "artifactName=shizukux.apk" >> $GITHUB_OUTPUT
             echo "filePath=${PLUS_RENAMED}" >> $GITHUB_OUTPUT
             echo "dropinPath=${DROPIN_RENAMED}" >> $GITHUB_OUTPUT
           fi
@@ -243,9 +243,9 @@ jobs:
         if: ${{ env.SENTRY_AUTH_TOKEN != '' && env.IS_DEBUG == 'false' }}
         continue-on-error: true
         run: |
-          ./gradlew :manager:uploadSentryProguardMappingsShizukuplusRelease :manager:uploadSentryNativeSymbolsForShizukuplusRelease
+          ./gradlew :manager:uploadSentryProguardMappingsShizukuxRelease :manager:uploadSentryNativeSymbolsForShizukuxRelease
 
-      - name: Upload ShizukuPlus Artifact
+      - name: Upload ShizukuX Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.buildWithGradle.outputs.artifactName }}
@@ -322,12 +322,12 @@ jobs:
           script: |
             yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
             echo 'org.gradle.caching=true' >> gradle.properties
-            # connectedDebugAndroidTest is ambiguous since the Dropin/Shizukuplus flavor split
-            # (candidates: connectedDropinDebugAndroidTest, connectedShizukuplusDebugAndroidTest) -
-            # target the Shizukuplus flavor, the standard build this workflow otherwise treats as
+            # connectedDebugAndroidTest is ambiguous since the Dropin/Shizukux flavor split
+            # (candidates: connectedDropinDebugAndroidTest, connectedShizukuxDebugAndroidTest) -
+            # target the Shizukux flavor, the standard build this workflow otherwise treats as
             # primary (see the Plus-vs-Drop-In asset selection in the release job below).
             set +e
-            ./gradlew :manager:connectedShizukuplusDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest --stacktrace > smoke-test.log 2>&1
+            ./gradlew :manager:connectedShizukuxDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest --stacktrace > smoke-test.log 2>&1
             gradle_status=$?
             cat smoke-test.log
             grep -E "PASSED|FAILED|ERROR" smoke-test.log || true
@@ -527,7 +527,7 @@ jobs:
           # Rename each built APK to a versioned, self-identifying filename before attaching (#340).
           #
           # Select each asset by its VERIFIED applicationId, not by "first .apk in a directory". The
-          # ShizukuPlus artifact download landed multiple APKs in files/main, so the old
+          # ShizukuX artifact download landed multiple APKs in files/main, so the old
           # `find files/main | head -1` grabbed the Drop-In and published it as the Plus asset —
           # every release r2141..r2152 shipped the Drop-In (moe.shizuku.privileged.api) under BOTH the
           # Plus and Drop-In names, so the standard af.shizuku.plus.api build (the coexist-with-stock

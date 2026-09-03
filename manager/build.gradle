@@ -61,7 +61,7 @@ android {
     }
     flavorDimensions = ["distribution"]
     productFlavors {
-        shizukuplus {
+        shizukux {
             dimension = "distribution"
             applicationId = "af.shizuku.plus.api"
             resValue "string", "app_name", "ShizukuX"

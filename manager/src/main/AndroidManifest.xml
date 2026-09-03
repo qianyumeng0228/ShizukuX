@@ -86,10 +86,10 @@
          (updateFlagsForUid -> grantRuntimePermission), which silently fails unless some installed
          package DEFINES it. Its DEFINITION is flavor-scoped because the flavors have opposite
          constraints:
-           - shizukuplus (af.shizuku.plus.api) can be installed BESIDE stock Shizuku, which owns this
+           - shizukux (af.shizuku.plus.api) can be installed BESIDE stock Shizuku, which owns this
              permission, so defining it here would fail install with -126 duplicate-permission (#316).
-             src/shizukuplus/AndroidManifest.xml removes it; the separate Compat Hub (mutually
-             exclusive with stock) is the definer for the Plus flavor.
+             src/shizukux/AndroidManifest.xml removes it; the separate Compat Hub (mutually
+             exclusive with stock) is the definer for the ShizukuX flavor.
            - dropin (moe.shizuku.privileged.api) IS the stock package-name replacement and is mutually
              exclusive with stock, so src/dropin/AndroidManifest.xml DEFINES it natively (dropin
              cannot host the Compat Hub — identical package name).

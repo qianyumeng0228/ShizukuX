@@ -33,10 +33,10 @@
 #define EXIT_FATAL_BINDER_BLOCKED_BY_SELINUX 10
 
 #define PACKAGE_NAME "af.shizuku.plus.api"
-// This same starter.cpp is built into both the shizukuplus flavor (applicationId
+// This same starter.cpp is built into both the shizukux flavor (applicationId
 // af.shizuku.plus.api) and the dropin flavor (applicationId moe.shizuku.privileged.api). When
 // invoked without --apk= (e.g. manually via `adb shell libshizuku.so`, the documented "start via
-// computer" command), the PACKAGE_NAME fallback below only ever queried the shizukuplus name,
+// computer" command), the PACKAGE_NAME fallback below only ever queried the shizukux name,
 // so `pm path` always came back empty on a dropin install and start failed with
 // "can't get path of manager" even though the app was genuinely installed.
 #define PACKAGE_NAME_DROPIN "moe.shizuku.privileged.api"
