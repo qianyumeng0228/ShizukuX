@@ -46,33 +46,6 @@
         <item>@string/update_channel_dev</item>
     </string-array>
 
-    <string-array name="icon_styles">
-        <item>标准（填充）</item>
-        <item>描边</item>
-        <item>双色</item>
-    </string-array>
-
-    <string-array name="icon_color_modes">
-        <item>无颜色（单色）</item>
-        <item>全部使用同一颜色</item>
-        <item>每个图标使用不同颜色</item>
-    </string-array>
-
-    <string-array name="shape_styles">
-        <item>禅意（艺术化）</item>
-        <item>现代（Material 3）</item>
-        <item>经典（Material 2）</item>
-        <item>自然（圆角方形）</item>
-        <item>切角（棱角）</item>
-    </string-array>
-
-    <string-array name="animation_intensities">
-        <item>无</item>
-        <item>轻微</item>
-        <item>标准</item>
-        <item>丰富</item>
-    </string-array>
-
     <string-array name="wallpaper_themes">
         <item>@string/settings_wallpaper_white_miku</item>
         <item>@string/settings_wallpaper_black_miku</item>
