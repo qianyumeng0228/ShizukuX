@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Shizuku (Compat Hub)</string>
+    <string name="app_name">ShizukuX Compat Hub</string>
     <string name="permission_group_label">Shizuku (Compat)</string>
     <string name="permission_group_description">Shizuku compat permissions</string>
     <string name="permission_label">Allow app to access Shizuku</string>
