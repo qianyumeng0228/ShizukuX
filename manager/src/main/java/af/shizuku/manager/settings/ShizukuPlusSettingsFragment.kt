@@ -495,6 +495,23 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         // are bound to this package name, see the execution doc).
         val scenePkg = "com.omarea.vtools"
 
+        android.util.Log.w("SceneRelay", "startSceneAdbActivation called")
+        try {
+            android.util.Log.w("SceneRelay", "pingBinder=${rikka.shizuku.Shizuku.pingBinder()} binder=${rikka.shizuku.Shizuku.getBinder()}")
+            try {
+                android.util.Log.w("SceneRelay", "getUid=${rikka.shizuku.Shizuku.getUid()}")
+            } catch (e: Throwable) {
+                android.util.Log.w("SceneRelay", "getUid threw: ${e.javaClass.simpleName}: ${e.message}")
+            }
+            try {
+                android.util.Log.w("SceneRelay", "getVersion=${rikka.shizuku.Shizuku.getVersion()}")
+            } catch (e: Throwable) {
+                android.util.Log.w("SceneRelay", "getVersion threw: ${e.javaClass.simpleName}: ${e.message}")
+            }
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "binder introspection failed: $e")
+        }
+
         if (!rikka.shizuku.Shizuku.pingBinder()) {
             Toast.makeText(ctx, R.string.scene_relay_shizuku_not_running, Toast.LENGTH_LONG).show()
             return
@@ -510,7 +527,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             return
         }
 
-        val upScript = "/storage/emulated/0/Android/data/$scenePkg/up.sh"
+        val upScript = "/data/local/tmp/up.sh"
         Toast.makeText(ctx, R.string.scene_relay_activating, Toast.LENGTH_SHORT).show()
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -518,13 +535,25 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 // shell/ADB on a non-root start) and have it run Scene's official up.sh. The
                 // script copies scene-daemon to /data/local/tmp and leaves it running in the
                 // background, which is what actually grants Scene its ADB permission.
-                val process = rikka.shizuku.Shizuku.newProcess(
-                    arrayOf("sh", "-c", "sh $upScript"), null, null
-                )
+                android.util.Log.w("SceneRelay", "about to call newProcess, pingBinder=${rikka.shizuku.Shizuku.pingBinder()}")
+                val process = try {
+                    rikka.shizuku.Shizuku.newProcess(
+                        arrayOf("/system/bin/sh", "-c", "/system/bin/sh $upScript"),
+                        null,
+                        // cwd 设为脚本所在目录：up.sh 内部用相对路径 ./busybox，且需避免
+                        // Runtime.exec 按 PATH 找到 APEX 受限 sush（不支持 [[ ]] 等语法）导致 syntax error。
+                        "/data/local/tmp"
+                    )
+                } catch (e: Throwable) {
+                    android.util.Log.w("SceneRelay", "newProcess threw: ${e.javaClass.simpleName}: ${e.message}", e)
+                    throw e
+                }
+                android.util.Log.w("SceneRelay", "newProcess returned: $process")
                 val stdout = process.inputStream.bufferedReader().use { it.readText() }
                 val stderr = process.errorStream.bufferedReader().use { it.readText() }
                 process.waitFor()
                 val output = (stdout + stderr).trim()
+                android.util.Log.w("SceneRelay", "up.sh output: $output")
                 val ok = stdout.contains("Scene-Daemon OK")
 
                 // Verify the daemon actually went resident (the real source of ADB permission).
@@ -540,6 +569,23 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 }
 
                 val activated = ok || daemonPid.isNotEmpty()
+
+                // 激活成功后，将 Scene 加入 ShizukuX 已授权应用列表（更新服务端权限 flags）。
+                var sceneGranted = false
+                if (activated) {
+                    try {
+                        val appInfo = ctx.packageManager.getApplicationInfo(scenePkg, 0)
+                        val sceneUid = appInfo.uid
+                        if (sceneUid > 0) {
+                            af.shizuku.manager.authorization.AuthorizationManager.grant(scenePkg, sceneUid)
+                            sceneGranted = af.shizuku.manager.authorization.AuthorizationManager.granted(scenePkg, sceneUid)
+                            android.util.Log.w("SceneRelay", "grant scene uid=$sceneUid granted=$sceneGranted")
+                        }
+                    } catch (e: Throwable) {
+                        android.util.Log.w("SceneRelay", "grant scene failed: ${e.message}")
+                    }
+                }
+
                 withContext(Dispatchers.Main) {
                     val sb = StringBuilder()
                     sb.append(
@@ -553,6 +599,11 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                             getString(R.string.scene_relay_failed)
                         }
                     )
+                    if (activated && sceneGranted) {
+                        sb.append("\n").append(getString(R.string.scene_relay_granted))
+                    } else if (activated) {
+                        sb.append("\n").append(getString(R.string.scene_relay_grant_failed))
+                    }
                     if (output.isNotEmpty()) {
                         sb.append("\n\n").append(output)
                     }
@@ -563,6 +614,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         .show()
                 }
             } catch (e: Exception) {
+                android.util.Log.w("SceneRelay", "startSceneAdbActivation catch: ${e.javaClass.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     MaterialAlertDialogBuilder(ctx)
                         .setTitle(R.string.scene_relay_result_title)

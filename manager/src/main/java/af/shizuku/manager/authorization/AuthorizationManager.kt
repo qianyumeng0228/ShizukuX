@@ -67,6 +67,29 @@ object AuthorizationManager {
         } catch (e: Throwable) {
             LOGGER.w(e, "getPackages failed, possibly due to ghost stock server")
         }
+
+        // 外部中转授权（Scene）目标：即使未声明 Shizuku 权限，只要已通过「外部中转授权」
+        // 写入授权 flags，也显示在已授权应用列表中。
+        try {
+            val scenePkg = "com.omarea.vtools"
+            if (packages.none { it.packageName == scenePkg }) {
+                outer@ for (user in ShizukuSystemApis.getUsers(useCache = false)) {
+                    try {
+                        val pkgs = ShizukuSystemApis.getInstalledPackages(0L, user.id)
+                        val pi = pkgs.firstOrNull { it.packageName == scenePkg } ?: continue
+                        val uid = pi.applicationInfo?.uid ?: continue
+                        if (granted(scenePkg, uid)) {
+                            packages.add(pi)
+                        }
+                        break@outer
+                    } catch (e: Throwable) {
+                        continue
+                    }
+                }
+            }
+        } catch (e: Throwable) {
+            LOGGER.w(e, "attach Scene package to list failed")
+        }
         return packages
     }
 

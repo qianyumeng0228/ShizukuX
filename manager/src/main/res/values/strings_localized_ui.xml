@@ -100,6 +100,8 @@
     <string name="scene_relay_success">Activation succeeded! Open Scene and select ADB mode.</string>
     <string name="scene_relay_daemon_running">Activation succeeded! scene-daemon is running (PID: %1$s). Open Scene and select ADB mode.</string>
     <string name="scene_relay_failed">Activation failed.</string>
+<string name="scene_relay_granted">Scene has been added to the authorized apps list.</string>
+<string name="scene_relay_grant_failed">Scene daemon is running, but adding it to the authorized apps list failed.</string>
     <string name="settings_system_performance_category_title">System &amp; Performance</string>
     <string name="settings_process_control_title">Process Control</string>
     <string name="settings_shell_accelerator_title">Shell Accelerator</string>
