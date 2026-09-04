@@ -9,6 +9,7 @@ import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.TwoStatePreference
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.R
@@ -185,11 +186,38 @@ class AboutSettingsFragment : BaseSettingsFragment() {
 
     private fun showChangelogDialog() {
         val context = context ?: return
-        MaterialAlertDialogBuilder(context)
+        // GitHub release notes are Markdown meant for a web page; for the dialog, drop the
+        // "Recent Releases" rollup table/links and strip trailing short git commit hashes the same
+        // way ChangelogDialogFragment does.
+        fun formatForDialog(raw: String): String = raw
+            .substringBefore("## 📦 Recent Releases")
+            .replace(Regex("""\s+\([0-9a-f]{7,8}\)$""", RegexOption.MULTILINE), "")
+            .trim()
+
+        val builder = MaterialAlertDialogBuilder(context)
             .setTitle(R.string.about_changelog_title)
-            .setMessage(getString(R.string.about_changelog_content))
+            .setMessage(R.string.about_changelog_loading)
             .setPositiveButton(R.string.ok, null)
-            .show()
+        val dialog = builder.create()
+        dialog.show()
+
+        // Fetch the notes of the version actually installed (cached locally, re-synced periodically)
+        // and swap them in once ready, so the dialog opens instantly and upgrades when the cache syncs.
+        lifecycleScope.launch {
+            val notes = UpdateChecker.getUpdateContentForCurrentVersion(context)
+            if (!isAdded || !dialog.isShowing) return@launch
+            val message: CharSequence = try {
+                notes?.takeIf { it.isNotBlank() }
+                    ?.let { formatForDialog(it) }
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { Markwon.create(context).toMarkdown(it) }
+                    ?: getString(R.string.changelog_fallback_message)
+            } catch (e: Exception) {
+                Timber.w(e, "Failed to format update content")
+                getString(R.string.changelog_fallback_message)
+            }
+            runCatching { dialog.setMessage(message) }
+        }
     }
 
     private fun openQqGroup() {

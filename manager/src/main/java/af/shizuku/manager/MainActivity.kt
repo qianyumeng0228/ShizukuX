@@ -47,6 +47,12 @@ class MainActivity : HomeActivity() {
             // Activity runs, so this needs its own last-seen key or it would never see an advance.
             checkAndShowChangelog()
 
+            // Background sniff: keep the cached update content of the *installed* version in sync
+            // with upstream (the maintainer may have edited the release notes after shipping).
+            lifecycleScope.launch {
+                UpdateChecker.syncCachedUpdateContentIfNeeded(this@MainActivity)
+            }
+
             Timber.d("MainActivity onCreate complete")
             Sentry.addBreadcrumb(Breadcrumb("MainActivity onCreate complete"))
         } catch (e: Exception) {
@@ -102,7 +108,7 @@ class MainActivity : HomeActivity() {
         val currentCode = try { packageManager.getPackageInfo(packageName, 0).versionCode } catch (e: Exception) { 0 }
         if (currentCode <= ShizukuSettings.getLastSeenChangelogVersion()) return
 
-        val versionPart = Regex("""\d+\.\d+\.\d+\.r\d+""").find(BuildConfig.VERSION_NAME)?.value
+        val versionPart = Regex("""\d+\.\d+\.\d+\.[kr]\d+""").find(BuildConfig.VERSION_NAME)?.value
         if (versionPart == null) {
             // Can't build a release tag from this build's version string — mark seen so we
             // don't retry every launch, and skip the dialog rather than showing a broken one.

@@ -262,11 +262,87 @@ object UpdateChecker {
         }
     }
 
-    /** Extracts the build number from "13.6.0.r1488-shizukuplus" → 1488 */
+    /** Extracts the build number from "13.6.0.r1488" → 1488, or "13.6.0.k2007" → 2007 */
     fun parseVersionCode(versionName: String): Int = try {
-        """\.\br(\d+)\b""".toRegex().find(versionName)?.groupValues?.get(1)?.toIntOrNull() ?: 0
+        """\.\b[kr](\d+)\b""".toRegex().find(versionName)?.groupValues?.get(1)?.toIntOrNull() ?: 0
     } catch (e: Exception) {
         0
+    }
+
+    // ------------------------------------------------------------------------------------
+    // Per-installed-version update content cache.
+    // The About screen shows the release notes of the version actually installed (not the
+    // latest release, which may have moved on). Notes are cached locally per version; a
+    // background sync periodically re-checks the upstream release body for that exact tag and
+    // refreshes the cache when it differs (e.g. the maintainer edited the notes after release).
+    // ------------------------------------------------------------------------------------
+    private const val CACHE_PREF_NAME = "update_content_cache"
+    private const val CACHE_KEY_VERSION = "cached_version"
+    private const val CACHE_KEY_CONTENT = "cached_content"
+    private const val CACHE_KEY_TIME = "cached_time"
+    private const val CACHE_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000L // 6 h
+
+    data class CachedUpdateContent(val version: String, val content: String, val cachedAt: Long)
+
+    /** Extracts the installed version segment, e.g. "ShizukuX 13.6.0.k2007" → "13.6.0.k2007". */
+    fun currentVersionPart(): String? =
+        Regex("""\d+\.\d+\.\d+\.[kr]\d+""").find(BuildConfig.VERSION_NAME)?.value
+
+    /** The GitHub Release tag for the installed version, e.g. "v13.6.0.k2007". */
+    fun currentVersionTag(): String? = currentVersionPart()?.let { "v$it" }
+
+    private fun cachePrefs(context: android.content.Context) =
+        context.getSharedPreferences(CACHE_PREF_NAME, android.content.Context.MODE_PRIVATE)
+
+    fun getCachedUpdateContent(context: android.content.Context): CachedUpdateContent? {
+        val p = cachePrefs(context)
+        val version = p.getString(CACHE_KEY_VERSION, null) ?: return null
+        val content = p.getString(CACHE_KEY_CONTENT, null) ?: return null
+        return CachedUpdateContent(version, content, p.getLong(CACHE_KEY_TIME, 0))
+    }
+
+    fun saveCachedUpdateContent(context: android.content.Context, version: String, content: String) {
+        cachePrefs(context).edit()
+            .putString(CACHE_KEY_VERSION, version)
+            .putString(CACHE_KEY_CONTENT, content)
+            .putLong(CACHE_KEY_TIME, System.currentTimeMillis())
+            .apply()
+    }
+
+    /**
+     * Background sniff: re-fetch the upstream release notes for the *installed* version and sync
+     * the local cache when they differ. Does nothing while the cache is fresh (same version, less
+     * than [CACHE_REFRESH_INTERVAL_MS] old).
+     */
+    suspend fun syncCachedUpdateContentIfNeeded(context: android.content.Context) {
+        val version = currentVersionPart() ?: return
+        val cached = getCachedUpdateContent(context)
+        if (cached != null && cached.version == version &&
+            System.currentTimeMillis() - cached.cachedAt < CACHE_REFRESH_INTERVAL_MS) return
+        val fresh = fetchReleaseNotesForTag(currentVersionTag() ?: return) ?: return
+        if (cached?.content != fresh) {
+            saveCachedUpdateContent(context, version, fresh)
+            Timber.tag(TAG).d("Synced cached update content for $version")
+        }
+    }
+
+    /**
+     * Returns the update content to show for the *installed* version: the fresh cache when
+     * available, otherwise fetches upstream and refreshes the cache (falling back to an old cache
+     * of the same version if the network is unavailable).
+     */
+    suspend fun getUpdateContentForCurrentVersion(context: android.content.Context): String? {
+        val version = currentVersionPart() ?: return null
+        val cached = getCachedUpdateContent(context)
+        if (cached != null && cached.version == version &&
+            System.currentTimeMillis() - cached.cachedAt < CACHE_REFRESH_INTERVAL_MS) {
+            return cached.content
+        }
+        val fresh = fetchReleaseNotesForTag(currentVersionTag() ?: return null)
+        val content = fresh?.takeIf { it.isNotBlank() }
+            ?: cached?.takeIf { it.version == version }?.content
+        if (fresh != null) saveCachedUpdateContent(context, version, fresh)
+        return content
     }
 
     fun formatPublishedDate(dateString: String): String = try {

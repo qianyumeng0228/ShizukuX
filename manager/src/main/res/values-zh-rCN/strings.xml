@@ -688,7 +688,7 @@
     <string name="about_view_source_code_title"><![CDATA[源代码]]></string>
     <string name="about_changelog_title"><![CDATA[更新内容]]></string>
     <string name="about_changelog_summary"><![CDATA[本版本的更新内容]]></string>
-    <string name="about_changelog_content"><![CDATA[v13.6.0.k2002 更新内容：\n- 关于界面新增「官网」入口，点击跳转 https://shizukux.xyz。\n- 关于界面新增「官网Q群」入口（群号 712125973），点击可直接拉起 QQ 加群。\n- 关于界面新增「更新内容」条目，可查看本版本的更新内容。]]></string>
+    <string name="about_changelog_loading"><![CDATA[正在加载本版本的更新内容…]]></string>
     <string name="about_website_title"><![CDATA[官网]]></string>
     <string name="about_qq_group_title"><![CDATA[官网Q群]]></string>
     <string name="about_qq_group_summary"><![CDATA[群号：712125973]]></string>
