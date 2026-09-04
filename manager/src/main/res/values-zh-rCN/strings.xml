@@ -686,6 +686,19 @@
     <string name="adb_error_ssl_button_reset"><![CDATA[转到开发者选项]]></string>
     <string name="settings_about"><![CDATA[关于]]></string>
     <string name="about_view_source_code_title"><![CDATA[源代码]]></string>
+    <string name="about_changelog_title"><![CDATA[更新内容]]></string>
+    <string name="about_changelog_summary"><![CDATA[本版本的更新内容]]></string>
+    <string name="about_changelog_content"><![CDATA[合入上游预发布 r2335-r2339，并继续同步中文美化分支。
+修复 ShizukuStateMachine.update() 把崩溃误判成主动停止的问题，避免 watchdog 重新拉起失效。
+新增 Cut (Angular) 形状样式。
+恢复大屏和 DeX 的响应式双列网格。
+修复 Shape Style 选择器里 Zen 选项说明不准确的问题。
+采用 AppCompatDelegate.setApplicationLocales() 作为应用语言来源。
+外观里新增壁纸功能，内置 3 种壁纸可选：原版、白色初音、黑色初音。
+关于界面新增「官网」入口，点击跳转 https://shizukux.xyz。
+关于界面新增「官网Q群」入口（群号 712125973），点击可直接拉起 QQ 加群。
+修复桌面图标被自适应遮罩裁切的问题，恢复显示原版图标。
+修复启动页图标在圆形遮罩内显示不全的问题。]]></string>
     <string name="about_website_title"><![CDATA[官网]]></string>
     <string name="about_qq_group_title"><![CDATA[官网Q群]]></string>
     <string name="about_qq_group_summary"><![CDATA[群号：712125973]]></string>

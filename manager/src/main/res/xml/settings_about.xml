@@ -66,6 +66,12 @@
             android:icon="@drawable/ic_info_24" />
 
         <Preference
+            android:key="changelog"
+            android:title="@string/about_changelog_title"
+            android:summary="@string/about_changelog_summary"
+            android:icon="@drawable/ic_history_24" />
+
+        <Preference
             android:key="website"
             android:title="@string/about_website_title"
             android:summary="https://shizukux.xyz"

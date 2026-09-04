@@ -694,6 +694,19 @@
     <string name="action_about">About</string>
     <string name="about_dialog_button_close">Close</string>
     <string name="about_view_source_code_title">Source code</string>
+    <string name="about_changelog_title">What\'s New</string>
+    <string name="about_changelog_summary">Changes in this version</string>
+    <string name="about_changelog_content"><![CDATA[Merged upstream prerelease r2335-r2339 and continued syncing the localized beautification branch.
+Fixed ShizukuStateMachine.update() misjudging a crash as a manual stop, so the watchdog could fail to restart the service.
+Added the Cut (Angular) shape style.
+Restored responsive two-column grid for large screens and DeX.
+Fixed the inaccurate Zen option description in the Shape Style picker.
+Adopted AppCompatDelegate.setApplicationLocales() as the app language source.
+Added a wallpaper feature in Appearance with 3 built-in wallpapers: Original, White Miku, Black Miku.
+Added an official website entry in About that opens https://shizukux.xyz.
+Added an official QQ group entry (Group 712125973) that opens QQ join card directly.
+Fixed the launcher icon being cropped by adaptive-icon mask; restored the original artwork.
+Fixed the splash-screen icon being cropped by the circular mask.]]></string>
     <string name="about_website_title">Official Website</string>
     <string name="about_qq_group_title">Official QQ Group</string>
     <string name="about_qq_group_summary">Group: 712125973</string>

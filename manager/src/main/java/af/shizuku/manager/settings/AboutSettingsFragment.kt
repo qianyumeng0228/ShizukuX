@@ -67,6 +67,11 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         }
 
         // 2. Setup standard links
+        findPreference<Preference>("changelog")?.setOnPreferenceClickListener {
+            showChangelogDialog()
+            true
+        }
+
         findPreference<Preference>("website")?.setOnPreferenceClickListener {
             CustomTabsHelper.launchUrlOrCopy(context, ProjectLinks.WEBSITE)
             true
@@ -176,6 +181,15 @@ class AboutSettingsFragment : BaseSettingsFragment() {
             else ->
                 getString(R.string.update_never_checked)
         }
+    }
+
+    private fun showChangelogDialog() {
+        val context = context ?: return
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.about_changelog_title)
+            .setMessage(getString(R.string.about_changelog_content))
+            .setPositiveButton(R.string.ok, null)
+            .show()
     }
 
     private fun openQqGroup() {
