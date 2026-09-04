@@ -696,10 +696,10 @@
     <string name="about_view_source_code_title">Source code</string>
     <string name="about_changelog_title">What\'s New</string>
     <string name="about_changelog_summary">Changes in this version</string>
-    <string name="about_changelog_content"><![CDATA[What's new in v13.6.0.k2002:
+    <string name="about_changelog_content"><![CDATA[What\'s new in v13.6.0.k2002:
 - Added an official website entry in About that opens https://shizukux.xyz.
 - Added an official QQ group entry (Group 712125973) that opens the QQ join card directly.
-- Added a What's New entry in About showing this version's changelog.]]></string>
+- Added a What\'s New entry in About showing this version\'s changelog.]]></string>
     <string name="about_website_title">Official Website</string>
     <string name="about_qq_group_title">Official QQ Group</string>
     <string name="about_qq_group_summary">Group: 712125973</string>
