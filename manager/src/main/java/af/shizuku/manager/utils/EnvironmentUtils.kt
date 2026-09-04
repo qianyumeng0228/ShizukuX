@@ -91,6 +91,30 @@ object EnvironmentUtils {
         return false
     }
 
+    /** Returns the first su binary path that actually exists on this device, or null if none. */
+    @JvmStatic
+    fun resolveSuPath(): String? {
+        val paths = System.getenv("PATH")?.split(":")?.toMutableList() ?: mutableListOf()
+        paths.addAll(listOf(
+            "/data/adb/ksu/bin",
+            "/data/adb/ap/bin",
+            "/data/adb/magisk",
+            "/sbin",
+            "/system/bin",
+            "/system/xbin",
+            "/data/local/xbin",
+            "/data/local/bin",
+            "/system/sd/xbin",
+            "/system/bin/failsafe",
+            "/data/local"
+        ))
+        for (path in paths) {
+            val f = java.io.File(path, "su")
+            if (f.exists()) return f.absolutePath
+        }
+        return null
+    }
+
     @JvmStatic
     fun getFullSdkVersion(): Int = af.shizuku.common.util.EnvironmentUtils.getFullSdkVersion()
 

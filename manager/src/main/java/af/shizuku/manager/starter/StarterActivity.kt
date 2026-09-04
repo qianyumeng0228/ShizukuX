@@ -224,35 +224,79 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         log("Starting with root...\n")
 
         return withContext(Dispatchers.IO) {
-            if (!Shell.getShell().isRoot) {
-                // Try again just in case
-                Shell.getCachedShell()?.close()
-
-                if (!Shell.getShell().isRoot) {
-                    Shell.getCachedShell()?.close()
-                    throw NotRootedException()
-                }
-            }
-
-            ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-            suspendCancellableCoroutine { cont ->
-                Shell.cmd(Starter.internalCommand)
-                    .to(object : CallbackList<String?>() {
-                        override fun onAddElement(s: String?) { s?.let { log(it) } }
-                    })
-                    .submit {
-                        if (cont.isActive) {
-                            if (it.isSuccess) {
-                                ShizukuStateMachine.update()
-                                ActivityLogManager.log("Shizuku", appContext.packageName, "Service started via root")
-                                cont.resume(Unit)
-                            } else {
-                                cont.resumeWithException(Exception("Failed to start with root"))
-                            }
-                        }
-                    }
+            val customSu = af.shizuku.manager.ShizukuSettings.getCustomRootSuPath()
+            if (customSu.isNotBlank()) {
+                startRootWithCustomSu(customSu)
+            } else {
+                startRootWithLibsu()
             }
         }
+    }
+
+    private suspend fun startRootWithLibsu() {
+        if (!Shell.getShell().isRoot) {
+            // Try again just in case
+            Shell.getCachedShell()?.close()
+
+            if (!Shell.getShell().isRoot) {
+                Shell.getCachedShell()?.close()
+                throw NotRootedException()
+            }
+        }
+
+        ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
+        suspendCancellableCoroutine { cont ->
+            Shell.cmd(Starter.internalCommand)
+                .to(object : CallbackList<String?>() {
+                    override fun onAddElement(s: String?) { s?.let { log(it) } }
+                })
+                .submit {
+                    if (cont.isActive) {
+                        if (it.isSuccess) {
+                            ShizukuStateMachine.update()
+                            ActivityLogManager.log("Shizuku", appContext.packageName, "Service started via root")
+                            cont.resume(Unit)
+                        } else {
+                            cont.resumeWithException(Exception("Failed to start with root"))
+                        }
+                    }
+                }
+        }
+    }
+
+    /** Launches the service using a user-configured su binary path instead of libsu's auto-detection. */
+    private suspend fun startRootWithCustomSu(suPath: String) {
+        val suFile = java.io.File(suPath)
+        if (!suFile.exists() || !suFile.canExecute()) {
+            log("Custom SU path not usable: $suPath\n")
+            throw NotRootedException()
+        }
+        log("Using custom SU path: $suPath\n")
+
+        ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
+        val process = ProcessBuilder(suPath, "-c", Starter.internalCommand)
+            .redirectErrorStream(true)
+            .start()
+
+        // Drain output off-thread so waitFor below can't deadlock on a full pipe.
+        val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
+        val drain = Thread({
+            reader.forEachLine { line -> log(line) }
+        }, "root-su-output")
+        drain.isDaemon = true
+        drain.start()
+
+        val finished = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+        if (!finished) {
+            process.destroy()
+            throw Exception("Timed out starting with root (custom su: $suPath)")
+        }
+        if (process.exitValue() != 0) {
+            throw Exception("Failed to start with root (exit ${process.exitValue()}, su: $suPath)")
+        }
+
+        ShizukuStateMachine.update()
+        ActivityLogManager.log("Shizuku", appContext.packageName, "Service started via root (custom su: $suPath)")
     }
 
 }

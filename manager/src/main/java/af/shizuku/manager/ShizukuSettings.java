@@ -91,6 +91,7 @@ public class ShizukuSettings {
         public static final String KEY_ON_DEVICE_ADB_TCP = "on_device_adb_tcp";
         public static final String KEY_FORCE_START_WADB = "force_start_wadb";
         public static final String KEY_SU_BRIDGE_ENABLED = "su_bridge_enabled";
+        public static final String KEY_CUSTOM_ROOT_SU_PATH = "custom_root_su_path";
         public static final String KEY_ROOT_MAGISK_MOCKING_ENABLED = "root_magisk_mocking_enabled";
         public static final String KEY_ROOT_AUTO_GRANT_ENABLED = "root_auto_grant_enabled";
         public static final String KEY_ROOT_FILE_INTERCEPTOR_ENABLED = "root_file_interceptor_enabled";
@@ -940,6 +941,11 @@ public class ShizukuSettings {
     public static String getCustomSuPath() {
         SharedPreferences p = getPreferences();
         return p != null ? p.getString("custom_su_path", "") : "";
+    }
+
+    public static String getCustomRootSuPath() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_CUSTOM_ROOT_SU_PATH, "") : "";
     }
 
     public static boolean isRootMagiskMockingEnabled() {

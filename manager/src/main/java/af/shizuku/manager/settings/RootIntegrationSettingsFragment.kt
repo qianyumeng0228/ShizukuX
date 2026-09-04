@@ -189,6 +189,28 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
                 .show()
             true // Intercept click to show presets dialog first
         }
+
+        // Custom Root SU Path — path of the su binary used to launch the Shizuku service via
+        // root (StarterActivity.startRoot). Leave blank to use the auto-detected default.
+        val rootSuPathPref = findPreference<androidx.preference.EditTextPreference>("custom_root_su_path")
+        rootSuPathPref?.apply {
+            updateRootSuPathSummary(this)
+            setOnPreferenceChangeListener { _, _ ->
+                updateRootSuPathSummary(this)
+                true
+            }
+        }
+    }
+
+    private fun updateRootSuPathSummary(pref: androidx.preference.EditTextPreference) {
+        val custom = ShizukuSettings.getCustomRootSuPath()
+        val current = if (custom.isNotBlank()) {
+            custom
+        } else {
+            af.shizuku.manager.utils.EnvironmentUtils.resolveSuPath()
+                ?: getString(R.string.su_bridge_no_export)
+        }
+        pref.summary = getString(R.string.settings_custom_root_su_path_summary, current)
     }
 
     private fun isBootloaderUnlocked(): Boolean {

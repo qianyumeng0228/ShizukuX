@@ -71,6 +71,14 @@
             app:iconSpaceReserved="true"
             android:singleLine="true" />
 
+        <EditTextPreference
+            android:key="custom_root_su_path"
+        android:title="@string/settings_custom_root_su_path_title"
+        android:summary="@string/settings_custom_root_su_path_summary"
+            android:icon="@drawable/ic_root_24"
+            app:iconSpaceReserved="true"
+            android:singleLine="true" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

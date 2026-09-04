@@ -61,6 +61,8 @@
     <string name="settings_su_bridge_configuration_category_title">SU 桥接配置</string>
     <string name="settings_custom_su_path_title">自定义 SU 路径</string>
     <string name="settings_custom_su_path_summary">设置用于模拟 su 二进制文件的自定义路径（例如 /system/xbin/su），留空使用默认值。</string>
+    <string name="settings_custom_root_su_path_title">自定义RootSU路径</string>
+    <string name="settings_custom_root_su_path_summary">设置用于 root 启动的自定义路径（当前：%1$s），留空使用默认值。</string>
     <string name="settings_rootless_bridges_category_title">无 Root 桥接</string>
     <string name="settings_build_prop_redirection_title">build.prop 重定向</string>
     <string name="settings_build_prop_redirection_summary">将系统 build 属性修改重定向到可写的无 Root 代理文件</string>

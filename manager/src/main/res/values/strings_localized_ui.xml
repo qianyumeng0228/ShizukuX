@@ -61,6 +61,8 @@
     <string name="settings_su_bridge_configuration_category_title">SU Bridge Configuration</string>
     <string name="settings_custom_su_path_title">Custom SU Path</string>
     <string name="settings_custom_su_path_summary">Set a custom path for the su binary spoofing (for example, /system/xbin/su). Leave blank for default.</string>
+    <string name="settings_custom_root_su_path_title">Custom Root SU Path</string>
+    <string name="settings_custom_root_su_path_summary">Set a custom path used to launch the service with root (current: %1$s). Leave blank for default.</string>
     <string name="settings_rootless_bridges_category_title">Rootless Bridges</string>
     <string name="settings_build_prop_redirection_title">build.prop Redirection</string>
     <string name="settings_build_prop_redirection_summary">Redirect system build property modifications to a writable proxy file rootless</string>
