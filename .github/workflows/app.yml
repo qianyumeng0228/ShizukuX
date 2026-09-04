@@ -342,7 +342,11 @@ jobs:
 
   release:
     needs: [build, lint]
-    if: ${{ !failure() && !cancelled() && ((github.event_name == 'push' && github.ref_name == 'master') || (github.event_name == 'workflow_dispatch' && inputs.debug != true)) }}
+    # Release is created ONLY on manual workflow_dispatch (k-series releases). A plain push to
+    # master still runs pre-push-guard/lint/build for compile validation but must NOT auto-publish
+    # a release: the push-triggered version derivation (vX.Y.Z.r{commit-count}) produced stray
+    # "ghost" releases like v13.6.0.r2394 with the upstream-default release notes.
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'workflow_dispatch' && inputs.debug != true) }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
