@@ -61,9 +61,9 @@
             android:defaultValue="false">
 
             <Preference
-                android:key="scene_relay_authorize"
-                android:title="@string/settings_scene_relay_title"
-                android:summary="@string/settings_scene_relay_summary"
+                android:key="external_relay_manager"
+                android:title="@string/settings_external_relay_manager_title"
+                android:summary="@string/settings_external_relay_manager_summary"
                 android:icon="@drawable/ic_devices_24" />
 
         </af.shizuku.manager.settings.CollapsiblePreferenceCategory>

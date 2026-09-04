@@ -36,7 +36,10 @@
         tools:targetApi="33" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+    <!-- Chinese ROMs (MIUI/HyperOS) gate QUERY_ALL_PACKAGES behind an extra runtime-granted "get installed apps" special access. Declared so it can be requested at runtime; on stock AOSP the permission does not exist and the request is skipped. -->
+    <uses-permission android:name="com.android.permission.GET_INSTALLED_APPS" />
+
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -217,6 +220,10 @@
             android:name=".settings.RootCompatibilityActivity"
             android:exported="false"
             android:label="@string/su_bridge_title" />
+        <activity
+            android:name=".settings.ExternalRelayActivity"
+            android:exported="false"
+            android:label="@string/settings_external_relay_category_title" />
         <activity
             android:name=".settings.DhizukuAppManagementActivity"
             android:theme="@style/Theme"

@@ -3,8 +3,10 @@ package af.shizuku.manager.settings
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -28,6 +30,16 @@ import timber.log.Timber
  * [DhizukuAppManager]'s Room database and enforced by DhizukuProvider.
  */
 class DhizukuAppManagementActivity : AppBarActivity() {
+
+    companion object {
+        /**
+         * Chinese ROMs (MIUI/HyperOS) gate the ability to enumerate installed apps behind this
+         * runtime-granted "get installed apps" special access (in addition to QUERY_ALL_PACKAGES).
+         * On stock AOSP this permission doesn't exist and the request is skipped.
+         */
+        private const val PERMISSION_GET_INSTALLED_APPS = "com.android.permission.GET_INSTALLED_APPS"
+        private const val REQUEST_GET_INSTALLED_APPS = 100
+    }
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var emptyView: View
@@ -64,6 +76,8 @@ class DhizukuAppManagementActivity : AppBarActivity() {
         // Load list off the main thread
         refresh()
 
+        requestGetInstalledAppsPermissionIfNeeded()
+
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)
@@ -84,6 +98,41 @@ class DhizukuAppManagementActivity : AppBarActivity() {
             val isEmpty = items.isEmpty()
             recyclerView.visibility = if (isEmpty) View.GONE else View.VISIBLE
             emptyView.visibility = if (isEmpty) View.VISIBLE else View.GONE
+        }
+    }
+
+    /**
+     * On MIUI/HyperOS the app can only enumerate installed packages once the "get installed
+     * apps" runtime permission is granted. Ask for it right away; when it's granted (or already
+     * granted) refresh() re-runs so the Dhizuku client list populates.
+     */
+    private fun requestGetInstalledAppsPermissionIfNeeded() {
+        try {
+            packageManager.getPermissionInfo(PERMISSION_GET_INSTALLED_APPS, 0)
+        } catch (e: Exception) {
+            // Permission doesn't exist on stock AOSP / non-Chinese ROMs - nothing to request.
+            Timber.d("GET_INSTALLED_APPS not available: %s", e.javaClass.simpleName)
+            return
+        }
+        val granted = ContextCompat.checkSelfPermission(this, PERMISSION_GET_INSTALLED_APPS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(PERMISSION_GET_INSTALLED_APPS),
+                REQUEST_GET_INSTALLED_APPS
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_GET_INSTALLED_APPS) {
+            refresh()
         }
     }
 

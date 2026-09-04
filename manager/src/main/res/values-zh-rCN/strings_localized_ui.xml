@@ -274,4 +274,12 @@
     <string name="settings_backup_key_unavailable">%1$s：此备份的加密密钥已不在当前设备上。备份按安装实例加密，卸载重装或清除应用数据后无法恢复。</string>
     <string name="settings_backup_decryption_failed_install">%1$s：无法解密此备份。它很可能来自另一个 ShizukuX 安装实例、已经损坏，或被修改过。</string>
     <string name="settings_error_with_detail">%1$s：%2$s</string>
+    <string name="settings_external_relay_manager_title">点击进入管理外部授权</string>
+    <string name="settings_external_relay_manager_summary">管理 Scene 等未声明 Shizuku 权限的应用的中转授权</string>
+    <string name="external_relay_scene_card_title">Scene 中转授权</string>
+    <string name="external_relay_scene_card_package">com.omarea.vtools</string>
+    <string name="external_relay_scene_activate">激活 Scene 的 ADB 模式</string>
+    <string name="external_relay_scene_activating">正在激活…</string>
+    <string name="external_relay_placeholder_title">更多外部授权即将推出</string>
+    <string name="external_relay_placeholder_summary">后续将在此支持更多应用的中转授权</string>
 </resources>

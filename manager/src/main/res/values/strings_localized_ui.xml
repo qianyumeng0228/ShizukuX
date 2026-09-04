@@ -275,4 +275,12 @@
     <string name="settings_backup_key_unavailable">%1$s: The encryption key for this backup no longer exists on this device. Backups are encrypted per installation, so they cannot be restored after reinstalling or clearing app data.</string>
     <string name="settings_backup_decryption_failed_install">%1$s: This backup could not be decrypted. It was most likely created by a different ShizukuX installation, is corrupt, or was modified.</string>
     <string name="settings_error_with_detail">%1$s: %2$s</string>
+    <string name="settings_external_relay_manager_title">Manage external relay authorizations</string>
+    <string name="settings_external_relay_manager_summary">Grant ADB-level access to apps that do not declare Shizuku permissions (e.g. Scene)</string>
+    <string name="external_relay_scene_card_title">Scene Relay Authorization</string>
+    <string name="external_relay_scene_card_package">com.omarea.vtools</string>
+    <string name="external_relay_scene_activate">Activate Scene\'s ADB mode</string>
+    <string name="external_relay_scene_activating">Activating…</string>
+    <string name="external_relay_placeholder_title">More relayed apps coming soon</string>
+    <string name="external_relay_placeholder_summary">External relay for more apps will be added here later</string>
 </resources>
