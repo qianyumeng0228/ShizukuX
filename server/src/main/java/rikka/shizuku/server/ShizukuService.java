@@ -2366,7 +2366,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public IAICorePlus getAICorePlus() {
         enforceCallingPermission("getAICorePlus");
-        if (!isFeatureEnabled("ai_core_plus")) return null;
+        // Always hand out the AICorePlus object. Diagnostic stats (getServerStats) are
+        // read-only and must stay available no matter how the ai_core_plus switch is set;
+        // actual AI features are gated per-call inside AICorePlusImpl
+        // (ai_core_plus + ai_core_experimental / ai_core_master / npu_acceleration).
         return aiCorePlus;
     }
 

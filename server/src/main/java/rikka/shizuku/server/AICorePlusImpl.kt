@@ -26,6 +26,10 @@ class AICorePlusImpl(
     }
 
     private fun checkExperimental(): Boolean {
+        if (!service.isPlusFeatureEnabled("ai_core_plus")) {
+            Log.w(TAG, "AI Core features are disabled.")
+            return false
+        }
         if (!service.isPlusFeatureEnabled("ai_core_experimental")) {
             Log.w(TAG, "Experimental AI Core features are disabled.")
             return false
@@ -60,7 +64,7 @@ class AICorePlusImpl(
     }
 
     override fun scheduleNPULoad(taskData: Bundle?): Bundle? {
-        if (!service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("npu_acceleration")) return null
+        if (!service.isPlusFeatureEnabled("ai_core_plus") || !service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("npu_acceleration")) return null
         if (taskData == null) return null
         
         try {
@@ -163,7 +167,7 @@ class AICorePlusImpl(
     }
 
     override fun getWindowHierarchy(): String? {
-        if (!service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("native_window_crawler")) return ""
+        if (!service.isPlusFeatureEnabled("ai_core_plus") || !service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("native_window_crawler")) return ""
         return try {
             automationBridge?.windowHierarchy ?: ""
         } catch (e: Exception) {
