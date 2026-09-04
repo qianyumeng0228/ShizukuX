@@ -90,6 +90,16 @@
     <string name="settings_networking_connectivity_category_title">Networking &amp; Connectivity</string>
     <string name="settings_dns_governor_title">DNS Governor</string>
     <string name="settings_continuity_bridge_title">Continuity Bridge</string>
+    <string name="settings_external_relay_category_title">External Relay Authorization</string>
+    <string name="settings_scene_relay_title">Scene Relay Authorization</string>
+    <string name="settings_scene_relay_summary">Activate Scene\'s ADB mode through Shizuku without a PC (middle-man)</string>
+    <string name="scene_relay_shizuku_not_running">Shizuku service is not running. Start it first.</string>
+    <string name="scene_relay_scene_not_installed">Official Scene (com.omarea.vtools) not found.</string>
+    <string name="scene_relay_result_title">Scene Relay Authorization</string>
+    <string name="scene_relay_activating">Running Scene activation script…</string>
+    <string name="scene_relay_success">Activation succeeded! Open Scene and select ADB mode.</string>
+    <string name="scene_relay_daemon_running">Activation succeeded! scene-daemon is running (PID: %1$s). Open Scene and select ADB mode.</string>
+    <string name="scene_relay_failed">Activation failed.</string>
     <string name="settings_system_performance_category_title">System &amp; Performance</string>
     <string name="settings_process_control_title">Process Control</string>
     <string name="settings_shell_accelerator_title">Shell Accelerator</string>

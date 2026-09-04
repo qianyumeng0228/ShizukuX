@@ -53,6 +53,21 @@
             app:infoDetail="@string/help_continuity_bridge_detail"
             app:badgeType="plus" />
 
+        <!-- External relay authorization: ShizukuX acts as a middle-man to grant ADB-level
+             access to apps that do not declare Shizuku permissions themselves (e.g. Scene). -->
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_external_relay"
+            android:title="@string/settings_external_relay_category_title"
+            android:defaultValue="false">
+
+            <Preference
+                android:key="scene_relay_authorize"
+                android:title="@string/settings_scene_relay_title"
+                android:summary="@string/settings_scene_relay_summary"
+                android:icon="@drawable/ic_devices_24" />
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

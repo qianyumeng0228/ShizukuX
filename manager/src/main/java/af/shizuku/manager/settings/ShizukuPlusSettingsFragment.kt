@@ -480,6 +480,98 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         // Check for integrated apps and update summaries
         checkAppIntegrations()
+
+        // Scene Relay Authorization: ShizukuX acts as a middle-man to run Scene's official
+        // activation script (up.sh) via a Shizuku shell process, granting Scene its ADB mode.
+        findPreference<Preference>("scene_relay_authorize")?.setOnPreferenceClickListener {
+            startSceneAdbActivation()
+            true
+        }
+    }
+
+    private fun startSceneAdbActivation() {
+        val ctx = context ?: return
+        // Scene's official package; the middle-man scheme only works against it (paths in up.sh
+        // are bound to this package name, see the execution doc).
+        val scenePkg = "com.omarea.vtools"
+
+        if (!rikka.shizuku.Shizuku.pingBinder()) {
+            Toast.makeText(ctx, R.string.scene_relay_shizuku_not_running, Toast.LENGTH_LONG).show()
+            return
+        }
+        val sceneInstalled = try {
+            ctx.packageManager.getPackageInfo(scenePkg, 0)
+            true
+        } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
+            false
+        }
+        if (!sceneInstalled) {
+            Toast.makeText(ctx, R.string.scene_relay_scene_not_installed, Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val upScript = "/storage/emulated/0/Android/data/$scenePkg/up.sh"
+        Toast.makeText(ctx, R.string.scene_relay_activating, Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                // Middle-man core: create a shell-level process (inherits the service UID, i.e.
+                // shell/ADB on a non-root start) and have it run Scene's official up.sh. The
+                // script copies scene-daemon to /data/local/tmp and leaves it running in the
+                // background, which is what actually grants Scene its ADB permission.
+                val process = rikka.shizuku.Shizuku.newProcess(
+                    arrayOf("sh", "-c", "sh $upScript"), null, null
+                )
+                val stdout = process.inputStream.bufferedReader().use { it.readText() }
+                val stderr = process.errorStream.bufferedReader().use { it.readText() }
+                process.waitFor()
+                val output = (stdout + stderr).trim()
+                val ok = stdout.contains("Scene-Daemon OK")
+
+                // Verify the daemon actually went resident (the real source of ADB permission).
+                var daemonPid = ""
+                try {
+                    val verify = rikka.shizuku.Shizuku.newProcess(
+                        arrayOf("sh", "-c", "pgrep -f scene-daemon"), null, null
+                    )
+                    val vOut = verify.inputStream.bufferedReader().use { it.readText() }
+                    verify.waitFor()
+                    daemonPid = vOut.trim()
+                } catch (_: Exception) {
+                }
+
+                val activated = ok || daemonPid.isNotEmpty()
+                withContext(Dispatchers.Main) {
+                    val sb = StringBuilder()
+                    sb.append(
+                        if (activated) {
+                            if (daemonPid.isNotEmpty()) {
+                                getString(R.string.scene_relay_daemon_running, daemonPid)
+                            } else {
+                                getString(R.string.scene_relay_success)
+                            }
+                        } else {
+                            getString(R.string.scene_relay_failed)
+                        }
+                    )
+                    if (output.isNotEmpty()) {
+                        sb.append("\n\n").append(output)
+                    }
+                    MaterialAlertDialogBuilder(ctx)
+                        .setTitle(R.string.scene_relay_result_title)
+                        .setMessage(sb.toString())
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    MaterialAlertDialogBuilder(ctx)
+                        .setTitle(R.string.scene_relay_result_title)
+                        .setMessage(getString(R.string.scene_relay_failed) + "\n\n" + (e.message ?: e.javaClass.simpleName))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            }
+        }
     }
 
     private fun isDeviceOwnerActive(ctx: Context): Boolean {

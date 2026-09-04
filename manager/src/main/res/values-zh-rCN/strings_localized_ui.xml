@@ -90,6 +90,16 @@
     <string name="settings_networking_connectivity_category_title">网络与连接</string>
     <string name="settings_dns_governor_title">DNS 管理器</string>
     <string name="settings_continuity_bridge_title">连续性桥接</string>
+    <string name="settings_external_relay_category_title">外部中转授权</string>
+    <string name="settings_scene_relay_title">Scene 中转授权</string>
+    <string name="settings_scene_relay_summary">通过 Shizuku 免电脑激活 Scene 的 ADB 模式（中间人方案）</string>
+    <string name="scene_relay_shizuku_not_running">Shizuku 服务未运行，请先启动</string>
+    <string name="scene_relay_scene_not_installed">未检测到官方版 Scene（com.omarea.vtools）</string>
+    <string name="scene_relay_result_title">Scene 中转授权</string>
+    <string name="scene_relay_activating">正在执行 Scene 激活脚本…</string>
+    <string name="scene_relay_success">激活成功！请打开 Scene 并选择 ADB 模式</string>
+    <string name="scene_relay_daemon_running">激活成功！scene-daemon 正在运行（PID：%1$s）。请打开 Scene 并选择 ADB 模式</string>
+    <string name="scene_relay_failed">激活失败</string>
     <string name="settings_system_performance_category_title">系统与性能</string>
     <string name="settings_process_control_title">进程控制</string>
     <string name="settings_shell_accelerator_title">Shell 加速器</string>
