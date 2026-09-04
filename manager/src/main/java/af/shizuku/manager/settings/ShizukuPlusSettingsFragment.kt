@@ -954,6 +954,13 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
 
+        // Binder firewall & the external-relay subcategory live inside the collapsible
+        // connectivity category. When that category starts collapsed, updateChildren() hides
+        // every child; these two are not covered by the dependency list above, so restore
+        // their visibility here (Scene relay does not require the enhanced API).
+        updatePreferenceDependency("binder_firewall_enabled", customApiEnabled, hideDisabled)
+        updatePreferenceDependency("category_external_relay", true, hideDisabled)
+
         // These also depend on window_manager_plus_enabled
         val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
         updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerPlusEnabled, hideDisabled)
