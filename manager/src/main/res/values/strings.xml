@@ -694,6 +694,10 @@
     <string name="action_about">About</string>
     <string name="about_dialog_button_close">Close</string>
     <string name="about_view_source_code_title">Source code</string>
+    <string name="about_website_title">Official Website</string>
+    <string name="about_qq_group_title">Official QQ Group</string>
+    <string name="about_qq_group_summary">Group: 712125973</string>
+    <string name="about_qq_group_copied">Group number copied, open QQ to join</string>
     <string name="about_view_source_code"><![CDATA[View source code at %s]]></string>
 
     <!-- Start/Stop -->

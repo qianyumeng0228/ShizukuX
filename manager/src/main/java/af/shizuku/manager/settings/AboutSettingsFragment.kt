@@ -67,6 +67,16 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         }
 
         // 2. Setup standard links
+        findPreference<Preference>("website")?.setOnPreferenceClickListener {
+            CustomTabsHelper.launchUrlOrCopy(context, ProjectLinks.WEBSITE)
+            true
+        }
+
+        findPreference<Preference>("qq_group")?.setOnPreferenceClickListener {
+            openQqGroup()
+            true
+        }
+
         findPreference<Preference>("source_code")?.setOnPreferenceClickListener {
             CustomTabsHelper.launchUrlOrCopy(context, ProjectLinks.REPOSITORY)
             true
@@ -165,6 +175,22 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                 )
             else ->
                 getString(R.string.update_never_checked)
+        }
+    }
+
+    private fun openQqGroup() {
+        val context = context ?: return
+        val qqIntent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("mqqapi://card/show_pslcard?src_type=internal&version=1&uin=${ProjectLinks.QQ_GROUP_NUMBER}&card_type=group&source=qrcode")
+        )
+        try {
+            startActivity(qqIntent)
+        } catch (e: android.content.ActivityNotFoundException) {
+            Timber.w(e, "QQ not installed, fallback to copy group number")
+            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("QQ Group", ProjectLinks.QQ_GROUP_NUMBER))
+            Toast.makeText(context, R.string.about_qq_group_copied, Toast.LENGTH_SHORT).show()
         }
     }
 

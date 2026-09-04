@@ -2,6 +2,8 @@ package af.shizuku.manager.utils
 
 object ProjectLinks {
     const val REPOSITORY = "https://github.com/qianyumeng0228/ShizukuX"
+    const val WEBSITE = "https://shizukux.xyz"
+    const val QQ_GROUP_NUMBER = "712125973"
     const val README_DEVELOPER_GUIDE = "https://github.com/qianyumeng0228/ShizukuX/tree/master/README.md#developer-guide"
     const val OPEN_SOURCE_LICENSES = "https://github.com/qianyumeng0228/ShizukuX/blob/master/OPEN_SOURCE_LICENSES.md"
 
