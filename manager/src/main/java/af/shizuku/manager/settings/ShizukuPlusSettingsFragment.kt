@@ -601,10 +601,23 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             val result = try {
                 // Execute dpm command via ShizukuX's shell privilege (inherits shell/ADB UID,
                 // which has permission to run dpm set-device-owner).
+                // Explicit environment variables are required because Shizuku.newProcess may not
+                // inherit the full shell environment (PATH, HOME, ANDROID_ROOT, etc.).
+                val env = arrayOf(
+                    "PATH=/system/bin:/system/xbin:/vendor/bin",
+                    "HOME=/data/local/tmp",
+                    "ANDROID_ROOT=/system",
+                    "ANDROID_DATA=/data",
+                    "EXTERNAL_STORAGE=/sdcard",
+                    "TMPDIR=/data/local/tmp"
+                )
+                // Use full path to dpm to ensure command is found
+                val fullCommand = "/system/bin/dpm set-device-owner " +
+                    "${ctx.packageName}/af.shizuku.manager.admin.DhizukuAdminReceiver"
                 val process = Shizuku.newProcess(
-                    arrayOf("/system/bin/sh", "-c", command),
-                    null,
-                    null
+                    arrayOf("/system/bin/sh", "-c", fullCommand),
+                    env,
+                    "/data/local/tmp"
                 )
                 val stdout = process.inputStream.bufferedReader().readText()
                 val stderr = process.errorStream.bufferedReader().readText()
