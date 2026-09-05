@@ -264,39 +264,125 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Launches the service using a user-configured su binary path instead of libsu's auto-detection. */
+    /**
+     * Launches the service using a user-configured su binary path instead of libsu's auto-detection.
+     *
+     * Supports multiple su invocation strategies for compatibility with non-standard root solutions
+     * (e.g. SKRoot, KernelSU, APatch, custom su binaries). Tries strategies in order and logs
+     * detailed diagnostics for each attempt.
+     */
     private suspend fun startRootWithCustomSu(suPath: String) {
         val suFile = java.io.File(suPath)
-        if (!suFile.exists() || !suFile.canExecute()) {
-            log("Custom SU path not usable: $suPath\n")
+        if (!suFile.exists()) {
+            log("Custom SU path does not exist: $suPath\n")
             throw NotRootedException()
         }
+
+        // Log detailed diagnostics about the su binary
         log("Using custom SU path: $suPath\n")
+        log("SU file exists: ${suFile.exists()}, canExecute: ${suFile.canExecute()}, " +
+            "canRead: ${suFile.canRead()}, size: ${suFile.length()} bytes\n")
+        try {
+            log("SU file absolute path: ${suFile.absolutePath}\n")
+            log("SU file parent: ${suFile.parent}\n")
+        } catch (e: Exception) {
+            log("SU file info error: ${e.message}\n")
+        }
+
+        // Try to make the file executable if it isn't (some custom su locations lack +x)
+        if (!suFile.canExecute()) {
+            log("SU file is not executable, attempting chmod +x...\n")
+            try {
+                suFile.setExecutable(true, false)
+                log("chmod +x result: ${suFile.canExecute()}\n")
+            } catch (e: Exception) {
+                log("chmod +x failed: ${e.message}\n")
+            }
+        }
 
         ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-        val process = ProcessBuilder(suPath, "-c", Starter.internalCommand)
-            .redirectErrorStream(true)
-            .start()
 
-        // Drain output off-thread so waitFor below can't deadlock on a full pipe.
-        val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
-        val drain = Thread({
-            reader.forEachLine { line -> log(line) }
-        }, "root-su-output")
-        drain.isDaemon = true
-        drain.start()
+        // Define multiple invocation strategies for compatibility with various root solutions
+        // Strategy 1: standard su -c "command"
+        // Strategy 2: su "command" (without -c, some custom su implementations accept this)
+        // Strategy 3: /system/bin/sh -c "su -c 'command'" (via system shell)
+        // Strategy 4: su -c command (without quotes around command)
+        val strategies = listOf(
+            Triple("su -c [command]", { cmd: String -> arrayOf(suPath, "-c", cmd) }, true),
+            Triple("su [command] (no -c)", { cmd: String -> arrayOf(suPath, cmd) }, false),
+            Triple("sh -c [su -c command]", { cmd: String ->
+                arrayOf("/system/bin/sh", "-c", "$suPath -c '$cmd'")
+            }, true),
+            Triple("su -c command (raw)", { cmd: String -> arrayOf(suPath, "-c", Starter.internalCommand) }, true)
+        )
 
-        val finished = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
-        if (!finished) {
-            process.destroy()
-            throw Exception("Timed out starting with root (custom su: $suPath)")
+        var lastError: Exception? = null
+        var successfulStrategy: String? = null
+
+        for ((strategyName, cmdBuilder, _) in strategies) {
+            log("\n--- Trying SU strategy: $strategyName ---\n")
+            try {
+                val cmdArray = cmdBuilder(Starter.internalCommand)
+                log("Command array: ${cmdArray.joinToString(" ")}\n")
+
+                val process = ProcessBuilder(*cmdArray)
+                    .redirectErrorStream(true)
+                    .start()
+
+                // Drain output off-thread so waitFor below can't deadlock on a full pipe.
+                val output = StringBuilder()
+                val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
+                val drain = Thread({
+                    reader.forEachLine { line ->
+                        output.appendLine(line)
+                        log("  $line")
+                    }
+                }, "root-su-output")
+                drain.isDaemon = true
+                drain.start()
+
+                val finished = process.waitFor(30, java.util.concurrent.TimeUnit.SECONDS)
+                if (!finished) {
+                    process.destroy()
+                    log("Strategy timed out after 30s\n")
+                    lastError = Exception("Timed out starting with root (strategy: $strategyName, su: $suPath)")
+                    continue
+                }
+
+                val exitCode = process.exitValue()
+                log("Strategy exit code: $exitCode\n")
+                log("Strategy output (${output.length} chars): ${output.toString().take(500)}\n")
+
+                if (exitCode == 0) {
+                    successfulStrategy = strategyName
+                    log("\n=== SU strategy succeeded: $strategyName ===\n")
+                    break
+                } else {
+                    lastError = Exception("Failed to start with root (exit $exitCode, strategy: $strategyName, su: $suPath)")
+                    log("Strategy failed with exit code $exitCode\n")
+                }
+            } catch (e: Exception) {
+                log("Strategy exception: ${e.javaClass.simpleName}: ${e.message}\n")
+                log("Stack trace: ${android.util.Log.getStackTraceString(e)}\n")
+                lastError = e
+            }
         }
-        if (process.exitValue() != 0) {
-            throw Exception("Failed to start with root (exit ${process.exitValue()}, su: $suPath)")
+
+        if (successfulStrategy == null) {
+            log("\n=== All SU strategies failed ===\n")
+            log("Last error: ${lastError?.message}\n")
+            log("Troubleshooting tips:\n")
+            log("1. Ensure the su path is correct (use 'ls -la' to verify)\n")
+            log("2. Ensure the su binary has execute permission (chmod +x)\n")
+            log("3. For SKRoot users: use '安装部署SU' in PermissionManager first, then copy the su path\n")
+            log("4. For SKRoot users: ensure ShizukuX is 64-bit (SKRoot only supports 64-bit apps)\n")
+            log("5. Try using the default (auto-detect) mode instead of custom su path\n")
+            throw lastError ?: Exception("All SU invocation strategies failed for: $suPath")
         }
 
         ShizukuStateMachine.update()
-        ActivityLogManager.log("Shizuku", appContext.packageName, "Service started via root (custom su: $suPath)")
+        ActivityLogManager.log("Shizuku", appContext.packageName,
+            "Service started via root (custom su: $suPath, strategy: $successfulStrategy)")
     }
 
 }

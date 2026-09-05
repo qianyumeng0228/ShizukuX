@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import rikka.html.text.toHtml
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import rikka.shizuku.Shizuku
 import af.shizuku.manager.security.BiometricLock
 import androidx.biometric.BiometricPrompt
 import af.shizuku.manager.ShizukuSettings.Keys.*
@@ -166,6 +167,17 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             }, crypto = BiometricPrompt.CryptoObject(cipher))
         } catch (e: Exception) {
             Toast.makeText(ctx, R.string.settings_restore_operation_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh Dhizuku device-owner status when returning to this page.
+        // The status can change externally (e.g. device owner transferred from
+        // another app like Dhizuku), and onCreatePreferences only runs once.
+        val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
+        if (dhizukuPref != null) {
+            updateDhizukuDeviceOwnerStatus(dhizukuPref)
         }
     }
 
@@ -555,27 +567,73 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             "${ctx.packageName}/af.shizuku.manager.admin.DhizukuAdminReceiver"
         val dpmCommand = "dpm set-device-owner " +
             "${ctx.packageName}/af.shizuku.manager.admin.DhizukuAdminReceiver"
-        val options = arrayOf(
-            getString(R.string.dhizuku_setup_copy),
-            getString(R.string.dhizuku_setup_run_root),
-            getString(R.string.dhizuku_setup_via_dhizuku)
-        )
-        MaterialAlertDialogBuilder(ctx)
+        lateinit var setupDialog: androidx.appcompat.app.AlertDialog
+        setupDialog = MaterialAlertDialogBuilder(ctx)
             .setTitle(R.string.dhizuku_setup_title)
             .setMessage(getString(R.string.dhizuku_setup_message, command))
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> {
-                        val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("dpm command", command))
-                        Toast.makeText(ctx, R.string.dhizuku_setup_copied, Toast.LENGTH_SHORT).show()
-                    }
-                    1 -> runDeviceOwnerAsRoot(ctx, dpmCommand)
-                    2 -> activateViaDhizuku(ctx)
-                }
+            .setPositiveButton(R.string.dhizuku_setup_via_shizukux) { _, _ ->
+                // Dismiss the setup dialog first, then show progress and activate
+                setupDialog.dismiss()
+                activateViaShizukuX(ctx, dpmCommand)
+            }
+            .setNeutralButton(R.string.dhizuku_setup_command_line) { _, _ ->
+                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("dpm command", command))
+                Toast.makeText(ctx, R.string.dhizuku_setup_copied, Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .create()
+        setupDialog.show()
+    }
+
+    private fun activateViaShizukuX(ctx: Context, command: String) {
+        // Check if ShizukuX service is running
+        if (!Shizuku.pingBinder()) {
+            Toast.makeText(ctx, R.string.dhizuku_setup_shizukux_not_running, Toast.LENGTH_LONG).show()
+            return
+        }
+        val progressDialog = MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.dhizuku_setup_running)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = try {
+                // Execute dpm command via ShizukuX's shell privilege (inherits shell/ADB UID,
+                // which has permission to run dpm set-device-owner).
+                val process = Shizuku.newProcess(
+                    arrayOf("/system/bin/sh", "-c", command),
+                    null,
+                    null
+                )
+                val stdout = process.inputStream.bufferedReader().readText()
+                val stderr = process.errorStream.bufferedReader().readText()
+                val exitCode = process.waitFor()
+                if (exitCode == 0 && (stdout + stderr).contains("Success")) {
+                    Result.success(Unit)
+                } else {
+                    val error = (stdout + stderr).trim().ifEmpty { "exit code $exitCode" }
+                    Result.failure(Exception(error))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+            withContext(Dispatchers.Main) {
+                progressDialog.dismiss()
+                if (result.isSuccess) {
+                    Toast.makeText(ctx, R.string.dhizuku_setup_shizukux_success, Toast.LENGTH_LONG).show()
+                    val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
+                    if (dhizukuPref != null) {
+                        ShizukuSettings.setDhizukuModeEnabled(true)
+                        dhizukuPref.isChecked = true
+                        updateDhizukuDeviceOwnerStatus(dhizukuPref)
+                    }
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                    Toast.makeText(ctx, getString(R.string.dhizuku_setup_shizukux_failure, error), Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
 
     private fun isDeviceRooted(): Boolean {

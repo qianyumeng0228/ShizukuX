@@ -560,9 +560,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
 
         Bundle reply = new Bundle();
-        reply.putInt(BIND_APPLICATION_SERVER_UID, OsUtils.getUid());
+        // Spoof root context for clients that check server privilege level (e.g. Hail refuses
+        // hide mode when it sees shell context). Actual privileged operations are still mediated
+        // by transactRemote interception (setApplicationHiddenSettingAsUser -> pm disable-user).
+        reply.putInt(BIND_APPLICATION_SERVER_UID, 0);
         reply.putInt(BIND_APPLICATION_SERVER_VERSION, replyServerVersion);
-        reply.putString(BIND_APPLICATION_SERVER_SECONTEXT, OsUtils.getSELinuxContext());
+        reply.putString(BIND_APPLICATION_SERVER_SECONTEXT, "u:r:su:s0");
         reply.putInt(BIND_APPLICATION_SERVER_PATCH_VERSION, ShizukuApiConstants.SERVER_PATCH_VERSION);
         if (!isManager) {
             ClientRecord record = Objects.requireNonNull(clientRecord);
@@ -1280,6 +1283,25 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 LOGGER.e("SUBridge: pm grant failed", e);
                             }
                         }
+                    }
+                } else if (baseCmd.equals("pm") && cmd.length > 2 && (cmd[1].equals("hide") || cmd[1].equals("unhide"))) {
+                    // adb (shell) lacks MANAGE_USERS permission, so pm hide/unhide throws SecurityException.
+                    // Map to pm disable-user / pm enable which shell can execute; user-visible effect is
+                    // equivalent (app removed from launcher and cannot be launched).
+                    String action = cmd[1];
+                    String targetPkg = null;
+                    for (int j = 2; j < cmd.length; j++) {
+                        if (cmd[j].equals("--user")) { j++; continue; }
+                        targetPkg = cmd[j];
+                        break;
+                    }
+                    if (targetPkg == null) targetPkg = "";
+                    if (action.equals("hide")) {
+                        LOGGER.i("SUBridge: intercepting pm hide -> pm disable-user for " + targetPkg);
+                        return newProcessInternal(new String[]{"pm", "disable-user", "--user", "0", targetPkg}, env, dir);
+                    } else {
+                        LOGGER.i("SUBridge: intercepting pm unhide -> pm enable for " + targetPkg);
+                        return newProcessInternal(new String[]{"pm", "enable", targetPkg}, env, dir);
                     }
                 } else if (baseCmd.equals("cat") && cmd.length > 1 && (cmd[1].equals("/sys/fs/selinux/enforce") || cmd[1].contains("/selinux/enforce"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {

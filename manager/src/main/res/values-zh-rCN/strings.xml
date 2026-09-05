@@ -884,6 +884,13 @@
     <string name="dhizuku_setup_root_success"><![CDATA[设备所有者设置成功！请重启 ShizukuX。]]></string>
     <string name="dhizuku_setup_root_failure"><![CDATA[执行失败：%1$s\n请手动在电脑上运行上方命令。]]></string>
     <string name="dhizuku_setup_via_dhizuku"><![CDATA[通过 Dhizuku 激活]]></string>
+    <string name="dhizuku_setup_via_shizukux"><![CDATA[通过 ShizukuX 激活]]></string>
+    <string name="dhizuku_setup_shizukux_not_running"><![CDATA[ShizukuX 服务未运行。请先启动 ShizukuX（通过 ADB 或 Root），再使用此功能。]]></string>
+    <string name="dhizuku_setup_shizukux_success"><![CDATA[设备所有者设置成功！Dhizuku 模式已启用。]]></string>
+    <string name="dhizuku_setup_shizukux_failure"><![CDATA[执行失败：%1$s
+请尝试使用命令行方式激活。]]></string>
+    <string name="dhizuku_setup_command_line"><![CDATA[命令行激活（复制命令）]]></string>
+
     <string name="dhizuku_setup_dhizuku_not_installed"><![CDATA[未检测到 Dhizuku 应用。请先安装 Dhizuku 并将其设为设备所有者，再通过它转移权限。]]></string>
     <string name="dhizuku_setup_dhizuku_launch"><![CDATA[打开 Dhizuku]]></string>
     <string name="dhizuku_status_active"><![CDATA[设备所有者：已启用]]></string>

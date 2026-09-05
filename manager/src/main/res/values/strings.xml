@@ -1029,6 +1029,13 @@
     <string name="dhizuku_setup_root_success">Device Owner set successfully! Please restart ShizukuX.</string>
     <string name="dhizuku_setup_root_failure">Execution failed: %1$s\nPlease run the command above manually on your computer.</string>
     <string name="dhizuku_setup_via_dhizuku">Activate via Dhizuku</string>
+    <string name="dhizuku_setup_via_shizukux">Activate via ShizukuX</string>
+    <string name="dhizuku_setup_shizukux_not_running">ShizukuX service is not running. Please start ShizukuX first (via ADB or Root), then use this feature.</string>
+    <string name="dhizuku_setup_shizukux_success">Device owner set successfully! Dhizuku mode enabled.</string>
+    <string name="dhizuku_setup_shizukux_failure">Execution failed: %1$s
+Please try the command-line method instead.</string>
+    <string name="dhizuku_setup_command_line">Command-line activation (copy command)</string>
+
     <string name="dhizuku_setup_dhizuku_not_installed">Dhizuku app not found. Please install Dhizuku and set it as Device Owner first, then transfer the permission through it.</string>
     <string name="dhizuku_setup_dhizuku_launch">Open Dhizuku</string>
     <string name="dhizuku_status_active">Device Owner: Active</string>
