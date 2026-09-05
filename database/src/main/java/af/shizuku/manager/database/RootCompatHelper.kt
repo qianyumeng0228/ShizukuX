@@ -65,6 +65,10 @@ object RootCompatHelper {
                 prefsEntry != null && isShizukuRoot() -> {
                     // Root Shizuku (UID 0) can directly edit another app's shared_prefs.
                     val (prefsFile, prefsKey) = prefsEntry
+                    // Force-stop first: a running app periodically flushes its in-memory
+                    // SharedPreferences to disk, which would overwrite the edit we are about to
+                    // make. Stopping it ensures the on-disk file is stable before we touch it.
+                    executePrivileged(arrayOf("am", "force-stop", packageName))
                     val escapedPath = escapeShellSingleQuote(escapeSed(suPath))
                     val escapedKey  = escapeSed(prefsKey)
                     val target = "/data/data/$packageName/shared_prefs/$prefsFile.xml"
@@ -81,8 +85,8 @@ object RootCompatHelper {
                     success = executePrivileged(arrayOf("sh", "-c", cmd))
                 }
                 else -> {
-                    // No automatic path; UI will guide the user through manual setup.
-                    success = true
+                    // Not in either map — canAutoSetup() should be checked before calling this.
+                    success = false
                 }
             }
         } catch (e: Exception) {
@@ -161,6 +165,19 @@ object RootCompatHelper {
 
     suspend fun deployBridgeToTmpDetailed(context: Context): DeployResult = withContext(Dispatchers.IO) {
         if (!isShizukuAvailable()) return@withContext DeployResult(null, "Shizuku binder not available")
+
+        // Android 16+ (API 36) tightened the SELinux policy for the ADB/shell process (uid 2000),
+        // denying writes to /data/local/tmp. Skip all write attempts immediately to avoid a
+        // multi-second stall.
+        val serverUid = try { rikka.shizuku.Shizuku.getUid() } catch (_: Exception) { -1 }
+        if (serverUid == 2000 && android.os.Build.VERSION.SDK_INT >= 36) {
+            return@withContext DeployResult(
+                null,
+                "Android 16+ ADB/shell mode: /data/local/tmp is not writable from the shell " +
+                "process (SELinux policy). Use the exported path instead."
+            )
+        }
+
         val dir = "/data/local/tmp"
         // asset name -> octal mode (scripts executable; dex read-only for app_process on A14+)
         val files = listOf(

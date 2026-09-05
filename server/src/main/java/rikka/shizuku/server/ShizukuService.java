@@ -56,6 +56,13 @@ import af.shizuku.server.IContinuityBridge;
 import af.shizuku.server.IOverlayManagerPlus;
 import af.shizuku.server.INetworkGovernorPlus;
 import af.shizuku.server.IActivityManagerPlus;
+import af.shizuku.server.IStatusBarGovernorExtra;
+import af.shizuku.server.IPackageGovernorExtra;
+import af.shizuku.server.IDisplayTunerExtra;
+import af.shizuku.server.IAppInspector;
+import af.shizuku.server.IPrivilegedDataSource;
+import af.shizuku.server.IBackupRestoreExtra;
+import af.shizuku.server.IApkPatcher;
 import rikka.hidden.compat.ActivityManagerApis;
 import rikka.hidden.compat.DeviceIdleControllerApis;
 import rikka.hidden.compat.PackageManagerApis;
@@ -185,6 +192,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final OverlayManagerPlusImpl overlayManagerPlus = new OverlayManagerPlusImpl();
     private final NetworkGovernorPlusImpl networkGovernorPlus = new NetworkGovernorPlusImpl();
     private final ActivityManagerPlusImpl activityManagerPlus = new ActivityManagerPlusImpl();
+    private final StatusBarGovernorExtraImpl statusBarGovernorExtra = new StatusBarGovernorExtraImpl();
+    private final PackageGovernorExtraImpl packageGovernorExtra = new PackageGovernorExtraImpl();
+    private final DisplayTunerExtraImpl displayTunerExtra = new DisplayTunerExtraImpl();
+    private final AppInspectorImpl appInspector = new AppInspectorImpl();
+    private final PrivilegedDataSourceImpl privilegedDataSource = new PrivilegedDataSourceImpl();
+    private final BackupRestoreExtraImpl backupRestoreExtra = new BackupRestoreExtraImpl();
+    private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl();
 
     private void grantRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
         Android17Compat.grantRuntimePermission(packageName, permName, userId);
@@ -2428,6 +2442,51 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         enforceCallingPermission("getActivityManagerPlus");
         if (!isFeatureEnabled("activity_manager_plus")) return null;
         return activityManagerPlus;
+    }
+
+    @Override
+    public IStatusBarGovernorExtra getStatusBarGovernorExtra() {
+        enforceCallingPermission("getStatusBarGovernorExtra");
+        if (!isFeatureEnabled("status_bar_governor_extra")) return null;
+        return statusBarGovernorExtra;
+    }
+
+    @Override
+    public IPackageGovernorExtra getPackageGovernorExtra() {
+        enforceCallingPermission("getPackageGovernorExtra");
+        if (!isFeatureEnabled("package_governor_extra")) return null;
+        return packageGovernorExtra;
+    }
+
+    @Override
+    public IDisplayTunerExtra getDisplayTunerExtra() {
+        enforceCallingPermission("getDisplayTunerExtra");
+        if (!isFeatureEnabled("display_tuner_extra")) return null;
+        return displayTunerExtra;
+    }
+
+    @Override
+    public IAppInspector getAppInspector() {
+        enforceCallingPermission("getAppInspector");
+        return appInspector;
+    }
+
+    @Override
+    public IPrivilegedDataSource getPrivilegedDataSource() {
+        enforceCallingPermission("getPrivilegedDataSource");
+        return privilegedDataSource;
+    }
+
+    @Override
+    public IBackupRestoreExtra getBackupRestoreExtra() {
+        enforceCallingPermission("getBackupRestoreExtra");
+        return backupRestoreExtra;
+    }
+
+    @Override
+    public IApkPatcher getApkPatcher() {
+        enforceCallingPermission("getApkPatcher");
+        return apkPatcher;
     }
 
     @Override

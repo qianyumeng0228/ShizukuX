@@ -19,8 +19,8 @@ object CryptoUtils {
     // keys can't be "upgraded" in place, so v2 forces a fresh, device-credential-capable key for
     // everyone. Cost: auth-protected backups made before this fix can't be restored (re-create
     // them); acceptable since that path was largely broken on non-biometric devices anyway.
-    private const val KEY_ALIAS_AUTH = "ShizukuXBackupKey_v2"
-    private const val KEY_ALIAS_NO_AUTH = "ShizukuXBackupKey_no_auth"
+    private const val KEY_ALIAS_AUTH = "ShizukuPlusBackupKey_v2"
+    private const val KEY_ALIAS_NO_AUTH = "ShizukuPlusBackupKey_no_auth"
     private const val ANDROID_KEYSTORE = "AndroidKeyStore"
     private const val TRANSFORMATION = "${KeyProperties.KEY_ALGORITHM_AES}/${KeyProperties.BLOCK_MODE_GCM}/${KeyProperties.ENCRYPTION_PADDING_NONE}"
 
@@ -127,6 +127,6 @@ object CryptoUtils {
  */
 class BackupKeyUnavailableException : java.security.GeneralSecurityException(
     "The encryption key for this backup no longer exists on this device. Settings backups are " +
-        "encrypted with a hardware-backed key that is destroyed when ShizukuX is uninstalled or its " +
+        "encrypted with a hardware-backed key that is destroyed when Shizuku+ is uninstalled or its " +
         "data is cleared, so a backup can only be restored by the installation that created it."
 )

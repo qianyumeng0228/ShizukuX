@@ -44,6 +44,18 @@ class BootCompleteReceiver : BroadcastReceiver() {
             // startForegroundService can be refused during direct boot / from background — expected.
             Timber.tag("BootCompleteReceiver").w(e, "Watchdog start skipped")
         }
+        // Restart AutomationService if any automation rules were configured before the reboot.
+        // The service self-stops when no rules are configured, so this is safe to call unconditionally
+        // as long as rules exist.
+        if (ShizukuSettings.hasAnyAutomationRulesConfigured()) {
+            try {
+                context.startForegroundService(
+                    android.content.Intent(context, af.shizuku.manager.automation.AutomationService::class.java)
+                )
+            } catch (e: Exception) {
+                Timber.tag("BootCompleteReceiver").w(e, "AutomationService start skipped")
+            }
+        }
         if (action == Intent.ACTION_MY_PACKAGE_REPLACED && ShizukuSettings.isSuBridgeEnabled()) {
             // The su/rish_shizuku.dex bridge deployed to /data/local/tmp is version-specific
             // bytecode compiled against this exact APK build; previously it was only ever

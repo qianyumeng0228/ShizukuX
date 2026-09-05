@@ -99,7 +99,9 @@ object StockShizukuCompat {
             // Spawn a fully detached process that waits 1 second, then starts our server.
             // We immediately force-stop the original Shizuku so the ports/ServiceManager are freed up.
             val cmd = "nohup sh -c 'sleep 1 && $starterCmd' >/dev/null 2>&1 & am force-stop $PACKAGE"
-            rikka.shizuku.Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+            // Process is intentionally fire-and-forget (nohup detaches it); destroy immediately
+            // to avoid leaking the process handle. Null return → not running yet, still return true.
+            rikka.shizuku.Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)?.destroy()
             true
         } catch (e: Exception) {
             false
@@ -117,7 +119,9 @@ object StockShizukuCompat {
         if (!rikka.shizuku.Shizuku.pingBinder()) return false
         var process: Process? = null
         return try {
+            // newProcess() is a Java platform type: null on some chipsets when spawn fails.
             process = rikka.shizuku.Shizuku.newProcess(arrayOf("sh", "-c", "ps -A | grep shizuku_server"), null, null)
+                ?: return false
             val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
             var line: String?
             var isOriginal = false

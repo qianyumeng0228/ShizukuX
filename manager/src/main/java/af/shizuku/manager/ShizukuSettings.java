@@ -162,6 +162,10 @@ public class ShizukuSettings {
         public static final String KEY_LIVE_ACTIVITY_ENABLED = "live_activity_enabled";
         public static final String KEY_AUTO_RECONNECT_MDNS = "auto_reconnect_mdns";
         public static final String KEY_STEALTH_MODE = "stealth_mode";
+
+        // Automation Engine (ShizukuX additions)
+        public static final String KEY_AUTOMATION_TRUSTED_NETWORKS = "automation_trusted_networks";
+        public static final String KEY_AUTOMATION_APP_PROFILES = "automation_app_profiles";
     }
 
     private static SharedPreferences sPreferences;
@@ -449,6 +453,10 @@ public class ShizukuSettings {
     public static boolean getStartOnBoot(Context context) {
         ComponentName bootCompleteReceiver = new ComponentName(context.getPackageName(), BootCompleteReceiver.class.getName());
         int state = context.getPackageManager().getComponentEnabledSetting(bootCompleteReceiver);
+        // COMPONENT_ENABLED_STATE_DEFAULT must fall back to the manifest's android:enabled="true"
+        if (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
+            return true;
+        }
         return state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;
     }
 
@@ -933,9 +941,35 @@ public class ShizukuSettings {
         if (p != null) p.edit().putString(Keys.KEY_SPOOF_TARGET, target).apply();
     }
 
+    public static java.util.Set<String> getAutomationTrustedNetworks() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getStringSet(Keys.KEY_AUTOMATION_TRUSTED_NETWORKS, new java.util.HashSet<>()) : new java.util.HashSet<>();
+    }
+
+    public static void setAutomationTrustedNetworks(java.util.Set<String> ssids) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putStringSet(Keys.KEY_AUTOMATION_TRUSTED_NETWORKS, ssids).apply();
+    }
+
+    public static String getAutomationAppProfilesJson() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_AUTOMATION_APP_PROFILES, "{}") : "{}";
+    }
+
+    public static void setAutomationAppProfilesJson(String json) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putString(Keys.KEY_AUTOMATION_APP_PROFILES, json).apply();
+    }
+
     public static boolean isSuBridgeEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_SU_BRIDGE_ENABLED, false);
+    }
+
+    public static boolean hasAnyAutomationRulesConfigured() {
+        if (!getAutomationTrustedNetworks().isEmpty()) return true;
+        String json = getAutomationAppProfilesJson();
+        return !"{}".equals(json) && json.length() > 2;
     }
 
     public static String getCustomSuPath() {
