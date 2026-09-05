@@ -106,6 +106,7 @@ object AppContextManager {
 
         // --- Software Management & Freezers ---
         put("com.aistra.hail", AppMetadata("Hail: Modern app freezer.", listOf(ENH_SHELL, ENH_DPM), true))
+        put("com.rosan.dhizuku", AppMetadata("Dhizuku: Device Owner sharing bridge.", listOf(ENH_DPM), true))
         put("samolego.canta", AppMetadata("Canta: Powerful system app debloater.", listOf(ENH_SHELL), true))
         put("rikka.appops", AppMetadata("App Ops: Manage hidden app permissions.", listOf(ENH_SHELL), true))
         put("com.catchingnow.icebox", AppMetadata("Ice Box: Freeze apps to save battery.", listOf(ENH_SHELL, ENH_DPM), true))
@@ -160,7 +161,18 @@ object AppContextManager {
 
     fun getMetadata(packageName: String): AppMetadata? {
         if (dynamicDatabase.isEmpty()) loadFromCache()
-        return dynamicDatabase[packageName] ?: staticDatabase[packageName]
+        val dynamic = dynamicDatabase[packageName]
+        val static = staticDatabase[packageName]
+        return when {
+            dynamic == null -> static
+            static == null -> dynamic
+            else -> {
+                // 合并：增强功能取并集（远程库缺项时由内置库兜底），其余字段以远程库为准
+                val enhancements = (static.potentialEnhancements + dynamic.potentialEnhancements)
+                    .distinctBy { it.key }
+                dynamic.copy(potentialEnhancements = enhancements)
+            }
+        }
     }
 
     fun getRootLegacyPackages(): Map<String, List<String>> {

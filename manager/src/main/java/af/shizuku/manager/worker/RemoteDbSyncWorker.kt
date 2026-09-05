@@ -21,7 +21,7 @@ class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coroutine
 
     companion object {
         private const val WORK_NAME = "remote_app_db_sync"
-        private const val DB_URL = ProjectLinks.APP_CONTEXT_DB
+        private const val DB_URL = ProjectLinks.APPS_DB
         private const val CONNECT_TIMEOUT_MS = 8_000
         private const val READ_TIMEOUT_MS = 12_000
         // Only re-fetch if the cached data is older than 20 hours

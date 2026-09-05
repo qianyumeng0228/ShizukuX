@@ -18,7 +18,7 @@ object ProjectLinks {
     const val API_RELEASES = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases"
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
 
-    const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/app-context-db.json"
+    const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
 
     const val HELP_HOME = "https://github.com/qianyumeng0228/ShizukuX/blob/master/docs/zh-CN/index.md"

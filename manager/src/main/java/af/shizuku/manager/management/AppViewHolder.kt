@@ -7,6 +7,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.util.TypedValue
@@ -15,6 +16,7 @@ import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -396,11 +398,29 @@ class AppViewHolder(private val binding: AppListItemBinding) :
         val checkedItems = BooleanArray(enhancements.size) { i ->
             ShizukuSettings.isAppEnhancementEnabled(packageName, enhancements[i].key)
         }
+        val options = enhancements.map { "${it.title}: ${it.description}" }.toTypedArray()
+        val density = context.resources.displayMetrics.density
 
-        MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.app_management_enhancements)
-            .setMessage(R.string.app_management_enhancements_desc)
-            .setMultiChoiceItems(enhancements.map { "${it.title}: ${it.description}" }.toTypedArray(), checkedItems) { _, which, isChecked ->
+        // 标题区域 = 标题 + 说明。说明不能用 setMessage：在部分 ROM（如 MIUI）上 setMessage 会遮挡 setMultiChoiceItems 的选项
+        val titleContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((22 * density).toInt(), (18 * density).toInt(), (22 * density).toInt(), (6 * density).toInt())
+            addView(TextView(context).apply {
+                text = context.getString(R.string.app_management_enhancements)
+                textSize = 18f
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            addView(TextView(context).apply {
+                text = context.getString(R.string.app_management_enhancements_desc)
+                textSize = 13f
+                setTextColor(context.getColor(android.R.color.darker_gray))
+                setPadding(0, (4 * density).toInt(), 0, 0)
+            })
+        }
+
+        AlertDialog.Builder(context)
+            .setCustomTitle(titleContainer)
+            .setMultiChoiceItems(options, checkedItems) { _, which, isChecked ->
                 ShizukuSettings.setAppEnhancementEnabled(packageName, enhancements[which].key, isChecked)
                 val appLabel = ai?.let { AppIconCache.getLabel(context, it) } ?: packageName
                 ActivityLogManager.log(appLabel, packageName, "Toggle Enhancement: ${enhancements[which].key} -> $isChecked")
