@@ -46,13 +46,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val isSamsung = EnvironmentUtils.isSamsung()
         val isTv = EnvironmentUtils.isTelevision()
 
-        if (!(isTv || isSamsung) || !EnvironmentUtils.isTlsSupported()) {
+        if (!EnvironmentUtils.isTlsSupported()) {
             Toast.makeText(this, getString(R.string.toast_accessibility_tv_only), Toast.LENGTH_SHORT).show()
             disableSelf()
             return
         }
 
-        // On Samsung, we don't necessarily want to jump to MainActivity immediately
+        // On Samsung/TV we don't necessarily want to jump to MainActivity immediately
         // as the user might be manually navigating Developer Options.
         if (isTv) {
             val intent = Intent(this, MainActivity::class.java).apply {
@@ -87,12 +87,12 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (port != null && password != null) return
 
         val source = event.source ?: return
-        val text = source.text ?: ""
 
         // Debug Samsung-specific dialog titles
         if (EnvironmentUtils.isSamsung() && event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""
             if (className.contains("AlertDialog") || className.contains("Dialog")) {
+                val text = source.text ?: ""
                 Timber.tag("AdbAccessibility").d("Samsung Dialog detected: $text")
                 Sentry.addBreadcrumb(Breadcrumb("Samsung Dialog detected").apply {
                     category = "adb.pairing"
@@ -101,34 +101,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             }
         }
 
-        val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
-        val passwordRegex = Regex("""\d{6}""")
-
-        // Standard IP:Port check
-        ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
-            port = it
-            Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
-                category = "adb.pairing"
-            })
-        }
-
-        // Samsung specific: sometimes the port is in a different view or has specific labels
-        if (port == null && text.contains("Port", ignoreCase = true)) {
-            val portMatch = Regex("""\d{5}""").find(text)
-            portMatch?.value?.toIntOrNull()?.let {
-                port = it
-                Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
-                    category = "adb.pairing"
-                })
-            }
-        }
-
-        passwordRegex.find(text)?.value?.let {
-            password = it
-            Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
-                category = "adb.pairing"
-            })
-        }
+        checkNode(source)
 
         // Recursive search for children if text is empty on parent (Samsung UI optimization)
         if (port == null || password == null) {
@@ -191,22 +164,55 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
     }
 
+    private val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
+    private val passwordRegex = Regex("""\d{6}""")
+
+    /**
+     * A 6-digit code is only accepted once an IP:port has been seen in the same window tree.
+     * Otherwise random 6-digit numbers on screen (notifications, status bar, other apps) get
+     * misread as the pairing code and an auto-pair attempt fires against a wrong service.
+     */
+    private var foundPortInWindow = false
+
+    private fun checkNode(node: android.view.accessibility.AccessibilityNodeInfo?) {
+        if (node == null) return
+        val text = node.text ?: return
+
+        if (port == null) {
+            ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
+                port = it
+                foundPortInWindow = true
+                Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
+                    category = "adb.pairing"
+                })
+            }
+            // Samsung specific: sometimes the port is in a different view or has specific labels
+            if (port == null && text.contains("Port", ignoreCase = true)) {
+                Regex("""\d{5}""").find(text)?.value?.toIntOrNull()?.let {
+                    port = it
+                    foundPortInWindow = true
+                    Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
+                        category = "adb.pairing"
+                    })
+                }
+            }
+        }
+
+        if (foundPortInWindow && password == null) {
+            passwordRegex.find(text)?.value?.let {
+                password = it
+                Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
+                    category = "adb.pairing"
+                })
+            }
+        }
+    }
+
     private fun findPortAndPasswordInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
         if (node == null || depth > 10) return // Prevent excessive recursion causing ANRs on complex Samsung UIs
         if (port != null && password != null) return
 
-        val text = node.text?.toString() ?: ""
-        if (text.isNotEmpty()) {
-            val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
-            val passwordRegex = Regex("""\d{6}""")
-
-            if (port == null) {
-                ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let { port = it }
-            }
-            if (password == null) {
-                passwordRegex.find(text)?.value?.let { password = it }
-            }
-        }
+        checkNode(node)
 
         for (i in 0 until node.childCount) {
             findPortAndPasswordInNode(node.getChild(i), depth + 1)

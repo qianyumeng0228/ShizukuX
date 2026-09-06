@@ -133,8 +133,16 @@
     <string name="dialog_adb_pairing_title">Pair with device</string>
     <string name="dialog_adb_pairing_discovery">Searching for pairing service</string>
         <string name="dialog_adb_pairing_paring_code">Pairing code</string>
-    <string name="dialog_adb_pairing_guide">The 6-digit pairing code is shown in the system pop-up under "Wireless debugging". If the pop-up has closed, tap "Open wireless debugging settings", tap "Pair device with pairing code", remember the code, then come back and enter it here.</string>
-    <string name="dialog_adb_pairing_open_settings">Open wireless debugging settings</string>
+    <string name="dialog_adb_pairing_legacy_guide">On this system the pairing session ends as soon as the system pop-up closes, so a code typed here later can never succeed.
+
+To pair reliably:
+1. Enable the Shizuku pairing service in accessibility settings (button below).
+2. Open "Wireless debugging" and tap "Pair device with pairing code".
+3. Keep the pop-up open — Shizuku reads the pairing code automatically and completes pairing.
+
+Alternatively, while the pop-up is open, pull down the notification shade and type the code in the notification input.</string>
+    <string name="dialog_adb_pairing_enable_auto">Enable accessibility auto-pair</string>
+    <string name="notification_adb_pairing_help">Pairing help</string>
     <string name="paring_code_is_wrong">Pairing code is wrong.</string>
     <string name="cannot_connect_port">Can\'t connect to wireless debugging service.\n\nPlease ensure that Shizuku is whitelisted in all firewall, ad-block, VPN, or similar apps that can restrict network access.</string>
     <string name="dialog_wireless_adb_not_enabled">Wireless debugging is not enabled.\nNote, before Android 11, to enable wireless debugging, computer connection is a must.</string>
@@ -817,7 +825,7 @@
     <string name="dialog_cannot_open_browser_title">Can\'t start browser</string>
     <string name="toast_copied_to_clipboard">Copied to clipboard</string>
     <string name="accessibility_service_label">ShizukuX Pairing Helper</string>
-    <string name="accessibility_service_description">Provides pairing support for devices (e.g., TVs and Samsung One UI phones) where notifications or split screen cannot be used easily.\n\nEnables ShizukuX to extract the pairing code from the wireless debugging pairing screen. It will disable itself once the pairing code is found.</string>
+    <string name="accessibility_service_description">Pairs ShizukuX automatically: while the system "Pair with device" pop-up is open, ShizukuX reads the pairing code from the screen and completes pairing by itself — no need to type the code in the notification.\n\nUseful on any device, and required on ROMs where the pairing session ends as soon as the pop-up is closed. It will disable itself once pairing is done.</string>
 
     <!-- Messages for legacy -->
     <string name="dialog_legacy_not_support_title">%1$s does not support modern Shizuku</string>

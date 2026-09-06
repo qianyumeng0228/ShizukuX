@@ -67,8 +67,16 @@
     <string name="dialog_adb_pairing_title">与设备配对</string>
     <string name="dialog_adb_pairing_discovery">正在搜索配对服务</string>
         <string name="dialog_adb_pairing_paring_code">配对码</string>
-    <string name="dialog_adb_pairing_guide">6 位配对码显示在系统“无线调试”页面的弹窗中。若弹窗已关闭：点下方“打开无线调试设置”，再点“使用配对码配对设备”，记住配对码后返回此处输入。</string>
-    <string name="dialog_adb_pairing_open_settings">打开无线调试设置</string>
+    <string name="dialog_adb_pairing_legacy_guide">此系统上，配对码弹窗一旦关闭，配对会话即结束，稍后在对话框中输入旧码无法成功。
+
+可靠的配对方式：
+1. 点下方按钮，在系统无障碍设置中开启「Shizuku 配对服务」。
+2. 打开无线调试，点「使用配对码配对设备」。
+3. 保持弹窗打开——Shizuku 会自动读取配对码并完成配对。
+
+或者：弹窗显示期间，下拉通知栏，在通知的输入框中输入配对码。</string>
+    <string name="dialog_adb_pairing_enable_auto">开启无障碍自动配对</string>
+    <string name="notification_adb_pairing_help">配对说明</string>
     <string name="paring_code_is_wrong">配对码错误。</string>
     <string name="cannot_connect_port">无法连接到无线调试服务。\n\n请确保已将 Shizuku 加入防火墙、广告拦截器、VPN 或其他可能限制网络访问的应用的白名单。</string>
     <string name="dialog_wireless_adb_not_enabled">无线调试未启用。\n\n请注意，在 Android 11 之前，必须连接电脑才能启用无线调试。</string>
@@ -184,7 +192,7 @@
     <string name="settings_report_bug">报告错误</string>
     <string name="settings_advanced">高级</string>
     <string name="settings_legacy_pairing">传统配对</string>
-    <string name="settings_legacy_pairing_summary">在带引导的对话框中输入配对码（通知中仍可直接输入）</string>
+    <string name="settings_legacy_pairing_summary">配对码弹窗关闭即结束配对会话；请使用通知输入或无障碍自动配对</string>
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">首先，请执行以下操作：</string>
     <string name="bug_report_dialog_update">请检查您是否正在使用^1。</string>

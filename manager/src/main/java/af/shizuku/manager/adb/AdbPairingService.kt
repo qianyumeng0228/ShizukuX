@@ -510,6 +510,24 @@ class AdbPairingService : Service() {
         return action
     }
 
+    /** Opens the pairing help/guide page (no code input — see createInputNotification). */
+    private fun pairingHelpAction(port: Int): Notification.Action {
+        val dialogIntent = Intent(this, AdbPairingDialogActivity::class.java)
+            .putExtra(portKey, port)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val pendingIntent = PendingIntent.getActivity(
+            this, dialogRequestId + port, dialogIntent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            else PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return Notification.Action.Builder(
+            null,
+            getString(R.string.notification_adb_pairing_help),
+            pendingIntent
+        ).build()
+    }
+
     private val searchingNotification by unsafeLazy {
         Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
@@ -521,27 +539,20 @@ class AdbPairingService : Service() {
 
     private fun createInputNotification(port: Int): Notification {
         if (ShizukuSettings.getLegacyPairing()) {
-            val dialogIntent = Intent(this, AdbPairingDialogActivity::class.java)
-                .putExtra(portKey, port)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            val contentIntent = PendingIntent.getActivity(
-                this, dialogRequestId + port, dialogIntent,
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                else PendingIntent.FLAG_UPDATE_CURRENT
-            )
+            // Legacy mode: the system pairing pop-up ends the pairing session as soon as it is
+            // dismissed (pulling down the shade / switching apps), so opening an in-app dialog
+            // to type the code is a dead end — by the time it's on screen the session is gone.
+            // The notification therefore does NOT open the dialog from its body; it offers the
+            // inline RemoteInput (fast path: type the code straight in the shade) plus a help
+            // action that explains the constraint and the accessibility auto-pair option.
             return Notification.Builder(this, NOTIFICATION_CHANNEL)
                 .setColor(getColor(R.color.notification))
                 .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))
                 .setContentText(getString(R.string.notification_adb_pairing_input_paring_code))
                 .setSmallIcon(R.drawable.ic_notification_icon)
-                .setContentIntent(contentIntent)
                 .setAutoCancel(false)
-                // Keep the inline RemoteInput as well: on OEM skins the system pairing pop-up
-                // closes when the shade is pulled down, so being able to type the code right in
-                // the notification (after reading it from the pop-up) avoids the extra hop into
-                // the dialog. Tapping the notification body opens the guided dialog instead.
                 .addAction(replyNotificationAction(port))
+                .addAction(pairingHelpAction(port))
                 .build()
         }
         return Notification.Builder(this, NOTIFICATION_CHANNEL)
