@@ -138,7 +138,7 @@ object UpdateChecker {
             .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
 
         // 资产名规则（与 GitHub Release 上传命名一致）：
-        //   ShizukuX-Drop-In-v<ver>.apk / ShizukuX-Standard-v<ver>.apk / ShizukuX-Compat-Hub-v<ver>.apk
+        //   ShizukuX-Drop-In-v<ver>.apk / ShizukuX-v<ver>.apk（标准版，无后缀） / ShizukuX-Compat-Hub-v<ver>.apk
         // Drop-In 版选含 "Drop-In" 的资产；Standard 版必须排除 Drop-In 与 Compat-Hub，
         // 否则 assets 顺序下会误选到 Compat-Hub（体积最小但功能不完整）。
         val targetAsset = if (isDropIn) {
