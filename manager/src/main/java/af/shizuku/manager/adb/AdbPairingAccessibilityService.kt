@@ -28,6 +28,7 @@ import java.net.ConnectException
 import io.sentry.Sentry
 import io.sentry.Breadcrumb
 import io.sentry.SentryLevel
+import java.util.concurrent.atomic.AtomicBoolean
 
 class AdbPairingAccessibilityService : AccessibilityService() {
 
@@ -35,6 +36,9 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     var password: String? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** True once a pairing pop-up (IP:port) has been seen; starts the 60s completion budget. */
+    private val timeoutScheduled = AtomicBoolean(false)
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -68,18 +72,10 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             Toast.makeText(this, R.string.accessibility_service_monitoring, Toast.LENGTH_SHORT).show()
         }
 
-        // Auto-disable after 60 seconds to prevent lingering background usage
-        serviceScope.launch(Dispatchers.Main) {
-            delay(60_000)
-            if (port == null || password == null) {
-                Timber.tag("AdbAccessibility").w("Pairing discovery timed out")
-                Sentry.addBreadcrumb(Breadcrumb("Pairing discovery timed out").apply {
-                    level = SentryLevel.WARNING
-                })
-                Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.toast_pairing_timeout), Toast.LENGTH_LONG).show()
-                disableSelf()
-            }
-        }
+        // No countdown starts here: the user may need a while to walk to the wireless
+        // debugging page after enabling the service. The 60s budget only starts once an
+        // actual pairing pop-up (an IP:port on screen) is detected below, so an idle
+        // service stays enabled instead of timing out before the user gets there.
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -101,11 +97,26 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             }
         }
 
-        checkNode(source)
+        Timber.tag("AdbAccessibility").d(
+            "Event type=%d source=%s text=%s port=%s password=%s",
+            event.eventType, event.className, source.text, port, password?.let { "******" }
+        )
 
-        // Recursive search for children if text is empty on parent (Samsung UI optimization)
-        if (port == null || password == null) {
-            findPortAndPasswordInNode(source)
+        // Pass 1: find the pairing pop-up — an IP:port somewhere in the window tree.
+        // Pass 2: only after a port is known, accept a 6-digit code from the same window.
+        // A single pass can miss the code when the code node precedes the IP:port node
+        // and the pop-up only ever fires one event.
+        // Pass 1: find the pairing pop-up — an IP:port somewhere in the window tree.
+        // Pass 2: only after a port is known, accept a 6-digit code from the same window.
+        // A single pass can miss the code when the code node precedes the IP:port node
+        // and the pop-up only ever fires one event. The pop-up always fires a
+        // TYPE_WINDOW_STATE_CHANGED whose source is the window root, so walking the
+        // source subtree (no getRoot(), which needs a newer API level) covers it.
+        if (port == null) {
+            findPortInNode(source)
+        }
+        if (port != null && password == null) {
+            findPasswordInNode(source)
         }
 
         val currentPort = port
@@ -164,58 +175,77 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
     }
 
-    private val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
-    private val passwordRegex = Regex("""\d{6}""")
-
     /**
-     * A 6-digit code is only accepted once an IP:port has been seen in the same window tree.
-     * Otherwise random 6-digit numbers on screen (notifications, status bar, other apps) get
-     * misread as the pairing code and an auto-pair attempt fires against a wrong service.
+     * Starts the 60-second completion budget the first time a pairing pop-up (an IP:port)
+     * shows up on screen. The service then disables itself if pairing didn't finish in time,
+     * so it never lingers in the background after the user gave up.
      */
-    private var foundPortInWindow = false
-
-    private fun checkNode(node: android.view.accessibility.AccessibilityNodeInfo?) {
-        if (node == null) return
-        val text = node.text ?: return
-
-        if (port == null) {
-            ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
-                port = it
-                foundPortInWindow = true
-                Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
-                    category = "adb.pairing"
-                })
-            }
-            // Samsung specific: sometimes the port is in a different view or has specific labels
-            if (port == null && text.contains("Port", ignoreCase = true)) {
-                Regex("""\d{5}""").find(text)?.value?.toIntOrNull()?.let {
-                    port = it
-                    foundPortInWindow = true
-                    Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
-                        category = "adb.pairing"
+    private fun scheduleTimeoutIfNeeded() {
+        if (timeoutScheduled.compareAndSet(false, true)) {
+            serviceScope.launch(Dispatchers.Main) {
+                delay(60_000)
+                if (port == null || password == null) {
+                    Timber.tag("AdbAccessibility").w("Pairing discovery timed out")
+                    Sentry.addBreadcrumb(Breadcrumb("Pairing discovery timed out").apply {
+                        level = SentryLevel.WARNING
                     })
+                    Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.toast_pairing_timeout), Toast.LENGTH_LONG).show()
+                    disableSelf()
                 }
-            }
-        }
-
-        if (foundPortInWindow && password == null) {
-            passwordRegex.find(text)?.value?.let {
-                password = it
-                Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
-                    category = "adb.pairing"
-                })
             }
         }
     }
 
-    private fun findPortAndPasswordInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
-        if (node == null || depth > 10) return // Prevent excessive recursion causing ANRs on complex Samsung UIs
-        if (port != null && password != null) return
-
-        checkNode(node)
-
+    private fun findPortInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
+        if (node == null || depth > 10) return
+        if (port != null) return
+        val text = node.text?.toString() ?: ""
+        if (text.isNotEmpty()) {
+            val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
+            ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
+                port = it
+                Timber.tag("AdbAccessibility").i("Pairing port found: %d", it)
+                Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
+                    category = "adb.pairing"
+                })
+                scheduleTimeoutIfNeeded()
+                return
+            }
+            // Samsung specific: sometimes the port is in a different view or has specific labels
+            if (text.contains("Port", ignoreCase = true)) {
+                Regex("""\d{5}""").find(text)?.value?.toIntOrNull()?.let {
+                    port = it
+                    Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d", it)
+                    Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
+                        category = "adb.pairing"
+                    })
+                    scheduleTimeoutIfNeeded()
+                    return
+                }
+            }
+        }
         for (i in 0 until node.childCount) {
-            findPortAndPasswordInNode(node.getChild(i), depth + 1)
+            findPortInNode(node.getChild(i), depth + 1)
+        }
+    }
+
+    private fun findPasswordInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
+        if (node == null || depth > 10) return
+        if (password != null) return
+        val text = node.text?.toString() ?: ""
+        if (text.isNotEmpty()) {
+            val passwordRegex = Regex("""\d{6}""")
+            passwordRegex.find(text)?.value?.let {
+                password = it
+                Timber.tag("AdbAccessibility").i("Pairing password found: %s", it)
+                Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
+                    category = "adb.pairing"
+                })
+                return
+            }
+        }
+        for (i in 0 until node.childCount) {
+            findPasswordInNode(node.getChild(i), depth + 1)
         }
     }
 
