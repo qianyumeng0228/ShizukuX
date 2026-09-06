@@ -2,6 +2,7 @@ package af.shizuku.manager.adb
 import af.shizuku.manager.R
 
 import android.accessibilityservice.AccessibilityService
+import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.content.Intent
 import android.widget.Toast
@@ -47,7 +48,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-
+        Log.i("AdbAccessibility", "onServiceConnected")
         Sentry.addBreadcrumb(Breadcrumb("ADB Pairing Accessibility Service connected").apply {
             category = "adb.pairing"
         })
@@ -85,8 +86,16 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         if (port != null && password != null) return
+        Log.i("AdbAccessibility", "EVENT type=" + event.eventType + " win=" + event.windowId + " cls=" + event.className + " pkg=" + event.packageName)
+        Timber.tag("AdbAccessibility").d(
+            "Event type=%d windowId=%d source=%s",
+            event.eventType, event.windowId, event.className
+        )
 
-        val source = event.source ?: return
+        val source = event.source ?: run {
+            Log.i("AdbAccessibility", "EVENT source null, skipped")
+            return
+        }
 
         // Window isolation: the wireless-debugging settings page shows the *connect* port
         // (e.g. 10.0.52.183:5555), which is NOT the pairing port. The pairing pop-up has its
@@ -96,12 +105,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val windowId = event.windowId
         if (windowId != candidateWindowId && port == null && password == null) {
             candidateWindowId = windowId
+            Log.i("AdbAccessibility", "WINDOW switch -> " + windowId + " (fresh)")
             Timber.tag("AdbAccessibility").d("Window switch to %d, scanning this window only", windowId)
         } else if (windowId != candidateWindowId) {
             candidateWindowId = windowId
             port = null
             password = null
             timeoutGeneration++
+            Log.i("AdbAccessibility", "WINDOW switch -> " + windowId + " (candidates cleared, port was " + port + ")")
             Timber.tag("AdbAccessibility").w("Window switched to %d, stale candidates cleared", windowId)
         }
 
@@ -149,6 +160,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (currentPort != null && currentPassword != null) {
             val portValue = currentPort
             val passwordValue = currentPassword
+            Log.i("AdbAccessibility", "PAIRING start host=127.0.0.1 port=" + portValue + " code=" + passwordValue)
 
             serviceScope.launch {
                 val host = "127.0.0.1"
@@ -168,6 +180,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 AdbPairingClient(host, portValue, passwordValue, key).runCatching {
                     start()
                 }.onFailure {
+                    Log.i("AdbAccessibility", "PAIRING failed: " + it.javaClass.simpleName + ": " + it.message)
                     Timber.tag("AdbAccessibility").w(it, "Pairing attempt failed; will retry on next event")
                     when (it) {
                         // Deterministic failures — retrying cannot help.
@@ -196,6 +209,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                     }
                 }.onSuccess {
                     if (it) {
+                        Log.i("AdbAccessibility", "PAIRING succeeded")
                         Sentry.addBreadcrumb(Breadcrumb("Pairing client succeeded").apply {
                             category = "adb.pairing"
                         })
@@ -264,6 +278,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (text.isNotEmpty()) {
             ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
                 port = it
+                Log.i("AdbAccessibility", "PORT found=" + it + " text=[" + text + "] win=" + candidateWindowId)
                 Timber.tag("AdbAccessibility").i("Pairing port found: %d (window %d)", it, candidateWindowId)
                 Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
                     category = "adb.pairing"
@@ -274,6 +289,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             if (text.contains("Port", ignoreCase = true)) {
                 fiveDigitRegex.find(text)?.value?.toIntOrNull()?.let {
                     port = it
+                    Log.i("AdbAccessibility", "PORT found(samsung)=" + it + " text=[" + text + "] win=" + candidateWindowId)
                     Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d (window %d)", it, candidateWindowId)
                     Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
                         category = "adb.pairing"
@@ -302,6 +318,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (text.isNotEmpty()) {
             passwordRegex.find(text)?.value?.let {
                 password = it
+                Log.i("AdbAccessibility", "PASSWORD found=" + it + " text=[" + text + "] win=" + candidateWindowId)
                 Timber.tag("AdbAccessibility").i("Pairing password found: %s (window %d)", it, candidateWindowId)
                 Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
                     category = "adb.pairing"
