@@ -1,4 +1,4 @@
-package af.shizuku.manager.home
+﻿package af.shizuku.manager.home
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
@@ -86,8 +86,11 @@ class StartWirelessAdbViewHolder(
         containerBinding.root.applySpringTouch()
         containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         binding.button1.setOnClickListener { v: View ->
-            if (ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING) {
-                Toast.makeText(context, context.getString(R.string.toast_shizuku_already_starting), Toast.LENGTH_SHORT).show()
+            // Don't stack a second starter screen on top of an existing one; the new
+            // step-by-step screen is safe to re-enter at any time (it re-checks state itself).
+            // A stale STARTING state from a previously failed start must NOT block entry —
+            // that deadlocked the button with "Shizuku is already starting" forever.
+            if (StarterActivity.isActive) {
                 return@setOnClickListener
             }
 

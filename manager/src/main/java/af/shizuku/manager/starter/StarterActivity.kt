@@ -446,6 +446,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     @SuppressLint("MissingPermission")
     private suspend fun runAdbFlow(intentPort: Int?) {
+        clearStaleStartingState()
         lastStart = Triple(false, false, intentPort ?: 0)
         setSteps(
             listOf(
@@ -494,6 +495,26 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
         updateStep("detect_pairing", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_paired))
         startServiceWithPort(port)
+    }
+
+    /**
+     * A failed start can leave the state machine stuck in STARTING forever (update() keeps
+     * STARTING sticky and failure paths never reset it). That deadlocks every later "start"
+     * attempt that checks the state. If the binder isn't actually alive, settle back to
+     * STOPPED so a fresh attempt can proceed.
+     */
+    private suspend fun clearStaleStartingState() {
+        if (ShizukuStateMachine.get() != ShizukuStateMachine.State.STARTING) return
+        val alive = withContext(Dispatchers.IO) {
+            try {
+                rikka.shizuku.Shizuku.pingBinder()
+            } catch (e: Exception) {
+                false
+            }
+        }
+        if (!alive) {
+            ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)
+        }
     }
 
     /** Auto-enables wireless debugging when we hold WRITE_SECURE_SETTINGS (post-grant state). */
@@ -636,6 +657,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     // ---------------------------------------------------------------- Root flow
 
     private suspend fun runRootFlow() {
+        clearStaleStartingState()
         lastStart = Triple(true, false, 0)
         setSteps(
             listOf(
