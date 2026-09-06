@@ -20,7 +20,6 @@ import af.shizuku.manager.adb.AdbKey
 import af.shizuku.manager.adb.AdbPairingClient
 import af.shizuku.manager.home.HomeActivity
 import af.shizuku.manager.utils.EnvironmentUtils
-import java.net.ConnectException
 import io.sentry.Sentry
 import io.sentry.Breadcrumb
 import io.sentry.SentryLevel
@@ -28,13 +27,23 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class AdbPairingAccessibilityService : AccessibilityService() {
 
+    @Volatile
     var port: Int? = null
+    @Volatile
     var password: String? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** True once a pairing pop-up (IP:port) has been seen; starts the 60s completion budget. */
+    /** Accessibility window id the current candidates were found in. */
+    @Volatile
+    private var candidateWindowId = -1
+
+    /** True once a pairing pop-up (port AND code) has been seen; starts the 60s budget. */
     private val timeoutScheduled = AtomicBoolean(false)
+
+    /** Bumped on every window switch; invalidates any in-flight timeout coroutine. */
+    @Volatile
+    private var timeoutGeneration = 0
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -43,7 +52,6 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             category = "adb.pairing"
         })
 
-        val isSamsung = EnvironmentUtils.isSamsung()
         val isTv = EnvironmentUtils.isTelevision()
 
         if (!EnvironmentUtils.isTlsSupported()) {
@@ -80,6 +88,23 @@ class AdbPairingAccessibilityService : AccessibilityService() {
 
         val source = event.source ?: return
 
+        // Window isolation: the wireless-debugging settings page shows the *connect* port
+        // (e.g. 10.0.52.183:5555), which is NOT the pairing port. The pairing pop-up has its
+        // own accessibility window containing both the real pairing port and the 6-digit code.
+        // Whenever the focused window changes, drop any candidates found in the previous
+        // window so the page's connect port can never be paired with the pop-up's code.
+        val windowId = event.windowId
+        if (windowId != candidateWindowId && port == null && password == null) {
+            candidateWindowId = windowId
+            Timber.tag("AdbAccessibility").d("Window switch to %d, scanning this window only", windowId)
+        } else if (windowId != candidateWindowId) {
+            candidateWindowId = windowId
+            port = null
+            password = null
+            timeoutGeneration++
+            Timber.tag("AdbAccessibility").w("Window switched to %d, stale candidates cleared", windowId)
+        }
+
         // Debug Samsung-specific dialog titles
         if (EnvironmentUtils.isSamsung() && event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val className = event.className?.toString() ?: ""
@@ -94,8 +119,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
 
         Timber.tag("AdbAccessibility").d(
-            "Event type=%d source=%s text=%s port=%s password=%s",
-            event.eventType, event.className, source.text, port, password?.let { "******" }
+            "Event type=%d windowId=%d source=%s port=%s password=%s",
+            event.eventType, windowId, event.className, port, password?.let { "******" }
         )
 
         // Pass 1: find the pairing pop-up — an IP:port somewhere in the window tree.
@@ -125,8 +150,6 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             val portValue = currentPort
             val passwordValue = currentPassword
 
-            var toastMsg = getString(R.string.notification_adb_pairing_failed_title)
-
             serviceScope.launch {
                 val host = "127.0.0.1"
 
@@ -135,56 +158,83 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 } catch (e: Throwable) {
                     Timber.tag("AdbAccessibility").e(e, "Failed to load AdbKey")
                     Sentry.captureException(e)
-                    toastMsg = getString(R.string.adb_error_key_store)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.adb_error_key_store), Toast.LENGTH_LONG).show()
+                    }
+                    disableSelf()
                     return@launch
                 }
 
                 AdbPairingClient(host, portValue, passwordValue, key).runCatching {
                     start()
                 }.onFailure {
-                    Timber.tag("AdbAccessibility").e(it, "Pairing client failed")
+                    Timber.tag("AdbAccessibility").w(it, "Pairing attempt failed; will retry on next event")
                     when (it) {
-                        is ConnectException -> toastMsg = getString(R.string.cannot_connect_port)
-                        is AdbInvalidPairingCodeException -> toastMsg = getString(R.string.paring_code_is_wrong)
-                        is AdbKeyException -> toastMsg = getString(R.string.adb_error_key_store)
-                        else -> Sentry.captureException(it)
+                        // Deterministic failures — retrying cannot help.
+                        is AdbInvalidPairingCodeException, is AdbKeyException -> {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    this@AdbPairingAccessibilityService,
+                                    if (it is AdbInvalidPairingCodeException) {
+                                        getString(R.string.paring_code_is_wrong)
+                                    } else {
+                                        getString(R.string.adb_error_key_store)
+                                    },
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            disableSelf()
+                        }
+                        // Transient failures (pairing server still binding, connect refused,
+                        // TLS handshake race): clear the candidates so the next event rescans
+                        // the same window and retries. The 60s budget (started when the code
+                        // was found) still bounds this, and window switches reset it.
+                        else -> {
+                            port = null
+                            password = null
+                        }
                     }
                 }.onSuccess {
                     if (it) {
                         Sentry.addBreadcrumb(Breadcrumb("Pairing client succeeded").apply {
                             category = "adb.pairing"
                         })
-                        toastMsg = "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}"
-
-                        val intent = Intent(this@AdbPairingAccessibilityService, MainActivity::class.java).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@AdbPairingAccessibilityService,
+                                "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            val intent = Intent(this@AdbPairingAccessibilityService, MainActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            }
+                            startActivity(intent)
                         }
-                        startActivity(intent)
                     } else {
                         Sentry.addBreadcrumb(Breadcrumb("Pairing client returned false").apply {
                             category = "adb.pairing"
                             level = SentryLevel.WARNING
                         })
                     }
+                    disableSelf()
                 }
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@AdbPairingAccessibilityService, toastMsg, Toast.LENGTH_LONG).show()
-                }
-                disableSelf()
             }
         }
     }
 
     /**
-     * Starts the 60-second completion budget the first time a pairing pop-up (an IP:port)
-     * shows up on screen. The service then disables itself if pairing didn't finish in time,
-     * so it never lingers in the background after the user gave up.
+     * Starts the 60-second completion budget the first time a *code* shows up on screen
+     * (i.e. a real pairing pop-up is present). The wireless-debugging settings page alone
+     * shows a connect port but no code, so it never starts the clock. The service disables
+     * itself if pairing didn't finish in time, so it never lingers after the user gave up.
+     * A window switch bumps timeoutGeneration, which voids any in-flight timeout coroutine.
      */
     private fun scheduleTimeoutIfNeeded() {
         if (timeoutScheduled.compareAndSet(false, true)) {
+            val gen = timeoutGeneration
             serviceScope.launch(Dispatchers.Main) {
                 delay(60_000)
-                if (port == null || password == null) {
+                if (timeoutGeneration == gen && (port == null || password == null)) {
                     Timber.tag("AdbAccessibility").w("Pairing discovery timed out")
                     Sentry.addBreadcrumb(Breadcrumb("Pairing discovery timed out").apply {
                         level = SentryLevel.WARNING
@@ -214,22 +264,20 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (text.isNotEmpty()) {
             ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
                 port = it
-                Timber.tag("AdbAccessibility").i("Pairing port found: %d", it)
+                Timber.tag("AdbAccessibility").i("Pairing port found: %d (window %d)", it, candidateWindowId)
                 Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
                     category = "adb.pairing"
                 })
-                scheduleTimeoutIfNeeded()
                 return
             }
             // Samsung specific: sometimes the port is in a different view or has specific labels
             if (text.contains("Port", ignoreCase = true)) {
                 fiveDigitRegex.find(text)?.value?.toIntOrNull()?.let {
                     port = it
-                    Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d", it)
+                    Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d (window %d)", it, candidateWindowId)
                     Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
                         category = "adb.pairing"
                     })
-                    scheduleTimeoutIfNeeded()
                     return
                 }
             }
@@ -254,10 +302,11 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (text.isNotEmpty()) {
             passwordRegex.find(text)?.value?.let {
                 password = it
-                Timber.tag("AdbAccessibility").i("Pairing password found: %s", it)
+                Timber.tag("AdbAccessibility").i("Pairing password found: %s (window %d)", it, candidateWindowId)
                 Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
                     category = "adb.pairing"
                 })
+                scheduleTimeoutIfNeeded()
                 return
             }
         }
