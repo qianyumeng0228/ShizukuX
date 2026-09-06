@@ -19,6 +19,8 @@ import af.shizuku.manager.widget.ExternalRelayAdapter
  */
 class ExternalRelayActivity : AppBarActivity() {
 
+    private lateinit var adapter: ExternalRelayAdapter
+
     override fun getLayoutId(): Int = R.layout.activity_external_relay
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,9 +38,10 @@ class ExternalRelayActivity : AppBarActivity() {
             insets
         }
 
-        recyclerView.adapter = ExternalRelayAdapter(this) {
+        adapter = ExternalRelayAdapter(this) {
             SceneRelayManager.startSceneAdbActivation(this, lifecycleScope)
         }
+        recyclerView.adapter = adapter
     }
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {

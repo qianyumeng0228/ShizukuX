@@ -11,8 +11,7 @@ import com.google.android.material.button.MaterialButton
 /**
  * Adapter for the external relay authorization screen ([af.shizuku.manager.settings.ExternalRelayActivity]).
  *
- * Today it lists the Scene relay card plus a placeholder card signalling that more relayed apps
- * are coming; future apps can be appended to [items] without touching the UI shell.
+ * Lists relay entries: Scene relay, plus a placeholder for future apps.
  */
 class ExternalRelayAdapter(
     private val context: Context,
