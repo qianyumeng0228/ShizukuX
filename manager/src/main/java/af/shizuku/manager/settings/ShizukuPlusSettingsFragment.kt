@@ -785,6 +785,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                     }
                 } catch (e: Exception) {
                     val error = e.message ?: e.javaClass.simpleName
+                    android.util.Log.i("ShizukuXTransfer", "transferOwnership FAILED: pkg=" + ctx.packageName + " target=" + target + " ex=" + e.javaClass.name + " msg=" + error, e)
                     Toast.makeText(ctx, getString(R.string.dhizuku_transfer_failure, error), Toast.LENGTH_LONG).show()
                 }
             }
