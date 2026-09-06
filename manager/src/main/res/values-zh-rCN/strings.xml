@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- To translators: you can leave your here -->
     <!-- Home - Status -->
@@ -66,7 +66,9 @@
     <string name="adb_pairing">配对</string>
     <string name="dialog_adb_pairing_title">与设备配对</string>
     <string name="dialog_adb_pairing_discovery">正在搜索配对服务</string>
-    <string name="dialog_adb_pairing_paring_code">配对码</string>
+        <string name="dialog_adb_pairing_paring_code">配对码</string>
+    <string name="dialog_adb_pairing_guide">6 位配对码显示在系统“无线调试”页面的弹窗中。若弹窗已关闭：点下方“打开无线调试设置”，再点“使用配对码配对设备”，记住配对码后返回此处输入。</string>
+    <string name="dialog_adb_pairing_open_settings">打开无线调试设置</string>
     <string name="paring_code_is_wrong">配对码错误。</string>
     <string name="cannot_connect_port">无法连接到无线调试服务。\n\n请确保已将 Shizuku 加入防火墙、广告拦截器、VPN 或其他可能限制网络访问的应用的白名单。</string>
     <string name="dialog_wireless_adb_not_enabled">无线调试未启用。\n\n请注意，在 Android 11 之前，必须连接电脑才能启用无线调试。</string>
@@ -89,7 +91,7 @@
     <string name="adb_pairing_tutorial_content_notification">一条来自 Shizuku 的通知将帮助您完成配对。</string>
     <string name="adb_pairing_tutorial_content_steps">进入“开发者选项”，然后打开“无线调试”。</string>
     <string name="adb_pairing_tutorial_content_enter_pairing_code">
-        点击“无线调试”左侧，然后点击“使用配对码配对设备”。输入通知中的代码以完成配对。</string>
+        点击“无线调试”左侧，然后点击“使用配对码配对设备”。系统会弹出窗口显示 6 位配对码——请先记住它，再在 Shizuku 的通知或对话框里输入。若下拉通知栏时弹窗已关闭，可重新打开无线调试设置，再次点击“使用配对码配对设备”获取新配对码。</string>
     <string name="adb_pairing_tutorial_content_notification_blocked">配对过程需要您与 Shizuku 的通知交互。请允许
         Shizuku 发布通知。</string>
     <string name="adb_pairing_tutorial_content_miui">MIUI
@@ -182,7 +184,7 @@
     <string name="settings_report_bug">报告错误</string>
     <string name="settings_advanced">高级</string>
     <string name="settings_legacy_pairing">传统配对</string>
-    <string name="settings_legacy_pairing_summary">在对话框中输入配对码，而不是在通知中输入</string>
+    <string name="settings_legacy_pairing_summary">在带引导的对话框中输入配对码（通知中仍可直接输入）</string>
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">首先，请执行以下操作：</string>
     <string name="bug_report_dialog_update">请检查您是否正在使用^1。</string>

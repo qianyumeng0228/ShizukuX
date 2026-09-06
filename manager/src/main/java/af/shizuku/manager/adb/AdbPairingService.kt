@@ -537,6 +537,11 @@ class AdbPairingService : Service() {
                 .setSmallIcon(R.drawable.ic_notification_icon)
                 .setContentIntent(contentIntent)
                 .setAutoCancel(false)
+                // Keep the inline RemoteInput as well: on OEM skins the system pairing pop-up
+                // closes when the shade is pulled down, so being able to type the code right in
+                // the notification (after reading it from the pop-up) avoids the extra hop into
+                // the dialog. Tapping the notification body opens the guided dialog instead.
+                .addAction(replyNotificationAction(port))
                 .build()
         }
         return Notification.Builder(this, NOTIFICATION_CHANNEL)

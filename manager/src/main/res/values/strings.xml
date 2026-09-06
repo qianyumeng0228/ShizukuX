@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="server_uptime">Server Uptime</string>
     <string name="active_connections">Active Connections</string>
     <string name="server_memory_usage">Server Memory Usage</string>
@@ -132,7 +132,9 @@
     <string name="adb_pairing">Pairing</string>
     <string name="dialog_adb_pairing_title">Pair with device</string>
     <string name="dialog_adb_pairing_discovery">Searching for pairing service</string>
-    <string name="dialog_adb_pairing_paring_code">Pairing code</string>
+        <string name="dialog_adb_pairing_paring_code">Pairing code</string>
+    <string name="dialog_adb_pairing_guide">The 6-digit pairing code is shown in the system pop-up under "Wireless debugging". If the pop-up has closed, tap "Open wireless debugging settings", tap "Pair device with pairing code", remember the code, then come back and enter it here.</string>
+    <string name="dialog_adb_pairing_open_settings">Open wireless debugging settings</string>
     <string name="paring_code_is_wrong">Pairing code is wrong.</string>
     <string name="cannot_connect_port">Can\'t connect to wireless debugging service.\n\nPlease ensure that Shizuku is whitelisted in all firewall, ad-block, VPN, or similar apps that can restrict network access.</string>
     <string name="dialog_wireless_adb_not_enabled">Wireless debugging is not enabled.\nNote, before Android 11, to enable wireless debugging, computer connection is a must.</string>
@@ -194,7 +196,7 @@
     <string name="adb_pairing_tutorial_title">Pair Shizuku with your device</string>
     <string name="adb_pairing_tutorial_content_notification">A notification from Shizuku will help you complete the pairing.</string>
     <string name="adb_pairing_tutorial_content_steps">Navigate to \"Developer Options\", then enable \"USB debugging\" and \"Wireless debugging\".</string>
-    <string name="adb_pairing_tutorial_content_enter_pairing_code">Tap the left side of \"Wireless debugging\", then tap \"Pair device with pairing code.\" Enter the code in the notification to complete pairing.</string>
+    <string name="adb_pairing_tutorial_content_enter_pairing_code">Tap the left side of \"Wireless debugging\", then tap \"Pair device with pairing code.\" A system pop-up shows a 6-digit code — remember it, then enter it in the Shizuku notification or dialog. If the pop-up closed when you pulled down the shade, reopen wireless debugging settings and tap \"Pair device with pairing code\" again.</string>
     <string name="adb_pairing_tutorial_content_notification_blocked">The pairing process needs you to interact with a notification from Shizuku. Please allow Shizuku to post notifications.</string>
     <string name="adb_pairing_tutorial_content_miui">MIUI users may need to switch notification style to \"Android\" from \"Notification\" - \"Notification shade\" in system settings.</string>
     <string name="adb_pairing_tutorial_content_miui_2">Otherwise, you may not able to enter the pairing code from the notification.</string>
