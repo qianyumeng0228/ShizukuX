@@ -18,6 +18,14 @@ object ProjectLinks {
     const val API_RELEASES = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases"
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
 
+    /**
+     * GitHub Release 文件加速下载通道（与官网 shizukux.xyz 下载实现一致）。
+     * 直连 release-assets.githubusercontent.com 在国内网络常连不通导致 DownloadManager 卡 0%，
+     * 经 fd.shizukux.xyz 加速域回源可稳定下载。URL 模板：
+     * $FD_DOWNLOAD/<tag>/<assetFileName>
+     */
+    const val FD_DOWNLOAD = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
+
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
 

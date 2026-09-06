@@ -137,20 +137,27 @@ object UpdateChecker {
             .map { assets.getJSONObject(it) }
             .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
 
+        // 资产名规则（与 GitHub Release 上传命名一致）：
+        //   ShizukuX-Drop-In-v<ver>.apk / ShizukuX-Standard-v<ver>.apk / ShizukuX-Compat-Hub-v<ver>.apk
+        // Drop-In 版选含 "Drop-In" 的资产；Standard 版必须排除 Drop-In 与 Compat-Hub，
+        // 否则 assets 顺序下会误选到 Compat-Hub（体积最小但功能不完整）。
         val targetAsset = if (isDropIn) {
-            apkAssets.firstOrNull { 
+            apkAssets.firstOrNull {
                 val name = it.getString("name")
                 name.contains("Drop-In", ignoreCase = true) || name.contains("dropin", ignoreCase = true)
             }
         } else {
-            apkAssets.firstOrNull { 
+            apkAssets.firstOrNull {
                 val name = it.getString("name")
                 !name.contains("Drop-In", ignoreCase = true) && !name.contains("dropin", ignoreCase = true)
+                        && !name.contains("Compat-Hub", ignoreCase = true) && !name.contains("compat-hub", ignoreCase = true)
             }
         } ?: apkAssets.firstOrNull()
 
-        val downloadUrl = targetAsset?.getString("browser_download_url")
-            ?: return CheckResult.UpToDate
+        // 下载走官网同款加速通道（fd.shizukux.xyz），避免直连 GitHub CDN 在国内网络卡 0%。
+        val downloadUrl = targetAsset?.let {
+            "${ProjectLinks.FD_DOWNLOAD}/$tagName/${it.getString("name")}"
+        } ?: return CheckResult.UpToDate
 
         val versionCode = parseVersionCode(versionName)
         val currentVersionCode = parseVersionCode(BuildConfig.VERSION_NAME)
