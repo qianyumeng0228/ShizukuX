@@ -574,12 +574,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
 
         Bundle reply = new Bundle();
-        // Spoof root context for clients that check server privilege level (e.g. Hail refuses
-        // hide mode when it sees shell context). Actual privileged operations are still mediated
-        // by transactRemote interception (setApplicationHiddenSettingAsUser -> pm disable-user).
-        reply.putInt(BIND_APPLICATION_SERVER_UID, 0);
+        // FIX (k2013): Spoof root context (uid=0, secontext=u:r:su:s0) ONLY when user enables
+        // root_magisk_mocking. Defaulting to real shell values is required because some apps
+        // (notably Hail) behave differently when they believe the server is root, which can
+        // cause parcel skew and "Shell cannot change component state for null" errors.
+        boolean spoofRootContext = isFeatureEnabled("root_magisk_mocking");
+        reply.putInt(BIND_APPLICATION_SERVER_UID, spoofRootContext ? 0 : OsUtils.getUid());
         reply.putInt(BIND_APPLICATION_SERVER_VERSION, replyServerVersion);
-        reply.putString(BIND_APPLICATION_SERVER_SECONTEXT, "u:r:su:s0");
+        reply.putString(BIND_APPLICATION_SERVER_SECONTEXT, spoofRootContext ? "u:r:su:s0" : OsUtils.getSELinuxContext());
         reply.putInt(BIND_APPLICATION_SERVER_PATCH_VERSION, ShizukuApiConstants.SERVER_PATCH_VERSION);
         if (!isManager) {
             ClientRecord record = Objects.requireNonNull(clientRecord);
