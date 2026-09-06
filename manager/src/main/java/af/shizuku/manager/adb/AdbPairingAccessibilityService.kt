@@ -4,12 +4,8 @@ import af.shizuku.manager.R
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.widget.Toast
-import android.provider.Settings
 import timber.log.Timber
-import android.content.ActivityNotFoundException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -106,17 +102,21 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         // Pass 2: only after a port is known, accept a 6-digit code from the same window.
         // A single pass can miss the code when the code node precedes the IP:port node
         // and the pop-up only ever fires one event.
-        // Pass 1: find the pairing pop-up — an IP:port somewhere in the window tree.
-        // Pass 2: only after a port is known, accept a 6-digit code from the same window.
-        // A single pass can miss the code when the code node precedes the IP:port node
-        // and the pop-up only ever fires one event. The pop-up always fires a
-        // TYPE_WINDOW_STATE_CHANGED whose source is the window root, so walking the
-        // source subtree (no getRoot(), which needs a newer API level) covers it.
+        //
+        // The event source may be only the *changed* node (CONTENT_CHANGED fires per-node),
+        // so the scan must cover the whole window: walk the parent chain up to the window
+        // root first (source.root needs a newer API level than this project compiles
+        // against, the parent chain does not).
+        val windowRoot = run {
+            var r: android.view.accessibility.AccessibilityNodeInfo = source
+            while (r.parent != null) r = r.parent
+            r
+        }
         if (port == null) {
-            findPortInNode(source)
+            findPortInNode(windowRoot)
         }
         if (port != null && password == null) {
-            findPasswordInNode(source)
+            findPasswordInNode(windowRoot)
         }
 
         val currentPort = port
@@ -196,12 +196,22 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
     }
 
+    private val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
+    private val passwordRegex = Regex("""\d{6}""")
+    private val fiveDigitRegex = Regex("""\d{5}""")
+
+    /** Deep-enough cap for the recursive scan; guards against pathological UI trees. */
+    private val MAX_DEPTH = 20
+
     private fun findPortInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
-        if (node == null || depth > 10) return
+        if (node == null || depth > MAX_DEPTH) return
         if (port != null) return
-        val text = node.text?.toString() ?: ""
+        val text = try {
+            node.text?.toString() ?: ""
+        } catch (e: Throwable) {
+            "" // node may be recycled by the framework mid-scan; skip it
+        }
         if (text.isNotEmpty()) {
-            val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
             ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
                 port = it
                 Timber.tag("AdbAccessibility").i("Pairing port found: %d", it)
@@ -213,7 +223,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             }
             // Samsung specific: sometimes the port is in a different view or has specific labels
             if (text.contains("Port", ignoreCase = true)) {
-                Regex("""\d{5}""").find(text)?.value?.toIntOrNull()?.let {
+                fiveDigitRegex.find(text)?.value?.toIntOrNull()?.let {
                     port = it
                     Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d", it)
                     Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
@@ -224,17 +234,24 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 }
             }
         }
-        for (i in 0 until node.childCount) {
-            findPortInNode(node.getChild(i), depth + 1)
+        try {
+            for (i in 0 until node.childCount) {
+                findPortInNode(node.getChild(i), depth + 1)
+            }
+        } catch (e: Throwable) {
+            // node recycled mid-traversal; the next event will rescan
         }
     }
 
     private fun findPasswordInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
-        if (node == null || depth > 10) return
+        if (node == null || depth > MAX_DEPTH) return
         if (password != null) return
-        val text = node.text?.toString() ?: ""
+        val text = try {
+            node.text?.toString() ?: ""
+        } catch (e: Throwable) {
+            ""
+        }
         if (text.isNotEmpty()) {
-            val passwordRegex = Regex("""\d{6}""")
             passwordRegex.find(text)?.value?.let {
                 password = it
                 Timber.tag("AdbAccessibility").i("Pairing password found: %s", it)
@@ -244,8 +261,12 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 return
             }
         }
-        for (i in 0 until node.childCount) {
-            findPasswordInNode(node.getChild(i), depth + 1)
+        try {
+            for (i in 0 until node.childCount) {
+                findPasswordInNode(node.getChild(i), depth + 1)
+            }
+        } catch (e: Throwable) {
+            // node recycled mid-traversal; the next event will rescan
         }
     }
 

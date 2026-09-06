@@ -560,6 +560,7 @@ class AdbPairingService : Service() {
             .setContentTitle(getString(R.string.notification_adb_pairing_service_found_title))
             .setSmallIcon(R.drawable.ic_notification_icon)
             .addAction(replyNotificationAction(port))
+            .addAction(pairingHelpAction(port))
             .build()
     }
 
