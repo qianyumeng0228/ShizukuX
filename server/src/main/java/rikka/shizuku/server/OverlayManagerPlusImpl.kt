@@ -4,10 +4,10 @@ import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
 import android.util.Log
-import af.shizuku.server.IOverlayManagerPlus
+import af.shizuku.server.IOverlayManagerExtra
 import af.shizuku.common.util.UserHandleCompat
 
-class OverlayManagerPlusImpl : IOverlayManagerPlus.Stub() {
+class OverlayManagerPlusImpl : IOverlayManagerExtra.Stub() {
 
     companion object {
         private const val TAG = "OverlayManagerPlus"

@@ -1078,47 +1078,47 @@ public class ShizukuSettings {
                 android.os.IBinder binder = (android.os.IBinder) rikka.shizuku.Shizuku.getBinder();
                 if (binder == null) return;
                 moe.shizuku.server.IShizukuService service = moe.shizuku.server.IShizukuService.Stub.asInterface(binder);
-                service.updatePlusFeatureEnabled("custom_api", isCustomApiEnabled());
-                service.updatePlusFeatureEnabled("shell_interceptor", isShellInterceptorEnabled());
-                service.updatePlusFeatureEnabled("avf_manager", isAvfManagerEnabled());
-                service.updatePlusFeatureEnabled("storage_proxy", isStorageProxyEnabled());
-                service.updatePlusFeatureEnabled("continuity_bridge", isContinuityBridgeEnabled());
-                service.updatePlusFeatureEnabled("ai_core_plus", isAICorePlusEnabled());
-                service.updatePlusFeatureEnabled("ai_core_master", isAiCoreMasterEnabled());
-                service.updatePlusFeatureEnabled("ai_core_experimental", isAICoreExperimentalEnabled());
-                service.updatePlusFeatureEnabled("npu_acceleration", isNpuAccelerationEnabled());
-                service.updatePlusFeatureEnabled("native_window_crawler", isNativeWindowCrawlerEnabled());
-                service.updatePlusFeatureEnabled("window_manager_plus", isWindowManagerPlusEnabled());
-                service.updatePlusFeatureEnabled("overlay_manager_plus", isOverlayManagerPlusEnabled());
-                service.updatePlusFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());
-                service.updatePlusFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
-                service.updatePlusFeatureEnabled("su_bridge", isSuBridgeEnabled());
-                service.setPlusSetting("custom_su_path", getCustomSuPath());
-                service.updatePlusFeatureEnabled("root_magisk_mocking", isRootMagiskMockingEnabled());
-                service.updatePlusFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());
-                service.updatePlusFeatureEnabled("root_file_interceptor", isRootFileInterceptorEnabled());
-                service.updatePlusFeatureEnabled("root_busybox_mocking", isRootBusyboxMockingEnabled());
-                service.updatePlusFeatureEnabled("root_build_prop_redirect", isRootBuildPropRedirectEnabled());
-                service.updatePlusFeatureEnabled("root_iptables_mocking", isRootIptablesMockingEnabled());
-                service.updatePlusFeatureEnabled("vector", isVectorEnabled());
-                service.updatePlusFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
-                service.updatePlusFeatureEnabled("spoof_device", isSpoofDeviceEnabled());
-                service.setPlusSetting("spoof_target", getSpoofTarget());
-                service.updatePlusFeatureEnabled("on_device_adb_tcp", isOnDeviceAdbTcpEnabled());
-                service.updatePlusFeatureEnabled("force_start_wadb", isForceStartWadbEnabled());
-                service.updatePlusFeatureEnabled("enable_activity_log", isActivityLogEnabled());
-                service.updatePlusFeatureEnabled("binder_firewall", isBinderFirewallEnabled());
-                service.updatePlusFeatureEnabled("binder_logging", isBinderLoggingEnabled());
-                service.updatePlusFeatureEnabled("shadow_binder", isShadowBinderEnabled());
-                service.setPlusSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
-                service.updatePlusFeatureEnabled("samsung_system_uid_escalation", isSamsungSystemUidEscalationEnabled());
-                service.updatePlusFeatureEnabled("software_keystore_fallback", isSoftwareKeystoreFallbackEnabled());
-                service.updatePlusFeatureEnabled("overlay_fs_proxy", isOverlayFsProxyEnabled());
-                service.updatePlusFeatureEnabled("root_kernel_ghosting", isRootKernelGhostingEnabled());
-                service.updatePlusFeatureEnabled("root_partition_ghosting", isRootPartitionGhostingEnabled());
-                service.updatePlusFeatureEnabled("root_power_ghosting", isRootPowerGhostingEnabled());
-                service.updatePlusFeatureEnabled("bootloader_flash_ota", isBootloaderFlashOtaEnabled());
-                service.updatePlusFeatureEnabled("bootloader_fastbootd_reboot", isBootloaderFastbootdRebootEnabled());
+                service.updateExtraFeatureEnabled("custom_api", isCustomApiEnabled());
+                service.updateExtraFeatureEnabled("shell_interceptor", isShellInterceptorEnabled());
+                service.updateExtraFeatureEnabled("avf_manager", isAvfManagerEnabled());
+                service.updateExtraFeatureEnabled("storage_proxy", isStorageProxyEnabled());
+                service.updateExtraFeatureEnabled("continuity_bridge", isContinuityBridgeEnabled());
+                service.updateExtraFeatureEnabled("ai_core_plus", isAICorePlusEnabled());
+                service.updateExtraFeatureEnabled("ai_core_master", isAiCoreMasterEnabled());
+                service.updateExtraFeatureEnabled("ai_core_experimental", isAICoreExperimentalEnabled());
+                service.updateExtraFeatureEnabled("npu_acceleration", isNpuAccelerationEnabled());
+                service.updateExtraFeatureEnabled("native_window_crawler", isNativeWindowCrawlerEnabled());
+                service.updateExtraFeatureEnabled("window_manager_plus", isWindowManagerPlusEnabled());
+                service.updateExtraFeatureEnabled("overlay_manager_plus", isOverlayManagerPlusEnabled());
+                service.updateExtraFeatureEnabled("network_governor_plus", isNetworkGovernorPlusEnabled());
+                service.updateExtraFeatureEnabled("activity_manager_plus", isActivityManagerPlusEnabled());
+                service.updateExtraFeatureEnabled("su_bridge", isSuBridgeEnabled());
+                service.setExtraSetting("custom_su_path", getCustomSuPath());
+                service.updateExtraFeatureEnabled("root_magisk_mocking", isRootMagiskMockingEnabled());
+                service.updateExtraFeatureEnabled("root_auto_grant", isRootAutoGrantEnabled());
+                service.updateExtraFeatureEnabled("root_file_interceptor", isRootFileInterceptorEnabled());
+                service.updateExtraFeatureEnabled("root_busybox_mocking", isRootBusyboxMockingEnabled());
+                service.updateExtraFeatureEnabled("root_build_prop_redirect", isRootBuildPropRedirectEnabled());
+                service.updateExtraFeatureEnabled("root_iptables_mocking", isRootIptablesMockingEnabled());
+                service.updateExtraFeatureEnabled("vector", isVectorEnabled());
+                service.updateExtraFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
+                service.updateExtraFeatureEnabled("spoof_device", isSpoofDeviceEnabled());
+                service.setExtraSetting("spoof_target", getSpoofTarget());
+                service.updateExtraFeatureEnabled("on_device_adb_tcp", isOnDeviceAdbTcpEnabled());
+                service.updateExtraFeatureEnabled("force_start_wadb", isForceStartWadbEnabled());
+                service.updateExtraFeatureEnabled("enable_activity_log", isActivityLogEnabled());
+                service.updateExtraFeatureEnabled("binder_firewall", isBinderFirewallEnabled());
+                service.updateExtraFeatureEnabled("binder_logging", isBinderLoggingEnabled());
+                service.updateExtraFeatureEnabled("shadow_binder", isShadowBinderEnabled());
+                service.setExtraSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
+                service.updateExtraFeatureEnabled("samsung_system_uid_escalation", isSamsungSystemUidEscalationEnabled());
+                service.updateExtraFeatureEnabled("software_keystore_fallback", isSoftwareKeystoreFallbackEnabled());
+                service.updateExtraFeatureEnabled("overlay_fs_proxy", isOverlayFsProxyEnabled());
+                service.updateExtraFeatureEnabled("root_kernel_ghosting", isRootKernelGhostingEnabled());
+                service.updateExtraFeatureEnabled("root_partition_ghosting", isRootPartitionGhostingEnabled());
+                service.updateExtraFeatureEnabled("root_power_ghosting", isRootPowerGhostingEnabled());
+                service.updateExtraFeatureEnabled("bootloader_flash_ota", isBootloaderFlashOtaEnabled());
+                service.updateExtraFeatureEnabled("bootloader_fastbootd_reboot", isBootloaderFastbootdRebootEnabled());
 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {
@@ -1142,7 +1142,7 @@ public class ShizukuSettings {
                         }
 
                         if (resolvedPath != null) {
-                            service.setPlusSetting("su_path", resolvedPath);
+                            service.setExtraSetting("su_path", resolvedPath);
                         }
                     } catch (Exception e) {
                         Timber.tag("ShizukuSettings").w(e, "failed to update su_path");

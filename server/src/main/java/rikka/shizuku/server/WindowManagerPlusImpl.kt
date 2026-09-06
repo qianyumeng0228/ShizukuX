@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
-import af.shizuku.server.IWindowManagerPlus
+import af.shizuku.server.IWindowManagerExtra
 
 /**
  * Implementation of WindowManagerPlus using Android's window management APIs.
@@ -18,7 +18,7 @@ import af.shizuku.server.IWindowManagerPlus
  * 
  * Uses reflection to access hidden IActivityTaskManager and IWindowManager APIs.
  */
-class WindowManagerPlusImpl : IWindowManagerPlus.Stub() {
+class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
     companion object {
         private const val TAG = "WindowManagerPlusImpl"
         private const val TASK_SERVICE_NAME = "task"

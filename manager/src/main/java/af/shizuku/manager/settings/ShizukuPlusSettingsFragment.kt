@@ -876,10 +876,10 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("storage_proxy_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("continuity_bridge_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
-        val aiCorePlusEnabled = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
-        updatePreferenceDependency("ai_core_master_enabled", aiCorePlusEnabled, hideDisabled)
-        updatePreferenceDependency("ai_core_experimental_enabled", aiCorePlusEnabled, hideDisabled)
-        val aiCoreMasterEnabled = ShizukuSettings.isAiCoreMasterEnabled() && aiCorePlusEnabled
+        val aiCoreExtraEnabled = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+        updatePreferenceDependency("ai_core_master_enabled", aiCoreExtraEnabled, hideDisabled)
+        updatePreferenceDependency("ai_core_experimental_enabled", aiCoreExtraEnabled, hideDisabled)
+        val aiCoreMasterEnabled = ShizukuSettings.isAiCoreMasterEnabled() && aiCoreExtraEnabled
         updatePreferenceDependency("npu_acceleration_enabled", aiCoreMasterEnabled, hideDisabled)
         updatePreferenceDependency("native_window_crawler_enabled", aiCoreMasterEnabled, hideDisabled)
         updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
@@ -894,8 +894,8 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("category_external_relay", true, hideDisabled)
 
         // These also depend on window_manager_plus_enabled
-        val windowManagerPlusEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
-        updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerPlusEnabled, hideDisabled)
+        val windowManagerExtraEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
+        updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerExtraEnabled, hideDisabled)
 
         // Force RecyclerView to recalculate layout after hiding/showing items.
         // Guard: PreferenceFragmentCompat.getListView() throws (not returns null) before
@@ -939,8 +939,8 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 updatePreferenceDependency("native_window_crawler_enabled", masterActive, hideDisabled)
             }
             "ai_core_master_enabled" -> {
-                val aiCorePlusActive = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
-                val active = newValue && aiCorePlusActive
+                val aiCoreExtraActive = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+                val active = newValue && aiCoreExtraActive
                 updatePreferenceDependency("npu_acceleration_enabled", active, hideDisabled)
                 updatePreferenceDependency("native_window_crawler_enabled", active, hideDisabled)
             }

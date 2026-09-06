@@ -50,12 +50,12 @@ import moe.shizuku.server.IRemoteProcess;
 import moe.shizuku.server.IShizukuApplication;
 import af.shizuku.server.IVirtualMachineManager;
 import af.shizuku.server.IStorageProxy;
-import af.shizuku.server.IAICorePlus;
-import af.shizuku.server.IWindowManagerPlus;
+import af.shizuku.server.IAICoreExtra;
+import af.shizuku.server.IWindowManagerExtra;
 import af.shizuku.server.IContinuityBridge;
-import af.shizuku.server.IOverlayManagerPlus;
-import af.shizuku.server.INetworkGovernorPlus;
-import af.shizuku.server.IActivityManagerPlus;
+import af.shizuku.server.IOverlayManagerExtra;
+import af.shizuku.server.INetworkGovernorExtra;
+import af.shizuku.server.IActivityManagerExtra;
 import af.shizuku.server.IStatusBarGovernorExtra;
 import af.shizuku.server.IPackageGovernorExtra;
 import af.shizuku.server.IDisplayTunerExtra;
@@ -186,12 +186,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private volatile long lastManagerAppIdRefresh;
     private final VirtualMachineManagerImpl virtualMachineManager = new VirtualMachineManagerImpl();
     private final StorageProxyImpl storageProxy = new StorageProxyImpl();
-    private final AICorePlusImpl aiCorePlus;
-    private final WindowManagerPlusImpl windowManagerPlus = new WindowManagerPlusImpl();
+    private final AICorePlusImpl aiCoreExtra;
+    private final WindowManagerPlusImpl windowManagerExtra = new WindowManagerPlusImpl();
     private final ContinuityBridgeImpl continuityBridge = new ContinuityBridgeImpl();
-    private final OverlayManagerPlusImpl overlayManagerPlus = new OverlayManagerPlusImpl();
-    private final NetworkGovernorPlusImpl networkGovernorPlus = new NetworkGovernorPlusImpl();
-    private final ActivityManagerPlusImpl activityManagerPlus = new ActivityManagerPlusImpl();
+    private final OverlayManagerPlusImpl overlayManagerExtra = new OverlayManagerPlusImpl();
+    private final NetworkGovernorPlusImpl networkGovernorExtra = new NetworkGovernorPlusImpl();
+    private final ActivityManagerPlusImpl activityManagerExtra = new ActivityManagerPlusImpl();
     private final StatusBarGovernorExtraImpl statusBarGovernorExtra = new StatusBarGovernorExtraImpl();
     private final PackageGovernorExtraImpl packageGovernorExtra = new PackageGovernorExtraImpl();
     private final DisplayTunerExtraImpl displayTunerExtra = new DisplayTunerExtraImpl();
@@ -350,7 +350,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         configManager = getConfigManager();
         clientManager = getClientManager();
-        aiCorePlus = new AICorePlusImpl(clientManager, this);
+        aiCoreExtra = new AICorePlusImpl(clientManager, this);
 
         ApkChangedObservers.start(ai.sourceDir, () -> {
             if (getManagerApplicationInfo() == null) {
@@ -692,7 +692,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public boolean checkPlusFeatureEnabled(String key) {
+    public boolean checkExtraFeatureEnabled(String key) {
         return isFeatureEnabled(key);
     }
 
@@ -858,15 +858,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public void updatePlusFeatureEnabled(String key, boolean enabled) {
-        enforceManagerPermission("updatePlusFeatureEnabled");
+    public void updateExtraFeatureEnabled(String key, boolean enabled) {
+        enforceManagerPermission("updateExtraFeatureEnabled");
         LOGGER.i("Plus Feature Update: " + key + " -> " + enabled);
         featureEnabledMap.put(key, enabled);
     }
 
     @Override
-    public void setPlusSetting(String key, String value) {
-        enforceManagerPermission("setPlusSetting");
+    public void setExtraSetting(String key, String value) {
+        enforceManagerPermission("setExtraSetting");
         LOGGER.i("Plus Setting Update: " + key + " -> " + value);
         plusSettingsMap.put(key, value);
     }
@@ -1214,7 +1214,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     LOGGER.i("SUBridge: intercepting mount remount. Delegating to OverlayManager Proxy.");
                     if (isFeatureEnabled("overlay_fs_proxy_enabled") && (fullCmd.contains("/system") || fullCmd.contains("/vendor"))) {
                         try {
-                            overlayManagerPlus.prepareShadowMount(callingPkg, "/system");
+                            overlayManagerExtra.prepareShadowMount(callingPkg, "/system");
                         } catch (Exception e) {
                             LOGGER.e("SUBridge: shadow mount proxy failed", e);
                         }
@@ -1667,13 +1667,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 if (cmd[1].equals("force-stop")) {
                     String pkg = cmd[2];
                     LOGGER.i("Plus Optimization: am force-stop " + pkg + " via ActivityManagerPlus");
-                    if (activityManagerPlus.deepForceStop(pkg)) {
+                    if (activityManagerExtra.deepForceStop(pkg)) {
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
                 } else if (cmd[1].equals("freeze") || cmd[1].equals("suspend")) {
                     String pkg = cmd[2];
                     LOGGER.i("Plus Optimization: am freeze " + pkg + " -> restricted bucket");
-                    if (activityManagerPlus.setAppStandbyBucket(pkg, 45)) { // 45 = RESTRICTED
+                    if (activityManagerExtra.setAppStandbyBucket(pkg, 45)) { // 45 = RESTRICTED
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
                 }
@@ -2402,20 +2402,20 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public IAICorePlus getAICorePlus() {
-        enforceCallingPermission("getAICorePlus");
+    public IAICoreExtra getAICoreExtra() {
+        enforceCallingPermission("getAICoreExtra");
         // Always hand out the AICorePlus object. Diagnostic stats (getServerStats) are
         // read-only and must stay available no matter how the ai_core_plus switch is set;
         // actual AI features are gated per-call inside AICorePlusImpl
         // (ai_core_plus + ai_core_experimental / ai_core_master / npu_acceleration).
-        return aiCorePlus;
+        return aiCoreExtra;
     }
 
     @Override
-    public IWindowManagerPlus getWindowManagerPlus() {
-        enforceCallingPermission("getWindowManagerPlus");
+    public IWindowManagerExtra getWindowManagerExtra() {
+        enforceCallingPermission("getWindowManagerExtra");
         if (!isFeatureEnabled("window_manager_plus")) return null;
-        return windowManagerPlus;
+        return windowManagerExtra;
     }
 
     @Override
@@ -2426,24 +2426,24 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public IOverlayManagerPlus getOverlayManagerPlus() {
-        enforceCallingPermission("getOverlayManagerPlus");
+    public IOverlayManagerExtra getOverlayManagerExtra() {
+        enforceCallingPermission("getOverlayManagerExtra");
         if (!isFeatureEnabled("overlay_manager_plus")) return null;
-        return overlayManagerPlus;
+        return overlayManagerExtra;
     }
 
     @Override
-    public INetworkGovernorPlus getNetworkGovernorPlus() {
-        enforceCallingPermission("getNetworkGovernorPlus");
+    public INetworkGovernorExtra getNetworkGovernorExtra() {
+        enforceCallingPermission("getNetworkGovernorExtra");
         if (!isFeatureEnabled("network_governor_plus")) return null;
-        return networkGovernorPlus;
+        return networkGovernorExtra;
     }
 
     @Override
-    public IActivityManagerPlus getActivityManagerPlus() {
-        enforceCallingPermission("getActivityManagerPlus");
+    public IActivityManagerExtra getActivityManagerExtra() {
+        enforceCallingPermission("getActivityManagerExtra");
         if (!isFeatureEnabled("activity_manager_plus")) return null;
-        return activityManagerPlus;
+        return activityManagerExtra;
     }
 
     @Override
@@ -2550,15 +2550,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     @Override
-    public String getPlusSetting(String key) {
-        enforceCallingPermission("getPlusSetting");
+    public String getExtraSetting(String key) {
+        enforceCallingPermission("getExtraSetting");
         return plusSettingsMap.get(key);
     }
 
     @Override
-    public boolean isPlusFeatureEnabled(String key) {
-        enforceCallingPermission("isPlusFeatureEnabled");
-        return checkPlusFeatureEnabled(key);
+    public boolean isExtraFeatureEnabled(String key) {
+        enforceCallingPermission("isExtraFeatureEnabled");
+        return checkExtraFeatureEnabled(key);
     }
 
     private af.shizuku.server.IAIAutomationBridge aiAutomationBridge;
@@ -2567,8 +2567,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public void registerAIAutomationBridge(af.shizuku.server.IAIAutomationBridge bridge) {
         enforceCallingPermission("registerAIAutomationBridge");
         this.aiAutomationBridge = bridge;
-        if (aiCorePlus != null) {
-            aiCorePlus.setAutomationBridge(bridge);
+        if (aiCoreExtra != null) {
+            aiCoreExtra.setAutomationBridge(bridge);
         }
     }
 

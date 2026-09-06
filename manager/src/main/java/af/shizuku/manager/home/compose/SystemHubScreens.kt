@@ -44,7 +44,7 @@ fun ServerMetricsScreen() {
                 if (Shizuku.pingBinder()) {
                     val binder = Shizuku.getBinder()
                     val shizukuService = moe.shizuku.server.IShizukuService.Stub.asInterface(binder)
-                    val ai = shizukuService.aiCorePlus
+                    val ai = shizukuService.aiCoreExtra
                     if (ai == null) {
                         // Null when connected to a stock/mismatched server that doesn't implement
                         // the Plus AICore extension (SHIZUKUPLUS-6J) - not an error, just unavailable.

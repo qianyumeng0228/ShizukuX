@@ -16,7 +16,7 @@ import android.util.Log
 
 class AICorePlusImplTest {
 
-    private lateinit var aiCorePlusImpl: AICorePlusImpl
+    private lateinit var aiCoreExtraImpl: AICorePlusImpl
     private lateinit var runtimeMock: Runtime
     private lateinit var processMock: Process
 
@@ -29,8 +29,8 @@ class AICorePlusImplTest {
 
         val clientManagerMock = mockk<ShizukuClientManager>(relaxed = true)
         val serviceMock = mockk<ShizukuService>(relaxed = true)
-        every { serviceMock.isPlusFeatureEnabled(any()) } returns true
-        aiCorePlusImpl = AICorePlusImpl(clientManagerMock, serviceMock)
+        every { serviceMock.isExtraFeatureEnabled(any()) } returns true
+        aiCoreExtraImpl = AICorePlusImpl(clientManagerMock, serviceMock)
         runtimeMock = mockk(relaxed = true)
         processMock = mockk(relaxed = true)
 
@@ -54,7 +54,7 @@ class AICorePlusImplTest {
         every { processMock.waitFor() } returns 0
 
         // Act
-        val result = aiCorePlusImpl.simulateTouch(x, y)
+        val result = aiCoreExtraImpl.simulateTouch(x, y)
 
         // Assert
         assertTrue("simulateTouch should return true when process exits with 0", result)
@@ -73,7 +73,7 @@ class AICorePlusImplTest {
         every { processMock.waitFor() } returns 1
 
         // Act
-        val result = aiCorePlusImpl.simulateTouch(x, y)
+        val result = aiCoreExtraImpl.simulateTouch(x, y)
 
         // Assert
         assertFalse("simulateTouch should return false when process exits with non-zero", result)
@@ -91,7 +91,7 @@ class AICorePlusImplTest {
         every { runtimeMock.exec(any<Array<String>>()) } throws RuntimeException("Mocked exception")
 
         // Act
-        val result = aiCorePlusImpl.simulateTouch(x, y)
+        val result = aiCoreExtraImpl.simulateTouch(x, y)
 
         // Assert
         assertFalse("simulateTouch should return false when an exception occurs", result)

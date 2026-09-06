@@ -5,14 +5,14 @@ import android.os.IBinder
 import android.os.Process
 import android.os.ServiceManager
 import android.util.Log
-import af.shizuku.server.INetworkGovernorPlus
+import af.shizuku.server.INetworkGovernorExtra
 import rikka.hidden.compat.ActivityManagerApis
 import af.shizuku.common.compat.Android17Compat
 import rikka.shizuku.server.api.IContentProviderUtils
 import rikka.shizuku.server.util.InputValidationUtils
 import af.shizuku.common.util.UserHandleCompat
 
-class NetworkGovernorPlusImpl : INetworkGovernorPlus.Stub() {
+class NetworkGovernorPlusImpl : INetworkGovernorExtra.Stub() {
 
     companion object {
         private const val TAG = "NetworkGovernorPlus"

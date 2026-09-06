@@ -10,7 +10,7 @@ import android.util.Log;
 import java.util.Arrays;
 import java.util.List;
 
-import af.shizuku.server.IAICorePlus;
+import af.shizuku.server.IAICoreExtra;
 import af.shizuku.server.IStorageProxy;
 import af.shizuku.server.IVirtualMachineManager;
 import moe.shizuku.server.IShizukuService;
@@ -177,7 +177,7 @@ public class PlusShell {
         }
 
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        af.shizuku.server.IActivityManagerPlus am = service.getActivityManagerPlus();
+        af.shizuku.server.IActivityManagerExtra am = service.getActivityManagerExtra();
         if (am == null) {
             LOGGER.e("Error: Activity Manager Plus feature is disabled in ShizukuX settings.");
             return;
@@ -231,7 +231,7 @@ public class PlusShell {
         }
 
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        af.shizuku.server.IWindowManagerPlus wm = service.getWindowManagerPlus();
+        af.shizuku.server.IWindowManagerExtra wm = service.getWindowManagerExtra();
         if (wm == null) {
             LOGGER.e("Error: Window Manager Plus feature is disabled.");
             return;
@@ -261,7 +261,7 @@ public class PlusShell {
         }
 
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        IAICorePlus aicore = service.getAICorePlus();
+        IAICoreExtra aicore = service.getAICoreExtra();
         if (aicore == null) {
             LOGGER.e("Error: AICore+ feature is disabled in ShizukuX settings.");
             return;
@@ -404,8 +404,8 @@ public class PlusShell {
 
     private static void handleSpoof(IBinder binder) throws RemoteException {
         IShizukuService service = IShizukuService.Stub.asInterface(binder);
-        boolean enabled = service.isPlusFeatureEnabled("spoof_device");
-        String target = service.getPlusSetting("spoof_target");
+        boolean enabled = service.isExtraFeatureEnabled("spoof_device");
+        String target = service.getExtraSetting("spoof_target");
 
         LOGGER.i("Identity Spoofing: " + (enabled ? "ACTIVE" : "DISABLED"));
         if (enabled) {
@@ -425,7 +425,7 @@ public class PlusShell {
         LOGGER.i("\nPlus Features Status:");
         String[] features = {"su_bridge", "shell_interceptor", "avf_manager", "storage_proxy", "ai_core_plus"};
         for (String f : features) {
-            LOGGER.i("  %-18s: %s", f, service.isPlusFeatureEnabled(f) ? "ENABLED" : "DISABLED");
+            LOGGER.i("  %-18s: %s", f, service.isExtraFeatureEnabled(f) ? "ENABLED" : "DISABLED");
         }
 
         LOGGER.i("\nDevice Identity:");

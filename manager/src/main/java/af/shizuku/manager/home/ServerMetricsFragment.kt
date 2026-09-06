@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.FragmentServerMetricsBinding
 import rikka.shizuku.Shizuku
-import af.shizuku.server.IAICorePlus
+import af.shizuku.server.IAICoreExtra
 import timber.log.Timber
 
 class ServerMetricsFragment : Fragment() {
@@ -18,7 +18,7 @@ class ServerMetricsFragment : Fragment() {
     private var _binding: FragmentServerMetricsBinding? = null
     private val binding get() = _binding!!
     private val handler = Handler(Looper.getMainLooper())
-    private var aiCore: IAICorePlus? = null
+    private var aiCore: IAICoreExtra? = null
 
     private val updateRunnable = object : Runnable {
         override fun run() {
@@ -42,7 +42,7 @@ class ServerMetricsFragment : Fragment() {
             if (Shizuku.pingBinder()) {
                 val binder = Shizuku.getBinder()
                 val shizukuService = moe.shizuku.server.IShizukuService.Stub.asInterface(binder)
-                aiCore = shizukuService.aiCorePlus
+                aiCore = shizukuService.aiCoreExtra
             }
         } catch (e: Exception) {
             Timber.w(e)

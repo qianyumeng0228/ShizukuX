@@ -79,7 +79,7 @@ class AICorePlusService : AccessibilityService() {
     }
 
     /**
-     * Alias for dumpHierarchy to match IAICorePlus AIDL.
+     * Alias for dumpHierarchy to match IAICoreExtra AIDL.
      */
     fun getWindowHierarchy(): String = dumpHierarchy()
 
@@ -154,7 +154,7 @@ class AICorePlusService : AccessibilityService() {
     }
 
     /**
-     * Alias for performTap to match IAICorePlus AIDL.
+     * Alias for performTap to match IAICoreExtra AIDL.
      */
     fun simulateTouch(x: Float, y: Float): Boolean = performTap(x, y)
 
@@ -173,7 +173,7 @@ class AICorePlusService : AccessibilityService() {
     }
 
     /**
-     * Alias for performSwipe to match IAICorePlus AIDL.
+     * Alias for performSwipe to match IAICoreExtra AIDL.
      */
     fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean =
         performSwipe(x1, y1, x2, y2, duration.toLong())

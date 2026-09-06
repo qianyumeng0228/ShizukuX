@@ -253,7 +253,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                 val shizukuService = try { Shizuku.getBinder() } catch (e: Exception) { null }
                 if (shizukuService != null) {
                     val amPlus = try {
-                        moe.shizuku.server.IShizukuService.Stub.asInterface(shizukuService).activityManagerPlus
+                        moe.shizuku.server.IShizukuService.Stub.asInterface(shizukuService).activityManagerExtra
                     } catch (e: Exception) { null }
                     if (amPlus != null) {
                         val isFrozen = try { amPlus.isAppFrozen(capturedPackage) } catch (e: Exception) { false }

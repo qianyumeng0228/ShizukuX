@@ -6,7 +6,7 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import af.shizuku.server.IAICorePlus
+import af.shizuku.server.IAICoreExtra
 
 /**
  * Implementation of AICorePlus using Android's SurfaceControl and AI framework APIs.
@@ -14,7 +14,7 @@ import af.shizuku.server.IAICorePlus
 class AICorePlusImpl(
     private val clientManager: ShizukuClientManager,
     private val service: ShizukuService
-) : IAICorePlus.Stub() {
+) : IAICoreExtra.Stub() {
     companion object {
         private const val TAG = "AICorePlusImpl"
     }
@@ -26,11 +26,11 @@ class AICorePlusImpl(
     }
 
     private fun checkExperimental(): Boolean {
-        if (!service.isPlusFeatureEnabled("ai_core_plus")) {
+        if (!service.isExtraFeatureEnabled("ai_core_plus")) {
             Log.w(TAG, "AI Core features are disabled.")
             return false
         }
-        if (!service.isPlusFeatureEnabled("ai_core_experimental")) {
+        if (!service.isExtraFeatureEnabled("ai_core_experimental")) {
             Log.w(TAG, "Experimental AI Core features are disabled.")
             return false
         }
@@ -64,7 +64,7 @@ class AICorePlusImpl(
     }
 
     override fun scheduleNPULoad(taskData: Bundle?): Bundle? {
-        if (!service.isPlusFeatureEnabled("ai_core_plus") || !service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("npu_acceleration")) return null
+        if (!service.isExtraFeatureEnabled("ai_core_plus") || !service.isExtraFeatureEnabled("ai_core_master") || !service.isExtraFeatureEnabled("npu_acceleration")) return null
         if (taskData == null) return null
         
         try {
@@ -167,7 +167,7 @@ class AICorePlusImpl(
     }
 
     override fun getWindowHierarchy(): String? {
-        if (!service.isPlusFeatureEnabled("ai_core_plus") || !service.isPlusFeatureEnabled("ai_core_master") || !service.isPlusFeatureEnabled("native_window_crawler")) return ""
+        if (!service.isExtraFeatureEnabled("ai_core_plus") || !service.isExtraFeatureEnabled("ai_core_master") || !service.isExtraFeatureEnabled("native_window_crawler")) return ""
         return try {
             automationBridge?.windowHierarchy ?: ""
         } catch (e: Exception) {
