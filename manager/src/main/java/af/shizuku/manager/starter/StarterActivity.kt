@@ -641,6 +641,8 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             Timber.tag("StarterActivity").w(e, "mDNS discovery failed")
             null
