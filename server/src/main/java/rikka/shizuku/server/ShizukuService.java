@@ -2063,7 +2063,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 )) {
                     list.add(pi);
                 } else if (pi.applicationInfo.metaData != null
-                        && pi.applicationInfo.metaData.getBoolean("af.shizuku.client.V3_SUPPORT", false)) {
+                        && (pi.applicationInfo.metaData.getBoolean("af.shizuku.client.V3_SUPPORT", false)
+                        || pi.applicationInfo.metaData.getBoolean("moe.shizuku.client.V3_SUPPORT", false))) {
                     list.add(pi);
                 }
             }
