@@ -239,6 +239,22 @@
             android:theme="@style/Theme"
             android:exported="false"
             android:label="@string/dhizuku_app_management_title" />
+        <!-- Official Dhizuku request-permission entry point. Clients (e.g. Hail) launch
+             this via the "<owner-package>.action.REQUEST_DHIZUKU_PERMISSION" intent with
+             "uid" + "request_permission_binder" extras; we show the agree/refuse dialog
+             and report the result back (mirrors the official RequestPermissionActivity). -->
+        <activity
+            android:name=".settings.RequestPermissionActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.App.DialogHost">
+            <intent-filter>
+                <action android:name="${applicationId}.action.REQUEST_DHIZUKU_PERMISSION" />
+                <action android:name="${applicationId}.action.request.permission" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".settings.ServiceDoctorActivity"
             android:theme="@style/Theme"
@@ -471,11 +487,22 @@
 
         <provider
             android:name=".DhizukuProvider"
-            android:authorities="${applicationId}.dhizuku_server.provider"
+            android:authorities="${applicationId}.dhizuku_server.provider;${applicationId}.server.provider"
             android:directBootAware="true"
             android:enabled="true"
             android:exported="true"
-            android:multiprocess="false" />
+            android:multiprocess="false">
+            <!-- Third-party apps (e.g. Hail) discover the Dhizuku provider through
+                 ContentResolver.call() on the authority resolved from the device-owner
+                 package name (DhizukuVariables.getProviderAuthorityName). The intent-filter
+                 is a secondary discovery path: the official Dhizuku declares
+                 "${applicationId}.server.provider"; the official package action is kept
+                 too for clients that hard-code it. -->
+            <intent-filter>
+                <action android:name="${applicationId}.server.provider" />
+                <action android:name="com.rosan.dhizuku.server.provider" />
+            </intent-filter>
+        </provider>
 
         <provider
             android:name="androidx.core.content.FileProvider"

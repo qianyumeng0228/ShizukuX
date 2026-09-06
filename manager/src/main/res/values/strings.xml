@@ -1189,6 +1189,10 @@ Please try the command-line method instead.</string>
     <!-- Dhizuku App Management (ported from dhizuku) -->
     <string name="dhizuku_app_management_title">Dhizuku 应用管理</string>
     <string name="dhizuku_app_management_summary">管理可访问 Dhizuku（设备所有者）API 的应用</string>
+    <string name="dhizuku_request_permission_title">允许 %1$s 使用 Dhizuku 服务？</string>
+    <string name="dhizuku_request_permission_message">授权后，%1$s 可执行需要设备所有者权限的操作。\n\n%2$d 秒后自动拒绝。</string>
+    <string name="dhizuku_request_permission_allow">允许</string>
+    <string name="dhizuku_request_permission_deny">拒绝</string>
     <string name="dhizuku_app_management_empty">未找到使用 Dhizuku 权限的应用\n\n应用需在清单中声明 com.rosan.dhizuku.permission.API 才能在此列出。</string>
     <string name="dhizuku_allow_access">允许访问 Dhizuku</string>
     <string name="dhizuku_app_blocked_notice">应用已被屏蔽，无法使用 Dhizuku 服务</string>
