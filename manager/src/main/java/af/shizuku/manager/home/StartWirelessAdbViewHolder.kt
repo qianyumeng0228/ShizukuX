@@ -102,11 +102,9 @@ class StartWirelessAdbViewHolder(
                 Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
             }
 
-            val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
-            if (adbEnabled == 0) {
-                WadbEnableUsbDebuggingDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-                return@setOnClickListener
-            }
+            // NOTE: no longer gate on Settings.Global.ADB_ENABLED (USB debugging). Wireless
+            // debugging (Android 11+ TLS) works with USB debugging off; gating on it made the
+            // one-tap flow bounce users to the "enable USB debugging" dialog for no reason.
 
             val sysPropPort = EnvironmentUtils.getAdbTcpPort()
             val discoveredPort = withState(homeModel) { it.discoveredAdbPort }
@@ -120,9 +118,19 @@ class StartWirelessAdbViewHolder(
             }
 
             if (validTcpPort <= 0 && !EnvironmentUtils.isTlsSupported()) {
+                // Pre-Android-11 path: classic ADB-over-TCP needs USB debugging enabled.
+                val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
+                if (adbEnabled == 0) {
+                    WadbEnableUsbDebuggingDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
+                    return@setOnClickListener
+                }
                 WadbNotEnabledDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
             } else if (validTcpPort <= 0) {
-                AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
+                // Android 11+ wireless debugging: no known port yet — jump straight into the
+                // pairing flow. Pairing success now auto-grants WRITE_SECURE_SETTINGS and
+                // auto-launches the service (one-tap, no manual developer-options step).
+                // isTlsSupported() implies SDK >= R here, but the compiler needs the guard.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) onPairClicked(context)
             } else if (!tcpMode) {
                 scope.launch {
                     AdbStarter.stopTcp(context, validTcpPort)
