@@ -31,6 +31,10 @@ class AdbPairingService : Service() {
         const val NOTIFICATION_CHANNEL = "adb_pairing"
         const val NOTIFICATION_ID = 1
 
+        /** Broadcast sent after a successful pairing; StarterActivity listens to continue its flow. */
+        const val ACTION_PAIRING_SUCCEEDED = "af.shizuku.manager.action.ADB_PAIRING_SUCCEEDED"
+        const val EXTRA_PORT = "port_number"
+
         private const val tag = "AdbPairingService"
 
         private const val replyRequestId = 1
@@ -287,6 +291,16 @@ class AdbPairingService : Service() {
                 if (port <= 0 || handled) return@Observer
                 handled = true
                 connectMdns?.stop()
+                // Notify a listening StarterActivity (one-tap flow) that pairing finished so it
+                // can continue to service startup without user interaction.
+                runCatching {
+                    sendBroadcast(
+                        Intent(ACTION_PAIRING_SUCCEEDED)
+                            .setPackage(packageName)
+                            .putExtra(EXTRA_PORT, port)
+                            .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    )
+                }
                 serviceScope.launch {
                     try {
                         waitForPortAvailable(port)
@@ -314,7 +328,15 @@ class AdbPairingService : Service() {
                         showPairingSucceededNotification()
                         return@launch
                     }
-                    navigateToStarter(port)
+                    // If a StarterActivity is alive it received the broadcast and is already
+                    // starting the service — don't launch a second instance on top of it.
+                    delay(3000)
+                    if (!StarterActivity.isActive) {
+                        navigateToStarter(port)
+                    } else {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                    }
                 }
             }
         )

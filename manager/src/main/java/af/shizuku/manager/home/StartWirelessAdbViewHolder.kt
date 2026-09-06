@@ -126,11 +126,16 @@ class StartWirelessAdbViewHolder(
                 }
                 WadbNotEnabledDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
             } else if (validTcpPort <= 0) {
-                // Android 11+ wireless debugging: no known port yet — jump straight into the
-                // pairing flow. Pairing success now auto-grants WRITE_SECURE_SETTINGS and
-                // auto-launches the service (one-tap, no manual developer-options step).
-                // isTlsSupported() implies SDK >= R here, but the compiler needs the guard.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) onPairClicked(context)
+                // Android 11+ wireless debugging: no known port yet — launch the new
+                // step-by-step starter screen, which detects the port, enables wireless
+                // debugging, pairs and starts the service automatically (one-tap flow).
+                val intent = Intent(context, StarterActivity::class.java)
+                val activity = context.asActivity<android.app.Activity>()
+                if (activity != null) {
+                    activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+                } else {
+                    context.startActivity(intent)
+                }
             } else if (!tcpMode) {
                 scope.launch {
                     AdbStarter.stopTcp(context, validTcpPort)
