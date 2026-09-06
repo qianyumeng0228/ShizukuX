@@ -232,6 +232,8 @@
     <string name="notification_adb_pairing_service_found_title">已找到配对服务</string>
     <string name="notification_adb_pairing_stop_searching">停止搜索</string>
     <string name="notification_adb_pairing_working_title">正在进行配对</string>
+    <string name="notification_adb_pairing_starting_title">配对成功，正在启动服务…</string>
+    <string name="notification_adb_pairing_starting_text">正在连接无线调试端口</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
     <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>

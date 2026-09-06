@@ -221,12 +221,16 @@ class AdbPairingService : Service() {
         if (success) {
             Timber.tag(tag).i("Pair succeed")
             stopSearch()
+            // Replace the "searching" notification immediately — the post-pairing flow
+            // (mDNS-discover connect port -> pm grant -> hand off) can take a few seconds,
+            // and leaving "searching for pairing service" up while it runs looks stuck.
+            getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, startingNotification)
             // One-tap flow: after pairing succeeds, mDNS-discover the wireless-debugging
             // connect port, connect over the freshly paired ADB key to run
             // `pm grant <pkg> android.permission.WRITE_SECURE_SETTINGS` (so the app can
-            // toggle wireless debugging itself next time), then auto-launch the service
-            // over wireless ADB. On any failure we fall back to the plain "pairing
-            // succeeded" notification with the start button.
+            // toggle wireless debugging itself next time), then hand off to the starter
+            // screen. On any failure we fall back to the plain "pairing succeeded"
+            // notification with the start button.
             autoGrantAndStart()
             return
         }
@@ -291,16 +295,6 @@ class AdbPairingService : Service() {
                 if (port <= 0 || handled) return@Observer
                 handled = true
                 connectMdns?.stop()
-                // Notify a listening StarterActivity (one-tap flow) that pairing finished so it
-                // can continue to service startup without user interaction.
-                runCatching {
-                    sendBroadcast(
-                        Intent(ACTION_PAIRING_SUCCEEDED)
-                            .setPackage(packageName)
-                            .putExtra(EXTRA_PORT, port)
-                            .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                    )
-                }
                 serviceScope.launch {
                     try {
                         waitForPortAvailable(port)
@@ -328,14 +322,21 @@ class AdbPairingService : Service() {
                         showPairingSucceededNotification()
                         return@launch
                     }
-                    // If a StarterActivity is alive it received the broadcast and is already
-                    // starting the service — don't launch a second instance on top of it.
-                    delay(3000)
-                    if (!StarterActivity.isActive) {
-                        navigateToStarter(port)
-                    } else {
+                    // Hand off at broadcast time: if a starter screen is alive right now it
+                    // received the broadcast and continues to service startup — stop the
+                    // service and clear the notification. Otherwise (pairing from the home
+                    // screen without a starter) launch the starter screen ourselves.
+                    sendBroadcast(
+                        Intent(ACTION_PAIRING_SUCCEEDED)
+                            .setPackage(packageName)
+                            .putExtra(EXTRA_PORT, port)
+                            .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    )
+                    if (StarterActivity.isActive) {
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
+                    } else {
+                        navigateToStarter(port)
                     }
                 }
             }
@@ -550,6 +551,16 @@ class AdbPairingService : Service() {
         Notification.Builder(this, NOTIFICATION_CHANNEL)
             .setColor(getColor(R.color.notification))
             .setContentTitle(getString(R.string.notification_adb_pairing_working_title))
+            .setSmallIcon(R.drawable.ic_notification_icon)
+            .build()
+    }
+
+    /** Shown right after pairing succeeds, while the connect port is being discovered. */
+    private val startingNotification by unsafeLazy {
+        Notification.Builder(this, NOTIFICATION_CHANNEL)
+            .setColor(getColor(R.color.notification))
+            .setContentTitle(getString(R.string.notification_adb_pairing_starting_title))
+            .setContentText(getString(R.string.notification_adb_pairing_starting_text))
             .setSmallIcon(R.drawable.ic_notification_icon)
             .build()
     }
