@@ -16,9 +16,12 @@ import kotlinx.coroutines.*
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.home.HomeActivity
+import af.shizuku.manager.starter.StarterActivity
 
 import rikka.core.ktx.unsafeLazy
 import java.net.ConnectException
+import java.net.InetSocketAddress
+import java.net.Socket
 
 @TargetApi(Build.VERSION_CODES.R)
 class AdbPairingService : Service() {
@@ -65,6 +68,9 @@ class AdbPairingService : Service() {
     }
 
     private var adbMdns: AdbMdns? = null
+
+    /** mDNS used by the post-pairing auto-grant/auto-start flow; stopped on destroy. */
+    private var connectMdns: AdbMdns? = null
 
     private val observer = Observer<Int> { port ->
         Timber.tag(tag).i("Pairing service port: $port")
@@ -170,6 +176,8 @@ class AdbPairingService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopSearch()
+        connectMdns?.stop()
+        connectMdns = null
         serviceScope.cancel()
     }
 
@@ -206,39 +214,43 @@ class AdbPairingService : Service() {
     private fun handleResult(success: Boolean, exception: Throwable?) {
         stopForeground(STOP_FOREGROUND_DETACH)
 
+        if (success) {
+            Timber.tag(tag).i("Pair succeed")
+            stopSearch()
+            // One-tap flow: after pairing succeeds, mDNS-discover the wireless-debugging
+            // connect port, connect over the freshly paired ADB key to run
+            // `pm grant <pkg> android.permission.WRITE_SECURE_SETTINGS` (so the app can
+            // toggle wireless debugging itself next time), then auto-launch the service
+            // over wireless ADB. On any failure we fall back to the plain "pairing
+            // succeeded" notification with the start button.
+            autoGrantAndStart()
+            return
+        }
+
         val title: String
         val text: String?
 
-        if (success) {
-            Timber.tag(tag).i("Pair succeed")
+        title = getString(R.string.notification_adb_pairing_failed_title)
 
-            title = getString(R.string.notification_adb_pairing_succeed_title)
-            text = getString(R.string.notification_adb_pairing_succeed_text)
+        text = when (exception) {
+            is ConnectException -> {
+                getString(R.string.cannot_connect_port)
+            }
+            is AdbInvalidPairingCodeException -> {
+                getString(R.string.paring_code_is_wrong)
+            }
+            is AdbKeyException -> {
+                getString(R.string.adb_error_key_store)
+            }
+            else -> {
+                exception?.let { Log.getStackTraceString(it) }
+            }
+        }
 
-            stopSearch()
+        if (exception != null) {
+            Timber.tag(tag).w(exception, "Pair failed")
         } else {
-            title = getString(R.string.notification_adb_pairing_failed_title)
-
-            text = when (exception) {
-                is ConnectException -> {
-                    getString(R.string.cannot_connect_port)
-                }
-                is AdbInvalidPairingCodeException -> {
-                    getString(R.string.paring_code_is_wrong)
-                }
-                is AdbKeyException -> {
-                    getString(R.string.adb_error_key_store)
-                }
-                else -> {
-                    exception?.let { Log.getStackTraceString(it) }
-                }
-            }
-
-            if (exception != null) {
-                Timber.tag(tag).w(exception, "Pair failed")
-            } else {
-                Timber.tag(tag).w("Pair failed")
-            }
+            Timber.tag(tag).w("Pair failed")
         }
 
         getSystemService(NotificationManager::class.java).notify(
@@ -249,13 +261,116 @@ class AdbPairingService : Service() {
                 .setContentTitle(title)
                 .setContentText(text)
                 .apply {
-                    if (!success) {
-                        addAction(retryNotificationAction)
-                    } else {
-                        setContentIntent(launchPendingIntent)
-                        addAction(startNotificationAction)
-                        setAutoCancel(true)
+                    addAction(retryNotificationAction)
+                }
+                .build()
+        )
+        stopSelf()
+    }
+
+    /**
+     * One-tap wireless-debugging start, ported from Stellar's flow:
+     * 1. mDNS-discover the connect port (_adb-tls-connect._tcp).
+     * 2. Connect over the just-paired ADB key and run
+     *    `pm grant <pkg> android.permission.WRITE_SECURE_SETTINGS`, so the app can toggle
+     *    wireless debugging itself on future launches (no manual developer-options step).
+     * 3. Launch StarterActivity which connects and starts the service.
+     *
+     * Any failure falls back to the "pairing succeeded" notification with the start button.
+     */
+    private fun autoGrantAndStart() {
+        var handled = false
+        connectMdns = AdbMdns(
+            this,
+            AdbMdns.TLS_CONNECT,
+            Observer<Int> { port ->
+                if (port <= 0 || handled) return@Observer
+                handled = true
+                connectMdns?.stop()
+                serviceScope.launch {
+                    try {
+                        waitForPortAvailable(port)
+                        val key = try {
+                            AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
+                        } catch (e: Throwable) {
+                            Timber.e("failed to load AdbKey for auto-grant", e)
+                            null
+                        }
+                        if (key != null) {
+                            runCatching {
+                                AdbClient("127.0.0.1", port, key).use { client ->
+                                    client.connect()
+                                    client.command("shell:pm grant $packageName android.permission.WRITE_SECURE_SETTINGS")
+                                }
+                                Timber.tag(tag).i("WRITE_SECURE_SETTINGS auto-granted via ADB")
+                            }.onFailure {
+                                // Grant failure is non-fatal: the service can still start;
+                                // only the next "auto-enable wireless debugging" step is lost.
+                                Timber.tag(tag).w(it, "Auto-grant WRITE_SECURE_SETTINGS failed; continuing")
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag(tag).w(e, "Auto-grant/connect failed; falling back to notification")
+                        showPairingSucceededNotification()
+                        return@launch
                     }
+                    navigateToStarter(port)
+                }
+            }
+        )
+        connectMdns?.start()
+        // Timeout fallback: if the connect port isn't discovered within 8s, keep the classic
+        // "pairing succeeded" notification with the start button instead of hanging forever.
+        serviceScope.launch {
+            delay(8000)
+            if (!handled) {
+                handled = true
+                connectMdns?.stop()
+                showPairingSucceededNotification()
+            }
+        }
+    }
+
+    /** Waits (up to ~6s) until the connect port accepts TCP connections. */
+    private suspend fun waitForPortAvailable(port: Int) {
+        val maxWaitMs = 6000L
+        val intervalMs = 200L
+        var elapsed = 0L
+        while (elapsed < maxWaitMs) {
+            try {
+                Socket().use { it.connect(InetSocketAddress("127.0.0.1", port), 500) }
+                return
+            } catch (_: Exception) {
+                delay(intervalMs)
+                elapsed += intervalMs
+            }
+        }
+    }
+
+    /** Launches the wireless-ADB starter screen for the given port, then ends this service. */
+    private fun navigateToStarter(port: Int) {
+        val intent = Intent(this, StarterActivity::class.java).apply {
+            putExtra(StarterActivity.EXTRA_PORT, port)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        startActivity(intent)
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    /** Original "pairing succeeded" notification with the start button (fallback path). */
+    private fun showPairingSucceededNotification() {
+        getSystemService(NotificationManager::class.java).notify(
+            NOTIFICATION_ID,
+            Notification.Builder(this, NOTIFICATION_CHANNEL)
+                .setColor(getColor(R.color.notification))
+                .setSmallIcon(R.drawable.ic_notification_icon)
+                .setContentTitle(getString(R.string.notification_adb_pairing_succeed_title))
+                .setContentText(getString(R.string.notification_adb_pairing_succeed_text))
+                .apply {
+                    setContentIntent(launchPendingIntent)
+                    addAction(startNotificationAction)
+                    setAutoCancel(true)
                 }
                 .build()
         )

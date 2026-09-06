@@ -97,6 +97,9 @@ class StartWirelessAdbViewHolder(
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
                 Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+                // Also enable wireless debugging itself (Android 11+ adbd switch), so the
+                // one-tap flow works without a manual trip to developer options.
+                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
             }
 
             val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
