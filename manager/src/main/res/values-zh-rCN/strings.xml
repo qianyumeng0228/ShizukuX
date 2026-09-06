@@ -234,6 +234,8 @@
     <string name="notification_adb_pairing_working_title">正在进行配对</string>
     <string name="notification_adb_pairing_starting_title">配对成功，正在启动服务…</string>
     <string name="notification_adb_pairing_starting_text">正在连接无线调试端口</string>
+    <string name="starter_step_system_running">正在尝试三星系统 UID 提权…</string>
+    <string name="starter_local_network_permission_needed">需要"附近设备"权限才能搜索无线调试服务并完成配对。请在权限弹窗中允许后重试。</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
     <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>

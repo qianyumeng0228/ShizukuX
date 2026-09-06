@@ -11,18 +11,15 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
 import af.shizuku.manager.adb.AdbPairingTutorialActivity
-import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartWirelessAdbBinding
 import af.shizuku.manager.ktx.startWithSceneTransition
@@ -33,7 +30,6 @@ import af.shizuku.manager.starter.StarterActivity
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.IconStyleHelper
-import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.content.asActivity
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
@@ -58,25 +54,13 @@ class StartWirelessAdbViewHolder(
         }
 
         fun start(context: android.content.Context, scope: CoroutineScope, discoveredPort: Int = -1) {
-            val sysPropPort = EnvironmentUtils.getAdbTcpPort()
-            val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
-            val lastPort = ShizukuSettings.getLastPort()
-            val validTcpPort = when {
-                tcpPort in 1..65535 -> tcpPort
-                lastPort in 1..65535 -> lastPort
-                else -> -1
+            // Always route through the step-by-step starter screen: it detects the port,
+            // enables wireless debugging, pairs and starts the service by itself.
+            val intent = android.content.Intent(context, StarterActivity::class.java).apply {
+                if (discoveredPort in 1..65535) putExtra(StarterActivity.EXTRA_PORT, discoveredPort)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            if (validTcpPort > 0 && ShizukuSettings.getTcpMode()) {
-                val intent = android.content.Intent(context, StarterActivity::class.java).apply {
-                    putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } else {
-                (context as? androidx.fragment.app.FragmentActivity)?.supportFragmentManager?.let { fm ->
-                    AdbDialogFragment().show(fm)
-                }
-            }
+            context.startActivity(intent)
         }
     }
 
@@ -112,7 +96,6 @@ class StartWirelessAdbViewHolder(
             val sysPropPort = EnvironmentUtils.getAdbTcpPort()
             val discoveredPort = withState(homeModel) { it.discoveredAdbPort }
             val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
-            val tcpMode = ShizukuSettings.getTcpMode()
             val lastPort = ShizukuSettings.getLastPort()
             val validTcpPort = when {
                 tcpPort in 1..65535 -> tcpPort
@@ -139,12 +122,8 @@ class StartWirelessAdbViewHolder(
                 } else {
                     context.startActivity(intent)
                 }
-            } else if (!tcpMode) {
-                scope.launch {
-                    AdbStarter.stopTcp(context, validTcpPort)
-                }
-                AdbDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
             } else {
+                // Known port (TCP mode on or off): the starter screen handles pairing itself.
                 val intent = Intent(context, StarterActivity::class.java).apply {
                     putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
                 }

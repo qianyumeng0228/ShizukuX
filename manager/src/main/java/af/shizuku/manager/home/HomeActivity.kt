@@ -249,7 +249,7 @@ open class HomeActivity : AppActivity(), MavericksView {
 
         when (intent?.getStringExtra("shortcut_action")) {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                AdbDialogFragment().show(supportFragmentManager)
+                startActivity(android.content.Intent(this, af.shizuku.manager.starter.StarterActivity::class.java))
             }
             "open_terminal" -> startActivity(android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java))
         }

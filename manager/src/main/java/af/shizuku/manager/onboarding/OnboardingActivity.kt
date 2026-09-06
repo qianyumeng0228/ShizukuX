@@ -1,4 +1,4 @@
-package af.shizuku.manager.onboarding
+﻿package af.shizuku.manager.onboarding
 
 import android.content.Intent
 import android.graphics.drawable.GradientDrawable
@@ -30,7 +30,6 @@ import af.shizuku.manager.databinding.PageOnboardingSetupBinding
 import af.shizuku.manager.databinding.PageOnboardingSwipeBinding
 import af.shizuku.manager.databinding.PageOnboardingGesturesBinding
 import af.shizuku.manager.databinding.PageOnboardingLongpressBinding
-import af.shizuku.manager.home.AdbDialogFragment
 import af.shizuku.manager.home.AdbPairDialogFragment
 import af.shizuku.manager.home.WadbEnableUsbDebuggingDialogFragment
 import af.shizuku.manager.home.WadbNotEnabledDialogFragment

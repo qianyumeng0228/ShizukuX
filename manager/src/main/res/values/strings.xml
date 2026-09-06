@@ -725,6 +725,8 @@
     <string name="notification_adb_pairing_working_title">Pairing in progress</string>
     <string name="notification_adb_pairing_starting_title">Pairing successful, starting service…</string>
     <string name="notification_adb_pairing_starting_text">Connecting to the wireless-debugging port</string>
+    <string name="starter_step_system_running">Attempting Samsung System UID escalation…</string>
+    <string name="starter_local_network_permission_needed">Local-network permission is required to discover the wireless-debugging service and pair. Grant it in the permission dialog and try again.</string>
     <string name="notification_adb_pairing_succeed_title">Pairing successful</string>
     <string name="notification_adb_pairing_succeed_text">You can start Shizuku service now.</string>
     <string name="notification_adb_pairing_failed_title">Pairing failed</string>

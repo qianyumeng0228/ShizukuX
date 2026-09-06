@@ -93,7 +93,7 @@ class StarterActivity : AppBarActivity() {
     private val viewModel: ViewModel by viewModels()
     private lateinit var binding: StarterActivityBinding
     private var logVisible = false
-    private val logSb = StringBuilder()
+    private var startPending = false
 
     private val pairingReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -122,7 +122,7 @@ class StarterActivity : AppBarActivity() {
             IconStyleHelper.applyToCardIcon(
                 headerIcon, headerIcon.drawable, if (isRoot) "home_start_root" else "home_start_adb"
             )
-            headerIcon.transitionName = if (isRoot) "icon_root" else "icon_adb"
+            headerIcon.transitionName = "icon_wireless_adb"
             headerTitle.setText(if (isRoot) R.string.home_root_title else R.string.home_adb_title)
         }
 
@@ -153,13 +153,12 @@ class StarterActivity : AppBarActivity() {
         )
 
         viewModel.steps.observe(this) { renderSteps(it) }
-        viewModel.output.observe(this) { line ->
-            logSb.appendLine(line)
-            binding.text1.text = logSb.toString()
+        viewModel.output.observe(this) { sb ->
+            binding.text1.text = sb.toString()
             if (logVisible) binding.scrollView.post {
                 binding.scrollView.scrollTo(0, binding.scrollView.bottom)
             }
-            if (line.contains(getString(R.string.starter_service_started))) {
+            if (sb.toString().contains(getString(R.string.starter_service_started))) {
                 HapticUtils.success(binding.root)
             }
         }
@@ -175,7 +174,7 @@ class StarterActivity : AppBarActivity() {
         viewModel.errorEvent.observe(this) { error ->
             if (error == null || isFinishing) return@observe
             binding.progressIndicator.isGone = true
-            binding.logButton.isVisible = logSb.isNotEmpty()
+            binding.logButton.isVisible = viewModel.hasLog()
             var message = 0
             when (error) {
                 is AdbKeyException -> message = R.string.adb_error_key_store
@@ -197,16 +196,50 @@ class StarterActivity : AppBarActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        if (!viewModel.started) {
-            val port = intent.getIntExtra(EXTRA_PORT, 0)
-            viewModel.start(
-                intent.getBooleanExtra(EXTRA_IS_ROOT, false),
-                intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
-                port
-            )
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus || viewModel.started) return
+        // Android 16+ gates mDNS discovery and the ADB sockets behind a local-network
+        // permission. The request (fired in onCreate for non-root flows) shows a separate
+        // window, so a start here would run before the user answers. Wait for
+        // onRequestPermissionsResult instead of starting without the permission. Root and
+        // Samsung-system flows don't need it.
+        val isRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, false)
+        val isSystem = intent.getBooleanExtra(EXTRA_IS_SYSTEM, false)
+        if (!isRoot && !isSystem && !af.shizuku.manager.adb.LocalNetworkPermission.granted(this)) {
+            startPending = true
+            return
         }
+        doStart()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode != af.shizuku.manager.adb.LocalNetworkPermission.REQUEST_CODE || !startPending) return
+        startPending = false
+        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            doStart()
+        } else {
+            // Without the local-network permission neither mDNS discovery nor the ADB
+            // pairing/connect sockets work — the flow cannot proceed.
+            MaterialAlertDialogBuilder(this)
+                .setMessage(R.string.starter_local_network_permission_needed)
+                .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+                .show()
+        }
+    }
+
+    private fun doStart() {
+        val port = intent.getIntExtra(EXTRA_PORT, 0)
+        viewModel.start(
+            intent.getBooleanExtra(EXTRA_IS_ROOT, false),
+            intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
+            port
+        )
     }
 
     override fun onDestroy() {
@@ -226,6 +259,7 @@ class StarterActivity : AppBarActivity() {
             val title: TextView = item.findViewById(R.id.stepTitle)
             title.text = getString(step.titleRes)
             val desc: TextView = item.findViewById(R.id.stepDescription)
+            desc.isGone = step.description.isEmpty()
             desc.text = step.description
 
             val circle: View = item.findViewById(R.id.statusCircle)
@@ -334,8 +368,8 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     private val _steps = MutableLiveData<List<StarterStep>>()
     val steps: LiveData<List<StarterStep>> = _steps
 
-    private val _output = MutableLiveData<String>()
-    val output: LiveData<String> = _output
+    private val _output = MutableLiveData<StringBuilder>()
+    val output: LiveData<StringBuilder> = _output
 
     private val _completed = MutableLiveData<Boolean>(false)
     val completed: LiveData<Boolean> = _completed
@@ -370,8 +404,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         _steps.value = list
     }
 
+    /** Accumulated log; the live value is the same StringBuilder instance so a postValue
+     *  from any thread never loses content (each observer read is a full snapshot). */
+    private val sb = StringBuilder()
+
+    /** Thread-safe log sink: startAdb/waitForBinder/root callbacks run on IO threads. */
     private fun log(line: String) {
-        _output.value = line
+        sb.appendLine(line)
+        _output.postValue(sb)
     }
 
     private fun setError(error: Throwable) {
@@ -393,8 +433,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     fun hasError(): Boolean = _errorEvent.value != null
 
+    fun hasLog(): Boolean = sb.isNotEmpty()
+
     fun start(root: Boolean, isSystem: Boolean, port: Int) {
         if (started) return
+        started = true
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             if (root) runRootFlow()
@@ -447,6 +490,8 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     @SuppressLint("MissingPermission")
     private suspend fun runAdbFlow(intentPort: Int?) {
         clearStaleStartingState()
+        waitingForPairing = false
+        waitingForWireless = false
         lastStart = Triple(false, false, intentPort ?: 0)
         setSteps(
             listOf(
@@ -574,20 +619,31 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private suspend fun discoverAdbPort(): Int? = withTimeoutOrNull(10000) {
-        suspendCancellableCoroutine { cont ->
-            val done = AtomicBoolean(false)
-            var mdns: AdbMdns? = null
-            mdns = AdbMdns(appContext, AdbMdns.TLS_CONNECT) { port ->
-                if (port in 1..65535 && done.compareAndSet(false, true)) {
-                    mdns?.stop()
-                    cont.resume(port)
+    private suspend fun discoverAdbPort(): Int? {
+        // AdbMdns.start() can throw (e.g. SecurityException when local-network permission
+        // was revoked after the flow started) — degrade to "no port" instead of crashing.
+        return try {
+            withTimeoutOrNull(10000) {
+                suspendCancellableCoroutine { cont ->
+                    val done = AtomicBoolean(false)
+                    var mdns: AdbMdns? = null
+                    mdns = AdbMdns(appContext, AdbMdns.TLS_CONNECT) { port ->
+                        if (port in 1..65535 && done.compareAndSet(false, true)) {
+                            mdns?.stop()
+                            // The coroutine may have been cancelled (user closed the screen);
+                            // resume on a cancelled continuation throws — swallow it.
+                            runCatching { cont.resume(port) }
+                        }
+                    }
+                    mdns?.start()
+                    cont.invokeOnCancellation {
+                        if (done.compareAndSet(false, true)) mdns?.stop()
+                    }
                 }
             }
-            mdns?.start()
-            cont.invokeOnCancellation {
-                if (done.compareAndSet(false, true)) mdns?.stop()
-            }
+        } catch (e: Throwable) {
+            Timber.tag("StarterActivity").w(e, "mDNS discovery failed")
+            null
         }
     }
 
@@ -658,6 +714,8 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun runRootFlow() {
         clearStaleStartingState()
+        waitingForPairing = false
+        waitingForWireless = false
         lastStart = Triple(true, false, 0)
         setSteps(
             listOf(
@@ -832,7 +890,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        updateStep("start_system", StepStatus.RUNNING, "Attempting Samsung System UID Escalation…")
+        updateStep("start_system", StepStatus.RUNNING, appContext.getString(R.string.starter_step_system_running))
         withContext(Dispatchers.IO) {
             try {
                 val intent = Intent().apply {
