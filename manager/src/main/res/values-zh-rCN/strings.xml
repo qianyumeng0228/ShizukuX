@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- To translators: you can leave your here -->
     <!-- Home - Status -->
@@ -246,6 +246,10 @@
     <string name="notification_adb_pairing_starting_text">正在连接无线调试端口</string>
     <string name="starter_step_system_running">正在尝试三星系统 UID 提权…</string>
     <string name="starter_local_network_permission_needed">需要"附近设备"权限才能搜索无线调试服务并完成配对。请在权限弹窗中允许后重试。</string>
+    <string name="starter_local_network_permission_rationale">ShizukuX 需要本地网络权限来搜索无线调试服务并完成配对。请在权限弹窗中允许后继续。</string>
+    <string name="starter_local_network_permission_denied">本地网络权限已被禁止。请在系统设置中开启后使用无线调试。</string>
+    <string name="starter_go_settings">去设置</string>
+    <string name="local_network_denied_hint">本地网络权限被拒绝，可能无法搜索到配对服务；若搜索失败请在设置中开启该权限。</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
     <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>

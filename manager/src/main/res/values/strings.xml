@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="server_uptime">Server Uptime</string>
     <string name="active_connections">Active Connections</string>
     <string name="server_memory_usage">Server Memory Usage</string>
@@ -737,6 +737,10 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="notification_adb_pairing_starting_text">Connecting to the wireless-debugging port</string>
     <string name="starter_step_system_running">Attempting Samsung System UID escalation…</string>
     <string name="starter_local_network_permission_needed">Local-network permission is required to discover the wireless-debugging service and pair. Grant it in the permission dialog and try again.</string>
+    <string name="starter_local_network_permission_rationale">ShizukuX needs local-network access to discover the wireless-debugging service and complete pairing. Grant the permission to continue.</string>
+    <string name="starter_local_network_permission_denied">Local-network permission is disabled. Enable it in system settings to use wireless debugging.</string>
+    <string name="starter_go_settings">Open Settings</string>
+    <string name="local_network_denied_hint">Local-network permission denied. Pairing may fail — grant it in settings if discovery doesn\'t work.</string>
     <string name="notification_adb_pairing_succeed_title">Pairing successful</string>
     <string name="notification_adb_pairing_succeed_text">You can start Shizuku service now.</string>
     <string name="notification_adb_pairing_failed_title">Pairing failed</string>

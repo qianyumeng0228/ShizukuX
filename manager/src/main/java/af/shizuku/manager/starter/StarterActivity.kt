@@ -1,4 +1,4 @@
-﻿package af.shizuku.manager.starter
+package af.shizuku.manager.starter
 
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.annotation.SuppressLint
@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -226,10 +227,43 @@ class StarterActivity : AppBarActivity() {
         } else {
             // Without the local-network permission neither mDNS discovery nor the ADB
             // pairing/connect sockets work — the flow cannot proceed.
+            val permission = af.shizuku.manager.adb.LocalNetworkPermission.required()
+            val rationale = permission != null && shouldShowRequestPermissionRationale(permission)
             MaterialAlertDialogBuilder(this)
-                .setMessage(R.string.starter_local_network_permission_needed)
-                .setPositiveButton(android.R.string.ok) { _, _ -> finish() }
+                .setMessage(
+                    if (rationale) R.string.starter_local_network_permission_rationale
+                    else R.string.starter_local_network_permission_denied
+                )
+                .setPositiveButton(R.string.starter_go_settings) { _, _ ->
+                    // A permanently denied permission can only be resolved in system settings.
+                    startPending = true
+                    startActivity(
+                        Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", packageName, null)
+                        )
+                    )
+                }
+                .setNegativeButton(if (rationale) R.string.starter_retry else android.R.string.cancel) { _, _ ->
+                    if (rationale) {
+                        // First denial: let the user try again with the explanation visible.
+                        startPending = true
+                        af.shizuku.manager.adb.LocalNetworkPermission.request(this)
+                    } else {
+                        finish()
+                    }
+                }
                 .show()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // The user may have granted local-network access in system settings after a
+        // denial; resume the pending wireless-debugging start automatically.
+        if (startPending && af.shizuku.manager.adb.LocalNetworkPermission.granted(this)) {
+            startPending = false
+            doStart()
         }
     }
 
