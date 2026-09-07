@@ -29,8 +29,8 @@ object BreventRelayManager {
     /** Activation script Brevent writes to /data/local/tmp once the user has opened the app. */
     private const val BREVENT_SCRIPT = "/data/local/tmp/brevent.sh"
 
-    /** Resident process names of a working Brevent service (matched exactly, not via -f). */
-    private const val VERIFY_PATTERN = "pgrep -x brevent_daemon; pgrep -x brevent_server"
+    /** Resident process names as shown by ps (argv[0]); do NOT use pgrep -x: the daemon's comm
+     *  is "brevent" and the server's comm is "main" on this binary, so an exact pgrep never hits. */
 
     fun activateBrevent(context: Context, scope: CoroutineScope) {
         if (!Shizuku.pingBinder()) {
@@ -131,14 +131,28 @@ object BreventRelayManager {
 
     /**
      * Returns the first PID of a resident Brevent service, or an empty string if not running.
+     * Matches ps output by argv[0] (brevent_daemon / brevent_server) and parses the PID column —
+     * the comm-based pgrep -x path misses both daemons ("brevent" / "main").
      * Runs on the IO dispatcher (blocking IPC); callers must not touch the main thread.
      */
     private suspend fun queryDaemonPid(): String {
         return try {
-            val verify = Shizuku.newProcess(arrayOf("sh", "-c", VERIFY_PATTERN), null, null)
+            // The grep process is created after ps snapshots, so it never pollutes the output;
+            // the wrapping sh has argv[0]="sh" and is filtered out by the regex below.
+            val verify = Shizuku.newProcess(
+                arrayOf("sh", "-c", "ps -A | grep -E 'brevent_(daemon|server)'"), null, null
+            )
             val vOut = verify.inputStream.bufferedReader().use { it.readText() }
             verify.waitFor()
-            vOut.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            vOut.lines().mapNotNull { line ->
+                val parts = line.trim().split(Regex("\\s+"))
+                val name = parts.lastOrNull()
+                if (parts.size >= 2 && (name == "brevent_daemon" || name == "brevent_server")) {
+                    parts[1]
+                } else {
+                    null
+                }
+            }.firstOrNull().orEmpty()
         } catch (e: Throwable) {
             ""
         }
