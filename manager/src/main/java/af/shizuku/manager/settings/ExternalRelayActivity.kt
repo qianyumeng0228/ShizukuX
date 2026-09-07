@@ -38,9 +38,15 @@ class ExternalRelayActivity : AppBarActivity() {
             insets
         }
 
-        adapter = ExternalRelayAdapter(this) {
-            SceneRelayManager.startSceneAdbActivation(this, lifecycleScope)
-        }
+        adapter = ExternalRelayAdapter(
+            this,
+            onActivateScene = {
+                SceneRelayManager.startSceneAdbActivation(this, lifecycleScope)
+            },
+            onActivateBrevent = {
+                BreventRelayManager.activateBrevent(this, lifecycleScope)
+            }
+        )
         recyclerView.adapter = adapter
     }
 

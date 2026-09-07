@@ -15,12 +15,14 @@ import com.google.android.material.button.MaterialButton
  */
 class ExternalRelayAdapter(
     private val context: Context,
-    private val onActivateScene: () -> Unit
+    private val onActivateScene: () -> Unit,
+    private val onActivateBrevent: () -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TYPE_SCENE = 0
-        private const val TYPE_PLACEHOLDER = 1
+        private const val TYPE_BREVENT = 1
+        private const val TYPE_PLACEHOLDER = 2
     }
 
     /** Ordered list of relay entries; extend this when adding new relayed apps. */
@@ -28,6 +30,7 @@ class ExternalRelayAdapter(
 
     init {
         items.add(TYPE_SCENE)
+        items.add(TYPE_BREVENT)
         items.add(TYPE_PLACEHOLDER)
     }
 
@@ -39,6 +42,9 @@ class ExternalRelayAdapter(
             TYPE_SCENE -> SceneViewHolder(
                 inflater.inflate(R.layout.item_external_relay_scene, parent, false)
             )
+            TYPE_BREVENT -> BreventViewHolder(
+                inflater.inflate(R.layout.item_external_relay_brevent, parent, false)
+            )
             else -> PlaceholderViewHolder(
                 inflater.inflate(R.layout.item_external_relay_placeholder, parent, false)
             )
@@ -48,6 +54,7 @@ class ExternalRelayAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val vh = holder) {
             is SceneViewHolder -> vh.bind()
+            is BreventViewHolder -> vh.bind()
             is PlaceholderViewHolder -> vh.bind()
         }
     }
@@ -63,6 +70,19 @@ class ExternalRelayAdapter(
                 statusText.text = context.getString(R.string.external_relay_scene_activating)
                 statusText.visibility = android.view.View.VISIBLE
                 onActivateScene()
+            }
+        }
+    }
+
+    inner class BreventViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
+        private val statusText: TextView = itemView.findViewById(R.id.status_text)
+        private val actionButton: MaterialButton = itemView.findViewById(R.id.action_button)
+
+        fun bind() {
+            actionButton.setOnClickListener {
+                statusText.text = context.getString(R.string.external_relay_brevent_activating)
+                statusText.visibility = android.view.View.VISIBLE
+                onActivateBrevent()
             }
         }
     }

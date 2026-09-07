@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_capabilities_category">Capabilities</string>
     <string name="settings_feature_hub_title">Feature Hub</string>
@@ -281,6 +281,18 @@
     <string name="external_relay_scene_card_package">com.omarea.vtools</string>
     <string name="external_relay_scene_activate">Activate Scene\'s ADB mode</string>
     <string name="external_relay_scene_activating">Activating…</string>
+    <string name="external_relay_brevent_card_title">Brevent Relay Authorization</string>
+    <string name="external_relay_brevent_card_package">me.piebridge.brevent</string>
+    <string name="external_relay_brevent_activate">Activate Brevent</string>
+    <string name="external_relay_brevent_activating">Activating…</string>
+    <string name="settings_brevent_relay_summary">Activate Brevent through Shizuku without wireless debugging (middle-man)</string>
+    <string name="brevent_relay_brevent_not_installed">Brevent (me.piebridge.brevent) not found.</string>
+    <string name="brevent_relay_script_missing">Activation script not found. Open Brevent once to generate brevent.sh, then retry.</string>
+    <string name="brevent_relay_already_running">Brevent service is already running (PID: %1$s).</string>
+    <string name="brevent_relay_success">Activation succeeded! Brevent service started.</string>
+    <string name="brevent_relay_daemon_running">Activation succeeded! Brevent daemon is running (PID: %1$s).</string>
+    <string name="brevent_relay_failed">Activation failed.</string>
+    <string name="brevent_relay_result_title">Brevent Relay Authorization</string>
     <string name="external_relay_placeholder_title">More relayed apps coming soon</string>
     <string name="external_relay_placeholder_summary">External relay for more apps will be added here later</string>
 </resources>
