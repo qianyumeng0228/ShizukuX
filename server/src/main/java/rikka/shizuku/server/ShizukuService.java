@@ -2031,7 +2031,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
 
         for (int user : users) {
-            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_META_DATA | PackageManager.GET_PERMISSIONS, user)) {
+            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_META_DATA | PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, user)) {
                 if (Objects.equals(MANAGER_APPLICATION_ID, pi.packageName)) continue;
                 if (pi.applicationInfo == null) continue;
 
@@ -2153,7 +2153,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             Stream<PackageInfo> packages =
                 InstalledPackagesCompat.getInstalledPackagesNoThrow(
-                    PackageManager.GET_PERMISSIONS, userId
+                    PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, userId
                 )
                 .stream()
                 .filter(pi -> pi != null && pi.requestedPermissions != null)

@@ -284,7 +284,7 @@ public class BinderSender {
                     continue;
                 }
 
-                for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
+                for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, userId)) {
                     if (pi == null || pi.applicationInfo == null || pi.requestedPermissions == null) continue;
 
                     if (!ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER) &&

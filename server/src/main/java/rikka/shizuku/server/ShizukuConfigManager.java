@@ -146,7 +146,7 @@ public class ShizukuConfigManager extends ConfigManager {
         List<PackageInfo> allPackages = new ArrayList<>();
 
         for (int userId : UserManagerApis.getUserIdsNoThrow()) {
-            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS, userId)) {
+            for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, userId)) {
                 if (pi == null || pi.applicationInfo == null) continue;
                 allPackages.add(pi);
 

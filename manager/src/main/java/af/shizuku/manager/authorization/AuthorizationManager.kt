@@ -48,7 +48,7 @@ object AuthorizationManager {
                 val allPackages: MutableList<PackageInfo> = ArrayList()
                 for (user in ShizukuSystemApis.getUsers(useCache = false)) {
                     try {
-                        allPackages.addAll(ShizukuSystemApis.getInstalledPackages((PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS).toLong(), user.id))
+                        allPackages.addAll(ShizukuSystemApis.getInstalledPackages((PackageManager.GET_META_DATA or PackageManager.GET_PERMISSIONS or PackageManager.MATCH_ALL).toLong(), user.id))
                     } catch (e: Throwable) {
                         LOGGER.w(e, "getInstalledPackages")
                     }
@@ -75,7 +75,7 @@ object AuthorizationManager {
             if (packages.none { it.packageName == scenePkg }) {
                 outer@ for (user in ShizukuSystemApis.getUsers(useCache = false)) {
                     try {
-                        val pkgs = ShizukuSystemApis.getInstalledPackages(0L, user.id)
+                        val pkgs = ShizukuSystemApis.getInstalledPackages(PackageManager.MATCH_ALL.toLong(), user.id)
                         val pi = pkgs.firstOrNull { it.packageName == scenePkg } ?: continue
                         val uid = pi.applicationInfo?.uid ?: continue
                         if (granted(scenePkg, uid)) {
