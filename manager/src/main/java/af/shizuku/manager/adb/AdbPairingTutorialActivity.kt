@@ -9,6 +9,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import timber.log.Timber
@@ -163,14 +164,32 @@ class AdbPairingTutorialActivity : AppBarActivity() {
     private val localNetworkPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (!granted) {
-                // A denial only blocks discovery of the pairing service; keep the flow going
-                // and surface the failure via the service error, but tell the user why.
-                Toast.makeText(this, R.string.local_network_denied_hint, Toast.LENGTH_LONG).show()
+                // A denial blocks discovery of the pairing service; give the user a way to
+                // fix it (open app settings) or to keep going and surface the failure later.
+                showLocalNetworkDeniedDialog()
+            } else {
+                doStartPairingService()
             }
-            // Start pairing whether or not the grant succeeded; a denial just means discovery/
-            // connect fails and the service surfaces the error, rather than a silent no-op.
-            doStartPairingService()
         }
+
+    private fun showLocalNetworkDeniedDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setMessage(R.string.local_network_denied_dialog_message)
+            .setPositiveButton(R.string.starter_go_settings) { _, _ ->
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                )
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                // User chose to continue without the permission; discovery will likely fail
+                // and the service surfaces the error.
+                doStartPairingService()
+            }
+            .show()
+    }
 
     private fun startPairingService() {
         val permission = LocalNetworkPermission.required()

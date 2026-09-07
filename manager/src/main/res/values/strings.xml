@@ -741,6 +741,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="starter_local_network_permission_denied">Local-network permission is disabled. Enable it in system settings to use wireless debugging.</string>
     <string name="starter_go_settings">Open Settings</string>
     <string name="local_network_denied_hint">Local-network permission denied. Pairing may fail — grant it in settings if discovery doesn\'t work.</string>
+    <string name="local_network_denied_dialog_message">Local-network permission was denied. ShizukuX may not be able to discover the pairing service. Grant it to continue, or cancel to try anyway.</string>
     <string name="notification_adb_pairing_succeed_title">Pairing successful</string>
     <string name="notification_adb_pairing_succeed_text">You can start Shizuku service now.</string>
     <string name="notification_adb_pairing_failed_title">Pairing failed</string>

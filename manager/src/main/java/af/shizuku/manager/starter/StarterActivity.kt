@@ -18,6 +18,7 @@ import android.provider.Settings
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
@@ -106,6 +107,54 @@ class StarterActivity : AppBarActivity() {
         }
     }
 
+    // Android 16+ gates mDNS discovery and the ADB sockets behind a local-network permission.
+    // A result contract (instead of requestPermissions + onRequestPermissionsResult) is used
+    // because a permanently denied (USER_FIXED) permission can be rejected synchronously,
+    // before onWindowFocusChanged has set startPending — the old path then silently dropped the
+    // callback and left the flow stuck. The contract always delivers its callback.
+    private val localNetworkPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            startPending = false
+            if (granted) {
+                doStart()
+            } else {
+                showLocalNetworkDeniedDialog()
+            }
+        }
+
+    private fun showLocalNetworkDeniedDialog() {
+        val permission = af.shizuku.manager.adb.LocalNetworkPermission.required()
+        val rationale = permission != null && shouldShowRequestPermissionRationale(permission)
+        MaterialAlertDialogBuilder(this)
+            .setMessage(
+                if (rationale) R.string.starter_local_network_permission_rationale
+                else R.string.starter_local_network_permission_denied
+            )
+            .setPositiveButton(R.string.starter_go_settings) { _, _ ->
+                // A permanently denied permission can only be resolved in system settings.
+                startPending = true
+                startActivity(
+                    Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", packageName, null)
+                    )
+                )
+            }
+            .setNegativeButton(if (rationale) R.string.starter_retry else android.R.string.cancel) { _, _ ->
+                if (rationale) {
+                    // First denial: let the user try again with the explanation visible.
+                    startPending = true
+                    val permissionAgain = af.shizuku.manager.adb.LocalNetworkPermission.required()
+                    if (permissionAgain != null) {
+                        localNetworkPermissionLauncher.launch(permissionAgain)
+                    }
+                } else {
+                    finish()
+                }
+            }
+            .show()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isActive = true
@@ -116,7 +165,14 @@ class StarterActivity : AppBarActivity() {
         binding = StarterActivityBinding.inflate(layoutInflater, rootView, true)
 
         val isRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, false)
-        if (!isRoot) af.shizuku.manager.adb.LocalNetworkPermission.request(this)
+        if (!isRoot) {
+            val permission = af.shizuku.manager.adb.LocalNetworkPermission.required()
+            if (permission != null &&
+                checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED
+            ) {
+                localNetworkPermissionLauncher.launch(permission)
+            }
+        }
 
         binding.header.apply {
             headerIcon.setImageResource(if (isRoot) R.drawable.ic_root_24 else R.drawable.ic_adb_24)
@@ -212,49 +268,6 @@ class StarterActivity : AppBarActivity() {
             return
         }
         doStart()
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode != af.shizuku.manager.adb.LocalNetworkPermission.REQUEST_CODE || !startPending) return
-        startPending = false
-        if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            doStart()
-        } else {
-            // Without the local-network permission neither mDNS discovery nor the ADB
-            // pairing/connect sockets work — the flow cannot proceed.
-            val permission = af.shizuku.manager.adb.LocalNetworkPermission.required()
-            val rationale = permission != null && shouldShowRequestPermissionRationale(permission)
-            MaterialAlertDialogBuilder(this)
-                .setMessage(
-                    if (rationale) R.string.starter_local_network_permission_rationale
-                    else R.string.starter_local_network_permission_denied
-                )
-                .setPositiveButton(R.string.starter_go_settings) { _, _ ->
-                    // A permanently denied permission can only be resolved in system settings.
-                    startPending = true
-                    startActivity(
-                        Intent(
-                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                            Uri.fromParts("package", packageName, null)
-                        )
-                    )
-                }
-                .setNegativeButton(if (rationale) R.string.starter_retry else android.R.string.cancel) { _, _ ->
-                    if (rationale) {
-                        // First denial: let the user try again with the explanation visible.
-                        startPending = true
-                        af.shizuku.manager.adb.LocalNetworkPermission.request(this)
-                    } else {
-                        finish()
-                    }
-                }
-                .show()
-        }
     }
 
     override fun onResume() {

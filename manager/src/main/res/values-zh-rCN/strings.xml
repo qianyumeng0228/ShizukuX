@@ -250,6 +250,7 @@
     <string name="starter_local_network_permission_denied">本地网络权限已被禁止。请在系统设置中开启后使用无线调试。</string>
     <string name="starter_go_settings">去设置</string>
     <string name="local_network_denied_hint">本地网络权限被拒绝，可能无法搜索到配对服务；若搜索失败请在设置中开启该权限。</string>
+    <string name="local_network_denied_dialog_message">本地网络权限被拒绝，ShizukuX 可能无法搜索到配对服务。请授权后继续，或取消以尝试。</string>
     <string name="notification_adb_pairing_succeed_title">配对成功</string>
     <string name="notification_adb_pairing_succeed_text">您现在可以启动 Shizuku 服务了。</string>
     <string name="notification_adb_pairing_failed_title">配对失败</string>
