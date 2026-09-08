@@ -35,9 +35,16 @@ object SceneRelayManager {
     private const val SCENE_PACKAGE = "com.omarea.vtools"
 
     private const val TMP = "/data/local/tmp"
-    private const val UP_SCRIPT = "$TMP/up.sh"
-    private const val DAEMON_BIN = "$TMP/scene-daemon"
-    private const val BUSYBOX_BIN = "$TMP/busybox"
+
+    // The whole activation chain lives in a dedicated sub-directory, never directly in $TMP:
+    // up.sh resolves its own directory as the "origin" of scene-daemon and copies it to
+    // /data/local/tmp/scene-daemon. If the script sat in $TMP, origin and target would be the
+    // same file and `cp` would abort with "cp: ... is the same file", leaving the daemon dead.
+    private const val SCENE_DIR = "$TMP/scene"
+    private const val UP_SCRIPT = "$SCENE_DIR/up.sh"
+    private const val DAEMON_BIN = "$SCENE_DIR/scene-daemon"   // origin (script dir)
+    private const val BUSYBOX_BIN = "$SCENE_DIR/busybox"
+    private const val DAEMON_TARGET = "$TMP/scene-daemon"      // final resident location
 
     /** Entry paths inside Scene's APK that carry the activation payload. */
     private const val DAEMON_APK_ENTRY = "res/raw/daemon"
@@ -117,16 +124,15 @@ object SceneRelayManager {
 
                 // 2) Middle-man core: run Scene's official up.sh through a shell-level process
                 //    (inherits the service UID, i.e. shell/ADB on a non-root start). The script
-                //    copies scene-daemon to /data/local/tmp and leaves it running in the
-                //    background, which is what actually grants Scene its ADB permission.
+                //    copies scene-daemon to /data/local/tmp/scene-daemon and leaves it running in
+                //    the background, which is what actually grants Scene its ADB permission.
+                //    cwd is the scene dir so the script's relative paths (./busybox) resolve.
                 android.util.Log.w("SceneRelay", "about to call newProcess, pingBinder=${Shizuku.pingBinder()}")
                 val process = try {
                     Shizuku.newProcess(
                         arrayOf("/system/bin/sh", "-c", "/system/bin/sh $UP_SCRIPT"),
                         null,
-                        // cwd 设为脚本所在目录：up.sh 内部用相对路径 ./busybox，且需避免
-                        // Runtime.exec 按 PATH 找到 APEX 受限 sush（不支持 [[ ]] 等语法）导致 syntax error。
-                        TMP
+                        SCENE_DIR
                     )
                 } catch (e: Throwable) {
                     android.util.Log.w("SceneRelay", "newProcess threw: ${e.javaClass.simpleName}: ${e.message}", e)
@@ -237,7 +243,10 @@ object SceneRelayManager {
         }
         android.util.Log.w("SceneRelay", "prepareActivationFiles: apk=$apk")
 
-        // b) Extract scene-daemon from res/raw/daemon.
+        // a2) Fresh scene dir — the previous run may have left a stale or half-written chain.
+        runShell("rm -rf $SCENE_DIR && mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
+
+        // b) Extract scene-daemon from res/raw/daemon (origin inside the scene dir).
         val out1 = runShell("unzip -p \"$apk\" $DAEMON_APK_ENTRY > $DAEMON_BIN && chmod 777 $DAEMON_BIN")
         // c) Extract busybox from assets/toolkit/busybox.
         val out2 = runShell("unzip -p \"$apk\" $BUSYBOX_APK_ENTRY > $BUSYBOX_BIN && chmod 777 $BUSYBOX_BIN")
@@ -258,7 +267,7 @@ object SceneRelayManager {
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         try {
-            val w = Shizuku.newProcess(arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT"), null, TMP)
+            val w = Shizuku.newProcess(arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT"), null, SCENE_DIR)
             w.outputStream.write(upShContent.toByteArray(Charsets.UTF_8))
             w.outputStream.flush()
             w.outputStream.close()
