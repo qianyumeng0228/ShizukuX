@@ -201,6 +201,7 @@
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">ADB 权限受限</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[这很可能是设备制造商限制了 ADB 权限。<p><b><a href="%1$s">此文档</a></b>中可能有针对您设备的解决方案。]]></string>
+    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/一加系统限制了 ADB 权限（服务端缺少系统授予权限），导致应用无法获得 Shizuku 授权。请在开发者选项中关闭「权限监控」（ColorOS 12+ 的独立开关；没有该按钮则把设备语言切换为英文，再关闭 "Disable system optimization"），然后<b>重启手机</b>。重启后重新启动 Shizuku，授权即可正常。]]></string>
     <string name="app_management_item_summary_requires_root">* 需要在 Root 模式下运行的 Shizuku</string>
     <string name="app_management_toggle_all">切换全部</string>
     <!-- Terminal -->

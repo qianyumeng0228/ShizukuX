@@ -23,6 +23,7 @@ import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.Logger.LOGGER
+import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.core.res.resolveColor
 import rikka.html.text.HtmlCompat
@@ -190,12 +191,25 @@ class RequestPermissionActivity : AppActivity() {
         val icon = getDrawable(R.drawable.ic_system_icon)
         icon?.setTint(theme.resolveColor(android.R.attr.colorAccent))
 
+        // OPPO/OnePlus (ColorOS/OxygenOS) gets a concrete, device-specific guide: the server's
+        // GRANT_RUNTIME_PERMISSIONS is blocked by the proprietary permission layer, and the fix
+        // (permission monitor / Disable system optimization) only takes effect after a reboot.
+        val messageRes = if (EnvironmentUtils.isOppo() || EnvironmentUtils.isOnePlus()) {
+            R.string.app_management_dialog_adb_is_limited_oppo
+        } else {
+            R.string.app_management_dialog_adb_is_limited_message
+        }
+        val message = if (messageRes == R.string.app_management_dialog_adb_is_limited_message) {
+            getString(messageRes, Helps.ADB.get())
+        } else {
+            getString(messageRes)
+        }
+
         val d = MaterialAlertDialogBuilder(this)
             .setIcon(icon)
             .setTitle("Shizuku: ${getString(R.string.app_management_dialog_adb_is_limited_title)}")
             .setMessage(
-                getString(R.string.app_management_dialog_adb_is_limited_message, Helps.ADB.get())
-                    .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
+                message.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
             )
             .setPositiveButton(android.R.string.ok, null)
             .setOnDismissListener { finish() }

@@ -340,6 +340,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <!-- Application management -->
     <string name="app_management_dialog_adb_is_limited_title">The permission of adb is limited</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[It\'s highly possible that your device manufacturer limits the permission of adb.<p>There may be a solution for your system in <b><a href=\"%1$s\">this document</a></b>.]]></string>
+    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/OnePlus restricts ADB permissions (the server lacks the system grant), so apps cannot receive Shizuku authorization. Turn off "Permission monitor" in Developer options (a separate ColorOS 12+ switch; if there is no such button, switch the device language to English and turn off "Disable system optimization"), then <b>reboot the phone</b>. After rebooting, restart Shizuku and authorization will work.]]></string>
     <string name="app_management_item_summary_requires_root">* requires Shizuku runs with root</string>
     <string name="app_management_item_summary_partial_root">⚠ Partially supported — some functions still need Shizuku with root</string>
     <string name="app_management_item_summary_requires_plus">* requires ShizukuX Enhanced API</string>
