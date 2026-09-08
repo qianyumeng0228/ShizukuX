@@ -176,6 +176,7 @@ object DiagnosticsExporter {
         block("SELinux / uid", "getenforce; id")
         block("/data/local/tmp (scene-related)", "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1")
         block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
+        block("System props (build/ColorOS hints)", "getprop 2>/dev/null | grep -iE 'ro.build.version|ro.product.(name|device|model)|ro.build.display|coloros|oplus|sys.oppo|ro.oplus' | head -30")
         block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
         block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")
         // Trial-run the daemon for 2s and capture its real stderr + exit code. exit=124 means the
@@ -185,7 +186,14 @@ object DiagnosticsExporter {
         // itself the answer (it IS running). No lasting side effect: output goes to a temp file
         // that is removed right after, and timeout reaps the process.
         block("Daemon trial run (2s, real stderr + exit code)", "timeout 2 /data/local/tmp/scene-daemon > /data/local/tmp/scene/daemon-trial.log 2>&1; ec=\$?; cat /data/local/tmp/scene/daemon-trial.log 2>/dev/null; echo \"trial_exit=\$ec (124 = daemon alive until timeout)\"; rm -f /data/local/tmp/scene/daemon-trial.log")
-        block("Logcat (SX_DEBUG / SceneRelay / FATAL / scene)", "logcat -d -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|ShizukuX:' | tail -150")
+        // Logcat across main/system/crash buffers: single-buffer -d can miss the SystemServer /
+        // crash ring where OEM permission denials and Scene crashes show up. Bounded by tail so
+        // the report stays shareable.
+        block("Logcat (main+system+crash, SX_DEBUG / SceneRelay / FATAL / scene)", "logcat -d -b main -b system -b crash -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|shizuku|ColorOS|Permission (denial|Denied)|SecurityException' | tail -200")
+        // dumpsys probes: package state tells us Scene's installed version/uid; activity
+        // processes reveals whether Scene is running and its death reason; the shizuku server
+        // process line confirms which privilege source is alive.
+        block("dumpsys (Scene pkg + shizuku server)", "dumpsys package com.omarea.vtools 2>&1 | grep -E 'versionCode|versionName|uid=|flags=|firstInstallTime|lastUpdateTime' | head -6; echo '-- scene/daemon in activity --'; dumpsys activity processes 2>&1 | grep -iE 'scene-daemon|omarea|vtools' | head -6; echo '-- shizuku server --'; ps -A 2>&1 | grep -iE 'shizuku|su_' | head -5")
         block("dmesg tail", "dmesg 2>&1 | tail -10")
         return sb.toString()
     }
