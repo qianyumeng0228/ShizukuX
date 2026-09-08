@@ -645,6 +645,22 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
+        <!-- External relay auto-activation (Scene ADB mode / Brevent): watches for Scene's
+             ADB-code page and for Brevent opening, then runs the relay chain automatically.
+             Enabled on demand from the external relay screen ("auto authorize" toggle). -->
+        <service
+            android:name=".adb.ExternalRelayAutoService"
+            android:label="@string/external_relay_auto_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_external_relay" />
+        </service>
     </application>
 
 </manifest>

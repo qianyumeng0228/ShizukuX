@@ -240,6 +240,18 @@
 4. MIUI/HyperOS：设置 → 应用设置 → 授权管理 → 后台弹出界面 → 允许
 5. 其他品牌（ColorOS/OriginOS 等）：关闭 ShizukuX 的「耗电管理」/「禁用系统优化」</string>
     <string name="anti_kill_dialog_open_battery">前往电池优化设置</string>
+
+    <string name="external_relay_auto_title">自动授权</string>
+    <string name="external_relay_auto_summary">开启后，点击 Scene 的 ADB 授权或打开黑阈时将自动完成激活，无需再回到本页手动操作（需要无障碍权限）</string>
+    <string name="external_relay_auto_need_accessibility">自动授权需要无障碍服务，请在接下来的页面中开启</string>
+    <string name="external_relay_auto_open_accessibility">开启无障碍服务</string>
+    <string name="external_relay_auto_open_accessibility_failed">无法打开无障碍设置</string>
+    <string name="external_relay_auto_accessibility_on">无障碍服务已开启</string>
+    <string name="external_relay_auto_accessibility_off">无障碍服务未开启</string>
+    <string name="external_relay_auto_accessibility_label">外部中转自动授权</string>
+    <string name="external_relay_auto_accessibility_description">当 Scene 弹出 ADB 授权页时自动激活 Scene ADB 模式，当打开黑阈时自动激活黑阈。仅在「自动授权」开关开启时生效。</string>
+    <string name="external_relay_auto_scene_detected">检测到 Scene ADB 授权，正在自动激活...</string>
+    <string name="external_relay_auto_brevent_detected">检测到黑阈打开，正在自动激活...</string>
     <string name="settings_tcp_mode">TCP 模式</string>
     <string name="settings_tcp_mode_summary">允许 Shizuku 在没有 Wi-Fi 的情况下重启。（Shizuku 必须在重启后至少启动过一次。）</string>
     <string name="settings_tcp_mode_dialog_close_port">TCP 端口将立即关闭。您需要连接 Wi-Fi 才能重新启用 TCP 模式。是否继续？</string>

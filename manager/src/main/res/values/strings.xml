@@ -429,6 +429,18 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
 4. MIUI/HyperOS: Settings → App settings → Permissions → Background pop-up → Allow
 5. Other brands (ColorOS/OriginOS etc.): disable "Power consumption management" / "Disable system optimization" for ShizukuX</string>
     <string name="anti_kill_dialog_open_battery">Open battery optimization settings</string>
+
+    <string name="external_relay_auto_title">Auto authorize</string>
+    <string name="external_relay_auto_summary">When on, tapping the Scene ADB-authorize button or opening Brevent activates automatically (no need to come back here). Requires the accessibility service.</string>
+    <string name="external_relay_auto_need_accessibility">Auto authorize needs the accessibility service. Please enable it in the following screen.</string>
+    <string name="external_relay_auto_open_accessibility">Enable accessibility service</string>
+    <string name="external_relay_auto_open_accessibility_failed">Cannot open accessibility settings</string>
+    <string name="external_relay_auto_accessibility_on">Accessibility service is enabled</string>
+    <string name="external_relay_auto_accessibility_off">Accessibility service is not enabled</string>
+    <string name="external_relay_auto_accessibility_label">External relay auto authorization</string>
+    <string name="external_relay_auto_accessibility_description">Automatically activates Scene ADB mode when its authorize dialog appears, and activates Brevent when the app is opened. Only active while the Auto authorize toggle is on.</string>
+    <string name="external_relay_auto_scene_detected">Scene ADB authorize detected; activating automatically...</string>
+    <string name="external_relay_auto_brevent_detected">Brevent opened; activating automatically...</string>
     <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>

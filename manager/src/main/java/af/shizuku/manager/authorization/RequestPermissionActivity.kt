@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.Helps
+import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
 import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.databinding.ConfirmationDialogBinding
@@ -95,6 +96,17 @@ class RequestPermissionActivity : AppActivity() {
             }
 
             // checkRemotePermission is a synchronous Binder call — run on IO
+            // Auto-allow permission requests from external-relay apps when the "auto authorize"
+            // toggle is on: Scene and Brevent are activated through the relay chain, and their
+            // subsequent Shizuku requests should go through without a manual dialog.
+            if (autoAllow(callingPackage)) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    dispatchResult(uid, pid, requestCode, allowed = true, onetime = false)
+                }
+                finish()
+                return@launch
+            }
+
             val hasSelfPermission = withContext(Dispatchers.IO) {
                 try {
                     Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
@@ -107,6 +119,15 @@ class RequestPermissionActivity : AppActivity() {
             if (isFinishing || isDestroyed) return@launch
             showPermissionDialog(uid, pid, requestCode, ai, callingPackage, hasSelfPermission)
         }
+    }
+
+    /**
+     * Whether the calling package should be auto-allowed under the external-relay
+     * "auto authorize" toggle (Scene / Brevent).
+     */
+    private fun autoAllow(callingPackage: String?): Boolean {
+        if (!ShizukuSettings.getExternalRelayAuto()) return false
+        return callingPackage == "com.omarea.vtools" || callingPackage == "me.piebridge.brevent"
     }
 
     private fun showPermissionDialog(uid: Int, pid: Int, requestCode: Int, ai: ApplicationInfo?, callingPackage: String?, hasSelfPermission: Boolean) {

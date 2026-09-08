@@ -67,6 +67,12 @@ public class ShizukuSettings {
         public static final String KEY_AI_CORE_MASTER_ENABLED = "ai_core_master_enabled";
         public static final String KEY_AI_CORE_EXPERIMENTAL_ENABLED = "ai_core_experimental_enabled";
         public static final String KEY_NPU_ACCELERATION_ENABLED = "npu_acceleration_enabled";
+
+        // External relay auto-activation (Scene ADB mode / Brevent): when enabled, an
+        // accessibility service watches for Scene's ADB-code page and for Brevent opening,
+        // and runs the relay activation chain automatically; permission requests from the
+        // relayed apps are auto-allowed as well.
+        public static final String KEY_EXTERNAL_RELAY_AUTO = "external_relay_auto";
         public static final String KEY_NATIVE_WINDOW_CRAWLER_ENABLED = "native_window_crawler_enabled";
         public static final String KEY_WINDOW_MANAGER_PLUS_ENABLED = "window_manager_plus_enabled";
         public static final String KEY_OVERLAY_MANAGER_PLUS_ENABLED = "overlay_manager_plus_enabled";
@@ -492,6 +498,15 @@ public class ShizukuSettings {
 
     public static boolean isWatchdogRunning() {
         return WatchdogService.isRunning();
+    }
+
+    /** External relay auto-activation toggle (Scene ADB mode / Brevent). Default OFF. */
+    public static boolean getExternalRelayAuto() {
+        return getPreferences().getBoolean(Keys.KEY_EXTERNAL_RELAY_AUTO, false);
+    }
+
+    public static void setExternalRelayAuto(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_EXTERNAL_RELAY_AUTO, enable).apply();
     }
 
     public static void setWatchdog(Context context, boolean enable) {

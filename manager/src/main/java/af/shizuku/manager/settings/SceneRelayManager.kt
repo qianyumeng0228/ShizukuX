@@ -49,10 +49,12 @@ object SceneRelayManager {
     /**
      * Activate Scene's ADB mode via Shizuku middle-man.
      *
-     * @param context host context (Activity or Fragment).
+     * @param context host context (Activity or Fragment; an application context is fine too).
      * @param scope   coroutine scope tied to the caller's lifecycle.
+     * @param silent  when true, results are surfaced as toasts instead of dialogs (used by the
+     *                background auto-activation service, which has no window to host a dialog).
      */
-    fun startSceneAdbActivation(context: Context, scope: CoroutineScope) {
+    fun startSceneAdbActivation(context: Context, scope: CoroutineScope, silent: Boolean = false) {
         android.util.Log.w("SceneRelay", "startSceneAdbActivation called")
 
         try {
@@ -72,7 +74,7 @@ object SceneRelayManager {
         }
 
         if (!Shizuku.pingBinder()) {
-            Toast.makeText(context, R.string.scene_relay_shizuku_not_running, Toast.LENGTH_LONG).show()
+            toastOnMain(context, R.string.scene_relay_shizuku_not_running)
             return
         }
         val sceneInstalled = try {
@@ -82,23 +84,22 @@ object SceneRelayManager {
             false
         }
         if (!sceneInstalled) {
-            Toast.makeText(context, R.string.scene_relay_scene_not_installed, Toast.LENGTH_LONG).show()
+            toastOnMain(context, R.string.scene_relay_scene_not_installed)
             return
         }
 
-        Toast.makeText(context, R.string.scene_relay_activating, Toast.LENGTH_SHORT).show()
+        toastOnMain(context, R.string.scene_relay_activating, Toast.LENGTH_SHORT)
         scope.launch(Dispatchers.IO) {
             try {
                 // 0) Already resident? Don't respawn a duplicate daemon.
                 val runningPid = queryDaemonPid()
                 if (runningPid.isNotEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        MaterialAlertDialogBuilder(context)
-                            .setTitle(R.string.scene_relay_result_title)
-                            .setMessage(context.getString(R.string.scene_relay_already_running, runningPid))
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show()
-                    }
+                    showResult(
+                        context,
+                        R.string.scene_relay_result_title,
+                        context.getString(R.string.scene_relay_already_running, runningPid),
+                        silent
+                    )
                     return@launch
                 }
 
@@ -106,13 +107,7 @@ object SceneRelayManager {
                 //    been opened once; Scene's never is, so extract it from Scene's own APK here.
                 val prepareError = prepareActivationFiles(context)
                 if (prepareError != null) {
-                    withContext(Dispatchers.Main) {
-                        MaterialAlertDialogBuilder(context)
-                            .setTitle(R.string.scene_relay_result_title)
-                            .setMessage(prepareError)
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show()
-                    }
+                    showResult(context, R.string.scene_relay_result_title, prepareError, silent)
                     return@launch
                 }
 
@@ -183,22 +178,43 @@ object SceneRelayManager {
                     if (output.isNotEmpty()) {
                         sb.append("\n\n").append(output)
                     }
-                    MaterialAlertDialogBuilder(context)
-                        .setTitle(R.string.scene_relay_result_title)
-                        .setMessage(sb.toString())
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
+                    showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
                 }
             } catch (e: Exception) {
                 android.util.Log.w("SceneRelay", "startSceneAdbActivation catch: ${e.javaClass.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    MaterialAlertDialogBuilder(context)
-                        .setTitle(R.string.scene_relay_result_title)
-                        .setMessage(context.getString(R.string.scene_relay_failed) + "\n\n" + (e.message ?: e.javaClass.simpleName))
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
+                    showResult(
+                        context,
+                        R.string.scene_relay_result_title,
+                        context.getString(R.string.scene_relay_failed) + "\n\n" + (e.message ?: e.javaClass.simpleName),
+                        silent
+                    )
                 }
             }
+        }
+    }
+
+    /**
+     * Surfaces a relay result either as a dialog (interactive callers) or as a toast
+     * (silent/background callers from the accessibility auto-activation service).
+     */
+    private fun showResult(context: Context, titleRes: Int, message: String, silent: Boolean) {
+        if (silent) {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        } else {
+            MaterialAlertDialogBuilder(context)
+                .setTitle(titleRes)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
+    }
+
+    /** Shows a toast on the main thread — safe to call from any caller thread (accessibility
+     *  service coroutines included). */
+    private fun toastOnMain(context: Context, resId: Int, length: Int = Toast.LENGTH_LONG) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Toast.makeText(context.applicationContext, resId, length).show()
         }
     }
 
