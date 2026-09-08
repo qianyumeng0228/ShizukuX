@@ -6,6 +6,7 @@
     <string name="home_status_service_not_running">%1$s未运行</string>
     <string name="home_status_service_version">版本 %2$s，%1$s</string>
     <string name="home_status_service_version_update"><![CDATA[版本 %2$s，%1$s<br>再次启动来升级到版本 %3$s]]></string>
+    <string name="home_status_service_version_unknown"><![CDATA[版本未知，%1$s<br>服务端未返回版本号，可能未正确启动或受系统限制。请尝试完全停止后重新启动，或在“服务诊断”中检查。]]></string>
     <string name="home_status_service_user_root">Root</string>
     <string name="home_status_service_user_adb">ADB</string>
     
@@ -83,9 +84,10 @@
 开发者选项 → USB 调试
 
 开启后返回此页面重试。]]></string>
-    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/一加系统可能通过权限监控限制 ADB。请前往开发者选项处理权限监控。
-
-如果开发者选项中没有权限监控按钮，请将设备语言切换为英文，再在开发者选项中查找并关闭 "Disable system optimization"。]]></string>
+    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/一加系统可能通过“权限监控”限制 ADB 和服务端。请前往开发者选项：
+① 关闭「权限监控」（ColorOS 12+ 的独立开关，与 Disable system optimization 不是同一个）
+② 若开发者选项中没有「权限监控」按钮，请将设备语言切换为英文，再找到并关闭 "Disable system optimization"
+③ 完成后务必重启手机（仅重启 Shizuku 可能不生效）]]></string>
     <string name="adb_permission_guide_go_developer"><![CDATA[前往开发者选项]]></string>
     <string name="settings_auto_pairing"><![CDATA[自动配对]]></string>
     <string name="settings_auto_pairing_summary"><![CDATA[启用配对助手，自动读取并输入无线调试配对码]]></string>
@@ -759,6 +761,8 @@
     <string name="doctor_check_root"><![CDATA[Root 权限：%1$s]]></string>
     <string name="doctor_check_permission"><![CDATA[ADB 权限：%1$s]]></string>
     <string name="doctor_check_server"><![CDATA[Shizuku 服务：%1$s]]></string>
+    <string name="doctor_check_server_version"><![CDATA[服务端版本]]></string>
+    <string name="doctor_tip_server_version"><![CDATA[服务端未返回版本号（首页显示“版本 0”），说明服务端未正常启动或被系统限制。OPPO/一加请确认已关闭开发者选项中的“权限监控”（ColorOS 12+ 独立开关），没有则切英文语言关闭 "Disable system optimization"，然后重启手机。]]></string>
     <string name="doctor_check_background"><![CDATA[后台限制：%1$s]]></string>
     <string name="doctor_check_accessibility"><![CDATA[无障碍服务]]></string>
     <string name="doctor_check_maximum_restrictions"><![CDATA[最大限制（One UI 8）]]></string>

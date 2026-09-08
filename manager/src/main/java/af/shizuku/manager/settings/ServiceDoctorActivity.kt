@@ -126,6 +126,25 @@ class ServiceDoctorActivity : AppBarActivity() {
             isRunning
         ))
 
+        // 4b. Server version probe — a reachable binder can still fail the version transaction
+        // (server not started correctly / restricted, e.g. ColorOS permission monitor), which the
+        // home card renders as "version 0" and a bogus "restart to update" prompt.
+        if (isRunning) {
+            val serverVersion = try {
+                rikka.shizuku.Shizuku.getVersion()
+            } catch (e: Throwable) {
+                -1
+            }
+            val versionOk = serverVersion > 0
+            checks.add(DoctorCheck(
+                getString(R.string.doctor_check_server_version),
+                if (versionOk) "${getString(R.string.doctor_status_ok)} (v$serverVersion)" else getString(R.string.doctor_status_limited),
+                versionOk,
+                onFix = if (versionOk) null else { { showAdbPermissionGuide() } }
+            ))
+            if (!versionOk) tips.add("• " + getString(R.string.doctor_tip_server_version))
+        }
+
         // 5. Secure Settings (WRITE_SECURE_SETTINGS)
         val hasSecureSettings = SettingsHelper.hasWriteSecureSettings(this)
         checks.add(DoctorCheck(

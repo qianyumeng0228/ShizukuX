@@ -216,19 +216,27 @@ class HomeBannerStatusViewHolder(
             context.getString(R.string.home_status_service_not_running, context.getString(R.string.app_name))
         }
         val summary = if (ok) {
-            // patchVersion is -1 when unknown (not yet delivered / not supported by the server);
-            // 0 is a legitimate patch value. Don't claim the server is outdated based on an unknown
-            // patch, or the "restart to update" prompt shows spuriously.
-            val patchKnown = patchVersion >= 0
-            val versionText = if (patchKnown) "${apiVersion}.${patchVersion}" else "$apiVersion"
-            if (apiVersion != Shizuku.getLatestServiceVersion() || (patchKnown && patchVersion != ShizukuApiConstants.SERVER_PATCH_VERSION)) {
-                context.getString(
-                    R.string.home_status_service_version_update, user,
-                    versionText,
-                    "${Shizuku.getLatestServiceVersion()}.${ShizukuApiConstants.SERVER_PATCH_VERSION}"
-                )
+            // apiVersion <= 0 means the version probe failed (the binder did not answer the
+            // transaction) — never render "version 0" or a spurious "restart to update" prompt.
+            // This happens when the server did not start correctly or is being restricted (e.g.
+            // ColorOS permission monitor).
+            if (apiVersion <= 0) {
+                context.getString(R.string.home_status_service_version_unknown, user)
             } else {
-                context.getString(R.string.home_status_service_version, user, versionText)
+                // patchVersion is -1 when unknown (not yet delivered / not supported by the server);
+                // 0 is a legitimate patch value. Don't claim the server is outdated based on an unknown
+                // patch, or the "restart to update" prompt shows spuriously.
+                val patchKnown = patchVersion >= 0
+                val versionText = if (patchKnown) "${apiVersion}.${patchVersion}" else "$apiVersion"
+                if (apiVersion != Shizuku.getLatestServiceVersion() || (patchKnown && patchVersion != ShizukuApiConstants.SERVER_PATCH_VERSION)) {
+                    context.getString(
+                        R.string.home_status_service_version_update, user,
+                        versionText,
+                        "${Shizuku.getLatestServiceVersion()}.${ShizukuApiConstants.SERVER_PATCH_VERSION}"
+                    )
+                } else {
+                    context.getString(R.string.home_status_service_version, user, versionText)
+                }
             }
         } else {
             context.getString(R.string.home_status_service_not_running_summary, context.getString(R.string.app_name))

@@ -107,6 +107,7 @@
     <string name="home_status_service_user_adb">adb</string>
     <string name="home_status_service_version">Version %2$s, %1$s</string>
     <string name="home_status_service_version_update"><![CDATA[Version %2$s, %1$s<br>Start again to update to version %3$s]]></string>
+    <string name="home_status_service_version_unknown"><![CDATA[Version unknown, %1$s<br>The service did not report its version. It may not have started correctly or is being restricted by the system. Try a full stop and restart, or check “Service diagnostics”.]]></string>
 
     <!-- Home - Adb -->
     <string name="home_adb_title"><![CDATA[Start by connecting to a computer]]></string>
@@ -149,9 +150,10 @@ Return here and retry afterwards.]]></string>
 Developer options → USB debugging
 
 Return here and retry afterwards.]]></string>
-    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/OnePlus may restrict ADB via the permission monitor. Please go to Developer options and handle the permission monitor.
-
-If there is no permission monitor entry, switch the device language to English, then find and turn off "Disable system optimization" in Developer options.]]></string>
+    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/OnePlus may restrict ADB and the server via the permission monitor. Please go to Developer options:
+① Turn off “Permission monitor” (a separate ColorOS 12+ switch, not the same as Disable system optimization)
+② If there is no “Permission monitor” entry, switch the device language to English and turn off "Disable system optimization"
+③ Reboot the phone afterwards (restarting only Shizuku may not take effect)]]></string>
     <string name="adb_permission_guide_go_developer">Go to developer options</string>
     <string name="settings_auto_pairing">Auto pairing</string>
     <string name="settings_auto_pairing_summary">Enable the pairing assistant to read and enter wireless-debugging pairing codes automatically</string>
@@ -735,6 +737,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="doctor_check_secure_settings">Secure Settings: %1$s</string>
     <string name="doctor_check_permission">ADB permission: %1$s</string>
     <string name="doctor_check_server">Shizuku server: %1$s</string>
+    <string name="doctor_check_server_version">Server version</string>
+    <string name="doctor_tip_server_version"><![CDATA[The server did not report its version (home shows “version 0”), meaning it did not start correctly or is being restricted. On OPPO/OnePlus, close “permission monitor” in Developer options (a separate ColorOS 12+ switch; if absent, switch the device language to English and turn off "Disable system optimization"), then reboot the phone.]]></string>
     <string name="doctor_check_background">Background limits: %1$s</string>
     <string name="doctor_check_accessibility">Accessibility service</string>
     <string name="doctor_check_maximum_restrictions">Maximum Restrictions (One UI 8)</string>
