@@ -417,6 +417,18 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="settings_use_system_color">Use system theme color</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku after a crash or unexpected stop. Cannot reconnect when the underlying network disconnects (e.g. USB cable unplugged while using RNDIS/USB ADB).</string>
+    <string name="settings_anti_kill_guide">Anti-kill setup guide</string>
+    <string name="settings_anti_kill_guide_summary">Keep ShizukuX alive in the background so the server and app authorizations survive system cleanup</string>
+    <string name="anti_kill_dialog_title">Stop the system from killing ShizukuX</string>
+    <string name="anti_kill_dialog_message">When the system kills ShizukuX, the Shizuku server stops and apps (e.g. GKD) lose their authorization until it is restarted. If the Watchdog toggle above is on, the server is restarted automatically and authorizations are reloaded from disk.
+
+To make sure the watchdog itself survives, allow ShizukuX to keep running in the background:
+1. System settings → Apps → ShizukuX → Battery saver → No restrictions
+2. System settings → Apps → ShizukuX → Autostart → Allow
+3. Recents → long-press ShizukuX → Lock
+4. MIUI/HyperOS: Settings → App settings → Permissions → Background pop-up → Allow
+5. Other brands (ColorOS/OriginOS etc.): disable "Power consumption management" / "Disable system optimization" for ShizukuX</string>
+    <string name="anti_kill_dialog_open_battery">Open battery optimization settings</string>
     <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>

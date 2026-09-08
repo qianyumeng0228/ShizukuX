@@ -234,6 +234,30 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
             }
             true
         }
+
+        // Anti-kill guide: explains how to stop the OEM task killers from freezing ShizukuX, and
+        // offers a direct hop to the battery optimization exemption page. The watchdog (toggle
+        // above) is the automatic-restart side of the same problem; this guide keeps the watchdog
+        // process itself alive so its CRASHED-triggered restart can actually fire.
+        findPreference<Preference>("anti_kill_guide")?.setOnPreferenceClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.anti_kill_dialog_title)
+                .setMessage(R.string.anti_kill_dialog_message)
+                .setPositiveButton(R.string.anti_kill_dialog_open_battery) { _, _ ->
+                    try {
+                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            requireContext(),
+                            R.string.settings_anti_kill_guide_summary,
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+            true
+        }
     }
 
     private fun syncTcpPortVisibility() {

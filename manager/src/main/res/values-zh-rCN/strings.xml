@@ -228,6 +228,18 @@
     <string name="settings_wallpaper_original">原版</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">如果 Shizuku 崩溃，则自动重启</string>
+    <string name="settings_anti_kill_guide">防杀设置引导</string>
+    <string name="settings_anti_kill_guide_summary">防止系统清理后台导致 Shizuku 服务停止、已授权应用失效</string>
+    <string name="anti_kill_dialog_title">防止 ShizukuX 被系统清理</string>
+    <string name="anti_kill_dialog_message">系统杀掉 ShizukuX 后，Shizuku 服务会停止，已授权的应用（如 GKD）将失效，直到服务重启。若上方 Watchdog 开关已开启，服务会被自动拉起并从磁盘恢复授权。
+
+要确保 Watchdog 本身存活，请允许 ShizukuX 在后台运行：
+1. 系统设置 → 应用 → ShizukuX → 省电策略 → 无限制
+2. 系统设置 → 应用 → ShizukuX → 自启动 → 允许
+3. 最近任务 → 长按 ShizukuX → 锁定
+4. MIUI/HyperOS：设置 → 应用设置 → 授权管理 → 后台弹出界面 → 允许
+5. 其他品牌（ColorOS/OriginOS 等）：关闭 ShizukuX 的「耗电管理」/「禁用系统优化」</string>
+    <string name="anti_kill_dialog_open_battery">前往电池优化设置</string>
     <string name="settings_tcp_mode">TCP 模式</string>
     <string name="settings_tcp_mode_summary">允许 Shizuku 在没有 Wi-Fi 的情况下重启。（Shizuku 必须在重启后至少启动过一次。）</string>
     <string name="settings_tcp_mode_dialog_close_port">TCP 端口将立即关闭。您需要连接 Wi-Fi 才能重新启用 TCP 模式。是否继续？</string>

@@ -18,6 +18,12 @@
             android:title="@string/settings_watchdog"
             android:icon="@drawable/ic_visibility_24" />
 
+        <Preference
+            android:key="anti_kill_guide"
+            android:title="@string/settings_anti_kill_guide"
+            android:summary="@string/settings_anti_kill_guide_summary"
+            android:icon="@drawable/ic_outline_notifications_active_24" />
+
         <SwitchPreferenceCompat
             android:key="auto_reconnect_mdns"
             android:title="@string/settings_auto_reconnect_title"

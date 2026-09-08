@@ -472,7 +472,13 @@ public class ShizukuSettings {
     }
 
     public static boolean getWatchdog() {
-        return getPreferences().getBoolean(Keys.KEY_WATCHDOG, false);
+        // Default ON: the watchdog (foreground service + 15min process-independent alarm +
+        // 2h WorkManager backstop) is what brings the Shizuku server back when the system kills
+        // ShizukuX, and re-loads authorizations from disk. It used to default to OFF, which made
+        // "ShizukuX killed -> apps' authorizations lost" the common report: with the watchdog
+        // off, a killed server stays dead until the user opens the app. Users who deliberately
+        // disable it (setWatchdog(false) persists) keep their choice.
+        return getPreferences().getBoolean(Keys.KEY_WATCHDOG, true);
     }
 
     /** Whether the app re-enables developer options / USB debugging / wireless debugging on boot. */

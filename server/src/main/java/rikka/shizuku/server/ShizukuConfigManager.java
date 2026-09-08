@@ -41,10 +41,21 @@ public class ShizukuConfigManager extends ConfigManager {
             .setVersion(ShizukuConfig.LATEST_VERSION)
             .create();
 
-    private static final long WRITE_DELAY = 10 * 1000;
+    // Write delay is a coalescing window for non-permission changes (constructor repairs,
+    // removals). Permission grant/revoke bypasses it entirely and writes synchronously in
+    // update() - a 10s window meant a just-granted app lost its authorization if the server
+    // process was killed by the system before the delayed write fired (reported: ShizukuX
+    // killed -> gkd authorization lost).
+    private static final long WRITE_DELAY = 1000;
 
     private static final File FILE = getConfigFile();
     private static final AtomicFile ATOMIC_FILE = new AtomicFile(FILE);
+
+    // Secondary copy written on every save (dual-write). The primary file lives under
+    // /data/user_de/0/com.android.shell/ when available; this shell-writable backup survives
+    // cases where the primary is wiped (e.g. app data reset of com.android.shell, or a bad
+    // primary file) so authorizations can still be recovered on next server start.
+    private static final File BACKUP_FILE = new File("/data/local/tmp/shizuku.json.bak");
 
     private static File getConfigFile() {
         File shellFile = new File("/data/user_de/0/com.android.shell/shizuku.json");
@@ -65,8 +76,13 @@ public class ShizukuConfigManager extends ConfigManager {
         try {
             stream = ATOMIC_FILE.openRead();
         } catch (FileNotFoundException e) {
-            LOGGER.i("no existing config file " + ATOMIC_FILE.getBaseFile() + "; starting empty");
-            return new ShizukuConfig();
+            LOGGER.i("no existing config file " + ATOMIC_FILE.getBaseFile() + "; trying backup");
+            try {
+                stream = new FileInputStream(BACKUP_FILE);
+            } catch (FileNotFoundException e2) {
+                LOGGER.i("no backup config either; starting empty");
+                return new ShizukuConfig();
+            }
         }
 
         ShizukuConfig config = null;
@@ -115,10 +131,32 @@ public class ShizukuConfigManager extends ConfigManager {
                     }
                 }
                 LOGGER.v("config saved to " + file.getAbsolutePath());
+
+                writeBackup(json);
             } catch (Throwable tr) {
                 LOGGER.e(tr, "can't save %s, restoring backup.", ATOMIC_FILE.getBaseFile());
                 ATOMIC_FILE.failWrite(stream);
             }
+        }
+    }
+
+    private static void writeBackup(String json) {
+        try {
+            FileOutputStream b = new FileOutputStream(BACKUP_FILE);
+            try {
+                b.write(json.getBytes());
+            } finally {
+                b.close();
+            }
+            try {
+                Os.chmod(BACKUP_FILE.getAbsolutePath(), 0660);
+                Os.chown(BACKUP_FILE.getAbsolutePath(), -1, android.os.Process.SHELL_UID);
+            } catch (ErrnoException e) {
+                LOGGER.w("failed to set permissions on backup config: " + e);
+            }
+            LOGGER.v("backup config saved to " + BACKUP_FILE.getAbsolutePath());
+        } catch (Throwable tr) {
+            LOGGER.w(tr, "failed to write backup config");
         }
     }
 
@@ -166,9 +204,14 @@ public class ShizukuConfigManager extends ConfigManager {
 
             List<String> packages = packagesByUid.get(entry.uid);
             if (packages == null || packages.isEmpty()) {
-                LOGGER.i("remove config for uid %d since it has gone", entry.uid);
-                config.packages.remove(entry);
-                changed = true;
+                // Previously this pruned the entry ("uid has gone"). That turned transient
+                // package-list query gaps (server-side enumeration is reflective on Android 17+,
+                // and per-user queries can be incomplete right after an install/update) into
+                // permanent authorization loss: the next restart would never re-grant an app the
+                // user had already allowed. Keeping the entry is safe: if the app is truly gone,
+                // it just stays dormant (UI filters it out); if it is reinstalled with the same
+                // uid, the authorization comes back automatically.
+                LOGGER.w("uid %d not found in current package list; keeping config entry to preserve authorization", entry.uid);
                 continue;
             }
 
@@ -205,9 +248,9 @@ public class ShizukuConfigManager extends ConfigManager {
             }
 
             if (packagesChanged) {
-                LOGGER.i("remove config for uid %d since the packages for it changed", entry.uid);
-                config.packages.remove(entry);
-                changed = true;
+                // Same rationale as above: a package-list mismatch after an app update or a
+                // partial query is not evidence the user revoked the grant, so keep the entry.
+                LOGGER.w("uid %d package list changed; keeping config entry to preserve authorization", entry.uid);
             }
         }
 
@@ -240,9 +283,9 @@ public class ShizukuConfigManager extends ConfigManager {
                 }
         }
 
-        if (changed) {
-            scheduleWriteLocked();
-        }
+        // Always persist once on start: (1) re-applies any constructor repairs, (2) refreshes
+        // the dual-write backup so recovery always has a fresh copy even when nothing changed.
+        write(config);
     }
 
     private void scheduleWriteLocked() {
@@ -310,6 +353,13 @@ public class ShizukuConfigManager extends ConfigManager {
     public void update(int uid, List<String> packages, int mask, int values) {
         synchronized (this) {
             updateLocked(uid, packages, mask, values);
+            if ((mask & ConfigManager.MASK_PERMISSION) != 0) {
+                // Permission grant/revoke is the critical case: write synchronously so a kill
+                // right after the user taps "allow" cannot lose the authorization (10s delayed
+                // write used to drop it when the process died inside the window).
+                HandlerKt.getWorkerHandler().removeCallbacks(mWriteRunner);
+                write(config);
+            }
         }
     }
 
