@@ -105,6 +105,8 @@
     <string name="scene_relay_apk_not_found">找不到 Scene 的安装包，无法提取激活文件。请重新安装 Scene 后重试</string>
     <string name="scene_relay_prepare_failed">准备 Scene 激活文件失败</string>
     <string name="scene_relay_already_running">scene-daemon 已在运行（PID：%1$s），Scene 应该已可用</string>
+    <string name="scene_relay_daemon_restarted">scene-daemon 进程存在但未监听端口，已自动重启（PID：%1$s）。请打开 Scene 并选择 ADB 模式</string>
+    <string name="scene_relay_listen_failed">scene-daemon 已运行但无法监听 14754 端口，Scene 无法连接。详情如下：</string>
     <string name="settings_system_performance_category_title">系统与性能</string>
     <string name="settings_process_control_title">进程控制</string>
     <string name="settings_shell_accelerator_title">Shell 加速器</string>

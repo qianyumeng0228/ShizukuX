@@ -105,6 +105,8 @@
     <string name="scene_relay_apk_not_found">Cannot locate Scene\'s APK. Reinstall Scene and retry.</string>
     <string name="scene_relay_prepare_failed">Failed to prepare Scene activation files.</string>
     <string name="scene_relay_already_running">scene-daemon is already running (PID: %1$s). Scene should be usable now.</string>
+    <string name="scene_relay_daemon_restarted">scene-daemon was alive but not listening on its port; it has been restarted (PID: %1$s). Open Scene and select ADB mode.</string>
+    <string name="scene_relay_listen_failed">scene-daemon is running but cannot listen on port 14754, so Scene cannot connect. Details:</string>
     <string name="settings_system_performance_category_title">System &amp; Performance</string>
     <string name="settings_process_control_title">Process Control</string>
     <string name="settings_shell_accelerator_title">Shell Accelerator</string>

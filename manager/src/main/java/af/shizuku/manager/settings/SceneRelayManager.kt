@@ -98,9 +98,42 @@ object SceneRelayManager {
         toastOnMain(context, R.string.scene_relay_activating, Toast.LENGTH_SHORT)
         scope.launch(Dispatchers.IO) {
             try {
-                // 0) Already resident? Don't respawn a duplicate daemon.
+                // 0) Already resident? Don't respawn a duplicate daemon. But a resident process is
+                //    not enough: Scene's ADB mode only works when scene-daemon is *listening* on
+                //    its port (14754). A process that failed to bind (stale connection/TIME_WAIT
+                //    still occupying the port) stays alive yet unreachable, which makes Scene show
+                //    the "run this on your PC" dialog. Detect that and restart the daemon.
                 val runningPid = queryDaemonPid()
                 if (runningPid.isNotEmpty()) {
+                    if (!awaitDaemonListening()) {
+                        android.util.Log.w("SceneRelay", "daemon pid=$runningPid alive but 14754 not listening; restarting")
+                        var recovered = false
+                        repeat(3) {
+                            if (restartDaemon()) { recovered = true; return@repeat }
+                            Thread.sleep(1000)
+                        }
+                        if (recovered) {
+                            val newPid = queryDaemonPid()
+                            withContext(Dispatchers.Main) {
+                                showResult(
+                                    context,
+                                    R.string.scene_relay_result_title,
+                                    context.getString(R.string.scene_relay_daemon_restarted, newPid),
+                                    silent
+                                )
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                showResult(
+                                    context,
+                                    R.string.scene_relay_result_title,
+                                    context.getString(R.string.scene_relay_listen_failed) + "\n\n" + listenDiagnosis(),
+                                    silent
+                                )
+                            }
+                        }
+                        return@launch
+                    }
                     withContext(Dispatchers.Main) {
                         showResult(
                             context,
@@ -149,8 +182,25 @@ object SceneRelayManager {
                 //    The official script's own pgrep check is unreliable on some devices (fresh
                 //    fork not yet visible, or a missing/odd pgrep), so wait briefly and use
                 //    pidof/ps fallbacks instead of trusting "Scene-Daemon OK!" from the script.
-                val daemonPid = awaitDaemonPid()
-                val activated = daemonPid.isNotEmpty()
+                //    Then verify it is actually *listening* on 14754 — a resident but unbound
+                //    daemon (port stolen by a stale connection) is invisible to Scene, which
+                //    would keep showing its PC-instruction dialog. If so, bounce the daemon.
+                var daemonPid = awaitDaemonPid()
+                var activated = daemonPid.isNotEmpty()
+                if (activated && !awaitDaemonListening()) {
+                    android.util.Log.w("SceneRelay", "daemon pid=$daemonPid up but 14754 not listening; bouncing")
+                    var recovered = false
+                    repeat(3) {
+                        if (restartDaemon()) { recovered = true; return@repeat }
+                        Thread.sleep(1000)
+                    }
+                    if (recovered) {
+                        daemonPid = queryDaemonPid()
+                        activated = daemonPid.isNotEmpty()
+                    } else {
+                        activated = false
+                    }
+                }
 
                 // 4) On success, add Scene to ShizukuX's authorized apps list (updates the
                 //    service-side permission flags).
@@ -335,5 +385,56 @@ object SceneRelayManager {
             Thread.sleep(700)
         }
         return pid
+    }
+
+    /**
+     * True when scene-daemon is actually listening on 127.0.0.1:14754 (0x39A2), the port Scene
+     * connects to for its ADB mode. `cat /proc/net/tcp{,6}` works on every Android shell and is
+     * more reliable than ss/netstat, which OEM builds often drop.
+     */
+    private fun isDaemonListening(): Boolean {
+        return try {
+            val p = Shizuku.newProcess(
+                arrayOf(
+                    "sh", "-c",
+                    "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2 | grep -q ' 0A ' && echo YES || echo NO"
+                ), null, null
+            )
+            val out = p.inputStream.bufferedReader().use { it.readText() }
+            p.waitFor()
+            out.contains("YES")
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "isDaemonListening failed: ${e.message}")
+            false
+        }
+    }
+
+    /** Waits (polling) until the daemon starts listening on 14754, or [attempts] polls expire. */
+    private fun awaitDaemonListening(attempts: Int = 4): Boolean {
+        repeat(attempts) {
+            if (isDaemonListening()) return true
+            Thread.sleep(700)
+        }
+        return false
+    }
+
+    /**
+     * Bounces scene-daemon: kill it (releasing 14754 — the stale connection that caused the
+     * failed bind dies with the process), give the port a moment to settle, then respawn it
+     * with nohup exactly like up.sh does. Returns true when the respawn listens on 14754.
+     */
+    private fun restartDaemon(): Boolean {
+        runShell("kill \$(pidof scene-daemon) 2>/dev/null; sleep 1")
+        runShell("nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &")
+        val pid = awaitDaemonPid()
+        if (pid.isEmpty()) return false
+        return awaitDaemonListening()
+    }
+
+    /** Human-readable port state for the failure dialog / diagnostics export. */
+    private fun listenDiagnosis(): String {
+        val raw = runShell("cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2")
+        return "daemon pid: ${queryDaemonPid().ifEmpty { "(none)" }}\n\n14754 port state:\n" +
+            raw.ifEmpty { "(no 14754 entries — daemon never bound the port)" }
     }
 }
