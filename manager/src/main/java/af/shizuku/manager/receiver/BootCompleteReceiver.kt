@@ -10,6 +10,7 @@ import timber.log.Timber
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.RootCompatHelper
 import af.shizuku.manager.service.WatchdogService
+import af.shizuku.manager.worker.DeveloperRestoreWorker
 
 class BootCompleteReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -25,6 +26,30 @@ class BootCompleteReceiver : BroadcastReceiver() {
         if (!handled) return
 
         Timber.tag("BootCompleteReceiver").i("Triggered by: $action")
+
+        // Restore developer options / USB debugging / wireless debugging before attempting the
+        // Shizuku auto-start below, so the worker can discover the wireless-debugging port.
+        // MIUI/HyperOS force developer options off on boot; with WRITE_SECURE_SETTINGS we can
+        // write it (and adb_enabled / adb_wifi_enabled) back. The first pass runs inline (the
+        // writes are fast enough to survive goAsync()); the delayed retry plus the
+        // "wireless debugging needs Wi-Fi" notification live in DeveloperRestoreWorker, because
+        // a 15s coroutine delay here used to get cancelled when the system reclaimed the process.
+        // Direct boot (LOCKED) is skipped: prefs are credential-encrypted and unavailable there.
+        if (action == Intent.ACTION_BOOT_COMPLETED && ShizukuSettings.isAutoRestoreDeveloperOptionsEnabled()) {
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    if (DeveloperOptionsRestorer.restore(context)) {
+                        DeveloperRestoreWorker.enqueue(context)
+                    }
+                } catch (e: Exception) {
+                    Timber.tag("BootCompleteReceiver").w(e, "Auto-restore developer options failed")
+                } finally {
+                    pending.finish()
+                }
+            }
+        }
+
         try {
             ShizukuReceiverStarter.start(context)
         } catch (e: Exception) {

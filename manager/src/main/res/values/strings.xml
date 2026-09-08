@@ -155,6 +155,15 @@ If there is no permission monitor entry, switch the device language to English, 
     <string name="adb_permission_guide_go_developer">Go to developer options</string>
     <string name="settings_auto_pairing">Auto pairing</string>
     <string name="settings_auto_pairing_summary">Enable the pairing assistant to read and enter wireless-debugging pairing codes automatically</string>
+    <string name="settings_auto_restore_dev_options">Auto-restore developer options on boot</string>
+    <string name="settings_auto_restore_dev_options_summary">After a reboot, re-enable developer options, USB debugging and wireless debugging (requires WRITE_SECURE_SETTINGS)</string>
+    <string name="settings_auto_restore_dev_options_no_permission">WRITE_SECURE_SETTINGS is missing, so auto-restore cannot take effect. Grant it via adb: adb shell pm grant &lt;package&gt; android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="settings_restore_dev_options_now">Restore developer options now</string>
+    <string name="settings_restore_dev_options_now_summary">Re-enable developer options, USB debugging and wireless debugging</string>
+    <string name="settings_restore_dev_options_ok">Developer options, USB debugging and wireless debugging restored</string>
+    <string name="settings_restore_wifi_notification_title">Wireless debugging not restored</string>
+    <string name="settings_restore_wifi_notification_text">Wi-Fi was off during auto-restore, so wireless debugging and Shizuku auto-start are waiting. Turn on Wi-Fi and Shizuku will start automatically.</string>
+    <string name="settings_restore_wifi_notification_action">Turn on Wi-Fi</string>
     <string name="doctor_fix_open_developer_options_failed">Could not open developer options</string>
     <string name="home_adb_button_view_command">View command</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* There are some other considerations, please confirm that you have read the help first.]]></string>

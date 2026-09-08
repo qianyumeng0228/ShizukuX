@@ -89,6 +89,15 @@
     <string name="adb_permission_guide_go_developer"><![CDATA[前往开发者选项]]></string>
     <string name="settings_auto_pairing"><![CDATA[自动配对]]></string>
     <string name="settings_auto_pairing_summary"><![CDATA[启用配对助手，自动读取并输入无线调试配对码]]></string>
+    <string name="settings_auto_restore_dev_options"><![CDATA[开机自动恢复开发者选项]]></string>
+    <string name="settings_auto_restore_dev_options_summary"><![CDATA[重启后自动恢复开发者选项、USB 调试与无线调试（需要 WRITE_SECURE_SETTINGS 权限）]]></string>
+    <string name="settings_auto_restore_dev_options_no_permission"><![CDATA[无 WRITE_SECURE_SETTINGS 权限，自动恢复将无法生效。可通过 adb 授予：adb shell pm grant 包名 android.permission.WRITE_SECURE_SETTINGS]]></string>
+    <string name="settings_restore_dev_options_now"><![CDATA[立即恢复开发者选项]]></string>
+    <string name="settings_restore_dev_options_now_summary"><![CDATA[恢复开发者选项、USB 调试与无线调试]]></string>
+    <string name="settings_restore_dev_options_ok"><![CDATA[已恢复开发者选项、USB 调试与无线调试]]></string>
+    <string name="settings_restore_wifi_notification_title"><![CDATA[无线调试未自动恢复]]></string>
+    <string name="settings_restore_wifi_notification_text"><![CDATA[开机自动恢复时 Wi-Fi 未开启，无线调试与 Shizuku 自动启动受阻。请开启 Wi-Fi，Shizuku 将自动启动。]]></string>
+    <string name="settings_restore_wifi_notification_action"><![CDATA[开启 Wi-Fi]]></string>
     <string name="doctor_fix_open_developer_options_failed"><![CDATA[无法打开开发者选项]]></string>
     <string name="home_adb_button_view_command">查看命令</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有其他注意事项，请先阅读帮助。]]></string>

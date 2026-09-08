@@ -70,6 +70,19 @@
             android:title="@string/settings_auto_pairing"
             android:icon="@drawable/ic_numeric_2_circle_outline_24" />
 
+        <SwitchPreferenceCompat
+            android:key="auto_restore_developer_options"
+            android:summary="@string/settings_auto_restore_dev_options_summary"
+            android:title="@string/settings_auto_restore_dev_options"
+            android:icon="@drawable/ic_settings_outline_24"
+            android:defaultValue="false" />
+
+        <Preference
+            android:key="restore_developer_options_now"
+            android:title="@string/settings_restore_dev_options_now"
+            android:summary="@string/settings_restore_dev_options_now_summary"
+            android:icon="@drawable/ic_settings_suggest_24" />
+
         <Preference
             android:key="reset_adb_keys"
             android:title="@string/settings_reset_adb_keys"

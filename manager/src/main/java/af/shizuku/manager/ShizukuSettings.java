@@ -28,6 +28,7 @@ public class ShizukuSettings {
     public static class Keys {
         public static final String KEY_START_ON_BOOT = "start_on_boot";
         public static final String KEY_WATCHDOG = "watchdog";
+        public static final String KEY_AUTO_RESTORE_DEVELOPER_OPTIONS = "auto_restore_developer_options";
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
         public static final String KEY_LAST_PORT = "last_adb_port";
@@ -472,6 +473,15 @@ public class ShizukuSettings {
 
     public static boolean getWatchdog() {
         return getPreferences().getBoolean(Keys.KEY_WATCHDOG, false);
+    }
+
+    /** Whether the app re-enables developer options / USB debugging / wireless debugging on boot. */
+    public static boolean isAutoRestoreDeveloperOptionsEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_AUTO_RESTORE_DEVELOPER_OPTIONS, false);
+    }
+
+    public static void setAutoRestoreDeveloperOptionsEnabled(boolean enable) {
+        getPreferences().edit().putBoolean(Keys.KEY_AUTO_RESTORE_DEVELOPER_OPTIONS, enable).apply();
     }
 
     public static boolean isWatchdogRunning() {
