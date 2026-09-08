@@ -131,7 +131,13 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
             val nb = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_settings_outline_24)
                 .setContentTitle(context.getString(R.string.settings_adb_security_notification_title))
-                .setContentText(context.getString(R.string.settings_adb_security_notification_text))
+                .setContentText(
+                    if (DeveloperOptionsRestorer.isUsbDebuggingEnabled(context)) {
+                        context.getString(R.string.settings_adb_security_notification_text_usb_on)
+                    } else {
+                        context.getString(R.string.settings_adb_security_notification_text_usb_off)
+                    }
+                )
                 .setContentIntent(openAppIntent)
                 .addAction(
                     R.drawable.ic_settings_outline_24,

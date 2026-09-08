@@ -100,6 +100,8 @@
     <string name="settings_restore_wifi_notification_action"><![CDATA[开启 Wi-Fi]]></string>
     <string name="settings_adb_security_notification_title"><![CDATA[USB 调试（安全设置）已关闭]]></string>
     <string name="settings_adb_security_notification_text"><![CDATA[点击前往开发者选项开启，Shizuku 才能正常启动]]></string>
+    <string name="settings_adb_security_notification_text_usb_on"><![CDATA[前往开发者选项 → 调试 → USB 调试（安全设置）]]></string>
+    <string name="settings_adb_security_notification_text_usb_off"><![CDATA[前往开发者选项 → 开启 USB 调试，再开启 USB 调试（安全设置）]]></string>
     <string name="settings_adb_security_notification_action"><![CDATA[前往开启]]></string>
     <string name="settings_restore_adb_security_hint"><![CDATA[USB 调试（安全设置）未开启，已跳转开发者选项，请开启该开关]]></string>
     <string name="doctor_fix_open_developer_options_failed"><![CDATA[无法打开开发者选项]]></string>

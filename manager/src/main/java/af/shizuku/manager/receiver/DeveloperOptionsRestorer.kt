@@ -36,6 +36,13 @@ object DeveloperOptionsRestorer {
         }.getOrDefault(false)
     }
 
+    /** Whether USB debugging itself is currently enabled (adb_enabled). */
+    fun isUsbDebuggingEnabled(context: Context): Boolean {
+        return runCatching {
+            Settings.Global.getInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0) == 1
+        }.getOrDefault(false)
+    }
+
     /**
      * Whether Xiaomi's "USB debugging (security settings)" toggle is on. It is stored in the
      * `persist.security.adbinput` system property (not a Settings key); MIUI/HyperOS resets it on

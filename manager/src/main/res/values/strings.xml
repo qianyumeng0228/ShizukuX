@@ -166,6 +166,8 @@ If there is no permission monitor entry, switch the device language to English, 
     <string name="settings_restore_wifi_notification_action">Turn on Wi-Fi</string>
     <string name="settings_adb_security_notification_title">USB debugging (security settings) is off</string>
     <string name="settings_adb_security_notification_text">Tap to open Developer options and enable it so Shizuku can start</string>
+    <string name="settings_adb_security_notification_text_usb_on">Open Developer options → Debugging → USB debugging (security settings)</string>
+    <string name="settings_adb_security_notification_text_usb_off">Open Developer options → enable USB debugging, then USB debugging (security settings)</string>
     <string name="settings_adb_security_notification_action">Open</string>
     <string name="settings_restore_adb_security_hint">USB debugging (security settings) is off; opened Developer options, please enable the toggle</string>
     <string name="doctor_fix_open_developer_options_failed">Could not open developer options</string>
