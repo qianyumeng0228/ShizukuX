@@ -160,10 +160,14 @@ object SceneRelayManager {
                 //    copies scene-daemon to /data/local/tmp/scene-daemon and leaves it running in
                 //    the background, which is what actually grants Scene its ADB permission.
                 //    cwd is the scene dir so the script's relative paths (./busybox) resolve.
+                //    stderr is merged into the stream (2>&1) so a chatty stderr cannot fill the
+                //    pipe buffer and deadlock the read; we never call waitFor()/exitValue() —
+                //    on some OEM builds (OPPO/Android 16) ShizukuProcess.exitValue() throws
+                //    IllegalArgumentException which rikka's waitFor(timeout) does not catch.
                 android.util.Log.w("SceneRelay", "about to call newProcess, pingBinder=${Shizuku.pingBinder()}")
                 val process = try {
                     Shizuku.newProcess(
-                        arrayOf("/system/bin/sh", "-c", "/system/bin/sh $UP_SCRIPT"),
+                        arrayOf("/system/bin/sh", "-c", "/system/bin/sh $UP_SCRIPT 2>&1"),
                         null,
                         SCENE_DIR
                     )
@@ -172,10 +176,7 @@ object SceneRelayManager {
                     throw e
                 }
                 android.util.Log.w("SceneRelay", "newProcess returned: $process")
-                val stdout = process.inputStream.bufferedReader().use { it.readText() }
-                val stderr = process.errorStream.bufferedReader().use { it.readText() }
-                process.waitFor()
-                val output = (stdout + stderr).trim()
+                val output = process.inputStream.bufferedReader().use { it.readText() }.trim()
                 android.util.Log.w("SceneRelay", "up.sh output: $output")
 
                 // 3) Verify the daemon actually went resident (the real source of ADB permission).
@@ -319,14 +320,13 @@ object SceneRelayManager {
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         try {
-            val w = Shizuku.newProcess(arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT"), null, SCENE_DIR)
+            val w = Shizuku.newProcess(arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT 2>&1"), null, SCENE_DIR)
             w.outputStream.write(upShContent.toByteArray(Charsets.UTF_8))
             w.outputStream.flush()
             w.outputStream.close()
             val wOut = w.inputStream.bufferedReader().use { it.readText() }
-            val wErr = w.errorStream.bufferedReader().use { it.readText() }
-            w.waitFor()
-            android.util.Log.w("SceneRelay", "write up.sh: out=$wOut err=$wErr")
+            try { w.waitFor() } catch (e: Throwable) { /* exit code optional */ }
+            android.util.Log.w("SceneRelay", "write up.sh: out=$wOut")
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: write up.sh failed: $e")
             return context.getString(R.string.scene_relay_prepare_failed)
@@ -334,14 +334,14 @@ object SceneRelayManager {
         return null
     }
 
-    /** Runs a command through a Shizuku shell process and returns its combined output. */
+    /** Runs a command through a Shizuku shell process and returns its combined output.
+     *  stderr is merged (2>&1) to avoid pipe-buffer deadlock; waitFor/exitValue are never used —
+     *  on OPPO/Android 16 ShizukuProcess.exitValue() throws IllegalArgumentException which rikka's
+     *  waitFor(timeout) does not catch. The merged stream reaching EOF is the exit signal. */
     private fun runShell(cmd: String): String {
         return try {
-            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, TMP)
-            val out = p.inputStream.bufferedReader().use { it.readText() }
-            val err = p.errorStream.bufferedReader().use { it.readText() }
-            p.waitFor()
-            out + err
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, TMP)
+            p.inputStream.bufferedReader().use { it.readText() }
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "runShell failed: cmd=$cmd err=${e.message}")
             ""
@@ -368,7 +368,7 @@ object SceneRelayManager {
                 ), null, null
             )
             val vOut = verify.inputStream.bufferedReader().use { it.readText() }
-            verify.waitFor()
+            try { verify.waitFor() } catch (e: Throwable) { /* exit code optional */ }
             vOut.lines().firstOrNull { it.isNotBlank() }?.trim()?.split(' ')?.first()?.orEmpty().orEmpty()
         } catch (e: Throwable) {
             ""
@@ -401,7 +401,7 @@ object SceneRelayManager {
                 ), null, null
             )
             val out = p.inputStream.bufferedReader().use { it.readText() }
-            p.waitFor()
+            try { p.waitFor() } catch (e: Throwable) { /* exit code optional */ }
             out.contains("YES")
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "isDaemonListening failed: ${e.message}")

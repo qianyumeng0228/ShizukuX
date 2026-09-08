@@ -115,10 +115,18 @@ object DiagnosticsExporter {
      * Runs a command through a Shizuku shell process and returns its combined output.
      *
      * Defensive on every axis: stdout and stderr are merged (`2>&1`) so a chatty stderr can never
-     * fill the pipe buffer and deadlock the sequential read; the read runs on a worker thread and
-     * the process is force-destroyed after 8s so a wedged command can't hang the export forever;
-     * any failure yields an "err:..." line instead of throwing, so one broken probe never kills
-     * the whole report.
+     * fill the pipe buffer and deadlock a sequential read; the read runs on a worker thread; a
+     * command that never finishes is force-destroyed after 8s so it can't hang the export
+     * forever; any failure yields an "err:..." line instead of throwing, so one broken probe
+     * never kills the whole report.
+     *
+     * NOTE: we deliberately never call waitFor()/exitValue() on the process. On some OEM builds
+     * (OPPO ColorOS, Android 16) ShizukuProcess.exitValue() throws IllegalArgumentException
+     * instead of IllegalThreadStateException when the child has not yet been reaped, and rikka's
+     * waitFor(timeout) only catches the latter — the exception escapes and turns every single
+     * probe into "err:IllegalArgumentException:process hasn't exited". Reading the merged stream
+     * to EOF is equivalent: the stream closes exactly when the child exits, so we get the full
+     * output (and implicitly know the process finished) without touching the buggy path.
      */
     private fun runShell(cmd: String): String {
         return try {
@@ -130,10 +138,18 @@ object DiagnosticsExporter {
                     ""
                 }
             }
-            if (!p.waitFor(8, java.util.concurrent.TimeUnit.SECONDS)) {
-                try { p.destroy() } catch (e: Throwable) { /* already dead */ }
+            try {
+                read.get(8, java.util.concurrent.TimeUnit.SECONDS).trim()
+            } catch (e: java.util.concurrent.TimeoutException) {
+                try { p.destroy() } catch (e2: Throwable) { /* already dead */ }
+                // After destroy the stream may still drain whatever is buffered; give it a
+                // short last chance, then fall back to a readable timeout marker.
+                try {
+                    read.get(3, java.util.concurrent.TimeUnit.SECONDS).trim()
+                } catch (e2: Throwable) {
+                    "(command timed out after 8s and was killed)"
+                }
             }
-            read.get(3, java.util.concurrent.TimeUnit.SECONDS).trim()
         } catch (e: Throwable) {
             "err:${e.javaClass.simpleName}:${e.message}"
         }
