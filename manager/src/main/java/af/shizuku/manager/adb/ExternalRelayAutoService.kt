@@ -57,9 +57,21 @@ class ExternalRelayAutoService : AccessibilityService() {
     @Volatile
     private var lastBreventTriggerMs = 0L
 
+    /** One-shot flags: after a successful auto-activation the same app is not re-triggered for
+     *  the rest of this service session (Brevent's window keeps emitting events while it is
+     *  foreground, which would otherwise re-fire the toast every debounce window). Reset on
+     *  service reconnect. */
+    @Volatile
+    private var breventTriggeredOnce = false
+
+    @Volatile
+    private var sceneTriggeredOnce = false
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         isRunning.set(true)
+        breventTriggeredOnce = false
+        sceneTriggeredOnce = false
         Timber.tag(TAG).d("External relay auto-activation service connected")
         logLine("onServiceConnected")
     }
@@ -104,9 +116,12 @@ class ExternalRelayAutoService : AccessibilityService() {
 
     /**
      * Scene: trigger only when the ADB-mode code dialog is actually on screen (its text mentions
-     * the up.sh command). Opening Scene normally must not fire activation.
+     * the up.sh command). Opening Scene normally must not fire activation. After one successful
+     * activation the flag is set and the dialog (which stays up until the user acts) no longer
+     * re-fires.
      */
     private fun handleSceneWindow() {
+        if (sceneTriggeredOnce) return
         val now = System.currentTimeMillis()
         if (now - lastSceneTriggerMs < DEBOUNCE_MS) return
 
@@ -121,24 +136,37 @@ class ExternalRelayAutoService : AccessibilityService() {
         Toast.makeText(applicationContext, R.string.external_relay_auto_scene_detected, Toast.LENGTH_SHORT).show()
         serviceScope.launch {
             SceneRelayManager.startSceneAdbActivation(applicationContext, this, silent = true)
+            // Confirm the daemon actually went resident before latching the one-shot flag.
+            delay(2000)
+            if (SceneRelayManager.queryDaemonPid().isNotEmpty()) {
+                sceneTriggeredOnce = true
+            }
         }
     }
 
     /**
      * Brevent: when the app opens, wait a moment for it to write its script, then run the
-     * activation chain (which itself skips if the daemon is already resident).
+     * activation chain (which itself skips if the daemon is already resident). One-shot: once
+     * the daemon is resident the flag latches and the constant window events Brevent emits while
+     * foreground no longer re-fire the toast.
      */
     private fun handleBreventWindow() {
+        if (breventTriggeredOnce) return
         val now = System.currentTimeMillis()
         if (now - lastBreventTriggerMs < DEBOUNCE_MS) return
         lastBreventTriggerMs = now
 
         serviceScope.launch {
+            toastOnMain(R.string.external_relay_auto_brevent_detected)
             delay(BREVENT_SCRIPT_WAIT_MS)
             Timber.tag(TAG).i("Brevent opened; auto-activating")
             logLine("BREVENT detected -> auto-activate")
-            toastOnMain(R.string.external_relay_auto_brevent_detected)
             BreventRelayManager.activateBrevent(applicationContext, this, silent = true)
+            // Confirm the daemon actually went resident before latching the one-shot flag.
+            delay(2000)
+            if (BreventRelayManager.queryDaemonPid().isNotEmpty()) {
+                breventTriggeredOnce = true
+            }
         }
     }
 

@@ -287,8 +287,9 @@ object SceneRelayManager {
         }
     }
 
-    /** First PID of a resident scene-daemon, or an empty string when not running. */
-    private fun queryDaemonPid(): String {
+    /** First PID of a resident scene-daemon, or an empty string when not running. Blocking IPC;
+     *  call from an IO thread/coroutine, never the main thread. */
+    fun queryDaemonPid(): String {
         return try {
             val verify = Shizuku.newProcess(
                 arrayOf("sh", "-c", "pgrep -f scene-daemon"), null, null

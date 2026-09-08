@@ -146,9 +146,9 @@ object BreventRelayManager {
      * Returns the first PID of a resident Brevent service, or an empty string if not running.
      * Matches ps output by argv[0] (brevent_daemon / brevent_server) and parses the PID column —
      * the comm-based pgrep -x path misses both daemons ("brevent" / "main").
-     * Runs on the IO dispatcher (blocking IPC); callers must not touch the main thread.
+     * Blocking IPC; call from an IO thread/coroutine, never the main thread.
      */
-    private suspend fun queryDaemonPid(): String {
+    fun queryDaemonPid(): String {
         return try {
             // The grep process is created after ps snapshots, so it never pollutes the output;
             // the wrapping sh has argv[0]="sh" and is filtered out by the regex below.
