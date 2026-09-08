@@ -120,28 +120,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Auto-restore developer options on boot. Requires WRITE_SECURE_SETTINGS (an adb-granted
-        // appop that survives reboots); without it the toggle still persists but does nothing, so
-        // surface the permission state instead of failing silently.
-        findPreference<TwoStatePreference>("auto_restore_developer_options")?.apply {
-            isChecked = ShizukuSettings.isAutoRestoreDeveloperOptionsEnabled()
-            setOnPreferenceChangeListener { _, newValue ->
-                val enable = newValue as Boolean
-                ShizukuSettings.setAutoRestoreDeveloperOptionsEnabled(enable)
-                if (enable && context != null &&
-                    context!!.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) !=
-                    android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) {
-                    Toast.makeText(
-                        context,
-                        R.string.settings_auto_restore_dev_options_no_permission,
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-                true
-            }
-        }
-
         findPreference<Preference>(KEY_REPORT_BUG)?.setOnPreferenceClickListener {
             BugReportDialog().show(parentFragmentManager, "BugReportDialog")
             true

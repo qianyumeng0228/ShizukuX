@@ -25,6 +25,13 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_server_restart" />
 
+        <SwitchPreferenceCompat
+            android:key="auto_restore_developer_options"
+            android:summary="@string/settings_auto_restore_dev_options_summary"
+            android:title="@string/settings_auto_restore_dev_options"
+            android:icon="@drawable/ic_settings_outline_24"
+            android:defaultValue="false" />
+
         <Preference
             android:key="restore_developer_options_now"
             android:title="@string/settings_restore_dev_options_now"
