@@ -578,6 +578,13 @@
     <string name="settings_activity_log_empty"><![CDATA[尚未记录任何活动。]]></string>
     <string name="settings_enable_activity_log"><![CDATA[启用活动日志]]></string>
     <string name="settings_enable_activity_log_summary"><![CDATA[记录并在主屏幕上显示 Shizuku API 调用和事件。]]></string>
+    <string name="settings_export_diagnostics"><![CDATA[导出诊断信息]]></string>
+    <string name="settings_export_diagnostics_summary"><![CDATA[一键收集设备与服务端状态，复制或分享给开发者排查问题]]></string>
+    <string name="export_diagnostics_title"><![CDATA[诊断信息]]></string>
+    <string name="export_diagnostics_share"><![CDATA[分享]]></string>
+    <string name="export_diagnostics_copy"><![CDATA[复制全部]]></string>
+    <string name="export_diagnostics_copied"><![CDATA[已复制到剪贴板]]></string>
+    <string name="export_diagnostics_failed"><![CDATA[收集诊断信息失败]]></string>
     <string name="settings_show_activity_log_home"><![CDATA[显示活动日志]]></string>
     <string name="settings_home_visibility"><![CDATA[主屏幕可见性]]></string>
     <string name="settings_update_app_database"><![CDATA[更新应用数据库]]></string>

@@ -1,13 +1,17 @@
 package af.shizuku.manager.settings
 import af.shizuku.manager.activitylog.ActivityLogActivity
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.preference.Preference
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.utils.CustomTabsHelper
+import af.shizuku.manager.utils.DiagnosticsExporter
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.home.disablePairingAssistant
 import af.shizuku.manager.home.enablePairingAssistant
@@ -80,6 +84,30 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        // One-tap diagnostics export: collect device/server/settings state on IO, then show a
+        // dialog to copy or share (e.g. to QQ) — no adb/logcat permission required.
+        findPreference<Preference>("export_diagnostics")?.setOnPreferenceClickListener {
+            // Capture the context up front; requireContext() inside the IO coroutine would throw
+            // if the fragment got detached while collecting.
+            val ctx = context ?: return@setOnPreferenceClickListener true
+            lifecycleScope.launch {
+                val report = withContext(Dispatchers.IO) {
+                    try {
+                        DiagnosticsExporter.collect(ctx)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+                if (!isAdded) return@launch
+                if (report != null) {
+                    showDiagnosticsDialog(report)
+                } else {
+                    Toast.makeText(ctx, R.string.export_diagnostics_failed, Toast.LENGTH_SHORT).show()
+                }
+            }
+            true
+        }
+
         findPreference<TwoStatePreference>(KEY_ENABLE_ACTIVITY_LOG)?.setOnPreferenceChangeListener { _, _ ->
             ShizukuSettings.syncAllPlusFeaturesToServer()
             true
@@ -92,9 +120,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
 
         findPreference<TwoStatePreference>(KEY_LEGACY_PAIRING)?.apply {
             isVisible = !EnvironmentUtils.isTelevision()
-        }
-
-        // Auto pairing: mirrors the pairing-assistant accessibility service. Turning it on
+        }        // Auto pairing: mirrors the pairing-assistant accessibility service. Turning it on
         // enables the service directly when WRITE_SECURE_SETTINGS is available (same linkage
         // as the AI core switch in the feature hub), otherwise falls back to the guided
         // accessibility-enable dialog.
@@ -182,5 +208,26 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                 }
             }
         }
+    }
+
+    private fun showDiagnosticsDialog(report: String) {
+        val ctx = requireContext()
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.export_diagnostics_title)
+            .setMessage(report)
+            .setPositiveButton(R.string.export_diagnostics_share) { _, _ ->
+                val send = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, report)
+                }
+                startActivity(Intent.createChooser(send, ctx.getString(R.string.export_diagnostics_share)))
+            }
+            .setNeutralButton(R.string.export_diagnostics_copy) { _, _ ->
+                val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                cm.setPrimaryClip(ClipData.newPlainText("ShizukuX Diagnostics", report))
+                Toast.makeText(ctx, R.string.export_diagnostics_copied, Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 }

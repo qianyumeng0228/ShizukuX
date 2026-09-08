@@ -27,6 +27,12 @@
             android:defaultValue="true" />
 
         <Preference
+            android:key="export_diagnostics"
+            android:title="@string/settings_export_diagnostics"
+            android:summary="@string/settings_export_diagnostics_summary"
+            android:icon="@drawable/ic_science_24" />
+
+        <Preference
             android:key="activity_log"
             android:title="@string/settings_activity_log"
             android:icon="@drawable/ic_history_24"
