@@ -158,12 +158,18 @@ class ServiceDoctorActivity : AppBarActivity() {
             if (!adbOk) tips.add("• " + getString(R.string.doctor_tip_xiaomi))
         }
 
-        // 6b. Oppo/OnePlus Restricted ADB (ColorOS/OxygenOS)
+        // 6b. Oppo/OnePlus Restricted ADB (ColorOS/OxygenOS). Same real permission check as the
+        // home screen's status card: the service may be running while ColorOS's permission monitor
+        // still blocks GRANT_RUNTIME_PERMISSIONS, so "running" alone would falsely report OK.
         if (EnvironmentUtils.isOppo() || EnvironmentUtils.isOnePlus()) {
-            val adbOk = isRunning
+            val adbOk = try {
+                Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } catch (e: Throwable) {
+                false
+            }
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_permission, ""),
-                if (adbOk) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_manual_check),
+                if (adbOk) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_limited),
                 adbOk,
                 onFix = if (adbOk) null else { { showAdbPermissionGuide() } }
             ))
