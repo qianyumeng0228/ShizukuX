@@ -1,7 +1,6 @@
 package af.shizuku.manager.widget
 
 import android.content.Context
-import android.content.Intent
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.ViewGroup

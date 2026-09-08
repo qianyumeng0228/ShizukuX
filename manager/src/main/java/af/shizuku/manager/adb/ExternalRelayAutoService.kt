@@ -4,7 +4,6 @@ import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,9 +72,7 @@ class ExternalRelayAutoService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        val auto = ShizukuSettings.getExternalRelayAuto()
-        logLine("event pkg=${event?.packageName} type=${event?.eventType} auto=$auto")
-        if (!auto) return
+        if (!ShizukuSettings.getExternalRelayAuto()) return
         if (event?.packageName == null) return
 
         val pkg = event.packageName.toString()
@@ -155,7 +152,12 @@ class ExternalRelayAutoService : AccessibilityService() {
     /** Bounded text collection from a node tree; caps length so giant lists don't stall us. */
     private fun collectText(root: AccessibilityNodeInfo, budget: Int = 2048): String {
         val sb = StringBuilder()
-        collectTextInternal(root, sb, budget)
+        try {
+            collectTextInternal(root, sb, budget)
+        } finally {
+            // rootInActiveWindow() nodes are caller-owned; recycle to avoid leaking the parcel.
+            root.recycle()
+        }
         return sb.toString()
     }
 

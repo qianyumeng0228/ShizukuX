@@ -94,12 +94,14 @@ object SceneRelayManager {
                 // 0) Already resident? Don't respawn a duplicate daemon.
                 val runningPid = queryDaemonPid()
                 if (runningPid.isNotEmpty()) {
-                    showResult(
-                        context,
-                        R.string.scene_relay_result_title,
-                        context.getString(R.string.scene_relay_already_running, runningPid),
-                        silent
-                    )
+                    withContext(Dispatchers.Main) {
+                        showResult(
+                            context,
+                            R.string.scene_relay_result_title,
+                            context.getString(R.string.scene_relay_already_running, runningPid),
+                            silent
+                        )
+                    }
                     return@launch
                 }
 
@@ -107,7 +109,9 @@ object SceneRelayManager {
                 //    been opened once; Scene's never is, so extract it from Scene's own APK here.
                 val prepareError = prepareActivationFiles(context)
                 if (prepareError != null) {
-                    showResult(context, R.string.scene_relay_result_title, prepareError, silent)
+                    withContext(Dispatchers.Main) {
+                        showResult(context, R.string.scene_relay_result_title, prepareError, silent)
+                    }
                     return@launch
                 }
 
