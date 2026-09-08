@@ -78,12 +78,6 @@
             android:defaultValue="false" />
 
         <Preference
-            android:key="restore_developer_options_now"
-            android:title="@string/settings_restore_dev_options_now"
-            android:summary="@string/settings_restore_dev_options_now_summary"
-            android:icon="@drawable/ic_settings_suggest_24" />
-
-        <Preference
             android:key="reset_adb_keys"
             android:title="@string/settings_reset_adb_keys"
             android:summary="@string/settings_reset_adb_keys_summary"

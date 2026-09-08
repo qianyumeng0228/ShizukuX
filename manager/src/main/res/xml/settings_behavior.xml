@@ -25,6 +25,12 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_server_restart" />
 
+        <Preference
+            android:key="restore_developer_options_now"
+            android:title="@string/settings_restore_dev_options_now"
+            android:summary="@string/settings_restore_dev_options_now_summary"
+            android:icon="@drawable/ic_settings_outline_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
