@@ -3,9 +3,11 @@ package af.shizuku.manager.receiver
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.SystemProperties
 import android.provider.Settings
 import af.shizuku.manager.database.ShizukuProcessUtils
+import af.shizuku.manager.utils.EnvironmentUtils
 import rikka.shizuku.Shizuku
 import timber.log.Timber
 
@@ -18,7 +20,9 @@ import timber.log.Timber
  * the existing boot-time Shizuku auto-start (AdbStartWorker) able to discover the port again.
  *
  * All writes are best-effort and idempotent; without the permission this is a no-op returning
- * false so callers can surface the permission state instead of failing silently.
+ * false so callers can surface the permission state instead of failing silently. All keys are
+ * AOSP standard Settings.Global entries, so the restore itself is vendor-neutral; only the
+ * "USB debugging (security settings)" detection below is Xiaomi-specific.
  */
 object DeveloperOptionsRestorer {
 
@@ -48,8 +52,13 @@ object DeveloperOptionsRestorer {
      * `persist.security.adbinput` system property (not a Settings key); MIUI/HyperOS resets it on
      * reboot and the shell uid cannot write it back (SELinux blocks `setprop` for non-root), so
      * without root this can only ever be *read* to guide the user — never automated.
+     *
+     * The toggle only exists on Xiaomi-family ROMs. On any other vendor (OPPO/ColorOS, vivo/
+     * OriginOS, Samsung One UI, …) there is nothing to restore, so report it as satisfied to
+     * avoid a false "needs attention" notification on devices that never had this switch.
      */
     fun isAdbSecuritySettingEnabled(): Boolean {
+        if (!EnvironmentUtils.isXiaomi()) return true
         return runCatching {
             SystemProperties.get("persist.security.adbinput", "") == "1"
         }.getOrDefault(false)
@@ -59,8 +68,9 @@ object DeveloperOptionsRestorer {
      * Turns Wi-Fi on so the wireless-debugging toggle can stick. Third-party apps cannot flip
      * Wi-Fi on Android 13+ (`WifiManager.setWifiEnabled` is a no-op for non-system apps), so this
      * routes `svc wifi enable` through Shizuku's privileged shell-uid process — the same channel
-     * used by the stop-service button's `pkill`. When the Shizuku binder isn't up yet (first boot
-     * pass) this is a no-op returning false; callers fall back to the delayed retry pass.
+     * used by the stop-service button's `pkill`. `svc wifi` is an AOSP shell command present on
+     * every vendor ROM. When the Shizuku binder isn't up yet (first boot pass) this is a no-op
+     * returning false; callers fall back to the delayed retry pass.
      */
     fun ensureWifiEnabled(): Boolean {
         return runCatching {
@@ -80,6 +90,11 @@ object DeveloperOptionsRestorer {
      * only sticks while Wi-Fi is up, so when the Shizuku binder is available this first enables
      * Wi-Fi (see [ensureWifiEnabled]) and gives the Wi-Fi stack a short moment before writing
      * `adb_wifi_enabled`.
+     *
+     * Vendor notes: the base keys (development_settings_enabled / adb_enabled) are standard AOSP
+     * and apply to every ROM (ColorOS/OriginOS/One UI …). Wireless debugging only exists on
+     * Android 11+ (`adb_wifi_enabled`) and `adb_allowed_connection_time` (the "revoke ADB
+     * authorization after" timeout) only on Android 14+, so both are written behind SDK gates.
      * @return true when the writes were attempted (permission present); false when the app
      *         lacks WRITE_SECURE_SETTINGS. Throws are swallowed and reported via Timber.
      */
@@ -92,12 +107,16 @@ object DeveloperOptionsRestorer {
             val cr = context.contentResolver
             Settings.Global.putInt(cr, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 1)
             Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-            Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            }
             if (ensureWifiEnabled()) {
                 // The toggle is rejected while the Wi-Fi stack is still coming up.
                 Thread.sleep(1500L)
             }
-            Settings.Global.putInt(cr, KEY_ADB_WIFI_ENABLED, 1)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                Settings.Global.putInt(cr, KEY_ADB_WIFI_ENABLED, 1)
+            }
             Timber.tag("DeveloperOptionsRestorer").i("Developer options / USB debugging / wireless debugging restored")
             true
         }.getOrElse { e ->

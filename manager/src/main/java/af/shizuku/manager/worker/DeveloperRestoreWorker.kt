@@ -40,10 +40,15 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
         // back to 0 shortly after. Reading immediately would see our own just-written 1 and miss
         // the failure, so wait for the value to settle before deciding whether to notify.
         delay(8_000)
-        if (!DeveloperOptionsRestorer.isWirelessDebuggingEnabled(context)) {
+        // Wireless debugging only exists on Android 11+; on older ROMs skip the check entirely.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            !DeveloperOptionsRestorer.isWirelessDebuggingEnabled(context)
+        ) {
             Timber.tag("DeveloperRestoreWorker").i("Wireless debugging did not stick after restore; notifying user")
             showWirelessNeedsWifiNotification(context)
         }
+        // isAdbSecuritySettingEnabled() itself only inspects Xiaomi-family devices; on other
+        // vendors it reports satisfied so no false notification is posted.
         if (!DeveloperOptionsRestorer.isAdbSecuritySettingEnabled()) {
             Timber.tag("DeveloperRestoreWorker")
                 .i("Xiaomi USB-debugging security setting did not survive reboot; notifying user")
