@@ -84,12 +84,13 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // One-tap diagnostics export: collect device/server/settings state on IO, then show a
+        // One-tap diagnostics export: collect device/server/shell state on IO, then show a
         // dialog to copy or share (e.g. to QQ) — no adb/logcat permission required.
         findPreference<Preference>("export_diagnostics")?.setOnPreferenceClickListener {
             // Capture the context up front; requireContext() inside the IO coroutine would throw
             // if the fragment got detached while collecting.
             val ctx = context ?: return@setOnPreferenceClickListener true
+            Toast.makeText(ctx, R.string.export_diagnostics_collecting, Toast.LENGTH_SHORT).show()
             lifecycleScope.launch {
                 val report = withContext(Dispatchers.IO) {
                     try {
@@ -230,6 +231,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_STREAM, uri)
                         putExtra(Intent.EXTRA_TEXT, report.take(500))
+                        clipData = ClipData.newUri(ctx.contentResolver, "ShizukuX Diagnostics", uri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
                     startActivity(Intent.createChooser(send, ctx.getString(R.string.export_diagnostics_share)))

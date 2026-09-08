@@ -111,16 +111,29 @@ object DiagnosticsExporter {
         return sb.toString()
     }
 
-    /** Runs a command through a Shizuku shell process and returns its combined output. Defensive:
-     *  any failure yields an "err:..." line instead of throwing, so one broken probe never kills
-     *  the whole report. */
+    /**
+     * Runs a command through a Shizuku shell process and returns its combined output.
+     *
+     * Defensive on every axis: stdout and stderr are merged (`2>&1`) so a chatty stderr can never
+     * fill the pipe buffer and deadlock the sequential read; the read runs on a worker thread and
+     * the process is force-destroyed after 8s so a wedged command can't hang the export forever;
+     * any failure yields an "err:..." line instead of throwing, so one broken probe never kills
+     * the whole report.
+     */
     private fun runShell(cmd: String): String {
         return try {
-            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            val out = p.inputStream.bufferedReader().use { it.readText() }
-            val err = p.errorStream.bufferedReader().use { it.readText() }
-            p.waitFor()
-            (out + err).trim()
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, null)
+            val read = java.util.concurrent.CompletableFuture.supplyAsync {
+                try {
+                    p.inputStream.bufferedReader().use { it.readText() }
+                } catch (e: Throwable) {
+                    ""
+                }
+            }
+            if (!p.waitFor(8, java.util.concurrent.TimeUnit.SECONDS)) {
+                try { p.destroy() } catch (e: Throwable) { /* already dead */ }
+            }
+            read.get(3, java.util.concurrent.TimeUnit.SECONDS).trim()
         } catch (e: Throwable) {
             "err:${e.javaClass.simpleName}:${e.message}"
         }
@@ -149,7 +162,13 @@ object DiagnosticsExporter {
         block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
         block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
         block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")
-        block("Try running daemon (2s, captures stderr)", "timeout 2 /data/local/tmp/scene-daemon 2>&1 | head -20; echo \"exit=$?\"")
+        // Trial-run the daemon for 2s and capture its real stderr + exit code. exit=124 means the
+        // daemon stayed alive until timeout killed it (it CAN run); any other code plus a stderr
+        // message (missing library, exec format error, ...) shows exactly why it dies instantly.
+        // If the daemon is already resident this reports its "address already in use" — which is
+        // itself the answer (it IS running). No lasting side effect: output goes to a temp file
+        // that is removed right after, and timeout reaps the process.
+        block("Daemon trial run (2s, real stderr + exit code)", "timeout 2 /data/local/tmp/scene-daemon > /data/local/tmp/scene/daemon-trial.log 2>&1; ec=\$?; cat /data/local/tmp/scene/daemon-trial.log 2>/dev/null; echo \"trial_exit=\$ec (124 = daemon alive until timeout)\"; rm -f /data/local/tmp/scene/daemon-trial.log")
         block("Logcat (SX_DEBUG / SceneRelay / FATAL / scene)", "logcat -d -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|ShizukuX:' | tail -150")
         block("dmesg tail", "dmesg 2>&1 | tail -10")
         return sb.toString()

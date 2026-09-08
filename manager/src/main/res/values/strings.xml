@@ -484,6 +484,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="export_diagnostics_copy">Copy all</string>
     <string name="export_diagnostics_copied">Copied to clipboard</string>
     <string name="export_diagnostics_failed">Failed to collect diagnostics</string>
+    <string name="export_diagnostics_collecting">Collecting diagnostics…</string>
     <string name="settings_show_activity_log_home">Show Activity Log</string>
     <string name="settings_home_visibility">Home screen visibility</string>
     <string name="settings_update_app_database">Update app database</string>
