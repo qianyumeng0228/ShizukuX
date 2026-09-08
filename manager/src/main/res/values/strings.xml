@@ -112,6 +112,50 @@
     <string name="home_adb_title"><![CDATA[Start by connecting to a computer]]></string>
     <string name="home_adb_description"><![CDATA[For devices without root, you need to use adb to start Shizuku (requires computer connection). This process needs to be repeated every time the device is restarted. Please <b><a href=\"%1$s\">read the help</a></b>.]]></string>
     <string name="home_adb_button_view_help">Read help</string>
+    <string name="home_adb_button_go_settings">Open settings</string>
+    <string name="dialog_enable_auto_pairing_title">Enable auto pairing?</string>
+    <string name="dialog_enable_auto_pairing_message">With the pairing assistant enabled, the pairing code will be read and entered automatically during wireless pairing. Enable it?</string>
+    <string name="home_wireless_adb_one_tap_button">One-tap start (Easy mode)</string>
+    <string name="accessibility_button_one_tap">One-tap start</string>
+    <string name="dialog_one_tap_requires_assistant_title">Pairing assistant required</string>
+    <string name="dialog_one_tap_requires_assistant_message">One-tap start needs the pairing assistant (accessibility service) to complete pairing automatically: it opens wireless debugging, taps the pairing button and enters the pairing code for you. Enable it now?</string>
+    <string name="starter_step_auto_pairing_hint">Auto pairing in progress…</string>
+    <string name="starter_step_enable_wireless_auto_hint">Enabling wireless debugging automatically…</string>
+    <string name="one_tap_step_wireless">Enable wireless debugging</string>
+    <string name="one_tap_step_pairing">Pair device</string>
+    <string name="one_tap_step_auth">Authorize ADB</string>
+    <string name="one_tap_step_start">Start service</string>
+    <string name="one_tap_step_complete">Done</string>
+    <string name="one_tap_step_wireless_running">Checking wireless debugging…</string>
+    <string name="one_tap_step_wireless_auto">Enabling wireless debugging automatically…</string>
+    <string name="one_tap_step_wireless_done">Wireless debugging enabled</string>
+    <string name="one_tap_step_wireless_manual">Enable wireless debugging in developer options, then tap “Done”</string>
+    <string name="one_tap_step_pairing_running">Pairing automatically…</string>
+    <string name="one_tap_step_pairing_done">Paired</string>
+    <string name="one_tap_step_pairing_manual">Complete pairing on the wireless debugging page; the flow continues automatically</string>
+    <string name="one_tap_step_auth_running">Connecting and authorizing…</string>
+    <string name="one_tap_step_auth_done">ADB authorized</string>
+    <string name="one_tap_step_start_running">Starting Shizuku…</string>
+    <string name="one_tap_step_complete_desc">Shizuku is running via wireless debugging</string>
+    <string name="adb_permission_guide_title">Fix restricted ADB permissions</string>
+    <string name="adb_permission_guide_xiaomi"><![CDATA[ADB permission is restricted by the system. Please enable:
+
+1. Developer options → USB debugging
+2. Developer options → USB debugging (Security settings) [Xiaomi]
+
+Return here and retry afterwards.]]></string>
+    <string name="adb_permission_guide_generic"><![CDATA[ADB permission is restricted by the system. Please enable:
+
+Developer options → USB debugging
+
+Return here and retry afterwards.]]></string>
+    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/OnePlus may restrict ADB via the permission monitor. Please go to Developer options and handle the permission monitor.
+
+If there is no permission monitor entry, switch the device language to English, then find and turn off "Disable system optimization" in Developer options.]]></string>
+    <string name="adb_permission_guide_go_developer">Go to developer options</string>
+    <string name="settings_auto_pairing">Auto pairing</string>
+    <string name="settings_auto_pairing_summary">Enable the pairing assistant to read and enter wireless-debugging pairing codes automatically</string>
+    <string name="doctor_fix_open_developer_options_failed">Could not open developer options</string>
     <string name="home_adb_button_view_command">View command</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* There are some other considerations, please confirm that you have read the help first.]]></string>
     <string name="home_adb_dialog_view_command_copy_button">Copy</string>
@@ -973,7 +1017,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="settings_update_channel_category">Release Channel</string>
     <string name="settings_update_channel_title">Update channel</string>
     <string name="update_channel_stable">Stable</string>
-    <string name="update_channel_dev">Development / Pre-release</string>
+    <string name="update_channel_dev">Development</string>
     <string name="update_channel_dev_warning_title">Switch to Dev channel?</string>
     <string name="update_channel_dev_warning_message">Development and pre-release builds from qianyumeng0228/ShizukuX may contain bugs, crashes, or breaking changes. Only use this if you want to test new features early.\n\nYou can switch back to Stable at any time.</string>
     <string name="settings_update_manual_category">Manual Update</string>

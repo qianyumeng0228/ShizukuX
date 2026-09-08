@@ -281,7 +281,7 @@ public class ShizukuSettings {
     public static final String WALLPAPER_THEME_ORIGINAL = "original";
 
     public static String getWallpaperTheme() {
-        return getPreferences().getString(Keys.KEY_WALLPAPER_THEME, WALLPAPER_THEME_WHITE_MIKU);
+        return getPreferences().getString(Keys.KEY_WALLPAPER_THEME, WALLPAPER_THEME_ORIGINAL);
     }
 
     public static void setWallpaperTheme(String value) {
@@ -1189,7 +1189,16 @@ public class ShizukuSettings {
 
     /** "stable" (default) or "dev" */
     public static String getUpdateChannel() {
-        return getPreferences().getString(Keys.KEY_UPDATE_CHANNEL, "stable");
+        return getPreferences().getString(Keys.KEY_UPDATE_CHANNEL, defaultUpdateChannel());
+    }
+
+    /**
+     * Channel used before the user ever picks one. Pre-release builds (version name contains
+     * ".k") default to the development channel so they can see their own pre-release updates;
+     * stable builds (".r" or anything else) default to the stable channel.
+     */
+    private static String defaultUpdateChannel() {
+        return BuildConfig.VERSION_NAME.contains(".k") ? "dev" : "stable";
     }
 
     public static void setUpdateChannel(String channel) {

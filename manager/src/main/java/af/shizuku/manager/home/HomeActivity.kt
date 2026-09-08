@@ -62,6 +62,7 @@ import rikka.recyclerview.addEdgeSpacing
 import rikka.recyclerview.addItemSpacing
 import rikka.recyclerview.fixEdgeEffect
 import rikka.shizuku.Shizuku
+import af.shizuku.manager.receiver.ShizukuReceiverStarter
 
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
@@ -215,6 +216,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                             .setMessage(R.string.dialog_stop_message)
                             .setPositiveButton(android.R.string.ok) { _, _ ->
                                 ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                                ShizukuReceiverStarter.killServerProcess()
                                 runCatching { Shizuku.exit() }
                             }
                             .setNegativeButton(android.R.string.cancel, null)

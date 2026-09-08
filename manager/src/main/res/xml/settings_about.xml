@@ -30,7 +30,6 @@
             android:icon="@drawable/ic_science_24"
             android:entries="@array/update_channel_entries"
             android:entryValues="@array/update_channel_values"
-            android:defaultValue="stable"
             android:dependency="auto_update_enabled" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>

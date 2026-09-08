@@ -31,6 +31,7 @@ import af.shizuku.manager.databinding.ItemDoctorCheckBinding
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
+import af.shizuku.manager.home.showAdbPermissionGuide
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
 import io.sentry.Sentry
@@ -142,24 +143,30 @@ class ServiceDoctorActivity : AppBarActivity() {
             onFix = if (!isAccessibilityEnabled) { { SettingsPage.Accessibility.launch(this) } } else null
         ))
 
-        // 6. Xiaomi Restricted ADB
+        // 6. Xiaomi Restricted ADB — if the server is already running it was started through
+        // adb (or root), so the ADB permission is demonstrably usable; otherwise the switch
+        // list is shown so the user can open the exact developer-options toggles.
         if (EnvironmentUtils.isXiaomi()) {
+            val adbOk = isRunning
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_permission, ""),
-                getString(R.string.doctor_status_limited),
-                false
+                if (adbOk) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_limited),
+                adbOk,
+                onFix = if (adbOk) null else { { showAdbPermissionGuide() } }
             ))
-            tips.add("• " + getString(R.string.doctor_tip_xiaomi))
+            if (!adbOk) tips.add("• " + getString(R.string.doctor_tip_xiaomi))
         }
 
         // 6b. Oppo/OnePlus Restricted ADB (ColorOS/OxygenOS)
         if (EnvironmentUtils.isOppo() || EnvironmentUtils.isOnePlus()) {
+            val adbOk = isRunning
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_permission, ""),
-                getString(R.string.doctor_status_manual_check),
-                false
+                if (adbOk) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_manual_check),
+                adbOk,
+                onFix = if (adbOk) null else { { showAdbPermissionGuide() } }
             ))
-            tips.add("• " + getString(R.string.doctor_tip_oppo_permission))
+            if (!adbOk) tips.add("• " + getString(R.string.doctor_tip_oppo_permission))
         }
 
         // 6c. TCL Device Polish

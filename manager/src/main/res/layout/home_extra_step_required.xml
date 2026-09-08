@@ -56,4 +56,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@android:id/text1" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@android:id/button2"
+        style="@style/CardButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:text="@string/home_adb_button_go_settings"
+        android:textColor="?colorOnPrimaryContainer"
+        android:contentDescription="@string/home_adb_button_go_settings"
+        app:backgroundTint="?colorPrimaryContainer"
+        app:icon="@drawable/ic_settings_outline_24"
+        app:iconTint="?colorOnPrimaryContainer"
+        app:layout_constraintStart_toEndOf="@android:id/button1"
+        app:layout_constraintTop_toBottomOf="@android:id/text1" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

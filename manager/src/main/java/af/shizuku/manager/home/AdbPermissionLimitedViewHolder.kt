@@ -24,6 +24,9 @@ class AdbPermissionLimitedViewHolder(private val binding: HomeExtraStepRequiredB
 
     init {
         binding.button1.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.ADB_PERMISSION.get()) }
+        binding.button2.setOnClickListener { v: View ->
+            v.context.showAdbPermissionGuide()
+        }
     }
 
     override fun onBind() {

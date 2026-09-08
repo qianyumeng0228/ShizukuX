@@ -22,8 +22,30 @@ sealed class SettingsPage(
     ) : SettingsPage(action, fragmentArg) {
 
         object Options : Developer()
-        object HighlightUsbDebugging : Developer(fragmentArg = "enable_adb")
-        object HighlightWirelessDebugging : Developer(fragmentArg = "toggle_adb_wireless")
+
+        /**
+         * Developer-options highlight pages. The base [Developer] uses the default task-clearing
+         * flags (NEW_TASK|NO_HISTORY|CLEAR_TASK|EXCLUDE_FROM_RECENTS), which force-cold-start the
+         * Settings app and can recreate the caller's activity on return — that shows as a flash
+         * when the user taps "wireless debugging" / "USB debugging" from the pairing dialog after
+         * granting ADB. These two build the intent with only NEW_TASK + the fragment arg, so an
+         * existing Settings task is reused and the caller stays alive.
+         */
+        object HighlightUsbDebugging : Developer(fragmentArg = "enable_adb") {
+            override fun buildIntent(context: Context): Intent =
+                Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    putExtra(":settings:fragment_args_key", "enable_adb")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+        }
+
+        object HighlightWirelessDebugging : Developer(fragmentArg = "toggle_adb_wireless") {
+            override fun buildIntent(context: Context): Intent =
+                Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+        }
 
         object WirelessDebugging : Developer() {
             // Brands that ship MIUI/HyperOS and cannot handle ACTION_QS_TILE_PREFERENCES

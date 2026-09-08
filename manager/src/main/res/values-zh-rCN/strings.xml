@@ -46,6 +46,50 @@
     <string name="home_adb_title"><![CDATA[通过电脑启动（使用 ADB）]]></string>
     <string name="home_adb_description"><![CDATA[没有 Root 的设备需要通过 ADB 启动 Shizuku（需要连接电脑）。每次设备重启后都需要重新启动。请<b><a href=\"%1$s\">阅读帮助</a></b>。]]></string>
     <string name="home_adb_button_view_help">阅读帮助</string>
+    <string name="home_adb_button_go_settings"><![CDATA[去设置]]></string>
+    <string name="dialog_enable_auto_pairing_title"><![CDATA[开启自动配对？]]></string>
+    <string name="dialog_enable_auto_pairing_message"><![CDATA[启用配对助手后，无线配对时将自动读取并输入配对码，无需手动输入。是否开启？]]></string>
+    <string name="home_wireless_adb_one_tap_button"><![CDATA[一键启动（轮椅模式）]]></string>
+    <string name="accessibility_button_one_tap"><![CDATA[一键启动]]></string>
+    <string name="dialog_one_tap_requires_assistant_title"><![CDATA[需要配对助手]]></string>
+    <string name="dialog_one_tap_requires_assistant_message"><![CDATA[一键启动需要配对助手（无障碍服务）自动完成配对：自动进入无线调试、自动点击配对、自动输入配对码。是否现在启用？]]></string>
+    <string name="starter_step_auto_pairing_hint"><![CDATA[正在自动配对，请稍候…]]></string>
+    <string name="starter_step_enable_wireless_auto_hint"><![CDATA[正在自动开启无线调试…]]></string>
+    <string name="one_tap_step_wireless"><![CDATA[开启无线调试]]></string>
+    <string name="one_tap_step_pairing"><![CDATA[配对设备]]></string>
+    <string name="one_tap_step_auth"><![CDATA[授权 ADB 连接]]></string>
+    <string name="one_tap_step_start"><![CDATA[启动服务]]></string>
+    <string name="one_tap_step_complete"><![CDATA[完成]]></string>
+    <string name="one_tap_step_wireless_running"><![CDATA[正在检测无线调试状态…]]></string>
+    <string name="one_tap_step_wireless_auto"><![CDATA[正在自动开启无线调试…]]></string>
+    <string name="one_tap_step_wireless_done"><![CDATA[无线调试已开启]]></string>
+    <string name="one_tap_step_wireless_manual"><![CDATA[请在开发者选项中开启无线调试，开启后点击“已完成”]]></string>
+    <string name="one_tap_step_pairing_running"><![CDATA[正在自动配对…]]></string>
+    <string name="one_tap_step_pairing_done"><![CDATA[配对成功]]></string>
+    <string name="one_tap_step_pairing_manual"><![CDATA[请在无线调试页面完成配对，配对后将自动继续]]></string>
+    <string name="one_tap_step_auth_running"><![CDATA[正在连接并授权…]]></string>
+    <string name="one_tap_step_auth_done"><![CDATA[ADB 授权成功]]></string>
+    <string name="one_tap_step_start_running"><![CDATA[正在启动 Shizuku 服务…]]></string>
+    <string name="one_tap_step_complete_desc"><![CDATA[Shizuku 已通过无线调试运行]]></string>
+    <string name="adb_permission_guide_title"><![CDATA[解除 ADB 权限限制]]></string>
+    <string name="adb_permission_guide_xiaomi"><![CDATA[ADB 权限被系统限制。请依次打开以下开关：
+
+① 开发者选项 → USB 调试
+② 开发者选项 → USB 调试（安全设置）【小米系统】
+
+开启后返回此页面重试。]]></string>
+    <string name="adb_permission_guide_generic"><![CDATA[ADB 权限被系统限制。请打开：
+
+开发者选项 → USB 调试
+
+开启后返回此页面重试。]]></string>
+    <string name="adb_permission_guide_oppo"><![CDATA[OPPO/一加系统可能通过权限监控限制 ADB。请前往开发者选项处理权限监控。
+
+如果开发者选项中没有权限监控按钮，请将设备语言切换为英文，再在开发者选项中查找并关闭 "Disable system optimization"。]]></string>
+    <string name="adb_permission_guide_go_developer"><![CDATA[前往开发者选项]]></string>
+    <string name="settings_auto_pairing"><![CDATA[自动配对]]></string>
+    <string name="settings_auto_pairing_summary"><![CDATA[启用配对助手，自动读取并输入无线调试配对码]]></string>
+    <string name="doctor_fix_open_developer_options_failed"><![CDATA[无法打开开发者选项]]></string>
     <string name="home_adb_button_view_command">查看命令</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有其他注意事项，请先阅读帮助。]]></string>
     <string name="home_adb_dialog_view_command_copy_button">复制</string>
@@ -852,10 +896,10 @@
     <string name="settings_auto_install_summary"><![CDATA[自动下载并提示安装更新（需要权限）]]></string>
     <string name="settings_update_channel_category"><![CDATA[发布渠道]]></string>
     <string name="settings_update_channel_title"><![CDATA[更新频道]]></string>
-    <string name="update_channel_stable"><![CDATA[稳定版]]></string>
-    <string name="update_channel_dev"><![CDATA[开发/预发布版本]]></string>
+    <string name="update_channel_stable"><![CDATA[正式版]]></string>
+    <string name="update_channel_dev"><![CDATA[开发版本]]></string>
     <string name="update_channel_dev_warning_title"><![CDATA[切换到开发频道？]]></string>
-    <string name="update_channel_dev_warning_message"><![CDATA[开发/预发布版本来自 qianyumeng0228/ShizukuX，可能包含错误、崩溃或破坏性更改。仅当您想提前测试新功能时才使用此选项。\n\n您可以随时切换回稳定版。]]></string>
+    <string name="update_channel_dev_warning_message"><![CDATA[开发版本来自 qianyumeng0228/ShizukuX，可能包含错误、崩溃或破坏性更改。仅当您想提前测试新功能时才使用此选项。\n\n您可以随时切换回正式版。]]></string>
     <string name="settings_update_manual_category"><![CDATA[手动更新]]></string>
     <string name="settings_check_for_update_title"><![CDATA[检查更新]]></string>
     <string name="settings_check_for_update_summary"><![CDATA[手动检查是否有新版本可用]]></string>

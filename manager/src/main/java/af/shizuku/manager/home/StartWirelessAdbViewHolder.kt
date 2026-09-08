@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import androidx.annotation.RequiresApi
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 import kotlinx.coroutines.CoroutineScope
 import af.shizuku.manager.Helps
@@ -152,6 +153,9 @@ class StartWirelessAdbViewHolder(
             binding.button2.setOnClickListener { v: View ->
                 onPairClicked(v.context)
             }
+            binding.button4.setOnClickListener { v: View ->
+                onOneTapClicked(v.context)
+            }
             binding.text1.movementMethod = LinkMovementMethod.getInstance()
             binding.text1.text = context.getString(R.string.home_wireless_adb_description)
                 .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
@@ -160,6 +164,7 @@ class StartWirelessAdbViewHolder(
                 .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
             binding.button2.isVisible = false
             binding.button3.isVisible = false
+            binding.button4.isVisible = false
         }
     }
 
@@ -174,11 +179,78 @@ class StartWirelessAdbViewHolder(
             context.showAccessibilityDialog()
             return
         }
+        // Ask once whether to enable the auto-pairing assistant along with this flow.
+        MaterialAlertDialogBuilder(context)
+            .setTitle(R.string.dialog_enable_auto_pairing_title)
+            .setMessage(R.string.dialog_enable_auto_pairing_message)
+            .setPositiveButton(R.string.enable) { _, _ ->
+                // Turn on the pairing assistant (accessibility service) first, then start the
+                // normal pairing flow. Best-effort: if it cannot be enabled directly the
+                // accessibility dialog guides the user through it.
+                val ctx = context.applicationContext
+                if (!ctx.enablePairingAssistant()) {
+                    ctx.showAccessibilityDialog()
+                }
+                launchPairingFlow(context)
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ ->
+                // User opted out: proceed with the original pairing flow unchanged.
+                launchPairingFlow(context)
+            }
+            .show()
+    }
+
+    private fun launchPairingFlow(context: Context) {
         // AdbPairingTutorialActivity provides a dedicated pairing flow: it starts the pairing
         // service, shows step-by-step instructions, handles notification permission, and
         // auto-dismisses once Shizuku is running.
         val activity = context.asActivity<FragmentActivity>() ?: return
         val intent = Intent(context, AdbPairingTutorialActivity::class.java)
         activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+    }
+
+    /**
+     * One-tap start: everything happens automatically. Requires the pairing assistant
+     * (accessibility service) so the pairing code is read and entered without touching
+     * the screen; if it is off, ask and enable it first.
+     */
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun onOneTapClicked(context: Context) {
+        if (EnvironmentUtils.isTelevision()) {
+            context.showAccessibilityDialog()
+            return
+        }
+        val ctx = context.applicationContext
+        if (!ctx.isPairingAssistantEnabled()) {
+            MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.dialog_one_tap_requires_assistant_title)
+                .setMessage(R.string.dialog_one_tap_requires_assistant_message)
+                .setPositiveButton(R.string.enable) { _, _ ->
+                    if (!ctx.enablePairingAssistant()) {
+                        ctx.showAccessibilityDialog()
+                    } else {
+                        // Give the accessibility service a moment to bind its receiver before
+                        // entering the one-tap flow, otherwise the request broadcast can drop.
+                        binding.root.postDelayed({ launchOneTap(context) }, 1200)
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+            return
+        }
+        launchOneTap(context)
+    }
+
+    private fun launchOneTap(context: Context) {
+        val intent = Intent(context, StarterActivity::class.java).apply {
+            putExtra(StarterActivity.EXTRA_AUTO_PAIRING, true)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val activity = context.asActivity<android.app.Activity>()
+        if (activity != null) {
+            activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+        } else {
+            context.startActivity(intent)
+        }
     }
 }

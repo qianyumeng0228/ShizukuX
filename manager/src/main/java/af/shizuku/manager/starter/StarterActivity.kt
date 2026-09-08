@@ -54,10 +54,12 @@ import af.shizuku.manager.adb.AdbClient
 import af.shizuku.manager.adb.AdbKey
 import af.shizuku.manager.adb.AdbKeyException
 import af.shizuku.manager.adb.AdbMdns
+import af.shizuku.manager.adb.AdbPairingAccessibilityService
 import af.shizuku.manager.adb.AdbPairingService
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.adb.PreferenceAdbKeyStore
 import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.home.isPairingAssistantEnabled
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.IconStyleHelper
@@ -85,6 +87,7 @@ class StarterActivity : AppBarActivity() {
         const val EXTRA_IS_SYSTEM = "$EXTRA.IS_SYSTEM"
         const val EXTRA_IS_ROOT = "$EXTRA.IS_ROOT"
         const val EXTRA_PORT = "$EXTRA.PORT"
+        const val EXTRA_AUTO_PAIRING = "$EXTRA.AUTO_PAIRING"
 
         /** True while a StarterActivity exists; AdbPairingService uses it to avoid double-launch. */
         @Volatile
@@ -103,6 +106,15 @@ class StarterActivity : AppBarActivity() {
                 val port = intent.getIntExtra(AdbPairingService.EXTRA_PORT, 0)
                 Timber.tag("StarterActivity").i("Pairing succeeded broadcast, port=%d", port)
                 viewModel.onPairingSucceeded(port)
+            } else if (intent.action == AdbPairingAccessibilityService.ACTION_AUTO_PAIRING_FAILED) {
+                Timber.tag("StarterActivity").w("Auto pairing failed; falling back to manual pairing")
+                viewModel.fallbackToManualPairing()
+            } else if (intent.action == AdbPairingAccessibilityService.ACTION_AUTO_WIRELESS_ENABLED) {
+                Timber.tag("StarterActivity").i("Wireless debugging enabled by assistant; retrying")
+                viewModel.continueAfterSetup()
+            } else if (intent.action == AdbPairingAccessibilityService.ACTION_AUTO_WIRELESS_FAILED) {
+                Timber.tag("StarterActivity").w("Auto wireless-enable failed; falling back to manual")
+                viewModel.fallbackToManualWireless()
             }
         }
     }
@@ -180,7 +192,13 @@ class StarterActivity : AppBarActivity() {
                 headerIcon, headerIcon.drawable, if (isRoot) "home_start_root" else "home_start_adb"
             )
             headerIcon.transitionName = "icon_wireless_adb"
-            headerTitle.setText(if (isRoot) R.string.home_root_title else R.string.home_adb_title)
+            headerTitle.setText(
+                when {
+                    isRoot -> R.string.home_root_title
+                    intent.getBooleanExtra(EXTRA_AUTO_PAIRING, false) -> R.string.home_wireless_adb_one_tap_button
+                    else -> R.string.home_adb_title
+                }
+            )
         }
 
         binding.cancelButton.setOnClickListener {
@@ -204,7 +222,12 @@ class StarterActivity : AppBarActivity() {
         }
 
         // Pairing success is delivered via broadcast (the service may outlive this activity).
-        val filter = IntentFilter(AdbPairingService.ACTION_PAIRING_SUCCEEDED)
+        // Auto-pairing failure (one-tap flow) is also delivered via broadcast.
+        val filter = IntentFilter(AdbPairingService.ACTION_PAIRING_SUCCEEDED).apply {
+            addAction(AdbPairingAccessibilityService.ACTION_AUTO_PAIRING_FAILED)
+            addAction(AdbPairingAccessibilityService.ACTION_AUTO_WIRELESS_ENABLED)
+            addAction(AdbPairingAccessibilityService.ACTION_AUTO_WIRELESS_FAILED)
+        }
         ContextCompat.registerReceiver(
             this, pairingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED
         )
@@ -285,7 +308,8 @@ class StarterActivity : AppBarActivity() {
         viewModel.start(
             intent.getBooleanExtra(EXTRA_IS_ROOT, false),
             intent.getBooleanExtra(EXTRA_IS_SYSTEM, false),
-            port
+            port,
+            intent.getBooleanExtra(EXTRA_AUTO_PAIRING, false)
         )
     }
 
@@ -378,7 +402,7 @@ class StarterActivity : AppBarActivity() {
         }
 
         when (step.id) {
-            "enable_wireless" -> {
+            "enable_wireless", "one_tap_wireless" -> {
                 addButton(R.string.starter_step_enable_wireless_btn) {
                     openWirelessDebuggingSettings()
                 }
@@ -386,7 +410,7 @@ class StarterActivity : AppBarActivity() {
                     viewModel.continueAfterSetup()
                 }
             }
-            "pairing" -> {
+            "pairing", "one_tap_pairing" -> {
                 addButton(R.string.starter_step_enable_wireless_btn) {
                     openWirelessDebuggingSettings()
                 }
@@ -410,6 +434,11 @@ class StarterActivity : AppBarActivity() {
 
 class ViewModel(application: Application) : AndroidViewModel(application) {
 
+    /** One-tap assistant-acknowledgement budget: fall back to manual if nothing comes back. */
+    private companion object {
+        const val AUTO_ACK_TIMEOUT_MS = 30_000L
+    }
+
     private val appContext = getApplication<Application>().applicationContext
 
     private val _steps = MutableLiveData<List<StarterStep>>()
@@ -430,6 +459,13 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     private var flowJob: Job? = null
     private var waitingForPairing = false
     private var waitingForWireless = false
+    private var autoPairingMode = false
+
+    /** Safety nets for the one-tap flow: if the assistant never acknowledges the request
+     *  (its receiver may not be bound yet right after enabling), fall back to manual so the
+     *  step can never be stuck in RUNNING forever. */
+    private var pairingAckJob: Job? = null
+    private var wirelessAckJob: Job? = null
 
     private fun setSteps(steps: List<StarterStep>) {
         _steps.value = steps
@@ -482,9 +518,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     fun hasLog(): Boolean = sb.isNotEmpty()
 
-    fun start(root: Boolean, isSystem: Boolean, port: Int) {
+    fun start(root: Boolean, isSystem: Boolean, port: Int, autoPairing: Boolean = false) {
         if (started) return
         started = true
+        autoPairingMode = autoPairing
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             if (root) runRootFlow()
@@ -516,9 +553,108 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun onPairingSucceeded(port: Int) {
         if (!waitingForPairing) return
         waitingForPairing = false
+        if (autoPairingMode) {
+            updateStep("one_tap_pairing", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_pairing_done))
+            if (port in 1..65535) {
+                viewModelScope.launch { startOneTapService(port) }
+            }
+            return
+        }
         updateStep("pairing", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_pairing_done))
         if (port in 1..65535) {
             viewModelScope.launch { startServiceWithPort(port) }
+        }
+    }
+
+    /** One-tap auto-pairing could not complete; switch the pairing step back to manual. */
+    @RequiresApi(Build.VERSION_CODES.R)
+    fun fallbackToManualPairing() {
+        if (!waitingForPairing) return
+        if (autoPairingMode) {
+            updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_manual))
+            val list = _steps.value?.toMutableList() ?: return
+            val index = list.indexOfFirst { it.id == "one_tap_pairing" }
+            if (index >= 0) {
+                list[index] = list[index].copy(needsUserAction = true)
+                _steps.value = list
+            }
+            startPairingService()
+            return
+        }
+        updateStep("pairing", StepStatus.RUNNING, appContext.getString(R.string.starter_step_pairing_hint))
+        val list = _steps.value?.toMutableList() ?: return
+        val index = list.indexOfFirst { it.id == "pairing" }
+        if (index >= 0) {
+            list[index] = list[index].copy(needsUserAction = true)
+            _steps.value = list
+        }
+        startPairingService()
+    }
+
+    /** Asks the pairing assistant (accessibility service) to run the pairing by itself. */
+    private fun sendAutoPairingRequest() {
+        runCatching {
+            appContext.sendBroadcast(
+                Intent(AdbPairingAccessibilityService.ACTION_AUTO_PAIRING).setPackage(appContext.packageName)
+            )
+            Timber.tag("StarterActivity").i("Auto-pairing request sent")
+        }.onFailure {
+            Timber.tag("StarterActivity").w(it, "Failed to send auto-pairing request")
+        }
+        // Safety net: if the assistant was just enabled and its receiver is not bound yet,
+        // the broadcast above is silently dropped. Without a timeout the pairing step would
+        // stay RUNNING forever. If neither pairing success nor failure arrives in time, fall
+        // back to manual — a late success broadcast still resumes the flow normally.
+        pairingAckJob?.cancel()
+        pairingAckJob = viewModelScope.launch {
+            delay(AUTO_ACK_TIMEOUT_MS)
+            if (waitingForPairing) {
+                Timber.tag("StarterActivity").w("Auto pairing not acknowledged in time; falling back to manual")
+                fallbackToManualPairing()
+            }
+        }
+    }
+
+    /** Asks the pairing assistant to flip the wireless-debugging switch by itself. */
+    private fun sendAutoEnableWirelessRequest() {
+        runCatching {
+            appContext.sendBroadcast(
+                Intent(AdbPairingAccessibilityService.ACTION_AUTO_ENABLE_WIRELESS).setPackage(appContext.packageName)
+            )
+            Timber.tag("StarterActivity").i("Auto-enable-wireless request sent")
+        }.onFailure {
+            Timber.tag("StarterActivity").w(it, "Failed to send auto-enable-wireless request")
+        }
+        // Same safety net as sendAutoPairingRequest: never let the step hang in RUNNING.
+        wirelessAckJob?.cancel()
+        wirelessAckJob = viewModelScope.launch {
+            delay(AUTO_ACK_TIMEOUT_MS)
+            if (waitingForWireless) {
+                Timber.tag("StarterActivity").w("Auto wireless-enable not acknowledged in time; falling back to manual")
+                fallbackToManualWireless()
+            }
+        }
+    }
+
+    /** Auto wireless-enabling could not complete; switch the step back to manual. */
+    fun fallbackToManualWireless() {
+        if (!waitingForWireless) return
+        if (autoPairingMode) {
+            updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_manual))
+            val list = _steps.value?.toMutableList() ?: return
+            val index = list.indexOfFirst { it.id == "one_tap_wireless" }
+            if (index >= 0) {
+                list[index] = list[index].copy(needsUserAction = true)
+                _steps.value = list
+            }
+            return
+        }
+        updateStep("enable_wireless", StepStatus.RUNNING, appContext.getString(R.string.starter_step_enable_wireless_hint))
+        val list = _steps.value?.toMutableList() ?: return
+        val index = list.indexOfFirst { it.id == "enable_wireless" }
+        if (index >= 0) {
+            list[index] = list[index].copy(needsUserAction = true)
+            _steps.value = list
         }
     }
 
@@ -526,6 +662,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun continueAfterSetup() {
         if (!waitingForWireless) return
         waitingForWireless = false
+        if (autoPairingMode) {
+            updateStep("one_tap_wireless", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_wireless_done))
+            viewModelScope.launch { continueOneTapFlow(null) }
+            return
+        }
         // Reset to port detection and retry the whole ADB flow.
         started = true
         flowJob?.cancel()
@@ -536,6 +677,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     @SuppressLint("MissingPermission")
     private suspend fun runAdbFlow(intentPort: Int?) {
+        if (autoPairingMode) {
+            runOneTapFlow(intentPort)
+            return
+        }
         clearStaleStartingState()
         waitingForPairing = false
         waitingForWireless = false
@@ -554,17 +699,28 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         updateStep("detect_port", StepStatus.RUNNING, appContext.getString(R.string.starter_step_detect_port_running))
         val detection = detectPort(intentPort)
         if (detection == null) {
-            // No wireless-debugging port at all: ask the user to enable it.
+            // No wireless-debugging port at all: enable it. In one-tap mode without
+            // WRITE_SECURE_SETTINGS the pairing assistant flips the switch by itself;
+            // otherwise auto-enable when privileged or ask the user to do it manually.
             updateStep("detect_port", StepStatus.WARNING, appContext.getString(R.string.starter_step_no_port))
             waitingForWireless = true
+            val autoWireless = autoPairingMode && appContext.isPairingAssistantEnabled() &&
+                appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
             insertStep(0, StarterStep(
                 "enable_wireless",
                 R.string.starter_step_enable_wireless,
                 StepStatus.RUNNING,
-                appContext.getString(R.string.starter_step_enable_wireless_hint),
-                needsUserAction = true
+                appContext.getString(
+                    if (autoWireless) R.string.starter_step_enable_wireless_auto_hint
+                    else R.string.starter_step_enable_wireless_hint
+                ),
+                needsUserAction = !autoWireless
             ))
-            tryAutoEnableWirelessDebugging()
+            if (autoWireless) {
+                sendAutoEnableWirelessRequest()
+            } else {
+                tryAutoEnableWirelessDebugging()
+            }
             return
         }
         val (port, paired) = detection
@@ -575,14 +731,28 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         if (!paired) {
             updateStep("detect_pairing", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_need_pairing))
             waitingForPairing = true
-            insertStep(2, StarterStep(
-                "pairing",
-                R.string.starter_step_pairing,
-                StepStatus.RUNNING,
-                appContext.getString(R.string.starter_step_pairing_hint),
-                needsUserAction = true
-            ))
-            startPairingService()
+            val autoPairing = autoPairingMode && appContext.isPairingAssistantEnabled()
+            if (autoPairing) {
+                // One-tap: the pairing assistant navigates to wireless debugging, clicks the
+                // pairing button and pairs by itself; the step just shows progress.
+                insertStep(2, StarterStep(
+                    "pairing",
+                    R.string.starter_step_pairing,
+                    StepStatus.RUNNING,
+                    appContext.getString(R.string.starter_step_auto_pairing_hint),
+                    needsUserAction = false
+                ))
+                sendAutoPairingRequest()
+            } else {
+                insertStep(2, StarterStep(
+                    "pairing",
+                    R.string.starter_step_pairing,
+                    StepStatus.RUNNING,
+                    appContext.getString(R.string.starter_step_pairing_hint),
+                    needsUserAction = true
+                ))
+                startPairingService()
+            }
             return
         }
         updateStep("detect_pairing", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_paired))
@@ -619,7 +789,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
                 Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
             }
-            updateStep("enable_wireless", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_enable_wireless_auto))
+            updateStep(
+                if (autoPairingMode) "one_tap_wireless" else "enable_wireless",
+                StepStatus.COMPLETED,
+                appContext.getString(R.string.starter_step_enable_wireless_auto)
+            )
             delay(1200)
             continueAfterSetup()
         }
@@ -705,11 +879,112 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 appContext.startService(intent)
             }
-            updateStep("pairing", StepStatus.RUNNING, appContext.getString(R.string.starter_waiting_pairing))
+            updateStep(
+                if (autoPairingMode) "one_tap_pairing" else "pairing",
+                StepStatus.RUNNING,
+                appContext.getString(R.string.starter_waiting_pairing)
+            )
         } catch (e: Throwable) {
             Timber.e("startPairingService", e)
             setError(e)
         }
+    }
+
+    /**
+     * One-tap (wheelchair-mode) flow. Unlike the regular wireless-debugging flow this shows
+     * the real automation chain on its own card: enable wireless debugging → pair the device
+     * → authorize ADB → start the service → done. Steps already satisfied (wireless debugging
+     * on, device paired) are skipped by marking them COMPLETED immediately.
+     */
+    private suspend fun runOneTapFlow(intentPort: Int?) {
+        clearStaleStartingState()
+        waitingForPairing = false
+        waitingForWireless = false
+        lastStart = Triple(false, false, intentPort ?: 0)
+        setSteps(
+            listOf(
+                StarterStep("one_tap_wireless", R.string.one_tap_step_wireless),
+                StarterStep("one_tap_pairing", R.string.one_tap_step_pairing),
+                StarterStep("one_tap_auth", R.string.one_tap_step_auth),
+                StarterStep("one_tap_start", R.string.one_tap_step_start),
+                StarterStep("one_tap_complete", R.string.one_tap_step_complete)
+            )
+        )
+        continueOneTapFlow(intentPort)
+    }
+
+    /** Advances the one-tap flow from its current state; safe to call after wireless
+     *  debugging has been (automatically or manually) enabled. */
+    private suspend fun continueOneTapFlow(intentPort: Int?) {
+        // Step 1: wireless debugging enabled?
+        updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_running))
+        val detection = detectPort(intentPort)
+        if (detection == null) {
+            updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_auto))
+            waitingForWireless = true
+            val autoWireless = appContext.isPairingAssistantEnabled() &&
+                appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
+            if (autoWireless) {
+                sendAutoEnableWirelessRequest()
+            } else {
+                tryAutoEnableWirelessDebugging()
+            }
+            return
+        }
+        updateStep("one_tap_wireless", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_wireless_done))
+        val (port, paired) = detection
+
+        // Step 2: device paired?
+        if (!paired) {
+            updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_running))
+            waitingForPairing = true
+            if (appContext.isPairingAssistantEnabled()) {
+                sendAutoPairingRequest()
+            } else {
+                // Assistant off (e.g. user turned it off mid-flight): fall back to manual.
+                updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_manual))
+                val list = _steps.value?.toMutableList() ?: return
+                val index = list.indexOfFirst { it.id == "one_tap_pairing" }
+                if (index >= 0) {
+                    list[index] = list[index].copy(needsUserAction = true)
+                    _steps.value = list
+                }
+                startPairingService()
+            }
+            return
+        }
+        updateStep("one_tap_pairing", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_pairing_done))
+        startOneTapService(port)
+    }
+
+    /** Step 3+4 of the one-tap flow: authorize the ADB connection, then start the service. */
+    private suspend fun startOneTapService(port: Int) {
+        if (port !in 1..65535) {
+            setError(IllegalArgumentException("Invalid port: $port"))
+            return
+        }
+        updateStep("one_tap_auth", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_auth_running))
+        try {
+            AdbStarter.startAdb(appContext, port) { log(it) }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            updateStep("one_tap_auth", StepStatus.ERROR, e.message ?: "")
+            setError(e)
+            return
+        }
+        updateStep("one_tap_auth", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_auth_done))
+
+        updateStep("one_tap_start", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_start_running))
+        try {
+            Starter.waitForBinder { log(it) }
+        } catch (e: Exception) {
+            if (e is CancellationException) throw e
+            updateStep("one_tap_start", StepStatus.ERROR, e.message ?: "")
+            setError(e)
+            return
+        }
+        updateStep("one_tap_start", StepStatus.COMPLETED, "")
+        markCompleted()
     }
 
     private suspend fun startServiceWithPort(port: Int) {
@@ -747,10 +1022,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             if (list[i].status != StepStatus.COMPLETED && list[i].status != StepStatus.WARNING) {
                 list[i] = list[i].copy(
                     status = StepStatus.COMPLETED,
-                    description = if (list[i].id == "complete") {
-                        appContext.getString(R.string.starter_step_complete_desc)
-                    } else {
-                        ""
+                    description = when (list[i].id) {
+                        "complete" -> appContext.getString(R.string.starter_step_complete_desc)
+                        "one_tap_complete" -> appContext.getString(R.string.one_tap_step_complete_desc)
+                        else -> ""
                     }
                 )
             }

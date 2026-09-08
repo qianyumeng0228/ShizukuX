@@ -9,6 +9,10 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings.Keys.*
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.home.disablePairingAssistant
+import af.shizuku.manager.home.enablePairingAssistant
+import af.shizuku.manager.home.isPairingAssistantEnabled
+import af.shizuku.manager.home.showAccessibilityDialog
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.setComponentEnabled
 import android.widget.Toast
@@ -88,6 +92,27 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
 
         findPreference<TwoStatePreference>(KEY_LEGACY_PAIRING)?.apply {
             isVisible = !EnvironmentUtils.isTelevision()
+        }
+
+        // Auto pairing: mirrors the pairing-assistant accessibility service. Turning it on
+        // enables the service directly when WRITE_SECURE_SETTINGS is available (same linkage
+        // as the AI core switch in the feature hub), otherwise falls back to the guided
+        // accessibility-enable dialog.
+        findPreference<TwoStatePreference>("auto_pairing")?.apply {
+            isVisible = !EnvironmentUtils.isTelevision()
+            isChecked = context.isPairingAssistantEnabled()
+            setOnPreferenceChangeListener { _, newValue ->
+                val enable = newValue as Boolean
+                val ctx = context ?: return@setOnPreferenceChangeListener false
+                if (enable) {
+                    if (!ctx.enablePairingAssistant()) {
+                        ctx.showAccessibilityDialog()
+                    }
+                } else {
+                    ctx.disablePairingAssistant()
+                }
+                true
+            }
         }
 
         findPreference<Preference>(KEY_HELP)?.setOnPreferenceClickListener {

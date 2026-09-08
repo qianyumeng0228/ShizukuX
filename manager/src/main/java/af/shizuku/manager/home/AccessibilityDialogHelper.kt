@@ -109,3 +109,20 @@ private fun Context.enableAccessibilityService(): Boolean {
 
     return isAccessibilityEnabled()
 }
+
+/** Public entry: turn the pairing assistant (accessibility service) on directly. */
+fun Context.enablePairingAssistant(): Boolean = enableAccessibilityService()
+
+/** Remove the pairing assistant from the enabled accessibility services. */
+fun Context.disablePairingAssistant() {
+    runCatching {
+        val accessibilityServiceName = "$packageName/${AdbPairingAccessibilityService::class.java.canonicalName}"
+        val enabledServices = getEnabledAccessibilityServices()
+        if (enabledServices.isNullOrEmpty()) return
+        val newServices = enabledServices.filterNot { it.equals(accessibilityServiceName) }.joinToString(":")
+        Settings.Secure.putString(contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, newServices)
+    }
+}
+
+/** Whether the pairing assistant accessibility service is currently enabled. */
+fun Context.isPairingAssistantEnabled(): Boolean = isAccessibilityEnabled()

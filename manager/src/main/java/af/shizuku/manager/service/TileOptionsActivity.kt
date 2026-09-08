@@ -7,6 +7,7 @@ import androidx.appcompat.app.AppCompatActivity
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.starter.Starter
+import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.worker.AdbStartWorker
 import androidx.work.WorkManager
@@ -91,6 +92,7 @@ class TileOptionsActivity : AppCompatActivity() {
     private fun stopShizuku() {
         ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
         WorkManager.getInstance(this).cancelUniqueWork("adb_start_worker")
+        ShizukuReceiverStarter.killServerProcess()
         kotlin.runCatching { rikka.shizuku.Shizuku.exit() }
         ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)
     }

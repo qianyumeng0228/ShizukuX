@@ -4,8 +4,14 @@ import af.shizuku.manager.R
 import android.accessibilityservice.AccessibilityService
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.provider.Settings
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import timber.log.Timber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +34,20 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 class AdbPairingAccessibilityService : AccessibilityService() {
 
+    companion object {
+        /** Broadcast from StarterActivity: start the fully-automatic pairing flow. */
+        const val ACTION_AUTO_PAIRING = "af.shizuku.manager.action.AUTO_PAIRING"
+        /** Broadcast back when the automatic flow could not complete; caller falls back to manual. */
+        const val ACTION_AUTO_PAIRING_FAILED = "af.shizuku.manager.action.AUTO_PAIRING_FAILED"
+        /** Broadcast from StarterActivity: automatically enable the wireless-debugging switch. */
+        const val ACTION_AUTO_ENABLE_WIRELESS = "af.shizuku.manager.action.AUTO_ENABLE_WIRELESS"
+        /** Broadcast back when wireless debugging was enabled by the assistant. */
+        const val ACTION_AUTO_WIRELESS_ENABLED = "af.shizuku.manager.action.AUTO_WIRELESS_ENABLED"
+        /** Broadcast back when enabling failed; caller falls back to manual. */
+        const val ACTION_AUTO_WIRELESS_FAILED = "af.shizuku.manager.action.AUTO_WIRELESS_FAILED"
+        private const val AUTO_PAIRING_TIMEOUT_MS = 90_000L
+    }
+
     @Volatile
     var port: Int? = null
     @Volatile
@@ -45,6 +65,45 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     /** Bumped on every window switch; invalidates any in-flight timeout coroutine. */
     @Volatile
     private var timeoutGeneration = 0
+
+    /** Active (one-tap) mode: navigate to wireless debugging, click the pairing button for us. */
+    @Volatile
+    private var autoPairRequested = false
+
+    /** True once the "pair with pairing code" button has been clicked in active mode. */
+    @Volatile
+    private var autoPairClicked = false
+
+    /** Bumped on every auto-pairing request; invalidates any in-flight timeout coroutine. */
+    @Volatile
+    private var autoPairTimeoutGeneration = 0
+
+    /** Active mode: automatically flip the wireless-debugging switch on the dev-options page. */
+    @Volatile
+    private var autoWirelessRequested = false
+
+    /** True once the wireless-debugging switch has been clicked in active mode. */
+    @Volatile
+    private var autoWirelessClicked = false
+
+    /** Bumped on every auto-wireless request; invalidates any in-flight timeout coroutine. */
+    @Volatile
+    private var autoWirelessTimeoutGeneration = 0
+
+    private val autoPairReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                ACTION_AUTO_PAIRING -> {
+                    Log.i("AdbAccessibility", "AUTO_PAIRING request received")
+                    startAutoPairing()
+                }
+                ACTION_AUTO_ENABLE_WIRELESS -> {
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS request received")
+                    startAutoEnableWireless()
+                }
+            }
+        }
+    }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -77,10 +136,30 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             Toast.makeText(this, R.string.accessibility_service_monitoring, Toast.LENGTH_SHORT).show()
         }
 
+        // Listen for one-tap auto-pairing / auto-enable-wireless requests (from the starter screen).
+        runCatching {
+            val filter = IntentFilter(ACTION_AUTO_PAIRING).apply {
+                addAction(ACTION_AUTO_ENABLE_WIRELESS)
+            }
+            registerReceiver(
+                autoPairReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+        }.onFailure {
+            Timber.tag("AdbAccessibility").w(it, "Failed to register auto-pairing receiver")
+        }
+
         // No countdown starts here: the user may need a while to walk to the wireless
         // debugging page after enabling the service. The 60s budget only starts once an
         // actual pairing pop-up (an IP:port on screen) is detected below, so an idle
         // service stays enabled instead of timing out before the user gets there.
+    }
+
+    override fun onDestroy() {
+        runCatching { unregisterReceiver(autoPairReceiver) }
+        serviceScope.cancel()
+        super.onDestroy()
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -148,6 +227,15 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             while (r.parent != null) r = r.parent
             r
         }
+        // Active (one-tap) mode: once we're on the wireless-debugging page, click the
+        // "pair with pairing code" button for the user.
+        if (autoPairRequested && !autoPairClicked && port == null && password == null) {
+            findAndClickPairButton(windowRoot)
+        }
+        // Active mode: flip the wireless-debugging switch on the developer-options page.
+        if (autoWirelessRequested && !autoWirelessClicked) {
+            clickWirelessDebuggingSwitch(windowRoot)
+        }
         if (port == null) {
             findPortInNode(windowRoot)
         }
@@ -196,6 +284,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                                     Toast.LENGTH_LONG
                                 ).show()
                             }
+                            if (autoPairRequested) sendAutoPairingFailed()
+                            resetAutoPairing()
                             disableSelf()
                         }
                         // Transient failures (pairing server still binding, connect refused,
@@ -219,6 +309,22 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                                 "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
                                 Toast.LENGTH_LONG
                             ).show()
+                            // The auto-pair path is independent of AdbPairingService: if that
+                            // service was started (home card "pairing" flow / tutorial) it may
+                            // still be foreground-searching. Stop it so the "searching for
+                            // pairing service" notification does not linger after success, and
+                            // broadcast success so a waiting StarterActivity continues its flow.
+                            runCatching {
+                                stopService(Intent(this@AdbPairingAccessibilityService, AdbPairingService::class.java))
+                            }
+                            runCatching {
+                                sendBroadcast(
+                                    Intent(AdbPairingService.ACTION_PAIRING_SUCCEEDED)
+                                        .setPackage(packageName)
+                                        .putExtra(AdbPairingService.EXTRA_PORT, portValue)
+                                        .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                                )
+                            }
                             val intent = Intent(this@AdbPairingAccessibilityService, MainActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                             }
@@ -230,6 +336,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                             level = SentryLevel.WARNING
                         })
                     }
+                    resetAutoPairing()
                     disableSelf()
                 }
             }
@@ -263,6 +370,206 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     private val ipPortRegex = Regex("""(?:\d{1,3}\.){3}\d{1,3}:(\d{2,5})""")
     private val passwordRegex = Regex("""\d{6}""")
     private val fiveDigitRegex = Regex("""\d{5}""")
+
+    /**
+     * One-tap flow entry: navigate to the wireless-debugging page and start watching for the
+     * "pair with pairing code" button. The button click itself happens in [findAndClickPairButton]
+     * once the page's accessibility events arrive. A global budget guards the whole flow and
+     * reports [ACTION_AUTO_PAIRING_FAILED] so the starter screen can fall back to manual pairing.
+     */
+    private fun startAutoPairing() {
+        if (port != null || password != null) return // already mid-pairing
+        autoPairRequested = true
+        autoPairClicked = false
+        candidateWindowId = -1
+        Log.i("AdbAccessibility", "AUTO_PAIRING start: navigating to wireless debugging")
+        runCatching {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+                }
+            )
+        }.onFailure {
+            Log.i("AdbAccessibility", "AUTO_PAIRING navigation failed: " + it.javaClass.simpleName)
+            autoPairRequested = false
+            sendAutoPairingFailed()
+        }
+        autoPairTimeoutGeneration++
+        val gen = autoPairTimeoutGeneration
+        serviceScope.launch(Dispatchers.Main) {
+            delay(AUTO_PAIRING_TIMEOUT_MS)
+            if (autoPairTimeoutGeneration == gen && autoPairRequested && (port == null || password == null)) {
+                Log.i("AdbAccessibility", "AUTO_PAIRING timed out")
+                autoPairRequested = false
+                autoPairClicked = false
+                sendAutoPairingFailed()
+            }
+        }
+    }
+
+    private fun sendAutoPairingFailed() {
+        runCatching {
+            sendBroadcast(
+                Intent(ACTION_AUTO_PAIRING_FAILED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+            )
+        }
+    }
+
+    /**
+     * One-tap flow entry: navigate to the developer-options wireless-debugging page and flip
+     * the switch for the user. The click happens in [clickWirelessDebuggingSwitch] once the
+     * page's accessibility events arrive; a 2s settle delay then reports
+     * [ACTION_AUTO_WIRELESS_ENABLED] so the starter screen retries port detection.
+     */
+    private fun startAutoEnableWireless() {
+        if (autoWirelessRequested) return
+        autoWirelessRequested = true
+        autoWirelessClicked = false
+        Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS start: navigating to wireless debugging")
+        runCatching {
+            startActivity(
+                Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra(":settings:fragment_args_key", "toggle_adb_wireless")
+                }
+            )
+        }.onFailure {
+            Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS navigation failed: " + it.javaClass.simpleName)
+            autoWirelessRequested = false
+            runCatching {
+                sendBroadcast(
+                    Intent(ACTION_AUTO_WIRELESS_FAILED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                )
+            }
+        }
+        autoWirelessTimeoutGeneration++
+        val gen = autoWirelessTimeoutGeneration
+        serviceScope.launch(Dispatchers.Main) {
+            delay(AUTO_PAIRING_TIMEOUT_MS)
+            if (autoWirelessTimeoutGeneration == gen && autoWirelessRequested && !autoWirelessClicked) {
+                Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS timed out")
+                autoWirelessRequested = false
+                runCatching {
+                    sendBroadcast(
+                        Intent(ACTION_AUTO_WIRELESS_FAILED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Clicks the wireless-debugging switch on the developer-options page. Matches the row by
+     * localized text, then walks up to a clickable ancestor (the switch row). After the click,
+     * reports [ACTION_AUTO_WIRELESS_ENABLED] once adbd has had a moment to bring up the port.
+     */
+    private fun clickWirelessDebuggingSwitch(root: AccessibilityNodeInfo?) {
+        if (root == null || autoWirelessClicked) return
+        val texts = setOf("无线调试", "Wireless debugging", "無線デバッグ", "디버깅")
+        val nodes = ArrayList<AccessibilityNodeInfo>()
+        collectNodesByText(root, nodes, texts, 0)
+        for (node in nodes) {
+            var target: AccessibilityNodeInfo? = node
+            var hops = 0
+            while (target != null && !target.isClickable && target.parent != null && hops < 4) {
+                target = target.parent
+                hops++
+            }
+            if (target != null && target.isClickable) {
+                // If the switch row reports itself already checked, wireless debugging is
+                // already on — do NOT click (that would toggle it OFF). Report success instead.
+                val alreadyOn = runCatching { target.isChecked }.getOrDefault(false)
+                if (alreadyOn) {
+                    autoWirelessClicked = true
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS already enabled; skipping click")
+                } else {
+                    runCatching { target.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                    autoWirelessClicked = true
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked wireless debugging switch")
+                }
+                val gen = autoWirelessTimeoutGeneration
+                serviceScope.launch(Dispatchers.Main) {
+                    delay(2000)
+                    if (autoWirelessRequested && autoWirelessTimeoutGeneration == gen) {
+                        autoWirelessRequested = false
+                        runCatching {
+                            sendBroadcast(
+                                Intent(ACTION_AUTO_WIRELESS_ENABLED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                            )
+                        }
+                    }
+                }
+                return
+            }
+        }
+    }
+
+    /** Clears the active mode; call when pairing succeeded, failed deterministically or timed out. */
+    private fun resetAutoPairing() {
+        autoPairRequested = false
+        autoPairClicked = false
+    }
+
+    /**
+     * Clicks the "pair with pairing code" button on the wireless-debugging page. Matches the
+     * button by localized text first, then falls back to any clickable node containing "pair"
+     * / "配对" so ROM-localized strings are covered.
+     */
+    private fun findAndClickPairButton(root: AccessibilityNodeInfo?) {
+        if (root == null || autoPairClicked) return
+        val exactTexts = setOf(
+            "使用配对码配对设备", "使用配对码", "配对码配对", "通过配对码配对设备",
+            "Pair device with pairing code", "Pair device", "pairing code", "Pair with code"
+        )
+        val found = ArrayList<AccessibilityNodeInfo>()
+        collectNodesByText(root, found, exactTexts, 0)
+        for (node in found) {
+            if (node.isClickable) {
+                runCatching { node.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                autoPairClicked = true
+                Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button")
+                return
+            }
+        }
+        // Fallback: walk again and click any clickable node whose text mentions pairing.
+        // Deliberately narrow: "pair" alone would also match "Paired devices" (已配对设备)
+        // on the same page and open the wrong sub-page.
+        val fallback = ArrayList<AccessibilityNodeInfo>()
+        collectNodesByText(root, fallback, setOf("Pair device", "pairing code", "配对码", "Pairing"), 0)
+        for (node in fallback) {
+            if (node.isClickable) {
+                runCatching { node.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                autoPairClicked = true
+                Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button (fallback)")
+                return
+            }
+        }
+    }
+
+    private fun collectNodesByText(
+        node: AccessibilityNodeInfo?,
+        out: MutableList<AccessibilityNodeInfo>,
+        texts: Set<String>,
+        depth: Int
+    ) {
+        if (node == null || depth > MAX_DEPTH) return
+        val text = try {
+            node.text?.toString() ?: ""
+        } catch (e: Throwable) {
+            ""
+        }
+        if (text.isNotEmpty() && texts.any { text.contains(it, ignoreCase = true) }) {
+            out.add(node)
+        }
+        try {
+            for (i in 0 until node.childCount) {
+                collectNodesByText(node.getChild(i), out, texts, depth + 1)
+            }
+        } catch (e: Throwable) {
+            // node recycled mid-traversal; the next event will rescan
+        }
+    }
 
     /** Deep-enough cap for the recursive scan; guards against pathological UI trees. */
     private val MAX_DEPTH = 20

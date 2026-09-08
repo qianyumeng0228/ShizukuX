@@ -66,8 +66,24 @@ object ShizukuReceiverStarter {
     fun stop() {
         if (!ShizukuStateMachine.isRunning()) return
         ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+        killServerProcess()
         runCatching { Shizuku.exit() }
             .onFailure { Timber.tag(AppConstants.TAG).w(it, "Shizuku.exit failed") }
+    }
+
+    /**
+     * Terminate the long-lived privileged server process itself (not just this client's binder
+     * connection). `Shizuku.exit()` alone only disconnects the local binder; the server keeps
+     * running and the next binder reconnection instantly flips the state machine back to RUNNING,
+     * which made "Stop" look like it stopped for a few seconds and then self-healed. Running the
+     * kill through the privileged process API ensures it works for both adb and root launches.
+     */
+    fun killServerProcess() {
+        runCatching {
+            af.shizuku.manager.database.ShizukuProcessUtils.runPrivilegedCapture(
+                arrayOf("pkill", "-f", "shizuku_plus_server")
+            )
+        }.onFailure { Timber.tag(AppConstants.TAG).w(it, "pkill shizuku_plus_server failed") }
     }
 
     fun buildNotification(context: Context, msg: String? = null): Notification {

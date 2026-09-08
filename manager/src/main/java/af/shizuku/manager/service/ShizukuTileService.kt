@@ -68,7 +68,10 @@ class ShizukuTileService : TileService() {
                 // Cancel worker
                 WorkManager.getInstance(this).cancelUniqueWork("adb_start_worker")
 
-                // Stop server if running
+                // Stop server if running (kill the server process too, not just this client's
+                // binder — otherwise the next binder reconnection restores permission within
+                // seconds, which defeats stopping it to debug other apps)
+                af.shizuku.manager.receiver.ShizukuReceiverStarter.killServerProcess()
                 kotlin.runCatching { rikka.shizuku.Shizuku.exit() }
 
                 ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)

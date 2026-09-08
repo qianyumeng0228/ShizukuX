@@ -64,6 +64,12 @@
             android:title="@string/settings_legacy_pairing"
             android:icon="@drawable/ic_numeric_1_circle_outline_24" />
 
+        <SwitchPreferenceCompat
+            android:key="auto_pairing"
+            android:summary="@string/settings_auto_pairing_summary"
+            android:title="@string/settings_auto_pairing"
+            android:icon="@drawable/ic_numeric_2_circle_outline_24" />
+
         <Preference
             android:key="reset_adb_keys"
             android:title="@string/settings_reset_adb_keys"
