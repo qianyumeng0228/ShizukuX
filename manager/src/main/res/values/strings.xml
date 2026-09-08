@@ -164,6 +164,10 @@ If there is no permission monitor entry, switch the device language to English, 
     <string name="settings_restore_wifi_notification_title">Wireless debugging not restored</string>
     <string name="settings_restore_wifi_notification_text">Wi-Fi was off during auto-restore, so wireless debugging and Shizuku auto-start are waiting. Turn on Wi-Fi and Shizuku will start automatically.</string>
     <string name="settings_restore_wifi_notification_action">Turn on Wi-Fi</string>
+    <string name="settings_adb_security_notification_title">USB debugging (security settings) is off</string>
+    <string name="settings_adb_security_notification_text">Tap to open Developer options and enable it so Shizuku can start</string>
+    <string name="settings_adb_security_notification_action">Open</string>
+    <string name="settings_restore_adb_security_hint">USB debugging (security settings) is off; opened Developer options, please enable the toggle</string>
     <string name="doctor_fix_open_developer_options_failed">Could not open developer options</string>
     <string name="home_adb_button_view_command">View command</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* There are some other considerations, please confirm that you have read the help first.]]></string>

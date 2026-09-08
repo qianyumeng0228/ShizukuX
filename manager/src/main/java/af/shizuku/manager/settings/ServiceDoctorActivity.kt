@@ -32,6 +32,7 @@ import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.home.showAdbPermissionGuide
+import af.shizuku.manager.receiver.DeveloperOptionsRestorer
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
 import io.sentry.Sentry
@@ -143,11 +144,11 @@ class ServiceDoctorActivity : AppBarActivity() {
             onFix = if (!isAccessibilityEnabled) { { SettingsPage.Accessibility.launch(this) } } else null
         ))
 
-        // 6. Xiaomi Restricted ADB — if the server is already running it was started through
-        // adb (or root), so the ADB permission is demonstrably usable; otherwise the switch
-        // list is shown so the user can open the exact developer-options toggles.
+        // 6. Xiaomi Restricted ADB — the toggle is stored in persist.security.adbinput and MIUI
+        // resets it on reboot, so read the property directly instead of inferring from the server
+        // state (a stopped server after boot is normal and is reported by check 4 above).
         if (EnvironmentUtils.isXiaomi()) {
-            val adbOk = isRunning
+            val adbOk = DeveloperOptionsRestorer.isAdbSecuritySettingEnabled()
             checks.add(DoctorCheck(
                 getString(R.string.doctor_check_permission, ""),
                 if (adbOk) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_limited),

@@ -3,6 +3,7 @@ import af.shizuku.manager.activitylog.ActivityLogActivity
 
 import android.content.ComponentName
 import android.content.Intent
+import android.provider.Settings
 import android.os.Bundle
 import androidx.preference.Preference
 import af.shizuku.manager.R
@@ -156,6 +157,17 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                     else R.string.settings_auto_restore_dev_options_no_permission,
                     if (ok) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
                 ).show()
+                // Xiaomi resets "USB debugging (security settings)" on reboot and it cannot be
+                // written from shell; when it is still off after restore, guide the user to the
+                // developer options page where the toggle lives.
+                if (ok && !af.shizuku.manager.receiver.DeveloperOptionsRestorer.isAdbSecuritySettingEnabled()) {
+                    Toast.makeText(
+                        requireContext(),
+                        R.string.settings_restore_adb_security_hint,
+                        Toast.LENGTH_LONG
+                    ).show()
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
+                }
             }
             true
         }

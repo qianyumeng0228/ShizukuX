@@ -98,6 +98,10 @@
     <string name="settings_restore_wifi_notification_title"><![CDATA[无线调试未自动恢复]]></string>
     <string name="settings_restore_wifi_notification_text"><![CDATA[开机自动恢复时 Wi-Fi 未开启，无线调试与 Shizuku 自动启动受阻。请开启 Wi-Fi，Shizuku 将自动启动。]]></string>
     <string name="settings_restore_wifi_notification_action"><![CDATA[开启 Wi-Fi]]></string>
+    <string name="settings_adb_security_notification_title"><![CDATA[USB 调试（安全设置）已关闭]]></string>
+    <string name="settings_adb_security_notification_text"><![CDATA[点击前往开发者选项开启，Shizuku 才能正常启动]]></string>
+    <string name="settings_adb_security_notification_action"><![CDATA[前往开启]]></string>
+    <string name="settings_restore_adb_security_hint"><![CDATA[USB 调试（安全设置）未开启，已跳转开发者选项，请开启该开关]]></string>
     <string name="doctor_fix_open_developer_options_failed"><![CDATA[无法打开开发者选项]]></string>
     <string name="home_adb_button_view_command">查看命令</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有其他注意事项，请先阅读帮助。]]></string>

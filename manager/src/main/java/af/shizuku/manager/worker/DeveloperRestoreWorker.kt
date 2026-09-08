@@ -44,6 +44,11 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
             Timber.tag("DeveloperRestoreWorker").i("Wireless debugging did not stick after restore; notifying user")
             showWirelessNeedsWifiNotification(context)
         }
+        if (!DeveloperOptionsRestorer.isAdbSecuritySettingEnabled()) {
+            Timber.tag("DeveloperRestoreWorker")
+                .i("Xiaomi USB-debugging security setting did not survive reboot; notifying user")
+            showAdbSecurityNeededNotification(context)
+        }
         return if (ok) Result.success() else Result.retry()
     }
 
@@ -94,10 +99,58 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
         }
     }
 
+    /**
+     * Xiaomi resets `persist.security.adbinput` ("USB debugging (security settings)") on reboot
+     * and it cannot be written from shell, so the only automation left is a one-tap guide: the
+     * notification opens the developer options page where the user flips the toggle.
+     */
+    private fun showAdbSecurityNeededNotification(context: Context) {
+        runCatching {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                nm.createNotificationChannel(
+                    NotificationChannel(
+                        CHANNEL_ID,
+                        context.getString(R.string.settings_restore_wifi_notification_title),
+                        NotificationManager.IMPORTANCE_DEFAULT
+                    )
+                )
+            }
+
+            val devOptionsIntent = Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+            val devOptionsPendingIntent = PendingIntent.getActivity(
+                context, 3, devOptionsIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val openAppIntent = PendingIntent.getActivity(
+                context, 4,
+                Intent(context, af.shizuku.manager.MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            val nb = NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_settings_outline_24)
+                .setContentTitle(context.getString(R.string.settings_adb_security_notification_title))
+                .setContentText(context.getString(R.string.settings_adb_security_notification_text))
+                .setContentIntent(openAppIntent)
+                .addAction(
+                    R.drawable.ic_settings_outline_24,
+                    context.getString(R.string.settings_adb_security_notification_action),
+                    devOptionsPendingIntent
+                )
+                .setAutoCancel(true)
+
+            nm.notify(NOTIFICATION_ID_ADB_SECURITY, nb.build())
+        }.onFailure {
+            Timber.tag("DeveloperRestoreWorker").w(it, "Failed to show ADB-security notification")
+        }
+    }
+
     companion object {
         const val CHANNEL_ID = "AutoRestore"
         // Distinct from AdbStartWorker's NOTIFICATION_ID (1448).
         const val NOTIFICATION_ID = 1455
+        const val NOTIFICATION_ID_ADB_SECURITY = 1456
 
         fun enqueue(context: Context) {
             // WorkManager uses credential-encrypted storage which is unavailable during direct boot.

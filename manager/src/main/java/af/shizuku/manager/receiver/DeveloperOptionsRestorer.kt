@@ -3,6 +3,7 @@ package af.shizuku.manager.receiver
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.SystemProperties
 import android.provider.Settings
 import af.shizuku.manager.database.ShizukuProcessUtils
 import rikka.shizuku.Shizuku
@@ -32,6 +33,18 @@ object DeveloperOptionsRestorer {
     fun isWirelessDebuggingEnabled(context: Context): Boolean {
         return runCatching {
             Settings.Global.getInt(context.contentResolver, KEY_ADB_WIFI_ENABLED, 0) == 1
+        }.getOrDefault(false)
+    }
+
+    /**
+     * Whether Xiaomi's "USB debugging (security settings)" toggle is on. It is stored in the
+     * `persist.security.adbinput` system property (not a Settings key); MIUI/HyperOS resets it on
+     * reboot and the shell uid cannot write it back (SELinux blocks `setprop` for non-root), so
+     * without root this can only ever be *read* to guide the user — never automated.
+     */
+    fun isAdbSecuritySettingEnabled(): Boolean {
+        return runCatching {
+            SystemProperties.get("persist.security.adbinput", "") == "1"
         }.getOrDefault(false)
     }
 
