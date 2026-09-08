@@ -144,11 +144,13 @@ object SceneRelayManager {
                 process.waitFor()
                 val output = (stdout + stderr).trim()
                 android.util.Log.w("SceneRelay", "up.sh output: $output")
-                val ok = stdout.contains("Scene-Daemon OK")
 
                 // 3) Verify the daemon actually went resident (the real source of ADB permission).
-                val daemonPid = queryDaemonPid()
-                val activated = ok || daemonPid.isNotEmpty()
+                //    The official script's own pgrep check is unreliable on some devices (fresh
+                //    fork not yet visible, or a missing/odd pgrep), so wait briefly and use
+                //    pidof/ps fallbacks instead of trusting "Scene-Daemon OK!" from the script.
+                val daemonPid = awaitDaemonPid()
+                val activated = daemonPid.isNotEmpty()
 
                 // 4) On success, add Scene to ShizukuX's authorized apps list (updates the
                 //    service-side permission flags).
@@ -296,18 +298,42 @@ object SceneRelayManager {
         }
     }
 
-    /** First PID of a resident scene-daemon, or an empty string when not running. Blocking IPC;
-     *  call from an IO thread/coroutine, never the main thread. */
+    /**
+     * First PID of a resident scene-daemon, or an empty string when not running. Blocking IPC;
+     *  call from an IO thread/coroutine, never the main thread.
+     *
+     * Probes are chained: `pidof` (toybox) first, then `pgrep -f`, then a raw `ps -A` grep as a
+     * final fallback. Some OEMs ship a pgrep that returns nothing for a freshly-forked process or
+     * is missing entirely, and the daemon may take a moment to show up after nohup, so a single
+     * probe is not enough — callers should retry with a short delay (see the activation flow).
+     */
     fun queryDaemonPid(): String {
         return try {
             val verify = Shizuku.newProcess(
-                arrayOf("sh", "-c", "pgrep -f scene-daemon"), null, null
+                arrayOf(
+                    "sh", "-c",
+                    "pidof scene-daemon 2>/dev/null; " +
+                        "pgrep -f scene-daemon 2>/dev/null; " +
+                        "ps -A 2>/dev/null | grep scene-daemon | grep -v grep | awk '{print $2}' | head -1"
+                ), null, null
             )
             val vOut = verify.inputStream.bufferedReader().use { it.readText() }
             verify.waitFor()
-            vOut.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+            vOut.lines().firstOrNull { it.isNotBlank() }?.trim()?.split(' ')?.first()?.orEmpty().orEmpty()
         } catch (e: Throwable) {
             ""
         }
+    }
+
+    /** Waits for scene-daemon to show up after activation (nohup spawns it async and some
+     *  devices are slow to reflect the new process). Returns its PID or empty after [attempts]. */
+    private fun awaitDaemonPid(attempts: Int = 4): String {
+        var pid = ""
+        repeat(attempts) {
+            pid = queryDaemonPid()
+            if (pid.isNotEmpty()) return pid
+            Thread.sleep(700)
+        }
+        return pid
     }
 }

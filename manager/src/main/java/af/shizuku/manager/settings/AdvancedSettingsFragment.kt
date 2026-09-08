@@ -216,11 +216,31 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
             .setTitle(R.string.export_diagnostics_title)
             .setMessage(report)
             .setPositiveButton(R.string.export_diagnostics_share) { _, _ ->
-                val send = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, report)
+                // Long shell diagnostics go out as a file (FileProvider) so messaging apps
+                // (QQ/WeChat) don't truncate the report; short reports share as plain text.
+                try {
+                    val file = java.io.File(ctx.cacheDir, "shizukux_diagnostics_${System.currentTimeMillis()}.txt")
+                    file.writeText(report)
+                    val uri = androidx.core.content.FileProvider.getUriForFile(
+                        ctx,
+                        "${ctx.packageName}.fileprovider",
+                        file
+                    )
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(Intent.EXTRA_TEXT, report.take(500))
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    startActivity(Intent.createChooser(send, ctx.getString(R.string.export_diagnostics_share)))
+                } catch (e: Exception) {
+                    // Fall back to plain-text share if the file provider path fails.
+                    val send = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, report)
+                    }
+                    startActivity(Intent.createChooser(send, ctx.getString(R.string.export_diagnostics_share)))
                 }
-                startActivity(Intent.createChooser(send, ctx.getString(R.string.export_diagnostics_share)))
             }
             .setNeutralButton(R.string.export_diagnostics_copy) { _, _ ->
                 val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager

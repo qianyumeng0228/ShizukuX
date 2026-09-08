@@ -103,6 +103,55 @@ object DiagnosticsExporter {
         sb.append("[Wireless Debugging]").append('\n')
         line("AdbPort", tryGet { EnvironmentUtils.getAdbTcpPort() })
 
+        // Deep shell diagnostics require Shizuku; when it is running, append the full
+        // device-side picture (logcat, /data/local/tmp state, daemon processes, ABI) so a
+        // remote report can triage failures like Scene relay without a real device.
+        sb.append(collectShell(context))
+
+        return sb.toString()
+    }
+
+    /** Runs a command through a Shizuku shell process and returns its combined output. Defensive:
+     *  any failure yields an "err:..." line instead of throwing, so one broken probe never kills
+     *  the whole report. */
+    private fun runShell(cmd: String): String {
+        return try {
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
+            val out = p.inputStream.bufferedReader().use { it.readText() }
+            val err = p.errorStream.bufferedReader().use { it.readText() }
+            p.waitFor()
+            (out + err).trim()
+        } catch (e: Throwable) {
+            "err:${e.javaClass.simpleName}:${e.message}"
+        }
+    }
+
+    /**
+     * Deep shell diagnostics — collected only when Shizuku is actually running. Every block is
+     * bounded (tail/head) so the report stays shareable over QQ as plain text, and every probe is
+     * defensive so a locked-down OEM layer reports "err:..." rather than crashing the export.
+     */
+    private fun collectShell(context: Context): String {
+        val sb = StringBuilder()
+        if (!Shizuku.pingBinder()) {
+            sb.append("\n\n==== Deep Shell Diagnostics ====\n")
+            sb.append("(Shizuku is not running — shell diagnostics skipped. Start Shizuku, reproduce the issue, then re-export.)\n")
+            return sb.toString()
+        }
+        fun block(title: String, cmd: String) {
+            sb.append("\n--- ").append(title).append(" ---\n")
+            sb.append(runShell(cmd)).append('\n')
+        }
+        sb.append("\n\n==== Deep Shell Diagnostics (via Shizuku) ====")
+        block("ABI", "getprop ro.product.cpu.abi; getprop ro.product.cpu.abilist")
+        block("SELinux / uid", "getenforce; id")
+        block("/data/local/tmp (scene-related)", "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1")
+        block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
+        block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
+        block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")
+        block("Try running daemon (2s, captures stderr)", "timeout 2 /data/local/tmp/scene-daemon 2>&1 | head -20; echo \"exit=$?\"")
+        block("Logcat (SX_DEBUG / SceneRelay / FATAL / scene)", "logcat -d -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|ShizukuX:' | tail -150")
+        block("dmesg tail", "dmesg 2>&1 | tail -10")
         return sb.toString()
     }
 }

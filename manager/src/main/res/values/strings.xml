@@ -478,7 +478,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_enable_activity_log">Enable activity log</string>
     <string name="settings_enable_activity_log_summary">Record and display Shizuku API calls and events on the home screen.</string>
     <string name="settings_export_diagnostics">Export diagnostics</string>
-    <string name="settings_export_diagnostics_summary">Collect device and server state in one tap, then copy or share it to the developer for troubleshooting</string>
+    <string name="settings_export_diagnostics_summary">Collect device, server and shell state (incl. logcat &amp; /data/local/tmp) in one tap, then copy or share it to the developer for troubleshooting</string>
     <string name="export_diagnostics_title">Diagnostics</string>
     <string name="export_diagnostics_share">Share</string>
     <string name="export_diagnostics_copy">Copy all</string>
