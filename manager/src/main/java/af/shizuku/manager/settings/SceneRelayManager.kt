@@ -196,8 +196,10 @@ object SceneRelayManager {
                         Thread.sleep(1000)
                     }
                     if (recovered) {
+                        // restartDaemon() already verified the respawn listens on 14754 — trust
+                        // that over a fresh pid probe (pidof/pgrep can transiently miss).
+                        activated = true
                         daemonPid = queryDaemonPid()
-                        activated = daemonPid.isNotEmpty()
                     } else {
                         activated = false
                     }
@@ -243,6 +245,11 @@ object SceneRelayManager {
                     }
                     showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Coroutine cancelled (screen closed / caller stopped). Do not surface a fake
+                // "activation failed" dialog on a dead activity — propagate the cancel.
+                android.util.Log.w("SceneRelay", "startSceneAdbActivation cancelled")
+                throw e
             } catch (e: Exception) {
                 android.util.Log.w("SceneRelay", "startSceneAdbActivation catch: ${e.javaClass.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
@@ -363,7 +370,10 @@ object SceneRelayManager {
                 arrayOf(
                     "sh", "-c",
                     "pidof scene-daemon 2>/dev/null; " +
-                        "pgrep -f scene-daemon 2>/dev/null; " +
+                        // Exclude our own shell ($$): some OEM pgrep -f matches the ancestor
+                        // shell whose cmdline contains "scene-daemon", which would otherwise
+                        // report a daemon that does not exist.
+                        "pgrep -f scene-daemon 2>/dev/null | grep -vw \$\$; " +
                         "ps -A 2>/dev/null | grep scene-daemon | grep -v grep | awk '{print $2}' | head -1"
                 ), null, null
             )
@@ -424,7 +434,9 @@ object SceneRelayManager {
      * with nohup exactly like up.sh does. Returns true when the respawn listens on 14754.
      */
     private fun restartDaemon(): Boolean {
-        runShell("kill \$(pidof scene-daemon) 2>/dev/null; sleep 1")
+        // mkdir first: this path is also reached from the already-running branch, where a stale
+        // daemon may exist while /data/local/tmp/scene was cleared (fresh reboot, manual rm).
+        runShell("mkdir -p $SCENE_DIR; kill \$(pidof scene-daemon) 2>/dev/null; sleep 1")
         runShell("nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &")
         val pid = awaitDaemonPid()
         if (pid.isEmpty()) return false
