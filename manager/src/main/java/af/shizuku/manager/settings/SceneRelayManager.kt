@@ -157,8 +157,30 @@ object SceneRelayManager {
                 //    been opened once; Scene's never is, so extract it from Scene's own APK here.
                 val prepareError = prepareActivationFiles(context)
                 if (prepareError != null) {
-                    withContext(Dispatchers.Main) {
-                        showResult(context, R.string.scene_relay_result_title, prepareError, silent)
+                    // 1b) Recovery fallback: the top-level daemon (a previous successful deploy)
+                    //     may still be valid even though the chain assembly failed. scene-daemon
+                    //     is a self-contained binary — no up.sh/busybox needed to listen on
+                    //     14754 — so launching it directly restores Scene's ADB mode. Only give
+                    //     up when even that binary is missing/corrupt.
+                    val topBytes = runShell("wc -c < $DAEMON_TARGET 2>/dev/null").trim().toLongOrNull() ?: 0L
+                    if (topBytes >= 1_000_000 && launchTopDaemon()) {
+                        val topPid = queryDaemonPid()
+                        val granted = grantScene(context)
+                        val sb = StringBuilder(
+                            context.getString(R.string.scene_relay_recovered_from_top, topPid.ifEmpty { "?" })
+                        )
+                        sb.append("\n").append(prepareError)
+                        sb.append("\n").append(
+                            if (granted) context.getString(R.string.scene_relay_granted)
+                            else context.getString(R.string.scene_relay_grant_failed)
+                        )
+                        withContext(Dispatchers.Main) {
+                            showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            showResult(context, R.string.scene_relay_result_title, prepareError, silent)
+                        }
                     }
                     return@launch
                 }
@@ -322,8 +344,12 @@ object SceneRelayManager {
         }
         android.util.Log.w("SceneRelay", "prepareActivationFiles: apk=$apk")
 
-        // a2) Fresh scene dir — the previous run may have left a stale or half-written chain.
-        runShell("rm -rf $SCENE_DIR && mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
+        // a2) Stage a fresh chain WITHOUT destroying the previous one first: if anything
+        //     below fails we must keep the old (possibly working) chain and the top-level
+        //     daemon intact, otherwise one failed activation wipes the only usable chain
+        //     and Scene stays dead. The old dir is parked aside and deleted only after the
+        //     new chain is verified complete.
+        runShell("rm -rf ${SCENE_DIR}.old && mv -f $SCENE_DIR ${SCENE_DIR}.old 2>/dev/null; mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
 
         // a3) Scene's own runtime artifacts take precedence. Newer Scene builds (N1 2026.09+)
         //     no longer bundle the daemon inside the APK — the app writes up.sh + daemon +
@@ -344,7 +370,7 @@ object SceneRelayManager {
             if (runShell("test -f \"$extDir/busybox\" && echo YES").trim() == "YES") {
                 runShell("cp \"$extDir/busybox\" $BUSYBOX_BIN && chmod 777 $BUSYBOX_BIN")
             } else {
-                runShell("unzip -p \"$apk\" $BUSYBOX_APK_ENTRY > $BUSYBOX_BIN 2>/dev/null; chmod 777 $BUSYBOX_BIN")
+                extractFromApkViaZip(apk, BUSYBOX_APK_ENTRY, BUSYBOX_BIN)
             }
             // Use Scene's official script instead of our bundled template.
             runShell("cp \"$externalUp\" $UP_SCRIPT && chmod 777 $UP_SCRIPT")
@@ -356,23 +382,31 @@ object SceneRelayManager {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: external up.sh had no usable daemon (${daemonBytes}B); falling back to APK extraction")
         }
 
-        // a4) APK extraction (older Scene builds bundle the daemon). A hardcoded entry is
-        //     catastrophic: unzip -p on a missing entry prints nothing yet the redirect still
-        //     creates a 0-byte file, which the old name-only check passed — leaving a 0-byte
-        //     scene-daemon that exits instantly (trial exit 0, no bind) and Scene keeps showing
-        //     its PC-instruction dialog. Enumerate instead and pick the largest plausible entry.
+        // a4) APK extraction (older Scene builds bundle the daemon). Extraction runs on the
+        //     Java side (ZipFile) so it never depends on a shell `unzip` binary (many OEM
+        //     shells ship toybox without unzip, or unzip is missing from PATH — previously a
+        //     failed `unzip -p` here silently produced an empty scene dir right after we had
+        //     wiped the old chain, leaving Scene dead with no recovery). The daemon entry is
+        //     enumerated and the largest plausible entry wins (the native daemon is ~2.2MB
+        //     while helper scripts are tiny), same rule as before.
         val daemonEntry = resolveDaemonEntry(apk)
         if (daemonEntry == null) {
-            val listing = runShell("unzip -l \"$apk\" 2>/dev/null | grep -iE 'daemon|scene' | head -20")
+            val listing = listApkEntries(apk)
             android.util.Log.w("SceneRelay", "prepareActivationFiles: no daemon entry. listing:\n$listing")
-            return context.getString(R.string.scene_relay_prepare_failed) + "\n\nAPK entries (daemon|scene):\n" + listing.trim()
+            restoreOldChain()
+            return context.getString(R.string.scene_relay_prepare_failed) + "\n\nAPK entries (daemon|scene):\n" + listing
         }
         android.util.Log.w("SceneRelay", "prepareActivationFiles: daemon entry = $daemonEntry")
 
         // b) Extract scene-daemon from the resolved entry (origin inside the scene dir).
-        val out1 = runShell("unzip -p \"$apk\" \"$daemonEntry\" > $DAEMON_BIN && chmod 777 $DAEMON_BIN")
+        val extractedDaemon = extractFromApkViaZip(apk, daemonEntry, DAEMON_BIN)
         // c) Extract busybox from assets/toolkit/busybox.
-        val out2 = runShell("unzip -p \"$apk\" $BUSYBOX_APK_ENTRY > $BUSYBOX_BIN && chmod 777 $BUSYBOX_BIN")
+        val extractedBusybox = extractFromApkViaZip(apk, BUSYBOX_APK_ENTRY, BUSYBOX_BIN)
+        if (!extractedDaemon || !extractedBusybox) {
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: java extract failed daemon=$extractedDaemon busybox=$extractedBusybox")
+            restoreOldChain()
+            return context.getString(R.string.scene_relay_prepare_failed) + "\n\nextract daemon=$extractedDaemon busybox=$extractedBusybox"
+        }
 
         // d) Verify the payload actually landed non-empty. The daemon is a multi-MB native
         //    binary and busybox ~1.5MB; a 0-byte file means extraction failed (wrong entry
@@ -381,9 +415,10 @@ object SceneRelayManager {
         val daemonBytes = runShell("wc -c < $DAEMON_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
         val busyboxBytes = runShell("wc -c < $BUSYBOX_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
         if (daemonBytes < 1_000_000 || busyboxBytes < 500_000) {
-            android.util.Log.w("SceneRelay", "prepareActivationFiles: extract failed (daemon=${daemonBytes}B busybox=${busyboxBytes}B). out1=$out1 out2=$out2")
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: extract failed (daemon=${daemonBytes}B busybox=${busyboxBytes}B)")
+            restoreOldChain()
             return context.getString(R.string.scene_relay_prepare_failed) +
-                "\n\ndaemon=${daemonBytes}B busybox=${busyboxBytes}B (need daemon>=1MB, busybox>=500KB)\n" + (out1 + out2).trim()
+                "\n\ndaemon=${daemonBytes}B busybox=${busyboxBytes}B (need daemon>=1MB, busybox>=500KB)"
         }
 
         // e) Write the official up.sh via the shell process stdin (avoids quoting/escaping issues
@@ -392,6 +427,7 @@ object SceneRelayManager {
             context.assets.open(UP_SCRIPT_ASSET).bufferedReader().use { it.readText() }
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: read asset failed: $e")
+            restoreOldChain()
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         try {
@@ -404,9 +440,18 @@ object SceneRelayManager {
             android.util.Log.w("SceneRelay", "write up.sh: out=$wOut")
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: write up.sh failed: $e")
+            restoreOldChain()
             return context.getString(R.string.scene_relay_prepare_failed)
         }
+
+        // New chain is complete — drop the parked old one.
+        runShell("rm -rf ${SCENE_DIR}.old")
         return null
+    }
+
+    /** Reverts to the previously parked chain when a fresh activation chain failed to assemble. */
+    private fun restoreOldChain() {
+        runShell("rm -rf $SCENE_DIR && mv -f ${SCENE_DIR}.old $SCENE_DIR 2>/dev/null; true")
     }
 
     /**
@@ -443,22 +488,80 @@ object SceneRelayManager {
      * @return the entry path (e.g. "res/raw/daemon"), or null when nothing plausible exists.
      */
     private fun resolveDaemonEntry(apk: String): String? {
-        val listing = runShell(
-            "unzip -l \"$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE ' daemon' | " +
-                "grep -viE '\\.(bak|log|txt|md|sh|json|xml)\$' | sort -rn | head -10"
-        )
-        var fallback: String? = null
-        for (line in listing.lineSequence()) {
-            val parts = line.trim().split(Regex("\\s+"))
-            if (parts.size < 2) continue
-            val size = parts[0].toLongOrNull() ?: 0L
-            val name = parts[1]
-            if (name.contains("daemon", ignoreCase = true)) {
-                if (fallback == null) fallback = name
-                if (size >= 1_000_000) return name
+        return try {
+            java.util.zip.ZipFile(apk).use { zip ->
+                var fallback: String? = null
+                var best: Pair<String, Long>? = null
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val e = entries.nextElement()
+                    val name = e.name
+                    if (!name.contains("daemon", ignoreCase = true)) continue
+                    if (name.endsWith(".bak") || name.endsWith(".log") || name.endsWith(".txt") ||
+                        name.endsWith(".md") || name.endsWith(".sh") || name.endsWith(".json") ||
+                        name.endsWith(".xml")) continue
+                    if (fallback == null) fallback = name
+                    val size = e.size
+                    if (size >= 1_000_000 && (best == null || size > best.second)) {
+                        best = name to size
+                    }
+                }
+                best?.first ?: fallback
             }
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "resolveDaemonEntry (zip) failed: ${e.message}")
+            null
         }
-        return fallback
+    }
+
+    /** Lists APK entries whose name mentions daemon/scene (diagnostics fallback; no unzip). */
+    private fun listApkEntries(apk: String): String {
+        return try {
+            val sb = StringBuilder()
+            java.util.zip.ZipFile(apk).use { zip ->
+                val entries = zip.entries()
+                while (entries.hasMoreElements()) {
+                    val name = entries.nextElement().name
+                    if (name.contains("daemon", ignoreCase = true) || name.contains("scene", ignoreCase = true)) {
+                        sb.append(name).append("\n")
+                    }
+                }
+            }
+            sb.toString().trim().ifEmpty { "(none)" }
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "listApkEntries failed: ${e.message}")
+            "(zip read failed: ${e.message})"
+        }
+    }
+
+    /**
+     * Extracts an entry from Scene's APK on the Java side and writes it through a shell
+     * process stdin (cat > file). Never depends on a shell `unzip` binary. Returns true
+     * when the target landed non-empty.
+     */
+    private fun extractFromApkViaZip(apk: String, entry: String, target: String): Boolean {
+        return try {
+            val bytes = java.util.zip.ZipFile(apk).use { zip ->
+                val e = zip.getEntry(entry) ?: return false
+                zip.getInputStream(e).use { it.readBytes() }
+            }
+            if (bytes.size < 1000) {
+                android.util.Log.w("SceneRelay", "extractFromApkViaZip: entry $entry only ${bytes.size}B")
+                return false
+            }
+            val p = Shizuku.newProcess(
+                arrayOf("sh", "-c", "cat > \"$target\" && chmod 777 \"$target\""), null, TMP
+            )
+            p.outputStream.write(bytes)
+            p.outputStream.flush()
+            p.outputStream.close()
+            p.inputStream.bufferedReader().use { it.readText() }
+            val size = runShell("wc -c < $target 2>/dev/null").trim().toLongOrNull() ?: 0L
+            size == bytes.size.toLong()
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "extractFromApkViaZip failed: ${e.message}")
+            false
+        }
     }
 
     /** Runs a command through a Shizuku shell process and returns its combined output.
@@ -558,6 +661,18 @@ object SceneRelayManager {
         // daemon may exist while /data/local/tmp/scene was cleared (fresh reboot, manual rm).
         runShell("mkdir -p $SCENE_DIR; kill \$(pidof scene-daemon) 2>/dev/null; sleep 1")
         runShell("nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &")
+        val pid = awaitDaemonPid()
+        if (pid.isEmpty()) return false
+        return awaitDaemonListening()
+    }
+
+    /**
+     * Directly launches the top-level daemon binary (/data/local/tmp/scene-daemon) when the
+     * activation chain (up.sh/busybox) could not be assembled but the binary itself is valid.
+     * Same resident behaviour as up.sh's non-root branch: nohup + wait for the 14754 bind.
+     */
+    private fun launchTopDaemon(): Boolean {
+        runShell("mkdir -p $SCENE_DIR; kill \$(pidof scene-daemon) 2>/dev/null; sleep 1; nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &")
         val pid = awaitDaemonPid()
         if (pid.isEmpty()) return false
         return awaitDaemonListening()
