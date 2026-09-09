@@ -82,9 +82,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     @Volatile
     private var autoWirelessRequested = false
 
-    /** True once the wireless-debugging switch has been clicked in active mode. */
+    /** True only once the wireless-debugging switch has been verified ON. */
     @Volatile
     private var autoWirelessClicked = false
+
+    /** True once the detail-page switch has been clicked (guard against repeat clicks). */
+    @Volatile
+    private var wirelessSwitchClicked = false
 
     /** Bumped on every auto-wireless request; invalidates any in-flight timeout coroutine. */
     @Volatile
@@ -419,13 +423,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     /**
      * One-tap flow entry: navigate to the developer-options wireless-debugging page and flip
      * the switch for the user. The click happens in [clickWirelessDebuggingSwitch] once the
-     * page's accessibility events arrive; a 2s settle delay then reports
-     * [ACTION_AUTO_WIRELESS_ENABLED] so the starter screen retries port detection.
+     * page's accessibility events arrive; success is only reported after the switch has been
+     * verified ON (see [scheduleWirelessVerification] / [scheduleAutoWirelessEnabled]).
      */
     private fun startAutoEnableWireless() {
         if (autoWirelessRequested) return
         autoWirelessRequested = true
         autoWirelessClicked = false
+        wirelessSwitchClicked = false
         Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS start: navigating to wireless debugging")
         runCatching {
             startActivity(
@@ -448,7 +453,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         serviceScope.launch(Dispatchers.Main) {
             delay(AUTO_PAIRING_TIMEOUT_MS)
             if (autoWirelessTimeoutGeneration == gen && autoWirelessRequested && !autoWirelessClicked) {
-                Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS timed out")
+                Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS timed out (switch never verified ON)")
                 autoWirelessRequested = false
                 runCatching {
                     sendBroadcast(
@@ -460,12 +465,40 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Clicks the wireless-debugging switch on the developer-options page. Matches the row by
-     * localized text, then walks up to a clickable ancestor (the switch row). After the click,
-     * reports [ACTION_AUTO_WIRELESS_ENABLED] once adbd has had a moment to bring up the port.
+     * Flips the wireless-debugging switch. Two ROM layouts exist:
+     *  - dev-options row is an *entry* to the detail page, where the real Switch lives;
+     *  - the row is an inline Switch (click = toggle in place).
+     * Stage A (detail page) finds the Switch and verifies isChecked. Stage B (dev-options)
+     * clicks the row and never claims success — [scheduleWirelessVerification] checks the
+     * actual state a moment later, so a failed/inline click can never fake a success that
+     * makes the starter loop on port detection.
      */
     private fun clickWirelessDebuggingSwitch(root: AccessibilityNodeInfo?) {
         if (root == null || autoWirelessClicked) return
+        val detailTexts = setOf(
+            "使用配对码配对设备", "Pair device with pairing code",
+            "已配对设备", "Paired devices", "使用配对码", "Pair with code"
+        )
+        if (containsAnyText(root, detailTexts)) {
+            // Stage A: on the detail page — the real master switch.
+            val sw = findWirelessSwitch(root)
+            if (sw != null) {
+                val checked = runCatching { sw.isChecked }.getOrDefault(false)
+                if (checked) {
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS detail switch already ON")
+                    autoWirelessClicked = true
+                    scheduleAutoWirelessEnabled()
+                } else if (!wirelessSwitchClicked) {
+                    wirelessSwitchClicked = true
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked detail switch; verifying next event")
+                    runCatching { sw.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                }
+            } else {
+                Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS on detail page; switch not found yet")
+            }
+            return
+        }
+        // Stage B: developer-options page. Click the entry row; verification follows later.
         val texts = setOf("无线调试", "Wireless debugging", "無線デバッグ", "디버깅")
         val nodes = ArrayList<AccessibilityNodeInfo>()
         collectNodesByText(root, nodes, texts, 0)
@@ -477,32 +510,100 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 hops++
             }
             if (target != null && target.isClickable) {
-                // If the switch row reports itself already checked, wireless debugging is
-                // already on — do NOT click (that would toggle it OFF). Report success instead.
-                val alreadyOn = runCatching { target.isChecked }.getOrDefault(false)
-                if (alreadyOn) {
-                    autoWirelessClicked = true
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS already enabled; skipping click")
-                } else {
-                    runCatching { target.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
-                    autoWirelessClicked = true
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked wireless debugging switch")
-                }
-                val gen = autoWirelessTimeoutGeneration
-                serviceScope.launch(Dispatchers.Main) {
-                    delay(2000)
-                    if (autoWirelessRequested && autoWirelessTimeoutGeneration == gen) {
-                        autoWirelessRequested = false
-                        runCatching {
-                            sendBroadcast(
-                                Intent(ACTION_AUTO_WIRELESS_ENABLED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                            )
-                        }
-                    }
-                }
+                Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked dev-options row; verifying after settle")
+                runCatching { target.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                scheduleWirelessVerification()
                 return
             }
         }
+    }
+
+    /**
+     * After the dev-options row was clicked, wait briefly then verify the switch is really
+     * ON (inline toggle switched in place, or we landed on the detail page whose switch the
+     * next accessibility event will flip). Only a verified ON broadcasts success.
+     */
+    private fun scheduleWirelessVerification() {
+        val gen = autoWirelessTimeoutGeneration
+        serviceScope.launch(Dispatchers.Main) {
+            delay(1500)
+            if (autoWirelessRequested && autoWirelessTimeoutGeneration == gen && !autoWirelessClicked) {
+                val root = runCatching { rootInActiveWindow }.getOrNull() ?: return@launch
+                val sw = findWirelessSwitch(root)
+                val checked = if (sw != null) runCatching { sw.isChecked }.getOrDefault(false) else false
+                if (checked) {
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS verified ON after row click")
+                    autoWirelessClicked = true
+                    scheduleAutoWirelessEnabled()
+                } else {
+                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS switch still OFF after row click")
+                }
+            }
+        }
+    }
+
+    /** Reports [ACTION_AUTO_WIRELESS_ENABLED] only from a verified-ON path. */
+    private fun scheduleAutoWirelessEnabled() {
+        val gen = autoWirelessTimeoutGeneration
+        serviceScope.launch(Dispatchers.Main) {
+            delay(2000)
+            if (autoWirelessRequested && autoWirelessTimeoutGeneration == gen) {
+                autoWirelessRequested = false
+                runCatching {
+                    sendBroadcast(
+                        Intent(ACTION_AUTO_WIRELESS_ENABLED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    )
+                }
+            }
+        }
+    }
+
+    /** Finds the master switch on the wireless-debugging detail page (row title mentions
+     *  wireless); falls back to the page's single Switch if the title match fails. */
+    private fun findWirelessSwitch(root: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (root == null) return null
+        val switches = ArrayList<AccessibilityNodeInfo>()
+        collectNodesByClassName(root, switches, "android.widget.Switch")
+        for (sw in switches) {
+            val rowText = try {
+                sw.parent?.text?.toString() ?: ""
+            } catch (e: Throwable) { "" }
+            val cd = try {
+                sw.contentDescription?.toString() ?: ""
+            } catch (e: Throwable) { "" }
+            if (rowText.contains("无线") || rowText.contains("Wireless") ||
+                cd.contains("无线") || cd.contains("Wireless")) {
+                return sw
+            }
+        }
+        return if (switches.size == 1) switches[0] else null
+    }
+
+    private fun collectNodesByClassName(
+        node: AccessibilityNodeInfo?,
+        out: MutableList<AccessibilityNodeInfo>,
+        className: String,
+        depth: Int = 0
+    ) {
+        if (node == null || depth > MAX_DEPTH) return
+        val cls = try {
+            node.className?.toString() ?: ""
+        } catch (e: Throwable) { "" }
+        if (cls.equals(className, ignoreCase = true)) out.add(node)
+        try {
+            for (i in 0 until node.childCount) {
+                collectNodesByClassName(node.getChild(i), out, className, depth + 1)
+            }
+        } catch (e: Throwable) {
+            // node recycled mid-traversal; the next event will rescan
+        }
+    }
+
+    private fun containsAnyText(root: AccessibilityNodeInfo?, texts: Set<String>): Boolean {
+        if (root == null) return false
+        val found = ArrayList<AccessibilityNodeInfo>()
+        collectNodesByText(root, found, texts, 0)
+        return found.isNotEmpty()
     }
 
     /** Clears the active mode; call when pairing succeeded, failed deterministically or timed out. */
