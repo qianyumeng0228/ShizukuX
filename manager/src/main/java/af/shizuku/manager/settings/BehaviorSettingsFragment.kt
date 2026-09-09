@@ -196,11 +196,13 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                     context!!.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) !=
                     android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
-                    Toast.makeText(
-                        context,
-                        R.string.settings_auto_restore_dev_options_no_permission,
-                        Toast.LENGTH_LONG
-                    ).show()
+                    // Toast truncates the long adb-grant command — show a full dialog instead.
+                    showDialog(
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.settings_auto_restore_dev_options_no_permission_title)
+                            .setMessage(R.string.settings_auto_restore_dev_options_no_permission)
+                            .setPositiveButton(android.R.string.ok, null)
+                    )
                 }
                 true
             }
