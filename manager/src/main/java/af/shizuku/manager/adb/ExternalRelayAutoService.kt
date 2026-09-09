@@ -43,6 +43,9 @@ class ExternalRelayAutoService : AccessibilityService() {
         /** How long to wait for Brevent to write its activation script after the app opens. */
         private const val BREVENT_SCRIPT_WAIT_MS = 4_000L
 
+        /** Cap for the diagnostic trace file; the oldest chunk is dropped when exceeded. */
+        private const val MAX_LOG_BYTES = 256 * 1024L
+
         private val isRunning = AtomicBoolean(false)
 
         @JvmStatic
@@ -100,12 +103,17 @@ class ExternalRelayAutoService : AccessibilityService() {
     }
 
     /** Diagnostic file log — Timber is not planted in release builds, so trace the service
-     *  lifecycle and triggers to an app-private file for verification. */
+     *  lifecycle and triggers to an app-private file for verification. Bounded: once the file
+     *  exceeds [MAX_LOG_BYTES] the oldest chunk is dropped (start fresh), so a long-lived
+     *  service cannot grow the file without limit. */
     private fun logLine(msg: String) {
         try {
+            val file = java.io.File(applicationContext.filesDir, "external_relay_auto.log")
+            if (file.exists() && file.length() > MAX_LOG_BYTES) {
+                file.delete()
+            }
             val line = "[${System.currentTimeMillis()}] $msg\n".toByteArray(Charsets.UTF_8)
-            java.io.FileOutputStream(java.io.File(applicationContext.filesDir, "external_relay_auto.log"), true)
-                .use { it.write(line) }
+            java.io.FileOutputStream(file, true).use { it.write(line) }
         } catch (_: Exception) {
         }
     }

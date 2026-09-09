@@ -55,7 +55,13 @@ class AdbMdns(
         if (!running) return
         running = false
         restartJob?.cancel()
-        mdnsScope.cancel()
+        restartJob = null
+        // A cancelled restart coroutine never reaches its own "restartScheduled = false"
+        // epilogue; without resetting these here, a later start() on this instance would
+        // never auto-reconnect again (and the dead scope would swallow new jobs). Keep the
+        // scope alive (it is only used for the restart job, which we just cancelled).
+        restartScheduled = false
+        attempts = 0
         if (registered) {
             try {
                 nsdManager.stopServiceDiscovery(listener)

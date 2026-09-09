@@ -52,12 +52,14 @@ object BreventRelayManager {
         scope.launch(Dispatchers.IO) {
             try {
                 // 0) The script only exists after the user opened Brevent once; surface that instead
-                //    of a confusing "not found" failure later on.
+                //    of a confusing "not found" failure later on. Like Scene, never call
+                //    waitFor()/exitValue() on the remote process — on some OEM builds
+                //    (OPPO/Android 16) ShizukuProcess.exitValue() throws IllegalArgumentException
+                //    and rikka's waitFor(timeout) does not catch it; reading the stream to EOF is
+                //    enough here.
                 val scriptOk = try {
                     val ls = Shizuku.newProcess(arrayOf("sh", "-c", "ls $BREVENT_SCRIPT"), null, "/data/local/tmp")
-                    val out = ls.inputStream.bufferedReader().use { it.readText() }
-                    ls.waitFor()
-                    out.contains("brevent.sh")
+                    ls.inputStream.bufferedReader().use { it.readText() }.contains("brevent.sh")
                 } catch (e: Throwable) {
                     false
                 }
@@ -78,7 +80,9 @@ object BreventRelayManager {
                 }
 
                 // 2) Activate. Brevent's script ends in `exec $brevent` (a resident daemon), so it
-                //    must be launched in the background — waitFor() would otherwise block forever.
+                //    must be launched in the background — waitFor() would otherwise block forever
+                //    (and on some OEM builds ShizukuProcess.waitFor()/exitValue() throws anyway).
+                //    Draining stdout/stderr to EOF is sufficient proof the shell started.
                 val cmd = "/system/bin/sh $BREVENT_SCRIPT >/dev/null 2>&1 &"
                 val process = Shizuku.newProcess(
                     arrayOf("/system/bin/sh", "-c", cmd),
@@ -87,7 +91,6 @@ object BreventRelayManager {
                 )
                 process.inputStream.bufferedReader().use { it.readText() }
                 process.errorStream.bufferedReader().use { it.readText() }
-                process.waitFor()
 
                 // 3) Give the daemon a moment to go resident, then verify.
                 delay(1000)
@@ -151,12 +154,12 @@ object BreventRelayManager {
     fun queryDaemonPid(): String {
         return try {
             // The grep process is created after ps snapshots, so it never pollutes the output;
-            // the wrapping sh has argv[0]="sh" and is filtered out by the regex below.
+            // the wrapping sh has argv[0]="sh" and is filtered out by the regex below. The
+            // stream is drained to EOF; no waitFor()/exitValue() — see activateBrevent.
             val verify = Shizuku.newProcess(
                 arrayOf("sh", "-c", "ps -A | grep -E 'brevent_(daemon|server)'"), null, null
             )
             val vOut = verify.inputStream.bufferedReader().use { it.readText() }
-            verify.waitFor()
             vOut.lines().mapNotNull { line ->
                 val parts = line.trim().split(Regex("\\s+"))
                 val name = parts.lastOrNull()

@@ -135,12 +135,19 @@ object SceneRelayManager {
                         return@launch
                     }
                     withContext(Dispatchers.Main) {
-                        showResult(
-                            context,
-                            R.string.scene_relay_result_title,
-                            context.getString(R.string.scene_relay_already_running, runningPid),
-                            silent
+                        // A resident + listening daemon already grants Scene its ADB
+                        // permission, but the ShizukuX authorization list may still be missing
+                        // Scene (e.g. after a data clear). Top the grant up so this path is
+                        // indistinguishable from a fresh activation.
+                        val granted = grantScene(context)
+                        val sb = StringBuilder(
+                            context.getString(R.string.scene_relay_already_running, runningPid)
                         )
+                        sb.append("\n").append(
+                            if (granted) context.getString(R.string.scene_relay_granted)
+                            else context.getString(R.string.scene_relay_grant_failed)
+                        )
+                        showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
                     }
                     return@launch
                 }
@@ -209,17 +216,7 @@ object SceneRelayManager {
                 //    service-side permission flags).
                 var sceneGranted = false
                 if (activated) {
-                    try {
-                        val appInfo = context.packageManager.getApplicationInfo(SCENE_PACKAGE, 0)
-                        val sceneUid = appInfo.uid
-                        if (sceneUid > 0) {
-                            AuthorizationManager.grant(SCENE_PACKAGE, sceneUid)
-                            sceneGranted = AuthorizationManager.granted(SCENE_PACKAGE, sceneUid)
-                            android.util.Log.w("SceneRelay", "grant scene uid=$sceneUid granted=$sceneGranted")
-                        }
-                    } catch (e: Throwable) {
-                        android.util.Log.w("SceneRelay", "grant scene failed: ${e.message}")
-                    }
+                    sceneGranted = grantScene(context)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -262,6 +259,27 @@ object SceneRelayManager {
                 }
             }
         }
+    }
+
+    /**
+     * Adds Scene to ShizukuX's authorized-apps list and reports whether the grant stuck.
+     * Safe to call when the daemon is already resident (idempotent — re-granting an
+     * already-authorized app is a no-op).
+     */
+    private fun grantScene(context: Context): Boolean = try {
+        val appInfo = context.packageManager.getApplicationInfo(SCENE_PACKAGE, 0)
+        val sceneUid = appInfo.uid
+        if (sceneUid > 0) {
+            AuthorizationManager.grant(SCENE_PACKAGE, sceneUid)
+            val granted = AuthorizationManager.granted(SCENE_PACKAGE, sceneUid)
+            android.util.Log.w("SceneRelay", "grant scene uid=$sceneUid granted=$granted")
+            granted
+        } else {
+            false
+        }
+    } catch (e: Throwable) {
+        android.util.Log.w("SceneRelay", "grant scene failed: ${e.message}")
+        false
     }
 
     /**
