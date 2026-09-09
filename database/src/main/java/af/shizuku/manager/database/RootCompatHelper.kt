@@ -271,13 +271,19 @@ object RootCompatHelper {
         // Probe B — real app-exec flow (best-effort).
         val appExec = try {
             val p = Runtime.getRuntime().exec(arrayOf("sh", "$tmpDir/su", "-c",
-                "echo APP_OK; grep -m1 '^Uid:' /proc/self/status"))
+                "echo APP_OK; awk '/^Uid:/{print \"UID=\"$2}' /proc/self/status"))
             val out = p.inputStream.bufferedReader().readText()
             val err = p.errorStream.bufferedReader().readText()
             p.waitFor()
             if (out.contains("APP_OK")) {
-                val auid = Regex("Uid:\\s+(\\d+)").find(out)?.groupValues?.get(1)?.toIntOrNull()
-                "✅ ran end-to-end (uid ${auid ?: "?"})"
+                val combined = out + err
+                val auid = Regex("Uid:\\s+(\\d+)").find(combined)?.groupValues?.get(1)?.toIntOrNull()
+                ?: Regex("UID=(\\d+)").find(combined)?.groupValues?.get(1)?.toIntOrNull()
+                if (auid != null) {
+                    "✅ ran end-to-end (uid $auid)"
+                } else {
+                    "⚠️ ran end-to-end; raw: ${(out + err).trim().take(200)}"
+                }
             } else {
                 "⚠️ didn't round-trip — an exec-style app may fail here:\n${(out + err).trim().take(220)}"
             }
