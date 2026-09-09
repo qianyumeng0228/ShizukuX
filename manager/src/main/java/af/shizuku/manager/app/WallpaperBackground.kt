@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import af.shizuku.manager.R
@@ -47,6 +48,12 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
     else
         R.drawable.wallpaper_bg_light
 
+    // PERF: the breathing animation must NOT drive Compose recomposition of the whole
+    // page (home RecyclerView / settings list) - an infiniteTransition read in the
+    // composition body re-runs `content()` every frame, which made every screen scroll
+    // stutter on low/mid-end devices. The colors below are therefore FIXED (mid-point
+    // alpha) and the breath effect is applied purely as a graphicsLayer alpha update,
+    // which only touches the layer properties and never recomposes content().
     val animationsEnabled = ShizukuSettings.isExpressiveAnimationsEnabled()
     val infiniteTransition = rememberInfiniteTransition()
     val alpha by infiniteTransition.animateFloat(
@@ -58,8 +65,8 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
         )
     )
 
-    val color1 = MaterialTheme.colorScheme.primary.copy(alpha = 0.03f + 0.03f * alpha)
-    val color2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.03f + 0.03f * (1f - alpha))
+    val color1 = MaterialTheme.colorScheme.primary.copy(alpha = 0.045f)
+    val color2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.045f)
     val color3 = MaterialTheme.colorScheme.secondary.copy(alpha = 0.025f)
     val color4 = MaterialTheme.colorScheme.primary.copy(alpha = 0.015f)
 
@@ -83,7 +90,14 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
             contentScale = ContentScale.Crop
         )
         Box(modifier = Modifier.fillMaxSize().background(scrim))
-        Box(modifier = Modifier.fillMaxSize().background(breathe))
+        // graphicsLayer: reads `alpha` without recomposing the tree; only the layer alpha
+        // is updated per frame. The tint itself stays static (mid-alpha colors above).
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(breathe)
+                .graphicsLayer { this.alpha = 0.82f + 0.18f * alpha }
+        )
         content()
     }
 }
@@ -94,6 +108,8 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
  */
 @Composable
 fun OriginalGradientBackground(content: @Composable () -> Unit) {
+    // PERF: same as WallpaperBackground - fixed colors, breath applied via graphicsLayer
+    // alpha so the page content never recomposes per frame.
     val animationsEnabled = ShizukuSettings.isExpressiveAnimationsEnabled()
     val infiniteTransition = rememberInfiniteTransition()
     val alpha by infiniteTransition.animateFloat(
@@ -105,8 +121,8 @@ fun OriginalGradientBackground(content: @Composable () -> Unit) {
         )
     )
 
-    val color1 = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f + 0.06f * alpha)
-    val color2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.05f + 0.06f * (1f - alpha))
+    val color1 = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+    val color2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f)
     val color3 = MaterialTheme.colorScheme.secondary.copy(alpha = 0.04f)
     val color4 = MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
 
@@ -119,6 +135,7 @@ fun OriginalGradientBackground(content: @Composable () -> Unit) {
                     center = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                 )
             )
+            .graphicsLayer { this.alpha = 0.78f + 0.22f * alpha }
     ) {
         content()
     }

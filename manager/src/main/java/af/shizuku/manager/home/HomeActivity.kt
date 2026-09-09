@@ -236,14 +236,16 @@ open class HomeActivity : AppActivity(), MavericksView {
                 onRestoreHomeCards = { adapter.restoreAllCards() },
                 recyclerViewProvider = { ctx, paddingValues ->
                     val density = ctx.resources.displayMetrics.density
-                    recyclerView.apply {
-                        setPadding(
-                            paddingLeft,
-                            (paddingValues.calculateTopPadding().value * density).toInt(),
-                            paddingRight,
-                            (paddingValues.calculateBottomPadding().value * density).toInt()
-                        )
+                    val top = (paddingValues.calculateTopPadding().value * density).toInt()
+                    val bottom = (paddingValues.calculateBottomPadding().value * density).toInt()
+                    // PERF: AndroidView.update runs on every recomposition; setPadding always
+                    // schedules a requestLayout. Only touch padding when it actually changed so
+                    // the background breath animation (graphicsLayer-only) never forces the
+                    // RecyclerView to relayout per frame while scrolling.
+                    if (recyclerView.paddingTop != top || recyclerView.paddingBottom != bottom) {
+                        recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
                     }
+                    recyclerView
                 }
             )
             }
