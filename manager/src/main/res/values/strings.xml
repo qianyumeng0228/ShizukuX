@@ -652,6 +652,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_root_compatibility_hub">Root Compatibility Hub</string>
     <string name="settings_root_compatibility_hub_summary">Configure and manage root apps to work with ShizukuX privileges.</string>
     <string name="su_bridge_title">SU Bridge</string>
+    <string name="su_bridge_hub_title">SU Bridge (full page)</string>
+    <string name="su_bridge_hub_summary">Device identity, usage guide, recommended apps and Magic Setup</string>
     <string name="su_bridge_description">Provide root access to apps that don\'t support Shizuku by creating a custom \'su\' binary.</string>
     <string name="su_bridge_suggested_apps">Suggested Apps</string>
     <string name="su_bridge_suggested_apps_desc">These apps support custom SU paths. Point them to your exported \'su\' script.</string>

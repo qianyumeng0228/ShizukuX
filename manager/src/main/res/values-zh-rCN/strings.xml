@@ -696,6 +696,8 @@
     <string name="settings_root_compatibility_hub"><![CDATA[Root 兼容性中心]]></string>
     <string name="settings_root_compatibility_hub_summary"><![CDATA[配置和管理 Root 应用，使其使用 ShizukuX 权限。]]></string>
     <string name="su_bridge_title"><![CDATA[SU 桥接]]></string>
+    <string name="su_bridge_hub_title"><![CDATA[SU 桥接（完整页面）]]></string>
+    <string name="su_bridge_hub_summary"><![CDATA[设备身份、使用方法、推荐应用与 Magic Setup 自动配置]]></string>
     <string name="su_bridge_description"><![CDATA[通过创建自定义“su”二进制文件，为不支持 Shizuku 的应用提供类似 Root 的访问能力。]]></string>
     <string name="su_bridge_suggested_apps"><![CDATA[推荐应用]]></string>
     <string name="su_bridge_suggested_apps_desc"><![CDATA[这些应用支持自定义 SU 路径。请将路径指向导出的“su”脚本。]]></string>
