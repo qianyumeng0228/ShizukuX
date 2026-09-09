@@ -526,6 +526,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         if (started) return
         started = true
         autoPairingMode = autoPairing
+        // New user-initiated flow: reset the device-owner write budget. It must NOT be reset
+        // inside runAdbFlow/runOneTapFlow, because the owner path re-enters them via
+        // continueAfterSetup() — a per-entry reset would defeat the 3-attempt cap and could
+        // loop forever if adbd never starts listening.
+        ownerEnableAttempts = 0
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             if (root) runRootFlow()
@@ -538,6 +543,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         _errorEvent.value = null
         _completed.value = false
         started = true
+        ownerEnableAttempts = 0
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             val last = lastStart ?: return@launch
@@ -709,7 +715,6 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         clearStaleStartingState()
-        ownerEnableAttempts = 0
         waitingForPairing = false
         waitingForWireless = false
         lastStart = Triple(false, false, intentPort ?: 0)
@@ -952,7 +957,6 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun runOneTapFlow(intentPort: Int?) {
         clearStaleStartingState()
-        ownerEnableAttempts = 0
         waitingForPairing = false
         waitingForWireless = false
         lastStart = Triple(false, false, intentPort ?: 0)
