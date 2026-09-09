@@ -9,7 +9,9 @@ import kotlinx.serialization.json.Json
 data class AppEnhancement(
     val key: String,
     val title: String,
-    val description: String
+    val description: String,
+    val titleZh: String? = null,
+    val descriptionZh: String? = null
 )
 
 @Serializable
@@ -34,7 +36,8 @@ object AppContextManager {
         val isVerified: Boolean = false,
         val suPathSettingNav: String? = null,
         val rootSupportLevel: RootSupportLevel = RootSupportLevel.FULL,
-        val supportsShizukuNatively: Boolean = false
+        val supportsShizukuNatively: Boolean = false,
+        val descriptionZh: String? = null
     )
 
     @Serializable
@@ -56,14 +59,14 @@ object AppContextManager {
         coerceInputValues = true
     }
 
-    private val ENH_SHELL = AppEnhancement("shell_interceptor", "Shell Acceleration", "Intercepts pm/am commands for native speed.")
-    private val ENH_STORAGE = AppEnhancement("storage_proxy", "Storage Bridge", "Bypasses Android 16/17 storage restrictions.")
-    private val ENH_DPM = AppEnhancement("dpm_plus", "Enhanced DPM", "Direct DevicePolicyManager access for better freezing.")
-    private val ENH_NPU = AppEnhancement("npu_plus", "NPU Accelerator", "Prioritized Neural Processing Unit scheduling.")
-    private val ENH_VM = AppEnhancement("vm_plus", "AVF Linux VM", "Spawns an isolated Microdroid VM for this task.")
-    private val ENH_WIN = AppEnhancement("win_plus", "Window Tuner", "Forces free-form and advanced window control.")
-    private val ENH_OVERLAY = AppEnhancement("overlay_manager_plus", "Overlay Bridge", "Installs and manages runtime overlays for theming.")
-    private val ENH_NETWORK = AppEnhancement("network_governor_plus", "Network Governor", "DNS-based firewall and traffic control without raw iptables.")
+    private val ENH_SHELL = AppEnhancement("shell_interceptor", "Shell Acceleration", "Intercepts pm/am commands for native speed.", "Shell 加速", "拦截 pm/am 命令，实现原生速度。")
+    private val ENH_STORAGE = AppEnhancement("storage_proxy", "Storage Bridge", "Bypasses Android 16/17 storage restrictions.", "存储桥接", "绕过 Android 16/17 的存储访问限制。")
+    private val ENH_DPM = AppEnhancement("dpm_plus", "Enhanced DPM", "Direct DevicePolicyManager access for better freezing.", "增强 DPM", "直连 DevicePolicyManager，冻结/解冻更稳定。")
+    private val ENH_NPU = AppEnhancement("npu_plus", "NPU Accelerator", "Prioritized Neural Processing Unit scheduling.", "NPU 加速", "优先调度神经处理单元。")
+    private val ENH_VM = AppEnhancement("vm_plus", "AVF Linux VM", "Spawns an isolated Microdroid VM for this task.", "AVF Linux 虚拟机", "为任务启动隔离的 Microdroid 虚拟机。")
+    private val ENH_WIN = AppEnhancement("win_plus", "Window Tuner", "Forces free-form and advanced window control.", "窗口调节", "强制自由窗口与高级窗口控制。")
+    private val ENH_OVERLAY = AppEnhancement("overlay_manager_plus", "Overlay Bridge", "Installs and manages runtime overlays for theming.", "Overlay 桥接", "安装并管理运行时覆盖层，用于主题定制。")
+    private val ENH_NETWORK = AppEnhancement("network_governor_plus", "Network Governor", "DNS-based firewall and traffic control without raw iptables.", "网络治理", "基于 DNS 的防火墙与流量控制，无需原生 iptables。")
 
     private val dynamicDatabase = mutableMapOf<String, AppMetadata>()
     private var settings: AppContextSettings? = null
@@ -105,7 +108,7 @@ object AppContextManager {
         put("thejaustin.snapback", AppMetadata("SnapBack: Secure Snapchat Backup Viewer.", listOf(ENH_STORAGE), true))
 
         // --- Software Management & Freezers ---
-        put("com.aistra.hail", AppMetadata("Hail: Modern app freezer.", listOf(ENH_SHELL, ENH_DPM), true))
+        put("com.aistra.hail", AppMetadata("Hail: Modern app freezer.", listOf(ENH_SHELL, ENH_DPM), true, descriptionZh = "雹：现代化应用冻结工具。"))
         put("com.rosan.dhizuku", AppMetadata("Dhizuku: Device Owner sharing bridge.", listOf(ENH_DPM), true))
         put("samolego.canta", AppMetadata("Canta: Powerful system app debloater.", listOf(ENH_SHELL), true))
         put("rikka.appops", AppMetadata("App Ops: Manage hidden app permissions.", listOf(ENH_SHELL), true))
@@ -167,10 +170,13 @@ object AppContextManager {
             dynamic == null -> static
             static == null -> dynamic
             else -> {
-                // 合并：增强功能取并集（远程库缺项时由内置库兜底），其余字段以远程库为准
+                // 合并：增强功能取并集（远程库缺项时由内置库兜底），其余字段以远程库为准；中文文案缺项时从内置库补
                 val enhancements = (static.potentialEnhancements + dynamic.potentialEnhancements)
                     .distinctBy { it.key }
-                dynamic.copy(potentialEnhancements = enhancements)
+                dynamic.copy(
+                    potentialEnhancements = enhancements,
+                    descriptionZh = dynamic.descriptionZh ?: static.descriptionZh
+                )
             }
         }
     }

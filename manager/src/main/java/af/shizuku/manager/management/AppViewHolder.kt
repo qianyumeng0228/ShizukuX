@@ -18,6 +18,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.util.Locale
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.AccessibilityDelegateCompat
@@ -398,7 +399,12 @@ class AppViewHolder(private val binding: AppListItemBinding) :
         val checkedItems = BooleanArray(enhancements.size) { i ->
             ShizukuSettings.isAppEnhancementEnabled(packageName, enhancements[i].key)
         }
-        val options = enhancements.map { "${it.title}: ${it.description}" }.toTypedArray()
+        val options = enhancements.map {
+            val isZh = Locale.getDefault().language.startsWith("zh")
+            val t = if (isZh) it.titleZh ?: it.title else it.title
+            val d = if (isZh) it.descriptionZh ?: it.description else it.description
+            "$t: $d"
+        }.toTypedArray()
         val density = context.resources.displayMetrics.density
 
         // 标题区域 = 标题 + 说明。说明不能用 setMessage：在部分 ROM（如 MIUI）上 setMessage 会遮挡 setMultiChoiceItems 的选项
@@ -502,8 +508,9 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             val tv = TypedValue()
             context.theme.resolveAttribute(colorAttr, tv, true)
             val color = String.format("#%06X", tv.data and 0xFFFFFF)
-
-            appContextView.text = context.getString(R.string.app_management_badge_format, color, badge, metadata.description).toHtml()
+            val desc = if (Locale.getDefault().language.startsWith("zh"))
+                metadata.descriptionZh ?: metadata.description else metadata.description
+            appContextView.text = context.getString(R.string.app_management_badge_format, color, badge, desc).toHtml()
             appContextView.setOnClickListener { showEnhancementSettings(context, metadata) }
         } else {
             appContextView.visibility = View.GONE
