@@ -177,6 +177,13 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)
         recyclerView.clipToPadding = false
+        // The M3E card styling already frames rows visually; the system vertical scrollbar thumb
+        // popping in on the right edge during scroll adds a second moving element that reads as
+        // "tugging"/laggy. Hide it.
+        recyclerView.isVerticalScrollBarEnabled = false
+        // PERF: disable the Android 12+ stretch overscroll — the rubber-band pull at the top/bottom
+        // runs a per-frame translate+scale animation on the whole list, which felt like a drag.
+        recyclerView.overScrollMode = android.view.View.OVER_SCROLL_NEVER
         recyclerView.addItemDecoration(SettingsItemDecoration(context))
 
         ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { _, insets ->
