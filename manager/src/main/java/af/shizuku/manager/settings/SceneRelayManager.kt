@@ -306,12 +306,42 @@ object SceneRelayManager {
         // a2) Fresh scene dir — the previous run may have left a stale or half-written chain.
         runShell("rm -rf $SCENE_DIR && mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
 
-        // a3) Resolve the daemon's entry inside Scene's APK. Its path changed across Scene
-        //     versions (res/raw/daemon -> assets/toolkit/daemon, per-ABI raw/daemon_arm64,
-        //     ...). A hardcoded entry is catastrophic: unzip -p on a missing entry prints
-        //     nothing yet the redirect still creates a 0-byte file, which the old
-        //     name-only check passed — leaving a 0-byte scene-daemon that exits instantly
-        //     (trial exit 0, no bind) and Scene keeps showing its PC-instruction dialog.
+        // a3) Scene's own runtime artifacts take precedence. Newer Scene builds (N1 2026.09+)
+        //     no longer bundle the daemon inside the APK — the app writes up.sh + daemon +
+        //     busybox into its external files dir at runtime, and the ADB-mode dialog simply
+        //     asks the user to run that up.sh. If it exists, reuse it (it knows its own
+        //     daemon path); we only mirror the files into our scene dir because the run step
+        //     executes up.sh with cwd=SCENE_DIR and the script resolves paths via dirname $0.
+        val externalUp = findExternalUp()
+        if (externalUp != null) {
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: Scene official up.sh found: $externalUp")
+            val extDir = externalUp.substringBeforeLast('/')
+            // Mirror the daemon (any plausible native binary >1MB next to up.sh) into our dir.
+            val extDaemon = runShell("find \"$extDir\" -maxdepth 2 -type f -size +1M 2>/dev/null | grep -v busybox | head -1").trim()
+            if (extDaemon.isNotEmpty()) {
+                runShell("cp \"$extDaemon\" $DAEMON_BIN && chmod 777 $DAEMON_BIN")
+            }
+            // Busybox: prefer Scene's own copy next to up.sh, else extract from the APK.
+            if (runShell("test -f \"$extDir/busybox\" && echo YES").trim() == "YES") {
+                runShell("cp \"$extDir/busybox\" $BUSYBOX_BIN && chmod 777 $BUSYBOX_BIN")
+            } else {
+                runShell("unzip -p \"$apk\" $BUSYBOX_APK_ENTRY > $BUSYBOX_BIN 2>/dev/null; chmod 777 $BUSYBOX_BIN")
+            }
+            // Use Scene's official script instead of our bundled template.
+            runShell("cp \"$externalUp\" $UP_SCRIPT && chmod 777 $UP_SCRIPT")
+            val daemonBytes = runShell("wc -c < $DAEMON_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
+            if (daemonBytes >= 1_000_000) {
+                android.util.Log.w("SceneRelay", "prepareActivationFiles: external artifacts ready (daemon=${daemonBytes}B)")
+                return null
+            }
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: external up.sh had no usable daemon (${daemonBytes}B); falling back to APK extraction")
+        }
+
+        // a4) APK extraction (older Scene builds bundle the daemon). A hardcoded entry is
+        //     catastrophic: unzip -p on a missing entry prints nothing yet the redirect still
+        //     creates a 0-byte file, which the old name-only check passed — leaving a 0-byte
+        //     scene-daemon that exits instantly (trial exit 0, no bind) and Scene keeps showing
+        //     its PC-instruction dialog. Enumerate instead and pick the largest plausible entry.
         val daemonEntry = resolveDaemonEntry(apk)
         if (daemonEntry == null) {
             val listing = runShell("unzip -l \"$apk\" 2>/dev/null | grep -iE 'daemon|scene' | head -20")
@@ -358,6 +388,26 @@ object SceneRelayManager {
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         return null
+    }
+
+    /**
+     * Locates Scene's official up.sh, which the app writes into its external files dir at
+     * runtime (shell-readable). Common locations are probed first (cheap `test -f`), then a
+     * bounded find as a last resort. Returns the first hit or null.
+     */
+    private fun findExternalUp(): String? {
+        val base = "/sdcard/Android/data/$SCENE_PACKAGE"
+        val candidates = listOf(
+            "$base/files/up.sh",
+            "$base/cache/up.sh",
+            "$base/up.sh",
+            "$base/files/cache/up.sh"
+        )
+        for (c in candidates) {
+            if (runShell("test -f \"$c\" && echo YES").trim() == "YES") return c
+        }
+        val found = runShell("find \"$base\" -maxdepth 5 -name 'up.sh' 2>/dev/null | head -1").trim()
+        return found.ifEmpty { null }
     }
 
     /**

@@ -180,6 +180,10 @@ object DiagnosticsExporter {
         // assets/toolkit/daemon, per-ABI raw names). Listing the real entries lets a remote
         // report confirm the relay's dynamic entry resolution picked the right file.
         block("Scene APK daemon/toolkit entries", "apk=\$(pm path com.omarea.vtools | sed 's/package://' | head -1); echo \"apk=\$apk\"; unzip -l \"\$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE 'daemon|toolkit' | head -15")
+        // Scene's official runtime artifacts: newer builds write up.sh + daemon into the app's
+        // external files dir (shell-readable) and the ADB dialog just runs that up.sh. Listing
+        // it tells a remote report whether the relay's external-first path found the real thing.
+        block("Scene external/cache dirs (official up.sh)", "base=/sdcard/Android/data/com.omarea.vtools; ls -la \$base 2>&1 | head -8; echo '-- files --'; ls -la \$base/files 2>&1 | head -15; echo '-- cache --'; ls -la \$base/cache 2>&1 | head -15; echo '-- find up.sh / daemon --'; find \$base -maxdepth 5 -name 'up.sh' 2>/dev/null | head -5; echo '-- daemon-ish --'; find \$base -maxdepth 5 -type f -size +1M 2>/dev/null | head -8")
         block("System props (build/ColorOS hints)", "getprop 2>/dev/null | grep -iE 'ro.build.version|ro.product.(name|device|model)|ro.build.display|coloros|oplus|sys.oppo|ro.oplus' | head -30")
         block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
         block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")
