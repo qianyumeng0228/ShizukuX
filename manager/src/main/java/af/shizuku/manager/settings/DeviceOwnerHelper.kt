@@ -47,20 +47,47 @@ object DeviceOwnerHelper {
         return try {
             val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
             val admin = adminComponent(context)
-            dpm.setGlobalSetting(admin, "development_settings_enabled", "1")
-            dpm.setGlobalSetting(admin, Settings.Global.ADB_ENABLED, "1")
-            dpm.setGlobalSetting(admin, "adb_wifi_enabled", "1")
-            dpm.setGlobalSetting(admin, "adb_allowed_connection_time", "0")
+            // Each setting is written independently: a single OEM-protected key must not
+            // roll back the whole enable flow (e.g. adb_allowed_connection_time is a
+            // system-guarded timestamp that throws "device owners cannot update ..." on
+            // every Android 11+; it has no functional effect on pairing, so a failure
+            // there is logged and ignored, never surfaced to the user as a hard error).
+            fun writeGlobal(key: String, value: String, critical: Boolean): String? {
+                return try {
+                    dpm.setGlobalSetting(admin, key, value)
+                    null
+                } catch (e: Throwable) {
+                    Timber.tag("DeviceOwnerHelper").w(e, "setGlobalSetting $key failed")
+                    if (critical) "$key: ${e.message ?: e.javaClass.simpleName}" else null
+                }
+            }
+            val errors = mutableListOf<String>()
+            writeGlobal("development_settings_enabled", "1", critical = true)?.let { errors += it }
+            writeGlobal(Settings.Global.ADB_ENABLED, "1", critical = true)?.let { errors += it }
+            writeGlobal("adb_wifi_enabled", "1", critical = true)?.let { errors += it }
+            // Deliberately NOT writing adb_allowed_connection_time: Android treats it as a
+            // system-guarded ADB-authorization timestamp that device owners cannot update,
+            // and writing it adds nothing to the pairing flow (the system stamps it itself
+            // once a pairing is accepted).
             // Android 10 and below use the legacy secure port (adbd must be restarted there,
             // which the owner cannot do — still write it for consistency; the wireless path
-            // on those versions is out of scope for the one-tap flow).
+            // on those versions is out of scope for the one-tap flow). Non-critical:
+            // OEMs may guard it as well.
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                dpm.setSecureSetting(admin, "adb_port", "5555")
+                try {
+                    dpm.setSecureSetting(admin, "adb_port", "5555")
+                } catch (e: Throwable) {
+                    Timber.tag("DeviceOwnerHelper").w(e, "setSecureSetting adb_port failed")
+                }
             }
-            Timber.tag("DeviceOwnerHelper").i("Wireless debugging enabled via device owner")
-            ""
+            if (errors.isEmpty()) {
+                Timber.tag("DeviceOwnerHelper").i("Wireless debugging enabled via device owner")
+                ""
+            } else {
+                errors.joinToString("\n")
+            }
         } catch (e: Throwable) {
-            Timber.tag("DeviceOwnerHelper").w(e, "setGlobalSetting failed as device owner")
+            Timber.tag("DeviceOwnerHelper").w(e, "enableWirelessDebugging failed")
             e.message ?: e.javaClass.simpleName
         }
     }
