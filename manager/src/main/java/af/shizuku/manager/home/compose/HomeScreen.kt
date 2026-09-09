@@ -162,8 +162,9 @@ fun HomeEmptyState(onRestoreHomeCards: () -> Unit) {
             contentDescription = null,
             modifier = Modifier
                 .size(72.dp)
-                // PERF: float via graphicsLayer (no per-frame recomposition of the empty state)
-                .graphicsLayer { translationY = floatAnim }
+                // PERF: float via graphicsLayer (no per-frame recomposition of the empty state);
+                // GraphicsLayerScope implements Density, so dp.toPx() keeps the original amplitude
+                .graphicsLayer { translationY = floatAnim.dp.toPx() }
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
