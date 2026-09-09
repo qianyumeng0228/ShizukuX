@@ -160,9 +160,8 @@ object UpdateChecker {
         } ?: return CheckResult.UpToDate
 
         val versionCode = parseVersionCode(versionName)
-        val currentVersionCode = parseVersionCode(BuildConfig.VERSION_NAME)
 
-        return if (versionCode > currentVersionCode) {
+        return if (isNewerVersion(versionName, BuildConfig.VERSION_NAME)) {
             Timber.tag(TAG).d("Update available: $versionName (channel=$channel, current=${BuildConfig.VERSION_NAME})")
             CheckResult.UpdateAvailable(
                 UpdateInfo(versionName, versionCode, releaseNotes, downloadUrl, publishedAt, isPrerelease)
@@ -217,8 +216,7 @@ object UpdateChecker {
                         val tagName = href.substringAfterLast("/releases/tag/")
                         val versionName = tagName.removePrefix("v")
                         val versionCode = parseVersionCode(versionName)
-                        val currentVersionCode = parseVersionCode(BuildConfig.VERSION_NAME)
-                        if (versionCode > currentVersionCode) {
+                        if (isNewerVersion(versionName, BuildConfig.VERSION_NAME)) {
                             Timber.tag(TAG).d("Atom fallback: update available $versionName")
                             return UpdateInfo(
                                 versionName = versionName,
@@ -274,6 +272,65 @@ object UpdateChecker {
         """\.\b[kr](\d+)\b""".toRegex().find(versionName)?.groupValues?.get(1)?.toIntOrNull() ?: 0
     } catch (e: Exception) {
         0
+    }
+
+    /**
+     * Parses a version stamp for *ordered* comparison: "13.7.0.k2002" →
+     * VersionStamp(13, 7, 0, 'k', 2002). Comparison is decided by the numeric mainline
+     * triple FIRST and only then by the k/r suffix, so a newer mainline (13.7.0) is never
+     * reported as older than an old mainline (13.6.0.k2014) just because its suffix digit
+     * happens to be smaller — the historical "downgrade" bug where users on 13.7.0 were
+     * offered 13.6.0 as an update. Within the same mainline, k/k and r/r compare by digit;
+     * a mixed k-vs-r pair is resolved by channel preference (stable r supersedes dev k)
+     * because r and k counters are independent (13.6.0.r2002 was re-tagged from
+     * 13.6.0.k2014 with the same versionCode). Falls back to the old digit-only comparison
+     * when the triple cannot be parsed (e.g. plain "13.6.0").
+     */
+    private fun isNewerVersion(versionName: String, currentVersionName: String): Boolean {
+        val candidate = parseVersionStamp(versionName)
+        val current = parseVersionStamp(currentVersionName)
+        if (candidate != null && current != null) {
+            return candidate > current
+        }
+        return parseVersionCode(versionName) > parseVersionCode(currentVersionName)
+    }
+
+    private data class VersionStamp(
+        val major: Int,
+        val minor: Int,
+        val patch: Int,
+        val suffixType: Char?,
+        val suffix: Int
+    ) : Comparable<VersionStamp> {
+        override fun compareTo(other: VersionStamp): Int {
+            compareValues(major, other.major).let { if (it != 0) return it }
+            compareValues(minor, other.minor).let { if (it != 0) return it }
+            compareValues(patch, other.patch).let { if (it != 0) return it }
+            val mine = suffixType
+            val theirs = other.suffixType
+            if (mine == null && theirs == null) return 0
+            if (mine == null) return -1
+            if (theirs == null) return 1
+            if (mine == theirs) return suffix.compareTo(other.suffix)
+            // Mixed k/r on the same mainline: a released build supersedes a dev build
+            // regardless of the (independent) counters.
+            return if (mine.equals('r', ignoreCase = true)) 1 else -1
+        }
+    }
+
+    private fun parseVersionStamp(versionName: String): VersionStamp? = try {
+        val triple = Regex("""(\d+)\.(\d+)\.(\d+)""").find(versionName) ?: return null
+        val (major, minor, patch) = triple.destructured
+        val suffix = Regex("""\.([kr])(\d+)""", RegexOption.IGNORE_CASE).find(versionName)
+        VersionStamp(
+            major.toInt(),
+            minor.toInt(),
+            patch.toInt(),
+            suffix?.groupValues?.get(1)?.firstOrNull(),
+            suffix?.groupValues?.get(2)?.toIntOrNull() ?: 0
+        )
+    } catch (e: Exception) {
+        null
     }
 
     // ------------------------------------------------------------------------------------

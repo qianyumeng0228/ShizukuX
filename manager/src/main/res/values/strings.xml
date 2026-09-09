@@ -1095,6 +1095,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="update_download_failed_storage">Not enough free storage to download the update.</string>
     <string name="update_download_failed_cannot_resume">The download couldn\'t resume after being interrupted. Please try again.</string>
     <string name="update_download_failed_http">A network error interrupted the download. Please check your connection and try again.</string>
+    <string name="update_downgrade_warning_title">Update cannot be installed</string>
+    <string name="update_downgrade_warning_content">The downloaded %1$s (build %2$d) is older than the installed build (%3$d); the system would reject it as a downgrade. Please wait for the correct build on the update channel.</string>
 
     <!-- Migration Dialog -->
 <string name="migration_dialog_title">Important: Reinstall Required</string>

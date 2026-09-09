@@ -20,6 +20,7 @@ import androidx.core.content.FileProvider
 import io.sentry.Sentry
 import af.shizuku.manager.home.HomeActivity
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.BuildConfig
 import java.io.File
 import kotlinx.coroutines.*
 
@@ -208,6 +209,22 @@ class UpdateManager(private val context: Context) {
         // Remove progress notification
         notificationManager.cancel(NOTIFICATION_ID)
 
+        // Defense-in-depth against the historical "downgrade" feedback: the update channel
+        // decides by version NAME while Android installs by manifest versionCode, and those
+        // two can drift apart (e.g. 13.6.0.r2002 was re-tagged from 13.6.0.k2014 with the
+        // same versionCode). If the downloaded APK's build number is lower than the installed
+        // one, the system installer would reject it with "App not installed" — refuse up
+        // front with a clear explanation instead of silently failing.
+        val downloadedCode = readApkVersionCode(file)
+        val installedCode = BuildConfig.VERSION_CODE
+        if (downloadedCode > 0 && downloadedCode < installedCode) {
+            Timber.tag(TAG).w(
+                "Downloaded APK versionCode $downloadedCode < installed $installedCode; refusing install"
+            )
+            showDowngradeWarningNotification(file, versionName, downloadedCode, installedCode)
+            return
+        }
+
         if (ShizukuSettings.isAutoInstallEnabled()) {
             scope.launch {
                 if (!installApk(file)) {
@@ -218,6 +235,49 @@ class UpdateManager(private val context: Context) {
             }
         } else {
             showInstallNotification(file, versionName)
+        }
+    }
+
+    /**
+     * Reads the manifest versionCode of a downloaded APK without installing it.
+     * Returns -1 when unreadable; callers treat that as "unknown" and proceed normally.
+     */
+    private fun readApkVersionCode(file: File): Int = try {
+        val info = context.packageManager.getPackageArchiveInfo(file.absolutePath, 0) ?: return -1
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            info.longVersionCode.toInt()
+        } else {
+            @Suppress("DEPRECATION")
+            info.versionCode
+        }
+    } catch (e: Exception) {
+        Timber.tag(TAG).w(e, "Failed to read downloaded APK versionCode")
+        -1
+    }
+
+    /**
+     * The downloaded build is older than what is installed; the system installer would
+     * reject it. Explain why and point at the update channel instead of installing.
+     */
+    private fun showDowngradeWarningNotification(file: File, versionName: String, downloadedCode: Int, installedCode: Int) {
+        try {
+            val content = context.getString(
+                R.string.update_downgrade_warning_content,
+                versionName, downloadedCode, installedCode
+            )
+            val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_notification_icon)
+                .setContentTitle(context.getString(R.string.update_downgrade_warning_title))
+                .setContentText(content)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build()
+
+            notificationManager.notify(NOTIFICATION_ID + 1, notification)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to show downgrade warning")
+            showDownloadErrorNotification()
         }
     }
 

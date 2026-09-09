@@ -225,26 +225,39 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         // The event source may be only the *changed* node (CONTENT_CHANGED fires per-node),
         // so the scan must cover the whole window: walk the parent chain up to the window
         // root first (source.root needs a newer API level than this project compiles
-        // against, the parent chain does not).
+        // against, the parent chain does not). Every parent hop allocates a fresh node
+        // object; they are collected and recycled once the scan is done. event.source
+        // itself is framework-managed and must never be recycled.
+        val windowChain = ArrayList<AccessibilityNodeInfo>()
         val windowRoot = run {
             var r: android.view.accessibility.AccessibilityNodeInfo = source
-            while (r.parent != null) r = r.parent
+            while (true) {
+                val parent = try { r.parent } catch (e: Throwable) { null } ?: break
+                windowChain.add(parent)
+                r = parent
+            }
             r
         }
-        // Active (one-tap) mode: once we're on the wireless-debugging page, click the
-        // "pair with pairing code" button for the user.
-        if (autoPairRequested && !autoPairClicked && port == null && password == null) {
-            findAndClickPairButton(windowRoot)
-        }
-        // Active mode: flip the wireless-debugging switch on the developer-options page.
-        if (autoWirelessRequested && !autoWirelessClicked) {
-            clickWirelessDebuggingSwitch(windowRoot)
-        }
-        if (port == null) {
-            findPortInNode(windowRoot)
-        }
-        if (port != null && password == null) {
-            findPasswordInNode(windowRoot)
+        try {
+            // Active (one-tap) mode: once we're on the wireless-debugging page, click the
+            // "pair with pairing code" button for the user.
+            if (autoPairRequested && !autoPairClicked && port == null && password == null) {
+                findAndClickPairButton(windowRoot)
+            }
+            // Active mode: flip the wireless-debugging switch on the developer-options page.
+            if (autoWirelessRequested && !autoWirelessClicked) {
+                clickWirelessDebuggingSwitch(windowRoot)
+            }
+            if (port == null) {
+                findPortInNode(windowRoot)
+            }
+            if (port != null && password == null) {
+                findPasswordInNode(windowRoot)
+            }
+        } finally {
+            for (node in windowChain) {
+                try { node.recycle() } catch (e: Throwable) {}
+            }
         }
 
         val currentPort = port
@@ -504,17 +517,32 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         collectNodesByText(root, nodes, texts, 0)
         for (node in nodes) {
             var target: AccessibilityNodeInfo? = node
+            val climbed = ArrayList<AccessibilityNodeInfo>()
             var hops = 0
-            while (target != null && !target.isClickable && target.parent != null && hops < 4) {
-                target = target.parent
+            while (target != null && !runCatching { target.isClickable }.getOrDefault(false) && hops < 4) {
+                val parent = try { target.parent } catch (e: Throwable) { null } ?: break
+                climbed.add(parent)
+                target = parent
                 hops++
             }
-            if (target != null && target.isClickable) {
+            if (target != null && runCatching { target.isClickable }.getOrDefault(false)) {
                 Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked dev-options row; verifying after settle")
                 runCatching { target.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                for (n in climbed) {
+                    try { n.recycle() } catch (e: Throwable) {}
+                }
+                for (n in nodes) {
+                    try { n.recycle() } catch (e: Throwable) {}
+                }
                 scheduleWirelessVerification()
                 return
             }
+            for (n in climbed) {
+                try { n.recycle() } catch (e: Throwable) {}
+            }
+        }
+        for (n in nodes) {
+            try { n.recycle() } catch (e: Throwable) {}
         }
     }
 
@@ -565,18 +593,32 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val switches = ArrayList<AccessibilityNodeInfo>()
         collectNodesByClassName(root, switches, "android.widget.Switch")
         for (sw in switches) {
+            val parent = try { sw.parent } catch (e: Throwable) { null }
             val rowText = try {
-                sw.parent?.text?.toString() ?: ""
+                parent?.text?.toString() ?: ""
             } catch (e: Throwable) { "" }
+            try { parent?.recycle() } catch (e: Throwable) {}
             val cd = try {
                 sw.contentDescription?.toString() ?: ""
             } catch (e: Throwable) { "" }
             if (rowText.contains("无线") || rowText.contains("Wireless") ||
                 cd.contains("无线") || cd.contains("Wireless")) {
+                // Recycle the switches we did not return.
+                for (other in switches) {
+                    if (other !== sw) {
+                        try { other.recycle() } catch (e: Throwable) {}
+                    }
+                }
                 return sw
             }
         }
-        return if (switches.size == 1) switches[0] else null
+        val result = if (switches.size == 1) switches[0] else null
+        if (result == null) {
+            for (sw in switches) {
+                try { sw.recycle() } catch (e: Throwable) {}
+            }
+        }
+        return result
     }
 
     private fun collectNodesByClassName(
@@ -592,7 +634,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (cls.equals(className, ignoreCase = true)) out.add(node)
         try {
             for (i in 0 until node.childCount) {
-                collectNodesByClassName(node.getChild(i), out, className, depth + 1)
+                val child = try { node.getChild(i) } catch (e: Throwable) { null } ?: continue
+                val before = out.size
+                collectNodesByClassName(child, out, className, depth + 1)
+                // Recycle the subtree only when nothing in it landed in the result set;
+                // result nodes stay alive for the caller.
+                if (out.size == before) {
+                    try { child.recycle() } catch (e: Throwable) {}
+                }
             }
         } catch (e: Throwable) {
             // node recycled mid-traversal; the next event will rescan
@@ -603,7 +652,12 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (root == null) return false
         val found = ArrayList<AccessibilityNodeInfo>()
         collectNodesByText(root, found, texts, 0)
-        return found.isNotEmpty()
+        val result = found.isNotEmpty()
+        // Only the boolean matters here; the matches themselves are never used again.
+        for (node in found) {
+            try { node.recycle() } catch (e: Throwable) {}
+        }
+        return result
     }
 
     /** Clears the active mode; call when pairing succeeded, failed deterministically or timed out. */
@@ -626,12 +680,18 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val found = ArrayList<AccessibilityNodeInfo>()
         collectNodesByText(root, found, exactTexts, 0)
         for (node in found) {
-            if (node.isClickable) {
+            if (runCatching { node.isClickable }.getOrDefault(false)) {
                 runCatching { node.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
                 autoPairClicked = true
                 Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button")
+                for (n in found) {
+                    try { n.recycle() } catch (e: Throwable) {}
+                }
                 return
             }
+        }
+        for (n in found) {
+            try { n.recycle() } catch (e: Throwable) {}
         }
         // Fallback: walk again and click any clickable node whose text mentions pairing.
         // Deliberately narrow: "pair" alone would also match "Paired devices" (已配对设备)
@@ -639,12 +699,18 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val fallback = ArrayList<AccessibilityNodeInfo>()
         collectNodesByText(root, fallback, setOf("Pair device", "pairing code", "配对码", "Pairing"), 0)
         for (node in fallback) {
-            if (node.isClickable) {
+            if (runCatching { node.isClickable }.getOrDefault(false)) {
                 runCatching { node.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
                 autoPairClicked = true
                 Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button (fallback)")
+                for (n in fallback) {
+                    try { n.recycle() } catch (e: Throwable) {}
+                }
                 return
             }
+        }
+        for (n in fallback) {
+            try { n.recycle() } catch (e: Throwable) {}
         }
     }
 
@@ -665,7 +731,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
         try {
             for (i in 0 until node.childCount) {
-                collectNodesByText(node.getChild(i), out, texts, depth + 1)
+                val child = try { node.getChild(i) } catch (e: Throwable) { null } ?: continue
+                val before = out.size
+                collectNodesByText(child, out, texts, depth + 1)
+                // Recycle the subtree only when nothing in it landed in the result set;
+                // result nodes stay alive for the caller.
+                if (out.size == before) {
+                    try { child.recycle() } catch (e: Throwable) {}
+                }
             }
         } catch (e: Throwable) {
             // node recycled mid-traversal; the next event will rescan
@@ -708,7 +781,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
         try {
             for (i in 0 until node.childCount) {
-                findPortInNode(node.getChild(i), depth + 1)
+                val child = try { node.getChild(i) } catch (e: Throwable) { null } ?: continue
+                try {
+                    findPortInNode(child, depth + 1)
+                } finally {
+                    // Recycle no matter how the recursion exits (including the early
+                    // "port found" return); this function never hands nodes to callers.
+                    try { child.recycle() } catch (e: Throwable) {}
+                }
             }
         } catch (e: Throwable) {
             // node recycled mid-traversal; the next event will rescan
@@ -737,7 +817,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         }
         try {
             for (i in 0 until node.childCount) {
-                findPasswordInNode(node.getChild(i), depth + 1)
+                val child = try { node.getChild(i) } catch (e: Throwable) { null } ?: continue
+                try {
+                    findPasswordInNode(child, depth + 1)
+                } finally {
+                    // Recycle no matter how the recursion exits (including the early
+                    // "password found" return); this function never hands nodes to callers.
+                    try { child.recycle() } catch (e: Throwable) {}
+                }
             }
         } catch (e: Throwable) {
             // node recycled mid-traversal; the next event will rescan
