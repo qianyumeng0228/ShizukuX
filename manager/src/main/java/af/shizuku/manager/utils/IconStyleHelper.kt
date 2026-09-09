@@ -70,9 +70,12 @@ object IconStyleHelper {
         seedKey: String? = null
     ): Drawable {
         val mutable = original.mutate()
+        // Unify visual size across icons that ship with different internal viewBox padding
+        // (24dp, 960dp, 108dp …). A small uniform inset makes them all read as the same weight.
+        val inset = (1 * context.resources.displayMetrics.density).toInt()
         return when (style) {
-            Style.STANDARD -> tinted(mutable, resolveColor(context, R.attr.colorPrimary))
-            Style.OUTLINED -> tinted(mutable, resolveColor(context, R.attr.colorOnSurfaceVariant))
+            Style.STANDARD -> InsetDrawable(tinted(mutable, resolveColor(context, R.attr.colorPrimary)), inset)
+            Style.OUTLINED -> InsetDrawable(tinted(mutable, resolveColor(context, R.attr.colorOnSurfaceVariant)), inset)
             Style.TWO_TONE -> {
                 val (bgColor, fgColor) = twoToneColors(context, colorMode, seedKey)
                 val bg = pillBackground(context, bgColor)
