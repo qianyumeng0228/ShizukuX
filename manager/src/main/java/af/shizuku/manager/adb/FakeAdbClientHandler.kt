@@ -162,7 +162,13 @@ class FakeAdbClientHandler(
                     }
                 } catch (e: Exception) {}
 
-                process.waitFor()
+                // waitFor() on a ShizukuProcess can throw (OEM builds where exitValue() raises
+                // IllegalArgumentException, or a binder death mid-command). Never let that kill
+                // this thread: the client is still owed the A_CLSE close signal and the process
+                // handle must be released, otherwise the fake-adb shell session hangs.
+                try { process.waitFor() } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "waitFor failed for shell process; closing anyway")
+                }
                 process.destroy()
                 activeProcesses.remove(localId)
                 writeMessage(AdbMessage(AdbProtocol.A_CLSE, localId, remoteId, ByteArray(0)))

@@ -134,12 +134,13 @@ object SceneRelayManager {
                         }
                         return@launch
                     }
+                    // A resident + listening daemon already grants Scene its ADB
+                    // permission, but the ShizukuX authorization list may still be missing
+                    // Scene (e.g. after a data clear). Top the grant up so this path is
+                    // indistinguishable from a fresh activation. The grant is binder IPC,
+                    // so it runs on this IO coroutine, not on the main thread.
+                    val granted = grantScene(context)
                     withContext(Dispatchers.Main) {
-                        // A resident + listening daemon already grants Scene its ADB
-                        // permission, but the ShizukuX authorization list may still be missing
-                        // Scene (e.g. after a data clear). Top the grant up so this path is
-                        // indistinguishable from a fresh activation.
-                        val granted = grantScene(context)
                         val sb = StringBuilder(
                             context.getString(R.string.scene_relay_already_running, runningPid)
                         )

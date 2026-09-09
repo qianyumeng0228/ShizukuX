@@ -33,6 +33,16 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
 
     override suspend fun doWork(): Result {
         val context = applicationContext
+        // Without WRITE_SECURE_SETTINGS the restore can never succeed, so retrying forever
+        // would keep waking the device with exponentially backed-off runs that always fail.
+        // Give up immediately in that case.
+        val canRestore = withContext(Dispatchers.IO) {
+            DeveloperOptionsRestorer.canRestore(context)
+        }
+        if (!canRestore) {
+            Timber.tag("DeveloperRestoreWorker").i("No WRITE_SECURE_SETTINGS; giving up auto-restore")
+            return Result.success()
+        }
         val ok = withContext(Dispatchers.IO) {
             DeveloperOptionsRestorer.restore(context)
         }

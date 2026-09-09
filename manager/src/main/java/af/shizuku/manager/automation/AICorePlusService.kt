@@ -74,7 +74,13 @@ class AICorePlusService : AccessibilityService() {
         }
         val rootNode = rootInActiveWindow ?: return "<error>Root node unavailable</error>"
         val sb = java.lang.StringBuilder()
-        buildXml(rootNode, sb, 0)
+        try {
+            buildXml(rootNode, sb, 0)
+        } finally {
+            // rootInActiveWindow() nodes are caller-owned; the recursive builder only
+            // recycles the children, so the root itself must be released here.
+            try { rootNode.recycle() } catch (e: Throwable) {}
+        }
         return sb.toString()
     }
 
@@ -215,6 +221,9 @@ class AICorePlusService : AccessibilityService() {
                             resultColor = bitmap.getPixel(x, y)
                         }
                     } finally {
+                        // The wrapped bitmap borrows the HardwareBuffer; the pixel read is done
+                        // synchronously, so the buffer can be released right away.
+                        try { screenshot.hardwareBuffer.close() } catch (e: Exception) {}
                         latch.countDown()
                     }
                 }
@@ -260,6 +269,9 @@ class AICorePlusService : AccessibilityService() {
                         val hwBitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
                         resultBitmap = hwBitmap?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
                     } finally {
+                        // hwBitmap borrowed the HardwareBuffer; resultBitmap is an independent
+                        // software copy, so the buffer can be released here.
+                        try { screenshot.hardwareBuffer.close() } catch (e: Exception) {}
                         latch.countDown()
                     }
                 }
@@ -295,8 +307,14 @@ class AICorePlusService : AccessibilityService() {
             putBoolean("is_xiaomi", brand.contains("xiaomi") || manufacturer.contains("xiaomi"))
 
             // Add current foreground activity info if possible
-            rootInActiveWindow?.let { root ->
-                putString("foreground_package", root.packageName?.toString())
+            val root = rootInActiveWindow
+            if (root != null) {
+                try {
+                    putString("foreground_package", root.packageName?.toString())
+                } finally {
+                    // Caller-owned node from rootInActiveWindow(); recycle to avoid the parcel leak.
+                    try { root.recycle() } catch (e: Throwable) {}
+                }
             }
         }
     }

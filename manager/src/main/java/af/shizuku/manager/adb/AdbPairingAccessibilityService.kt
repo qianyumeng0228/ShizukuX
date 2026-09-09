@@ -145,7 +145,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             val filter = IntentFilter(ACTION_AUTO_PAIRING).apply {
                 addAction(ACTION_AUTO_ENABLE_WIRELESS)
             }
-            registerReceiver(
+            // ContextCompat: the flag-bearing registerReceiver() overload only exists on
+            // API 33+; calling it directly would throw NoSuchMethodError on API 24-32 and
+            // silently kill auto-pairing there. ContextCompat maps the flag to the plain
+            // two-arg form below 33 (our broadcasts are explicit-package, so they arrive
+            // regardless) and to the exported flag on 33+.
+            ContextCompat.registerReceiver(
+                this,
                 autoPairReceiver,
                 filter,
                 ContextCompat.RECEIVER_NOT_EXPORTED
@@ -496,15 +502,20 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             // Stage A: on the detail page — the real master switch.
             val sw = findWirelessSwitch(root)
             if (sw != null) {
-                val checked = runCatching { sw.isChecked }.getOrDefault(false)
-                if (checked) {
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS detail switch already ON")
-                    autoWirelessClicked = true
-                    scheduleAutoWirelessEnabled()
-                } else if (!wirelessSwitchClicked) {
-                    wirelessSwitchClicked = true
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked detail switch; verifying next event")
-                    runCatching { sw.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                try {
+                    val checked = runCatching { sw.isChecked }.getOrDefault(false)
+                    if (checked) {
+                        Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS detail switch already ON")
+                        autoWirelessClicked = true
+                        scheduleAutoWirelessEnabled()
+                    } else if (!wirelessSwitchClicked) {
+                        wirelessSwitchClicked = true
+                        Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked detail switch; verifying next event")
+                        runCatching { sw.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
+                    }
+                } finally {
+                    // findWirelessSwitch() returns a caller-owned node; release it after use.
+                    try { sw.recycle() } catch (e: Throwable) {}
                 }
             } else {
                 Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS on detail page; switch not found yet")
@@ -557,14 +568,21 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             delay(1500)
             if (autoWirelessRequested && autoWirelessTimeoutGeneration == gen && !autoWirelessClicked) {
                 val root = runCatching { rootInActiveWindow }.getOrNull() ?: return@launch
-                val sw = findWirelessSwitch(root)
-                val checked = if (sw != null) runCatching { sw.isChecked }.getOrDefault(false) else false
-                if (checked) {
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS verified ON after row click")
-                    autoWirelessClicked = true
-                    scheduleAutoWirelessEnabled()
-                } else {
-                    Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS switch still OFF after row click")
+                var sw: android.view.accessibility.AccessibilityNodeInfo? = null
+                try {
+                    sw = findWirelessSwitch(root)
+                    val checked = if (sw != null) runCatching { sw.isChecked }.getOrDefault(false) else false
+                    if (checked) {
+                        Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS verified ON after row click")
+                        autoWirelessClicked = true
+                        scheduleAutoWirelessEnabled()
+                    } else {
+                        Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS switch still OFF after row click")
+                    }
+                } finally {
+                    // Caller-owned nodes from rootInActiveWindow()/findWirelessSwitch().
+                    try { sw?.recycle() } catch (e: Throwable) {}
+                    try { root.recycle() } catch (e: Throwable) {}
                 }
             }
         }
