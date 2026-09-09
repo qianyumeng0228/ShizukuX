@@ -34,3 +34,8 @@ build_failure.log
 check.log
 smoke-test.log
 ktlint
+
+# build outputs
+release/
+release_k2003/
+
