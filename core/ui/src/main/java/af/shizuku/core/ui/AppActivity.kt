@@ -108,11 +108,24 @@ abstract class AppActivity : MaterialActivity() {
         // actually set (edge-to-edge could never be turned off, and Blur UI could never be turned
         // on, since neither key was ever actually found in the file being read).
         val prefs = createDeviceProtectedStorageContext().getSharedPreferences("settings", android.content.Context.MODE_PRIVATE)
-        if (prefs.getBoolean("edge_to_edge_enabled", true)) {
+        val edgeToEdgeOn = prefs.getBoolean("edge_to_edge_enabled", true)
+        if (edgeToEdgeOn) {
             enableEdgeToEdge()
         }
-        if (prefs.getBoolean("blur_ui_enabled", false) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            window.setBackgroundBlurRadius(30)
+        // Window background blur requires a *translucent* window background. That only
+        // exists when edge-to-edge is on (enableEdgeToEdge() makes the system bar / decor
+        // background transparent). When edge-to-edge is off the window falls back to the
+        // opaque theme background, and calling setBackgroundBlurRadius on such a window
+        // crashes the renderer on several OEM builds (reproduced on Xiaomi HyperOS Android
+        // 17: "enable blur, then disable immersive" => every subsequent Activity launch
+        // SIGABRTs). Gate the blur on edge-to-edge being on, and guard the call itself.
+        if (prefs.getBoolean("blur_ui_enabled", false) && edgeToEdgeOn &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        ) {
+            try {
+                window.setBackgroundBlurRadius(30)
+            } catch (_: Throwable) {
+            }
         }
         super.onCreate(savedInstanceState)
         // Theme-change flash fix: immediately replace the new theme's android:windowBackground with

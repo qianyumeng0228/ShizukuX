@@ -182,11 +182,20 @@ open class HomeActivity : AppActivity(), MavericksView {
         super.onCreate(savedInstanceState)
         // AppActivity.onCreate already called enableEdgeToEdge() when E2E is on; this mirrors
         // that guard so the two calls stay consistent.
-        if (ShizukuSettings.isEdgeToEdgeEnabled()) {
+        val edgeToEdgeOn = ShizukuSettings.isEdgeToEdgeEnabled()
+        if (edgeToEdgeOn) {
             androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
         }
-        if (ShizukuSettings.isBlurUiEnabled() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-            window.setBackgroundBlurRadius(30)
+        // Background blur only makes sense (and only renders safely) while edge-to-edge keeps
+        // the window background translucent — with immersive off the opaque theme background
+        // makes setBackgroundBlurRadius crash the renderer (see AppActivity.onCreate).
+        if (ShizukuSettings.isBlurUiEnabled() && edgeToEdgeOn &&
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+        ) {
+            try {
+                window.setBackgroundBlurRadius(30)
+            } catch (_: Throwable) {
+            }
         }
 
         var showEmptyState by mutableStateOf(false)
