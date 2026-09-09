@@ -108,19 +108,11 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
  */
 @Composable
 fun OriginalGradientBackground(content: @Composable () -> Unit) {
-    // PERF: same as WallpaperBackground - fixed colors, breath applied via graphicsLayer
-    // alpha so the page content never recomposes per frame.
-    val animationsEnabled = ShizukuSettings.isExpressiveAnimationsEnabled()
-    val infiniteTransition = rememberInfiniteTransition()
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (animationsEnabled) 1f else 0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(15000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        )
-    )
-
+    // PERF: keep the gradient look but drop the 15s infinite breathing animation.
+    // The infiniteTransition re-rendered the full-screen sweepGradient every single frame
+    // on RenderThread, which layered under a scrolling RecyclerView (with the collapsing
+    // LargeTopAppBar's per-frame scroll-delta work) and read as stutter. Static gradient
+    // at a mid alpha looks identical and costs nothing after the first frame.
     val color1 = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
     val color2 = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.08f)
     val color3 = MaterialTheme.colorScheme.secondary.copy(alpha = 0.04f)
@@ -135,7 +127,6 @@ fun OriginalGradientBackground(content: @Composable () -> Unit) {
                     center = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
                 )
             )
-            .graphicsLayer { this.alpha = 0.78f + 0.22f * alpha }
     ) {
         content()
     }
