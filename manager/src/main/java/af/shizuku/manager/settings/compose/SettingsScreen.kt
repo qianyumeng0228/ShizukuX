@@ -76,8 +76,11 @@ fun SettingsScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Wallpaper page background (shared with home), respecting the wallpaper-theme setting.
-        af.shizuku.manager.app.WallpaperBackground { }
+        // PERF: WallpaperBackground removed from settings. ShizukuPlus (which settings are
+        // modeled on) has no wallpaper layer; drawing a full-screen image + scrim + breathe
+        // gradient in Compose every frame under a scrolling Preference list was the source of
+        // the "stutter/tugging" feel. The settings list now uses the plain Scaffold surface,
+        // exactly like stock ShizukuPlus.
 
         Scaffold(
             containerColor = Color.Transparent,
