@@ -55,18 +55,18 @@
         android:title="@string/settings_su_bridge_configuration_category_title"
         android:defaultValue="true">
 
-        <Preference
-            android:key="root_compatibility_hub"
-            android:title="@string/su_bridge_hub_title"
-            android:summary="@string/su_bridge_hub_summary"
-            android:icon="@drawable/ic_admin_panel_settings_24" />
-
         <SwitchPreferenceCompat
             android:key="su_bridge_enabled"
             android:title="@string/settings_fake_su"
             android:summary="@string/settings_fake_su_summary"
             android:icon="@drawable/ic_root_24"
             android:defaultValue="false" />
+
+        <Preference
+            android:key="root_compatibility_hub"
+            android:title="@string/su_bridge_hub_title"
+            android:summary="@string/su_bridge_hub_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
 
         <EditTextPreference
             android:key="custom_su_path"
