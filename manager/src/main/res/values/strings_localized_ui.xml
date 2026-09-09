@@ -286,6 +286,15 @@
     <string name="external_relay_scene_card_package">com.omarea.vtools</string>
     <string name="external_relay_scene_activate">Activate Scene\'s ADB mode</string>
     <string name="external_relay_scene_activating">Activating…</string>
+    <string name="external_relay_owner_card_title">Device Owner (Dhizuku)</string>
+    <string name="external_relay_owner_card_summary">As device owner, write system settings directly to enable developer options, USB debugging and wireless debugging — no Wi-Fi connection and no switch clicking needed</string>
+    <string name="external_relay_owner_enabled">Device owner is active</string>
+    <string name="external_relay_owner_disabled">Device owner is not set (run dpm set-device-owner via Shizuku/ADB first)</string>
+    <string name="external_relay_owner_activate">Enable wireless debugging &amp; developer options</string>
+    <string name="external_relay_owner_activating">Writing system settings…</string>
+    <string name="external_relay_owner_done">Enabled developer options, USB debugging and wireless debugging as device owner</string>
+    <string name="external_relay_owner_failed">Failed: </string>
+    <string name="dhizuku_owner_not_active">ShizukuX is not the device owner; cannot write system settings directly</string>
     <string name="external_relay_brevent_card_title">Brevent Relay Authorization</string>
     <string name="external_relay_brevent_card_package">me.piebridge.brevent</string>
     <string name="external_relay_brevent_activate">Activate Brevent</string>
@@ -300,4 +309,6 @@
     <string name="brevent_relay_result_title">Brevent Relay Authorization</string>
     <string name="external_relay_placeholder_title">More relayed apps coming soon</string>
     <string name="external_relay_placeholder_summary">External relay for more apps will be added here later</string>
+    <string name="one_tap_step_wireless_owner_auto">Wireless debugging enabled via device owner</string>
+    <string name="starter_step_enable_wireless_owner_auto">Wireless debugging enabled via device owner</string>
 </resources>

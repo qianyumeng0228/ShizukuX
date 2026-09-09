@@ -28,6 +28,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import af.shizuku.manager.settings.DeviceOwnerHelper
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.topjohnwu.superuser.CallbackList
@@ -461,6 +462,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     private var waitingForWireless = false
     private var autoPairingMode = false
 
+    /** Consecutive device-owner enable attempts in one flow; caps the write-and-retry loop. */
+    private var ownerEnableAttempts = 0
+
     /** Safety nets for the one-tap flow: if the assistant never acknowledges the request
      *  (its receiver may not be bound yet right after enabling), fall back to manual so the
      *  step can never be stuck in RUNNING forever. */
@@ -705,6 +709,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         clearStaleStartingState()
+        ownerEnableAttempts = 0
         waitingForPairing = false
         waitingForWireless = false
         lastStart = Triple(false, false, intentPort ?: 0)
@@ -727,6 +732,24 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             // otherwise auto-enable when privileged or ask the user to do it manually.
             updateStep("detect_port", StepStatus.WARNING, appContext.getString(R.string.starter_step_no_port))
             waitingForWireless = true
+            // Device Owner: write Settings.Global directly — no switch click, no Wi-Fi needed.
+            if (DeviceOwnerHelper.isDeviceOwner(appContext) && ownerEnableAttempts < 3) {
+                val ownerErr = DeviceOwnerHelper.enableWirelessDebugging(appContext)
+                if (ownerErr.isEmpty()) {
+                    ownerEnableAttempts++
+                    insertStep(0, StarterStep(
+                        "enable_wireless",
+                        R.string.starter_step_enable_wireless,
+                        StepStatus.COMPLETED,
+                        appContext.getString(R.string.starter_step_enable_wireless_owner_auto),
+                        needsUserAction = false
+                    ))
+                    delay(1500)
+                    continueAfterSetup()
+                    return
+                }
+                Timber.tag("StarterActivity").w("Device-owner enable failed: $ownerErr; falling through")
+            }
             val autoWireless = autoPairingMode && appContext.isPairingAssistantEnabled() &&
                 appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
             insertStep(0, StarterStep(
@@ -929,6 +952,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun runOneTapFlow(intentPort: Int?) {
         clearStaleStartingState()
+        ownerEnableAttempts = 0
         waitingForPairing = false
         waitingForWireless = false
         lastStart = Triple(false, false, intentPort ?: 0)
@@ -953,6 +977,24 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         if (detection == null) {
             updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_auto))
             waitingForWireless = true
+            // Device Owner: write Settings.Global directly — no switch click, no Wi-Fi needed
+            // (HyperOS disables the switch without a connected network; the write does not care).
+            // Guarded: if adbd still hasn't listened after 3 writes, degrade to the normal paths.
+            if (DeviceOwnerHelper.isDeviceOwner(appContext) && ownerEnableAttempts < 3) {
+                val ownerErr = DeviceOwnerHelper.enableWirelessDebugging(appContext)
+                if (ownerErr.isEmpty()) {
+                    ownerEnableAttempts++
+                    updateStep(
+                        "one_tap_wireless",
+                        StepStatus.COMPLETED,
+                        appContext.getString(R.string.one_tap_step_wireless_owner_auto)
+                    )
+                    delay(1500)
+                    continueAfterSetup()
+                    return
+                }
+                Timber.tag("StarterActivity").w("Device-owner enable failed: $ownerErr; falling through")
+            }
             val autoWireless = appContext.isPairingAssistantEnabled() &&
                 appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
             if (autoWireless) {

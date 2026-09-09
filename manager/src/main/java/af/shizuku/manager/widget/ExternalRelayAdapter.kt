@@ -22,14 +22,16 @@ class ExternalRelayAdapter(
     private val onActivateScene: () -> Unit,
     private val onActivateBrevent: () -> Unit,
     private val onAutoToggle: (Boolean) -> Unit,
-    private val onOpenAccessibility: () -> Unit
+    private val onOpenAccessibility: () -> Unit,
+    private val onEnableOwnerWireless: () -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
         private const val TYPE_HEADER = 0
-        private const val TYPE_SCENE = 1
-        private const val TYPE_BREVENT = 2
-        private const val TYPE_PLACEHOLDER = 3
+        private const val TYPE_OWNER = 1
+        private const val TYPE_SCENE = 2
+        private const val TYPE_BREVENT = 3
+        private const val TYPE_PLACEHOLDER = 4
 
         /** Component name of the external-relay auto-activation accessibility service. */
         private fun autoServiceComponent(packageName: String): String =
@@ -41,6 +43,7 @@ class ExternalRelayAdapter(
 
     init {
         items.add(TYPE_HEADER)
+        items.add(TYPE_OWNER)
         items.add(TYPE_SCENE)
         items.add(TYPE_BREVENT)
         items.add(TYPE_PLACEHOLDER)
@@ -53,6 +56,9 @@ class ExternalRelayAdapter(
         return when (viewType) {
             TYPE_HEADER -> HeaderViewHolder(
                 inflater.inflate(R.layout.item_external_relay_header, parent, false)
+            )
+            TYPE_OWNER -> OwnerViewHolder(
+                inflater.inflate(R.layout.item_external_relay_owner, parent, false)
             )
             TYPE_SCENE -> SceneViewHolder(
                 inflater.inflate(R.layout.item_external_relay_scene, parent, false)
@@ -69,6 +75,7 @@ class ExternalRelayAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (val vh = holder) {
             is HeaderViewHolder -> vh.bind()
+            is OwnerViewHolder -> vh.bind()
             is SceneViewHolder -> vh.bind()
             is BreventViewHolder -> vh.bind()
             is PlaceholderViewHolder -> vh.bind()
@@ -113,6 +120,41 @@ class ExternalRelayAdapter(
             } catch (e: Exception) {
                 false
             }
+        }
+    }
+
+    inner class OwnerViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
+        private val statusText: TextView = itemView.findViewById(R.id.owner_status)
+        private val resultText: TextView = itemView.findViewById(R.id.owner_result)
+        private val actionButton: MaterialButton = itemView.findViewById(R.id.owner_action_button)
+
+        fun bind() {
+            val ownerActive = af.shizuku.manager.settings.DeviceOwnerHelper.isDeviceOwner(context)
+            statusText.text = context.getString(
+                if (ownerActive) R.string.external_relay_owner_enabled
+                else R.string.external_relay_owner_disabled
+            )
+            actionButton.isEnabled = ownerActive
+            actionButton.setOnClickListener {
+                resultText.visibility = android.view.View.VISIBLE
+                resultText.text = context.getString(R.string.external_relay_owner_activating)
+                onEnableOwnerWireless()
+            }
+        }
+
+        /** Called by the activity when the owner-enable attempt finishes. */
+        fun showResult(success: Boolean, message: String?) {
+            resultText.visibility = android.view.View.VISIBLE
+            resultText.setTextColor(
+                context.getColor(
+                    if (success) android.R.color.holo_green_dark
+                    else android.R.color.holo_red_dark
+                )
+            )
+            resultText.text = message ?: context.getString(
+                if (success) R.string.external_relay_owner_done
+                else R.string.external_relay_owner_failed
+            )
         }
     }
 

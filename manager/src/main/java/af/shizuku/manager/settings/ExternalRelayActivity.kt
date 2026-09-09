@@ -69,6 +69,23 @@ class ExternalRelayActivity : AppBarActivity() {
                 } catch (e: Exception) {
                     Toast.makeText(this, R.string.external_relay_auto_open_accessibility_failed, Toast.LENGTH_SHORT).show()
                 }
+            },
+            onEnableOwnerWireless = {
+                // Device Owner writes system settings directly — no Wi-Fi, no switch click.
+                val result = DeviceOwnerHelper.enableWirelessDebugging(this)
+                val success = result.isEmpty()
+                val holder = recyclerView.findViewHolderForAdapterPosition(1)
+                    as? ExternalRelayAdapter.OwnerViewHolder
+                if (holder != null) {
+                    holder.showResult(success, if (success) null else result)
+                } else {
+                    val msg: CharSequence = if (success) {
+                        getString(R.string.external_relay_owner_done)
+                    } else {
+                        getString(R.string.external_relay_owner_failed) + result
+                    }
+                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+                }
             }
         )
         recyclerView.adapter = adapter
@@ -94,6 +111,7 @@ class ExternalRelayActivity : AppBarActivity() {
         // Refresh the accessibility status row after the user comes back from Settings.
         if (::adapter.isInitialized) {
             adapter.notifyItemChanged(0)
+            adapter.notifyItemChanged(1)
         }
     }
 

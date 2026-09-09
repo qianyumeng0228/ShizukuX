@@ -285,6 +285,15 @@
     <string name="external_relay_scene_card_package">com.omarea.vtools</string>
     <string name="external_relay_scene_activate">激活 Scene 的 ADB 模式</string>
     <string name="external_relay_scene_activating">正在激活…</string>
+    <string name="external_relay_owner_card_title">设备所有者（Dhizuku）</string>
+    <string name="external_relay_owner_card_summary">以设备所有者身份直接写入系统设置，开启开发者选项、USB 调试与无线调试，无需连接 Wi-Fi、无需点击开关</string>
+    <string name="external_relay_owner_enabled">设备所有者已激活</string>
+    <string name="external_relay_owner_disabled">设备所有者未激活（需先通过 Shizuku/ADB 执行 dpm set-device-owner）</string>
+    <string name="external_relay_owner_activate">一键开启无线调试与开发者选项</string>
+    <string name="external_relay_owner_activating">正在写入系统设置…</string>
+    <string name="external_relay_owner_done">已通过设备所有者开启开发者选项、USB 调试与无线调试</string>
+    <string name="external_relay_owner_failed">开启失败：</string>
+    <string name="dhizuku_owner_not_active">ShizukuX 不是设备所有者，无法直接写入系统设置</string>
     <string name="external_relay_brevent_card_title">黑阈（Brevent）中继授权</string>
     <string name="external_relay_brevent_card_package">me.piebridge.brevent</string>
     <string name="external_relay_brevent_activate">激活黑阈</string>
@@ -299,4 +308,6 @@
     <string name="brevent_relay_result_title">黑阈中继授权</string>
     <string name="external_relay_placeholder_title">更多外部授权即将推出</string>
     <string name="external_relay_placeholder_summary">后续将在此支持更多应用的中转授权</string>
+    <string name="one_tap_step_wireless_owner_auto">已通过设备所有者开启无线调试</string>
+    <string name="starter_step_enable_wireless_owner_auto">已通过设备所有者开启无线调试</string>
 </resources>
