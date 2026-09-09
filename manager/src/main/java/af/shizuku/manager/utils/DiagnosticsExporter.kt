@@ -176,6 +176,10 @@ object DiagnosticsExporter {
         block("SELinux / uid", "getenforce; id")
         block("/data/local/tmp (scene-related)", "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1")
         block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
+        // Scene's APK layout: the daemon entry moved between Scene versions (raw/daemon ->
+        // assets/toolkit/daemon, per-ABI raw names). Listing the real entries lets a remote
+        // report confirm the relay's dynamic entry resolution picked the right file.
+        block("Scene APK daemon/toolkit entries", "apk=\$(pm path com.omarea.vtools | sed 's/package://' | head -1); echo \"apk=\$apk\"; unzip -l \"\$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE 'daemon|toolkit' | head -15")
         block("System props (build/ColorOS hints)", "getprop 2>/dev/null | grep -iE 'ro.build.version|ro.product.(name|device|model)|ro.build.display|coloros|oplus|sys.oppo|ro.oplus' | head -30")
         block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
         block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")

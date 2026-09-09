@@ -46,8 +46,8 @@ object SceneRelayManager {
     private const val BUSYBOX_BIN = "$SCENE_DIR/busybox"
     private const val DAEMON_TARGET = "$TMP/scene-daemon"      // final resident location
 
-    /** Entry paths inside Scene's APK that carry the activation payload. */
-    private const val DAEMON_APK_ENTRY = "res/raw/daemon"
+    /** Entry paths inside Scene's APK that carry the activation payload. The daemon's entry is
+     *  resolved dynamically (its path changed across Scene versions); busybox still sits here. */
     private const val BUSYBOX_APK_ENTRY = "assets/toolkit/busybox"
 
     /** Official activation script template bundled with ShizukuX (assets/scene_up.sh). */
@@ -306,16 +306,35 @@ object SceneRelayManager {
         // a2) Fresh scene dir — the previous run may have left a stale or half-written chain.
         runShell("rm -rf $SCENE_DIR && mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
 
-        // b) Extract scene-daemon from res/raw/daemon (origin inside the scene dir).
-        val out1 = runShell("unzip -p \"$apk\" $DAEMON_APK_ENTRY > $DAEMON_BIN && chmod 777 $DAEMON_BIN")
+        // a3) Resolve the daemon's entry inside Scene's APK. Its path changed across Scene
+        //     versions (res/raw/daemon -> assets/toolkit/daemon, per-ABI raw/daemon_arm64,
+        //     ...). A hardcoded entry is catastrophic: unzip -p on a missing entry prints
+        //     nothing yet the redirect still creates a 0-byte file, which the old
+        //     name-only check passed — leaving a 0-byte scene-daemon that exits instantly
+        //     (trial exit 0, no bind) and Scene keeps showing its PC-instruction dialog.
+        val daemonEntry = resolveDaemonEntry(apk)
+        if (daemonEntry == null) {
+            val listing = runShell("unzip -l \"$apk\" 2>/dev/null | grep -iE 'daemon|scene' | head -20")
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: no daemon entry. listing:\n$listing")
+            return context.getString(R.string.scene_relay_prepare_failed) + "\n\nAPK entries (daemon|scene):\n" + listing.trim()
+        }
+        android.util.Log.w("SceneRelay", "prepareActivationFiles: daemon entry = $daemonEntry")
+
+        // b) Extract scene-daemon from the resolved entry (origin inside the scene dir).
+        val out1 = runShell("unzip -p \"$apk\" \"$daemonEntry\" > $DAEMON_BIN && chmod 777 $DAEMON_BIN")
         // c) Extract busybox from assets/toolkit/busybox.
         val out2 = runShell("unzip -p \"$apk\" $BUSYBOX_APK_ENTRY > $BUSYBOX_BIN && chmod 777 $BUSYBOX_BIN")
 
-        // d) Verify the two payload files actually landed.
-        val ls = runShell("ls -l $DAEMON_BIN $BUSYBOX_BIN")
-        if (!ls.contains("scene-daemon") || !ls.contains("busybox")) {
-            android.util.Log.w("SceneRelay", "prepareActivationFiles: extract failed. ls=$ls out1=$out1 out2=$out2")
-            return context.getString(R.string.scene_relay_prepare_failed) + "\n\n" + (ls + out1 + out2).trim()
+        // d) Verify the payload actually landed non-empty. The daemon is a multi-MB native
+        //    binary and busybox ~1.5MB; a 0-byte file means extraction failed (wrong entry
+        //    or APK layout) and would make activation fail invisibly later — catch it here
+        //    instead of shipping a dead daemon to the runtime.
+        val daemonBytes = runShell("wc -c < $DAEMON_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
+        val busyboxBytes = runShell("wc -c < $BUSYBOX_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
+        if (daemonBytes < 1_000_000 || busyboxBytes < 500_000) {
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: extract failed (daemon=${daemonBytes}B busybox=${busyboxBytes}B). out1=$out1 out2=$out2")
+            return context.getString(R.string.scene_relay_prepare_failed) +
+                "\n\ndaemon=${daemonBytes}B busybox=${busyboxBytes}B (need daemon>=1MB, busybox>=500KB)\n" + (out1 + out2).trim()
         }
 
         // e) Write the official up.sh via the shell process stdin (avoids quoting/escaping issues
@@ -339,6 +358,38 @@ object SceneRelayManager {
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         return null
+    }
+
+    /**
+     * Finds the scene-daemon binary inside Scene's APK. Newer Scene builds moved the
+     * daemon out of res/raw/daemon (assets/toolkit/daemon, per-ABI raw names, ...), so
+     * the entry is enumerated instead of hardcoded and the largest plausible entry wins
+     * (the native daemon is ~2.2MB while helper scripts are tiny).
+     *
+     * unzip -l column order (toybox/Info-ZIP): Length Date Time Name — awk prints
+     * "size name", then we filter for names containing "daemon", drop doc/sidecar
+     * suffixes, sort by size descending and return the biggest >=1MB match (falling
+     * back to the first plausible name when nothing is that large).
+     *
+     * @return the entry path (e.g. "res/raw/daemon"), or null when nothing plausible exists.
+     */
+    private fun resolveDaemonEntry(apk: String): String? {
+        val listing = runShell(
+            "unzip -l \"$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE ' daemon' | " +
+                "grep -viE '\\.(bak|log|txt|md|sh|json|xml)\$' | sort -rn | head -10"
+        )
+        var fallback: String? = null
+        for (line in listing.lineSequence()) {
+            val parts = line.trim().split(Regex("\\s+"))
+            if (parts.size < 2) continue
+            val size = parts[0].toLongOrNull() ?: 0L
+            val name = parts[1]
+            if (name.contains("daemon", ignoreCase = true)) {
+                if (fallback == null) fallback = name
+                if (size >= 1_000_000) return name
+            }
+        }
+        return fallback
     }
 
     /** Runs a command through a Shizuku shell process and returns its combined output.
