@@ -65,6 +65,7 @@
     <string name="one_tap_step_wireless_auto"><![CDATA[正在自动开启无线调试…]]></string>
     <string name="one_tap_step_wireless_done"><![CDATA[无线调试已开启]]></string>
     <string name="one_tap_step_wireless_manual"><![CDATA[请在开发者选项中开启无线调试，开启后点击“已完成”]]></string>
+    <string name="one_tap_step_wireless_need_wifi"><![CDATA[无线调试开关需要已连接的 Wi-Fi 网络（系统限制）。请先连接一个 Wi-Fi（如手机热点），连接后点击“已完成”]]></string>
     <string name="one_tap_step_pairing_running"><![CDATA[正在自动配对…]]></string>
     <string name="one_tap_step_pairing_done"><![CDATA[配对成功]]></string>
     <string name="one_tap_step_pairing_manual"><![CDATA[请在无线调试页面完成配对，配对后将自动继续]]></string>
@@ -847,6 +848,7 @@
     <string name="starter_step_pairing_done"><![CDATA[配对成功]]></string>
     <string name="starter_step_enable_wireless"><![CDATA[开启无线调试]]></string>
     <string name="starter_step_enable_wireless_hint"><![CDATA[未找到无线调试端口。请先开启无线调试：开发者选项 → 无线调试]]></string>
+    <string name="starter_step_enable_wireless_need_wifi"><![CDATA[无线调试开关需要已连接的 Wi-Fi 网络（系统限制）。请先连接一个 Wi-Fi（如手机热点），连接后点击“已完成”]]></string>
     <string name="starter_step_enable_wireless_btn"><![CDATA[打开无线调试设置]]></string>
     <string name="starter_step_enable_wireless_done"><![CDATA[我已完成，继续]]></string>
     <string name="starter_step_enable_wireless_auto"><![CDATA[已自动开启无线调试]]></string>

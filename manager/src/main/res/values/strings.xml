@@ -131,6 +131,7 @@
     <string name="one_tap_step_wireless_auto">Enabling wireless debugging automatically…</string>
     <string name="one_tap_step_wireless_done">Wireless debugging enabled</string>
     <string name="one_tap_step_wireless_manual">Enable wireless debugging in developer options, then tap “Done”</string>
+    <string name="one_tap_step_wireless_need_wifi">The wireless-debugging switch requires a connected Wi-Fi network (system restriction). Connect to any Wi-Fi (e.g. a phone hotspot), then tap “Done”</string>
     <string name="one_tap_step_pairing_running">Pairing automatically…</string>
     <string name="one_tap_step_pairing_done">Paired</string>
     <string name="one_tap_step_pairing_manual">Complete pairing on the wireless debugging page; the flow continues automatically</string>
@@ -877,6 +878,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="starter_step_pairing_done">Pairing successful</string>
     <string name="starter_step_enable_wireless">Enable wireless debugging</string>
     <string name="starter_step_enable_wireless_hint">No wireless-debugging port found. Enable it first: Developer options → Wireless debugging</string>
+    <string name="starter_step_enable_wireless_need_wifi">The wireless-debugging switch requires a connected Wi-Fi network (system restriction). Connect to any Wi-Fi (e.g. a phone hotspot), then tap “Done”</string>
     <string name="starter_step_enable_wireless_btn">Open wireless-debugging settings</string>
     <string name="starter_step_enable_wireless_done">I\'m done, continue</string>
     <string name="starter_step_enable_wireless_auto">Wireless debugging enabled</string>

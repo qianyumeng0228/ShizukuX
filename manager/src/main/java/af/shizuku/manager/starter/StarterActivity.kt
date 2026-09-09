@@ -640,7 +640,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun fallbackToManualWireless() {
         if (!waitingForWireless) return
         if (autoPairingMode) {
-            updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_manual))
+            val hint = if (isWifiConnected()) R.string.one_tap_step_wireless_manual
+                       else R.string.one_tap_step_wireless_need_wifi
+            updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(hint))
             val list = _steps.value?.toMutableList() ?: return
             val index = list.indexOfFirst { it.id == "one_tap_wireless" }
             if (index >= 0) {
@@ -649,9 +651,30 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
-        updateStep("enable_wireless", StepStatus.RUNNING, appContext.getString(R.string.starter_step_enable_wireless_hint))
+        val hint = if (isWifiConnected()) R.string.starter_step_enable_wireless_hint
+                   else R.string.starter_step_enable_wireless_need_wifi
+        updateStep("enable_wireless", StepStatus.RUNNING, appContext.getString(hint))
         val list = _steps.value?.toMutableList() ?: return
         val index = list.indexOfFirst { it.id == "enable_wireless" }
+        if (index >= 0) {
+            list[index] = list[index].copy(needsUserAction = true)
+            _steps.value = list
+        }
+    }
+
+    /**
+     * HyperOS-class ROMs disable the wireless-debugging switch unless a Wi-Fi network is
+     * *connected*; the accessibility assistant cannot click a disabled switch, so asking the
+     * user to connect any Wi-Fi (e.g. a phone hotspot) once is the only way forward. The step
+     * becomes user-actionable; tapping continue re-runs the flow (continueAfterSetup).
+     */
+    private fun promptWirelessNeedsWifi(stepId: String) {
+        if (!waitingForWireless) return
+        val res = if (autoPairingMode) R.string.one_tap_step_wireless_need_wifi
+                  else R.string.starter_step_enable_wireless_need_wifi
+        updateStep(stepId, StepStatus.RUNNING, appContext.getString(res))
+        val list = _steps.value?.toMutableList() ?: return
+        val index = list.indexOfFirst { it.id == stepId }
         if (index >= 0) {
             list[index] = list[index].copy(needsUserAction = true)
             _steps.value = list
@@ -717,7 +740,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 needsUserAction = !autoWireless
             ))
             if (autoWireless) {
-                sendAutoEnableWirelessRequest()
+                if (isWifiConnected()) {
+                    sendAutoEnableWirelessRequest()
+                } else {
+                    promptWirelessNeedsWifi("enable_wireless")
+                }
             } else {
                 tryAutoEnableWirelessDebugging()
             }
@@ -779,10 +806,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Auto-enables wireless debugging when we hold WRITE_SECURE_SETTINGS (post-grant state). */
+    /** Auto-enables wireless debugging via Settings.Global when we hold WRITE_SECURE_SETTINGS.
+     *  No Wi-Fi connection is required: adbd listens on all interfaces and pairing runs over
+     *  127.0.0.1 — the old isWifiConnected() guard wrongly blocked this path on WiFi-less
+     *  devices (HyperOS force-disables the settings switch without a connected network, but
+     *  the settings write itself works regardless). */
     private suspend fun tryAutoEnableWirelessDebugging() {
         val context = appContext
-        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED && isWifiConnected()) {
+        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
             runCatching {
                 val cr = context.contentResolver
                 Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
@@ -925,7 +956,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             val autoWireless = appContext.isPairingAssistantEnabled() &&
                 appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
             if (autoWireless) {
-                sendAutoEnableWirelessRequest()
+                // The assistant can only click the settings switch, and HyperOS-class ROMs
+                // disable that switch unless a Wi-Fi network is *connected*. Detect it up
+                // front instead of spinning on the 90s timeout.
+                if (isWifiConnected()) {
+                    sendAutoEnableWirelessRequest()
+                } else {
+                    promptWirelessNeedsWifi("one_tap_wireless")
+                }
             } else {
                 tryAutoEnableWirelessDebugging()
             }
