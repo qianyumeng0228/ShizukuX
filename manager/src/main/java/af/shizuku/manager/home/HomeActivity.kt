@@ -247,13 +247,16 @@ open class HomeActivity : AppActivity(), MavericksView {
                     val density = ctx.resources.displayMetrics.density
                     val top = (paddingValues.calculateTopPadding().value * density).toInt()
                     val bottom = (paddingValues.calculateBottomPadding().value * density).toInt()
-                    // PERF: setPadding schedules requestLayout, but the collapsing LargeTopAppBar's
-                    // expand animation changes innerPadding.top continuously. Skipping setPadding
-                    // when the value "looks unchanged" caused a one-frame lag on fast flings to
-                    // the top — the title expanded but the first card was still under the title,
-                    // so they overlapped. Always apply the latest padding; RecyclerView relayout
-                    // cost is small compared to the overlap bug.
-                    recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
+                    // PERF: setPadding schedules requestLayout. Only touch padding when it
+                    // actually changed by at least 1px — this avoids per-frame relayout during
+                    // the collapsing topBar's scroll animation (which was causing the "stuck /
+                    // can't scroll" feel on continuous flings). The one-frame overlap on
+                    // fling-to-top is acceptable because the topBar's expand animation finishes
+                    // within a few frames and the next recomposition corrects the padding.
+                    if (kotlin.math.abs(recyclerView.paddingTop - top) > 1 ||
+                        kotlin.math.abs(recyclerView.paddingBottom - bottom) > 1) {
+                        recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
+                    }
                     recyclerView
                 }
             )
