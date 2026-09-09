@@ -491,7 +491,7 @@
     <string name="adb_pairing_searching"><![CDATA[正在搜索配对服务...]]></string>
     <string name="adb_pairing_status_pairing"><![CDATA[正在与设备配对...]]></string>
     <string name="adb_pairing_status_failed"><![CDATA[配对失败。]]></string>
-    <string name="app_management_badge_format"><![CDATA[&lt;b&gt;&lt;font color=\"%1$s\"&gt;[%2$s]&lt;/font&gt;&lt;/b&gt; %3$s]]></string>
+    <string name="app_management_badge_format">&lt;b&gt;&lt;font color="%1$s"&gt;[%2$s]&lt;/font&gt;&lt;/b&gt; %3$s</string>
     <string name="home_automation_description_device_restriction"><![CDATA[要在设备上使用启动 Intent，您需要先在电脑上运行 %1$s，启用 ADB over TCP。]]></string>
     <string name="home_automation_bottom_sheet_intents"><![CDATA[意图]]></string>
     <string name="home_automation_bottom_sheet_label_action"><![CDATA[操作]]></string>
