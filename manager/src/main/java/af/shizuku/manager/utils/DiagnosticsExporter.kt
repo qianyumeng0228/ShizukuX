@@ -174,6 +174,11 @@ object DiagnosticsExporter {
         sb.append("\n\n==== Deep Shell Diagnostics (via Shizuku) ====")
         block("ABI", "getprop ro.product.cpu.abi; getprop ro.product.cpu.abilist")
         block("SELinux / uid", "getenforce; id")
+        // set-device-owner prerequisites: Android refuses to set a device owner when the device
+        // has more than one user (ColorOS 应用分身 creates a persistent MultiApp user 999), any
+        // active account, or an existing owner. Listing these three lets a remote report tell
+        // exactly which prerequisite is blocking Dhizuku activation without a real device.
+        block("Device owner / users / provisioning", "echo '-- users --'; pm list users 2>&1; echo '-- device owner --'; dpm list-owners 2>&1; echo '-- active admins --'; dpm list-active-admins 2>&1; echo '-- provisioning --'; settings get global device_provisioned 2>&1; settings get secure user_setup_complete 2>&1; echo '-- accounts --'; dumpsys account 2>&1 | grep -E 'Accounts:' | head -5")
         block("/data/local/tmp (scene-related)", "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1")
         block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
         // Scene's APK layout: the daemon entry moved between Scene versions (raw/daemon ->
