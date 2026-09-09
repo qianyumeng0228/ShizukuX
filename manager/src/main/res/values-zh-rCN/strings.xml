@@ -96,6 +96,9 @@
     <string name="settings_auto_restore_dev_options_summary"><![CDATA[重启后自动恢复开发者选项、USB 调试与无线调试（需要 WRITE_SECURE_SETTINGS 权限）]]></string>
     <string name="settings_auto_restore_dev_options_no_permission"><![CDATA[无 WRITE_SECURE_SETTINGS 权限，自动恢复将无法生效。可通过 adb 授予：adb shell pm grant 包名 android.permission.WRITE_SECURE_SETTINGS]]></string>
     <string name="settings_auto_restore_dev_options_no_permission_title"><![CDATA[缺少权限]]></string>
+    <string name="settings_auto_restore_dev_options_auto_grant"><![CDATA[通过 Shizuku 自动授权]]></string>
+    <string name="settings_auto_restore_dev_options_granted"><![CDATA[已通过 Shizuku 授予 WRITE_SECURE_SETTINGS 权限]]></string>
+    <string name="settings_auto_restore_dev_options_grant_failed"><![CDATA[自动授权失败，请用 adb 命令手动授予]]></string>
     <string name="settings_restore_dev_options_now"><![CDATA[立即恢复开发者选项]]></string>
     <string name="settings_restore_dev_options_now_summary"><![CDATA[恢复开发者选项、USB 调试与无线调试]]></string>
     <string name="settings_restore_dev_options_ok"><![CDATA[已恢复开发者选项、USB 调试与无线调试]]></string>

@@ -162,6 +162,9 @@ Return here and retry afterwards.]]></string>
     <string name="settings_auto_restore_dev_options_summary">After a reboot, re-enable developer options, USB debugging and wireless debugging (requires WRITE_SECURE_SETTINGS)</string>
     <string name="settings_auto_restore_dev_options_no_permission">WRITE_SECURE_SETTINGS is missing, so auto-restore cannot take effect. Grant it via adb: adb shell pm grant &lt;package&gt; android.permission.WRITE_SECURE_SETTINGS</string>
     <string name="settings_auto_restore_dev_options_no_permission_title">Permission missing</string>
+    <string name="settings_auto_restore_dev_options_auto_grant">Auto-grant via Shizuku</string>
+    <string name="settings_auto_restore_dev_options_granted">WRITE_SECURE_SETTINGS granted via Shizuku</string>
+    <string name="settings_auto_restore_dev_options_grant_failed">Auto-grant failed, please use the adb command manually</string>
     <string name="settings_restore_dev_options_now">Restore developer options now</string>
     <string name="settings_restore_dev_options_now_summary">Re-enable developer options, USB debugging and wireless debugging</string>
     <string name="settings_restore_dev_options_ok">Developer options, USB debugging and wireless debugging restored</string>

@@ -197,12 +197,29 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                     android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     // Toast truncates the long adb-grant command — show a full dialog instead.
-                    showDialog(
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle(R.string.settings_auto_restore_dev_options_no_permission_title)
-                            .setMessage(R.string.settings_auto_restore_dev_options_no_permission)
-                            .setPositiveButton(android.R.string.ok, null)
-                    )
+                    // If Shizuku is already running, offer a one-tap auto-grant via Shizuku's
+                    // shell uid (no computer needed); otherwise fall back to the manual adb command.
+                    val builder = MaterialAlertDialogBuilder(requireContext())
+                        .setTitle(R.string.settings_auto_restore_dev_options_no_permission_title)
+                        .setMessage(R.string.settings_auto_restore_dev_options_no_permission)
+                        .setPositiveButton(android.R.string.ok, null)
+                    if (ShizukuStateMachine.isRunning()) {
+                        builder.setNeutralButton(R.string.settings_auto_restore_dev_options_auto_grant) { _, _ ->
+                            lifecycleScope.launch {
+                                val pkg = requireContext().packageName
+                                val r = af.shizuku.manager.database.ShizukuProcessUtils
+                                    .runPrivilegedCapture(arrayOf("pm", "grant", pkg, "android.permission.WRITE_SECURE_SETTINGS"))
+                                val ok = r.exitCode == 0
+                                SnackbarHelper.show(
+                                    requireContext(), requireView(),
+                                    msg = if (ok) getString(R.string.settings_auto_restore_dev_options_granted)
+                                          else getString(R.string.settings_auto_restore_dev_options_grant_failed),
+                                    duration = 3000
+                                )
+                            }
+                        }
+                    }
+                    showDialog(builder)
                 }
                 true
             }
