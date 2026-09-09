@@ -1332,7 +1332,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 } else if (baseCmd.equals("stat") && cmd.length > 1 && String.join(" ", cmd).matches(".*\\b(su|magisk)\\b.*")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking stat for su/magisk");
-                        String target = String.join(" ", cmd).contains("magisk") ? "/sbin/magisk" : "/system/xbin/su";
+                        String target = String.join(" ", cmd).contains("magisk") ? "/sbin/magisk" : "/data/local/tmp/su";
                         return newProcessInternal(new String[]{"echo", "  File: " + target + "\n  Size: 157328\tBlocks: 312\tIO Block: 4096\tregular file\nAccess: (0755/-rwsr-xr-x)\tUid: (    0/    root)\tGid: (    0/    root)"}, env, dir);
                     }
                 } else if (baseCmd.equals("ls") && cmd.length > 1 && (String.join(" ", cmd).contains("/su") || String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk"))) {
@@ -1340,7 +1340,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (String.join(" ", cmd).contains("su")) {
                             LOGGER.i("SUBridge: mocking ls for su path");
                             String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
-                            if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/system/xbin/su";
+                            if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/data/local/tmp/su";
                             return newProcessInternal(new String[]{"echo", "-rwsr-xr-x 1 root root 157328 2026-03-11 12:00 " + customSuPath}, env, dir);
                         } else if (String.join(" ", cmd).contains("magisk")) {
                             LOGGER.i("SUBridge: mocking ls for Magisk path");
@@ -1354,7 +1354,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
                     String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
-                    if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/system/xbin/su";
+                    if (customSuPath == null || customSuPath.trim().isEmpty()) customSuPath = "/data/local/tmp/su";
                     LOGGER.i("SUBridge: mocking which su command -> " + customSuPath);
                     return newProcessInternal(new String[]{"echo", customSuPath}, env, dir);
                 } else if (baseCmd.equals("getprop") && cmd.length > 1) {

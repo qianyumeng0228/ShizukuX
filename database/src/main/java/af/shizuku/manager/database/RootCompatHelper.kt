@@ -166,17 +166,14 @@ object RootCompatHelper {
     suspend fun deployBridgeToTmpDetailed(context: Context): DeployResult = withContext(Dispatchers.IO) {
         if (!isShizukuAvailable()) return@withContext DeployResult(null, "Shizuku binder not available")
 
-        // Android 16+ (API 36) tightened the SELinux policy for the ADB/shell process (uid 2000),
-        // denying writes to /data/local/tmp. Skip all write attempts immediately to avoid a
-        // multi-second stall.
-        val serverUid = try { rikka.shizuku.Shizuku.getUid() } catch (_: Exception) { -1 }
-        if (serverUid == 2000 && android.os.Build.VERSION.SDK_INT >= 36) {
-            return@withContext DeployResult(
-                null,
-                "Android 16+ ADB/shell mode: /data/local/tmp is not writable from the shell " +
-                "process (SELinux policy). Use the exported path instead."
-            )
-        }
+        // NOTE: no blanket "Android 16+ / ADB mode is not writable" rejection here. An earlier
+        // guard refused to even try when uid==2000 on SDK>=36, but in practice the shell process
+        // CAN still write /data/local/tmp on many Android 16 devices (e.g. HyperOS 3.0.5 - the
+        // rish/plus files there were deployed by the shell uid). That blanket check made SU Bridge
+        // deployment permanently fail (su file missing, self-test reporting the platform as
+        // unwritable). We now always attempt the deploy and surface the real per-file
+        // exitCode/stderr via DeployResult.failureDetail; genuine SELinux rejections are still
+        // reported accurately instead of assumed.
 
         val dir = "/data/local/tmp"
         // asset name -> octal mode (scripts executable; dex read-only for app_process on A14+)
