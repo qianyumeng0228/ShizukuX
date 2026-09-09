@@ -167,10 +167,6 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
         recyclerView.addEdgeSpacing(top = 8f, bottom = 8f, unit = TypedValue.COMPLEX_UNIT_DIP)
 
         adapter.registerAdapterDataObserver(object : AdapterDataObserver() {
-            override fun onItemRangeChanged(positionStart: Int, itemCount: Int, payload: Any?) {
-                viewModel.load(true)
-            }
-
             override fun onChanged() {
                 backCallback?.isEnabled = adapter.isSelectionMode
                 if (adapter.isSelectionMode) {
