@@ -39,20 +39,17 @@ fun HomeScreen(
     onRestoreHomeCards: () -> Unit,
     recyclerViewProvider: (Context, PaddingValues) -> RecyclerView
 ) {
-    // PERF: do NOT wire exitUntilCollapsedScrollBehavior + nestedScroll to this page. That
-    // design intercepts every RecyclerView scroll delta on the main thread every single frame
-    // (computing how much the large title should collapse / fade), which made the otherwise
-    // 5ms-per-frame list feel laggy and unresponsive (High input latency spiked to ~2 per
-    // frame). The title stays fixed; the cards scroll underneath it — matching stock Shizuku's
-    // plain Activity chrome, which never had this per-frame overhead.
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = {
+                title = { 
                     Text(
-                        if (isEditMode) stringResource(R.string.home_edit_mode_hint)
+                        if (isEditMode) stringResource(R.string.home_edit_mode_hint) 
                         else stringResource(R.string.app_name)
-                    )
+                    ) 
                 },
                 actions = {
                     if (!isEditMode) {
@@ -82,7 +79,8 @@ fun HomeScreen(
                         MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
                     else
                         MaterialTheme.colorScheme.surfaceContainer
-                )
+                ),
+                scrollBehavior = scrollBehavior
             )
         }
     ) { innerPadding ->
