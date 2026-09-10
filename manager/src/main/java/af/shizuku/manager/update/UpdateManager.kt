@@ -400,8 +400,15 @@ class UpdateManager(private val context: Context) {
                         } else {
                             // Use Shizuku.newProcess (shell uid=2000) — libsu Shell without root
                             // runs as app uid and has no pm install permission.
+                            // Copy to /data/local/tmp/ first — Android 11+ scoped storage may
+                            // block shell uid=2000 from reading Android/data/<pkg>/files/.
+                            val apkPath = file.absolutePath
+                            val script = "cp \"$apkPath\" /data/local/tmp/shizukux_update.apk && " +
+                                    "chmod 644 /data/local/tmp/shizukux_update.apk && " +
+                                    "pm install -r -d /data/local/tmp/shizukux_update.apk; " +
+                                    "rm -f /data/local/tmp/shizukux_update.apk"
                             val process = rikka.shizuku.Shizuku.newProcess(
-                                arrayOf("sh", "-c", "pm install -r -d \"${file.absolutePath}\""),
+                                arrayOf("sh", "-c", script),
                                 null, null
                             )
                             val exitCode = process?.waitFor() ?: -1

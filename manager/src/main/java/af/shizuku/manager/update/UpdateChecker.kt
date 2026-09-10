@@ -153,10 +153,13 @@ object UpdateChecker {
             }
         } ?: apkAssets.firstOrNull()
 
-        // 下载走官网同款加速通道（fd.shizukux.xyz），避免直连 GitHub CDN 在国内网络卡 0%。
-        val downloadUrl = targetAsset?.let {
-            "${ProjectLinks.FD_DOWNLOAD}/$tagName/${it.getString("name")}"
-        } ?: return CheckResult.UpToDate
+        // Use GitHub's official browser_download_url directly. DownloadManager follows
+        // 302 redirects to release-assets.githubusercontent.com automatically. The old
+        // custom CDN (fd.shizukux.xyz) was a single point of failure — when it went
+        // down, all in-app downloads stalled at 0% with no fallback.
+        val downloadUrl = targetAsset?.optString("browser_download_url")
+            ?.takeIf { it.isNotBlank() }
+            ?: return CheckResult.UpToDate
 
         val versionCode = parseVersionCode(versionName)
 
