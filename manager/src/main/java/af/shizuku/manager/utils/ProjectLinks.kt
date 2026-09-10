@@ -19,12 +19,17 @@ object ProjectLinks {
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
 
     /**
-     * GitHub Release 文件加速下载通道（与官网 shizukux.xyz 下载实现一致）。
-     * 直连 release-assets.githubusercontent.com 在国内网络常连不通导致 DownloadManager 卡 0%，
-     * 经 fd.shizukux.xyz 加速域回源可稳定下载。URL 模板：
-     * $FD_DOWNLOAD/<tag>/<assetFileName>
+     * Tencent COS (Guangzhou) — primary download source for APK updates.
+     * Domestic China access is fast and stable (no Cloudflare interference).
+     * URL template: $COS_DOWNLOAD/<assetFileName>
      */
-    const val FD_DOWNLOAD = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
+    const val COS_DOWNLOAD = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
+
+    /**
+     * Fallback download source: GitHub's official browser_download_url.
+     * Used when COS file is not yet uploaded (new release before manual COS sync).
+     */
+    const val GITHUB_DOWNLOAD_FALLBACK = true
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"

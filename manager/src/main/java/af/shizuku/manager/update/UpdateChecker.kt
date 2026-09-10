@@ -153,13 +153,12 @@ object UpdateChecker {
             }
         } ?: apkAssets.firstOrNull()
 
-        // Use GitHub's official browser_download_url directly. DownloadManager follows
-        // 302 redirects to release-assets.githubusercontent.com automatically. The old
-        // custom CDN (fd.shizukux.xyz) was a single point of failure — when it went
-        // down, all in-app downloads stalled at 0% with no fallback.
-        val downloadUrl = targetAsset?.optString("browser_download_url")
-            ?.takeIf { it.isNotBlank() }
-            ?: return CheckResult.UpToDate
+        // Primary: Tencent COS (Guangzhou) — fast and stable for domestic China users.
+        // Fallback: GitHub's official browser_download_url if COS file is missing.
+        val assetName = targetAsset?.getString("name") ?: return CheckResult.UpToDate
+        val cosUrl = "${ProjectLinks.COS_DOWNLOAD}/$assetName"
+        val githubUrl = targetAsset.optString("browser_download_url")
+        val downloadUrl = cosUrl
 
         val versionCode = parseVersionCode(versionName)
 
