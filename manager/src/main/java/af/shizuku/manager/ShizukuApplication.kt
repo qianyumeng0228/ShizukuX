@@ -574,9 +574,15 @@ class ShizukuApplication : Application(), Configuration.Provider {
             override fun onActivityResumed(activity: android.app.Activity) {
                 if (ShizukuSettings.isHideFromRecentsEnabled()) {
                     try {
-                        activity.finishAndRemoveTask()
+                        // Only strip from Recents, do NOT finish the activity itself — finishAndRemoveTask()
+                        // would kill the launcher Activity on cold start and look like a crash.
+                        val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+                        val tasks = am.appTasks
+                        for (task in tasks) {
+                            task.setExcludeFromRecents(true)
+                        }
                     } catch (e: Exception) {
-                        Timber.w(e, "finishAndRemoveTask failed")
+                        Timber.w(e, "setExcludeFromRecents failed")
                     }
                 }
             }
