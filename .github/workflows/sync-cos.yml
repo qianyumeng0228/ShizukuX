@@ -1,0 +1,68 @@
+name: Sync Release Assets to Tencent COS
+
+on:
+  release:
+    types: [published, updated, edited]
+  schedule:
+    # Daily cleanup at 00:00 UTC (08:00 Beijing)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all release assets
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p ./assets
+          gh release download ${{ github.event.release.tag_name }} \
+            --repo ${{ github.repository }} \
+            --dir ./assets \
+            --clobber
+
+      - name: Install coscmd
+        run: pip install coscmd
+
+      - name: Configure COS
+        run: |
+          coscmd config \
+            -a ${{ secrets.COS_SECRET_ID }} \
+            -s ${{ secrets.COS_SECRET_KEY }} \
+            -b ${{ secrets.COS_BUCKET }} \
+            -r ${{ secrets.COS_REGION }}
+
+      - name: Upload new assets to COS
+        if: github.event_name == 'release'
+        run: |
+          for f in ./assets/*; do
+            fname=$(basename "$f")
+            echo "Uploading $fname ..."
+            coscmd upload "$f" "$fname"
+          done
+
+      - name: Cleanup orphaned objects (daily)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # List all assets from latest releases
+          gh release list --repo ${{ github.repository }} --limit 200 | awk '{print $1}' > /tmp/tags.txt
+          declared=""
+          while read tag; do
+            gh release download "$tag" --repo ${{ github.repository }} --dir /tmp/ref --clobber 2>/dev/null || true
+          done < /tmp/tags.txt
+          ls /tmp/ref/ 2>/dev/null | sort > /tmp/declared.txt
+
+          # List all objects in COS
+          coscmd list | grep -oP '[A-Za-z0-9._-]+\.apk$' | sort > /tmp/cos.txt
+
+          # Delete orphans (in COS but not in any GitHub release)
+          comm -23 /tmp/cos.txt /tmp/declared.txt > /tmp/orphans.txt
+          while read obj; do
+            [ -z "$obj" ] && continue
+            echo "Deleting orphan: $obj"
+            coscmd delete "$obj" || true
+          done < /tmp/orphans.txt
