@@ -77,7 +77,10 @@ class AutomationService : Service() {
             }
         }
 
-        startForegroundAppMonitor()
+        // Foreground-app polling disabled: the registered rules (AppSpecificProfileRule,
+        // NetworkFirewallRule) are no-op placeholders that only log, and polling
+        // UsageStatsManager every 2s was the single biggest battery drain in the app.
+        // Network callback above remains (event-driven, zero idle cost).
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
