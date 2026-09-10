@@ -18,7 +18,9 @@ object UpdateInstaller {
     }
 
     fun forceUpdateWithShizuku(context: Context, apkFile: File): Boolean {
-        if (!Shizuku.pingBinder() && !Shell.getShell().isRoot) {
+        val hasShizuku = try { Shizuku.pingBinder() } catch (e: Exception) { false }
+        val hasRoot = try { com.topjohnwu.superuser.Shell.getShell().isRoot } catch (e: Exception) { false }
+        if (!hasShizuku && !hasRoot) {
             Timber.tag(TAG).w("No root or Shizuku available for force update.")
             return false
         }
@@ -38,8 +40,6 @@ object UpdateInstaller {
             val packageName = context.packageName
             val apkPath = apkFile.absolutePath
 
-            // The script sleeps for 2 seconds to allow the app to finish its current execution,
-            // then uninstalls the current package, installs the new APK, and restarts the app.
             val script = """
                 #!/system/bin/sh
                 sleep 2
@@ -49,7 +49,6 @@ object UpdateInstaller {
                 pm install -r -d /data/local/tmp/update.apk
                 rm /data/local/tmp/update.apk
  
-                # Enhance: Auto-grant crucial permissions and AppOps to ensure a truly seamless transition
                 pm grant $packageName android.permission.POST_NOTIFICATIONS 2>/dev/null
                 pm grant $packageName android.permission.WRITE_SECURE_SETTINGS 2>/dev/null
                 appops set $packageName SYSTEM_ALERT_WINDOW allow 2>/dev/null
@@ -61,9 +60,13 @@ object UpdateInstaller {
  
             scriptFile.writeText(script)
  
-            // 3. Execute the script in a detached background process via root/shizuku
-            // Copy script to /data/local/tmp and run it from there so it survives app uninstallation
-            Shell.cmd("cp '${scriptFile.absolutePath}' /data/local/tmp/force_update.sh && chmod 755 /data/local/tmp/force_update.sh && nohup sh /data/local/tmp/force_update.sh >/dev/null 2>&1 &").exec()
+            // 3. Execute via Shizuku.newProcess (shell uid=2000) or root Shell
+            val execCmd = "cp '${scriptFile.absolutePath}' /data/local/tmp/force_update.sh && chmod 755 /data/local/tmp/force_update.sh && nohup sh /data/local/tmp/force_update.sh >/dev/null 2>&1 &"
+            if (hasRoot) {
+                com.topjohnwu.superuser.Shell.cmd(execCmd).exec()
+            } else {
+                Shizuku.newProcess(arrayOf("sh", "-c", execCmd), null, null)?.waitFor()
+            }
 
             return true
         } catch (e: Exception) {

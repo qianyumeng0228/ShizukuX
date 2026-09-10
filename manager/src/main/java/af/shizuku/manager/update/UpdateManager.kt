@@ -383,39 +383,46 @@ class UpdateManager(private val context: Context) {
      */
     suspend fun installApk(file: File): Boolean {
         try {
-            // Shell.getShell()/pingBinder() are blocking calls that can wedge forever if a
-            // root prompt is ignored or the Shizuku binder is stuck — without a timeout the
-            // download just hangs with no install notification ever shown (never falls
-            // through to the system installer below).
-            val silentInstallHandled = withTimeoutOrNull(5000) {
-                val isRootOrShizuku = withContext(Dispatchers.IO) {
-                    com.topjohnwu.superuser.Shell.getShell().isRoot || rikka.shizuku.Shizuku.pingBinder()
-                }
-                if (isRootOrShizuku) {
-                    Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
-                    val result = withContext(Dispatchers.IO) {
-                        com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec()
-                    }
-                    if (result.isSuccess) {
-                        Timber.tag(TAG).i("Silent install successful")
-                        true
-                    } else {
-                        Timber.tag(TAG).w("Silent install failed (likely signature mismatch): ${result.out}")
-                        if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
-                            Timber.tag(TAG).i("Force-update background script initiated to handle signature mismatch")
-                            true
+            val shizukuAlive = withTimeoutOrNull(5000) {
+                withContext(Dispatchers.IO) { rikka.shizuku.Shizuku.pingBinder() }
+            } ?: false
+
+            val rootAlive = withTimeoutOrNull(5000) {
+                withContext(Dispatchers.IO) { com.topjohnwu.superuser.Shell.getShell().isRoot }
+            } ?: false
+
+            if (shizukuAlive || rootAlive) {
+                Timber.tag(TAG).d("Attempting silent install via Shizuku/Root...")
+                val installSuccess = withContext(Dispatchers.IO) {
+                    runCatching {
+                        if (rootAlive) {
+                            com.topjohnwu.superuser.Shell.cmd("pm install -r -d \"${file.absolutePath}\"").exec().isSuccess
                         } else {
-                            false
+                            // Use Shizuku.newProcess (shell uid=2000) — libsu Shell without root
+                            // runs as app uid and has no pm install permission.
+                            val process = rikka.shizuku.Shizuku.newProcess(
+                                arrayOf("sh", "-c", "pm install -r -d \"${file.absolutePath}\""),
+                                null, null
+                            )
+                            val exitCode = process?.waitFor() ?: -1
+                            if (exitCode != 0) {
+                                val err = process?.errorStream?.bufferedReader()?.readText().orEmpty()
+                                Timber.tag(TAG).w("Shizuku pm install exit=$exitCode err=$err")
+                            }
+                            exitCode == 0
                         }
-                    }
-                } else {
-                    false
+                    }.getOrDefault(false)
                 }
-            }
-            if (silentInstallHandled == null) {
-                Timber.tag(TAG).w("Silent install attempt timed out; falling back to system installer")
-            } else if (silentInstallHandled) {
-                return true
+                if (installSuccess) {
+                    Timber.tag(TAG).i("Silent install successful")
+                    return true
+                } else {
+                    Timber.tag(TAG).w("Silent install failed; trying force-update script")
+                    if (UpdateInstaller.forceUpdateWithShizuku(context, file)) {
+                        Timber.tag(TAG).i("Force-update background script initiated")
+                        return true
+                    }
+                }
             }
 
             val apkUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
