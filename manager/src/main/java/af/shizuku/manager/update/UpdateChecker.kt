@@ -137,20 +137,19 @@ object UpdateChecker {
             .map { assets.getJSONObject(it) }
             .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
 
-        // 资产名规则（与 GitHub Release 上传命名一致）：
-        //   ShizukuX-Drop-In-v<ver>.apk / ShizukuX-v<ver>.apk（标准版，无后缀） / ShizukuX-Compat-Hub-v<ver>.apk
-        // Drop-In 版选含 "Drop-In" 的资产；Standard 版必须排除 Drop-In 与 Compat-Hub，
-        // 否则 assets 顺序下会误选到 Compat-Hub（体积最小但功能不完整）。
+        // 资产名规则（与 GitHub Release 实际上传文件名一致）：
+        //   manager-dropin-release.apk（Drop-In） / manager-shizukux-release.apk（标准版） / compat-release.apk（Compat-Hub）
+        // gh CLI 的 #label 只是 display label，不改资产文件名，所以匹配按实际文件名来。
         val targetAsset = if (isDropIn) {
             apkAssets.firstOrNull {
                 val name = it.getString("name")
-                name.contains("Drop-In", ignoreCase = true) || name.contains("dropin", ignoreCase = true)
+                name.contains("dropin", ignoreCase = true)
             }
         } else {
             apkAssets.firstOrNull {
                 val name = it.getString("name")
-                !name.contains("Drop-In", ignoreCase = true) && !name.contains("dropin", ignoreCase = true)
-                        && !name.contains("Compat-Hub", ignoreCase = true) && !name.contains("compat-hub", ignoreCase = true)
+                !name.contains("dropin", ignoreCase = true)
+                        && !name.contains("compat", ignoreCase = true)
             }
         } ?: apkAssets.firstOrNull()
 
