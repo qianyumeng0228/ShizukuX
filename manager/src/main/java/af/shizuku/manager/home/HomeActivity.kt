@@ -713,7 +713,7 @@ open class HomeActivity : AppActivity(), MavericksView {
             builder.setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleases() }
         } else {
             builder.setPositiveButton(R.string.update_download) { _, _ ->
-                UpdateManager(this).downloadUpdate(updateInfo.downloadUrl, updateInfo.versionName)
+                UpdateManager(this).downloadUpdate(updateInfo.downloadUrls, updateInfo.versionName)
             }
         }
 

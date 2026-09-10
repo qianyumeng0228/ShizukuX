@@ -58,63 +58,90 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Download update APK
-     * @param downloadUrl URL to download the APK from
+     * Download update APK from the best available mirror.
+     * @param downloadUrls Ordered list of mirror URLs — fastest reachable one wins.
      * @param versionName Version name for display
      */
     @SuppressLint("Range")
-    fun downloadUpdate(downloadUrl: String, versionName: String) {
+    fun downloadUpdate(downloadUrls: List<String>, versionName: String) {
         createNotificationChannel()
 
-        // Callers invoke this from a UI click handler; the file-exists check, delete, and
-        // cleanup() below are all blocking disk I/O, so this whole body runs on IO instead of
-        // whatever thread called downloadUpdate() (previously janked/risked ANR on slow storage
-        // or with many stale APKs to clean up).
         scope.launch(Dispatchers.IO) {
             val fileName = "ShizukuX-v$versionName.apk"
             val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
 
-            // Check if file already exists and delete it
             if (file.exists()) {
                 file.delete()
             }
 
-            // Old update APKs are never referenced again once a newer one starts downloading.
             cleanup()
 
-            val request = DownloadManager.Request(Uri.parse(downloadUrl))
-                .setTitle(context.getString(R.string.update_downloading_title))
-                .setDescription(context.getString(R.string.update_downloading_description, versionName))
-                // HIDDEN, not VISIBLE_NOTIFY_COMPLETED — monitorDownload() already drives our own
-                // progress/install notifications; VISIBLE_NOTIFY_COMPLETED would show a second,
-                // redundant system download notification alongside them.
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
-                .setDestinationUri(Uri.fromFile(file))
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(true)
-                .setMimeType("application/vnd.android.package-archive")
-
-            // Add after-download broadcast
-            request.addRequestHeader("User-Agent", "ShizukuX/${versionName}")
-
-            try {
-                downloadId = downloadManager.enqueue(request)
-
-                // Save download ID
-                context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
-                    .edit()
-                    .putLong(DOWNLOAD_ID_PREF, downloadId)
-                    .apply()
-
-                Timber.tag(TAG).d("Download started: $downloadUrl, ID: $downloadId")
-
-                // Monitor download progress
-                monitorDownload(downloadId, file, versionName)
-            } catch (e: Exception) {
-                Timber.tag(TAG).e(e, "Failed to start download")
-                Sentry.captureException(e)
+            // Probe mirrors concurrently — pick the first one that responds
+            val bestUrl = pickBestMirror(downloadUrls)
+            if (bestUrl == null) {
+                Timber.tag(TAG).e("All mirrors unreachable")
                 showDownloadErrorNotification()
+                return@launch
             }
+
+            Timber.tag(TAG).d("Using mirror: $bestUrl")
+            startDownload(bestUrl, file, versionName)
+        }
+    }
+
+    /**
+     * Probe each mirror with a quick HEAD request and return the first one that responds.
+     * Tries them in order (not concurrently) to respect priority — first reachable wins.
+     */
+    private suspend fun pickBestMirror(urls: List<String>): String? = withContext(Dispatchers.IO) {
+        for (url in urls) {
+            try {
+                val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                    requestMethod = "HEAD"
+                    connectTimeout = 3000
+                    readTimeout = 3000
+                    instanceFollowRedirects = true
+                }
+                val code = conn.responseCode
+                conn.disconnect()
+                if (code in 200..399) {
+                    Timber.tag(TAG).d("Mirror reachable: $url (HTTP $code)")
+                    return@withContext url
+                }
+                Timber.tag(TAG).w("Mirror $url returned HTTP $code")
+            } catch (e: Exception) {
+                Timber.tag(TAG).w("Mirror $url unreachable: ${e.message}")
+            }
+        }
+        null
+    }
+
+    private fun startDownload(downloadUrl: String, file: File, versionName: String) {
+        val request = DownloadManager.Request(Uri.parse(downloadUrl))
+            .setTitle(context.getString(R.string.update_downloading_title))
+            .setDescription(context.getString(R.string.update_downloading_description, versionName))
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)
+            .setDestinationUri(Uri.fromFile(file))
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+            .setMimeType("application/vnd.android.package-archive")
+
+        request.addRequestHeader("User-Agent", "ShizukuX/${versionName}")
+
+        try {
+            downloadId = downloadManager.enqueue(request)
+
+            context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putLong(DOWNLOAD_ID_PREF, downloadId)
+                .apply()
+
+            Timber.tag(TAG).d("Download started: $downloadUrl, ID: $downloadId")
+            monitorDownload(downloadId, file, versionName)
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to start download")
+            Sentry.captureException(e)
+            showDownloadErrorNotification()
         }
     }
 

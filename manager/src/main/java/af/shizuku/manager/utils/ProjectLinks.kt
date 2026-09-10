@@ -19,17 +19,16 @@ object ProjectLinks {
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
 
     /**
-     * Tencent COS (Guangzhou) — primary download source for APK updates.
-     * Domestic China access is fast and stable (no Cloudflare interference).
-     * URL template: $COS_DOWNLOAD/<assetFileName>
+     * Multi-source download mirrors for APK updates.
+     * Ordered by priority — first source that responds wins.
+     * Each entry is a URL template: $MIRROR/<assetFileName>
      */
-    const val COS_DOWNLOAD = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
-
-    /**
-     * Fallback download source: GitHub's official browser_download_url.
-     * Used when COS file is not yet uploaded (new release before manual COS sync).
-     */
-    const val GITHUB_DOWNLOAD_FALLBACK = true
+    // 1. Cloudflare main site (shizukux.xyz) — fast global CDN
+    const val MIRROR_CLOUDFLARE = "https://shizukux.xyz/downloads"
+    // 2. Cloudflare accelerated domain (fd.shizukux.xyz)
+    const val MIRROR_CF_ACCEL = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
+    // 3. Tencent COS (Guangzhou) — domestic China direct connect
+    const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"

@@ -39,7 +39,7 @@ object UpdateChecker {
         val versionName: String,
         val versionCode: Int,
         val releaseNotes: String,
-        val downloadUrl: String,
+        val downloadUrls: List<String>,
         val publishedAt: String,
         val isPrerelease: Boolean,
         // True when only the Atom fallback succeeded — no direct APK URL available.
@@ -153,19 +153,23 @@ object UpdateChecker {
             }
         } ?: apkAssets.firstOrNull()
 
-        // Primary: Tencent COS (Guangzhou) — fast and stable for domestic China users.
-        // Fallback: GitHub's official browser_download_url if COS file is missing.
+        // Build multi-source download URL list (ordered by priority).
+        // UpdateManager will probe each mirror and use the fastest reachable one.
         val assetName = targetAsset?.getString("name") ?: return CheckResult.UpToDate
-        val cosUrl = "${ProjectLinks.COS_DOWNLOAD}/$assetName"
         val githubUrl = targetAsset.optString("browser_download_url")
-        val downloadUrl = cosUrl
+        val downloadUrls = buildList {
+            add("${ProjectLinks.MIRROR_CLOUDFLARE}/$assetName")
+            add("${ProjectLinks.MIRROR_CF_ACCEL}/$assetName")
+            add("${ProjectLinks.MIRROR_COS}/$assetName")
+            if (githubUrl.isNotBlank()) add(githubUrl)
+        }
 
         val versionCode = parseVersionCode(versionName)
 
         return if (isNewerVersion(versionName, BuildConfig.VERSION_NAME)) {
             Timber.tag(TAG).d("Update available: $versionName (channel=$channel, current=${BuildConfig.VERSION_NAME})")
             CheckResult.UpdateAvailable(
-                UpdateInfo(versionName, versionCode, releaseNotes, downloadUrl, publishedAt, isPrerelease)
+                UpdateInfo(versionName, versionCode, releaseNotes, downloadUrls, publishedAt, isPrerelease)
             )
         } else {
             Timber.tag(TAG).d("Already on latest ($channel): ${BuildConfig.VERSION_NAME}")
@@ -223,7 +227,7 @@ object UpdateChecker {
                                 versionName = versionName,
                                 versionCode = versionCode,
                                 releaseNotes = "",
-                                downloadUrl = "",
+                                downloadUrls = emptyList(),
                                 publishedAt = "",
                                 isPrerelease = versionName.contains("beta", ignoreCase = true)
                                         || versionName.contains("alpha", ignoreCase = true),
