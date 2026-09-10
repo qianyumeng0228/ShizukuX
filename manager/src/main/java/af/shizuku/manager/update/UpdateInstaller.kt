@@ -34,9 +34,6 @@ object UpdateInstaller {
                 Timber.tag(TAG).i("Auto-exported settings to ${backupFile.absolutePath}")
             }
 
-            // 2. Create a shell script to do the detached reinstall
-            val cacheDir = context.cacheDir ?: context.filesDir ?: return false
-            val scriptFile = File(cacheDir, "force_update.sh")
             val packageName = context.packageName
             val apkPath = apkFile.absolutePath
 
@@ -48,24 +45,47 @@ object UpdateInstaller {
                 pm uninstall $packageName
                 pm install -r -d /data/local/tmp/update.apk
                 rm /data/local/tmp/update.apk
- 
+
                 pm grant $packageName android.permission.POST_NOTIFICATIONS 2>/dev/null
                 pm grant $packageName android.permission.WRITE_SECURE_SETTINGS 2>/dev/null
                 appops set $packageName SYSTEM_ALERT_WINDOW allow 2>/dev/null
                 appops set $packageName GET_USAGE_STATS allow 2>/dev/null
- 
+
                 am start -n $packageName/af.shizuku.manager.MainActivity
                 rm /data/local/tmp/force_update.sh
             """.trimIndent()
- 
-            scriptFile.writeText(script)
- 
-            // 3. Execute via Shizuku.newProcess (shell uid=2000) or root Shell
-            val execCmd = "cp '${scriptFile.absolutePath}' /data/local/tmp/force_update.sh && chmod 755 /data/local/tmp/force_update.sh && nohup sh /data/local/tmp/force_update.sh >/dev/null 2>&1 &"
+
             if (hasRoot) {
-                com.topjohnwu.superuser.Shell.cmd(execCmd).exec()
+                // Root: write script via libsu Shell
+                val cacheDir = context.cacheDir ?: context.filesDir ?: return false
+                val scriptFile = File(cacheDir, "force_update.sh")
+                scriptFile.writeText(script)
+                com.topjohnwu.superuser.Shell.cmd(
+                    "cp '${scriptFile.absolutePath}' /data/local/tmp/force_update.sh && " +
+                    "chmod 755 /data/local/tmp/force_update.sh && " +
+                    "nohup sh /data/local/tmp/force_update.sh >/dev/null 2>&1 &"
+                ).exec()
             } else {
-                Shizuku.newProcess(arrayOf("sh", "-c", execCmd), null, null)?.waitFor()
+                // Shizuku (shell uid=2000): cannot read app-private cacheDir, so write script
+                // directly via the process stdin (same pattern as SceneRelayManager).
+                val writer = Shizuku.newProcess(
+                    arrayOf("sh", "-c", "cat > /data/local/tmp/force_update.sh && chmod 755 /data/local/tmp/force_update.sh"),
+                    null, null
+                )
+                if (writer == null) {
+                    Timber.tag(TAG).w("Shizuku.newProcess returned null for script writer")
+                    return false
+                }
+                writer.outputStream.write(script.toByteArray(Charsets.UTF_8))
+                writer.outputStream.flush()
+                writer.outputStream.close()
+                writer.waitFor()
+
+                // Launch the detached script in background
+                Shizuku.newProcess(
+                    arrayOf("sh", "-c", "nohup sh /data/local/tmp/force_update.sh >/dev/null 2>&1 &"),
+                    null, null
+                )?.waitFor()
             }
 
             return true
