@@ -571,24 +571,28 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // Hide from Recents: when enabled, strip this app's card from the recent-tasks list on
         // every Activity resume so it never lingers as a visible entry after the user leaves.
         registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
-            override fun onActivityResumed(activity: android.app.Activity) {
+            override fun onActivityCreated(activity: android.app.Activity, b: android.os.Bundle?) {
                 if (ShizukuSettings.isHideFromRecentsEnabled()) {
                     try {
-                        // Only strip from Recents, do NOT finish the activity itself — finishAndRemoveTask()
-                        // would kill the launcher Activity on cold start and look like a crash.
                         val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
-                        val tasks = am.appTasks
-                        for (task in tasks) {
-                            task.setExcludeFromRecents(true)
-                        }
+                        for (task in am.appTasks) task.setExcludeFromRecents(true)
                     } catch (e: Exception) {
                         Timber.w(e, "setExcludeFromRecents failed")
                     }
                 }
             }
-            override fun onActivityCreated(a: android.app.Activity, b: android.os.Bundle?) {}
+            override fun onActivityResumed(activity: android.app.Activity) {}
+            override fun onActivityPaused(activity: android.app.Activity) {
+                if (ShizukuSettings.isHideFromRecentsEnabled()) {
+                    try {
+                        val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
+                        for (task in am.appTasks) task.setExcludeFromRecents(true)
+                    } catch (e: Exception) {
+                        Timber.w(e, "setExcludeFromRecents failed")
+                    }
+                }
+            }
             override fun onActivityStarted(a: android.app.Activity) {}
-            override fun onActivityPaused(a: android.app.Activity) {}
             override fun onActivityStopped(a: android.app.Activity) {}
             override fun onActivitySaveInstanceState(a: android.app.Activity, b: android.os.Bundle) {}
             override fun onActivityDestroyed(a: android.app.Activity) {}
