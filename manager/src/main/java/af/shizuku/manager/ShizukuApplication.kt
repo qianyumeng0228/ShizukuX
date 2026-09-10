@@ -577,7 +577,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
                         val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
                         for (task in am.appTasks) task.setExcludeFromRecents(true)
                     } catch (e: Exception) {
-                        Timber.w(e, "setExcludeFromRecents failed")
+                        android.util.Log.e("HideFromRecents", "failed", e)
                     }
                 }
             }
