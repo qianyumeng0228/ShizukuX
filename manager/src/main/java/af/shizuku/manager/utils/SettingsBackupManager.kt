@@ -2,6 +2,7 @@ package af.shizuku.manager.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import org.json.JSONObject
 import af.shizuku.manager.ShizukuSettings
 
@@ -18,8 +19,18 @@ object SettingsBackupManager {
         ShizukuSettings.Keys.KEY_MIGRATION_OFFERED,
     )
 
+    /** Use the same storage context as ShizukuSettings (device protected storage on API 24+). */
+    private fun getPrefs(context: Context): SharedPreferences {
+        val storageCtx = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            context.createDeviceProtectedStorageContext()
+        } else {
+            context
+        }
+        return storageCtx.getSharedPreferences(ShizukuSettings.NAME, Context.MODE_PRIVATE)
+    }
+
     fun export(context: Context): String {
-        val prefs: SharedPreferences = context.getSharedPreferences(ShizukuSettings.NAME, Context.MODE_PRIVATE)
+        val prefs = getPrefs(context)
         val json = JSONObject()
         json.put(VERSION_KEY, BACKUP_VERSION)
         for ((key, value) in prefs.all) {
@@ -42,7 +53,7 @@ object SettingsBackupManager {
             val version = obj.optInt(VERSION_KEY, -1)
             if (version < 1) return false
 
-            val prefs = context.getSharedPreferences(ShizukuSettings.NAME, Context.MODE_PRIVATE)
+            val prefs = getPrefs(context)
             val editor = prefs.edit()
 
             val keys = obj.keys()
