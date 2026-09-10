@@ -1,4 +1,4 @@
-name: Sync Release Assets to Tencent COS
+name: Sync Release Assets to CDN Mirrors
 
 on:
   release:
@@ -23,43 +23,53 @@ jobs:
             --dir ./assets \
             --clobber
 
+      # --- Tencent COS (China domestic) ---
       - name: Install coscmd
+        if: github.event_name == 'release'
         run: pip install coscmd
 
-      - name: Configure COS
+      - name: Upload to Tencent COS
+        if: github.event_name == 'release'
         run: |
           coscmd config \
             -a ${{ secrets.COS_SECRET_ID }} \
             -s ${{ secrets.COS_SECRET_KEY }} \
             -b ${{ secrets.COS_BUCKET }} \
             -r ${{ secrets.COS_REGION }}
-
-      - name: Upload new assets to COS
-        if: github.event_name == 'release'
-        run: |
           for f in ./assets/*; do
             fname=$(basename "$f")
-            echo "Uploading $fname ..."
+            echo "Uploading $fname to COS ..."
             coscmd upload "$f" "$fname"
           done
 
-      - name: Cleanup orphaned objects (daily)
+      # --- Cloudflare R2 (global CDN) ---
+      - name: Upload to Cloudflare R2
+        if: github.event_name == 'release' && secrets.CF_R2_ACCESS_KEY_ID != ''
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+          AWS_S3_ENDPOINT: https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          SOURCE_DIR: ./assets
+
+      # --- Daily cleanup: delete orphans ---
+      - name: Cleanup COS orphans (daily)
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # List all assets from latest releases
+          pip install coscmd
+          coscmd config -a ${{ secrets.COS_SECRET_ID }} -s ${{ secrets.COS_SECRET_KEY }} -b ${{ secrets.COS_BUCKET }} -r ${{ secrets.COS_REGION }}
           gh release list --repo ${{ github.repository }} --limit 200 | awk '{print $1}' > /tmp/tags.txt
-          declared=""
+          mkdir -p /tmp/ref
           while read tag; do
             gh release download "$tag" --repo ${{ github.repository }} --dir /tmp/ref --clobber 2>/dev/null || true
           done < /tmp/tags.txt
           ls /tmp/ref/ 2>/dev/null | sort > /tmp/declared.txt
-
-          # List all objects in COS
           coscmd list | grep -oP '[A-Za-z0-9._-]+\.apk$' | sort > /tmp/cos.txt
-
-          # Delete orphans (in COS but not in any GitHub release)
           comm -23 /tmp/cos.txt /tmp/declared.txt > /tmp/orphans.txt
           while read obj; do
             [ -z "$obj" ] && continue
