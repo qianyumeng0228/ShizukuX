@@ -155,12 +155,11 @@ object UpdateChecker {
 
         // Build multi-source download URL list (ordered by priority).
         // UpdateManager will probe each mirror and use the first reachable one.
-        // Priority: Cloudflare first (fast global), GitHub as backup, Tencent COS last.
+        // Priority: Cloudflare CDN → GitHub direct → Tencent COS (last resort).
         val assetName = targetAsset?.getString("name") ?: return CheckResult.UpToDate
         val githubUrl = targetAsset.optString("browser_download_url")
         val downloadUrls = buildList {
-            add("${ProjectLinks.MIRROR_CLOUDFLARE}/$assetName")
-            add("${ProjectLinks.MIRROR_CF_ACCEL}/$assetName")
+            add("${ProjectLinks.MIRROR_CF}/$assetName")
             if (githubUrl.isNotBlank()) add(githubUrl)
             add("${ProjectLinks.MIRROR_COS}/$assetName")
         }

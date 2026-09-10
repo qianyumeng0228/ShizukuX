@@ -90,8 +90,8 @@ class UpdateManager(private val context: Context) {
     }
 
     /**
-     * Probe each mirror with a quick HEAD request and return the first one that responds.
-     * Tries them in order (not concurrently) to respect priority — first reachable wins.
+     * Probe each mirror with a quick HEAD request and return the first one that serves
+     * an actual APK (not an HTML error page). Tries them in order — first valid wins.
      */
     private suspend fun pickBestMirror(urls: List<String>): String? = withContext(Dispatchers.IO) {
         for (url in urls) {
@@ -103,12 +103,19 @@ class UpdateManager(private val context: Context) {
                     instanceFollowRedirects = true
                 }
                 val code = conn.responseCode
+                val contentType = conn.contentType ?: ""
+                val contentLength = conn.contentLength
                 conn.disconnect()
-                if (code in 200..399) {
-                    Timber.tag(TAG).d("Mirror reachable: $url (HTTP $code)")
+                // Accept any 2xx/3xx, but reject HTML pages (website error pages that
+                // return 200 text/html instead of the APK file).
+                val looksLikeHtml = contentType.startsWith("text/html", ignoreCase = true)
+                // Also reject tiny responses (< 1 MB) — APKs are always > 5 MB.
+                val tooSmall = contentLength in 1 until 1_000_000
+                if (code in 200..399 && !looksLikeHtml && !tooSmall) {
+                    Timber.tag(TAG).d("Mirror reachable: $url (HTTP $code, type=$contentType, len=$contentLength)")
                     return@withContext url
                 }
-                Timber.tag(TAG).w("Mirror $url returned HTTP $code")
+                Timber.tag(TAG).w("Mirror $url rejected: HTTP $code, type=$contentType, len=$contentLength")
             } catch (e: Exception) {
                 Timber.tag(TAG).w("Mirror $url unreachable: ${e.message}")
             }

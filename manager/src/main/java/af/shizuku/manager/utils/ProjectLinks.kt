@@ -23,11 +23,9 @@ object ProjectLinks {
      * Ordered by priority — first source that responds wins.
      * Each entry is a URL template: $MIRROR/<assetFileName>
      */
-    // 1. Cloudflare main site (shizukux.xyz) — fast global CDN
-    const val MIRROR_CLOUDFLARE = "https://shizukux.xyz/downloads"
-    // 2. Cloudflare accelerated domain (fd.shizukux.xyz)
-    const val MIRROR_CF_ACCEL = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
-    // 3. Tencent COS (Guangzhou) — domestic China direct connect
+    // 1. Cloudflare CDN (fd.shizukux.xyz) — fast global, cached from GitHub releases
+    const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
+    // 2. Tencent COS (Guangzhou) — domestic China direct connect, last resort
     const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
