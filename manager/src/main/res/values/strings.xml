@@ -475,6 +475,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_stealth_mode">Stealth Mode</string>
     <string name="settings_stealth_mode_summary">Hide app icon and simplify UI for privacy</string>
+    <string name="settings_hide_from_recents">Hide from Recents</string>
+    <string name="settings_hide_from_recents_summary">Hide this app from the recent tasks list</string>
 
     <string name="settings_report_bug">Report a bug</string>
     <string name="settings_activity_log">Activity log</string>

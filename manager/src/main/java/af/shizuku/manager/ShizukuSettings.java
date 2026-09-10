@@ -169,6 +169,7 @@ public class ShizukuSettings {
         public static final String KEY_LIVE_ACTIVITY_ENABLED = "live_activity_enabled";
         public static final String KEY_AUTO_RECONNECT_MDNS = "auto_reconnect_mdns";
         public static final String KEY_STEALTH_MODE = "stealth_mode";
+        public static final String KEY_HIDE_FROM_RECENTS = "hide_from_recents";
 
         // Automation Engine (ShizukuX additions)
         public static final String KEY_AUTOMATION_TRUSTED_NETWORKS = "automation_trusted_networks";
@@ -1259,6 +1260,11 @@ public class ShizukuSettings {
     public static boolean isStealthModeEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_STEALTH_MODE, false);
+    }
+
+    public static boolean isHideFromRecentsEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_HIDE_FROM_RECENTS, false);
     }
 
     public static void setStealthModeEnabled(boolean enable) {

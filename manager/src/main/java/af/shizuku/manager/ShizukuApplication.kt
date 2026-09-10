@@ -568,6 +568,26 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // find "what was on screen" for SelectiveScreenshotEventProcessor.
         af.shizuku.manager.utils.ForegroundActivityTracker.register(this)
 
+        // Hide from Recents: when enabled, strip this app's card from the recent-tasks list on
+        // every Activity resume so it never lingers as a visible entry after the user leaves.
+        registerActivityLifecycleCallbacks(object : android.app.Application.ActivityLifecycleCallbacks {
+            override fun onActivityResumed(activity: android.app.Activity) {
+                if (ShizukuSettings.isHideFromRecentsEnabled()) {
+                    try {
+                        activity.finishAndRemoveTask()
+                    } catch (e: Exception) {
+                        Timber.w(e, "finishAndRemoveTask failed")
+                    }
+                }
+            }
+            override fun onActivityCreated(a: android.app.Activity, b: android.os.Bundle?) {}
+            override fun onActivityStarted(a: android.app.Activity) {}
+            override fun onActivityPaused(a: android.app.Activity) {}
+            override fun onActivityStopped(a: android.app.Activity) {}
+            override fun onActivitySaveInstanceState(a: android.app.Activity, b: android.os.Bundle) {}
+            override fun onActivityDestroyed(a: android.app.Activity) {}
+        })
+
         // 2. Initialize Sentry FIRST to catch all crashes including early startup failures
         initializeSentryEarly()
 

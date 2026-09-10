@@ -579,6 +579,8 @@
     <string name="settings_diagnostics_category"><![CDATA[诊断]]></string>
     <string name="settings_stealth_mode"><![CDATA[隐身模式]]></string>
     <string name="settings_stealth_mode_summary"><![CDATA[隐藏应用图标并简化界面，以保护隐私]]></string>
+    <string name="settings_hide_from_recents"><![CDATA[后台隐藏]]></string>
+    <string name="settings_hide_from_recents_summary"><![CDATA[从最近任务列表中隐藏本应用]]></string>
     <string name="settings_activity_log"><![CDATA[活动日志]]></string>
     <string name="settings_activity_log_empty"><![CDATA[尚未记录任何活动。]]></string>
     <string name="settings_enable_activity_log"><![CDATA[启用活动日志]]></string>
