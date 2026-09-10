@@ -575,10 +575,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 if (ShizukuSettings.isHideFromRecentsEnabled()) {
                     try {
                         val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
-                        val m = am.javaClass.getMethod("removeTask", Int::class.javaPrimitiveType)
-                        m.invoke(am, activity.taskId)
+                        for (task in am.appTasks) task.setExcludeFromRecents(true)
                     } catch (e: Exception) {
-                        Timber.w(e, "removeTask failed")
+                        Timber.w(e, "setExcludeFromRecents failed")
                     }
                 }
             }
@@ -587,10 +586,9 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 if (ShizukuSettings.isHideFromRecentsEnabled()) {
                     try {
                         val am = activity.getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager
-                        val m = am.javaClass.getMethod("removeTask", Int::class.javaPrimitiveType)
-                        m.invoke(am, activity.taskId)
+                        for (task in am.appTasks) task.setExcludeFromRecents(true)
                     } catch (e: Exception) {
-                        Timber.w(e, "removeTask failed")
+                        Timber.w(e, "setExcludeFromRecents failed")
                     }
                 }
             }
