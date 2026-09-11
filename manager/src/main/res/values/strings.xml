@@ -1,4 +1,4 @@
-<resources>
+﻿<resources>
     <string name="server_uptime">Server Uptime</string>
     <string name="active_connections">Active Connections</string>
     <string name="server_memory_usage">Server Memory Usage</string>
@@ -1390,4 +1390,16 @@ Please try the command-line method instead.</string>
     <string name="backup_app_failed">Backup failed: %1$s</string>
     <string name="backup_freeze_success">App frozen</string>
     <string name="backup_unfreeze_success">App unfrozen</string>
+
+    <string name="notification_channel_shell_consent">Shell Access Request</string>
+    <string name="notification_shell_consent_title">Shell Access Request</string>
+    <string name="notification_shell_consent_title_identified">%s is requesting shell access</string>
+    <string name="notification_shell_consent_text">Tap to view Shizuku privileged access requests from a shell client (e.g. rish or ADB).</string>
+    <string name="notification_shell_consent_text_identified">Only allow if you just ran a shell command.</string>
+    <string name="notification_shell_consent_action_allow">Always allow</string>
+    <string name="notification_shell_consent_action_deny">Deny</string>
+    <string name="shell_consent_dialog_title">A shell client (e.g. rish or ADB) is requesting Shizuku privileged access.\n\nOnly allow if you just ran a shell command. The requesting app could not be identified.</string>
+    <string name="shell_consent_dialog_title_identified">%s is requesting Shizuku privileged shell access.\n\nOnly allow if you just ran a shell command.</string>
+    <string name="shell_consent_button_allow">Allow</string>
+    <string name="shell_consent_retry_hint">Authorized. Please re-run the command to connect (the app is paused while waiting).</string>
 </resources>
