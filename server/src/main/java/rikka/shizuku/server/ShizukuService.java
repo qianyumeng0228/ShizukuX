@@ -2300,9 +2300,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             Bundle extra = new Bundle();
             if (MANAGER_APPLICATION_ID.equals(packageName)) {
                 extra.putParcelable("xyz.shizuku.extra.api.intent.extra.BINDER", new af.shizuku.api.BinderContainer(binder));
+            } else {
+                // Only put ONE BinderContainer flavor per call. On Android 11, when a Bundle
+                // crosses process boundaries the framework deserializes ALL Parcelable entries
+                // in the receiver's ClassLoader. Sending multiple flavors (rikka.* + moe.*) in
+                // the same Bundle causes BadParcelableException: ClassNotFoundException on apps
+                // whose Shizuku API build only knows one of the two classes. The classic
+                // "moe.shizuku.privileged.api.intent.extra.BINDER" key + moe.shizuku.api
+                // BinderContainer is what every Shizuku client (Hail, aShell, App Ops, ...)
+                // understands, exactly like upstream RikkaApps/Shizuku does.
+                extra.putParcelable("moe.shizuku.privileged.api.intent.extra.BINDER", new moe.shizuku.api.BinderContainer(binder));
             }
-            extra.putParcelable("rikka.shizuku.intent.extra.BINDER", new rikka.shizuku.BinderContainer(binder));
-            extra.putParcelable("moe.shizuku.privileged.api.intent.extra.BINDER", new moe.shizuku.api.BinderContainer(binder));
 
             Bundle reply = IContentProviderUtils.callCompat(provider, null, name, "sendBinder", null, extra);
             if (reply != null) {
