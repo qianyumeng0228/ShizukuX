@@ -175,11 +175,25 @@ public class BinderSender {
 
         int userId = uid / 100000;
         for (String packageName : packages) {
-            PackageInfo pi = Android17Compat.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS, userId);
-            if (pi == null || pi.requestedPermissions == null)
+            PackageInfo pi = Android17Compat.getPackageInfo(packageName,
+                    PackageManager.GET_PERMISSIONS | PackageManager.GET_PROVIDERS, userId);
+            if (pi == null)
                 continue;
 
-            if (ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
+            // Check if this app registers a <packageName>.shizuku provider even without
+            // declaring the API_V23 uses-permission (e.g. AxManagerD).
+            boolean hasShizukuProvider = false;
+            if (pi.providers != null) {
+                String expectedAuthority = packageName + ".shizuku";
+                for (android.content.pm.ProviderInfo provider : pi.providers) {
+                    if (expectedAuthority.equals(provider.authority)) {
+                        hasShizukuProvider = true;
+                        break;
+                    }
+                }
+            }
+
+            if (pi.requestedPermissions != null && ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
                 boolean granted = false;
                 try {
                     if (pid == -1)
@@ -195,9 +209,11 @@ public class BinderSender {
                     ShizukuService.sendBinderToManager(sShizukuService, userId);
                     return true;
                 }
-            } else if (ArraysKt.contains(pi.requestedPermissions, PERMISSION) ||
-                       ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) ||
-                       ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL)) {
+            } else if ((pi.requestedPermissions != null &&
+                        (ArraysKt.contains(pi.requestedPermissions, PERMISSION) ||
+                         ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) ||
+                         ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL)))
+                    || hasShizukuProvider) {
                 // NOT sendBinderToUserAppWithRetry: this fires on every foreground/process-state/uid
                 // observer event during live usage (r2211 force-stopped Morphe mid-package-install
                 // when a transient pingBinder() false-positive hit here - "Failed to install update:
@@ -284,13 +300,28 @@ public class BinderSender {
                     continue;
                 }
 
-                for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, userId)) {
-                    if (pi == null || pi.applicationInfo == null || pi.requestedPermissions == null) continue;
+                for (PackageInfo pi : InstalledPackagesCompat.getInstalledPackagesNoThrow(
+                        PackageManager.GET_PERMISSIONS | PackageManager.GET_PROVIDERS | PackageManager.MATCH_ALL, userId)) {
+                    if (pi == null || pi.applicationInfo == null) continue;
 
-                    if (!ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER) &&
-                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION) &&
-                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) &&
-                            !ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL)) {
+                    boolean hasPermission = pi.requestedPermissions != null && (
+                            ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER) ||
+                            ArraysKt.contains(pi.requestedPermissions, PERMISSION) ||
+                            ArraysKt.contains(pi.requestedPermissions, PERMISSION_LEGACY) ||
+                            ArraysKt.contains(pi.requestedPermissions, PERMISSION_ORIGINAL));
+
+                    boolean hasShizukuProvider = false;
+                    if (!hasPermission && pi.providers != null) {
+                        String expectedAuthority = pi.packageName + ".shizuku";
+                        for (android.content.pm.ProviderInfo provider : pi.providers) {
+                            if (expectedAuthority.equals(provider.authority)) {
+                                hasShizukuProvider = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!hasPermission && !hasShizukuProvider) {
                         continue;
                     }
 
@@ -304,7 +335,7 @@ public class BinderSender {
                     if (state < 0 || state >= PROCESS_STATE_NONEXISTENT) continue;
 
                     try {
-                        if (ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
+                        if (pi.requestedPermissions != null && ArraysKt.contains(pi.requestedPermissions, PERMISSION_MANAGER)) {
                             // sendBinderToManager has its own force-stop + retry path.
                             ShizukuService.sendBinderToManager(sShizukuService, userId);
                         } else {

@@ -2151,15 +2151,39 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             } catch (Throwable ignored) {
             }
 
+            // Discover clients two ways:
+            // 1. Apps that declare moe.shizuku.manager.permission.API_V23 (or its ShizukuX
+            //    variants) in their manifest — the standard way every Shizuku client does.
+            // 2. Apps that register a <packageName>.shizuku ContentProvider even without the
+            //    uses-permission declaration (e.g. AxManagerD and similar deep Shizuku forks
+            //    that bundle the Shizuku API but omit the <uses-permission> tag).  This matches
+            //    Stellar's discovery behaviour and lets such clients receive the binder without
+            //    a manifest fix on their side.
             Stream<PackageInfo> packages =
                 InstalledPackagesCompat.getInstalledPackagesNoThrow(
-                    PackageManager.GET_PERMISSIONS | PackageManager.MATCH_ALL, userId
+                    PackageManager.GET_PERMISSIONS | PackageManager.GET_PROVIDERS | PackageManager.MATCH_ALL, userId
                 )
                 .stream()
-                .filter(pi -> pi != null && pi.requestedPermissions != null)
-                .filter(pi -> ArraysKt.contains(pi.requestedPermissions, PERMISSION) || 
-                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY) ||
-                              ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL))
+                .filter(pi -> pi != null)
+                .filter(pi -> {
+                    // Path 1: standard permission-based discovery
+                    if (pi.requestedPermissions != null &&
+                            (ArraysKt.contains(pi.requestedPermissions, PERMISSION) ||
+                             ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_LEGACY) ||
+                             ArraysKt.contains(pi.requestedPermissions, ServerConstants.PERMISSION_ORIGINAL))) {
+                        return true;
+                    }
+                    // Path 2: Provider-based discovery — app registers <pkg>.shizuku
+                    if (pi.providers != null) {
+                        String expectedAuthority = pi.packageName + ".shizuku";
+                        for (android.content.pm.ProviderInfo provider : pi.providers) {
+                            if (expectedAuthority.equals(provider.authority)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                })
                 .filter(pi -> runningPackages.contains(pi.packageName));
 
             // NOT sendBinderToUserAppWithRetry: the same force-stop hazard that caused the
