@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <string name="server_uptime">Server Uptime</string>
     <string name="active_connections">Active Connections</string>
     <string name="server_memory_usage">Server Memory Usage</string>
@@ -446,10 +446,13 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="external_relay_auto_accessibility_on">Accessibility service is enabled</string>
     <string name="external_relay_auto_accessibility_off">Accessibility service is not enabled</string>
     <string name="external_relay_auto_accessibility_label">External relay auto authorization</string>
-    <string name="external_relay_auto_accessibility_description">Automatically activates Scene ADB mode when its authorize dialog appears, and activates Brevent when the app is opened. Only active while the Auto authorize toggle is on.</string>
+    <string name="external_relay_auto_accessibility_description">Automatically activates Scene ADB mode when its authorize dialog appears, and activates Brevent when the app is opened. Only active while the Auto authorize toggle is on.\n\nTo keep this service alive: disable battery optimization for ShizukuX, and lock ShizukuX in the recent apps list.</string>
     <string name="external_relay_auto_scene_detected">Scene ADB authorize detected; activating automatically...</string>
     <string name="external_relay_auto_brevent_detected">Brevent opened; activating automatically...</string>
-    <string name="settings_tcp_mode">TCP mode</string>
+    <string name="external_relay_auto_battery_ok">Battery optimization is disabled (service will stay alive)</string>
+    <string name="external_relay_auto_battery_off">Battery optimization is ON — the system may kill this service</string>
+    <string name="external_relay_auto_battery_optimize">Disable battery optimization</string>
+    <string name="external_relay_auto_battery_hint">Tip: also lock ShizukuX in recent apps to prevent the system from killing the service.</string>    <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>
     <string name="settings_tcp_mode_closing_port">Closing TCP port...</string>

@@ -1,7 +1,10 @@
 package af.shizuku.manager.settings
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.widget.Toast
 import androidx.core.view.ViewCompat
@@ -86,6 +89,21 @@ class ExternalRelayActivity : AppBarActivity() {
                     }
                     Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
                 }
+            },
+            onRequestIgnoreBatteryOptimization = {
+                val pm = getSystemService(POWER_SERVICE) as PowerManager
+                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                    try {
+                        startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:$packageName")))
+                    } catch (e: Exception) {
+                        try {
+                            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                        } catch (e2: Exception) {
+                            Toast.makeText(this, R.string.external_relay_auto_open_accessibility_failed, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
         )
         recyclerView.adapter = adapter
@@ -108,7 +126,7 @@ class ExternalRelayActivity : AppBarActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh the accessibility status row after the user comes back from Settings.
+        // Refresh the accessibility and battery status rows after the user comes back from Settings.
         if (::adapter.isInitialized) {
             adapter.notifyItemChanged(0)
             adapter.notifyItemChanged(1)

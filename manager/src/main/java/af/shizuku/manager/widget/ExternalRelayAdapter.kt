@@ -1,6 +1,7 @@
 package af.shizuku.manager.widget
 
 import android.content.Context
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -23,7 +24,8 @@ class ExternalRelayAdapter(
     private val onActivateBrevent: () -> Unit,
     private val onAutoToggle: (Boolean) -> Unit,
     private val onOpenAccessibility: () -> Unit,
-    private val onEnableOwnerWireless: () -> Unit
+    private val onEnableOwnerWireless: () -> Unit,
+    private val onRequestIgnoreBatteryOptimization: () -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -88,6 +90,8 @@ class ExternalRelayAdapter(
         private val autoSwitch: MaterialSwitch = itemView.findViewById(R.id.auto_switch)
         private val accessibilityStatus: TextView = itemView.findViewById(R.id.accessibility_status)
         private val openAccessibilityButton: MaterialButton = itemView.findViewById(R.id.open_accessibility_button)
+        private val batteryStatus: TextView = itemView.findViewById(R.id.battery_status)
+        private val batteryButton: MaterialButton = itemView.findViewById(R.id.battery_button)
 
         fun bind() {
             autoSwitch.isChecked = ShizukuSettings.getExternalRelayAuto()
@@ -98,6 +102,10 @@ class ExternalRelayAdapter(
             openAccessibilityButton.setOnClickListener {
                 onOpenAccessibility()
             }
+            refreshBatteryStatus()
+            batteryButton.setOnClickListener {
+                onRequestIgnoreBatteryOptimization()
+            }
         }
 
         fun refreshAccessibilityStatus() {
@@ -107,6 +115,16 @@ class ExternalRelayAdapter(
                 else R.string.external_relay_auto_accessibility_off
             )
             openAccessibilityButton.isEnabled = !enabled
+        }
+
+        fun refreshBatteryStatus() {
+            val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+            val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
+            batteryStatus.text = context.getString(
+                if (isIgnoring) R.string.external_relay_auto_battery_ok
+                else R.string.external_relay_auto_battery_off
+            )
+            batteryButton.isEnabled = !isIgnoring
         }
 
         private fun isAutoAccessibilityEnabled(): Boolean {

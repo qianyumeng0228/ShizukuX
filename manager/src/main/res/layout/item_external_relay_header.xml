@@ -59,4 +59,20 @@
         android:layout_marginTop="2dp"
         android:text="@string/external_relay_auto_open_accessibility" />
 
+    <TextView
+        android:id="@+id/battery_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="?android:attr/textColorSecondary" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/battery_button"
+        style="@style/Widget.Material3.Button.TextButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="@string/external_relay_auto_battery_optimize" />
+
 </LinearLayout>
