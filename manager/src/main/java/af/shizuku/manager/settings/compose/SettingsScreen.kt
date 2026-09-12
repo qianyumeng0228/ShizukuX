@@ -76,11 +76,11 @@ fun SettingsScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // PERF: WallpaperBackground removed from settings. ShizukuPlus (which settings are
+        // PERF: WallpaperBackground removed from settings. ShizukuExtra (which settings are
         // modeled on) has no wallpaper layer; drawing a full-screen image + scrim + breathe
         // gradient in Compose every frame under a scrolling Preference list was the source of
         // the "stutter/tugging" feel. The settings list now uses the plain Scaffold surface,
-        // exactly like stock ShizukuPlus.
+        // exactly like stock ShizukuExtra.
 
         Scaffold(
             containerColor = Color.Transparent,

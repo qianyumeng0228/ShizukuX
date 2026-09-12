@@ -92,7 +92,7 @@
         android:title="@string/settings_rootless_bridges_category_title"
         android:defaultValue="true">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_build_prop_redirect_enabled"
         android:title="@string/settings_build_prop_redirection_title"
         android:summary="@string/settings_build_prop_redirection_summary"
@@ -101,7 +101,7 @@
             app:infoTitle="@string/settings_build_prop_redirection_explainer_title"
             app:infoDetail="@string/settings_build_prop_redirection_explainer_detail" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_auto_grant_enabled"
             android:title="@string/settings_root_auto_grant"
             android:summary="@string/settings_root_auto_grant_summary"
@@ -110,7 +110,7 @@
             app:infoTitle="@string/help_root_auto_grant_title"
             app:infoDetail="@string/help_root_auto_grant_detail" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_file_interceptor_enabled"
             android:title="@string/settings_root_file_interceptor"
             android:summary="@string/settings_root_file_interceptor_summary"
@@ -126,7 +126,7 @@
         android:title="@string/settings_mocking_simulation_category_title"
         android:defaultValue="false">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_iptables_mocking_enabled"
         android:title="@string/settings_firewall_success_mocking_title"
         android:summary="@string/settings_firewall_success_mocking_summary"
@@ -135,7 +135,7 @@
             app:infoTitle="@string/settings_firewall_mocking_explainer_title"
             app:infoDetail="@string/settings_firewall_mocking_explainer_detail" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_magisk_mocking_enabled"
             android:title="@string/settings_root_magisk_mocking"
             android:summary="@string/settings_root_magisk_mocking_summary"
@@ -144,7 +144,7 @@
             app:infoTitle="@string/help_root_magisk_title"
             app:infoDetail="@string/help_root_magisk_detail" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_busybox_mocking_enabled"
             android:title="@string/settings_root_busybox_mocking"
             android:summary="@string/settings_root_busybox_mocking_summary"
@@ -153,28 +153,28 @@
             app:infoTitle="@string/help_root_busybox_title"
             app:infoDetail="@string/help_root_busybox_detail" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="overlay_fs_proxy_enabled"
         android:title="@string/settings_overlayfs_ghosting_title"
         android:summary="@string/settings_overlayfs_ghosting_summary"
             android:icon="@drawable/ic_folder_24"
             android:defaultValue="false" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_kernel_ghosting_enabled"
         android:title="@string/settings_kernel_driver_ghosting_title"
         android:summary="@string/settings_kernel_driver_ghosting_summary"
             android:icon="@drawable/ic_settings_suggest_24"
             android:defaultValue="false" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_partition_ghosting_enabled"
         android:title="@string/settings_partition_flash_ghosting_title"
         android:summary="@string/settings_partition_flash_ghosting_summary"
             android:icon="@drawable/ic_admin_panel_settings_24"
             android:defaultValue="false" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="root_power_ghosting_enabled"
         android:title="@string/settings_power_state_ghosting_title"
         android:summary="@string/settings_power_state_ghosting_summary"
@@ -188,14 +188,14 @@
         android:title="@string/settings_bootloader_integration_category_title"
         android:defaultValue="false">
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="bootloader_flash_ota_enabled"
         android:title="@string/settings_systemless_ota_flashing_title"
         android:summary="@string/settings_systemless_ota_flashing_summary"
             android:icon="@drawable/ic_update_24"
             android:defaultValue="false" />
 
-        <af.shizuku.manager.settings.PlusFeaturePreference
+        <af.shizuku.manager.settings.ExtraFeaturePreference
             android:key="bootloader_fastbootd_reboot_enabled"
         android:title="@string/settings_fastbootd_transition_title"
         android:summary="@string/settings_fastbootd_transition_summary"

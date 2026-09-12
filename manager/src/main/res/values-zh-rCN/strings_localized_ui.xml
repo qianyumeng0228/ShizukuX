@@ -228,7 +228,7 @@
     <string name="server_memory_details">%1$s / %2$s（最大允许）</string>
     <string name="update_version_name">版本 %1$s</string>
     <string name="update_published_date">发布于：%1$s</string>
-    <string name="settings_plus_enable_feature">启用功能</string>
+    <string name="settings_extra_enable_feature">启用功能</string>
     <string name="settings_search_clear">清除搜索</string>
     <string name="settings_search_empty">没有找到设置</string>
     <string name="settings_search_default_category">设置</string>

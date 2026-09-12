@@ -15,7 +15,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
 import af.shizuku.manager.R
 
-class PlusNavPreference(context: Context, attrs: AttributeSet?) : Preference(context, attrs) {
+class ExtraNavPreference(context: Context, attrs: AttributeSet?) : Preference(context, attrs) {
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)

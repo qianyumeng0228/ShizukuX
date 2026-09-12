@@ -796,12 +796,12 @@ public class ShizukuSettings {
         return p == null || p.getBoolean(Keys.KEY_CONTINUITY_BRIDGE_ENABLED, true);
     }
 
-    public static boolean isAICorePlusEnabled() {
+    public static boolean isAICoreExtraEnabled() {
         SharedPreferences p = getPreferences();
         return p == null || p.getBoolean(Keys.KEY_AI_CORE_PLUS_ENABLED, true);
     }
 
-    public static void setAICorePlusEnabled(boolean enabled) {
+    public static void setAICoreExtraEnabled(boolean enabled) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_AI_CORE_PLUS_ENABLED, enabled).apply();
     }
@@ -1103,7 +1103,7 @@ public class ShizukuSettings {
         if (p != null) p.edit().putBoolean(Keys.KEY_HIDE_DISABLED_PLUS_FEATURES, enable).apply();
     }
 
-    public static void syncAllPlusFeaturesToServer() {
+    public static void syncAllExtraFeaturesToServer() {
         if (!rikka.shizuku.Shizuku.pingBinder()) return;
         new Thread(() -> {
             try {
@@ -1115,7 +1115,7 @@ public class ShizukuSettings {
                 service.updateExtraFeatureEnabled("avf_manager", isAvfManagerEnabled());
                 service.updateExtraFeatureEnabled("storage_proxy", isStorageProxyEnabled());
                 service.updateExtraFeatureEnabled("continuity_bridge", isContinuityBridgeEnabled());
-                service.updateExtraFeatureEnabled("ai_core_plus", isAICorePlusEnabled());
+                service.updateExtraFeatureEnabled("ai_core_plus", isAICoreExtraEnabled());
                 service.updateExtraFeatureEnabled("ai_core_master", isAiCoreMasterEnabled());
                 service.updateExtraFeatureEnabled("ai_core_experimental", isAICoreExperimentalEnabled());
                 service.updateExtraFeatureEnabled("npu_acceleration", isNpuAccelerationEnabled());

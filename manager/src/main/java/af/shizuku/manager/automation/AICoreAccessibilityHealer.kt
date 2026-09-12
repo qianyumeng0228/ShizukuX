@@ -27,14 +27,14 @@ object AICoreAccessibilityHealer {
     fun reenableIfNeeded(context: Context) {
         try {
             // Only act on the user's standing intent: AICore+ feature toggled on in-app.
-            if (!ShizukuSettings.isAICorePlusEnabled()) return
+            if (!ShizukuSettings.isAICoreExtraEnabled()) return
 
             // Re-enabling requires WRITE_SECURE_SETTINGS, granted to the manager once Shizuku
             // is running. Without it there's nothing we can do here (the UI already guides the
             // user to enable the service manually).
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return
 
-            val target = ComponentName(context, AICorePlusService::class.java)
+            val target = ComponentName(context, AICoreExtraService::class.java)
             if (isServiceEnabled(context, target)) return
 
             val current = Settings.Secure.getString(
@@ -64,7 +64,7 @@ object AICoreAccessibilityHealer {
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
         ) ?: return false
-        // Compare via ComponentName so a short-form entry (pkg/.automation.AICorePlusService)
+        // Compare via ComponentName so a short-form entry (pkg/.automation.AICoreExtraService)
         // still matches the fully-qualified target the OEM may have stored either way.
         return enabled.split(':').any { ComponentName.unflattenFromString(it) == target }
     }

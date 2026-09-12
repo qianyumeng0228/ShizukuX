@@ -13,7 +13,7 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:title="@string/plus_dashboard_title"
+            app:title="@string/extra_dashboard_title"
              />
 
     </com.google.android.material.appbar.AppBarLayout>

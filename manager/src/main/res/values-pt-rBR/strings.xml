@@ -376,7 +376,7 @@
     <string name="settings_reset_adb_keys_error">Falha ao redefinir as chaves ADB</string>
 
     <!-- ShizukuX Features -->
-    <string name="settings_shizuku_plus_features">Recursos do ShizukuX</string>
+    <string name="settings_shizuku_extra_features">Recursos do ShizukuX</string>
     <string name="settings_dhizuku_mode">Modo Dhizuku</string>
     <string name="settings_dhizuku_mode_summary">Delegar privilégios de Proprietário do Dispositivo (DevicePolicyManager) a aplicativos que suportam o Dhizuku.</string>
     <string name="dhizuku_device_owner_label">ShizukuX (Modo Dhizuku)</string>
@@ -403,10 +403,10 @@
     <string name="settings_network_governor_plus_summary">Controle privilegiado de rede. Usado pelo AFWall+ para filtragem robusta em todo o sistema.</string>
     <string name="settings_activity_manager_plus">↳ Controle Profundo de Processos</string>
     <string name="settings_activity_manager_plus_summary">Controle nativo de processos. Permite que o MacroDroid, o Tasker e o Naptime encerrem aplicativos profundamente e definam grupos de espera.</string>
-    <string name="settings_plus_app_found">Aplicativo integrado detectado: %1$s. Toque para configurar.</string>
-    <string name="settings_plus_app_setup_title">Configurar Integração</string>
-    <string name="settings_plus_app_open">Abrir Aplicativo</string>
-    <string name="settings_plus_learn_more">Saiba mais</string>
+    <string name="settings_extra_app_found">Aplicativo integrado detectado: %1$s. Toque para configurar.</string>
+    <string name="settings_extra_app_setup_title">Configurar Integração</string>
+    <string name="settings_extra_app_open">Abrir Aplicativo</string>
+    <string name="settings_extra_learn_more">Saiba mais</string>
     <string name="help_general_plus_summary"><![CDATA[<b>Como o ShizukuX funciona com outros aplicativos</b><br><br>O ShizukuX oferece <i>recursos exclusivos Extra</i> (Ponte de Armazenamento, Ponte de IA, Ponte de Personalização) acessíveis por este aplicativo e por qualquer aplicativo de terceiros que use explicitamente a API do ShizukuX (xyz.shizuku.extra.api).<br><br><b>Importante:</b> O ShizukuX é totalmente compatível com a API original do Shizuku. Aplicativos existentes que usam o Shizuku padrão (como SD Maid SE e SwiftBackup) descobrirão e funcionarão automaticamente com o ShizukuX sem qualquer atualização do desenvolvedor.<br><br><b>Usando junto com o Shizuku padrão:</b> Apenas um serviço pode ser executado por vez. O cartão de Complemento na tela inicial facilita a troca caso você ainda tenha o Shizuku padrão instalado, mas é recomendado desinstalar o Shizuku padrão e usar apenas o ShizukuX.]]></string>
 
     <!-- Detailed Help Strings -->
@@ -441,14 +441,14 @@
     <string name="help_activity_manager_plus_detail">O Controle Profundo de Processos permite que o servidor ignore as restrições padrão de hibernação e espera de aplicativos. Ele pode forçar aplicativos ao grupo de espera RESTRICTED ou realizar um verdadeiro deepForceStop (encerrando todos os serviços e tarefas em segundo plano), o que é essencial para ferramentas agressivas de economia de bateria.</string>
 
     <!-- Plus settings category titles -->
-    <string name="settings_plus_category_framework">Estrutura</string>
-    <string name="settings_plus_category_performance">Desempenho e Controle de Processos</string>
-    <string name="settings_plus_category_files">Arquivos e Máquinas Virtuais</string>
-    <string name="settings_plus_category_display">Exibição e Personalização</string>
-    <string name="settings_plus_category_network">Rede e Privacidade</string>
-    <string name="settings_plus_category_intelligence">Inteligência e Continuidade</string>
-    <string name="settings_plus_category_developer">Opções do Desenvolvedor (Experimental)</string>
-    <string name="settings_plus_category_root_compat">Módulos de Compatibilidade Root</string>
+    <string name="settings_extra_category_framework">Estrutura</string>
+    <string name="settings_extra_category_performance">Desempenho e Controle de Processos</string>
+    <string name="settings_extra_category_files">Arquivos e Máquinas Virtuais</string>
+    <string name="settings_extra_category_display">Exibição e Personalização</string>
+    <string name="settings_extra_category_network">Rede e Privacidade</string>
+    <string name="settings_extra_category_intelligence">Inteligência e Continuidade</string>
+    <string name="settings_extra_category_developer">Opções do Desenvolvedor (Experimental)</string>
+    <string name="settings_extra_category_root_compat">Módulos de Compatibilidade Root</string>
     <string name="settings_root_magisk_mocking">Simulação de Ambiente Magisk</string>
     <string name="settings_root_magisk_mocking_summary">Simula binários, propriedades e pastas internas do Magisk para enganar aplicativos que detectam root.</string>
     <string name="settings_root_auto_grant">Ponte de Aprovação Automática</string>
@@ -918,8 +918,8 @@
     <string name="changelog_view_on_github">Ver no GitHub</string>
     <string name="changelog_fallback_message">Não foi possível carregar as notas de lançamento desta atualização (você pode estar offline). Toque em "Ver no GitHub" para ver o que mudou.</string>
 
-    <string name="aicore_plus_label">Ponte de Automação AICore+</string>
-    <string name="aicore_plus_description">Necessário para os recursos AICore+ do ShizukuX. Fornece despejo privilegiado de hierarquia de UI e simulação de entrada física para automação orientada por IA. Não observa senhas ou dados pessoais.</string>
+    <string name="aicore_extra_label">Ponte de Automação AICore+</string>
+    <string name="aicore_extra_description">Necessário para os recursos AICore+ do ShizukuX. Fornece despejo privilegiado de hierarquia de UI e simulação de entrada física para automação orientada por IA. Não observa senhas ou dados pessoais.</string>
 
     <!-- Common action labels -->
     <string name="action_clear_all">Limpar Tudo</string>

@@ -19,7 +19,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import af.shizuku.manager.R
 
-class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPreferenceCompat(context, attrs) {
+class ExtraFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPreferenceCompat(context, attrs) {
 
     private val infoTitle: Int
     private val infoDetail: Int
@@ -29,11 +29,11 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
     private var integrationAppName: String? = null
 
     init {
-        val a = context.obtainStyledAttributes(attrs, R.styleable.PlusFeaturePreference)
-        infoTitle = a.getResourceId(R.styleable.PlusFeaturePreference_infoTitle, 0)
-        infoDetail = a.getResourceId(R.styleable.PlusFeaturePreference_infoDetail, 0)
-        badgeType = a.getInt(R.styleable.PlusFeaturePreference_badgeType, 0)
-        severityBadge = a.getInt(R.styleable.PlusFeaturePreference_severityBadge, 0)
+        val a = context.obtainStyledAttributes(attrs, R.styleable.ExtraFeaturePreference)
+        infoTitle = a.getResourceId(R.styleable.ExtraFeaturePreference_infoTitle, 0)
+        infoDetail = a.getResourceId(R.styleable.ExtraFeaturePreference_infoDetail, 0)
+        badgeType = a.getInt(R.styleable.ExtraFeaturePreference_badgeType, 0)
+        severityBadge = a.getInt(R.styleable.ExtraFeaturePreference_severityBadge, 0)
         a.recycle()
     }
 
@@ -166,7 +166,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
 
             // Title
             val titleTextView = TextView(context).apply {
-                text = context.getString(if (infoTitle != 0) infoTitle else R.string.settings_plus_learn_more)
+                text = context.getString(if (infoTitle != 0) infoTitle else R.string.settings_extra_learn_more)
                 setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 20f)
                 setTypeface(null, android.graphics.Typeface.BOLD)
                 setTextColor(resolveColor(com.google.android.material.R.attr.colorOnSurface, 0xFF000000.toInt()))
@@ -230,7 +230,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
                 )
             }
 
-            val enableFeatureLabel = context.getString(R.string.settings_plus_feature_help_enable)
+            val enableFeatureLabel = context.getString(R.string.settings_extra_feature_help_enable)
             val switchText = TextView(context).apply {
                 text = enableFeatureLabel
                 setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 15f)
@@ -242,13 +242,13 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
             switchLayout.addView(switchText)
 
             val mSwitch = com.google.android.material.materialswitch.MaterialSwitch(context).apply {
-                isChecked = this@PlusFeaturePreference.isChecked
+                isChecked = this@ExtraFeaturePreference.isChecked
                 // Standalone switch with no adjacent Preference row for TalkBack to borrow a
                 // label from - without this it announces only "Switch, on/off" with no context.
                 contentDescription = enableFeatureLabel
                 setOnCheckedChangeListener { _, isCheckedVal ->
-                    this@PlusFeaturePreference.isChecked = isCheckedVal
-                    this@PlusFeaturePreference.callChangeListener(isCheckedVal)
+                    this@ExtraFeaturePreference.isChecked = isCheckedVal
+                    this@ExtraFeaturePreference.callChangeListener(isCheckedVal)
                 }
             }
             switchLayout.addView(mSwitch)
@@ -257,7 +257,7 @@ class PlusFeaturePreference(context: Context, attrs: AttributeSet) : SwitchPrefe
 
             // Dismiss Button
             val closeButton = com.google.android.material.button.MaterialButton(context).apply {
-                text = context.getString(R.string.settings_plus_feature_help_close)
+                text = context.getString(R.string.settings_extra_feature_help_close)
                 cornerRadius = (24 * context.resources.displayMetrics.density).toInt()
                 val params = android.widget.LinearLayout.LayoutParams(
                     android.view.ViewGroup.LayoutParams.MATCH_PARENT,

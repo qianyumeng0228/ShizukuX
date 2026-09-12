@@ -6,7 +6,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 
 /**
- * A self-describing Plus feature that can be discovered and launched via [PlusFeatureRegistry].
+ * A self-describing Plus feature that can be discovered and launched via [ExtraFeatureRegistry].
  *
  * Existing hardcoded settings entries are NOT migrated to this interface - doing so without
  * device testing across all of them is too risky. This is new infrastructure for future features
@@ -14,7 +14,7 @@ import androidx.annotation.StringRes
  * af.shizuku.manager.scripting.ScriptingFeatureModule) registers itself here as a working proof
  * of concept while remaining fully functional through its existing direct preference wiring.
  */
-interface PlusFeatureModule {
+interface ExtraFeatureModule {
     /** Stable, unique identifier - used as the registry key. */
     val id: String
 

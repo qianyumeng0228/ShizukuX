@@ -120,7 +120,7 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                         val activity = context as? androidx.fragment.app.FragmentActivity
                         val frag = activity?.supportFragmentManager
                             ?.findFragmentById(R.id.fragment_container)
-                        val opened = if (frag is ShizukuPlusSettingsFragment) {
+                        val opened = if (frag is ShizukuExtraSettingsFragment) {
                             frag.findPreference<Preference>("shadow_binder_hidden_packages")?.let {
                                 frag.onPreferenceTreeClick(it)
                             } != null

@@ -15,7 +15,7 @@
         <attr name="emptyActionText" />
     </declare-styleable>
 
-    <declare-styleable name="PlusFeaturePreference">
+    <declare-styleable name="ExtraFeaturePreference">
         <attr name="infoTitle" format="reference|string" />
         <attr name="infoDetail" format="reference|string" />
         <attr name="badgeType" format="enum">

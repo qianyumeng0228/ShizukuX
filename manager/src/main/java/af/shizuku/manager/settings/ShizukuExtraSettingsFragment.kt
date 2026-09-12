@@ -36,7 +36,7 @@ import javax.crypto.AEADBadTagException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
-class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
+class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
 
     override fun getTitle(): CharSequence? = getString(R.string.settings_feature_hub_title)
 
@@ -183,16 +183,16 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         if (!isAdded) return
-        setPreferencesFromResource(R.xml.settings_shizuku_plus, rootKey)
+        setPreferencesFromResource(R.xml.settings_shizuku_extra, rootKey)
 
-        ShizukuSettings.syncAllPlusFeaturesToServer()
+        ShizukuSettings.syncAllExtraFeaturesToServer()
 
         // Setup menu for 'Learn more' icon
         activity?.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 if (!isAdded) return
                 menu.clear()
-                menuInflater.inflate(R.menu.plus_settings_menu, menu)
+                menuInflater.inflate(R.menu.extra_settings_menu, menu)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
@@ -346,7 +346,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 maybePromptRestart(KEY_CUSTOM_API_ENABLED, newValue) {
                     ShizukuSettings.setCustomApiEnabled(newValue)
                     customApiPref.isChecked = newValue
-                    ShizukuSettings.syncAllPlusFeaturesToServer()
+                    ShizukuSettings.syncAllExtraFeaturesToServer()
                     updateAllPlusFeatureDependencies()
                 }
             }
@@ -436,13 +436,13 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                         // Cascade child state BEFORE syncing so the server sees a consistent
                         // parent+child snapshot (disabling a parent force-unchecks children).
                         updatePlusFeatureDependency(prefKey, true)
-                        ShizukuSettings.syncAllPlusFeaturesToServer()
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                     }
                     false // Handle manually after dialog
                 } else {
                     preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, enabled)?.apply()
                     updatePlusFeatureDependency(prefKey, enabled)
-                    ShizukuSettings.syncAllPlusFeaturesToServer()
+                    ShizukuSettings.syncAllExtraFeaturesToServer()
                     true
                 }
             }
@@ -450,12 +450,12 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
 
         findPreference<Preference>("spoof_target")?.setOnPreferenceChangeListener { _, newValue ->
             preferenceManager.sharedPreferences?.edit()?.putString("spoof_target", newValue as String)?.apply()
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
 
         findPreference<Preference>(KEY_SHADOW_BINDER_HIDDEN_PACKAGES)?.setOnPreferenceChangeListener { _, _ ->
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
 
@@ -465,8 +465,8 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 val lock = BiometricLock(requireActivity())
                 if (lock.canAuthenticate(requireContext())) {
                     lock.authenticate({
-                        ShizukuSettings.setAICorePlusEnabled(true)
-                        ShizukuSettings.syncAllPlusFeaturesToServer()
+                        ShizukuSettings.setAICoreExtraEnabled(true)
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                         activity?.runOnUiThread {
                             findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
                             updatePlusFeatureDependency("ai_core_plus_enabled", true)
@@ -481,7 +481,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             // AI sub-features, and the server gates NPU/window/automation on those child flags
             // (not on ai_core_plus), so they must be false in prefs before the sync runs.
             updatePlusFeatureDependency("ai_core_plus_enabled", enabled)
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
 
@@ -796,7 +796,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
     private fun showGeneralHelpDialog() {
         val context = context ?: return
         MaterialAlertDialogBuilder(context)
-            .setTitle(R.string.settings_shizuku_plus_features)
+            .setTitle(R.string.settings_shizuku_extra_features)
             .setMessage(getString(R.string.help_general_plus_summary).toHtml())
             .setPositiveButton(android.R.string.ok, null)
             .show()
@@ -856,10 +856,10 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
             launch(Dispatchers.Main) {
                 found.forEach { (prefKey, foundApp) ->
                     if (foundApp != null) {
-                        findPreference<PlusFeaturePreference>(prefKey)?.apply {
+                        findPreference<ExtraFeaturePreference>(prefKey)?.apply {
                             setIntegration(foundApp.first, foundApp.second)
                             val originalSummary = summary
-                            summary = getString(R.string.settings_plus_app_found, foundApp.second) + "\n\n" + originalSummary
+                            summary = getString(R.string.settings_extra_app_found, foundApp.second) + "\n\n" + originalSummary
                         }
                     }
                 }
@@ -877,7 +877,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("storage_proxy_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("continuity_bridge_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
-        val aiCoreExtraEnabled = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+        val aiCoreExtraEnabled = ShizukuSettings.isAICoreExtraEnabled() && customApiEnabled
         updatePreferenceDependency("ai_core_master_enabled", aiCoreExtraEnabled, hideDisabled)
         updatePreferenceDependency("ai_core_experimental_enabled", aiCoreExtraEnabled, hideDisabled)
         val aiCoreMasterEnabled = ShizukuSettings.isAiCoreMasterEnabled() && aiCoreExtraEnabled
@@ -940,7 +940,7 @@ class ShizukuPlusSettingsFragment : BaseSettingsFragment() {
                 updatePreferenceDependency("native_window_crawler_enabled", masterActive, hideDisabled)
             }
             "ai_core_master_enabled" -> {
-                val aiCoreExtraActive = ShizukuSettings.isAICorePlusEnabled() && customApiEnabled
+                val aiCoreExtraActive = ShizukuSettings.isAICoreExtraEnabled() && customApiEnabled
                 val active = newValue && aiCoreExtraActive
                 updatePreferenceDependency("npu_acceleration_enabled", active, hideDisabled)
                 updatePreferenceDependency("native_window_crawler_enabled", active, hideDisabled)

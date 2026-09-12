@@ -11,11 +11,11 @@
     <string name="home_status_service_user_adb">ADB</string>
     
     <!-- ShizukuX Strings -->
-    <string name="settings_shizuku_plus_features">ShizukuX 功能</string>
-    <string name="settings_plus_category_performance">性能与加速</string>
-    <string name="settings_plus_category_network">网络与隐私</string>
-    <string name="settings_plus_category_intelligence">智能与连续性</string>
-    <string name="settings_plus_category_developer">开发者选项（实验性）</string>
+    <string name="settings_shizuku_extra_features">ShizukuX 功能</string>
+    <string name="settings_extra_category_performance">性能与加速</string>
+    <string name="settings_extra_category_network">网络与隐私</string>
+    <string name="settings_extra_category_intelligence">智能与连续性</string>
+    <string name="settings_extra_category_developer">开发者选项（实验性）</string>
     <string name="settings_vector">矢量加速</string>
     <string name="settings_vector_summary">系统操作的实验性原生执行。</string>
     <string name="settings_experimental_root">实验性 Root 兼容性</string>
@@ -437,7 +437,7 @@
     <string name="server_memory_usage"><![CDATA[服务内存使用情况]]></string>
     <string name="server_memory_uncapped"><![CDATA[不设上限]]></string>
     <string name="server_clients_connected"><![CDATA[%1$d 个应用已连接]]></string>
-    <string name="plus_dashboard_title"><![CDATA[ShizukuX 控制面板]]></string>
+    <string name="extra_dashboard_title"><![CDATA[ShizukuX 控制面板]]></string>
     <string name="error_unknown"><![CDATA[未知错误]]></string>
     <string name="translation_contributors"><![CDATA[thejaustin]]></string>
     <string name="translation_url"><![CDATA[https://github.com/qianyumeng0228/ShizukuX]]></string>
@@ -633,12 +633,12 @@
     <string name="settings_network_governor_plus_summary"><![CDATA[提供特权网络控制。AFWall+ 可使用它进行系统级网络过滤。]]></string>
     <string name="settings_activity_manager_plus"><![CDATA[↳ 深度进程控制]]></string>
     <string name="settings_activity_manager_plus_summary"><![CDATA[提供原生进程控制。允许 MacroDroid、Tasker 和 Naptime 深度强制停止应用并设置待机桶。]]></string>
-    <string name="settings_plus_app_found"><![CDATA[检测到集成应用：%1$s。点按以进行设置。]]></string>
-    <string name="settings_plus_app_setup_title"><![CDATA[设置集成]]></string>
-    <string name="settings_plus_app_open"><![CDATA[打开应用]]></string>
-    <string name="settings_plus_learn_more"><![CDATA[了解更多]]></string>
-    <string name="settings_plus_feature_help_enable">启用功能</string>
-    <string name="settings_plus_feature_help_close">关闭</string>
+    <string name="settings_extra_app_found"><![CDATA[检测到集成应用：%1$s。点按以进行设置。]]></string>
+    <string name="settings_extra_app_setup_title"><![CDATA[设置集成]]></string>
+    <string name="settings_extra_app_open"><![CDATA[打开应用]]></string>
+    <string name="settings_extra_learn_more"><![CDATA[了解更多]]></string>
+    <string name="settings_extra_feature_help_enable">启用功能</string>
+    <string name="settings_extra_feature_help_close">关闭</string>
     <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Extra 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（xyz.shizuku.extra.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
     <string name="help_dhizuku_title"><![CDATA[关于 Dhizuku 模式]]></string>
     <string name="help_dhizuku_detail"><![CDATA[Dhizuku 允许 Shizuku 与第三方应用共享设备所有者（DevicePolicyManager）权限。这对 Dhizuku Manager 或信息亭模式工具等应用很重要，因为这些应用需要管理系统策略，但又不能成为唯一的设备所有者。]]></string>
@@ -660,10 +660,10 @@
     <string name="help_network_governor_plus_detail"><![CDATA[网络与 DNS 管理器提供对 INetworkPolicyManager 和专用 DNS 设置的特权访问。它可以对单个应用实施 POLICY_REJECT_ALL，提供系统级防火墙，即使没有活动 VPN 隧道，也能在 Wi-Fi 和 5G 连接上工作。]]></string>
     <string name="help_activity_manager_plus_title"><![CDATA[关于深度进程控制]]></string>
     <string name="help_activity_manager_plus_detail"><![CDATA[深度进程控制允许服务绕过标准的应用休眠和待机限制。它可以将应用强制放入受限待机桶，或执行真正的 deepForceStop（终止所有服务和后台任务），适合激进的省电工具使用。]]></string>
-    <string name="settings_plus_category_framework"><![CDATA[框架]]></string>
-    <string name="settings_plus_category_files"><![CDATA[文件和虚拟机]]></string>
-    <string name="settings_plus_category_display"><![CDATA[显示和主题]]></string>
-    <string name="settings_plus_category_root_compat"><![CDATA[Root 兼容模块]]></string>
+    <string name="settings_extra_category_framework"><![CDATA[框架]]></string>
+    <string name="settings_extra_category_files"><![CDATA[文件和虚拟机]]></string>
+    <string name="settings_extra_category_display"><![CDATA[显示和主题]]></string>
+    <string name="settings_extra_category_root_compat"><![CDATA[Root 兼容模块]]></string>
     <string name="settings_root_magisk_mocking"><![CDATA[Magisk 环境模拟]]></string>
     <string name="settings_root_magisk_mocking_summary"><![CDATA[模拟 Magisk 二进制文件、属性和内部目录，帮助绕过应用的 Root 检测。]]></string>
     <string name="settings_root_auto_grant"><![CDATA[自动授权桥接]]></string>
@@ -1026,8 +1026,8 @@
     <string name="changelog_close"><![CDATA[关闭]]></string>
     <string name="changelog_view_on_github"><![CDATA[在 GitHub 上查看]]></string>
     <string name="changelog_fallback_message"><![CDATA[无法加载此更新的发行说明（您可能处于离线状态）。点击“在 GitHub 上查看”以查看更改的内容。]]></string>
-    <string name="aicore_plus_label"><![CDATA[AICore+自动化桥]]></string>
-    <string name="aicore_plus_description"><![CDATA[ShizukuX AICore+ 功能所需。为 AI 驱动的自动化提供特权 UI 层次结构转储和物理输入模拟。不观察密码或个人数据。]]></string>
+    <string name="aicore_extra_label"><![CDATA[AICore+自动化桥]]></string>
+    <string name="aicore_extra_description"><![CDATA[ShizukuX AICore+ 功能所需。为 AI 驱动的自动化提供特权 UI 层次结构转储和物理输入模拟。不观察密码或个人数据。]]></string>
     <string name="action_clear_all"><![CDATA[全部清除]]></string>
     <string name="action_continue"><![CDATA[继续]]></string>
     <string name="action_open_github"><![CDATA[GitHub]]></string>

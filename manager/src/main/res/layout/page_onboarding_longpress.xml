@@ -129,7 +129,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/settings_shizuku_plus_features"
+            android:text="@string/settings_shizuku_extra_features"
             android:textAppearance="?textAppearanceLabelLarge"
             android:textColor="?colorPrimary"
             android:layout_marginBottom="4dp" />

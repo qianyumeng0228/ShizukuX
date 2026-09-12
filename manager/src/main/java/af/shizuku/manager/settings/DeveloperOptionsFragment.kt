@@ -26,7 +26,7 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
             isChecked = ShizukuSettings.isVectorEnabled()
             setOnPreferenceChangeListener { _, v ->
                 ShizukuSettings.setVectorEnabled(v as Boolean)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
                 true
             }
         }
@@ -36,7 +36,7 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
             isChecked = ShizukuSettings.isExperimentalRootCompatEnabled()
             setOnPreferenceChangeListener { _, v ->
                 ShizukuSettings.setExperimentalRootCompatEnabled(v as Boolean)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
                 true
             }
         }
@@ -46,7 +46,7 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
             isChecked = ShizukuSettings.isSpoofDeviceEnabled()
             setOnPreferenceChangeListener { _, v ->
                 ShizukuSettings.setSpoofDeviceEnabled(v as Boolean)
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
                 true
             }
         }
@@ -54,7 +54,7 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
         // Spoof Target
         findPreference<rikka.preference.SimpleMenuPreference>(KEY_SPOOF_TARGET)?.setOnPreferenceChangeListener { _, v ->
             ShizukuSettings.setSpoofTarget(if (v == "auto") "auto" else v as String)
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
 

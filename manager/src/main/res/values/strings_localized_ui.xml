@@ -229,7 +229,7 @@
     <string name="server_memory_details">%1$s / %2$s (max allowed)</string>
     <string name="update_version_name">Version %1$s</string>
     <string name="update_published_date">Published: %1$s</string>
-    <string name="settings_plus_enable_feature">Enable feature</string>
+    <string name="settings_extra_enable_feature">Enable feature</string>
     <string name="settings_search_clear">Clear search</string>
     <string name="settings_search_empty">No settings found</string>
     <string name="settings_search_default_category">Settings</string>

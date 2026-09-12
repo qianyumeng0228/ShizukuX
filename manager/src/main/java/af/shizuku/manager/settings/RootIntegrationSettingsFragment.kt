@@ -31,7 +31,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
         val context = requireContext()
 
         // Sync current su_bridge state to server on fragment open
-        ShizukuSettings.syncAllPlusFeaturesToServer()
+        ShizukuSettings.syncAllExtraFeaturesToServer()
 
         val bootloaderUnlocked = isBootloaderUnlocked()
         val bootloaderCategory = findPreference<androidx.preference.PreferenceGroup>("category_unlocked_bootloader")
@@ -83,7 +83,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
         findPreference<TwoStatePreference>("force_start_wadb")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
                 preferenceManager.sharedPreferences?.edit()?.putBoolean("force_start_wadb", newValue)?.apply()
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
             }
             true
         }
@@ -91,7 +91,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
         findPreference<TwoStatePreference>("su_bridge_enabled")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is Boolean) {
                 preferenceManager.sharedPreferences?.edit()?.putBoolean("su_bridge_enabled", newValue)?.apply()
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
             }
             true
         }
@@ -121,14 +121,14 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
                             .setPositiveButton(R.string.root_ota_enable) { _, _ ->
                                 preferenceManager.sharedPreferences?.edit()?.putBoolean(key, true)?.apply()
                                 pref.isChecked = true
-                                ShizukuSettings.syncAllPlusFeaturesToServer()
+                                ShizukuSettings.syncAllExtraFeaturesToServer()
                             }
                             .setNegativeButton(R.string.action_cancel, null)
                             .show()
                         return@setOnPreferenceChangeListener false
                     } else {
                         preferenceManager.sharedPreferences?.edit()?.putBoolean(key, newValue)?.apply()
-                        ShizukuSettings.syncAllPlusFeaturesToServer()
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                         return@setOnPreferenceChangeListener true
                     }
                 }
@@ -144,7 +144,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
         // Preset SU Path Picker helper
         val suPathPref = findPreference<androidx.preference.EditTextPreference>("custom_su_path")
         suPathPref?.setOnPreferenceChangeListener { _, _ ->
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
         suPathPref?.setOnPreferenceClickListener {
@@ -178,7 +178,7 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
                         // Setting .text programmatically does NOT fire the change listener,
                         // so push the new path to the server explicitly.
                         suPathPref.text = chosen
-                        ShizukuSettings.syncAllPlusFeaturesToServer()
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                         Toast.makeText(
                             context,
                             context.getString(R.string.root_su_path_preset_applied, presets[which]),

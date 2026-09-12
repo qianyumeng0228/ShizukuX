@@ -20,9 +20,9 @@ import rikka.shizuku.ShizukuApiConstants;
 import af.shizuku.manager.utils.Logger;
 import timber.log.Timber;
 
-public class PlusShell {
+public class ExtraShell {
 
-    private static final Logger LOGGER = new Logger("PlusShell");
+    private static final Logger LOGGER = new Logger("ExtraShell");
 
     private static class LogTree extends Timber.Tree {
         @Override
@@ -483,7 +483,7 @@ public class PlusShell {
                     printHelp();
             }
         } catch (Throwable tr) {
-            LOGGER.e(tr, "Uncaught exception in PlusShell");
+            LOGGER.e(tr, "Uncaught exception in ExtraShell");
         } finally {
             System.exit(0);
         }

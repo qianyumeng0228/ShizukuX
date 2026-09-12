@@ -110,7 +110,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
         }
 
         findPreference<TwoStatePreference>(KEY_ENABLE_ACTIVITY_LOG)?.setOnPreferenceChangeListener { _, _ ->
-            ShizukuSettings.syncAllPlusFeaturesToServer()
+            ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
 

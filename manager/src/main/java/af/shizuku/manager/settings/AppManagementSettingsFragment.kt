@@ -25,14 +25,14 @@ class AppManagementSettingsFragment : BaseSettingsFragment() {
 
         // Swipe gestures — auto-persist via SharedPrefs; notify server of change
         findPreference<rikka.preference.SimpleMenuPreference>("swipe_right_action")
-            ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllPlusFeaturesToServer(); true }
+            ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllExtraFeaturesToServer(); true }
         findPreference<rikka.preference.SimpleMenuPreference>("swipe_left_action")
-            ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllPlusFeaturesToServer(); true }
+            ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllExtraFeaturesToServer(); true }
 
         // Long-press action toggles — auto-persist via SharedPrefs; notify server
         listOf("lp_open_app", "lp_app_info", "lp_toggle_permission", "lp_hide_from_list").forEach { key ->
             findPreference<TwoStatePreference>(key)
-                ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllPlusFeaturesToServer(); true }
+                ?.setOnPreferenceChangeListener { _, _ -> ShizukuSettings.syncAllExtraFeaturesToServer(); true }
         }
 
         // Local signature matching and F-Droid verification — pure local, auto-persist is sufficient

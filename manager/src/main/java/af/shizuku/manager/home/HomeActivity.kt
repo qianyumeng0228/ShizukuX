@@ -113,7 +113,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                 // Shizuku started - refresh everything
                 checkServerStatus()
                 appsModel.load()
-                ShizukuSettings.syncAllPlusFeaturesToServer()
+                ShizukuSettings.syncAllExtraFeaturesToServer()
                 maybeShowVersionSkewSnackbar()
             }
             ShizukuStateMachine.State.STOPPED,
@@ -237,7 +237,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                 },
                 onHelpClick = {
                     MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.settings_shizuku_plus_features)
+                        .setTitle(R.string.settings_shizuku_extra_features)
                         .setMessage(getString(R.string.help_general_plus_summary).toHtml())
                         .setPositiveButton(android.R.string.ok, null)
                         .show()

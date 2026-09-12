@@ -72,7 +72,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
     // WorkManager's own internal background thread (e.g. ForceStopRunnable's Room queries) can
     // throw on an unrecoverable device condition (observed: full-disk SQLiteFullException, which
     // WorkManager converts to an IllegalStateException) entirely inside library code, with no
-    // ShizukuPlus frames in the stack. Without a custom TaskExecutor to catch it here, that
+    // ShizukuExtra frames in the stack. Without a custom TaskExecutor to catch it here, that
     // reaches the process-wide uncaught-exception handler and kills the whole app.
     private val workManagerTaskExecutor: java.util.concurrent.Executor by lazy {
         val delegate = java.util.concurrent.Executors.newFixedThreadPool(4)
@@ -402,7 +402,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
     private fun initializeManagers() {
         ActivityLogManager.initialize(this, ActivityLogSettingsImpl())
         af.shizuku.manager.database.ScriptSnippetManager.initialize(this)
-        af.shizuku.manager.plugin.PlusFeatureRegistry.register(af.shizuku.manager.scripting.ScriptingFeatureModule)
+        af.shizuku.manager.plugin.ExtraFeatureRegistry.register(af.shizuku.manager.scripting.ScriptingFeatureModule)
 
         // Run auto-run snippets each time the Shizuku service transitions to RUNNING.
         CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
@@ -487,7 +487,7 @@ class ShizukuApplication : Application(), Configuration.Provider {
             try {
                 val jsonObject = org.json.JSONObject(eventJson)
                 val levelStr = jsonObject.optString("level", "error")
-                val tag = jsonObject.optString("tag", "ShizukuPlus")
+                val tag = jsonObject.optString("tag", "ShizukuExtra")
                 val message = jsonObject.optString("message", "")
                 val stackTrace = jsonObject.optString("stackTrace", "")
 

@@ -13,28 +13,28 @@ import rikka.shizuku.Shizuku
  * AICore+ Automation Bridge
  * Provides privileged UI hierarchy dumping and physical input simulation for AI automation.
  */
-class AICorePlusService : AccessibilityService() {
+class AICoreExtraService : AccessibilityService() {
 
     private val bridge = object : IAIAutomationBridge.Stub() {
-        override fun getWindowHierarchy(): String = this@AICorePlusService.getWindowHierarchy()
-        override fun simulateTouch(x: Float, y: Float): Boolean = this@AICorePlusService.simulateTouch(x, y)
+        override fun getWindowHierarchy(): String = this@AICoreExtraService.getWindowHierarchy()
+        override fun simulateTouch(x: Float, y: Float): Boolean = this@AICoreExtraService.simulateTouch(x, y)
         override fun simulateSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Int): Boolean =
-            this@AICorePlusService.simulateSwipe(x1, y1, x2, y2, duration)
-        override fun simulateText(text: String?): Boolean = this@AICorePlusService.simulateText(text ?: "")
-        override fun getPixelColor(x: Int, y: Int): Int = this@AICorePlusService.getPixelColor(x, y)
-        override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICorePlusService.captureLayer(layerId)
+            this@AICoreExtraService.simulateSwipe(x1, y1, x2, y2, duration)
+        override fun simulateText(text: String?): Boolean = this@AICoreExtraService.simulateText(text ?: "")
+        override fun getPixelColor(x: Int, y: Int): Int = this@AICoreExtraService.getPixelColor(x, y)
+        override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICoreExtraService.captureLayer(layerId)
     }
 
     companion object {
         // WeakReference prevents leaking the AccessibilityService across reconnects
-        private var _instance: java.lang.ref.WeakReference<AICorePlusService>? = null
-        val instance: AICorePlusService? get() = _instance?.get()
+        private var _instance: java.lang.ref.WeakReference<AICoreExtraService>? = null
+        val instance: AICoreExtraService? get() = _instance?.get()
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         _instance = java.lang.ref.WeakReference(this)
-        Timber.d("AICorePlusService connected")
+        Timber.d("AICoreExtraService connected")
         registerBridge()
     }
 
@@ -56,7 +56,7 @@ class AICorePlusService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Timber.d("AICorePlusService interrupted")
+        Timber.d("AICoreExtraService interrupted")
     }
 
     override fun onDestroy() {

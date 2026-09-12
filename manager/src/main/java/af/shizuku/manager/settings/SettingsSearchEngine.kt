@@ -24,7 +24,7 @@ object SettingsSearchEngine {
     }
 
     private val screens = mapOf(
-        R.xml.settings_shizuku_plus to "af.shizuku.manager.settings.ShizukuPlusSettingsFragment",
+        R.xml.settings_shizuku_extra to "af.shizuku.manager.settings.ShizukuExtraSettingsFragment",
         R.xml.settings_personalization to "af.shizuku.manager.settings.PersonalizationSettingsFragment",
         R.xml.settings_behavior to "af.shizuku.manager.settings.BehaviorSettingsFragment",
         R.xml.settings_advanced to "af.shizuku.manager.settings.AdvancedSettingsFragment",
