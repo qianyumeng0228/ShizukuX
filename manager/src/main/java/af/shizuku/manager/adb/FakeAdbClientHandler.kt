@@ -54,7 +54,10 @@ class FakeAdbClientHandler(
             msg = readMessage()
             if (msg.command == AdbProtocol.A_AUTH) {
                 if (msg.arg0 == AdbProtocol.ADB_AUTH_SIGNATURE) {
-                    val signature = msg.data!!
+                    val signature = msg.data ?: run {
+                        Timber.tag(TAG).w("AUTH_SIGNATURE with null data — ignoring")
+                        continue
+                    }
                     if (verifySignature(token, signature)) {
                         authenticated = true
                         writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
@@ -64,7 +67,11 @@ class FakeAdbClientHandler(
                         writeMessage(AdbMessage(AdbProtocol.A_AUTH, AdbProtocol.ADB_AUTH_TOKEN, 0, token))
                     }
                 } else if (msg.arg0 == AdbProtocol.ADB_AUTH_RSAPUBLICKEY) {
-                    val pubKeyStr = String(msg.data!!).trimEnd('\u0000')
+                    val rawKeyData = msg.data ?: run {
+                        Timber.tag(TAG).w("AUTH_RSAPUBLICKEY with null data — ignoring")
+                        continue
+                    }
+                    val pubKeyStr = String(rawKeyData).trimEnd('\u0000')
                     Timber.tag(TAG).i("Received public key: $pubKeyStr")
 
                     if (isKeyAuthorized(pubKeyStr)) {
@@ -96,7 +103,11 @@ class FakeAdbClientHandler(
             when (msg.command) {
                 AdbProtocol.A_OPEN -> {
                     val remoteId = msg.arg0
-                    val destination = String(msg.data!!).trimEnd('\u0000')
+                    val destination = String(msg.data ?: run {
+                        Timber.tag(TAG).w("A_OPEN with null data — closing channel")
+                        writeMessage(AdbMessage(AdbProtocol.A_CLSE, 0, msg.arg0, ByteArray(0)))
+                        return@when
+                    }).trimEnd('\u0000')
                     if (destination.startsWith("shell:")) {
                         val cmd = destination.substring(6)
                         startShellProcess(remoteId, cmd)
@@ -108,10 +119,11 @@ class FakeAdbClientHandler(
                 AdbProtocol.A_WRTE -> {
                     val localId = msg.arg0
                     val remoteId = msg.arg1
+                    val writeData = msg.data ?: return@when
                     val process = activeProcesses[localId]
                     if (process != null) {
                         try {
-                            process.outputStream.write(msg.data!!)
+                            process.outputStream.write(writeData)
                             process.outputStream.flush()
                             writeMessage(AdbMessage(AdbProtocol.A_OKAY, localId, remoteId, ByteArray(0)))
                         } catch (e: Exception) {
