@@ -103,25 +103,27 @@ class FakeAdbClientHandler(
             when (msg.command) {
                 AdbProtocol.A_OPEN -> {
                     val remoteId = msg.arg0
-                    val destination = String(msg.data ?: run {
+                    val rawData = msg.data
+                    if (rawData == null) {
                         Timber.tag(TAG).w("A_OPEN with null data — closing channel")
-                        writeMessage(AdbMessage(AdbProtocol.A_CLSE, 0, msg.arg0, ByteArray(0)))
-                        return@when
-                    }).trimEnd('\u0000')
-                    if (destination.startsWith("shell:")) {
-                        val cmd = destination.substring(6)
-                        startShellProcess(remoteId, cmd)
-                    } else {
-                        Timber.tag(TAG).w("Unsupported destination: $destination")
                         writeMessage(AdbMessage(AdbProtocol.A_CLSE, 0, remoteId, ByteArray(0)))
+                    } else {
+                        val destination = String(rawData).trimEnd('\u0000')
+                        if (destination.startsWith("shell:")) {
+                            val cmd = destination.substring(6)
+                            startShellProcess(remoteId, cmd)
+                        } else {
+                            Timber.tag(TAG).w("Unsupported destination: $destination")
+                            writeMessage(AdbMessage(AdbProtocol.A_CLSE, 0, remoteId, ByteArray(0)))
+                        }
                     }
                 }
                 AdbProtocol.A_WRTE -> {
                     val localId = msg.arg0
                     val remoteId = msg.arg1
-                    val writeData = msg.data ?: return@when
+                    val writeData = msg.data
                     val process = activeProcesses[localId]
-                    if (process != null) {
+                    if (process != null && writeData != null) {
                         try {
                             process.outputStream.write(writeData)
                             process.outputStream.flush()
