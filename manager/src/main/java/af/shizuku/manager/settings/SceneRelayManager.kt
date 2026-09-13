@@ -337,7 +337,12 @@ object SceneRelayManager {
      */
     private fun prepareActivationFiles(context: Context): String? {
         // a) Locate Scene's APK.
-        val apk = runShell("pm path $SCENE_PACKAGE | sed 's/package://' | head -1").trim()
+        val pmPath = runShell("pm path $SCENE_PACKAGE | sed 's/package://' | head -1")
+        if (pmPath == SHELL_UNAVAILABLE) {
+            android.util.Log.w("SceneRelay", "prepareActivationFiles: Shizuku shell unavailable (newProcess null)")
+            return context.getString(R.string.scene_relay_shell_unavailable)
+        }
+        val apk = pmPath.trim()
         if (apk.isEmpty()) {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: apk not found")
             return context.getString(R.string.scene_relay_apk_not_found)
@@ -564,6 +569,12 @@ object SceneRelayManager {
         }
     }
 
+    /** Sentinel returned by [runShell] when Shizuku's shell channel is unusable (newProcess
+     *  returned null or threw), so callers can distinguish "command produced no output" from
+     * "shell itself is down" — previously both collapsed to an empty string, which made a dead
+     * Shizuku shell look like "Scene APK not found". */
+    private const val SHELL_UNAVAILABLE = "__SHELL_UNAVAILABLE__"
+
     /** Runs a command through a Shizuku shell process and returns its combined output.
      *  stderr is merged (2>&1) to avoid pipe-buffer deadlock; waitFor/exitValue are never used —
      *  on OPPO/Android 16 ShizukuProcess.exitValue() throws IllegalArgumentException which rikka's
@@ -571,10 +582,11 @@ object SceneRelayManager {
     private fun runShell(cmd: String): String {
         return try {
             val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, TMP)
+                ?: return SHELL_UNAVAILABLE
             p.inputStream.bufferedReader().use { it.readText() }
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "runShell failed: cmd=$cmd err=${e.message}")
-            ""
+            SHELL_UNAVAILABLE
         }
     }
 
