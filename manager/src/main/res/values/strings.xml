@@ -736,13 +736,13 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
 
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">First, please do the following:</string>
-    <string name="bug_report_dialog_update">Check that you are using the %1$s.</string>
+    <string name="bug_report_dialog_update">Check that you are using the ^1.</string>
     <string name="bug_report_dialog_link_update">latest version</string>
-    <string name="bug_report_dialog_wiki">Read the %1$s and follow all relevant troubleshooting steps.</string>
+    <string name="bug_report_dialog_wiki">Read the ^1 and follow all relevant troubleshooting steps.</string>
     <string name="bug_report_dialog_link_wiki">wiki</string>
-    <string name="bug_report_dialog_issues">Search through all %1$s to see if your bug has already been reported.</string>
+    <string name="bug_report_dialog_issues">Search through all ^1 to see if your bug has already been reported.</string>
     <string name="bug_report_dialog_link_issues">existing issues</string>
-    <string name="bug_report_dialog_method">Please submit an issue on %1$s if you have an account.</string>
+    <string name="bug_report_dialog_method">Please submit an issue on ^1 if you have an account.</string>
     <string name="bug_report_dialog_method_2">Otherwise, you can send an email.</string>
     <string name="bug_report_dialog_button_email">Email</string>
     <string name="bug_report_email_subject">Bug Report</string>

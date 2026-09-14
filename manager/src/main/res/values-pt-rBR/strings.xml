@@ -577,13 +577,13 @@
 
     <!-- Bug Report Dialog -->
     <string name="bug_report_dialog_before_reporting">Primeiro, faça o seguinte:</string>
-    <string name="bug_report_dialog_update">Verifique se você está usando a %1$s.</string>
+    <string name="bug_report_dialog_update">Verifique se você está usando a ^1.</string>
     <string name="bug_report_dialog_link_update">versão mais recente</string>
-    <string name="bug_report_dialog_wiki">Leia a %1$s e siga todas as etapas relevantes de solução de problemas.</string>
+    <string name="bug_report_dialog_wiki">Leia a ^1 e siga todas as etapas relevantes de solução de problemas.</string>
     <string name="bug_report_dialog_link_wiki">wiki</string>
-    <string name="bug_report_dialog_issues">Pesquise em todas as %1$s para ver se o seu bug já foi reportado.</string>
+    <string name="bug_report_dialog_issues">Pesquise em todas as ^1 para ver se o seu bug já foi reportado.</string>
     <string name="bug_report_dialog_link_issues">issues existentes</string>
-    <string name="bug_report_dialog_method">Por favor, envie uma issue no %1$s se você tiver uma conta.</string>
+    <string name="bug_report_dialog_method">Por favor, envie uma issue no ^1 se você tiver uma conta.</string>
     <string name="bug_report_dialog_method_2">Caso contrário, você pode enviar um e-mail.</string>
     <string name="bug_report_dialog_button_email">E-mail</string>
 
