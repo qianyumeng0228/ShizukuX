@@ -301,7 +301,6 @@ object ActivityLogManager {
                 } else {
                     context
                 }
-                var recoverySuccessful = false
                 val dbFile = storageContext.getDatabasePath("shizuku_activity_logs.db")
                 val timestamp = getTimestampFilename()
                 val corruptedBackup = File(dbFile.path + "_corrupt_backup_" + timestamp)
@@ -317,7 +316,7 @@ object ActivityLogManager {
                         file.delete()
                     }
                 }
-                
+
                 try {
                     dbFile.parentFile?.let { parent ->
                         if (!parent.exists()) parent.mkdirs()
@@ -328,21 +327,13 @@ object ActivityLogManager {
 
                 database = ActivityLogDatabase.getInstance(storageContext)
                 dao = database?.activityLogDao()
-                
-                if (recoverySuccessful) {
-                    settings?.showNotification("System Recovered", "Activity log database was corrupted but automatically salvaged using SQLite recovery!")
-                } else {
-                    settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can attempt manual recovery in Developer Settings.")
-                }
-                
+
+                settings?.showNotification("System Warning", "Activity log database corrupted. A backup was saved and a new DB created. You can attempt manual recovery in Developer Settings.")
+
                 val recoveryRecord = ActivityLogRecord(
                     appName = "System",
                     packageName = context.packageName,
-                    action = if (recoverySuccessful) {
-                        "Database automatically recovered and salvaged from corruption!"
-                    } else {
-                        "Database autofixed after corruption. Backup saved to ${corruptedBackup.name}"
-                    }
+                    action = "Database autofixed after corruption. Backup saved to ${corruptedBackup.name}"
                 )
                 
                 synchronized(records) {
