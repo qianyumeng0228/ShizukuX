@@ -43,7 +43,9 @@ object ShizukuReceiverStarter {
     }
 
     fun start(context: Context, forceStart: Boolean = false) {
-        if ((UserHandleCompat.myUserId() > 0 || ShizukuStateMachine.isRunning()) && !forceStart) return
+        if (!forceStart && (UserHandleCompat.myUserId() > 0
+                || ShizukuStateMachine.isRunning()
+                || ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING)) return
 
         if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
             rootStart(context)

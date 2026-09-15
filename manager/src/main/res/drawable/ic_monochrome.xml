@@ -5,7 +5,20 @@
     android:viewportWidth="24"
     android:viewportHeight="24"
     android:tint="?attr/colorControlNormal">
+    <!-- Hexagon ring — flat-top hexagon matching the launcher art bounding box
+         (x: 134–311, y: 145–303 in 432-unit space, centre 222.5,224, r=88.5).
+         Stroke-only so the shape reads as the recognisable Shizuku hexagon outline
+         under one-colour themed-icon and notification-shade rendering, rather than
+         the opaque "+" blob shown previously. -->
     <path
-        android:fillColor="@android:color/white"
-        android:pathData="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z" />
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="16"
+        android:strokeLineJoin="round"
+        android:pathData="M 311.0,224.0 L 266.75,300.64 L 178.25,300.64 L 134.0,224.0 L 178.25,147.36 L 266.75,147.36 Z" />
+    <!-- Plus badge — upper-right shoulder of the hexagon (centre 285,170).
+         Coordinates kept in sync with ic_launcher_foreground.xml (×4 viewport scale). -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 277.88,141.50 h 14.25 v 21.38 h 21.38 v 14.25 h -21.38 v 21.38 h -14.25 v -21.38 h -21.38 v -14.25 h 21.38 z" />
 </vector>

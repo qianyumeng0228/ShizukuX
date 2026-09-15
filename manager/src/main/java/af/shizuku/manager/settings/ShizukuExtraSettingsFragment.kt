@@ -183,7 +183,12 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         if (!isAdded) return
+<<<<<<< HEAD:manager/src/main/java/af/shizuku/manager/settings/ShizukuExtraSettingsFragment.kt
         setPreferencesFromResource(R.xml.settings_shizuku_extra, rootKey)
+=======
+        migrateAutomationTrustedNetworks()
+        setPreferencesFromResource(R.xml.settings_shizuku_plus, rootKey)
+>>>>>>> e9200f50 (fix: resolve #504 double-boot, #499 Feature Hub crash, and UI/icon bugs (#492/#496/#497)):manager/src/main/java/af/shizuku/manager/settings/ShizukuPlusSettingsFragment.kt
 
         ShizukuSettings.syncAllExtraFeaturesToServer()
 
@@ -947,4 +952,44 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
             }
         }
     }
+<<<<<<< HEAD:manager/src/main/java/af/shizuku/manager/settings/ShizukuExtraSettingsFragment.kt
+=======
+
+    override fun onResume() {
+        super.onResume()
+        // Re-apply backup category visibility in case the user toggled it in Advanced settings
+        // and navigated back to Feature Hub without recreating the fragment.
+        applyBackupCategoryVisibility()
+    }
+
+    /**
+     * Shows or hides the entire "Backup & Restore" category in the Feature Hub based on the
+     * [ShizukuSettings.isHideBackupSettingsEnabled] preference (issue #461).
+     */
+    private fun applyBackupCategoryVisibility() {
+        val hide = ShizukuSettings.isHideBackupSettingsEnabled()
+        findPreference<af.shizuku.manager.settings.CollapsiblePreferenceCategory>("category_backup")
+            ?.isVisible = !hide
+    }
+
+    // Must be called before setPreferencesFromResource(). In builds prior to r2436 this key was
+    // stored as Set<String>; EditTextPreference calls getString() during XML inflation and Android
+    // throws ClassCastException immediately — crashing the Feature Hub screen (#499).
+    private fun migrateAutomationTrustedNetworks() {
+        val ctx = context ?: return
+        val prefs = androidx.preference.PreferenceManager.getDefaultSharedPreferences(ctx)
+        try {
+            prefs.getString(ShizukuSettings.Keys.KEY_AUTOMATION_TRUSTED_NETWORKS, null)
+        } catch (e: ClassCastException) {
+            val oldSet = try {
+                @Suppress("UNCHECKED_CAST")
+                prefs.getStringSet(ShizukuSettings.Keys.KEY_AUTOMATION_TRUSTED_NETWORKS, null)
+            } catch (ignored: Exception) { null }
+            prefs.edit()
+                .putString(ShizukuSettings.Keys.KEY_AUTOMATION_TRUSTED_NETWORKS, oldSet?.joinToString(",") ?: "")
+                .apply()
+        }
+    }
+
+>>>>>>> e9200f50 (fix: resolve #504 double-boot, #499 Feature Hub crash, and UI/icon bugs (#492/#496/#497)):manager/src/main/java/af/shizuku/manager/settings/ShizukuPlusSettingsFragment.kt
 }
