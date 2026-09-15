@@ -117,7 +117,9 @@ class AutomationService : Service() {
             // (SHIZUKUPLUS-6H/6G) and failed type validation (SHIZUKUPLUS-6M). specialUse has no
             // such limit; the type is declared in the manifest and backed by
             // FOREGROUND_SERVICE_SPECIAL_USE.
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            // FOREGROUND_SERVICE_TYPE_SPECIAL_USE was added in API 34 (UPSIDE_DOWN_CAKE); passing
+            // it on Android 10-13 causes type validation failure (same guard as WatchdogService).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
             } else {
                 startForeground(NOTIFICATION_ID, notification)
