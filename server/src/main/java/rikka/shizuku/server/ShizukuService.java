@@ -1114,6 +1114,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     System.arraycopy(cmd, 1, newCmd, 0, newCmd.length);
                     cmd = newCmd;
                 }
+            } else if ((cmd[0].equals("toybox") || cmd[0].endsWith("/toybox")
+                    || cmd[0].equals("toolbox") || cmd[0].endsWith("/toolbox"))
+                    && cmd.length > 1 && !cmd[1].startsWith("-")) {
+                // Unpack toybox/toolbox the same way, so applets (mount, iptables, chmod, ...)
+                // hit our hooks when invoked through the multiplexer. Unlike busybox we don't
+                // fake a version string — toybox/toolbox are the real AOSP system binaries.
+                String[] newCmd = new String[cmd.length - 1];
+                System.arraycopy(cmd, 1, newCmd, 0, newCmd.length);
+                cmd = newCmd;
             }
             
             String baseCmd = cmd[0];

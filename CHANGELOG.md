@@ -9,6 +9,8 @@ All notable changes to ShizukuX (formerly ShizukuPlus) are documented here.
 #### Server / Service
 - **Re-verified the shell/rish consent re-implementation (`32382e89`) across every client type** — rish/shell, root/su, normal app clients, and Dhizuku clients each go through their own already-uid-verified path; no remaining spoofing or persistence gap found. Fixes "Allow always" not persisting ([#420](https://github.com/thejaustin/ShizukuPlus/issues/420)) and the underlying re-implementation request ([#416](https://github.com/thejaustin/ShizukuPlus/issues/416)).
 - Fixed a stale code comment in `ShizukuService.checkCallerPermission()` still describing the deleted notification-based shell-consent flow.
+- **Fixed the build.prop Redirection module silently doing nothing** — it staged its writable shadow copies under `/data/adb/shizuku/` (0700 root), which the server (shell UID 2000) can't create or write, so the `mkdirs`/copy failed *and* the command path was still rewritten to that dead location. Shadows now stage in `/data/local/tmp/shizuku_proxy`, and the original path is only rewritten once the writable copy actually exists. ([`ed188594`](https://github.com/thejaustin/ShizukuPlus/commit/ed188594))
+- **Fixed Firewall Success Mocking never applying a real rule for per-app blocks** — one of three duplicate `iptables --uid-owner` handlers passed `POLICY_ALLOW_METERED_BACKGROUND` (value 4) to `setUidPolicy`, which is the *opposite* of a restriction and throws `IllegalArgumentException` on modern AOSP, so no policy was ever set. The three handlers are consolidated into a single `mapIptablesToNetworkPolicy` helper using the correct reject value. ([`ed188594`](https://github.com/thejaustin/ShizukuPlus/commit/ed188594))
 
 #### Manager App (UI)
 - **Fixed authorized-apps count briefly showing "0" on cold start** — `HomeState.grantedAppCount` now starts as `null` (not loaded) instead of `0`, so the home screen shows a loading state instead of a wrong count before the real value arrives. ([#424](https://github.com/thejaustin/ShizukuPlus/issues/424))
@@ -21,6 +23,13 @@ All notable changes to ShizukuX (formerly ShizukuPlus) are documented here.
 - **Dev/Beta update channel could get stuck on a stale prerelease** — it always preferred the newest *prerelease*-flagged release over the newest release overall, even after a newer *stable* release had since been cut. Now compares actual version codes and takes whichever is genuinely newer. (Follow-up to the r2287-era Dev/Beta fix below — same function, a different edge case.)
 
 ### ✨ Enhancements
+
+#### Server / Service (Root Compatibility)
+- **SU Bridge now performs real framework operations instead of only mocking success**, with a graceful fallback to mocked success only when the real operation genuinely can't run at shell UID:
+  - **`iptables --uid-owner` → real per-app network restriction.** Maps to `INetworkPolicyManager.setUidPolicy` (metered-background reject) *stacked with* the `cmd netpolicy` data-saver blacklist for a broader per-UID block, instead of pretending the kernel netfilter rule succeeded. ([`ed188594`](https://github.com/thejaustin/ShizukuPlus/commit/ed188594))
+  - **Magisk `resetprop` → real `SystemProperties` set/read.** `resetprop <name> <value>` applies the property (visible in real `getprop`) and `resetprop <name>` returns the live value; deletes and read-only/SELinux-blocked props fall back to mocked success. ([`ed188594`](https://github.com/thejaustin/ShizukuPlus/commit/ed188594))
+  - **`chmod`/`chown` attempt the real operation first.** Targets the server can actually modify (app data, `/data/local/tmp`, `/sdcard`) are changed for real; only privileged targets that need root fall back to mocked success so callers don't error out. ([`ed188594`](https://github.com/thejaustin/ShizukuPlus/commit/ed188594))
+- **`toybox`/`toolbox` multiplexer calls are now unpacked like `busybox`** — applets invoked as `toybox mount …` / `toolbox iptables …` (the modern AOSP default) now hit the same interception hooks as when the applet is called directly, instead of bypassing them. Unlike busybox, no fake version string is emitted since these are the real system binaries.
 
 #### UI / UX
 - **App icon plus badge repositioned** to match the intended design and separated back out into its own semi-transparent overlay layer (was previously baked into the flattened artwork at the wrong position).
