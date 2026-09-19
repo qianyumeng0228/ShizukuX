@@ -476,7 +476,7 @@ object SceneRelayManager {
             if (runShell("test -f \"$c\" && echo YES").trim() == "YES") return c
         }
         val found = runShell("find \"$base\" -maxdepth 5 -name 'up.sh' 2>/dev/null | head -1").trim()
-        return found.ifEmpty { null }
+        return found.takeUnless { it.isEmpty() || it == SHELL_UNAVAILABLE }
     }
 
     /**

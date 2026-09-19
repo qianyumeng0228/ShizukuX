@@ -10,6 +10,7 @@ import android.text.SpannableString
 import android.text.TextUtils
 import android.text.style.TypefaceSpan
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import timber.log.Timber
 import af.shizuku.manager.R
 import af.shizuku.manager.adb.AdbPairingAccessibilityService
 import af.shizuku.manager.utils.SettingsHelper
@@ -111,7 +112,21 @@ private fun Context.enableAccessibilityService(): Boolean {
 }
 
 /** Public entry: turn the pairing assistant (accessibility service) on directly. */
-fun Context.enablePairingAssistant(): Boolean = enableAccessibilityService()
+fun Context.enablePairingAssistant(): Boolean {
+    // enableAccessibilityService() writes Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, which
+    // requires WRITE_SECURE_SETTINGS. Without it the write throws SecurityException on the
+    // caller's thread — observed as a hard crash (点击"配对"→"启用") on non-rooted
+    // Android 17 / HyperOS where the permission was never granted via adb (k2010, pairing-crash).
+    // Return false so callers fall back to showAccessibilityDialog(), which has its own
+    // permission-gated flow instead of crashing.
+    if (checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return false
+    return try {
+        enableAccessibilityService()
+    } catch (e: Throwable) {
+        Timber.w(e, "enablePairingAssistant: failed to enable accessibility service")
+        false
+    }
+}
 
 /** Remove the pairing assistant from the enabled accessibility services. */
 fun Context.disablePairingAssistant() {

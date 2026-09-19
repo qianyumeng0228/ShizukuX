@@ -102,6 +102,18 @@ object DiagnosticsExporter {
 
         sb.append("[Wireless Debugging]").append('\n')
         line("AdbPort", tryGet { EnvironmentUtils.getAdbTcpPort() })
+        sb.append('\n')
+
+        // Last persistent crash (saved by CrashHandler's uncaught-exception hook). Including the
+        // full stack trace here turns any "点击XXX就闪退" report into something self-diagnosable
+        // without adb — the export is the crash log for the most recent crash on the device.
+        sb.append("[Crash Log]").append('\n')
+        val lastCrash = tryGet { CrashHandler.getLastCrashReport(context) }
+        if (lastCrash != null) {
+            sb.append(lastCrash).append('\n')
+        } else {
+            sb.append("(no crash recorded)\n")
+        }
 
         // Deep shell diagnostics require Shizuku; when it is running, append the full
         // device-side picture (logcat, /data/local/tmp state, daemon processes, ABI) so a

@@ -186,9 +186,11 @@ class StartWirelessAdbViewHolder(
             .setPositiveButton(R.string.enable) { _, _ ->
                 // Turn on the pairing assistant (accessibility service) first, then start the
                 // normal pairing flow. Best-effort: if it cannot be enabled directly the
-                // accessibility dialog guides the user through it.
+                // accessibility dialog guides the user through it. runCatching is belt-and-
+                // suspenders on top of enablePairingAssistant()'s own permission guard — a
+                // SecurityException here used to crash the app (点击"配对"闪退, k2010).
                 val ctx = context.applicationContext
-                if (!ctx.enablePairingAssistant()) {
+                if (!runCatching { ctx.enablePairingAssistant() }.getOrDefault(false)) {
                     ctx.showAccessibilityDialog()
                 }
                 launchPairingFlow(context)
