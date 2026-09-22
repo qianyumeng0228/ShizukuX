@@ -129,7 +129,7 @@
             android:title="@string/settings_haptic_feedback"
             android:summary="@string/settings_haptic_feedback_summary"
             android:defaultValue="true"
-            android:icon="@drawable/ic_bolt_24" />
+            android:icon="@drawable/ic_vibration_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

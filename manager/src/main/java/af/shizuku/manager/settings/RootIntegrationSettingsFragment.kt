@@ -143,7 +143,18 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
 
         // Preset SU Path Picker helper
         val suPathPref = findPreference<androidx.preference.EditTextPreference>("custom_su_path")
-        suPathPref?.setOnPreferenceChangeListener { _, _ ->
+        suPathPref?.setOnPreferenceChangeListener { _, newValue ->
+            val path = (newValue as? String).orEmpty().trim()
+            // Empty = reset to default (always valid). Non-empty must be an absolute path
+            // using only safe characters to prevent shell metacharacter injection.
+            if (path.isNotEmpty() && !path.matches(Regex("^/[a-zA-Z0-9_./\\-]+$"))) {
+                Toast.makeText(
+                    context,
+                    getString(R.string.su_path_invalid),
+                    Toast.LENGTH_LONG
+                ).show()
+                return@setOnPreferenceChangeListener false
+            }
             ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
