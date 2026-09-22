@@ -1405,4 +1405,11 @@ Please try the command-line method instead.</string>
     <string name="shell_consent_dialog_title_identified">%s is requesting Shizuku privileged shell access.\n\nOnly allow if you just ran a shell command.</string>
     <string name="shell_consent_button_allow">Allow</string>
     <string name="shell_consent_retry_hint">Authorized. Please re-run the command to connect (the app is paused while waiting).</string>
+
+    <!-- Home layout simulator accessibility labels -->
+    <string name="accessibility_sim_toggle_adb">Toggle ADB start card visibility</string>
+    <string name="accessibility_sim_toggle_terminal">Toggle Terminal card visibility</string>
+    <string name="accessibility_sim_toggle_automation">Toggle Automation card visibility</string>
+    <string name="accessibility_sim_toggle_activity_log">Toggle Activity Log card visibility</string>
+    <string name="accessibility_sim_toggle_learn_more">Toggle Learn More card visibility</string>
 </resources>
