@@ -191,7 +191,10 @@ class StartWirelessAdbViewHolder(
                 // SecurityException here used to crash the app (点击"配对"闪退, k2010).
                 val ctx = context.applicationContext
                 if (!runCatching { ctx.enablePairingAssistant() }.getOrDefault(false)) {
-                    ctx.showAccessibilityDialog()
+                    // Dialog must be built with the Activity context: the application context
+                    // has no AppCompat theme and MaterialAlertDialogBuilder crashes with
+                    // "requires Theme.AppCompat" on it (k2012 一键启动→启用 闪退).
+                    context.showAccessibilityDialog()
                 }
                 launchPairingFlow(context)
             }
@@ -229,7 +232,9 @@ class StartWirelessAdbViewHolder(
                 .setMessage(R.string.dialog_one_tap_requires_assistant_message)
                 .setPositiveButton(R.string.enable) { _, _ ->
                     if (!ctx.enablePairingAssistant()) {
-                        ctx.showAccessibilityDialog()
+                        // Same as the pairing flow: the accessibility dialog must use the
+                        // Activity context, not the application context (theme crash, k2012).
+                        context.showAccessibilityDialog()
                     } else {
                         // Give the accessibility service a moment to bind its receiver before
                         // entering the one-tap flow, otherwise the request broadcast can drop.

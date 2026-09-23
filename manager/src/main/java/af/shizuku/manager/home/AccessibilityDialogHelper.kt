@@ -10,6 +10,7 @@ import android.text.SpannableString
 import android.text.TextUtils
 import android.text.style.TypefaceSpan
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import rikka.core.content.asActivity
 import timber.log.Timber
 import af.shizuku.manager.R
 import af.shizuku.manager.adb.AdbPairingAccessibilityService
@@ -17,21 +18,29 @@ import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 
 fun Context.showAccessibilityDialog() {
-    val hasWriteSecureSettings = (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
+    // The accessibility dialogs are MaterialAlertDialogBuilders, which require an Activity
+    // theme (Material's ThemeEnforcement checks the AppCompat isLightTheme attribute).
+    // Building them with an application/plain context crashes with "The style on this component
+    // requires your app theme to be Theme.AppCompat" (observed on k2012: 一键启动 → 启用).
+    // Resolve the host Activity first and refuse to show when none is available.
+    val host = asActivity<android.app.Activity>() ?: return
+    host.run {
+        val hasWriteSecureSettings = (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
 
-    val installer = packageManager.getInstallerPackageName(packageName)
-    val isInstalledByPlayOrAdb = (installer == "com.android.vending") || (installer == null)
-    val hasAccessRestrictedSettings = isInstalledByPlayOrAdb || Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+        val installer = packageManager.getInstallerPackageName(packageName)
+        val isInstalledByPlayOrAdb = (installer == "com.android.vending") || (installer == null)
+        val hasAccessRestrictedSettings = isInstalledByPlayOrAdb || Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
-    if (isAccessibilityEnabled()) {
-        showNavigateDialog()
-    } else if (hasWriteSecureSettings) {
-        if (enableAccessibilityService()) return
-        showPermissionDialog()
-    } else if (!hasAccessRestrictedSettings) {
-        showPermissionDialog()
-    } else {
-        showEnableDialog()
+        if (isAccessibilityEnabled()) {
+            showNavigateDialog()
+        } else if (hasWriteSecureSettings) {
+            if (enableAccessibilityService()) return
+            showPermissionDialog()
+        } else if (!hasAccessRestrictedSettings) {
+            showPermissionDialog()
+        } else {
+            showEnableDialog()
+        }
     }
 }
 
