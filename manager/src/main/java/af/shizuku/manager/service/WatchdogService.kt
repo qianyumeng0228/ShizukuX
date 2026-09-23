@@ -33,6 +33,7 @@ class WatchdogService : Service() {
     private var consecutiveCrashes = 0
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var job: Job? = null
+    private var intentionalStop = false
 
     // Returns false on failure so callers can bail out via stopSelf() instead of crashing
     // (RemoteServiceException$CannotPostForegroundServiceNotificationException, background-start
@@ -115,6 +116,7 @@ class WatchdogService : Service() {
             return START_NOT_STICKY
         }
         if (intent?.action == ACTION_STOP_SERVICE) {
+            intentionalStop = true
             stopSelf()
             return START_NOT_STICKY
         }
@@ -125,7 +127,9 @@ class WatchdogService : Service() {
         job?.cancel()
         scope.cancel()
         isRunning.set(false)
-        ShizukuSettings.setWatchdog(applicationContext, false)
+        if (intentionalStop) {
+            ShizukuSettings.setWatchdog(applicationContext, false)
+        }
         super.onDestroy()
     }
 
