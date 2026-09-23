@@ -1439,4 +1439,35 @@ Please try the command-line method instead.</string>
     <string name="accessibility_sim_toggle_automation">Toggle Automation card visibility</string>
     <string name="accessibility_sim_toggle_activity_log">Toggle Activity Log card visibility</string>
     <string name="accessibility_sim_toggle_learn_more">Toggle Learn More card visibility</string>
+
+    <!-- Device Control -->
+    <string name="device_control_title">Device Control</string>
+    <string name="device_control_connectivity">Connectivity</string>
+    <string name="device_control_airplane_on">Airplane ON</string>
+    <string name="device_control_airplane_off">Airplane OFF</string>
+    <string name="device_control_wifi_on">WiFi ON</string>
+    <string name="device_control_wifi_off">WiFi OFF</string>
+    <string name="device_control_bt_on">BT ON</string>
+    <string name="device_control_bt_off">BT OFF</string>
+    <string name="device_control_mobile_on">Data ON</string>
+    <string name="device_control_mobile_off">Data OFF</string>
+    <string name="device_control_nfc_on">NFC ON</string>
+    <string name="device_control_nfc_off">NFC OFF</string>
+    <string name="device_control_display">Display</string>
+    <string name="device_control_brightness">Brightness</string>
+    <string name="device_control_autobrightness_on">Auto-Bright ON</string>
+    <string name="device_control_autobrightness_off">Auto-Bright OFF</string>
+    <string name="device_control_autorotate_on">Auto-Rotate ON</string>
+    <string name="device_control_autorotate_off">Auto-Rotate OFF</string>
+    <string name="device_control_audio">Audio</string>
+    <string name="device_control_media_volume">Media Volume</string>
+    <string name="device_control_appearance">System Appearance</string>
+    <string name="device_control_animations_on">Animations ON</string>
+    <string name="device_control_animations_off">Animations OFF</string>
+    <string name="device_control_power">Power</string>
+    <string name="device_control_power_adb_warning">⚠ Reboot/Shutdown require ROOT. They will fail in ADB mode (shell uid lacks REBOOT permission).</string>
+    <string name="device_control_reboot">Reboot</string>
+    <string name="device_control_reboot_recovery">Reboot Recovery</string>
+    <string name="device_control_shutdown">Shutdown</string>
+    <string name="device_control_status_ready">Ready</string>
 </resources>

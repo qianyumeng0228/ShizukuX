@@ -62,6 +62,7 @@ import af.shizuku.server.IDisplayTunerExtra;
 import af.shizuku.server.IAppInspector;
 import af.shizuku.server.IPrivilegedDataSource;
 import af.shizuku.server.IBackupRestoreExtra;
+import af.shizuku.server.IDeviceControlExtra;
 import af.shizuku.server.IApkPatcher;
 import rikka.hidden.compat.ActivityManagerApis;
 import rikka.hidden.compat.DeviceIdleControllerApis;
@@ -198,6 +199,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final AppInspectorImpl appInspector = new AppInspectorImpl();
     private final PrivilegedDataSourceImpl privilegedDataSource = new PrivilegedDataSourceImpl();
     private final BackupRestoreExtraImpl backupRestoreExtra = new BackupRestoreExtraImpl();
+    private final DeviceControlExtraImpl deviceControlExtra = new DeviceControlExtraImpl();
     private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl();
 
     private void grantRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
@@ -2591,6 +2593,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public IBackupRestoreExtra getBackupRestoreExtra() {
         enforceCallingPermission("getBackupRestoreExtra");
         return backupRestoreExtra;
+    }
+
+    public IDeviceControlExtra getDeviceControlExtra() {
+        enforceCallingPermission("getDeviceControlExtra");
+        return deviceControlExtra;
     }
 
     @Override

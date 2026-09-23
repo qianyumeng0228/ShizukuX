@@ -1,12 +1,45 @@
 package rikka.shizuku.server
 
+import android.os.Binder
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.ServiceManager
+import android.util.Log
 import af.shizuku.server.IBackupRestoreExtra
 import java.io.File
+import java.io.InputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
+
+    companion object {
+        private const val TAG = "BackupRestoreExtra"
+    }
+
+    private fun packageManagerService(): Any? = try {
+        val binder = ServiceManager.getService("package") ?: return null
+        Class.forName("android.content.pm.IPackageManager\$Stub")
+            .getDeclaredMethod("asInterface", IBinder::class.java)
+            .invoke(null, binder)
+    } catch (e: Exception) {
+        Log.w(TAG, "packageManagerService unavailable", e)
+        null
+    }
+
+    private fun callingUserId(): Int = Binder.getCallingUid() / 100000
+
+    // Reads and discards a stream on a daemon thread, so a chatty child process can't
+    // fill its stderr/stdout pipe buffer and deadlock the copy we actually care about.
+    private fun drainQuietly(stream: InputStream) {
+        Thread {
+            try { stream.use { val buf = ByteArray(4096); while (it.read(buf) >= 0) { /* discard */ } } }
+            catch (_: Exception) {}
+        }.also { it.isDaemon = true }.start()
+    }
 
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
@@ -114,6 +147,40 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun clearAppData(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
+        val userId = callingUserId()
+        // Primary: IPackageManager.clearApplicationUserData with blocking observer
+        try {
+            val pm = packageManagerService() ?: error("no package service")
+            val latch = CountDownLatch(1)
+            val succeeded = AtomicBoolean(false)
+            // Parcel.writeStrongBinder() requires a real android.os.Binder — Proxy.newProxyInstance
+            // implementing IBinder can't be marshaled cross-process, causing the call to throw.
+            // IPackageDataObserver: onRemoveCompleted(String packageName, boolean succeeded) at FIRST_CALL_TRANSACTION.
+            val observer = object : Binder() {
+                init { attachInterface(null, "android.content.pm.IPackageDataObserver") }
+                override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+                    return when (code) {
+                        IBinder.FIRST_CALL_TRANSACTION -> {
+                            data.enforceInterface("android.content.pm.IPackageDataObserver")
+                            data.readString() // packageName (unused)
+                            succeeded.set(data.readInt() != 0) // boolean succeeded
+                            latch.countDown()
+                            reply?.writeNoException()
+                            true
+                        }
+                        else -> super.onTransact(code, data, reply, flags)
+                    }
+                }
+            }
+            val method = pm.javaClass.methods.firstOrNull { it.name == "clearApplicationUserData" }
+                ?: error("clearApplicationUserData not found")
+            method.invoke(pm, packageName, observer, userId)
+            // Only trust the IPC path if the observer actually reported success in time;
+            // otherwise fall through to the `pm clear` fallback rather than lying.
+            if (latch.await(30, TimeUnit.SECONDS) && succeeded.get()) return true
+        } catch (e: Exception) {
+            Log.w(TAG, "clearAppData IPC failed for $packageName, falling back", e)
+        }
         return execExit("pm", "clear", packageName) == 0
     }
 
