@@ -779,8 +779,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
                 // Spoof original Shizuku package to fix #248 and #249 (client app hardcoded checks)
                 boolean isShizukuSpoof = "moe.shizuku.privileged.api".equals(packageName);
-                
-                if (!isFeatureEnabled("shadow_binder") && !isFeatureEnabled("root_magisk_mocking") && !isShizukuSpoof) return false;
+
+                // Stealth mode: hide ShizukuX manager/drop-in packages from security SDKs that
+                // query IPackageManager to detect root/management apps (banking apps, DRM checks).
+                boolean isStealthHide = isFeatureEnabled("stealth_mode") && packageName != null &&
+                    (packageName.equals(MANAGER_APPLICATION_ID) ||
+                     packageName.equals(ServerConstants.DROPIN_APPLICATION_ID));
+
+                if (!isFeatureEnabled("shadow_binder") && !isFeatureEnabled("root_magisk_mocking") && !isShizukuSpoof && !isStealthHide) return false;
 
                 // Binder-level Magisk & Framework Spoofing
                 if ((isFeatureEnabled("root_magisk_mocking") && packageName != null && 
@@ -818,6 +824,27 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         LOGGER.e("Shadow: Failed to spoof package %s", packageName);
                     }
                 }
+
+                // Stealth mode hides ShizukuX/Shizuku from any PM query without touching the
+                // shadow_binder hidden-packages list. Only intercept known transaction codes and
+                // only when the reflection-initialized TRANSACTION_* fields are valid (!= -1),
+                // so a failed reflection lookup can never cause type-confusion crashes.
+                if (isStealthHide) {
+                    boolean matchPackageInfo = TRANSACTION_getPackageInfo != -1 && code == TRANSACTION_getPackageInfo;
+                    boolean matchApplicationInfo = TRANSACTION_getApplicationInfo != -1 && code == TRANSACTION_getApplicationInfo;
+                    boolean matchPackageUid = TRANSACTION_getPackageUid != -1 && code == TRANSACTION_getPackageUid;
+                    if (matchPackageInfo || matchApplicationInfo || matchPackageUid) {
+                        LOGGER.i("Stealth: Hiding %s from IPackageManager call (code %d)", packageName, code);
+                        reply.writeNoException();
+                        if (matchPackageUid) {
+                            reply.writeInt(-1); // -1 UID = package not installed
+                        } else {
+                            reply.writeTypedObject(null, 0); // null PackageInfo/ApplicationInfo
+                        }
+                        return true;
+                    }
+                }
+
                 String hiddenPackages = plusSettingsMap.get("shadow_hidden_packages");
                 if (hiddenPackages != null && packageName != null && !packageName.isEmpty()) {
                     boolean shouldHide = false;

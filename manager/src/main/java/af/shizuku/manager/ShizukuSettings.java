@@ -1132,6 +1132,7 @@ public class ShizukuSettings {
                 service.updateExtraFeatureEnabled("root_busybox_mocking", isRootBusyboxMockingEnabled());
                 service.updateExtraFeatureEnabled("root_build_prop_redirect", isRootBuildPropRedirectEnabled());
                 service.updateExtraFeatureEnabled("root_iptables_mocking", isRootIptablesMockingEnabled());
+                service.updateExtraFeatureEnabled("stealth_mode", isStealthModeEnabled());
                 service.updateExtraFeatureEnabled("vector", isVectorEnabled());
                 service.updateExtraFeatureEnabled("experimental_root", isExperimentalRootCompatEnabled());
                 service.updateExtraFeatureEnabled("spoof_device", isSpoofDeviceEnabled());
