@@ -81,6 +81,21 @@ class AppBackupActivity : AppBarActivity() {
         adapter.onFreezeClick = { entry ->
             viewModel.toggleFreeze(entry)
         }
+        adapter.onRestoreClick = { entry ->
+            val safUri = getSafUri()
+            if (safUri == null) {
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.backup_restore_title)
+                    .setMessage(R.string.backup_restore_no_dir)
+                    .setPositiveButton(R.string.backup_choose_export_dir) { _, _ ->
+                        directoryPicker.launch(null)
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            } else {
+                showRestoreConfirmation(listOf(entry), safUri)
+            }
+        }
         adapter.onItemLongClick = { entry ->
             if (!adapter.isInSelectionMode()) {
                 adapter.enterSelectionMode(entry.packageName)
@@ -314,8 +329,16 @@ class AppBackupActivity : AppBarActivity() {
             return
         }
 
-        // Secondary confirmation dialog
-        val pkgList = selectedEntries.joinToString("\n") { "• ${it.label} (${it.packageName})" }
+        showRestoreConfirmation(selectedEntries, safUri)
+    }
+
+    /**
+     * Shows the restore confirmation dialog for one or more apps.
+     * Includes restore scope selection (internal data checkbox) and auto-backup notice.
+     * On confirm, starts the restore via viewModel.restoreAll().
+     */
+    private fun showRestoreConfirmation(entries: List<BackupViewModel.AppEntry>, safUri: android.net.Uri) {
+        val pkgList = entries.joinToString("\n") { "• ${it.label} (${it.packageName})" }
         val includeInternalCheckbox = android.widget.CheckBox(this).apply {
             text = getString(R.string.backup_restore_include_internal)
             isChecked = true
@@ -329,11 +352,11 @@ class AppBackupActivity : AppBarActivity() {
         }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.backup_restore_confirm_title)
-            .setMessage(getString(R.string.backup_restore_confirm_msg, selectedEntries.size, pkgList))
+            .setMessage(getString(R.string.backup_restore_confirm_msg, entries.size, pkgList) + "\n\n" + getString(R.string.backup_restore_auto_backup_notice))
             .setView(dialogView)
             .setPositiveButton(R.string.backup_restore_action) { _, _ ->
-                viewModel.restoreAll(selectedEntries, safUri, includeInternalCheckbox.isChecked)
-                exitSelectionMode()
+                viewModel.restoreAll(entries, safUri, includeInternalCheckbox.isChecked)
+                if (adapter.isInSelectionMode()) exitSelectionMode()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

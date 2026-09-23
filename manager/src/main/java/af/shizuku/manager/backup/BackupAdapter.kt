@@ -9,6 +9,7 @@ import af.shizuku.manager.databinding.ItemBackupAppBinding
 class BackupAdapter : ListAdapter<BackupViewModel.AppEntry, BackupAppViewHolder>(DIFF) {
 
     var onBackupClick: ((BackupViewModel.AppEntry) -> Unit)? = null
+    var onRestoreClick: ((BackupViewModel.AppEntry) -> Unit)? = null
     var onFreezeClick: ((BackupViewModel.AppEntry) -> Unit)? = null
     var onItemClick: ((BackupViewModel.AppEntry) -> Unit)? = null
     var onItemLongClick: ((BackupViewModel.AppEntry) -> Unit)? = null
@@ -80,6 +81,7 @@ class BackupAdapter : ListAdapter<BackupViewModel.AppEntry, BackupAppViewHolder>
             entry.packageName in selectedPackages,
             selectionMode,
             onBackupClick,
+            onRestoreClick,
             onFreezeClick,
             onItemClick,
             onItemLongClick

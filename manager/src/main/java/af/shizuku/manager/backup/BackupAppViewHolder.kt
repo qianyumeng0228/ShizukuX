@@ -14,6 +14,7 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
         isSelected: Boolean,
         selectionMode: Boolean,
         onBackup: ((BackupViewModel.AppEntry) -> Unit)?,
+        onRestore: ((BackupViewModel.AppEntry) -> Unit)?,
         onFreeze: ((BackupViewModel.AppEntry) -> Unit)?,
         onItemClick: ((BackupViewModel.AppEntry) -> Unit)?,
         onItemLongClick: ((BackupViewModel.AppEntry) -> Unit)?
@@ -38,6 +39,8 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
         binding.btnFreeze.visibility = if (selectionMode) View.GONE else View.VISIBLE
         binding.btnBackup.isEnabled = !isBusy
         binding.btnBackup.setText(if (isBusy) R.string.backup_in_progress else R.string.backup_action_backup)
+        binding.btnRestore.isEnabled = !isBusy
+        binding.btnRestore.visibility = if (selectionMode) View.GONE else View.VISIBLE
 
         binding.btnFreeze.isEnabled = !isBusy
         binding.btnFreeze.setText(
@@ -45,6 +48,7 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
         )
 
         binding.btnBackup.setOnClickListener { if (!isBusy) onBackup?.invoke(entry) }
+        binding.btnRestore.setOnClickListener { if (!isBusy) onRestore?.invoke(entry) }
         binding.btnFreeze.setOnClickListener { if (!isBusy) onFreeze?.invoke(entry) }
         binding.root.setOnClickListener {
             if (selectionMode) onItemClick?.invoke(entry)

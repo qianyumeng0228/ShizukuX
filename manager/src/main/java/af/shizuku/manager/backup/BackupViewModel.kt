@@ -309,15 +309,45 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
+     * Back up current app data before restore, using .pre-restore suffix to avoid
+     * overwriting existing backups. Called automatically by [restoreAppData].
+     *
+     * Backs up both internal data (data.pre-restore.tar.gz) and external data
+     * (external.pre-restore.tar.gz) into the same SAF directory structure.
+     *
+     * Returns true if at least one component was backed up successfully.
+     */
+    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver): Boolean {
+        var backedUpSomething = false
+        // Internal data (requires app debuggable — caller must prepareTempDebug first)
+        val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
+        if (dataPfd != null) {
+            if (writeBackupStream(safTreeUri, null, pkg, "data.pre-restore.tar.gz", cr) { out ->
+                dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
+            }) backedUpSomething = true
+        }
+        // External data (shell-level, no debuggable required)
+        val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
+        if (extPfd != null) {
+            if (writeBackupStream(safTreeUri, null, pkg, "external.pre-restore.tar.gz", cr) { out ->
+                extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
+            }) backedUpSomething = true
+        }
+        return backedUpSomething
+    }
+
+    /**
      * Restore a single app's data from a SAF backup directory.
      *
-     * Flow: prepareTempDebug → clearAppData → restoreDataDir (internal, if [includeInternal])
-     * → restoreExternalData → restoreOriginal.
+     * Flow: prepareTempDebug → **backupPreRestore** (auto-backup current data with
+     * .pre-restore suffix; aborts restore if backup fails) → clearAppData →
+     * restoreDataDir (internal, if [includeInternal]) → restoreExternalData → restoreOriginal.
      *
      * Internal data restore uses run-as + tar -xzf (requires app to be debuggable,
      * which prepareTempDebug ensures). External data restore uses shell-level extraction.
      *
      * Returns true if at least one data component was restored successfully.
+     * Returns false if pre-restore backup failed (restore aborted to prevent data loss).
      */
     suspend fun restoreAppData(
         entry: AppEntry,
@@ -332,6 +362,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             prepared = try {
                 ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
             } catch (_: Exception) { false }
+
+            // Auto-backup current data before restore (rollback safety)
+            val preRestoreOk = backupPreRestore(pkg, safTreeUri, cr)
+            if (!preRestoreOk) {
+                Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
+                return@restoreAppData false
+            }
 
             // Clear existing data for clean restore state
             try { ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg) } catch (_: Exception) {}

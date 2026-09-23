@@ -1509,4 +1509,6 @@ This action cannot be undone. Continue?</string>
     <string name="device_control_autobrightness_tile">Auto Brightness</string>
     <string name="device_control_autorotate_tile">Auto Rotate</string>
     <string name="backup_restore_include_internal">Also restore internal app data (/data/data/)</string>
+    <string name="backup_restore_auto_backup_notice">⚠ Current data will be automatically backed up (with .pre-restore suffix) before restore. If backup fails, restore will be aborted to protect your data.</string>
+    <string name="backup_action_restore">Restore</string>
 </resources>

@@ -68,6 +68,15 @@
             android:text="@string/backup_action_freeze" />
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_restore"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:minWidth="0dp"
+            android:text="@string/backup_action_restore" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_backup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
