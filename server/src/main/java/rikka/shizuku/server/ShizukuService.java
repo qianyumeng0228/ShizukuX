@@ -963,27 +963,35 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 "/system/etc/audio_effects.conf", "/vendor/etc/audio_effects.conf",
                 "/system/etc/gps.conf"
             };
-            
+
+            // The server runs at shell UID (2000), which cannot write under /data/adb (0700 root).
+            // Stage the shadow copies in the canonical shell-writable dir instead, or the mkdir
+            // and copy below silently fail and the redirect points at an unwritable path.
+            String proxyDir = "/data/local/tmp/shizuku_proxy";
+
             for (int i = 0; i < cmd.length; i++) {
                 if (cmd[i] == null) continue;
                 for (String target : proxyTargets) {
                     if (cmd[i].contains(target)) {
                         String fileName = new java.io.File(target).getName();
-                        String proxyPath = "/data/adb/shizuku/" + fileName;
-                        
+                        String proxyPath = proxyDir + "/" + fileName;
+
+                        boolean ready = false;
                         try {
-                            Runtime.getRuntime().exec(new String[]{"mkdir", "-p", "/data/adb/shizuku"}).waitFor();
+                            new java.io.File(proxyDir).mkdirs();
                             java.io.File dest = new java.io.File(proxyPath);
                             if (!dest.exists()) {
-                                String sourcePath = target;
-                                Runtime.getRuntime().exec(new String[]{"cp", sourcePath, proxyPath}).waitFor();
+                                Runtime.getRuntime().exec(new String[]{"cp", target, proxyPath}).waitFor();
                             }
+                            ready = dest.exists() && dest.length() > 0;
                         } catch (Exception e) {
                             LOGGER.e(e, "SUBridge: failed to prepare proxy file for " + target);
                         }
-                        
-                        cmd[i] = cmd[i].replace(target, proxyPath);
-                        LOGGER.i("SUBridge: dynamically rewrote " + target + " to " + proxyPath);
+
+                        if (ready) {
+                            cmd[i] = cmd[i].replace(target, proxyPath);
+                            LOGGER.i("SUBridge: dynamically rewrote " + target + " to " + proxyPath);
+                        }
                     }
                 }
             }
@@ -1358,6 +1366,37 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     }
                 } else if (baseCmd.equals("resetprop")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
+                        // Magisk's resetprop was a pure ghost here. Make it genuinely functional
+                        // where shell UID is permitted: "resetprop <name> <value>" applies via
+                        // SystemProperties.set (the change then surfaces in real getprop), and
+                        // "resetprop <name>" answers a read. Deletes and unsupported flags fall
+                        // back to a mocked success so callers don't error out.
+                        java.util.List<String> rpArgs = new java.util.ArrayList<>();
+                        boolean rpDeleting = false;
+                        for (int i = 1; i < cmd.length; i++) {
+                            String a = cmd[i];
+                            if (a.equals("--delete") || a.equals("-d")) {
+                                rpDeleting = true;
+                                continue;
+                            }
+                            if (a.startsWith("-")) continue;
+                            rpArgs.add(a);
+                        }
+                        if (!rpDeleting && rpArgs.size() >= 2) {
+                            String name = rpArgs.get(0);
+                            String value = rpArgs.get(1);
+                            LOGGER.i("SUBridge: resetprop applying %s=%s via SystemProperties", name, value);
+                            try {
+                                android.os.SystemProperties.set(name, value);
+                            } catch (Exception e) {
+                                LOGGER.w(e, "SUBridge: resetprop could not set %s (read-only/SELinux), mocking success", name);
+                            }
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        } else if (!rpDeleting && rpArgs.size() == 1) {
+                            String value = android.os.SystemProperties.get(rpArgs.get(0), "");
+                            LOGGER.i("SUBridge: resetprop read %s -> %s", rpArgs.get(0), value);
+                            return newProcessInternal(new String[]{"echo", value}, env, dir);
+                        }
                         LOGGER.i("SUBridge: mocking resetprop " + String.join(" ", cmd));
                         return newProcessInternal(new String[]{"true"}, env, dir);
                     }
