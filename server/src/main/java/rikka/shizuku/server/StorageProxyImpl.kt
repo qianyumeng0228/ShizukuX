@@ -145,7 +145,9 @@ class StorageProxyImpl : IStorageProxy.Stub() {
         } catch (_: Exception) {
             if (serverUid == 2000 &&
                 (srcPath!!.startsWith("/data/data/") || srcPath.startsWith("/data/user/"))) {
-                val pkg = extractPackageName(srcPath) ?: return false
+                val pkg = extractPackageName(srcPath)
+                    ?.takeIf { InputValidationUtils.isValidPackageName(it) }
+                    ?: return false
                 return try {
                     Runtime.getRuntime().exec(arrayOf("run-as", pkg, "cp", srcPath, destPath!!))
                         .waitFor() == 0
