@@ -132,6 +132,26 @@ object InputValidationUtils {
         return sanitized
     }
 
+    // Android package name: dot-separated segments, each starting with a letter and
+    // containing only letters, digits, and underscores. Deliberately rejects '/', '..',
+    // whitespace and shell metacharacters, so a validated value is safe to interpolate
+    // into a filesystem path or a command argument.
+    private val PACKAGE_NAME_PATTERN = Pattern.compile(
+        "^[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*$"
+    )
+
+    /**
+     * Validates an Android package name.
+     *
+     * @param packageName the package name to validate
+     * @return true if the name is a well-formed package identifier, false otherwise
+     */
+    @JvmStatic
+    fun isValidPackageName(packageName: String?): Boolean {
+        if (packageName.isNullOrEmpty() || packageName.length > 255) return false
+        return PACKAGE_NAME_PATTERN.matcher(packageName).matches()
+    }
+
     // Whitelist of allowed directory prefixes for the Storage Proxy
     private val ALLOWED_STORAGE_PREFIXES = listOf(
         "/data/data/",

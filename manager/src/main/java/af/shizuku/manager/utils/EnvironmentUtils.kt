@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.SystemProperties
+import android.provider.Settings
 import af.shizuku.manager.ShizukuApplication
 import af.shizuku.manager.ShizukuSettings
 import com.topjohnwu.superuser.Shell
@@ -154,6 +155,15 @@ object EnvironmentUtils {
 
     @JvmStatic
     fun isSecondaryUser(): Boolean = af.shizuku.common.util.EnvironmentUtils.isSecondaryUser()
+
+    /**
+     * Android 17 (API 37) redacts Settings.Global.ADB_ENABLED to 0 for third-party apps,
+     * so a 0 reading no longer means USB debugging is actually disabled.
+     */
+    fun isAdbEnabled(): Boolean {
+        if (Settings.Global.getInt(appContext.contentResolver, Settings.Global.ADB_ENABLED, 0) > 0) return true
+        return Build.VERSION.SDK_INT >= 37
+    }
 
     fun getAdbTcpPort(): Int {
         var port = af.shizuku.common.util.EnvironmentUtils.getAdbTcpPort()

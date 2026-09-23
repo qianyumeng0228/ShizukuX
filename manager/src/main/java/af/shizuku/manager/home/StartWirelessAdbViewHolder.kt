@@ -106,8 +106,7 @@ class StartWirelessAdbViewHolder(
 
             if (validTcpPort <= 0 && !EnvironmentUtils.isTlsSupported()) {
                 // Pre-Android-11 path: classic ADB-over-TCP needs USB debugging enabled.
-                val adbEnabled = Settings.Global.getInt(cr, Settings.Global.ADB_ENABLED, 0)
-                if (adbEnabled == 0) {
+                if (!EnvironmentUtils.isAdbEnabled()) {
                     WadbEnableUsbDebuggingDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
                     return@setOnClickListener
                 }

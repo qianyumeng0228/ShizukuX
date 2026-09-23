@@ -164,9 +164,10 @@ class StorageProxyImpl : IStorageProxy.Stub() {
     override fun tarDirectory(dirPath: String?, packageContext: String?): ParcelFileDescriptor? {
         if (!InputValidationUtils.isSafePath(dirPath)) return null
         val dir = dirPath!!
-        return if (!packageContext.isNullOrBlank() && serverUid == 2000 &&
+        val pkg = packageContext?.takeIf { InputValidationUtils.isValidPackageName(it) }
+        return if (pkg != null && serverUid == 2000 &&
             (dir.startsWith("/data/data/") || dir.startsWith("/data/user/"))) {
-            openViaShellPipe(arrayOf("run-as", packageContext, "tar", "-czf", "-", "-C", dir, "."))
+            openViaShellPipe(arrayOf("run-as", pkg, "tar", "-czf", "-", "-C", dir, "."))
         } else {
             openViaShellPipe(arrayOf("tar", "-czf", "-", "-C", dir, "."))
         }
