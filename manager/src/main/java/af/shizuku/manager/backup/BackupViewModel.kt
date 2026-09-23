@@ -212,9 +212,15 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             val treeDocUri = DocumentsContract.buildDocumentUriUsingTree(
                 safTreeUri, DocumentsContract.getTreeDocumentId(safTreeUri)
             )
-            // Try to create a per-package subdirectory; some providers (e.g. Downloads) don't
-            // support MIME_TYPE_DIR and return null — fall back to a flat "{pkg}_{file}" name.
-            val parentUri = try {
+            // Try to reuse an existing per-package subdirectory (query first), then create if
+            // absent. Some providers (e.g. Downloads) don't support MIME_TYPE_DIR and return
+            // null — fall back to a flat "{pkg}_{file}" name.
+            val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+                safTreeUri, DocumentsContract.getTreeDocumentId(safTreeUri))
+            val existingId = try { queryForDocument(childrenUri, cr, pkg) } catch (_: Exception) { null }
+            val parentUri = if (existingId != null) {
+                DocumentsContract.buildDocumentUriUsingTree(safTreeUri, existingId)
+            } else try {
                 DocumentsContract.createDocument(
                     cr, treeDocUri, DocumentsContract.Document.MIME_TYPE_DIR, pkg
                 )
@@ -233,7 +239,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 null
             } ?: return false
 
-            cr.openOutputStream(fileUri)?.use { block(it) }
+            val out = cr.openOutputStream(fileUri) ?: run {
+                // Created document but cannot open write stream — delete empty shell to avoid
+                // misleading rollback lookup (a 0-byte file would be "found" but useless).
+                try { DocumentsContract.deleteDocument(cr, fileUri) } catch (_: Exception) {}
+                return false
+            }
+            out.use { block(it) }
             return true
         } else {
             val pkgDir = File(outputDir!!, pkg).also { it.mkdirs() }
@@ -318,17 +330,18 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      *
      * Returns the timestamp string if at least one component was backed up, or null on failure.
      */
-    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver): String? {
+    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver, requireInternal: Boolean = false): String? {
         val timestamp = PreRestoreManager.generateTimestamp()
         val dataName = PreRestoreManager.getSnapshotFileName("data", timestamp)
         val extName = PreRestoreManager.getSnapshotFileName("external", timestamp)
         var backedUpSomething = false
+        var internalBackedUp = false
         // Internal data (requires app debuggable — caller must prepareTempDebug first)
         val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
         if (dataPfd != null) {
             if (writeBackupStream(safTreeUri, null, pkg, dataName, cr) { out ->
                 dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-            }) backedUpSomething = true
+            }) { backedUpSomething = true; internalBackedUp = true }
         }
         // External data (shell-level, no debuggable required)
         val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
@@ -337,7 +350,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
             }) backedUpSomething = true
         }
-        if (backedUpSomething) {
+        if (backedUpSomething && (!requireInternal || internalBackedUp)) {
             PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp)
             return timestamp
         }
@@ -380,7 +393,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
             // Auto-backup current data before restore (skip for rollbacks — we're restoring FROM a snapshot)
             if (!isRollback) {
-                val preRestoreTs = backupPreRestore(pkg, safTreeUri, cr)
+                val preRestoreTs = backupPreRestore(pkg, safTreeUri, cr, requireInternal = includeInternal)
                 if (preRestoreTs == null) {
                     Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
                     recordRestoreHistory(entry, includeInternal, success = false, isRollback = false, snapshotTimestamp = null)

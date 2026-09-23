@@ -9,6 +9,7 @@ import android.os.ServiceManager
 import android.util.Log
 import af.shizuku.common.compat.InstalledPackagesCompat
 import af.shizuku.server.IBackupRestoreExtra
+import rikka.shizuku.server.util.InputValidationUtils
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
@@ -44,6 +45,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
+        drainQuietly(proc.errorStream)
         val out = proc.inputStream.bufferedReader().readText().trim()
         proc.waitFor()
         out
@@ -58,6 +60,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         Thread {
             try {
                 val proc = Runtime.getRuntime().exec(args)
+                drainQuietly(proc.errorStream)
                 proc.inputStream.use { src ->
                     ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
                         src.copyTo(dst)
@@ -256,7 +259,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     // ── External Storage Backup / Restore ─────────────────────────────────────
 
     override fun backupExternalData(packageName: String?): ParcelFileDescriptor? {
-        if (packageName.isNullOrBlank()) return null
+        if (!InputValidationUtils.isValidPackageName(packageName)) return null
         // Try both the primary external path and the Android/data path
         val dir = listOf(
             "/sdcard/Android/data/$packageName",
@@ -266,7 +269,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     }
 
     override fun restoreExternalData(packageName: String?, tarStream: ParcelFileDescriptor?): Boolean {
-        if (packageName.isNullOrBlank() || tarStream == null) return false
+        if (!InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
         val dir = "/sdcard/Android/data/$packageName"
         File(dir).mkdirs()
         return try {
@@ -462,7 +465,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     // ── OBB Data Backup / Restore ─────────────────────────────────────────────
 
     override fun backupObbData(packageName: String?): ParcelFileDescriptor? {
-        if (packageName.isNullOrBlank()) return null
+        if (!InputValidationUtils.isValidPackageName(packageName)) return null
         val dir = listOf(
             "/sdcard/Android/obb/$packageName",
             "/storage/emulated/0/Android/obb/$packageName"
@@ -471,7 +474,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     }
 
     override fun restoreObbData(packageName: String?, tarStream: ParcelFileDescriptor?): Boolean {
-        if (packageName.isNullOrBlank() || tarStream == null) return false
+        if (!InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
         val dir = "/sdcard/Android/obb/$packageName"
         File(dir).mkdirs()
         return try {

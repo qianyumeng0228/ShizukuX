@@ -4,6 +4,7 @@ import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
 import af.shizuku.server.IDeviceControlExtra
+import java.util.concurrent.TimeUnit
 
 /**
  * Implements IDeviceControlExtra using shell commands and Binder IPC available to uid 2000.
@@ -28,19 +29,17 @@ class DeviceControlExtraImpl : IDeviceControlExtra.Stub() {
     }
 
     private fun exec(vararg args: String): String = try {
-        val proc = Runtime.getRuntime().exec(args)
+        val proc = ProcessBuilder(*args).redirectErrorStream(true).start()
         val out = proc.inputStream.bufferedReader().readText()
-        proc.waitFor()
+        if (!proc.waitFor(10, TimeUnit.SECONDS)) proc.destroy()
         out.trim()
-    } catch (_: Exception) {
-        ""
-    }
+    } catch (_: Exception) { "" }
 
     private fun execBool(vararg args: String): Boolean = try {
-        Runtime.getRuntime().exec(args).waitFor() == 0
-    } catch (_: Exception) {
-        false
-    }
+        val proc = ProcessBuilder(*args).redirectErrorStream(true).start()
+        proc.inputStream.use { it.bufferedReader().readText() }
+        proc.waitFor(10, TimeUnit.SECONDS) && proc.exitValue() == 0
+    } catch (_: Exception) { false }
 
     private fun settingsPut(namespace: String, key: String, value: String): Boolean {
         if (namespace !in VALID_NAMESPACES) return false

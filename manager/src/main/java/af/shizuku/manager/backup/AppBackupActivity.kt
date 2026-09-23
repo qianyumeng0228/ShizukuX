@@ -230,6 +230,7 @@ class AppBackupActivity : AppBarActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.clear()
         if (adapter.isInSelectionMode()) {
             menu.add(0, MENU_RESTORE, 0, R.string.backup_restore_selected)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
@@ -268,6 +269,14 @@ class AppBackupActivity : AppBarActivity() {
             }
         })
 
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        // invalidateOptionsMenu() triggers onPrepareOptionsMenu (not onCreateOptionsMenu per
+        // Android contract); rebuild here so selection-mode menu items appear correctly.
+        menu.clear()
+        onCreateOptionsMenu(menu)
         return true
     }
 

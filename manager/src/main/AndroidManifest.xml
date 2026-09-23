@@ -672,6 +672,7 @@
         <service
             android:name=".devicecontrol.AnimationTileService"
             android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:icon="@drawable/ic_qs_animations_24"
             android:label="@string/device_control_animations_tile">
             <intent-filter>
@@ -683,6 +684,7 @@
         <service
             android:name=".devicecontrol.AirplaneModeTileService"
             android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:icon="@drawable/ic_qs_airplane_24"
             android:label="@string/device_control_airplane_tile">
             <intent-filter>
@@ -694,6 +696,7 @@
         <service
             android:name=".devicecontrol.AutoBrightnessTileService"
             android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:icon="@drawable/ic_qs_brightness_24"
             android:label="@string/device_control_autobrightness_tile">
             <intent-filter>
@@ -705,6 +708,7 @@
         <service
             android:name=".devicecontrol.AutoRotateTileService"
             android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
             android:icon="@drawable/ic_qs_rotate_24"
             android:label="@string/device_control_autorotate_tile">
             <intent-filter>

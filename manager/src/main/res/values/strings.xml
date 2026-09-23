@@ -803,10 +803,10 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="su_path_preset_applied">SU path preset applied: %1$s</string>
     <string name="su_path_invalid">Invalid path. Must be an absolute path (starts with /) using only letters, numbers, slashes, underscores, dots, and hyphens.</string>
     <string name="stock_shizuku_conflict_title">Incompatible Server Detected</string>
-    <string name="stock_shizuku_conflict_description">The original Shizuku server is running in the background. It is incompatible with Shizuku+ and blocks it from starting.</string>
+    <string name="stock_shizuku_conflict_description">The original Shizuku server is running in the background. It is incompatible with ShizukuX and blocks it from starting.</string>
     <string name="stock_shizuku_conflict_fix_button">Fix Conflict</string>
     <string name="stock_shizuku_conflict_dialog_title">Incompatible Server Running</string>
-    <string name="stock_shizuku_conflict_dialog_message">The original Shizuku server is currently running in the background. Because of Android security constraints, Shizuku+ cannot communicate with or kill the original server.\n\nPlease completely restart your device to kill the original server, then start Shizuku+ using ADB or Root.</string>
+    <string name="stock_shizuku_conflict_dialog_message">The original Shizuku server is currently running in the background. Because of Android security constraints, ShizukuX cannot communicate with or kill the original server.\n\nPlease completely restart your device to kill the original server, then start ShizukuX using ADB or Root.</string>
     <string name="stock_shizuku_restarting_via_root">Restarting via Root…</string>
     <string name="backup_plain_exported">Plain backup exported. Keep this file private — it is not encrypted.</string>
     <string name="backup_exported_success">Backup exported successfully</string>

@@ -195,6 +195,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                         .setPositiveButton(R.string.settings_enable_stealth_confirm) { _, _ ->
                             context.packageManager.setComponentEnabled(launcherAlias, false)
                             ShizukuSettings.setStealthModeEnabled(true)
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                             (pref as? TwoStatePreference)?.isChecked = true
                         }
                         .setNegativeButton(android.R.string.cancel) { _, _ ->
@@ -205,6 +206,7 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
                 } else {
                     context.packageManager.setComponentEnabled(launcherAlias, true)
                     ShizukuSettings.setStealthModeEnabled(false)
+                        ShizukuSettings.syncAllExtraFeaturesToServer()
                     true
                 }
             }
