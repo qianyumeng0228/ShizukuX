@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?android:attr/colorControlNormal">
+    <!-- Auto rotate icon: circular arrows with phone -->
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M12,4c-2.21,0 -4.21,0.9 -5.66,2.34L4,4v6h6l-2.12,-2.12C9.03,6.69 10.46,6 12,6c3.31,0 6,2.69 6,6s-2.69,6 -6,6c-1.54,0 -2.97,-0.69 -4.12,-1.88L6,17.66C7.79,19.1 9.79,20 12,20c4.42,0 8,-3.58 8,-8s-3.58,-8 -8,-8zM9,10.5L11,8l2,2.5h-1.5V15h-1v-4.5H9z" />
+</vector>

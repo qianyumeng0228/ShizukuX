@@ -1508,4 +1508,5 @@ This action cannot be undone. Continue?</string>
     <string name="device_control_airplane_tile">Airplane Mode</string>
     <string name="device_control_autobrightness_tile">Auto Brightness</string>
     <string name="device_control_autorotate_tile">Auto Rotate</string>
+    <string name="backup_restore_include_internal">Also restore internal app data (/data/data/)</string>
 </resources>

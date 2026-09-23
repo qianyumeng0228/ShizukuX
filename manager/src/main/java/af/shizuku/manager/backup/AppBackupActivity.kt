@@ -316,11 +316,23 @@ class AppBackupActivity : AppBarActivity() {
 
         // Secondary confirmation dialog
         val pkgList = selectedEntries.joinToString("\n") { "• ${it.label} (${it.packageName})" }
+        val includeInternalCheckbox = android.widget.CheckBox(this).apply {
+            text = getString(R.string.backup_restore_include_internal)
+            isChecked = true
+            setPadding(0, (16 * resources.displayMetrics.density).toInt(), 0, 0)
+        }
+        val dialogView = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding((24 * resources.displayMetrics.density).toInt(), 0,
+                (24 * resources.displayMetrics.density).toInt(), 0)
+            addView(includeInternalCheckbox)
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.backup_restore_confirm_title)
             .setMessage(getString(R.string.backup_restore_confirm_msg, selectedEntries.size, pkgList))
+            .setView(dialogView)
             .setPositiveButton(R.string.backup_restore_action) { _, _ ->
-                viewModel.restoreAll(selectedEntries, safUri)
+                viewModel.restoreAll(selectedEntries, safUri, includeInternalCheckbox.isChecked)
                 exitSelectionMode()
             }
             .setNegativeButton(android.R.string.cancel, null)

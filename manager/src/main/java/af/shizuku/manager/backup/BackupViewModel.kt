@@ -309,27 +309,65 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Restore a single app's external data from a SAF backup directory.
-     * Reads {pkg}/external.tar.gz from the tree and feeds it to restoreExternalData.
-     * Returns true if restore succeeded.
+     * Restore a single app's data from a SAF backup directory.
+     *
+     * Flow: prepareTempDebug → clearAppData → restoreDataDir (internal, if [includeInternal])
+     * → restoreExternalData → restoreOriginal.
+     *
+     * Internal data restore uses run-as + tar -xzf (requires app to be debuggable,
+     * which prepareTempDebug ensures). External data restore uses shell-level extraction.
+     *
+     * Returns true if at least one data component was restored successfully.
      */
-    suspend fun restoreAppData(entry: AppEntry, safTreeUri: android.net.Uri): Boolean {
+    suspend fun restoreAppData(
+        entry: AppEntry,
+        safTreeUri: android.net.Uri,
+        includeInternal: Boolean = true
+    ): Boolean {
         val pkg = entry.packageName
         val cr = getApplication<Application>().contentResolver
+        var prepared = false
         return try {
-            // Find external.tar.gz in the package's backup subdirectory
+            // Make app debuggable so run-as can access /data/data/<pkg>/
+            prepared = try {
+                ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
+            } catch (_: Exception) { false }
+
+            // Clear existing data for clean restore state
+            try { ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg) } catch (_: Exception) {}
+
+            var restoredSomething = false
+
+            // 1. Restore internal data (/data/data/<pkg>/) from data.tar.gz
+            if (includeInternal) {
+                val dataUri = findBackupFile(safTreeUri, pkg, "data.tar.gz", cr)
+                if (dataUri != null) {
+                    val ok = cr.openFileDescriptor(dataUri, "r")?.use { pfd ->
+                        ShizukuXAPI.ApkPatcher.restoreDataDir(pkg, pfd)
+                    } ?: false
+                    if (ok) restoredSomething = true
+                } else {
+                    Timber.w("No data.tar.gz found for $pkg (internal data skip)")
+                }
+            }
+
+            // 2. Restore external data (/sdcard/Android/data/<pkg>/) from external.tar.gz
             val extUri = findBackupFile(safTreeUri, pkg, "external.tar.gz", cr)
-            if (extUri == null) {
-                Timber.w("No external.tar.gz found for $pkg in backup directory")
-                false
-            } else {
-                cr.openFileDescriptor(extUri, "r")?.use { pfd ->
+            if (extUri != null) {
+                val ok = cr.openFileDescriptor(extUri, "r")?.use { pfd ->
                     ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
                 } ?: false
+                if (ok) restoredSomething = true
+            } else {
+                Timber.w("No external.tar.gz found for $pkg (external data skip)")
             }
+
+            restoredSomething
         } catch (e: Exception) {
             Timber.e(e, "Restore failed for $pkg")
             false
+        } finally {
+            if (prepared) try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (_: Exception) {}
         }
     }
 
@@ -338,7 +376,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      * Emits progress via [batchProgress] and [RestoreComplete] per app.
      * Clears app data before restore to ensure clean state.
      */
-    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri) {
+    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri, includeInternal: Boolean = true) {
         if (_batchRunning.value) return
         if (entries.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
@@ -355,9 +393,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     succeeded = succeeded, failed = failed
                 )
                 try {
-                    // Clear existing data first for clean restore
-                    try { ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg) } catch (_: Exception) {}
-                    val ok = restoreAppData(entry, safTreeUri)
+                    val ok = restoreAppData(entry, safTreeUri, includeInternal)
                     if (ok) succeeded++ else failed++
                     _events.emit(BackupEvent.RestoreComplete(pkg, ok))
                 } catch (e: Exception) {
