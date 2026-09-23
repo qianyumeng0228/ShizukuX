@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.R
@@ -80,6 +81,23 @@ class AppBackupActivity : AppBarActivity() {
         adapter.onFreezeClick = { entry ->
             viewModel.toggleFreeze(entry)
         }
+        adapter.onItemLongClick = { entry ->
+            if (!adapter.isInSelectionMode()) {
+                adapter.enterSelectionMode(entry.packageName)
+                updateSelectionTitle()
+                invalidateOptionsMenu()
+            }
+        }
+        adapter.onItemClick = { entry ->
+            if (adapter.isInSelectionMode()) {
+                adapter.toggleSelection(entry.packageName)
+                updateSelectionTitle()
+                if (adapter.getSelectedCount() == 0) {
+                    exitSelectionMode()
+                }
+            }
+        }
+        adapter.onSelectionChanged = { updateSelectionTitle() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -111,6 +129,22 @@ class AppBackupActivity : AppBarActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.batchRunning.collect { running ->
                     backupAllItem?.isEnabled = !running
+                    binding.batchProgressPanel.visibility = if (running) View.VISIBLE else View.GONE
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.batchProgress.collect { progress ->
+                    if (progress.total > 0) {
+                        val pct = if (progress.total > 0) (progress.current * 100 / progress.total) else 0
+                        binding.batchProgressBar.progress = pct
+                        binding.batchProgressText.text = getString(
+                            R.string.backup_batch_progress,
+                            progress.current, progress.total, progress.currentPkg
+                        )
+                    }
                 }
             }
         }
@@ -131,6 +165,11 @@ class AppBackupActivity : AppBarActivity() {
                                 getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path),
                                 Snackbar.LENGTH_LONG
                             ).show()
+                        is BackupViewModel.BackupEvent.RestoreComplete -> {
+                            val msg = if (event.success) R.string.backup_restore_success
+                                      else R.string.backup_restore_failed
+                            Snackbar.make(rootView, getString(msg, event.pkg), Snackbar.LENGTH_SHORT).show()
+                        }
                         is BackupViewModel.BackupEvent.FreezeChanged -> {
                             val msg = if (event.nowFrozen) R.string.backup_freeze_success else R.string.backup_unfreeze_success
                             Snackbar.make(rootView, msg, Snackbar.LENGTH_SHORT).show()
@@ -165,6 +204,16 @@ class AppBackupActivity : AppBarActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        if (adapter.isInSelectionMode()) {
+            menu.add(0, MENU_RESTORE, 0, R.string.backup_restore_selected)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+            menu.add(0, MENU_SELECT_ALL, 1, R.string.backup_select_all)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+            menu.add(0, MENU_CANCEL, 2, android.R.string.cancel)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+            return true
+        }
+
         menuInflater.inflate(R.menu.app_backup_menu, menu)
         menu.findItem(R.id.action_show_system)?.isChecked = includeSystem
         backupAllItem = menu.findItem(R.id.action_backup_all)
@@ -195,7 +244,13 @@ class AppBackupActivity : AppBarActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            android.R.id.home -> { finish(); true }
+            android.R.id.home -> {
+                if (adapter.isInSelectionMode()) { exitSelectionMode(); true }
+                else { finish(); true }
+            }
+            MENU_RESTORE -> { startRestoreSelected(); true }
+            MENU_SELECT_ALL -> { adapter.selectAll(); updateSelectionTitle(); true }
+            MENU_CANCEL -> { exitSelectionMode(); true }
             R.id.action_backup_all -> {
                 val safUri = getSafUri()
                 if (safUri != null) {
@@ -216,7 +271,75 @@ class AppBackupActivity : AppBarActivity() {
         }
     }
 
+    private fun updateSelectionTitle() {
+        if (adapter.isInSelectionMode()) {
+            supportActionBar?.title = getString(R.string.backup_selected_count, adapter.getSelectedCount())
+        } else {
+            supportActionBar?.title = getString(R.string.home_backup_title)
+        }
+    }
+
+    private fun exitSelectionMode() {
+        adapter.exitSelectionMode()
+        updateSelectionTitle()
+        invalidateOptionsMenu()
+    }
+
+    private fun startRestoreSelected() {
+        val selectedPkgs = adapter.getSelectedPackages()
+        if (selectedPkgs.isEmpty()) return
+
+        val safUri = getSafUri()
+        if (safUri == null) {
+            // No SAF directory configured — prompt user to choose one first
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.backup_restore_title)
+                .setMessage(R.string.backup_restore_no_dir)
+                .setPositiveButton(R.string.backup_choose_export_dir) { _, _ ->
+                    directoryPicker.launch(null)
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+            return
+        }
+
+        // Get AppEntry objects for selected packages
+        val state = viewModel.state.value
+        val selectedEntries = if (state is BackupViewModel.UiState.Loaded) {
+            state.apps.filter { it.packageName in selectedPkgs }
+        } else emptyList()
+
+        if (selectedEntries.isEmpty()) {
+            Snackbar.make(rootView, R.string.backup_restore_no_apps, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        // Secondary confirmation dialog
+        val pkgList = selectedEntries.joinToString("\n") { "• ${it.label} (${it.packageName})" }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.backup_restore_confirm_title)
+            .setMessage(getString(R.string.backup_restore_confirm_msg, selectedEntries.size, pkgList))
+            .setPositiveButton(R.string.backup_restore_action) { _, _ ->
+                viewModel.restoreAll(selectedEntries, safUri)
+                exitSelectionMode()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (adapter.isInSelectionMode()) {
+            exitSelectionMode()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     companion object {
         private const val MENU_CHOOSE_DIR = 1001
+        private const val MENU_RESTORE = 1002
+        private const val MENU_SELECT_ALL = 1003
+        private const val MENU_CANCEL = 1004
     }
 }

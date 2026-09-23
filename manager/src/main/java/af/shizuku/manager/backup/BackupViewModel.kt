@@ -31,6 +31,17 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         val isFrozen: Boolean = false
     )
 
+    /**
+     * Progress of a batch backup/restore operation.
+     */
+    data class BatchProgress(
+        val current: Int = 0,
+        val total: Int = 0,
+        val currentPkg: String = "",
+        val succeeded: Int = 0,
+        val failed: Int = 0,
+    )
+
     sealed class UiState {
         object Loading : UiState()
         data class Loaded(val apps: List<AppEntry>) : UiState()
@@ -41,6 +52,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     sealed class BackupEvent {
         data class BackupComplete(val pkg: String, val path: String) : BackupEvent()
         data class BatchComplete(val succeeded: Int, val failed: Int, val path: String) : BackupEvent()
+        data class RestoreComplete(val pkg: String, val success: Boolean) : BackupEvent()
         data class FreezeChanged(val pkg: String, val nowFrozen: Boolean) : BackupEvent()
         data class Failure(val msg: String) : BackupEvent()
     }
@@ -58,6 +70,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     // Batch backup state
     private val _batchRunning = MutableStateFlow(false)
     val batchRunning: StateFlow<Boolean> = _batchRunning
+
+    private val _batchProgress = MutableStateFlow(BatchProgress())
+    val batchProgress: StateFlow<BatchProgress> = _batchProgress
 
     // Master app list (unfiltered); _state holds the filtered view
     @Volatile private var allApps: List<AppEntry> = emptyList()
@@ -239,9 +254,19 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             var succeeded = 0
             var failed = 0
             val cr = getApplication<Application>().contentResolver
+            val total = apps.size
+            var index = 0
             for (entry in apps) {
                 val pkg = entry.packageName
-                if (pkg in _busyPackages.value) continue
+                if (pkg in _busyPackages.value) {
+                    index++
+                    continue
+                }
+                index++
+                _batchProgress.value = BatchProgress(
+                    current = index, total = total, currentPkg = pkg,
+                    succeeded = succeeded, failed = failed
+                )
                 _busyPackages.value = _busyPackages.value + pkg
                 var prepared = false
                 try {
@@ -277,9 +302,121 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             } else {
                 outputDir?.absolutePath ?: "backup folder"
             }
+            _batchProgress.value = BatchProgress(current = total, total = total, succeeded = succeeded, failed = failed)
             _events.emit(BackupEvent.BatchComplete(succeeded, failed, outputDesc))
             _batchRunning.value = false
         }
+    }
+
+    /**
+     * Restore a single app's external data from a SAF backup directory.
+     * Reads {pkg}/external.tar.gz from the tree and feeds it to restoreExternalData.
+     * Returns true if restore succeeded.
+     */
+    suspend fun restoreAppData(entry: AppEntry, safTreeUri: android.net.Uri): Boolean {
+        val pkg = entry.packageName
+        val cr = getApplication<Application>().contentResolver
+        return try {
+            // Find external.tar.gz in the package's backup subdirectory
+            val extUri = findBackupFile(safTreeUri, pkg, "external.tar.gz", cr)
+            if (extUri == null) {
+                Timber.w("No external.tar.gz found for $pkg in backup directory")
+                false
+            } else {
+                cr.openFileDescriptor(extUri, "r")?.use { pfd ->
+                    ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
+                } ?: false
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Restore failed for $pkg")
+            false
+        }
+    }
+
+    /**
+     * Batch restore external data for multiple apps from a SAF backup directory.
+     * Emits progress via [batchProgress] and [RestoreComplete] per app.
+     * Clears app data before restore to ensure clean state.
+     */
+    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri) {
+        if (_batchRunning.value) return
+        if (entries.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _batchRunning.value = true
+            var succeeded = 0
+            var failed = 0
+            val total = entries.size
+            var index = 0
+            for (entry in entries) {
+                val pkg = entry.packageName
+                index++
+                _batchProgress.value = BatchProgress(
+                    current = index, total = total, currentPkg = pkg,
+                    succeeded = succeeded, failed = failed
+                )
+                try {
+                    // Clear existing data first for clean restore
+                    try { ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg) } catch (_: Exception) {}
+                    val ok = restoreAppData(entry, safTreeUri)
+                    if (ok) succeeded++ else failed++
+                    _events.emit(BackupEvent.RestoreComplete(pkg, ok))
+                } catch (e: Exception) {
+                    Timber.e(e, "Batch restore failed for $pkg")
+                    failed++
+                }
+            }
+            _batchProgress.value = BatchProgress(current = total, total = total, succeeded = succeeded, failed = failed)
+            _events.emit(BackupEvent.BatchComplete(succeeded, failed, "restore"))
+            _batchRunning.value = false
+        }
+    }
+
+    /**
+     * Find a backup file (e.g. external.tar.gz) inside a package's subdirectory
+     * of the SAF tree. Returns the document Uri, or null if not found.
+     */
+    private fun findBackupFile(
+        safTreeUri: android.net.Uri, pkg: String, fileName: String,
+        cr: android.content.ContentResolver
+    ): android.net.Uri? {
+        return try {
+            val treeId = android.provider.DocumentsContract.getTreeDocumentId(safTreeUri)
+            val childrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(safTreeUri, treeId)
+            // First try to find the package subdirectory
+            val pkgDirId = queryForDocument(childrenUri, cr, pkg)
+            if (pkgDirId != null) {
+                val pkgChildrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(safTreeUri, pkgDirId)
+                val fileId = queryForDocument(pkgChildrenUri, cr, fileName)
+                if (fileId != null) {
+                    return android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, fileId)
+                }
+            }
+            // Fallback: try flat name "{pkg}_{fileName}" (Downloads provider)
+            val flatId = queryForDocument(childrenUri, cr, "${pkg}_$fileName")
+            if (flatId != null) {
+                android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, flatId)
+            } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun queryForDocument(
+        childrenUri: android.net.Uri, cr: android.content.ContentResolver, displayName: String
+    ): String? {
+        val projection = arrayOf(
+            android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME
+        )
+        cr.query(childrenUri, projection, null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val name = cursor.getString(1)
+                if (name == displayName) {
+                    return cursor.getString(0)
+                }
+            }
+        }
+        return null
     }
 
     fun toggleFreeze(entry: AppEntry) {

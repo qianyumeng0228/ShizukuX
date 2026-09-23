@@ -10,8 +10,13 @@ class BackupAdapter : ListAdapter<BackupViewModel.AppEntry, BackupAppViewHolder>
 
     var onBackupClick: ((BackupViewModel.AppEntry) -> Unit)? = null
     var onFreezeClick: ((BackupViewModel.AppEntry) -> Unit)? = null
+    var onItemClick: ((BackupViewModel.AppEntry) -> Unit)? = null
+    var onItemLongClick: ((BackupViewModel.AppEntry) -> Unit)? = null
+    var onSelectionChanged: ((Int) -> Unit)? = null
 
     private var busyPackages: Set<String> = emptySet()
+    private var selectionMode = false
+    private val selectedPackages = mutableSetOf<String>()
 
     fun setBusy(packages: Set<String>) {
         val old = busyPackages
@@ -23,6 +28,45 @@ class BackupAdapter : ListAdapter<BackupViewModel.AppEntry, BackupAppViewHolder>
         }
     }
 
+    fun isInSelectionMode() = selectionMode
+
+    fun getSelectedCount() = selectedPackages.size
+
+    fun getSelectedPackages() = selectedPackages.toSet()
+
+    fun enterSelectionMode(pkg: String) {
+        selectionMode = true
+        selectedPackages.clear()
+        selectedPackages.add(pkg)
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedPackages.size)
+    }
+
+    fun exitSelectionMode() {
+        selectionMode = false
+        selectedPackages.clear()
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(0)
+    }
+
+    fun toggleSelection(pkg: String) {
+        if (selectedPackages.contains(pkg)) {
+            selectedPackages.remove(pkg)
+        } else {
+            selectedPackages.add(pkg)
+        }
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedPackages.size)
+    }
+
+    fun selectAll() {
+        for (i in 0 until itemCount) {
+            selectedPackages.add(getItem(i).packageName)
+        }
+        notifyDataSetChanged()
+        onSelectionChanged?.invoke(selectedPackages.size)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BackupAppViewHolder {
         val binding = ItemBackupAppBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return BackupAppViewHolder(binding)
@@ -30,7 +74,16 @@ class BackupAdapter : ListAdapter<BackupViewModel.AppEntry, BackupAppViewHolder>
 
     override fun onBindViewHolder(holder: BackupAppViewHolder, position: Int) {
         val entry = getItem(position)
-        holder.bind(entry, entry.packageName in busyPackages, onBackupClick, onFreezeClick)
+        holder.bind(
+            entry,
+            entry.packageName in busyPackages,
+            entry.packageName in selectedPackages,
+            selectionMode,
+            onBackupClick,
+            onFreezeClick,
+            onItemClick,
+            onItemLongClick
+        )
     }
 
     companion object {

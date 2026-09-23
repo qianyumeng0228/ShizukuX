@@ -15,6 +15,14 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
+        <CheckBox
+            android:id="@+id/selection_checkbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:visibility="gone"
+            android:contentDescription="@null" />
+
         <ImageView
             android:id="@+id/app_icon"
             android:layout_width="40dp"

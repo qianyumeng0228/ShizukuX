@@ -11,8 +11,12 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
     fun bind(
         entry: BackupViewModel.AppEntry,
         isBusy: Boolean,
+        isSelected: Boolean,
+        selectionMode: Boolean,
         onBackup: ((BackupViewModel.AppEntry) -> Unit)?,
-        onFreeze: ((BackupViewModel.AppEntry) -> Unit)?
+        onFreeze: ((BackupViewModel.AppEntry) -> Unit)?,
+        onItemClick: ((BackupViewModel.AppEntry) -> Unit)?,
+        onItemLongClick: ((BackupViewModel.AppEntry) -> Unit)?
     ) {
         val context = binding.root.context
         val pm = context.packageManager
@@ -28,6 +32,10 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
         }
 
         binding.busyIndicator.visibility = if (isBusy) View.VISIBLE else View.GONE
+        binding.selectionCheckbox.visibility = if (selectionMode) View.VISIBLE else View.GONE
+        binding.selectionCheckbox.isChecked = isSelected
+        binding.btnBackup.visibility = if (selectionMode) View.GONE else View.VISIBLE
+        binding.btnFreeze.visibility = if (selectionMode) View.GONE else View.VISIBLE
         binding.btnBackup.isEnabled = !isBusy
         binding.btnBackup.setText(if (isBusy) R.string.backup_in_progress else R.string.backup_action_backup)
 
@@ -38,5 +46,12 @@ class BackupAppViewHolder(private val binding: ItemBackupAppBinding) :
 
         binding.btnBackup.setOnClickListener { if (!isBusy) onBackup?.invoke(entry) }
         binding.btnFreeze.setOnClickListener { if (!isBusy) onFreeze?.invoke(entry) }
+        binding.root.setOnClickListener {
+            if (selectionMode) onItemClick?.invoke(entry)
+        }
+        binding.root.setOnLongClickListener {
+            onItemLongClick?.invoke(entry)
+            true
+        }
     }
 }

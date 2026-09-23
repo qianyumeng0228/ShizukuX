@@ -6,6 +6,36 @@
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
+
+    <LinearLayout
+        android:id="@+id/batch_progress_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="?colorSurfaceContainerHigh"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/batch_progress_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?textAppearanceLabelMedium"
+            android:textColor="?colorOnSurface"
+            android:singleLine="true"
+            android:ellipsize="middle" />
+
+        <ProgressBar
+            android:id="@+id/batch_progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:max="100" />
+
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"

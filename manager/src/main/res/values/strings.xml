@@ -1487,4 +1487,25 @@ Please try the command-line method instead.</string>
     <string name="device_control_animations_tile">Animations</string>
     <string name="device_control_operation_failed">Operation failed</string>
     <string name="device_control_service_not_available">Shizuku service not available</string>
+    <string name="backup_batch_progress">Backing up %1$d/%2$d: %3$s</string>
+
+    <string name="backup_restore_selected">Restore selected</string>
+    <string name="backup_select_all">Select all</string>
+    <string name="backup_selected_count">%1$d selected</string>
+    <string name="backup_restore_title">Restore</string>
+    <string name="backup_restore_action">Restore</string>
+    <string name="backup_restore_no_dir">No backup directory configured. Please choose a directory containing backup files first.</string>
+    <string name="backup_restore_no_apps">No valid apps selected for restore</string>
+    <string name="backup_restore_confirm_title">Confirm restore</string>
+    <string name="backup_restore_confirm_msg">This will restore data for %1$d app(s), overwriting existing data:
+
+%2$s
+
+This action cannot be undone. Continue?</string>
+    <string name="backup_restore_success">Restored %1$s</string>
+    <string name="backup_restore_failed">Restore failed: %1$s</string>
+
+    <string name="device_control_airplane_tile">Airplane Mode</string>
+    <string name="device_control_autobrightness_tile">Auto Brightness</string>
+    <string name="device_control_autorotate_tile">Auto Rotate</string>
 </resources>
