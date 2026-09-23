@@ -52,6 +52,14 @@ private fun androidColorScheme(context: Context, darkTheme: Boolean): ColorSchem
     val surfaceVariant = color(MaterialR.attr.colorSurfaceVariant, fallback.surfaceVariant)
     val onSurfaceVariant = color(MaterialR.attr.colorOnSurfaceVariant, fallback.onSurfaceVariant)
     val outline = color(MaterialR.attr.colorOutline, fallback.outline)
+    val scrim = color(MaterialR.attr.scrimBackground, fallback.scrim)
+    val surfaceBright = color(MaterialR.attr.colorSurfaceBright, fallback.surfaceBright)
+    val surfaceDim = color(MaterialR.attr.colorSurfaceDim, fallback.surfaceDim)
+    val surfaceContainer = color(MaterialR.attr.colorSurfaceContainer, fallback.surfaceContainer)
+    val surfaceContainerHigh = color(MaterialR.attr.colorSurfaceContainerHigh, fallback.surfaceContainerHigh)
+    val surfaceContainerHighest = color(MaterialR.attr.colorSurfaceContainerHighest, fallback.surfaceContainerHighest)
+    val surfaceContainerLow = color(MaterialR.attr.colorSurfaceContainerLow, fallback.surfaceContainerLow)
+    val surfaceContainerLowest = color(MaterialR.attr.colorSurfaceContainerLowest, fallback.surfaceContainerLowest)
 
     // darkColorScheme()/lightColorScheme() are plain functions (not a shared type with a common
     // named-argument call), so a stored function reference can't be invoked with named args here -
@@ -70,6 +78,14 @@ private fun androidColorScheme(context: Context, darkTheme: Boolean): ColorSchem
             surface = surface, onSurface = onSurface,
             surfaceVariant = surfaceVariant, onSurfaceVariant = onSurfaceVariant,
             outline = outline,
+            scrim = scrim,
+            surfaceBright = surfaceBright,
+            surfaceDim = surfaceDim,
+            surfaceContainer = surfaceContainer,
+            surfaceContainerHigh = surfaceContainerHigh,
+            surfaceContainerHighest = surfaceContainerHighest,
+            surfaceContainerLow = surfaceContainerLow,
+            surfaceContainerLowest = surfaceContainerLowest,
         )
     } else {
         lightColorScheme(
@@ -85,6 +101,14 @@ private fun androidColorScheme(context: Context, darkTheme: Boolean): ColorSchem
             surface = surface, onSurface = onSurface,
             surfaceVariant = surfaceVariant, onSurfaceVariant = onSurfaceVariant,
             outline = outline,
+            scrim = scrim,
+            surfaceBright = surfaceBright,
+            surfaceDim = surfaceDim,
+            surfaceContainer = surfaceContainer,
+            surfaceContainerHigh = surfaceContainerHigh,
+            surfaceContainerHighest = surfaceContainerHighest,
+            surfaceContainerLow = surfaceContainerLow,
+            surfaceContainerLowest = surfaceContainerLowest,
         )
     }
 }
@@ -116,10 +140,18 @@ fun AppTheme(
     // Belt-and-suspenders: ThemeOverlay.Black (applied via onApplyUserThemeResource) already
     // forces colorSurface/android:colorBackground to black, so this should be redundant with the
     // read above - kept in case a future overlay change misses one of the two attributes.
+    // All surface-container tones are pure black (#496: near-black values like #0D0D0D are visibly
+    // grey on high-contrast OLEDs; AMOLED users expect zero pixels lit in backgrounds).
     if (darkTheme && isBlackNightTheme) {
         colorScheme = colorScheme.copy(
             background = Color.Black,
-            surface = Color.Black
+            surface = Color.Black,
+            surfaceDim = Color.Black,
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainer = Color.Black,
+            surfaceContainerHigh = Color.Black,
+            surfaceContainerHighest = Color.Black,
         )
     }
 

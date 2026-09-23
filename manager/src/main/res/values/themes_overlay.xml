@@ -8,20 +8,17 @@
         <item name="android:colorPrimaryDark">@android:color/black</item>
         <item name="android:colorBackground">@android:color/black</item>
         <item name="colorSurface">@android:color/black</item>
-        <item name="colorSurfaceContainerLow">?colorSurfaceContainerLowest</item>
-        <!-- Cards/settings groups use colorSurfaceContainerHigh (see home_item_container.xml,
-             M3ECardItemDecoration) - dial it down one tone step so AMOLED cards stay close to
-             true black instead of inheriting the base theme's full-contrast High tone. -->
-        <item name="colorSurfaceContainerHigh">?colorSurfaceContainer</item>
-        <!-- shape_edit_control_background.xml (home-card edit-mode drag/remove chip) uses
-             Highest - same one-step-down treatment. This resolves through the High remap above
-             (Android's ?attr resolution is against the fully merged theme, not each item's
-             pre-overlay value), so Highest ties with High/Container here, same as Low already
-             ties with Lowest above. That's fine for this chip specifically: both icons inside it
-             (ic_drag_handle, ic_close_24) are tinted independently via colorControlNormal/
-             colorError, not derived from this background, so they stay visible even if the
-             chip's own background blends into the card behind it. -->
-        <item name="colorSurfaceContainerHighest">?colorSurfaceContainerHigh</item>
+        <!-- AMOLED pure black: all surface-container tones forced to #000000.
+             Previous ?attr forwarding (Low→Lowest, High→Container, Highest→High) left
+             cards visibly grey on OLEDs because the base theme's container tokens are
+             near-black (#0D0D0D etc.), not true black. #496. -->
+        <item name="colorSurfaceBright">@android:color/black</item>
+        <item name="colorSurfaceDim">@android:color/black</item>
+        <item name="colorSurfaceContainerLowest">@android:color/black</item>
+        <item name="colorSurfaceContainerLow">@android:color/black</item>
+        <item name="colorSurfaceContainer">@android:color/black</item>
+        <item name="colorSurfaceContainerHigh">@android:color/black</item>
+        <item name="colorSurfaceContainerHighest">@android:color/black</item>
     </style>
 
     <style name="ThemeOverlay.DynamicColors.Light" parent="ThemeOverlay.Material3.DynamicColors.Light.Shizuku"/>
