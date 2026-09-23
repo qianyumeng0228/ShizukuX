@@ -27,6 +27,7 @@ class AppBackupActivity : AppBarActivity() {
     private lateinit var adapter: BackupAdapter
     private var includeSystem = false
     private var backupAllItem: MenuItem? = null
+    private var lastRestoredPkg: String? = null
 
     private val directoryPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) {
@@ -174,16 +175,26 @@ class AppBackupActivity : AppBarActivity() {
                                 getString(R.string.backup_app_complete, event.pkg, event.path),
                                 Snackbar.LENGTH_LONG
                             ).show()
-                        is BackupViewModel.BackupEvent.BatchComplete ->
-                            Snackbar.make(
+                        is BackupViewModel.BackupEvent.BatchComplete -> {
+                            val snackbar = Snackbar.make(
                                 rootView,
                                 getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path),
                                 Snackbar.LENGTH_LONG
-                            ).show()
+                            )
+                            snackbar.setAction(R.string.backup_history_action) { showRestoreHistory() }
+                            snackbar.show()
+                        }
                         is BackupViewModel.BackupEvent.RestoreComplete -> {
+                            lastRestoredPkg = event.pkg
                             val msg = if (event.success) R.string.backup_restore_success
                                       else R.string.backup_restore_failed
-                            Snackbar.make(rootView, getString(msg, event.pkg), Snackbar.LENGTH_SHORT).show()
+                            val snackbar = Snackbar.make(rootView, getString(msg, event.pkg), Snackbar.LENGTH_LONG)
+                            if (event.success) {
+                                snackbar.setAction(R.string.backup_rollback_action) {
+                                    showSnapshotSelectionDialog(event.pkg)
+                                }
+                            }
+                            snackbar.show()
                         }
                         is BackupViewModel.BackupEvent.FreezeChanged -> {
                             val msg = if (event.nowFrozen) R.string.backup_freeze_success else R.string.backup_unfreeze_success
@@ -236,6 +247,9 @@ class AppBackupActivity : AppBarActivity() {
         // Add choose export directory as a dynamic menu item
         menu.add(0, MENU_CHOOSE_DIR, 100, R.string.backup_choose_export_dir)
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+        // Add restore history
+        menu.add(0, MENU_HISTORY, 101, R.string.backup_history_title)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
 
         val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem?.actionView as? SearchView
@@ -282,6 +296,7 @@ class AppBackupActivity : AppBarActivity() {
                 true
             }
             MENU_CHOOSE_DIR -> { directoryPicker.launch(null); true }
+            MENU_HISTORY -> { showRestoreHistory(); true }
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -362,6 +377,106 @@ class AppBackupActivity : AppBarActivity() {
             .show()
     }
 
+    /**
+     * Show a dialog listing available pre-restore snapshots for an app.
+     * Selecting a snapshot starts a rollback restore from that snapshot.
+     */
+    private fun showSnapshotSelectionDialog(pkg: String) {
+        val snapshots = PreRestoreManager.getSnapshots(this, pkg)
+        if (snapshots.isEmpty()) {
+            Snackbar.make(rootView, R.string.backup_rollback_no_snapshots, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        val displayNames = snapshots.map { PreRestoreManager.formatForDisplay(it) }.toTypedArray()
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.backup_rollback_select_snapshot)
+            .setSingleChoiceItems(displayNames, 0) { dialog, which ->
+                val selectedTimestamp = snapshots[which]
+                dialog.dismiss()
+                showRollbackConfirmation(pkg, selectedTimestamp)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * Show secondary confirmation for rollback, then perform rollback restore.
+     */
+    private fun showRollbackConfirmation(pkg: String, snapshotTimestamp: String) {
+        val entry = findEntryByPkg(pkg) ?: return
+        val safUri = getSafUri() ?: run {
+            Snackbar.make(rootView, R.string.backup_restore_no_dir, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.backup_rollback_confirm_title)
+            .setMessage(getString(R.string.backup_rollback_confirm_msg, entry.label, PreRestoreManager.formatForDisplay(snapshotTimestamp)))
+            .setPositiveButton(R.string.backup_rollback_action) { _, _ ->
+                viewModel.restoreAll(listOf(entry), safUri, includeInternal = true, snapshotTimestamp = snapshotTimestamp, isRollback = true)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun findEntryByPkg(pkg: String): BackupViewModel.AppEntry? {
+        val state = viewModel.state.value
+        return if (state is BackupViewModel.UiState.Loaded) {
+            state.apps.firstOrNull { it.packageName == pkg }
+        } else null
+    }
+
+    /**
+     * Show restore history dialog with list of past restore operations.
+     * Each entry can be rolled back or deleted.
+     */
+    private fun showRestoreHistory() {
+        val entries = RestoreHistoryManager.getEntries(this)
+        if (entries.isEmpty()) {
+            Snackbar.make(rootView, R.string.backup_history_empty, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        val items = entries.map { entry ->
+            val status = if (entry.success) "✓" else "✗"
+            val rollbackTag = if (entry.isRollback) " [Rollback]" else ""
+            "${entry.formatTime()}  $status  ${entry.appLabel} (${entry.scopeDisplay()})$rollbackTag"
+        }.toTypedArray()
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.backup_history_title)
+            .setItems(items) { _, which ->
+                val entry = entries[which]
+                // Show options dialog for the selected entry
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(entry.appLabel)
+                    .setMessage("${entry.formatTime()}\nScope: ${entry.scopeDisplay()}\nStatus: ${if (entry.success) "Success" else "Failed"}${if (entry.isRollback) "\n(Rollback from ${entry.snapshotTimestamp?.let { PreRestoreManager.formatForDisplay(it) } ?: "?"})" else ""}")
+                    .setPositiveButton(R.string.backup_rollback_action) { _, _ ->
+                        if (entry.success && !entry.isRollback) {
+                            showSnapshotSelectionDialog(entry.packageName)
+                        } else {
+                            Snackbar.make(rootView, R.string.backup_rollback_not_available, Snackbar.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNeutralButton(R.string.backup_history_delete) { _, _ ->
+                        RestoreHistoryManager.deleteEntry(this, entry.id)
+                        Snackbar.make(rootView, R.string.backup_history_deleted, Snackbar.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+            .setNeutralButton(R.string.backup_history_clear_all) { _, _ ->
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.backup_history_clear_all_confirm)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        RestoreHistoryManager.clearAll(this)
+                        Snackbar.make(rootView, R.string.backup_history_cleared, Snackbar.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (adapter.isInSelectionMode()) {
@@ -373,6 +488,7 @@ class AppBackupActivity : AppBarActivity() {
 
     companion object {
         private const val MENU_CHOOSE_DIR = 1001
+        private const val MENU_HISTORY = 1005
         private const val MENU_RESTORE = 1002
         private const val MENU_SELECT_ALL = 1003
         private const val MENU_CANCEL = 1004

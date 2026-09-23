@@ -1511,4 +1511,19 @@ This action cannot be undone. Continue?</string>
     <string name="backup_restore_include_internal">Also restore internal app data (/data/data/)</string>
     <string name="backup_restore_auto_backup_notice">⚠ Current data will be automatically backed up (with .pre-restore suffix) before restore. If backup fails, restore will be aborted to protect your data.</string>
     <string name="backup_action_restore">Restore</string>
+
+    <string name="backup_rollback_action">Rollback</string>
+    <string name="backup_rollback_select_snapshot">Select snapshot to rollback</string>
+    <string name="backup_rollback_no_snapshots">No pre-restore snapshots available</string>
+    <string name="backup_rollback_confirm_title">Confirm rollback</string>
+    <string name="backup_rollback_confirm_msg">Rollback %1$s to state from %2$s? This will overwrite current data.</string>
+    <string name="backup_rollback_not_available">Rollback not available for this entry</string>
+    <string name="backup_history_action">History</string>
+    <string name="backup_history_title">Restore History</string>
+    <string name="backup_history_empty">No restore history yet</string>
+    <string name="backup_history_delete">Delete</string>
+    <string name="backup_history_deleted">History entry deleted</string>
+    <string name="backup_history_clear_all">Clear all</string>
+    <string name="backup_history_clear_all_confirm">Clear all restore history? This cannot be undone.</string>
+    <string name="backup_history_cleared">All history cleared</string>
 </resources>

@@ -309,31 +309,39 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Back up current app data before restore, using .pre-restore suffix to avoid
-     * overwriting existing backups. Called automatically by [restoreAppData].
+     * Back up current app data before restore, using timestamp-based .pre-restore names
+     * to retain multiple snapshots. Called automatically by [restoreAppData].
      *
-     * Backs up both internal data (data.pre-restore.tar.gz) and external data
-     * (external.pre-restore.tar.gz) into the same SAF directory structure.
+     * Backs up both internal data (data.pre-restore.{timestamp}.tar.gz) and external data
+     * (external.pre-restore.{timestamp}.tar.gz) into the same SAF directory structure.
+     * Records the snapshot timestamp via [PreRestoreManager] for rollback selection.
      *
-     * Returns true if at least one component was backed up successfully.
+     * Returns the timestamp string if at least one component was backed up, or null on failure.
      */
-    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver): Boolean {
+    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver): String? {
+        val timestamp = PreRestoreManager.generateTimestamp()
+        val dataName = PreRestoreManager.getSnapshotFileName("data", timestamp)
+        val extName = PreRestoreManager.getSnapshotFileName("external", timestamp)
         var backedUpSomething = false
         // Internal data (requires app debuggable — caller must prepareTempDebug first)
         val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
         if (dataPfd != null) {
-            if (writeBackupStream(safTreeUri, null, pkg, "data.pre-restore.tar.gz", cr) { out ->
+            if (writeBackupStream(safTreeUri, null, pkg, dataName, cr) { out ->
                 dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
             }) backedUpSomething = true
         }
         // External data (shell-level, no debuggable required)
         val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
         if (extPfd != null) {
-            if (writeBackupStream(safTreeUri, null, pkg, "external.pre-restore.tar.gz", cr) { out ->
+            if (writeBackupStream(safTreeUri, null, pkg, extName, cr) { out ->
                 extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
             }) backedUpSomething = true
         }
-        return backedUpSomething
+        if (backedUpSomething) {
+            PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp)
+            return timestamp
+        }
+        return null
     }
 
     /**
@@ -352,22 +360,32 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun restoreAppData(
         entry: AppEntry,
         safTreeUri: android.net.Uri,
-        includeInternal: Boolean = true
+        includeInternal: Boolean = true,
+        snapshotTimestamp: String? = null,
+        isRollback: Boolean = false
     ): Boolean {
         val pkg = entry.packageName
         val cr = getApplication<Application>().contentResolver
         var prepared = false
+        // Determine source file names: normal restore uses data.tar.gz, rollback uses snapshot
+        val dataFileName = if (snapshotTimestamp != null)
+            PreRestoreManager.getSnapshotFileName("data", snapshotTimestamp) else "data.tar.gz"
+        val extFileName = if (snapshotTimestamp != null)
+            PreRestoreManager.getSnapshotFileName("external", snapshotTimestamp) else "external.tar.gz"
         return try {
             // Make app debuggable so run-as can access /data/data/<pkg>/
             prepared = try {
                 ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
             } catch (_: Exception) { false }
 
-            // Auto-backup current data before restore (rollback safety)
-            val preRestoreOk = backupPreRestore(pkg, safTreeUri, cr)
-            if (!preRestoreOk) {
-                Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
-                return@restoreAppData false
+            // Auto-backup current data before restore (skip for rollbacks — we're restoring FROM a snapshot)
+            if (!isRollback) {
+                val preRestoreTs = backupPreRestore(pkg, safTreeUri, cr)
+                if (preRestoreTs == null) {
+                    Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
+                    recordRestoreHistory(entry, includeInternal, success = false, isRollback = false, snapshotTimestamp = null)
+                    return@restoreAppData false
+                }
             }
 
             // Clear existing data for clean restore state
@@ -375,9 +393,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
             var restoredSomething = false
 
-            // 1. Restore internal data (/data/data/<pkg>/) from data.tar.gz
+            // 1. Restore internal data (/data/data/<pkg>/)
             if (includeInternal) {
-                val dataUri = findBackupFile(safTreeUri, pkg, "data.tar.gz", cr)
+                val dataUri = findBackupFile(safTreeUri, pkg, dataFileName, cr)
                 if (dataUri != null) {
                     val ok = cr.openFileDescriptor(dataUri, "r")?.use { pfd ->
                         ShizukuXAPI.ApkPatcher.restoreDataDir(pkg, pfd)
@@ -388,8 +406,8 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            // 2. Restore external data (/sdcard/Android/data/<pkg>/) from external.tar.gz
-            val extUri = findBackupFile(safTreeUri, pkg, "external.tar.gz", cr)
+            // 2. Restore external data (/sdcard/Android/data/<pkg>/)
+            val extUri = findBackupFile(safTreeUri, pkg, extFileName, cr)
             if (extUri != null) {
                 val ok = cr.openFileDescriptor(extUri, "r")?.use { pfd ->
                     ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
@@ -399,13 +417,32 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 Timber.w("No external.tar.gz found for $pkg (external data skip)")
             }
 
+            recordRestoreHistory(entry, includeInternal, restoredSomething, isRollback, snapshotTimestamp)
             restoredSomething
         } catch (e: Exception) {
             Timber.e(e, "Restore failed for $pkg")
+            recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
             false
         } finally {
             if (prepared) try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (_: Exception) {}
         }
+    }
+
+    private fun recordRestoreHistory(
+        entry: AppEntry, includeInternal: Boolean, success: Boolean,
+        isRollback: Boolean, snapshotTimestamp: String?
+    ) {
+        val scope = if (includeInternal) "both" else "external"
+        RestoreHistoryManager.addEntry(getApplication(), RestoreHistoryManager.Entry(
+            id = java.util.UUID.randomUUID().toString(),
+            timestamp = System.currentTimeMillis(),
+            packageName = entry.packageName,
+            appLabel = entry.label,
+            scope = scope,
+            success = success,
+            isRollback = isRollback,
+            snapshotTimestamp = snapshotTimestamp
+        ))
     }
 
     /**
@@ -413,7 +450,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      * Emits progress via [batchProgress] and [RestoreComplete] per app.
      * Clears app data before restore to ensure clean state.
      */
-    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri, includeInternal: Boolean = true) {
+    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri, includeInternal: Boolean = true, snapshotTimestamp: String? = null, isRollback: Boolean = false) {
         if (_batchRunning.value) return
         if (entries.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
@@ -430,7 +467,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     succeeded = succeeded, failed = failed
                 )
                 try {
-                    val ok = restoreAppData(entry, safTreeUri, includeInternal)
+                    val ok = restoreAppData(entry, safTreeUri, includeInternal, snapshotTimestamp, isRollback)
                     if (ok) succeeded++ else failed++
                     _events.emit(BackupEvent.RestoreComplete(pkg, ok))
                 } catch (e: Exception) {
