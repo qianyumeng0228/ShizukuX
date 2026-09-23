@@ -1470,4 +1470,12 @@ Please try the command-line method instead.</string>
     <string name="device_control_reboot_recovery">Reboot Recovery</string>
     <string name="device_control_shutdown">Shutdown</string>
     <string name="device_control_status_ready">Ready</string>
+
+    <!-- Backup SAF export directory -->
+    <string name="backup_choose_export_dir">Choose backup directory</string>
+    <string name="backup_export_dir_set">Backups will be saved to: %1$s</string>
+
+    <!-- Device Control settings entry -->
+    <string name="settings_device_control_title">Device Control</string>
+    <string name="settings_device_control_summary">Quick toggles for connectivity, display, audio, and power via Shizuku</string>
 </resources>

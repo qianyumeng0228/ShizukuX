@@ -12,9 +12,13 @@ import kotlinx.coroutines.launch
 import rikka.shizuku.ShizukuXAPI
 import af.shizuku.manager.utils.ShizukuStateMachine
 import timber.log.Timber
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.DocumentsContract
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.OutputStream
 
 class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -88,14 +92,14 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun backupAppData(entry: AppEntry, outputDir: File) {
+    fun backupAppData(entry: AppEntry, outputDir: File? = null, safTreeUri: Uri? = null) {
         val pkg = entry.packageName
         if (pkg in _busyPackages.value) return
         viewModelScope.launch(Dispatchers.IO) {
             _busyPackages.value = _busyPackages.value + pkg
             var prepared = false
             try {
-                val pkgDir = File(outputDir, pkg).also { it.mkdirs() }
+                val cr = getApplication<Application>().contentResolver
 
                 ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
 
@@ -115,13 +119,11 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     null
                 }
                 if (dataPfd != null) {
-                    val dataFile = File(pkgDir, "data.tar.gz")
-                    dataPfd.use { pfd ->
-                        FileInputStream(pfd.fileDescriptor).use { input ->
-                            FileOutputStream(dataFile).use { input.copyTo(it) }
+                    if (writeBackupStream(safTreeUri, outputDir, pkg, "data.tar.gz", cr) { out ->
+                        dataPfd.use { pfd ->
+                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
                         }
-                    }
-                    backedUpSomething = true
+                    }) backedUpSomething = true
                 }
 
                 val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (e: Exception) {
@@ -129,17 +131,20 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     null
                 }
                 if (extPfd != null) {
-                    val extFile = File(pkgDir, "external.tar.gz")
-                    extPfd.use { pfd ->
-                        FileInputStream(pfd.fileDescriptor).use { input ->
-                            FileOutputStream(extFile).use { input.copyTo(it) }
+                    if (writeBackupStream(safTreeUri, outputDir, pkg, "external.tar.gz", cr) { out ->
+                        extPfd.use { pfd ->
+                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
                         }
-                    }
-                    backedUpSomething = true
+                    }) backedUpSomething = true
                 }
 
                 if (backedUpSomething) {
-                    _events.emit(BackupEvent.BackupComplete(pkg, pkgDir.absolutePath))
+                    val outputDesc = if (safTreeUri != null) {
+                        safTreeUri.lastPathSegment ?: "backup folder"
+                    } else {
+                        outputDir?.absolutePath ?: "backup folder"
+                    }
+                    _events.emit(BackupEvent.BackupComplete(pkg, outputDesc))
                 } else {
                     _events.emit(BackupEvent.Failure("No data could be read for $pkg. The app may block backup access."))
                 }
@@ -154,6 +159,48 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 _busyPackages.value = _busyPackages.value - pkg
             }
+        }
+    }
+
+    private fun writeBackupStream(
+        safTreeUri: Uri?,
+        outputDir: File?,
+        pkg: String,
+        fileName: String,
+        cr: ContentResolver,
+        block: (OutputStream) -> Unit
+    ): Boolean {
+        if (safTreeUri != null) {
+            val treeDocUri = DocumentsContract.buildDocumentUriUsingTree(
+                safTreeUri, DocumentsContract.getTreeDocumentId(safTreeUri)
+            )
+            // Try to create a per-package subdirectory; some providers (e.g. Downloads) don't
+            // support MIME_TYPE_DIR and return null — fall back to a flat "{pkg}_{file}" name.
+            val parentUri = try {
+                DocumentsContract.createDocument(
+                    cr, treeDocUri, DocumentsContract.Document.MIME_TYPE_DIR, pkg
+                )
+            } catch (_: Exception) { null }
+
+            val (targetUri, targetName) = if (parentUri != null) {
+                parentUri to fileName
+            } else {
+                treeDocUri to "${pkg}_$fileName"
+            }
+
+            val fileUri = try {
+                DocumentsContract.createDocument(cr, targetUri, "application/octet-stream", targetName)
+            } catch (e: Exception) {
+                Timber.w(e, "createDocument failed for $pkg/$targetName")
+                null
+            } ?: return false
+
+            cr.openOutputStream(fileUri)?.use { block(it) }
+            return true
+        } else {
+            val pkgDir = File(outputDir!!, pkg).also { it.mkdirs() }
+            FileOutputStream(File(pkgDir, fileName)).use { block(it) }
+            return true
         }
     }
 

@@ -103,6 +103,7 @@
     <application
         android:name=".ShizukuApplication"
         android:allowBackup="true"
+        android:backupAgent=".ShizukuBackupAgent"
         android:autoRevokePermissions="allowed"
         android:banner="@drawable/ic_launcher"
         android:dataExtractionRules="@xml/data_extraction_rules"

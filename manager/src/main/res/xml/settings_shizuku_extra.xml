@@ -106,6 +106,12 @@
             app:infoDetail="@string/help_avf_manager_detail"
             app:badgeType="plus" />
 
+        <Preference
+            android:key="device_control"
+            android:title="@string/settings_device_control_title"
+            android:summary="@string/settings_device_control_summary"
+            android:icon="@drawable/ic_settings_suggest_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

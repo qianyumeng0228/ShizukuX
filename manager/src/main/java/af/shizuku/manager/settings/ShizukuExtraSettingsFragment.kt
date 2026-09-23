@@ -385,6 +385,12 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        val deviceControlPref = findPreference<Preference>("device_control")
+        deviceControlPref?.setOnPreferenceClickListener {
+            startActivity(android.content.Intent(requireContext(), af.shizuku.manager.devicecontrol.DeviceControlActivity::class.java))
+            true
+        }
+
         val hideDisabledPref = findPreference<TwoStatePreference>("hide_disabled_plus_features")
         hideDisabledPref?.isChecked = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
         hideDisabledPref?.setOnPreferenceChangeListener { _, newValue ->

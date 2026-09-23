@@ -1,8 +1,11 @@
 package af.shizuku.manager.backup
 
+import android.net.Uri
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.ActivityAppBackupBinding
 import kotlinx.coroutines.launch
 
@@ -19,6 +23,32 @@ class AppBackupActivity : AppBarActivity() {
     private val viewModel: BackupViewModel by viewModels()
     private lateinit var binding: ActivityAppBackupBinding
     private lateinit var adapter: BackupAdapter
+
+    private val directoryPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
+        if (uri != null) {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            )
+            ShizukuSettings.setExportDirUri(uri.toString())
+            com.google.android.material.snackbar.Snackbar.make(
+                rootView,
+                getString(R.string.backup_export_dir_set, uri.lastPathSegment ?: ""),
+                com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+            ).show()
+        }
+    }
+
+    private fun getSafUri(): Uri? {
+        return ShizukuSettings.getExportDirUri()?.let { uriStr ->
+            val uri = Uri.parse(uriStr)
+            val hasWritePermission = contentResolver.persistedUriPermissions.any {
+                it.uri == uri && it.isWritePermission
+            }
+            if (hasWritePermission) uri else null
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,8 +66,13 @@ class AppBackupActivity : AppBarActivity() {
         binding.recyclerView.adapter = adapter
 
         adapter.onBackupClick = { entry ->
-            val outputDir = getExternalFilesDir(null) ?: filesDir
-            viewModel.backupAppData(entry, outputDir)
+            val safUri = getSafUri()
+            if (safUri != null) {
+                viewModel.backupAppData(entry, safTreeUri = safUri)
+            } else {
+                val outputDir = getExternalFilesDir(null) ?: filesDir
+                viewModel.backupAppData(entry, outputDir = outputDir)
+            }
         }
         adapter.onFreezeClick = { entry ->
             viewModel.toggleFreeze(entry)
@@ -112,11 +147,21 @@ class AppBackupActivity : AppBarActivity() {
         binding.errorText.text = msg
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menu.add(0, MENU_CHOOSE_DIR, 0, R.string.backup_choose_export_dir)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+        return true
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            finish()
-            return true
+        return when (item.itemId) {
+            android.R.id.home -> { finish(); true }
+            MENU_CHOOSE_DIR -> { directoryPicker.launch(null); true }
+            else -> super.onOptionsItemSelected(item)
         }
-        return super.onOptionsItemSelected(item)
+    }
+
+    companion object {
+        private const val MENU_CHOOSE_DIR = 1001
     }
 }

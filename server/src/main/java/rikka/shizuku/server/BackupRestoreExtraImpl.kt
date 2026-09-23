@@ -7,6 +7,7 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.os.ServiceManager
 import android.util.Log
+import af.shizuku.common.compat.InstalledPackagesCompat
 import af.shizuku.server.IBackupRestoreExtra
 import java.io.File
 import java.io.InputStream
@@ -73,17 +74,46 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     // ── Package Inventory ─────────────────────────────────────────────────────
 
     override fun listInstalledPackages(includeSystem: Boolean): List<Bundle> {
-        // pm list packages -f gives "package:<path>=<pkg>" lines.
-        // pm dump <pkg> is expensive per-package; use pm list + pm path for bulk inventory.
+        val userId = callingUserId()
+        // Primary: InstalledPackagesCompat — works on Android 17 without exec
+        try {
+            val packages = InstalledPackagesCompat.getInstalledPackagesNoThrow(0L, userId)
+            if (packages.isNotEmpty()) {
+                return packages
+                    .filter { pi -> includeSystem || (pi.applicationInfo?.flags?.and(android.content.pm.ApplicationInfo.FLAG_SYSTEM) == 0) }
+                    .map { pi ->
+                        val ai = pi.applicationInfo
+                        val flags = ai?.flags ?: 0
+                        Bundle().apply {
+                            putString("packageName", pi.packageName)
+                            putString("versionName", pi.versionName ?: "")
+                            putLong("versionCode", pi.longVersionCode)
+                            putString("sourceDir", ai?.sourceDir)
+                            putString("dataDir", ai?.dataDir)
+                            putInt("uid", ai?.uid ?: -1)
+                            putInt("targetSdk", ai?.targetSdkVersion ?: -1)
+                            putBoolean("isSystem", flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0)
+                            putBoolean("isDebuggable", flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
+                            putBoolean("allowBackup", flags and android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP != 0)
+                            putBoolean("isFrozen", ai?.enabled == false)
+                        }
+                    }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "listInstalledPackages IPC failed, falling back to exec", e)
+        }
+        // Fallback: pm list packages exec
+        val disabledPkgs = try {
+            exec("pm", "list", "packages", "-d").lines()
+                .map { it.removePrefix("package:").trim() }.toHashSet()
+        } catch (_: Exception) { emptySet<String>() }
         val args = if (includeSystem)
             arrayOf("pm", "list", "packages", "-f", "--show-versioncode")
         else
             arrayOf("pm", "list", "packages", "-f", "--show-versioncode", "-3")
-
         val output = exec(*args)
         val result = mutableListOf<Bundle>()
         for (line in output.lines()) {
-            // Format: "package:<apkPath>=<pkgName>  versionCode:<N>"
             val pkgSection = line.removePrefix("package:").trim()
             val eqIdx = pkgSection.lastIndexOf('=')
             if (eqIdx < 0) continue
@@ -93,14 +123,15 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             val packageName = parts[0]
             val versionCode = parts.find { it.startsWith("versionCode:") }
                 ?.removePrefix("versionCode:")?.toLongOrNull() ?: -1L
-
-            val b = Bundle()
-            b.putString("packageName", packageName)
-            b.putString("sourceDir", apkPath)
-            b.putLong("versionCode", versionCode)
-            // Lightweight flags: avoid pm dump per-package for the bulk list
-            b.putBoolean("isSystem", apkPath.startsWith("/system/") || apkPath.startsWith("/product/") || apkPath.startsWith("/vendor/"))
-            result.add(b)
+            result.add(Bundle().apply {
+                putString("packageName", packageName)
+                putString("versionName", "")
+                putLong("versionCode", versionCode)
+                putString("sourceDir", apkPath)
+                putBoolean("isSystem", apkPath.startsWith("/system/") || apkPath.startsWith("/product/") || apkPath.startsWith("/vendor/"))
+                putBoolean("allowBackup", true)
+                putBoolean("isFrozen", packageName in disabledPkgs)
+            })
         }
         return result
     }
