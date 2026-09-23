@@ -6,7 +6,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import rikka.core.content.asActivity
+import android.net.Uri
 import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.backup.AppBackupActivity
 import af.shizuku.manager.databinding.HomeAppBackupItemBinding
 import af.shizuku.manager.databinding.HomeItemContainerBinding
@@ -63,7 +65,25 @@ class AppBackupViewHolder(
         } else {
             itemView.isEnabled = true
             title.setText(R.string.home_backup_title)
-            summary.setText(R.string.home_backup_summary)
+            val exportDir = getConfiguredExportDir(context)
+            if (exportDir != null) {
+                summary.text = context.getString(R.string.home_backup_summary_saf, exportDir)
+            } else {
+                summary.setText(R.string.home_backup_summary)
+            }
+        }
+    }
+
+    private fun getConfiguredExportDir(context: android.content.Context): String? {
+        val uriStr = ShizukuSettings.getExportDirUri() ?: return null
+        return try {
+            val uri = Uri.parse(uriStr)
+            val hasPermission = context.contentResolver.persistedUriPermissions.any {
+                it.uri == uri && it.isWritePermission
+            }
+            if (hasPermission) uri.lastPathSegment ?: uriStr else null
+        } catch (_: Exception) {
+            null
         }
     }
 

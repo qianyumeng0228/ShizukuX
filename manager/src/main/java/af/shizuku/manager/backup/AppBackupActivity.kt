@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -23,6 +24,8 @@ class AppBackupActivity : AppBarActivity() {
     private val viewModel: BackupViewModel by viewModels()
     private lateinit var binding: ActivityAppBackupBinding
     private lateinit var adapter: BackupAdapter
+    private var includeSystem = false
+    private var backupAllItem: MenuItem? = null
 
     private val directoryPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) {
@@ -106,12 +109,26 @@ class AppBackupActivity : AppBarActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.batchRunning.collect { running ->
+                    backupAllItem?.isEnabled = !running
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.events.collect { event ->
                     when (event) {
                         is BackupViewModel.BackupEvent.BackupComplete ->
                             Snackbar.make(
                                 rootView,
                                 getString(R.string.backup_app_complete, event.pkg, event.path),
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        is BackupViewModel.BackupEvent.BatchComplete ->
+                            Snackbar.make(
+                                rootView,
+                                getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path),
                                 Snackbar.LENGTH_LONG
                             ).show()
                         is BackupViewModel.BackupEvent.FreezeChanged -> {
@@ -125,7 +142,7 @@ class AppBackupActivity : AppBarActivity() {
             }
         }
 
-        viewModel.loadApps()
+        viewModel.loadApps(includeSystem)
     }
 
     private fun showLoading() {
@@ -148,14 +165,52 @@ class AppBackupActivity : AppBarActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menu.add(0, MENU_CHOOSE_DIR, 0, R.string.backup_choose_export_dir)
+        menuInflater.inflate(R.menu.app_backup_menu, menu)
+        menu.findItem(R.id.action_show_system)?.isChecked = includeSystem
+        backupAllItem = menu.findItem(R.id.action_backup_all)
+
+        // Add choose export directory as a dynamic menu item
+        menu.add(0, MENU_CHOOSE_DIR, 100, R.string.backup_choose_export_dir)
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+
+        val searchItem = menu.findItem(R.id.action_search)
+        val searchView = searchItem?.actionView as? SearchView
+        searchView?.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?) = true
+            override fun onQueryTextChange(newText: String?): Boolean {
+                viewModel.setQuery(newText.orEmpty())
+                return true
+            }
+        })
+        searchItem?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(item: MenuItem) = true
+            override fun onMenuItemActionCollapse(item: MenuItem): Boolean {
+                viewModel.setQuery("")
+                return true
+            }
+        })
+
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> { finish(); true }
+            R.id.action_backup_all -> {
+                val safUri = getSafUri()
+                if (safUri != null) {
+                    viewModel.backupAll(safTreeUri = safUri)
+                } else {
+                    viewModel.backupAll(outputDir = getExternalFilesDir(null) ?: filesDir)
+                }
+                true
+            }
+            R.id.action_show_system -> {
+                includeSystem = !includeSystem
+                item.isChecked = includeSystem
+                viewModel.loadApps(includeSystem)
+                true
+            }
             MENU_CHOOSE_DIR -> { directoryPicker.launch(null); true }
             else -> super.onOptionsItemSelected(item)
         }

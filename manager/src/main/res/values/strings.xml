@@ -1478,4 +1478,13 @@ Please try the command-line method instead.</string>
     <!-- Device Control settings entry -->
     <string name="settings_device_control_title">Device Control</string>
     <string name="settings_device_control_summary">Quick toggles for connectivity, display, audio, and power via Shizuku</string>
+
+    <string name="backup_all_title">Back up all</string>
+    <string name="backup_show_system_apps">Show system apps</string>
+    <string name="settings_search">Search</string>
+    <string name="home_backup_summary_saf">Backups saved to %1$s</string>
+
+    <string name="device_control_animations_tile">Animations</string>
+    <string name="device_control_operation_failed">Operation failed</string>
+    <string name="device_control_service_not_available">Shizuku service not available</string>
 </resources>

@@ -40,6 +40,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
     sealed class BackupEvent {
         data class BackupComplete(val pkg: String, val path: String) : BackupEvent()
+        data class BatchComplete(val succeeded: Int, val failed: Int, val path: String) : BackupEvent()
         data class FreezeChanged(val pkg: String, val nowFrozen: Boolean) : BackupEvent()
         data class Failure(val msg: String) : BackupEvent()
     }
@@ -53,6 +54,27 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     // Packages currently being backed up — drives per-row busy state in the adapter.
     private val _busyPackages = MutableStateFlow<Set<String>>(emptySet())
     val busyPackages: StateFlow<Set<String>> = _busyPackages
+
+    // Batch backup state
+    private val _batchRunning = MutableStateFlow(false)
+    val batchRunning: StateFlow<Boolean> = _batchRunning
+
+    // Master app list (unfiltered); _state holds the filtered view
+    @Volatile private var allApps: List<AppEntry> = emptyList()
+    private val _query = MutableStateFlow("")
+
+    fun setQuery(q: String) {
+        _query.value = q
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        if (allApps.isEmpty()) return
+        val q = _query.value.trim().lowercase()
+        val filtered = if (q.isEmpty()) allApps
+        else allApps.filter { it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q) }
+        _state.value = UiState.Loaded(filtered)
+    }
 
     fun loadApps(includeSystem: Boolean = false) {
         _state.value = UiState.Loading
@@ -84,7 +106,8 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                         )
                     }
                     .sortedBy { it.label.lowercase() }
-                _state.value = UiState.Loaded(entries)
+                allApps = entries
+                applyFilter()
             } catch (e: Exception) {
                 Timber.e(e, "loadApps failed")
                 _state.value = UiState.Error(e.message ?: "Unknown error")
@@ -204,6 +227,61 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Sequentially backs up all currently loaded (filtered) user apps.
+     * Emits [BackupEvent.BatchComplete] with succeeded/failed counts when done.
+     */
+    fun backupAll(outputDir: java.io.File? = null, safTreeUri: android.net.Uri? = null) {
+        if (_batchRunning.value) return
+        val apps = allApps.ifEmpty { return }
+        viewModelScope.launch(Dispatchers.IO) {
+            _batchRunning.value = true
+            var succeeded = 0
+            var failed = 0
+            val cr = getApplication<Application>().contentResolver
+            for (entry in apps) {
+                val pkg = entry.packageName
+                if (pkg in _busyPackages.value) continue
+                _busyPackages.value = _busyPackages.value + pkg
+                var prepared = false
+                try {
+                    ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
+                    prepared = try {
+                        ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
+                    } catch (_: Exception) { false }
+
+                    var backedUpSomething = false
+                    val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
+                    if (dataPfd != null) {
+                        if (writeBackupStream(safTreeUri, outputDir, pkg, "data.tar.gz", cr) { out ->
+                            dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
+                        }) backedUpSomething = true
+                    }
+                    val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
+                    if (extPfd != null) {
+                        if (writeBackupStream(safTreeUri, outputDir, pkg, "external.tar.gz", cr) { out ->
+                            extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
+                        }) backedUpSomething = true
+                    }
+                    if (backedUpSomething) succeeded++ else failed++
+                } catch (e: Exception) {
+                    Timber.e(e, "Batch backup failed for $pkg")
+                    failed++
+                } finally {
+                    if (prepared) try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (_: Exception) {}
+                    _busyPackages.value = _busyPackages.value - pkg
+                }
+            }
+            val outputDesc = if (safTreeUri != null) {
+                safTreeUri.lastPathSegment ?: "backup folder"
+            } else {
+                outputDir?.absolutePath ?: "backup folder"
+            }
+            _events.emit(BackupEvent.BatchComplete(succeeded, failed, outputDesc))
+            _batchRunning.value = false
+        }
+    }
+
     fun toggleFreeze(entry: AppEntry) {
         val pkg = entry.packageName
         viewModelScope.launch(Dispatchers.IO) {
@@ -215,13 +293,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     ShizukuXAPI.BackupRestoreExtra.freezeApp(pkg)
                     true
                 }
-                // Update the frozen state directly in the loaded list.
-                val current = _state.value
-                if (current is UiState.Loaded) {
-                    _state.value = UiState.Loaded(
-                        current.apps.map { if (it.packageName == pkg) it.copy(isFrozen = nowFrozen) else it }
-                    )
-                }
+                // Update the frozen state in the master list, then re-apply filter.
+                allApps = allApps.map { if (it.packageName == pkg) it.copy(isFrozen = nowFrozen) else it }
+                applyFilter()
                 _events.emit(BackupEvent.FreezeChanged(pkg, nowFrozen))
             } catch (e: Exception) {
                 Timber.e(e, "toggleFreeze failed for $pkg")

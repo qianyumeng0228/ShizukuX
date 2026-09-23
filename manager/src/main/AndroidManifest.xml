@@ -667,6 +667,18 @@
             android:exported="false"
             android:label="@string/device_control_title" />
 
-</application>
+
+        <!-- Device Control: Animation toggle Quick Settings tile -->
+        <service
+            android:name=".devicecontrol.AnimationTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:label="@string/device_control_animations_tile">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+    </application>
 
 </manifest>
