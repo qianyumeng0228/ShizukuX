@@ -1,6 +1,8 @@
 package af.shizuku.manager.devicecontrol
 
 import android.service.quicksettings.Tile
+import android.os.Handler
+import android.os.Looper
 import android.service.quicksettings.TileService
 import android.widget.Toast
 import af.shizuku.manager.R
@@ -12,6 +14,8 @@ import kotlin.concurrent.thread
  * Works in ADB mode (shell UID has WRITE_SECURE_SETTINGS).
  */
 class AirplaneModeTileService : TileService() {
+    @Volatile private var busy = false
+
 
     override fun onStartListening() {
         super.onStartListening()
@@ -20,7 +24,9 @@ class AirplaneModeTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
-        val tile = qsTile ?: return
+        if (busy) return
+        busy = true
+        val tile = qsTile ?: run { busy = false; return }
         val currentlyOn = tile.state == Tile.STATE_ACTIVE
         val target = !currentlyOn
 
@@ -39,6 +45,8 @@ class AirplaneModeTileService : TileService() {
                 }
             } catch (e: Exception) {
                 Toast.makeText(this@AirplaneModeTileService, R.string.device_control_service_not_available, Toast.LENGTH_SHORT).show()
+            } finally {
+                busy = false
             }
         }
     }
@@ -49,16 +57,28 @@ class AirplaneModeTileService : TileService() {
                 val value = DeviceControlManager.getSetting("global", "airplane_mode_on")?.toIntOrNull() ?: 0
                 updateTileState(value != 0)
             } catch (_: Exception) {
-                updateTileState(true)
+                // Shizuku not available — mark tile unavailable rather than falsely showing "on"
+                val act = this
+                Handler(Looper.getMainLooper()).post {
+                    act.qsTile?.let { t ->
+                        t.state = Tile.STATE_UNAVAILABLE
+                        t.updateTile()
+                    }
+                }
             }
         }
     }
 
     private fun updateTileState(enabled: Boolean) {
-        val tile = qsTile ?: return
-        tile.state = if (enabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
+        val act = this
+        // Tile writes must happen on the main thread (some OEM SystemUIs discard
+        // updates from background threads).
+        Handler(Looper.getMainLooper()).post {
+            val tile = act.qsTile ?: return@post
+            tile.state = if (enabled) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         tile.label = getString(R.string.device_control_airplane_tile)
         tile.contentDescription = getString(if (enabled) R.string.device_control_airplane_on else R.string.device_control_airplane_off)
-        tile.updateTile()
+            tile.updateTile()
+        }
     }
 }

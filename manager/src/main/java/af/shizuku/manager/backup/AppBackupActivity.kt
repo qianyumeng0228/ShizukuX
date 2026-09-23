@@ -28,6 +28,7 @@ class AppBackupActivity : AppBarActivity() {
     private var includeSystem = false
     private var backupAllItem: MenuItem? = null
     private var lastRestoredPkg: String? = null
+    private var historyDialog: androidx.appcompat.app.AlertDialog? = null
 
     private val directoryPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri != null) {
@@ -450,7 +451,8 @@ class AppBackupActivity : AppBarActivity() {
             "${entry.formatTime()}  $status  ${entry.appLabel} (${entry.scopeDisplay()})$rollbackTag"
         }.toTypedArray()
 
-        MaterialAlertDialogBuilder(this)
+        historyDialog?.dismiss()
+        historyDialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.backup_history_title)
             .setItems(items) { _, which ->
                 val entry = entries[which]
@@ -468,6 +470,8 @@ class AppBackupActivity : AppBarActivity() {
                     .setNeutralButton(R.string.backup_history_delete) { _, _ ->
                         RestoreHistoryManager.deleteEntry(this, entry.id)
                         Snackbar.make(rootView, R.string.backup_history_deleted, Snackbar.LENGTH_SHORT).show()
+                        // Re-show history list with updated data
+                        showRestoreHistory()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
@@ -477,13 +481,16 @@ class AppBackupActivity : AppBarActivity() {
                     .setTitle(R.string.backup_history_clear_all_confirm)
                     .setPositiveButton(android.R.string.ok) { _, _ ->
                         RestoreHistoryManager.clearAll(this)
+                        historyDialog?.dismiss()
+                        historyDialog = null
                         Snackbar.make(rootView, R.string.backup_history_cleared, Snackbar.LENGTH_SHORT).show()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
                     .show()
             }
             .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            .create()
+            .also { it.show() }
     }
 
     @Deprecated("Deprecated in Java")

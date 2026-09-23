@@ -31,13 +31,15 @@ class DeviceControlActivity : AppCompatActivity() {
         statusText = findViewById(R.id.tv_status)
         powerWarning = findViewById(R.id.tv_power_warning)
 
-        // Check if power operations are available (root only)
-        try {
-            if (DeviceControlManager.isPowerAvailable()) {
-                powerWarning.visibility = android.view.View.GONE
+        // Check if power operations are available (root only); disable buttons in ADB mode
+        val powerAvailable = try { DeviceControlManager.isPowerAvailable() } catch (_: Exception) { false }
+        if (powerAvailable) {
+            powerWarning.visibility = android.view.View.GONE
+        } else {
+            // ADB mode (shell uid 2000 lacks REBOOT permission) — disable power buttons
+            listOf(R.id.btn_reboot, R.id.btn_reboot_recovery, R.id.btn_shutdown).forEach { id ->
+                findViewById<Button>(id).isEnabled = false
             }
-        } catch (_: Exception) {
-            // binder not available, warning stays visible
         }
 
         // ── Connectivity ──────────────────────────────────────────────────────
@@ -74,6 +76,13 @@ class DeviceControlActivity : AppCompatActivity() {
         runSafe("getVolume") {
             val vol = DeviceControlManager.getStreamVolume(3)
             if (vol >= 0) volumeSeek.progress = vol
+            true
+        }
+
+        // Set initial brightness (read current system value)
+        runSafe("getBrightness") {
+            val bright = DeviceControlManager.getSetting("system", "screen_brightness")?.toIntOrNull()
+            if (bright != null) brightnessSeek.progress = bright
             true
         }
 

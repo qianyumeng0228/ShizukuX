@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -60,7 +61,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state
 
-    private val _events = MutableSharedFlow<BackupEvent>()
+    private val _events = MutableSharedFlow<BackupEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val events: SharedFlow<BackupEvent> = _events
 
     // Packages currently being backed up — drives per-row busy state in the adapter.
@@ -336,6 +337,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         val extName = PreRestoreManager.getSnapshotFileName("external", timestamp)
         var backedUpSomething = false
         var internalBackedUp = false
+        // Force-stop the app before snapshot to ensure a consistent tar state
+        // (avoids capturing half-written files from a foreground-running app).
+        try { ShizukuXAPI.BackupRestoreExtra.forceStop(pkg) } catch (_: Exception) {}
         // Internal data (requires app debuggable — caller must prepareTempDebug first)
         val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
         if (dataPfd != null) {
@@ -351,7 +355,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             }) backedUpSomething = true
         }
         if (backedUpSomething && (!requireInternal || internalBackedUp)) {
-            PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp)
+            PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp, safTreeUri, cr)
             return timestamp
         }
         return null
@@ -401,8 +405,21 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
 
-            // Clear existing data for clean restore state
-            try { ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg) } catch (_: Exception) {}
+            // Clear existing data for clean restore state. If clear fails (IPC broken or
+            // app actively resisting), abort to avoid restoreDataDir writing into a live/
+            // inconsistent data directory.
+            val cleared = try {
+                ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg)
+            } catch (e: Exception) {
+                Timber.w(e, "clearAppData failed for $pkg — aborting restore to avoid mixed writes")
+                recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
+                return@restoreAppData false
+            }
+            if (!cleared) {
+                Timber.w("clearAppData returned false for $pkg — aborting restore")
+                recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
+                return@restoreAppData false
+            }
 
             var restoredSomething = false
 
