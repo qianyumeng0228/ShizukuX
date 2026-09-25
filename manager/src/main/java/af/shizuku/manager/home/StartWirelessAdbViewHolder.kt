@@ -194,12 +194,18 @@ class StartWirelessAdbViewHolder(
                 // SecurityException here used to crash the app (点击"配对"闪退, k2010).
                 val ctx = context.applicationContext
                 if (!runCatching { ctx.enablePairingAssistant() }.getOrDefault(false)) {
+                    // Cannot enable directly (usually no WRITE_SECURE_SETTINGS). Show the
+                    // accessibility guidance dialog ONLY — do NOT also launch the full-screen
+                    // pairing tutorial, otherwise two overlapping guides stack and the
+                    // tutorial covers the dialog (k2013 flow-fix). Once the user finishes
+                    // enabling/reading the steps they can tap "配对" again to proceed.
                     // Dialog must be built with the Activity context: the application context
                     // has no AppCompat theme and MaterialAlertDialogBuilder crashes with
                     // "requires Theme.AppCompat" on it (k2012 一键启动→启用 闪退).
                     context.showAccessibilityDialog()
+                } else {
+                    launchPairingFlow(context)
                 }
-                launchPairingFlow(context)
             }
             .setNegativeButton(android.R.string.cancel) { _, _ ->
                 // User opted out: proceed with the original pairing flow unchanged.
