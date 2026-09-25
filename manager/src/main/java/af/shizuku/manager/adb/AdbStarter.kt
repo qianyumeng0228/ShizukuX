@@ -94,13 +94,50 @@ object AdbStarter {
 
                 log?.invoke("Connecting on port $activePort...")
 
-                AdbClient("127.0.0.1", activePort, key).use { client ->
-                    connectWithRetry(client)
-                    log?.invoke("Successfully connected on port $activePort...\n")
-                    client.runCommand("shell:${Starter.internalCommand}")
-                    ShizukuSettings.setLastPort(activePort)
-                    ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
-                    ShizukuStateMachine.update()
+                try {
+                    AdbClient("127.0.0.1", activePort, key).use { client ->
+                        connectWithRetry(client)
+                        log?.invoke("Successfully connected on port $activePort...\n")
+                        client.runCommand("shell:${Starter.internalCommand}")
+                        ShizukuSettings.setLastPort(activePort)
+                        ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
+                        ShizukuStateMachine.update()
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    // Some ROMs (e.g. HyperOS) ignore the tcpip: redirect while wireless
+                    // debugging is active, so adbd never listens on the TCP port. Instead of
+                    // failing the whole start, fall back to the original wireless debugging
+                    // port and start the service directly (no TCP redirect).
+                    if (activePort != port && port in 1..65535) {
+                        Timber.tag(TAG).w(e, "TCP redirect to $activePort failed; falling back to port $port")
+                        log?.invoke("TCP redirect to $activePort failed (${e.message}); falling back to port $port")
+                        activePort = port
+                        log?.invoke("Connecting on port $activePort...")
+                        try {
+                            AdbClient("127.0.0.1", activePort, key).use { client ->
+                                connectWithRetry(client)
+                                log?.invoke("Successfully connected on port $activePort...\n")
+                                client.runCommand("shell:${Starter.internalCommand}")
+                                ShizukuSettings.setLastPort(activePort)
+                                ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
+                                ShizukuStateMachine.update()
+                            }
+                        } catch (e2: Exception) {
+                            if (e2 is CancellationException) throw e2
+                            // The fallback port failed too: the tcpip: redirect made adbd
+                            // re-bind to a brand-new random TLS port (observed on HyperOS),
+                            // so the original port is gone and TCP mode can never work here.
+                            // Disable TCP mode so the next attempt connects directly without
+                            // the tcpip redirect, then let the caller re-detect and retry.
+                            Timber.tag(TAG).w(e2, "Fallback to port $port failed; disabling TCP mode")
+                            log?.invoke("Fallback failed (${e2.message}); disabling TCP mode")
+                            runCatching { ShizukuSettings.setTcpMode(false) }
+                            throw e2
+                        }
+                    } else {
+                        throw e
+                    }
                 }
             }
         } catch (e: Exception) {

@@ -1081,9 +1081,29 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             AdbStarter.startAdb(appContext, port) { log(it) }
         } catch (e: Exception) {
             if (e is CancellationException) throw e
-            updateStep("start_service", StepStatus.ERROR, e.message ?: "")
-            setError(e)
-            return
+            // The wireless-debugging port can rotate between detection and connect
+            // (e.g. a tcpip: redirect ignored by the ROM, or adbd re-binding its TLS
+            // port). Re-detect the port once and retry before giving up. The mDNS
+            // cache may still report the stale port for a few seconds after adbd
+            // re-binds, so wait briefly before re-detecting.
+            delay(3000)
+            val redetected = detectPort(null)
+            if (redetected != null) {
+                Timber.tag("StarterActivity").w(e, "Port $port failed; retrying with redetected port ${redetected.first}")
+                updateStep("start_service", StepStatus.RUNNING, appContext.getString(R.string.starter_step_connecting))
+                try {
+                    AdbStarter.startAdb(appContext, redetected.first) { log(it) }
+                } catch (e2: Exception) {
+                    if (e2 is CancellationException) throw e2
+                    updateStep("start_service", StepStatus.ERROR, e2.message ?: "")
+                    setError(e2)
+                    return
+                }
+            } else {
+                updateStep("start_service", StepStatus.ERROR, e.message ?: "")
+                setError(e)
+                return
+            }
         }
         updateStep("start_service", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_start_service_done))
 
