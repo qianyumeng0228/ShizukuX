@@ -61,7 +61,7 @@ class HomeLayoutSimulatorPreference @JvmOverloads constructor(
     }
 
     private fun isPrefEnabled(key: String): Boolean {
-        return preferenceManager.sharedPreferences?.getBoolean(key, key != "show_start_adb_home") ?: true
+        return preferenceManager.sharedPreferences?.getBoolean(key, true) ?: true
     }
 
     private fun savePref(key: String, value: Boolean) {
