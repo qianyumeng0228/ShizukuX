@@ -21,6 +21,7 @@ import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.IconStyleHelper
+import rikka.core.content.asActivity
 import rikka.core.util.ClipboardUtils
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
@@ -57,27 +58,29 @@ class AutomationViewHolder(
             setOnLongClickListener { HomeEditMode.enter(); true }
         }
         binding.button1.setOnClickListener { v ->
-            val context = v.context
+            // MaterialAlertDialogBuilder + BottomSheetDialog both require an Activity theme
+            // (ThemeEnforcement); v.context may be theme-wrapped under MaterialActivity.
+            val activity = v.context.asActivity<android.app.Activity>() ?: return@setOnClickListener
             val authToken = af.shizuku.manager.ShizukuSettings.getAuthToken()
             val encryptedToken = af.shizuku.manager.utils.IntentCrypto.encrypt(authToken)
             if (encryptedToken == null) {
-                Toast.makeText(context, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             val sheetBinding = HomeAutomationBottomSheetBinding.inflate(
-                LayoutInflater.from(context)
+                LayoutInflater.from(activity)
             )
 
             sheetBinding.apply {
                 val action = getIntentAction(buttonGroup.checkedButtonId)
                 val fields = listOf(
                     Field(actionLayout, actionEditText, action),
-                    Field(packageLayout, packageEditText, context.packageName),
+                    Field(packageLayout, packageEditText, activity.packageName),
                     Field(
                         targetLayout,
                         targetEditText,
-                        context.getString(R.string.home_automation_target_broadcast_receiver)
+                        activity.getString(R.string.home_automation_target_broadcast_receiver)
                     ),
                     Field(extrasLayout, extrasEditText, "auth:$encryptedToken")
                 )
@@ -87,14 +90,14 @@ class AutomationViewHolder(
                     input.setKeyListener(null)
 
                     layout.setEndIconOnClickListener { v ->
-                        val context = v.context
+                        val ctx = v.context
                         if (
-                            ClipboardUtils.put(context, input.text) &&
+                            ClipboardUtils.put(ctx, input.text) &&
                             Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2
                         ) {
                             Toast.makeText(
-                                context,
-                                context.getString(R.string.toast_copied_to_clipboard),
+                                ctx,
+                                ctx.getString(R.string.toast_copied_to_clipboard),
                                 Toast.LENGTH_SHORT,
                             ).show()
                         }
@@ -108,7 +111,7 @@ class AutomationViewHolder(
                     }
                 }
                 extrasLayout.setStartIconOnClickListener {
-                    MaterialAlertDialogBuilder(context)
+                    MaterialAlertDialogBuilder(activity)
                         .setTitle(R.string.home_automation_regenerate_token)
                         .setMessage(R.string.home_automation_regenerate_token_message)
                         .setNegativeButton(android.R.string.cancel, null)
@@ -119,7 +122,7 @@ class AutomationViewHolder(
                             // AuthenticatedReceiver couldn't verify, so a copied automation failed.
                             val newEncryptedToken = af.shizuku.manager.utils.IntentCrypto.encrypt(newToken)
                             if (newEncryptedToken == null) {
-                                Toast.makeText(context, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
+                                Toast.makeText(activity, R.string.home_automation_token_encrypt_failed, Toast.LENGTH_SHORT).show()
                             } else {
                                 extrasEditText.setText("auth:$newEncryptedToken")
                             }
@@ -128,7 +131,7 @@ class AutomationViewHolder(
                 }
             }
 
-            BottomSheetDialog(context).apply {
+            BottomSheetDialog(activity).apply {
                 setContentView(sheetBinding.root)
                 show()
             }

@@ -25,6 +25,7 @@ import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import rikka.core.content.asActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -137,6 +138,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             return true
         }
         val context = v.context
+        val activity = context.asActivity<Activity>()
         val appInfo = ai ?: return true
         // Capture values before entering coroutine — the ViewHolder may be rebound
         val capturedPackage = packageName
@@ -152,10 +154,16 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                 when {
                     enabled.isEmpty() -> { /* consume silently */ }
                     enabled.size == 1 -> enabled[0].run()
-                    else -> MaterialAlertDialogBuilder(context)
-                        .setTitle(appLabel)
-                        .setItems(enabled.map { it.label }.toTypedArray()) { _, i -> enabled[i].run() }
-                        .show()
+                    else -> {
+                        // MaterialAlertDialogBuilder requires Activity theme (ThemeEnforcement);
+                        // v.context may be theme-wrapped under MaterialActivity. Fall back to
+                        // running the first action if we can't resolve an Activity.
+                        val host = activity ?: context
+                        MaterialAlertDialogBuilder(host)
+                            .setTitle(appLabel)
+                            .setItems(enabled.map { it.label }.toTypedArray()) { _, i -> enabled[i].run() }
+                            .show()
+                    }
                 }
             }
         }
@@ -377,10 +385,13 @@ class AppViewHolder(private val binding: AppListItemBinding) :
     }
 
     private fun showAdbLimitedDialog(context: Context) {
-        val dialog = MaterialAlertDialogBuilder(context)
+        // MaterialAlertDialogBuilder requires Activity theme; resolve via asActivity
+        // (callers pass v.context from ViewHolder click handlers).
+        val host = context.asActivity<Activity>() ?: context
+        val dialog = MaterialAlertDialogBuilder(host)
             .setTitle(R.string.app_management_dialog_adb_is_limited_title)
             .setMessage(
-                context.getString(
+                host.getString(
                     R.string.app_management_dialog_adb_is_limited_message,
                     Helps.ADB.get()
                 ).toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)

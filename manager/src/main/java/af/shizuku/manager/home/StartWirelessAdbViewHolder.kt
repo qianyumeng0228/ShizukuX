@@ -174,12 +174,16 @@ class StartWirelessAdbViewHolder(
 
     @RequiresApi(Build.VERSION_CODES.R)
     private fun onPairClicked(context: Context) {
+        // MaterialAlertDialogBuilder requires an Activity theme (ThemeEnforcement checks
+        // isLightTheme); v.context can be a theme-wrapped context under MaterialActivity.
+        // Resolve the host Activity first — same fix as AccessibilityDialogHelper (k2013).
+        val activity = context.asActivity<android.app.Activity>() ?: return
         if (EnvironmentUtils.isTelevision()) {
-            context.showAccessibilityDialog()
+            activity.showAccessibilityDialog()
             return
         }
         // Ask once whether to enable the auto-pairing assistant along with this flow.
-        MaterialAlertDialogBuilder(context)
+        MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.dialog_enable_auto_pairing_title)
             .setMessage(R.string.dialog_enable_auto_pairing_message)
             .setPositiveButton(R.string.enable) { _, _ ->
@@ -220,13 +224,17 @@ class StartWirelessAdbViewHolder(
      */
     @RequiresApi(Build.VERSION_CODES.R)
     private fun onOneTapClicked(context: Context) {
+        // Same Activity-context guard as onPairClicked — MaterialAlertDialogBuilder needs
+        // an Activity theme, v.context may be theme-wrapped under MaterialActivity (k2012
+        // Theme.AppCompat crash class).
+        val activity = context.asActivity<android.app.Activity>() ?: return
         if (EnvironmentUtils.isTelevision()) {
-            context.showAccessibilityDialog()
+            activity.showAccessibilityDialog()
             return
         }
         val ctx = context.applicationContext
         if (!ctx.isPairingAssistantEnabled()) {
-            MaterialAlertDialogBuilder(context)
+            MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.dialog_one_tap_requires_assistant_title)
                 .setMessage(R.string.dialog_one_tap_requires_assistant_message)
                 .setPositiveButton(R.string.enable) { _, _ ->

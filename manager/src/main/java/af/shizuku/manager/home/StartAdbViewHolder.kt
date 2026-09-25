@@ -22,6 +22,7 @@ import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
+import rikka.core.content.asActivity
 
 class StartAdbViewHolder(
     private val binding: HomeStartAdbBinding,
@@ -40,22 +41,24 @@ class StartAdbViewHolder(
         containerBinding.root.applySpringTouch()
         containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
         binding.button1.setOnClickListener { v: View ->
-            val context = v.context
-            MaterialAlertDialogBuilder(context)
+            // MaterialAlertDialogBuilder requires an Activity theme; resolve host Activity
+            // first (same guard as StartWirelessAdbViewHolder / AccessibilityDialogHelper).
+            val activity = v.context.asActivity<android.app.Activity>() ?: return@setOnClickListener
+            MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.home_adb_button_view_command)
                 .setMessage(
                     HtmlCompat.fromHtml(
-                        context.getString(
+                        activity.getString(
                             R.string.home_adb_dialog_view_command_message,
                             Starter.adbCommand
                         )
                     )
                 )
                 .setPositiveButton(R.string.home_adb_dialog_view_command_copy_button) { _, _ ->
-                    if (ClipboardUtils.put(context, Starter.adbCommand)) {
+                    if (ClipboardUtils.put(activity, Starter.adbCommand)) {
                         Toast.makeText(
-                            context,
-                            context.getString(R.string.toast_copied_to_clipboard),
+                            activity,
+                            activity.getString(R.string.toast_copied_to_clipboard),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -67,9 +70,9 @@ class StartAdbViewHolder(
                     intent.putExtra(Intent.EXTRA_TEXT, Starter.adbCommand)
                     intent = Intent.createChooser(
                         intent,
-                        context.getString(R.string.home_adb_dialog_view_command_button_send)
+                        activity.getString(R.string.home_adb_dialog_view_command_button_send)
                     )
-                    context.startActivity(intent)
+                    activity.startActivity(intent)
                 }
                 .show()
         }
