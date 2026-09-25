@@ -438,9 +438,17 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     /** One-tap assistant-acknowledgement budget: fall back to manual if nothing comes back. */
     private companion object {
         const val AUTO_ACK_TIMEOUT_MS = 30_000L
+        // How many times the flow re-sends the auto-pairing / auto-enable broadcast before
+        // falling back to manual. The pairing assistant may have just been enabled (its receiver
+        // not bound yet) so the first broadcast can be silently dropped (k2013 one-tap flow-fix).
+        const val MAX_AUTO_ACK_RETRIES = 2
     }
 
     private val appContext = getApplication<Application>().applicationContext
+
+    /** Consecutive re-sends of the auto-pairing / auto-enable-wireless request in one flow. */
+    private var pairingAutoRetries = 0
+    private var wirelessAutoRetries = 0
 
     private val _steps = MutableLiveData<List<StarterStep>>()
     val steps: LiveData<List<StarterStep>> = _steps
@@ -531,6 +539,8 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         // continueAfterSetup() — a per-entry reset would defeat the 3-attempt cap and could
         // loop forever if adbd never starts listening.
         ownerEnableAttempts = 0
+        pairingAutoRetries = 0
+        wirelessAutoRetries = 0
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             if (root) runRootFlow()
@@ -613,14 +623,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
         // Safety net: if the assistant was just enabled and its receiver is not bound yet,
         // the broadcast above is silently dropped. Without a timeout the pairing step would
-        // stay RUNNING forever. If neither pairing success nor failure arrives in time, fall
-        // back to manual — a late success broadcast still resumes the flow normally.
+        // stay RUNNING forever. If neither pairing success nor failure arrives in time, retry
+        // while the assistant is still on (its receiver may have bound late), then fall back to
+        // manual — a late success broadcast still resumes the flow normally.
         pairingAckJob?.cancel()
         pairingAckJob = viewModelScope.launch {
             delay(AUTO_ACK_TIMEOUT_MS)
             if (waitingForPairing) {
-                Timber.tag("StarterActivity").w("Auto pairing not acknowledged in time; falling back to manual")
-                fallbackToManualPairing()
+                if (appContext.isPairingAssistantEnabled() && pairingAutoRetries < MAX_AUTO_ACK_RETRIES) {
+                    pairingAutoRetries++
+                    Timber.tag("StarterActivity").w("Auto pairing not acknowledged; assistant on, retrying (%d)", pairingAutoRetries)
+                    sendAutoPairingRequest()
+                } else {
+                    Timber.tag("StarterActivity").w("Auto pairing not acknowledged in time; falling back to manual")
+                    fallbackToManualPairing()
+                }
             }
         }
     }
@@ -636,12 +653,19 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             Timber.tag("StarterActivity").w(it, "Failed to send auto-enable-wireless request")
         }
         // Same safety net as sendAutoPairingRequest: never let the step hang in RUNNING.
+        // Retry while the assistant is on and we are under budget, then fall back to manual.
         wirelessAckJob?.cancel()
         wirelessAckJob = viewModelScope.launch {
             delay(AUTO_ACK_TIMEOUT_MS)
             if (waitingForWireless) {
-                Timber.tag("StarterActivity").w("Auto wireless-enable not acknowledged in time; falling back to manual")
-                fallbackToManualWireless()
+                if (appContext.isPairingAssistantEnabled() && wirelessAutoRetries < MAX_AUTO_ACK_RETRIES) {
+                    wirelessAutoRetries++
+                    Timber.tag("StarterActivity").w("Auto wireless-enable not acknowledged; assistant on, retrying (%d)", wirelessAutoRetries)
+                    sendAutoEnableWirelessRequest()
+                } else {
+                    Timber.tag("StarterActivity").w("Auto wireless-enable not acknowledged in time; falling back to manual")
+                    fallbackToManualWireless()
+                }
             }
         }
     }

@@ -595,6 +595,16 @@ open class HomeActivity : AppActivity(), MavericksView {
         checkServerStatus()
         // Also reload apps list
         appsModel.load()
+
+        // One-tap flow-fix: the user tapped 一键启动, was asked to enable the pairing assistant
+        // in system accessibility settings, and has now returned. Resume the one-tap flow
+        // automatically instead of requiring a second tap.
+        if (StartWirelessAdbViewHolder.pendingOneTapAfterAssistant &&
+            this.isPairingAssistantEnabled()
+        ) {
+            StartWirelessAdbViewHolder.pendingOneTapAfterAssistant = false
+            StartWirelessAdbViewHolder.launchOneTapDirect(this)
+        }
     }
 
     override fun onPause() {

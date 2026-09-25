@@ -46,12 +46,31 @@ class StartWirelessAdbViewHolder(
 ) : BaseViewHolder<Any?>(containerBinding.root) {
 
     companion object {
+        /**
+         * Set when the one-tap flow asked the user to enable the pairing assistant and the
+         * assistant could not be enabled directly (no WRITE_SECURE_SETTINGS). The user goes to
+         * system accessibility settings; when they return home and the assistant is now on,
+         * HomeActivity.onResume() consumes this flag and auto-starts the one-tap flow so the
+         * user does not have to tap "一键启动" a second time (k2013 one-tap flow-fix).
+         */
+        @JvmStatic
+        var pendingOneTapAfterAssistant = false
+
         fun creator(scope: CoroutineScope, homeModel: HomeViewModel): Creator<Any> {
             return Creator { inflater: LayoutInflater, parent: ViewGroup? ->
                 val outer = HomeItemContainerBinding.inflate(inflater, parent, false)
                 val inner = HomeStartWirelessAdbBinding.inflate(inflater, outer.cardContent, true)
                 StartWirelessAdbViewHolder(inner, outer, scope, homeModel)
             }
+        }
+
+        /** Launch the one-tap flow without a shared-element transition (used from HomeActivity.onResume). */
+        fun launchOneTapDirect(context: android.content.Context) {
+            val intent = android.content.Intent(context, af.shizuku.manager.starter.StarterActivity::class.java).apply {
+                putExtra(af.shizuku.manager.starter.StarterActivity.EXTRA_AUTO_PAIRING, true)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
         }
 
         fun start(context: android.content.Context, scope: CoroutineScope, discoveredPort: Int = -1) {
@@ -248,6 +267,10 @@ class StartWirelessAdbViewHolder(
                         // Same as the pairing flow: the accessibility dialog must use the
                         // Activity context, not the application context (theme crash, k2012).
                         context.showAccessibilityDialog()
+                        // User will enable the assistant in system accessibility settings; when
+                        // they come back home the flow resumes automatically (k2013 one-tap
+                        // flow-fix) — no second tap needed.
+                        pendingOneTapAfterAssistant = true
                     } else {
                         // Give the accessibility service a moment to bind its receiver before
                         // entering the one-tap flow, otherwise the request broadcast can drop.
