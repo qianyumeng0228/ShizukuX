@@ -9,6 +9,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
@@ -27,11 +28,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbMdns
+import af.shizuku.manager.adb.AdbPortProber
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
@@ -41,6 +44,9 @@ import af.shizuku.manager.settings.BugReportDialogActivity
 import af.shizuku.manager.starter.Starter
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
+import rikka.shizuku.Shizuku
+import timber.log.Timber
+import android.Manifest
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
@@ -52,8 +58,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val cr = applicationContext.contentResolver
 
-            Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-            Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            // Guard the secure-settings writes: without WRITE_SECURE_SETTINGS each
+            // putInt throws SecurityException (swallowed into a retry loop upstream).
+            // Mirrors upstream: write ADB_ENABLED / adb_allowed_connection_time only
+            // when the permission is actually held.
+            val hasSecureSettingsPermission = applicationContext.checkSelfPermission(
+                Manifest.permission.WRITE_SECURE_SETTINGS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (hasSecureSettingsPermission) {
+                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
+                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            }
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
@@ -62,7 +77,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val savedPort = ShizukuSettings.getLastPort()
             val isWifiOk = !EnvironmentUtils.isWifiRequired() || ShizukuSettings.isForceStartWadbEnabled()
+            // Fast path (upstream getLiveAdbTcpPort equivalent): probe 5555 → last
+            // port → configured TCP port on loopback and reuse a live one without
+            // mDNS. A configured TCP port alone does NOT imply it is live — after a
+            // reboot 5555 exists only once the service has rebound adbd to it — so a
+            // stale port falls through to mDNS discovery below.
+            val livePort = if (isWifiOk) AdbPortProber.findActiveLoopbackPort() else -1
             val port = when {
+                livePort > 0 -> livePort
                 tcpPort > 0 && isWifiOk -> tcpPort
                 savedPort > 0 && isWifiOk && runAttemptCount == 0 -> savedPort
                 else -> callbackFlow {
@@ -109,7 +131,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 if (intent.action == Intent.ACTION_USER_PRESENT) {
                                     context.unregisterReceiver(this)
                                     unlockReceiver = null
-                                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                                    if (hasSecureSettingsPermission) {
+                                        Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                                    }
                                 }
                             }
                         }
@@ -135,7 +159,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                if (hasSecureSettingsPermission) {
+                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
+                }
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
@@ -150,6 +176,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             AdbStarter.startAdb(applicationContext, port)
             Starter.waitForBinder()
+            // Some ROMs (HyperOS) clear adb_wifi_enabled when legacy TCP mode
+            // activates; re-arm it through the server shell after the binder is up.
+            reassertWifiFlagIfEnabled()
             ActivityLogManager.log("Shizuku", applicationContext.packageName, "Service started via background ADB worker on port $port")
 
             val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -194,6 +223,46 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val retryState = if (e is TimeoutException) WorkerState.AWAITING_DISCOVERY else WorkerState.AWAITING_RETRY
                 updateNotification(applicationContext, retryState)
                 return Result.retry()
+            }
+        }
+    }
+
+    /**
+     * Opt-in hammer for hostile ROMs (HyperOS): some ROMs clear adb_wifi_enabled
+     * when legacy TCP mode activates — a write before the bind lands in the wiped
+     * window. Runs AFTER the binder is up. Shells out through the Shizuku service
+     * (shell UID), NOT the app ContentResolver — the app UID typically lacks
+     * WRITE_SECURE_SETTINGS. Reads first and NEVER writes 0: a manufactured
+     * disable event mid-connection makes hostile ROMs tear down the live socket.
+     */
+    private suspend fun reassertWifiFlagIfEnabled() {
+        withContext(Dispatchers.IO) {
+            try {
+                if (!Shizuku.pingBinder()) return@withContext
+                // Let the ROM's post-bind wipe land before touching the flag.
+                delay(3_000)
+                if (!Shizuku.pingBinder()) return@withContext
+
+                val cr = applicationContext.contentResolver
+                // Read first: if the flag is already armed there is nothing to do —
+                // and, vitally, nothing to disturb. A live wireless-debugging session
+                // must never see a synthetic 0.
+                if (Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1) {
+                    Timber.tag("AdbStartWorker").d("adb_wifi_enabled already 1, no-op")
+                    return@withContext
+                }
+
+                val process = Shizuku.newProcess(
+                    arrayOf("sh", "-c", "settings put global adb_wifi_enabled 1 >/dev/null 2>&1"),
+                    null,
+                    null
+                ) ?: return@withContext
+                val exitCode = withTimeout(5_000) {
+                    runInterruptible { process.waitFor() }
+                }
+                Timber.tag("AdbStartWorker").i("wifi flag re-arm exit=$exitCode")
+            } catch (e: Exception) {
+                Timber.tag("AdbStartWorker").w(e, "wifi re-assert failed")
             }
         }
     }

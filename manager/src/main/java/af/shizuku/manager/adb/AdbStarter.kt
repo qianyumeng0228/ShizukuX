@@ -54,6 +54,9 @@ object AdbStarter {
             Timber.tag(TAG).w("startAdb called with invalid port $port — skipping")
             return
         }
+        // Only auto-disable wireless debugging after a fully successful start:
+        // disabling on failure would tear down the very socket a retry depends on.
+        var startedSuccessfully = false
         suspend fun AdbClient.runCommand(cmd: String) {
             command(cmd) { log?.invoke(String(it)) }
         }
@@ -102,6 +105,7 @@ object AdbStarter {
                         ShizukuSettings.setLastPort(activePort)
                         ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
                         ShizukuStateMachine.update()
+                        startedSuccessfully = true
                     }
                 } catch (e: Exception) {
                     if (e is CancellationException) throw e
@@ -122,6 +126,7 @@ object AdbStarter {
                                 ShizukuSettings.setLastPort(activePort)
                                 ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
                                 ShizukuStateMachine.update()
+                                startedSuccessfully = true
                             }
                         } catch (e2: Exception) {
                             if (e2 is CancellationException) throw e2
@@ -165,7 +170,7 @@ object AdbStarter {
             }
             throw e
         } finally {
-            if (ShizukuSettings.getAutoDisableUsbDebugging() && context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
+            if (startedSuccessfully && ShizukuSettings.getAutoDisableUsbDebugging() && context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
                 Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
         }
     }

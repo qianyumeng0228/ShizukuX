@@ -293,8 +293,11 @@
             android:directBootAware="true"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
             android:theme="@style/GrantPermissions">
+            <!-- 2026-10-01 修复：去掉 android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
+                 ——第三方 Shizuku 客户端（LSPatch 等）用 moe.shizuku.manager.intent.action.REQUEST_PERMISSION
+                 发起授权请求，带系统签名级权限会直接 SecurityException 被拒，授权弹窗弹不出来，
+                 导致客户端永远"未授权/未连接"。官方 Shizuku 此 activity 无 permission 限制。 -->
             <intent-filter>
                 <action android:name="${applicationId}.intent.action.REQUEST_PERMISSION" />
                 <action android:name="moe.shizuku.manager.intent.action.REQUEST_PERMISSION" />
@@ -477,14 +480,17 @@
              flavor re-adds the stock authority in src/dropin/AndroidManifest.xml (it IS that package,
              so it's collision-safe); stock-client compat for the Extra flavor comes from the separate
              Compat Hub. -->
+        <!-- 2026-10-01 修复第三方 Shizuku 客户端（如 LSPatch）连不上：原 android:permission=
+             android.permission.INTERACT_ACROSS_USERS_FULL 是系统签名级权限，第三方应用拿不到，
+             导致它们 bind 本 provider 时被系统拒绝（"Shizuku 服务未连接"）。
+             官方 Shizuku 的 provider 本就不设 permission（靠 binder 协议内部校验），此处与官方对齐。 -->
         <provider
             android:name=".ShizukuManagerProvider"
             android:authorities="${applicationId}.shizuku"
             android:directBootAware="true"
             android:enabled="true"
             android:exported="true"
-            android:multiprocess="false"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+            android:multiprocess="false" />
 
         <provider
             android:name=".DhizukuProvider"
