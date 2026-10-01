@@ -325,6 +325,12 @@ open class HomeActivity : AppActivity(), MavericksView {
                     duration = Snackbar.LENGTH_INDEFINITE,
                     actionText = getString(R.string.snackbar_action_fix),
                     action = {
+                        // MIUI/HyperOS 的"省电策略-无限制"不一定写入 AOSP whitelist，
+                        // 标准 API 会一直返回 false；只要用户从本 app 进过电池页就视为已响应，
+                        // 返回后弹窗立即收起、不再反复出现。
+                        if (EnvironmentUtils.isXiaomi()) {
+                            SettingsHelper.markBatteryOptimizationAcknowledged(this)
+                        }
                         if (EnvironmentUtils.isSamsung()) {
                             SettingsPage.Samsung.DeviceCareBattery.launch(this)
                         } else {
@@ -332,6 +338,9 @@ open class HomeActivity : AppActivity(), MavericksView {
                         }
                     }
                 )
+            } else {
+                // 状态变为"已豁免/已处理"时收起弹窗（例如从系统电池设置页返回后实时刷新）
+                SnackbarHelper.dismiss()
             }
         }
         homeModel.checkBatteryOptimization()
@@ -593,6 +602,9 @@ open class HomeActivity : AppActivity(), MavericksView {
         wallpaperTheme = ShizukuSettings.getWallpaperTheme()
         // Force refresh status on resume
         checkServerStatus()
+        // Re-check battery optimization so a "no limit" set in system settings is picked up
+        // immediately on return (previously the snackbar stayed until next cold start).
+        homeModel.checkBatteryOptimization()
         // Also reload apps list
         appsModel.load()
 

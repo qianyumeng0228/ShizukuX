@@ -23,6 +23,33 @@ object SettingsHelper {
         return pm.isIgnoringBatteryOptimizations(context.packageName)
     }
 
+    // MIUI/HyperOS 会把"省电策略-无限制"存到自己的电池管理里，不一定写入 AOSP 的
+    // battery whitelist，PowerManager.isIgnoringBatteryOptimizations() 会一直返回 false，
+    // 导致用户明明在系统里设了"无限制"，主界面/设置页的弹窗却照常出现（状态没有实时变化）。
+    // 对这些 ROM：只要用户从本 app 进过电池设置页（点过"修复"）并返回，就视为已处理，
+    // 不再反复打扰——这是 MIUI 上唯一可靠的"用户已响应"信号。
+    private const val BATTERY_ACK_PREFS = "battery_optimization_ack"
+    private const val KEY_BATTERY_ACK = "acknowledged"
+
+    private fun batteryAckPrefs(context: Context) =
+        context.getSharedPreferences(BATTERY_ACK_PREFS, Context.MODE_PRIVATE)
+
+    fun isBatteryOptimizationAcknowledged(context: Context): Boolean =
+        batteryAckPrefs(context).getBoolean(KEY_BATTERY_ACK, false)
+
+    fun markBatteryOptimizationAcknowledged(context: Context) {
+        batteryAckPrefs(context).edit().putBoolean(KEY_BATTERY_ACK, true).apply()
+    }
+
+    /**
+     * 统一的"电池优化已处理"判定：非 MIUI 走标准 API；MIUI/HyperOS 上标准 API 不可靠，
+     * 用户已从本 app 进过电池页即视为已处理。
+     */
+    fun isBatteryOptimizationEffectivelyDisabled(context: Context): Boolean {
+        if (EnvironmentUtils.isXiaomi() && isBatteryOptimizationAcknowledged(context)) return true
+        return isIgnoringBatteryOptimizations(context)
+    }
+
     fun hasWriteSecureSettings(context: Context): Boolean {
         return context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) == android.content.pm.PackageManager.PERMISSION_GRANTED
     }

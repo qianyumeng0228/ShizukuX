@@ -48,7 +48,12 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         preferenceManager.sharedPreferencesMode = android.content.Context.MODE_PRIVATE
 
         batteryOptimizationListener = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            val accepted = SettingsHelper.isIgnoringBatteryOptimizations(requireContext())
+            // MIUI/HyperOS 的"无限制"不一定写入 AOSP whitelist，isIgnoringBatteryOptimizations
+            // 会持续返回 false，导致用户设置后开关仍回弹、弹窗反复出现。返回即视为已处理。
+            if (EnvironmentUtils.isXiaomi()) {
+                SettingsHelper.markBatteryOptimizationAcknowledged(requireContext())
+            }
+            val accepted = SettingsHelper.isBatteryOptimizationEffectivelyDisabled(requireContext())
             batteryOptimizationContinuation?.resume(accepted)
         }
 
@@ -276,7 +281,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
 
     protected fun maybeToggleBatterySensitiveSetting(newValue: Boolean, onResult: (Boolean) -> Unit) {
         val context = requireContext()
-        if (!newValue || SettingsHelper.isIgnoringBatteryOptimizations(context) || EnvironmentUtils.isTelevision()) {
+        if (!newValue || SettingsHelper.isBatteryOptimizationEffectivelyDisabled(context) || EnvironmentUtils.isTelevision()) {
             onResult(true)
             return
         }

@@ -1,7 +1,6 @@
 package af.shizuku.manager.widget
 
 import android.content.Context
-import android.os.PowerManager
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,6 +8,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.utils.SettingsHelper
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.materialswitch.MaterialSwitch
 
@@ -118,8 +118,8 @@ class ExternalRelayAdapter(
         }
 
         fun refreshBatteryStatus() {
-            val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-            val isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
+            // 统一判定：MIUI/HyperOS 的"无限制"不一定写入 AOSP whitelist，用户已进过电池页即视为已处理
+            val isIgnoring = SettingsHelper.isBatteryOptimizationEffectivelyDisabled(context)
             batteryStatus.text = context.getString(
                 if (isIgnoring) R.string.external_relay_auto_battery_ok
                 else R.string.external_relay_auto_battery_off

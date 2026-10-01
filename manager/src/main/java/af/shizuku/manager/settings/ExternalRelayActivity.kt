@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.widget.ExternalRelayAdapter
 
 /**
@@ -92,7 +94,11 @@ class ExternalRelayActivity : AppBarActivity() {
             },
             onRequestIgnoreBatteryOptimization = {
                 val pm = getSystemService(POWER_SERVICE) as PowerManager
+                // MIUI/HyperOS：进入电池页即标记已响应（标准 API 与省电策略不同步）
                 if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                    if (EnvironmentUtils.isXiaomi()) {
+                        SettingsHelper.markBatteryOptimizationAcknowledged(this)
+                    }
                     try {
                         startActivity(Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
                             Uri.parse("package:$packageName")))

@@ -44,6 +44,10 @@ class ServiceDoctorActivity : AppBarActivity() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     private val batteryOptimizationListener = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        // MIUI/HyperOS：从电池页返回即视为已响应（标准 API 与省电策略不同步）
+        if (EnvironmentUtils.isXiaomi()) {
+            SettingsHelper.markBatteryOptimizationAcknowledged(this)
+        }
         runDiagnostics()
     }
 
@@ -91,7 +95,8 @@ class ServiceDoctorActivity : AppBarActivity() {
         val tips = mutableListOf<String>()
 
         // 1. Battery Optimization
-        val isIgnoring = SettingsHelper.isIgnoringBatteryOptimizations(this)
+        // 统一判定：MIUI/HyperOS 的"无限制"不一定写入 AOSP whitelist，用户已进过电池页即视为已处理
+        val isIgnoring = SettingsHelper.isBatteryOptimizationEffectivelyDisabled(this)
         checks.add(DoctorCheck(
             getString(R.string.doctor_check_battery, ""),
             if (isIgnoring) getString(R.string.doctor_status_ok) else getString(R.string.doctor_status_optimized),

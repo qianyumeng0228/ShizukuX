@@ -158,7 +158,8 @@ class HomeViewModel(
     fun checkBatteryOptimization() {
         if (EnvironmentUtils.isTelevision()) return
         if (!ShizukuSettings.getStartOnBoot(appContext) && !ShizukuSettings.getWatchdog()) return
-        val isIgnoring = SettingsHelper.isIgnoringBatteryOptimizations(appContext)
+        // MIUI/HyperOS 的"无限制"不一定写入 AOSP whitelist，统一判定里已处理该差异
+        val isIgnoring = SettingsHelper.isBatteryOptimizationEffectivelyDisabled(appContext)
         setState { copy(shouldShowBatteryOptimizationSnackbar = !isIgnoring) }
     }
 

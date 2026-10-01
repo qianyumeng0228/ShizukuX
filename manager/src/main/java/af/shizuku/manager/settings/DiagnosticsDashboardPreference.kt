@@ -20,6 +20,7 @@ import androidx.preference.PreferenceViewHolder
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.utils.SettingsHelper
 
 class DiagnosticsDashboardPreference @JvmOverloads constructor(
     context: Context,
@@ -182,8 +183,9 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
 
     private fun isIgnoringBatteryOptimizations(ctx: Context): Boolean {
         return try {
-            val pm = ctx.getSystemService(Context.POWER_SERVICE) as PowerManager
-            pm.isIgnoringBatteryOptimizations(ctx.packageName)
+            // 统一判定：MIUI/HyperOS 的"无限制"不一定写入 AOSP whitelist，
+            // 用户已从本 app 进过电池页即视为已处理，不误报警告。
+            SettingsHelper.isBatteryOptimizationEffectivelyDisabled(ctx)
         } catch (e: Exception) {
             true // default to true to not raise warnings if system query fails
         }
