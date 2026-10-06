@@ -13,6 +13,7 @@
     <string name="compat_hub_missing_title">需要兼容中心</string>
     <string name="compat_hub_missing_desc">显式检查原版 Shizuku 的第三方应用无法识别 ShizukuX。安装轻量级兼容中心后，这些应用即可检测到 ShizukuX。</string>
     <string name="compat_hub_install_btn">安装兼容中心</string>
+    <string name="compat_hub_uninstall_btn">卸载兼容中心</string>
     <string name="compat_hub_installing">正在安装…</string>
     <string name="compat_hub_install_success">兼容中心已成功安装！</string>
     <string name="compat_hub_install_fail">安装失败。请确认 ShizukuX 或 Root 已激活。</string>

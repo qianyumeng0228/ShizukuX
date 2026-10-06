@@ -220,7 +220,13 @@ class ShizukuCompanionViewHolder(
             binding.title.setText(R.string.compat_hub_installed_title)
             binding.text1.setText(R.string.compat_hub_installed_desc)
             binding.button1.visibility = View.GONE
-            binding.button2.visibility = View.GONE
+            // Compat Hub installed with no stock Shizuku conflict: the only useful action is
+            // removing the leftover hub, so surface button2 (system uninstall page) here.
+            // Drop-in builds ARE moe.shizuku.privileged.api (no separate hub) — hide the
+            // button there so it never offers to uninstall the running app itself.
+            val selfIsHub = binding.root.context.packageName == StockShizukuCompat.PACKAGE
+            binding.button2.setText(R.string.compat_hub_uninstall_btn)
+            binding.button2.visibility = if (selfIsHub) View.GONE else View.VISIBLE
         } else if (companionInstalled) {
             binding.title.setText(R.string.companion_conflict_title)
             binding.text1.setText(R.string.companion_conflict_description)
