@@ -63,6 +63,14 @@
             android:icon="@drawable/ic_lan_24"
             android:inputType="number" />
 
+        <SwitchPreferenceCompat
+            android:key="tcp_auto_close_port"
+            android:title="@string/settings_tcp_auto_close_port"
+            android:summary="@string/settings_tcp_auto_close_port_summary"
+            android:icon="@drawable/ic_warning_24"
+            android:dependency="tcp_mode"
+            android:defaultValue="false" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

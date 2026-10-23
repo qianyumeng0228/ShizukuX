@@ -894,9 +894,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      * Order: explicit intent port → system property port → last used port → mDNS discovery.
      */
     private suspend fun detectPort(intentPort: Int?): Pair<Int, Boolean>? {
-        val p = intentPort
-        if (p != null && p in 1..65535) {
-            return Pair(p, canConnect(p))
+        // intentPort 连不上时不能直接失败：它很可能来自 on_device_adb_tcp 残留的 5555
+        //（adbd 停在明文模式而 key 未授权，或已被切到无线调试 TLS 模式），必须继续向下
+        // 探测而不是把 (port, false) 直接抛给启动流程。
+        if (intentPort != null && intentPort in 1..65535 && canConnect(intentPort)) {
+            return Pair(intentPort, true)
         }
         val sysPropPort = EnvironmentUtils.getAdbTcpPort()
         val lastPort = ShizukuSettings.getLastPort()
@@ -904,6 +906,18 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             if (p in 1..65535) {
                 if (canConnect(p)) return Pair(p, true)
             }
+        }
+        // 「设备内 ADB over TCP」（on_device_adb_tcp，传统明文 TCP 模式）与无线调试
+        // （adb_wifi_enabled，TLS）互斥。其残留的 service.adb.tcp.port 属性会让 adbd
+        // 停在明文 5555 模式（或误导上面的端口检测），而明文 AUTH 需要 adb_keys 白名单
+        // 授权（无线调试配对 key 不通用）→ canConnect 失败；随后 mDNS 本机自发现又常
+        // 不可靠 → 一键激活失败。这里清理该残留并让 adbd 回到无线调试状态，再走 mDNS。
+        if (EnvironmentUtils.getAdbTcpPort() in 1..65535) {
+            Timber.tag("StarterActivity").i("on_device_adb_tcp active but unreachable; clearing it to restore wireless debugging")
+            withContext(Dispatchers.IO) {
+                runCatching { af.shizuku.manager.service.AdbProxyService.disableAdbTcp() }
+            }
+            delay(1500) // let adbd re-register its TLS service before mDNS
         }
         // Wireless debugging may still be on with a random TLS port — discover it via mDNS.
         val discovered: Int = discoverAdbPort() ?: 0

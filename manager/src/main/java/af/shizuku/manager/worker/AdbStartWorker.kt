@@ -33,8 +33,11 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.adb.AdbClient
+import af.shizuku.manager.adb.AdbKey
 import af.shizuku.manager.adb.AdbMdns
 import af.shizuku.manager.adb.AdbPortProber
+import af.shizuku.manager.adb.PreferenceAdbKeyStore
 import af.shizuku.manager.database.ActivityLogManager
 import af.shizuku.manager.adb.AdbStarter
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
@@ -83,9 +86,24 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             // reboot 5555 exists only once the service has rebound adbd to it — so a
             // stale port falls through to mDNS discovery below.
             val livePort = if (isWifiOk) AdbPortProber.findActiveLoopbackPort() else -1
+            // Fast-path 的 Socket 连通性探测（150ms）不验证 AUTH：「设备内 ADB over TCP」
+            // （on_device_adb_tcp）残留的明文 TCP 5555 端口可被抢先命中——明文 AUTH 需要
+            // adb_keys 白名单授权（无线调试配对 key 不通用），startAdb 必然失败。这里先做
+            // 一次真实 AUTH 连接验证；失败即清理残留（恢复无线调试），让下方分支落空自然
+            // 走到 mDNS 发现 TLS 配对端口。
+            val usableLivePort = if (livePort > 0 && !isAuthUsable(livePort)) {
+                Timber.tag("AdbStartWorker").w("loopback port $livePort open but AUTH failed (on_device_adb_tcp residue?); clearing and rediscovering")
+                if (EnvironmentUtils.getAdbTcpPort() in 1..65535) {
+                    withContext(Dispatchers.IO) {
+                        runCatching { af.shizuku.manager.service.AdbProxyService.disableAdbTcp() }
+                    }
+                    delay(1500) // let adbd re-register its TLS service before mDNS
+                }
+                -1
+            } else livePort
             val port = when {
-                livePort > 0 -> livePort
-                tcpPort > 0 && isWifiOk -> tcpPort
+                usableLivePort > 0 -> usableLivePort
+                EnvironmentUtils.getAdbTcpPort() > 0 && isWifiOk -> EnvironmentUtils.getAdbTcpPort()
                 savedPort > 0 && isWifiOk && runAttemptCount == 0 -> savedPort
                 else -> callbackFlow {
                 val adbMdns = AdbMdns(applicationContext, AdbMdns.TLS_CONNECT) { p ->
@@ -228,6 +246,25 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     /**
+     * Real AUTH-capable connection check on a candidate port. TCP connectivity alone
+     * (AdbPortProber) does not imply the ADB key is accepted: a legacy plaintext TCP
+     * port (on_device_adb_tcp residue) requires the key to be in adb_keys, while a
+     * wireless-debugging TLS port requires a valid pairing. Either success counts.
+     * AdbClient.connect() enforces 5s connect / 15s read timeouts, so this cannot hang.
+     */
+    private suspend fun isAuthUsable(port: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
+            AdbClient("127.0.0.1", port, key).use { it.connect() }
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
      * Opt-in hammer for hostile ROMs (HyperOS): some ROMs clear adb_wifi_enabled
      * when legacy TCP mode activates — a write before the bind lands in the wiped
      * window. Runs AFTER the binder is up. Shells out through the Shizuku service
@@ -320,9 +357,12 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 .setConstraints(constraints)
                 .build()
 
+            // Use KEEP while a key offer is waiting for a dialog response — REPLACE would cancel
+            // the current connection and create another "Allow USB debugging?" dialog.
+            val policy = if (af.shizuku.manager.adb.AdbStarter.keyOfferInFlight) ExistingWorkPolicy.KEEP else ExistingWorkPolicy.REPLACE
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "adb_start_worker",
-                ExistingWorkPolicy.REPLACE,
+                policy,
                 request
             )
         }

@@ -17,6 +17,8 @@ import androidx.fragment.app.FragmentActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
@@ -99,6 +101,17 @@ class StartWirelessAdbViewHolder(
             }
 
             context.sendBroadcast(Intent(context, NotifCancelReceiver::class.java))
+
+            // 「设备内 ADB over TCP」（on_device_adb_tcp，传统明文 TCP 模式）与无线调试
+            // （adb_wifi_enabled，TLS）互斥。其残留的 service.adb.tcp.port 会让 adbd 停在
+            // 明文 5555 模式，而下面读到的 sysPropPort=5555 会把一键启动引向连不上的明文
+            // 端口（明文 AUTH 需要 adb_keys 白名单授权，无线调试配对 key 不通用），直接
+            // 导致激活失败。先清理它并让 adbd 回到无线调试状态，再继续一键启动流程。
+            if (EnvironmentUtils.getAdbTcpPort() in 1..65535) {
+                scope.launch(Dispatchers.IO) {
+                    runCatching { af.shizuku.manager.service.AdbProxyService.disableAdbTcp() }
+                }
+            }
 
             val cr = context.contentResolver
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {

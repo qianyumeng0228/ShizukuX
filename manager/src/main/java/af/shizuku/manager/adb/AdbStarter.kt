@@ -34,6 +34,11 @@ import af.shizuku.manager.utils.SettingsPage
 object AdbStarter {
     private const val TAG = "AdbStarter"
 
+    // True while a connection is holding its socket open waiting for the user to tap
+    // "Allow USB debugging?". Read by AdbStartWorker.enqueue() to switch from REPLACE
+    // to KEEP so the waiting worker is not cancelled and a second dialog is not queued.
+    @Volatile var keyOfferInFlight: Boolean = false
+
     private fun Context.getActivity(): Activity? {
         var context = this
         while (context is ContextWrapper) {
@@ -221,7 +226,10 @@ object AdbStarter {
                     delay(delayTime)
                     delayTime = (delayTime * 1.5).toLong().coerceAtMost(3000L) // Exponential backoff up to 3s
                 }
-                client.connect()
+                client.connect(
+                    onKeyOffered = { keyOfferInFlight = true },
+                    onKeyOfferDone = { keyOfferInFlight = false },
+                )
                 break
             } catch (e: Exception) {
                 if (

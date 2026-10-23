@@ -1,7 +1,7 @@
 #!/system/bin/sh
 
 # ShizukuX SU Bridge (su wrapper)
-# Allows legacy root apps to function via ShizukuX privileges.
+# POSIX / Magisk / SuperSU Compatible
 # Drop-in replacement for /system/bin/su for apps that support custom paths.
 
 BASEDIR=$(dirname "$0")
@@ -12,33 +12,163 @@ BASEDIR=$(dirname "$0")
 # hardcoded value here (previously af.shizuku.plus.api) would break the bridge for every app except
 # ShizukuX itself. Leave it unset and let rish resolve it — unless the caller already exported one.
 
-# Parse su-style arguments so more apps' invocation styles work:
-#   su                      -> interactive shell
-#   su -c "cmd"             -> run cmd
-#   su -c cmd arg1 arg2     -> run "cmd arg1 arg2" (everything after -c, not just the first token)
-#   su root -c "cmd" / su 0 -c "cmd" / su <user> -c "cmd"  -> user specifier ignored (rish is shell-level)
-#   su --mount-master -c "cmd" / su -s /bin/sh -c "cmd"    -> Magisk-style flags ignored
+# Unset dynamic linker preload to avoid EACCES in cross-UID ADB mode
+unset LD_PRELOAD
+
 COMMAND=""
 HAS_COMMAND=0
+PRESERVE_ENV=1
+
+# Helper function to single-quote escape an argument safely for /system/bin/sh
+escape_arg() {
+    printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
 while [ $# -gt 0 ]; do
     case "$1" in
-        -c|--command|--)
+        -v|--version)
+            echo "26.4:MAGISKSU"
+            exit 0
+            ;;
+        -V)
+            echo "26400"
+            exit 0
+            ;;
+        -h|--help)
+            echo "usage: su [options] [-] [user [argument...]]"
+            echo ""
+            echo "Options:"
+            echo "  -c, --command <command>  pass command to shell"
+            echo "  -p, -m, --preserve-environment"
+            echo "                           preserve environment"
+            echo "  -s, --shell <shell>      specify shell"
+            echo "  -l, --login              simulate a login shell"
+            echo "  -v, --version            display version number and exit"
+            echo "  -V                       display version code and exit"
+            echo "  -M, -mm, --mount-master  run in global mount namespace"
+            exit 0
+            ;;
+        -p|-m|--preserve-environment)
+            PRESERVE_ENV=1
             shift
-            COMMAND="$*"      # everything after -c is the command (real su semantics)
+            ;;
+        -l|--login|-)
+            PRESERVE_ENV=0
+            shift
+            ;;
+        -s|--shell)
+            shift 2
+            ;;
+        --shell=*)
+            shift
+            ;;
+        -z|-Z|--context)
+            shift 2
+            ;;
+        --context=*)
+            shift
+            ;;
+        -M|-mm|--mount-master)
+            shift
+            ;;
+        -c|--command)
+            shift
+            if [ $# -eq 1 ]; then
+                COMMAND="$1"
+            elif [ $# -gt 1 ]; then
+                COMMAND=""
+                for arg in "$@"; do
+                    if [ -z "$COMMAND" ]; then
+                        COMMAND="$(escape_arg "$arg")"
+                    else
+                        COMMAND="$COMMAND $(escape_arg "$arg")"
+                    fi
+                done
+            fi
             HAS_COMMAND=1
             break
             ;;
-        *)
-            # Positional user specifier (root/0/<name>) or a flag we can't map (-mm, -p, -s ...):
-            # skip it. rish always runs at Shizuku's shell/ADB privilege regardless.
+        --command=*)
+            COMMAND="${1#--command=}"
+            HAS_COMMAND=1
             shift
+            break
+            ;;
+        --)
+            shift
+            if [ $# -gt 0 ]; then
+                COMMAND=""
+                for arg in "$@"; do
+                    if [ -z "$COMMAND" ]; then
+                        COMMAND="$(escape_arg "$arg")"
+                    else
+                        COMMAND="$COMMAND $(escape_arg "$arg")"
+                    fi
+                done
+                HAS_COMMAND=1
+            fi
+            break
+            ;;
+        *)
+            # Check if this token is a username/UID (0, root, shell, etc.)
+            case "$1" in
+                0|root|shell|1000|[0-9]*)
+                    shift
+                    # If arguments remain after user specifier, they form the command
+                    if [ $# -gt 0 ]; then
+                        COMMAND=""
+                        for arg in "$@"; do
+                            if [ -z "$COMMAND" ]; then
+                                COMMAND="$(escape_arg "$arg")"
+                            else
+                                COMMAND="$COMMAND $(escape_arg "$arg")"
+                            fi
+                        done
+                        HAS_COMMAND=1
+                        break
+                    fi
+                    ;;
+                *)
+                    # Direct positional command: su id
+                    COMMAND=""
+                    for arg in "$@"; do
+                        if [ -z "$COMMAND" ]; then
+                            COMMAND="$(escape_arg "$arg")"
+                        else
+                            COMMAND="$COMMAND $(escape_arg "$arg")"
+                        fi
+                    done
+                    HAS_COMMAND=1
+                    break
+                    ;;
+            esac
             ;;
     esac
 done
 
+export RISH_PRESERVE_ENV="$PRESERVE_ENV"
+
+# When KernelSU/Magisk provides a real su binary, delegate to it for uid=0 execution.
+# This makes the bridge transparent on temp-rooted or Magisk-rooted devices: apps that
+# are authorized in both ShizukuX and KernelSU get true root; others fall through to rish.
+_SYS_SU=""
+_HAVE_REAL_SU=0
+_self=$(readlink -f "$0" 2>/dev/null || echo "$0")
+for _candidate in /system/bin/su /system/xbin/su /data/adb/ksu/bin/su /data/adb/ap/bin/su /sbin/su /debug_ramdisk/su; do
+    if [ -f "$_candidate" ] && [ -x "$_candidate" ]; then
+        _sys=$(readlink -f "$_candidate" 2>/dev/null || echo "$_candidate")
+        if [ "$_self" != "$_sys" ]; then
+            _SYS_SU="$_candidate"
+            _HAVE_REAL_SU=1
+            break
+        fi
+    fi
+done
+
 if [ "$HAS_COMMAND" = "1" ] && [ -n "$COMMAND" ]; then
+    [ "$_HAVE_REAL_SU" = "1" ] && exec "$_SYS_SU" -c "$COMMAND"
     exec sh "$BASEDIR/rish" -c "$COMMAND"
 else
-    # No command (e.g. `su`, `su root`) -> interactive rish shell.
+    [ "$_HAVE_REAL_SU" = "1" ] && exec "$_SYS_SU"
     exec sh "$BASEDIR/rish"
 fi

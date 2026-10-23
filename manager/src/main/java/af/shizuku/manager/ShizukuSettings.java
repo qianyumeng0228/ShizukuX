@@ -32,6 +32,7 @@ public class ShizukuSettings {
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
         public static final String KEY_LAST_PORT = "last_adb_port";
+        public static final String KEY_TCP_AUTO_CLOSE_PORT = "tcp_auto_close_port";
         public static final String KEY_AUTO_DISABLE_USB_DEBUGGING = "auto_disable_usb_debugging";
         public static final String KEY_LANGUAGE = "language";
         public static final String KEY_TRANSLATION = "translation";
@@ -549,6 +550,10 @@ public class ShizukuSettings {
 
     public static int getLastPort() {
         return getPreferences().getInt(Keys.KEY_LAST_PORT, 0);
+    }
+
+    public static boolean isAutoCloseTcpPortEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_TCP_AUTO_CLOSE_PORT, false);
     }
 
     public static void setLastPort(int port) {

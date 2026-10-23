@@ -7,6 +7,9 @@ import android.provider.Settings
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -95,6 +98,30 @@ object ShizukuStateMachine {
                     )
                 } catch (e: Exception) {
                     Timber.tag("ShizukuStateMachine").w(e, "Failed to dispatch automation event")
+                }
+
+                // Auto-close the ADB wireless-debugging listener (and the TCP port adbd was
+                // bound to) when the session ends, so the port is not left open after a stop.
+                // Only on STOPPED/CRASHED: the connection is already gone by then, so writing
+                // adb_wifi_enabled=0 cannot tear down a live socket (hostile-ROM red line).
+                if ((newState == State.STOPPED || newState == State.CRASHED) &&
+                    ShizukuSettings.isAutoCloseTcpPortEnabled()
+                ) {
+                    try {
+                        val context = ShizukuApplication.appContext
+                        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
+                                    Timber.tag("ShizukuStateMachine").i("auto-closed TCP port (disabled wireless debugging)")
+                                } catch (e: Exception) {
+                                    Timber.tag("ShizukuStateMachine").w(e, "Failed to auto-close TCP port")
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag("ShizukuStateMachine").w(e, "Failed to initiate TCP auto-close on $newState")
+                    }
                 }
 
                 // Persist so a future cold-started process (see loadPersistedSettledState() above)
