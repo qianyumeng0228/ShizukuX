@@ -372,12 +372,13 @@ public class ShizukuConfigManager extends ConfigManager {
     /**
      * Writes any change still waiting for the delayed worker now, on the calling thread.
      * Called before the server exits, which would otherwise lose it.
+     * Lock order is `this -> ATOMIC_FILE`, matching update()/markPermGrantMigrationDone() —
+     * NOT the upstream ATOMIC_FILE -> this order, because ShizukuX writes synchronously
+     * under `this` and the opposite order would deadlock with a concurrent update().
      */
     public void flushPendingWrite() {
-        synchronized (ATOMIC_FILE) {
-            synchronized (this) {
-                write(config);
-            }
+        synchronized (this) {
+            write(config);
         }
     }
 

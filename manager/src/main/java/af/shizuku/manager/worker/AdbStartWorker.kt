@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbClient
@@ -250,13 +251,17 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
      * (AdbPortProber) does not imply the ADB key is accepted: a legacy plaintext TCP
      * port (on_device_adb_tcp residue) requires the key to be in adb_keys, while a
      * wireless-debugging TLS port requires a valid pairing. Either success counts.
-     * AdbClient.connect() enforces 5s connect / 15s read timeouts, so this cannot hang.
+     * Bounded by withTimeoutOrNull: since P1-3 (a8dda0f7) the key-offer path holds the
+     * socket open for up to 5 minutes waiting for an "Allow USB debugging?" dialog, which
+     * is not what this fast AUTH probe wants — a loopback probe that hits a key-offer
+     * must fail fast and fall through to mDNS discovery, not park the worker for 5 min.
      */
     private suspend fun isAuthUsable(port: Int): Boolean = withContext(Dispatchers.IO) {
         try {
-            val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
-            AdbClient("127.0.0.1", port, key).use { it.connect() }
-            true
+            withTimeoutOrNull(10_000) {
+                val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
+                AdbClient("127.0.0.1", port, key).use { it.connect() }
+            } != null
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
