@@ -51,6 +51,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import af.shizuku.manager.AppConstants.EXTRA
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.adb.AdbArm
 import af.shizuku.manager.adb.AdbClient
 import af.shizuku.manager.adb.AdbKey
 import af.shizuku.manager.adb.AdbKeyException
@@ -858,20 +859,16 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Auto-enables wireless debugging via Settings.Global when we hold WRITE_SECURE_SETTINGS.
+    /** Auto-enables wireless debugging via the AdbArm choke point (WRITE_SECURE_SETTINGS,
+     *  or Device Owner fallback for the allowlisted keys).
      *  No Wi-Fi connection is required: adbd listens on all interfaces and pairing runs over
      *  127.0.0.1 — the old isWifiConnected() guard wrongly blocked this path on WiFi-less
      *  devices (HyperOS force-disables the settings switch without a connected network, but
      *  the settings write itself works regardless). */
     private suspend fun tryAutoEnableWirelessDebugging() {
         val context = appContext
-        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-            runCatching {
-                val cr = context.contentResolver
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-            }
+        if (AdbArm.canArm(context)) {
+            AdbArm.arm(context)
             updateStep(
                 if (autoPairingMode) "one_tap_wireless" else "enable_wireless",
                 StepStatus.COMPLETED,

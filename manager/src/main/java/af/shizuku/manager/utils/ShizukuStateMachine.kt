@@ -1,9 +1,6 @@
 package af.shizuku.manager.utils
 
-import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
-import android.content.pm.PackageManager
-import android.provider.Settings
 import timber.log.Timber
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
@@ -16,6 +13,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import af.shizuku.manager.ShizukuApplication
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.BuildConfig
+import af.shizuku.manager.adb.AdbArm
 import rikka.shizuku.Shizuku
 import io.sentry.Sentry
 import io.sentry.Breadcrumb
@@ -109,14 +107,13 @@ object ShizukuStateMachine {
                 ) {
                     try {
                         val context = ShizukuApplication.appContext
-                        if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                if (AdbArm.disarmWifiEnabled(context)) {
                                     Timber.tag("ShizukuStateMachine").i("auto-closed TCP port (disabled wireless debugging)")
-                                } catch (e: Exception) {
-                                    Timber.tag("ShizukuStateMachine").w(e, "Failed to auto-close TCP port")
                                 }
+                            } catch (e: Exception) {
+                                Timber.tag("ShizukuStateMachine").w(e, "Failed to auto-close TCP port")
                             }
                         }
                     } catch (e: Exception) {
@@ -154,10 +151,9 @@ object ShizukuStateMachine {
             State.STOPPING -> {
                 try {
                     val context = ShizukuApplication.appContext
-                    val permissionGranted = context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
-                    val shouldDisableUsbDebugging = permissionGranted && ShizukuSettings.getAutoDisableUsbDebugging()
+                    val shouldDisableUsbDebugging = ShizukuSettings.getAutoDisableUsbDebugging()
                     if (shouldDisableUsbDebugging) {
-                        Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
+                        AdbArm.disarmUsbDebugging(context)
                     }
                 } catch (e: UninitializedPropertyAccessException) {
                     Timber.tag("ShizukuStateMachine").w("Skipping USB debugging disable: appContext not initialized yet")

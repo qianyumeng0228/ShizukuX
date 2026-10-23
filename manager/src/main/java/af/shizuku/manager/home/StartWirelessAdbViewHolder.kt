@@ -1,11 +1,8 @@
 ﻿package af.shizuku.manager.home
 
-import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -22,6 +19,7 @@ import kotlinx.coroutines.launch
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
+import af.shizuku.manager.adb.AdbArm
 import af.shizuku.manager.adb.AdbPairingTutorialActivity
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeStartWirelessAdbBinding
@@ -113,14 +111,10 @@ class StartWirelessAdbViewHolder(
                 }
             }
 
-            val cr = context.contentResolver
-            if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-                // Also enable wireless debugging itself (Android 11+ adbd switch), so the
-                // one-tap flow works without a manual trip to developer options.
-                Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-            }
+            // One-tap arm through the AdbArm choke point: WRITE_SECURE_SETTINGS writes
+            // ADB_ENABLED + adb_allowed_connection_time + adb_wifi_enabled; Device Owner
+            // (dhizuku) writes the two allowlisted ADB keys as fallback.
+            AdbArm.arm(context)
 
             // NOTE: no longer gate on Settings.Global.ADB_ENABLED (USB debugging). Wireless
             // debugging (Android 11+ TLS) works with USB debugging off; gating on it made the

@@ -1,10 +1,7 @@
 package af.shizuku.manager.adb
 import af.shizuku.manager.R
 
-import android.Manifest.permission.WRITE_SECURE_SETTINGS
-import android.content.pm.PackageManager
 import android.content.Context
-import android.provider.Settings
 import timber.log.Timber
 import android.widget.Toast
 import java.io.EOFException
@@ -175,19 +172,15 @@ object AdbStarter {
             }
             throw e
         } finally {
-            if (startedSuccessfully && ShizukuSettings.getAutoDisableUsbDebugging() && context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
-                Settings.Global.putInt(context.contentResolver, "adb_wifi_enabled", 0)
+            if (startedSuccessfully && ShizukuSettings.getAutoDisableUsbDebugging())
+                AdbArm.disarmWifiEnabled(context)
         }
     }
 
     suspend fun stopTcp(context: Context, port: Int) {
         if (port !in 1..65535) return
         runCatching {
-            val cr = context.contentResolver
-            if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-            }
+            AdbArm.armUsbDebugging(context)
 
             if (!EnvironmentUtils.isAdbEnabled()) throw IllegalStateException("ADB is not enabled")
 

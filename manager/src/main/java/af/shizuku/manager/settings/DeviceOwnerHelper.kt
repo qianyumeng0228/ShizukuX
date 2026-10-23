@@ -35,6 +35,43 @@ object DeviceOwnerHelper {
     }
 
     /**
+     * Writes a single system-global setting as device owner.
+     *
+     * `DevicePolicyManager.setGlobalSetting` is allowlisted for exactly
+     * `Settings.Global.ADB_ENABLED` and `adb_wifi_enabled` (AOSP
+     * `DevicePolicyManagerService.GLOBAL_SETTINGS_ALLOWLIST`); writing any other key
+     * throws `SecurityException`, so callers must only pass allowlisted keys here.
+     *
+     * @return true when the write succeeded, false otherwise (logs the failure).
+     */
+    fun setGlobalSetting(context: Context, key: String, value: String): Boolean {
+        if (!isDeviceOwner(context)) return false
+        return try {
+            val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+            val admin = adminComponent(context)
+            dpm.setGlobalSetting(admin, key, value)
+            true
+        } catch (e: Throwable) {
+            Timber.tag("DeviceOwnerHelper").w(e, "setGlobalSetting $key failed")
+            false
+        }
+    }
+
+    /**
+     * Turns USB debugging + wireless debugging on as device owner (ADB allowlist keys
+     * only; does NOT touch development_settings_enabled). Idempotent.
+     *
+     * @return true when both writes succeeded.
+     */
+    fun enableAdbViaDpm(context: Context): Boolean {
+        var ok = setGlobalSetting(context, Settings.Global.ADB_ENABLED, "1")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            ok = setGlobalSetting(context, "adb_wifi_enabled", "1") && ok
+        }
+        return ok
+    }
+
+    /**
      * Enables developer options + USB debugging + wireless debugging as device owner.
      * No Wi-Fi connection and no settings-switch click are required.
      *

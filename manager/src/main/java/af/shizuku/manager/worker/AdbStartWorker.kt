@@ -9,7 +9,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
@@ -34,6 +33,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.adb.AdbArm
 import af.shizuku.manager.adb.AdbClient
 import af.shizuku.manager.adb.AdbKey
 import af.shizuku.manager.adb.AdbMdns
@@ -50,7 +50,6 @@ import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
 import timber.log.Timber
-import android.Manifest
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
@@ -62,17 +61,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val cr = applicationContext.contentResolver
 
-            // Guard the secure-settings writes: without WRITE_SECURE_SETTINGS each
-            // putInt throws SecurityException (swallowed into a retry loop upstream).
-            // Mirrors upstream: write ADB_ENABLED / adb_allowed_connection_time only
-            // when the permission is actually held.
-            val hasSecureSettingsPermission = applicationContext.checkSelfPermission(
-                Manifest.permission.WRITE_SECURE_SETTINGS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (hasSecureSettingsPermission) {
-                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
-            }
+            // Arming routes through the AdbArm choke point: WRITE_SECURE_SETTINGS when
+            // held, otherwise Device Owner (dhizuku) fallback for the allowlisted keys.
+            AdbArm.armUsbDebugging(applicationContext)
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
@@ -150,9 +141,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 if (intent.action == Intent.ACTION_USER_PRESENT) {
                                     context.unregisterReceiver(this)
                                     unlockReceiver = null
-                                    if (hasSecureSettingsPermission) {
-                                        Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                                    }
+                                    AdbArm.armWifiEnabled(context)
                                 }
                             }
                         }
@@ -178,9 +167,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                if (hasSecureSettingsPermission) {
-                    Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
-                }
+                AdbArm.armWifiEnabled(applicationContext)
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 
