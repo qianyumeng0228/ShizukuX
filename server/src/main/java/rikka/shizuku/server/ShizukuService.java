@@ -1951,9 +1951,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         } else {
             for (ClientRecord record : records) {
                 packages.add(record.packageName);
+                boolean previouslyAllowed = record.allowed;
                 record.allowed = allowed;
                 if (record.pid == requestPid) {
                     record.dispatchRequestPermissionResult(requestCode, allowed);
+                } else if (!allowed && previouslyAllowed) {
+                    // Only force-stop if access was revoked or denied, ensuring revoked processes
+                    // cannot continue making calls with stale assumptions. When granted, record.allowed
+                    // is already set to true above, avoiding abrupt package death mid-flow (#488).
+                    ActivityManagerApis.forceStopPackageNoThrow(record.packageName, UserHandleCompat.getUserId(record.uid));
                 }
             }
         }
