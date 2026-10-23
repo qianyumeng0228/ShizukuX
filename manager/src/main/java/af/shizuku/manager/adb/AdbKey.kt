@@ -2,6 +2,7 @@ package af.shizuku.manager.adb
 
 import android.content.SharedPreferences
 import android.os.Build
+import android.os.UserManager
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -197,6 +198,20 @@ class AdbKey(private val adbKeyStore: AdbKeyStore, name: String) {
                 }
                 privateKey = keyFactory.generatePrivate(PKCS8EncodedKeySpec(plaintext)) as RSAPrivateKey
             } catch (e: Exception) {
+                // A key that cannot be read is not a key that does not exist, and before the first
+                // unlock the keystore may well not be able to read it yet (credential-encrypted
+                // storage is still locked). Generating a new one here would be saved over the good
+                // one, and the device that trusted it would no longer know this app: a pairing
+                // nobody asked to lose (ported from Shizuku-Next c5eeafa). So while the user is
+                // locked the failure is the answer and the start reports it; the start made at the
+                // unlock reads the key properly. Unlocked, a key that cannot be decrypted really is
+                // gone (a restored backup, a reset keystore) and a new one is the only way forward.
+                val um = af.shizuku.manager.ShizukuApplication.appContext
+                    .getSystemService(UserManager::class.java)
+                val userLocked = um != null && um.isUserUnlocked != true
+                if (userLocked) {
+                    throw IllegalStateException("The ADB key could not be read while the user is locked", e)
+                }
                 Timber.tag(TAG).w("Failed to decrypt stored ADB key; generating a new key: ${e.message}")
             }
         }

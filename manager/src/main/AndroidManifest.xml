@@ -363,6 +363,28 @@
                     The watchdog service is opt-in and toggleable via settings, so users can choose to disable it at any time if not desired." />
         </service>
 
+        <!-- The start that is made before the first unlock after a restart. WorkManager cannot run
+             then (its database is in credential-encrypted storage), so the same start is made here:
+             direct-boot aware so that the system can run it from LOCKED_BOOT_COMPLETED, and a
+             foreground service because the local-only hotspot it may need is gated on that.
+             (ported from Shizuku-Next c5eeafa, ShizukuX adaptation: runs AdbStarter.startAdb once,
+             no backoff, no WorkManager.) -->
+        <service
+            android:name=".service.LockedBootStartService"
+            android:directBootAware="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="The user can configure the app to start the Shizuku API server automatically when the device boots.
+                    After a restart the device stays locked until the user types their PIN, which can take a minute or more,
+                    and many apps that rely on the API service are waiting for it in the meantime.
+                    This service makes the same start the background worker would make, but without the worker,
+                    which cannot run until the first unlock. It connects to the device's own debugging port, runs once,
+                    and stops itself as soon as the start has finished or failed.
+                    It shows the start's ongoing notification for as long as it runs, and does nothing otherwise." />
+        </service>
+
         <receiver
             android:name=".widget.ShizukuWidgetProvider"
             android:exported="true"

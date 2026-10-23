@@ -9,7 +9,9 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.RootCompatHelper
+import af.shizuku.manager.service.LockedBootStartService
 import af.shizuku.manager.service.WatchdogService
+import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.worker.DeveloperRestoreWorker
 
 class BootCompleteReceiver : BroadcastReceiver() {
@@ -50,17 +52,40 @@ class BootCompleteReceiver : BroadcastReceiver() {
             }
         }
 
-        try {
-            ShizukuReceiverStarter.start(context)
-        } catch (e: Exception) {
-            // LOCKED_BOOT_COMPLETED fires during direct boot, before credential-encrypted storage
-            // is available — WorkManager can't initialize and prefs may be inaccessible. This is
-            // expected; the later BOOT_COMPLETED (post-unlock) handles auto-start. Catch broadly so
-            // no variant crashes the receiver, and log at warn (breadcrumb, not a billed Sentry event).
-            Timber.tag("BootCompleteReceiver").w(e, "Auto-start skipped (service not ready, e.g. direct boot)")
+        if (action == Intent.ACTION_LOCKED_BOOT_COMPLETED) {
+            // Direct boot, before the first unlock: WorkManager cannot run (its database is in
+            // credential-encrypted storage) and prefs are inaccessible, so the ordinary start
+            // chain must NOT be touched here — a request would take the process down. A wireless
+            // start needs only device-protected storage (settings + encrypted ADB key), the system
+            // settings and the network, so it is made in the direct-boot-aware foreground service
+            // instead. Everything else waits for BOOT_COMPLETED after the unlock.
+            //
+            // Note: no "manually stopped" check here. ShizukuX has no such persisted flag, and
+            // loadPersistedSettledState() degrades to STOPPED while locked (prefs unreadable), so
+            // a state-based check would be true on every cold boot and skip the start. This
+            // matches the BOOT_COMPLETED path, which also always attempts when start-on-boot is on.
+            val startWanted = ShizukuSettings.getStartOnBoot(context)
+            val adbMethod = ShizukuSettings.getLastLaunchMode() == ShizukuSettings.LaunchMethod.ADB
+            if (startWanted && adbMethod) {
+                LockedBootStartService.start(context)
+            }
+        } else {
+            try {
+                ShizukuReceiverStarter.start(context)
+            } catch (e: Exception) {
+                // LOCKED_BOOT_COMPLETED fires during direct boot, before credential-encrypted storage
+                // is available — WorkManager can't initialize and prefs may be inaccessible. This is
+                // expected; the later BOOT_COMPLETED (post-unlock) handles auto-start. Catch broadly so
+                // no variant crashes the receiver, and log at warn (breadcrumb, not a billed Sentry event).
+                Timber.tag("BootCompleteReceiver").w(e, "Auto-start skipped (service not ready, e.g. direct boot)")
+            }
         }
         try {
-            if (ShizukuSettings.getWatchdog()) {
+            // The watchdog is not direct-boot aware, so before the first unlock the platform
+            // cannot find it; start it only after BOOT_COMPLETED (the unlock has happened by
+            // then). This mirrors Shizuku-Next c5eeafa (UserUnlockedStarter starts it at the
+            // unlock) without needing a separate unlock receiver here.
+            if (ShizukuSettings.getWatchdog() && action != Intent.ACTION_LOCKED_BOOT_COMPLETED) {
                 WatchdogService.start(context)
                 // Exact alarms don't survive a reboot; re-arm the external watchdog (#415, #417).
                 WatchdogAlarmReceiver.schedule(context)

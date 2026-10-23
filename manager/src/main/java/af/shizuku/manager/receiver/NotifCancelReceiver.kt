@@ -7,10 +7,13 @@ import android.content.Intent
 import androidx.work.WorkManager
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.receiver.ShizukuReceiverStarter
+import af.shizuku.manager.service.LockedBootStartService
 import af.shizuku.manager.utils.EnvironmentUtils
 
 class NotifCancelReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Cancel a start the direct-boot service may still be running; ported from Shizuku-Next c5eeafa.
+        LockedBootStartService.cancelRun("cancelled from the notification")
         try {
             WorkManager.getInstance(context).cancelUniqueWork("adb_start_worker")
         } catch (e: Throwable) {
