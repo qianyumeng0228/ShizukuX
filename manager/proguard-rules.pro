@@ -41,6 +41,11 @@
 
 # Missing class android.app.IProcessObserver$Stub
 # Missing class android.app.IUidObserver$Stub
+# Android 16 eager verifier rejects whole DEXes when hidden-compat bytecode is
+# rewritten by R8 9.x without a keep. Keep ALL of rikka.hidden.compat (not just the
+# two named adapters below) — upstream ShizukuPlus 0aa38709/5ec4e1a8/6c9da310.
+-keep class rikka.hidden.compat.** { *; }
+
 -keepclassmembers class rikka.hidden.compat.adapter.ProcessObserverAdapter {
     <methods>;
 }

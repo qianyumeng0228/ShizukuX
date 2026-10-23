@@ -17,6 +17,15 @@ public class ShizukuConfig {
     @SerializedName("packages")
     public List<PackageEntry> packages = new ArrayList<>();
 
+    /**
+     * Whether the one-time OS-level runtime-permission backfill
+     * (ShizukuService.migratePermissionGrants) has already run. Gated so that a manual
+     * `pm revoke` by the user is NOT silently re-granted on every server restart.
+     * Old configs (no field) deserialize as false and run the migration exactly once.
+     */
+    @SerializedName("permGrantMigrationDone")
+    public boolean permGrantMigrationDone = false;
+
     public static class PackageEntry extends ConfigPackageEntry {
 
         @SerializedName("uid")

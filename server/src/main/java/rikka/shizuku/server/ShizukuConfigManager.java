@@ -101,14 +101,14 @@ public class ShizukuConfigManager extends ConfigManager {
         return new ShizukuConfig();
     }
 
-    public static void write(ShizukuConfig config) {
+    public static boolean write(ShizukuConfig config) {
         synchronized (ATOMIC_FILE) {
             FileOutputStream stream;
             try {
                 stream = ATOMIC_FILE.startWrite();
             } catch (IOException e) {
                 LOGGER.e("failed to write state: " + e);
-                return;
+                return false;
             }
 
             try {
@@ -133,9 +133,11 @@ public class ShizukuConfigManager extends ConfigManager {
                 LOGGER.v("config saved to " + file.getAbsolutePath());
 
                 writeBackup(json);
+                return true;
             } catch (Throwable tr) {
                 LOGGER.e(tr, "can't save %s, restoring backup.", ATOMIC_FILE.getBaseFile());
                 ATOMIC_FILE.failWrite(stream);
+                return false;
             }
         }
     }
@@ -358,8 +360,44 @@ public class ShizukuConfigManager extends ConfigManager {
                 // right after the user taps "allow" cannot lose the authorization (10s delayed
                 // write used to drop it when the process died inside the window).
                 HandlerKt.getWorkerHandler().removeCallbacks(mWriteRunner);
+                if (!write(config)) {
+                    // A failed save (full disk, I/O error) would lose the change at the next
+                    // restart; queue a retry instead of dropping it (upstream 9ae889ff).
+                    HandlerKt.getWorkerHandler().postDelayed(mWriteRunner, WRITE_DELAY);
+                }
+            }
+        }
+    }
+
+    /**
+     * Writes any change still waiting for the delayed worker now, on the calling thread.
+     * Called before the server exits, which would otherwise lose it.
+     */
+    public void flushPendingWrite() {
+        synchronized (ATOMIC_FILE) {
+            synchronized (this) {
                 write(config);
             }
+        }
+    }
+
+    /**
+     * Whether the one-time permission-grant backfill has already completed (persisted in
+     * shizuku.json). When true, migratePermissionGrants() must be skipped on startup so a
+     * manual `pm revoke` is not silently re-granted.
+     */
+    public boolean isPermGrantMigrationDone() {
+        synchronized (this) {
+            return config.permGrantMigrationDone;
+        }
+    }
+
+    /** Marks the one-time migration as done and persists it immediately. */
+    public void markPermGrantMigrationDone() {
+        synchronized (this) {
+            config.permGrantMigrationDone = true;
+            HandlerKt.getWorkerHandler().removeCallbacks(mWriteRunner);
+            write(config);
         }
     }
 

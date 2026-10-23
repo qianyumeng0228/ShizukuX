@@ -209,11 +209,20 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     // Re-grants the OS-level runtime permission for every already-authorized app on each server
     // start. Prior to the 741df2f4 fix (2026-07-19), grantRuntimePermission silently failed because
     // no installed package defined moe.shizuku.manager.permission.API_V23 — so apps authorized
-    // before that date have a ConfigManager entry but no OS grant. This is idempotent (re-granting
-    // an already-granted permission is a no-op), so it's safe to run unconditionally on startup.
+    // before that date have a ConfigManager entry but no OS grant. The backfill is gated by a
+    // persisted flag (ShizukuConfig.permGrantMigrationDone): it runs exactly once, and is skipped
+    // on all subsequent starts so a manual `pm revoke` by the user is NOT silently re-granted
+    // (upstream 7798b546).
     private void migratePermissionGrants() {
+        if (configManager.isPermGrantMigrationDone()) {
+            LOGGER.i("migratePermissionGrants: already done, skipping (respects manual pm revoke)");
+            return;
+        }
         List<Integer> allowedUids = configManager.getAllowedUids();
-        if (allowedUids.isEmpty()) return;
+        if (allowedUids.isEmpty()) {
+            configManager.markPermGrantMigrationDone();
+            return;
+        }
         LOGGER.i("migratePermissionGrants: checking %d authorized UIDs", allowedUids.size());
         int migrated = 0;
         for (int uid : allowedUids) {
@@ -241,6 +250,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             }
         }
         LOGGER.i("migratePermissionGrants: granted/refreshed %d permission(s)", migrated);
+        configManager.markPermGrantMigrationDone();
     }
 
     private void revokeRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
@@ -513,6 +523,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public void exit() {
         enforceManagerPermission("exit");
         LOGGER.i("exit");
+        // Flush any delayed config write still waiting (non-permission changes use the 1s
+        // coalescing window) before System.exit, so a stop/restart cannot lose them.
+        try {
+            configManager.flushPendingWrite();
+        } catch (Throwable e) {
+            LOGGER.w(e, "failed to flush config on exit");
+        }
         System.exit(0);
     }
 
