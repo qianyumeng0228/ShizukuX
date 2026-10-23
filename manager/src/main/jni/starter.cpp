@@ -7,6 +7,7 @@
 #include <cstring>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <sys/system_properties.h>
 #include <cerrno>
 #include <string>
@@ -31,6 +32,8 @@
 #define EXIT_FATAL_PM_PATH 7
 #define EXIT_FATAL_KILL 9
 #define EXIT_FATAL_BINDER_BLOCKED_BY_SELINUX 10
+#define EXIT_MANAGER_APP_NOT_FOUND 50
+#define STABLE_UPTIME_RESET_SECS 60
 
 #define PACKAGE_NAME "xyz.shizuku.extra.api"
 // This same starter.cpp is built into both the shizukux flavor (applicationId
@@ -53,7 +56,20 @@
 #define ABI "arm64"
 #endif
 
+static void detach_stdio_to_dev_null() {
+    int fd = open("/dev/null", O_RDWR);
+    if (fd != -1) {
+        dup2(fd, STDIN_FILENO);
+        dup2(fd, STDOUT_FILENO);
+        dup2(fd, STDERR_FILENO);
+        if (fd > 2) close(fd);
+    }
+}
+
 static void run_server(const char *dex_path, const char *main_class, const char *process_name) {
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGHUP, SIG_DFL);
+
     if (setenv("CLASSPATH", dex_path, true)) {
         LOGE("can't set CLASSPATH\n");
         exit(EXIT_FATAL_SET_CLASSPATH);
@@ -121,67 +137,135 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
     }
 }
 
-static void start_server(const char *path, const char *main_class, const char *process_name) {
-    int fds[2];
-    if (pipe(fds) < 0) {
-        perrorf("fatal: can't create pipe\n");
-        exit(EXIT_FATAL_FORK);
-    }
+[[noreturn]] static void supervise_server(const char *path, const char *main_class, const char *process_name, int pipe_write_fd) {
+    int restart_count = 0;
+    const int max_restarts = 5;
+    const unsigned int restart_delay_secs = 5;
 
-    pid_t pid = fork();
-    switch (pid) {
-        case -1: {
-            perrorf("fatal: can't fork\n");
+    for (;;) {
+        pid_t pid = fork();
+        if (pid == -1) {
+            LOGE("fatal: can't fork shizuku_server");
+            if (pipe_write_fd != -1) {
+                close(pipe_write_fd);
+            }
             exit(EXIT_FATAL_FORK);
-        }
-        case 0: {
-            LOGD("child");
-            close(fds[0]);
+        } else if (pid == 0) {
+            if (pipe_write_fd != -1) {
+                close(pipe_write_fd);
+            }
             setsid();
             chdir("/");
-            int fd = open("/dev/null", O_RDWR);
-            if (fd != -1) {
-                dup2(fd, STDIN_FILENO);
-                dup2(fd, STDOUT_FILENO);
-                dup2(fd, STDERR_FILENO);
-                if (fd > 2) close(fd);
-            }
-            
-            char ready = 1;
-            write(fds[1], &ready, 1);
-            close(fds[1]);
-
+            detach_stdio_to_dev_null();
             run_server(path, main_class, process_name);
+            _exit(EXIT_FATAL_APP_PROCESS);
         }
-        default: {
-            close(fds[1]);
-            char ready = 0;
-            
-            struct pollfd pfd;
-            pfd.fd = fds[0];
-            pfd.events = POLLIN;
-            
-            int ret = poll(&pfd, 1, 5000); // 5 second timeout
-            if (ret > 0) {
-                read(fds[0], &ready, 1);
-            } else if (ret == 0) {
-                perrorf("warn: starter timeout, server might not have started correctly\n");
-            } else {
-                perrorf("warn: poll failed: %s\n", strerror(errno));
-            }
-            
-            close(fds[0]);
 
-            if (ready == 1) {
-                printf("info: shizuku_server pid is %d\n", pid);
-                printf("info: shizuku_starter exit with 0\n");
-                exit(EXIT_SUCCESS);
-            } else {
-                perrorf("fatal: shizuku_server failed to start\n");
-                exit(EXIT_FATAL_APP_PROCESS);
-            }
+        struct timespec started_at{};
+        clock_gettime(CLOCK_MONOTONIC, &started_at);
+
+        if (pipe_write_fd != -1) {
+            ssize_t ignored = write(pipe_write_fd, &pid, sizeof(pid));
+            (void) ignored;
+            close(pipe_write_fd);
+            pipe_write_fd = -1;
+            detach_stdio_to_dev_null();
+        }
+        LOGI("shizuku_server pid is %d", pid);
+
+        int status = 0;
+        while (waitpid(pid, &status, 0) == -1) {
+            if (errno == EINTR) continue;
+            break;
+        }
+
+        struct timespec ended_at{};
+        clock_gettime(CLOCK_MONOTONIC, &ended_at);
+        long uptime_secs = ended_at.tv_sec - started_at.tv_sec;
+        if (uptime_secs < 0) uptime_secs = 0;
+
+        int exit_code = -1;
+        bool killed_by_signal = false;
+        if (WIFEXITED(status)) {
+            exit_code = WEXITSTATUS(status);
+        } else if (WIFSIGNALED(status)) {
+            exit_code = 128 + WTERMSIG(status);
+            killed_by_signal = true;
+        }
+
+        LOGI("shizuku_server exited with code %d after %lds", exit_code, uptime_secs);
+
+        if (!killed_by_signal && exit_code == 0) {
+            LOGI("shizuku_server exited cleanly, no restart");
+            exit(0);
+        }
+
+        if (!killed_by_signal && exit_code == EXIT_MANAGER_APP_NOT_FOUND) {
+            LOGW("manager application not found, stopping supervisor without restart");
+            exit(0);
+        }
+
+        if (uptime_secs >= STABLE_UPTIME_RESET_SECS) {
+            restart_count = 0;
+        }
+
+        restart_count += 1;
+        if (restart_count > max_restarts) {
+            LOGE("fatal: shizuku_server crashed %d times consecutively, giving up", restart_count);
+            exit(EXIT_FATAL_APP_PROCESS);
+        }
+
+        LOGW("restarting shizuku_server in %u seconds (attempt %d/%d)...",
+             restart_delay_secs, restart_count, max_restarts);
+        sleep(restart_delay_secs);
+    }
+}
+
+[[noreturn]] static void start_server(const char *path, const char *main_class, const char *process_name) {
+    int pipe_fds[2] = {-1, -1};
+    if (pipe(pipe_fds) != 0) {
+        pipe_fds[0] = -1;
+        pipe_fds[1] = -1;
+    }
+
+    pid_t supervisor_pid = fork();
+    if (supervisor_pid == -1) {
+        if (pipe_fds[0] != -1) {
+            close(pipe_fds[0]);
+            close(pipe_fds[1]);
+        }
+        perrorf("fatal: can't fork\n");
+        exit(EXIT_FATAL_FORK);
+    } else if (supervisor_pid == 0) {
+        if (pipe_fds[0] != -1) {
+            close(pipe_fds[0]);
+        }
+        setsid();
+        chdir("/");
+        supervise_server(path, main_class, process_name, pipe_fds[1]);
+    }
+
+    if (pipe_fds[1] != -1) {
+        close(pipe_fds[1]);
+    }
+
+    pid_t server_pid = supervisor_pid;
+    if (pipe_fds[0] != -1) {
+        pid_t reported_pid = 0;
+        ssize_t read_bytes = read(pipe_fds[0], &reported_pid, sizeof(reported_pid));
+        close(pipe_fds[0]);
+        if (read_bytes == (ssize_t) sizeof(reported_pid)) {
+            server_pid = reported_pid;
+        } else {
+            perrorf("fatal: failed to spawn shizuku_server\n");
+            exit(EXIT_FATAL_FORK);
         }
     }
+
+    printf("info: shizuku_server pid is %d\n", server_pid);
+    printf("info: shizuku_starter exit with 0\n");
+    fflush(stdout);
+    exit(EXIT_SUCCESS);
 }
 
 static int check_selinux(const char *s, const char *t, const char *c, const char *p) {
@@ -224,7 +308,54 @@ static int switch_cgroup() {
     return -1;
 }
 
+static char s_self_exe[PATH_MAX]{0};
+static ssize_t s_self_exe_len = 0;
+
+static void kill_old_processes() {
+    s_self_exe_len = readlink("/proc/self/exe", s_self_exe, sizeof(s_self_exe) - 1);
+    if (s_self_exe_len > 0) {
+        s_self_exe[s_self_exe_len] = '\0';
+    }
+
+    foreach_proc([](pid_t pid) {
+        if (pid == getpid()) return;
+
+        char name[1024]{0};
+        if (get_proc_name(pid, name, sizeof(name)) != 0) return;
+
+        bool is_server = (strcmp(SERVER_NAME, name) == 0);
+        bool is_old_supervisor = false;
+        if (!is_server && s_self_exe_len > 0) {
+            char proc_exe_path[64]{0};
+            snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
+            char exe_buf[PATH_MAX]{0};
+            ssize_t len = readlink(proc_exe_path, exe_buf, sizeof(exe_buf) - 1);
+            if (len == s_self_exe_len && memcmp(exe_buf, s_self_exe, (size_t) len) == 0) {
+                is_old_supervisor = true;
+            }
+        }
+
+        if (!is_server && !is_old_supervisor) return;
+
+        if (kill(pid, SIGKILL) == 0) {
+            printf("info: killed %d (%s)\n", pid, name);
+        } else if (errno == EPERM) {
+            if (is_server) {
+                perrorf("fatal: can't kill %d, please try to stop existing Shizuku from app first.\n", pid);
+                exit(EXIT_FATAL_KILL);
+            } else {
+                printf("warn: can't kill old supervisor %d (EPERM), ignoring.\n", pid);
+            }
+        } else {
+            printf("warn: failed to kill %d (%s)\n", pid, name);
+        }
+    });
+}
+
 int main(int argc, char *argv[]) {
+    signal(SIGPIPE, SIG_IGN);
+    signal(SIGHUP, SIG_IGN);
+
     std::string apk_path;
     for (int i = 0; i < argc; ++i) {
         if (strncmp(argv[i], "--apk=", 6) == 0) {
@@ -269,28 +400,11 @@ int main(int argc, char *argv[]) {
     printf("info: starter begin\n");
     fflush(stdout);
 
-    // kill old server
+    // Kill old server and any stale supervisor from a previous run.
     printf("info: killing old process...\n");
     fflush(stdout);
 
-    foreach_proc([](pid_t pid) {
-        if (pid == getpid()) return;
-
-        char name[1024];
-        if (get_proc_name(pid, name, 1024) != 0) return;
-
-        if (strcmp(SERVER_NAME, name) != 0)
-            return;
-
-        if (kill(pid, SIGKILL) == 0)
-            printf("info: killed %d (%s)\n", pid, name);
-        else if (errno == EPERM) {
-            perrorf("fatal: can't kill %d, please try to stop existing Shizuku from app first.\n", pid);
-            exit(EXIT_FATAL_KILL);
-        } else {
-            printf("warn: failed to kill %d (%s)\n", pid, name);
-        }
-    });
+    kill_old_processes();
 
     if (access(apk_path.c_str(), R_OK) == 0) {
         printf("info: use apk path from argv\n");
