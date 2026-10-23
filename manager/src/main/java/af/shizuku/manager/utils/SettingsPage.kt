@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.service.quicksettings.TileService
@@ -114,6 +115,23 @@ sealed class SettingsPage(
 
     object InternetPanel : SettingsPage(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
     object Accessibility : SettingsPage(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+
+    /**
+     * This app's own page in Settings.
+     *
+     * It is where "Allow restricted settings" lives, in the menu in the corner: the one way to
+     * open Android's restricted-settings gate on a device with no computer attached to run the
+     * equivalent app-ops command on it. Android offers that menu entry only once the
+     * restriction has been met at least once, which is the case by the time this is opened — the
+     * accessibility list has just refused the switch.
+     */
+    object ApplicationDetails : SettingsPage(Settings.ACTION_APPLICATION_DETAILS_SETTINGS) {
+        override fun buildIntent(context: Context): Intent {
+            return super.buildIntent(context).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+        }
+    }
 
     // Themed (Material You) icons has no dedicated Settings.ACTION_* — it's a per-launcher
     // toggle (Pixel Launcher's "Wallpaper & style", One UI Home, Nova, etc. each store and

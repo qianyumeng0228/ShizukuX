@@ -149,8 +149,9 @@
     <string name="dialog_usb_debugging_not_enabled">USB 调试未启用。\n请在“开发者选项”中启用 USB 调试。</string>
     <string name="dialog_adb_pairing_message">请按以下步骤开始配对：\n- 打开“开发者选项”\n- 启用“无线调试”\n- 点按“无线调试”\n- 点按“使用配对码配对设备”\n- 在通知中输入配对码</string>
     <string name="dialog_adb_pairing_accessibility_permission">在 Android 14 上，安装或更新 Shizuku 时，软件包安装程序会撤销 %1$s 权限；启用配对辅助功能需要此权限。\n\n若要授予权限，请运行以下 ADB 命令：\n\n%2$s\n\n运行命令后即可继续配对。\n\n注意：通过 ADB 安装或更新 Shizuku 也可以跳过此操作。</string>
-    <string name="dialog_adb_pairing_accessibility_permission_template">在 Android 14 上，安装或更新 Shizuku 时，软件包安装程序会撤销 ^1 权限；启用配对辅助功能需要此权限。\n\n若要授予权限，请运行以下 ADB 命令：\n\n^2\n\n运行命令后即可继续配对。\n\n注意：通过 ADB 安装或更新 Shizuku 也可以跳过此操作。</string>
-    <string name="dialog_adb_pairing_accessibility_enable">请启用无障碍服务以开始配对。这样 Shizuku 才能检测配对码。\n\n检测到配对码后，或等待 1 分钟后，无障碍服务会自动关闭以节省电量。</string>
+    <string name="dialog_adb_pairing_accessibility_permission_template">Android 会阻止从应用商店之外安装的应用开启此开关。允许 ^1 应用操作即可开启无障碍服务。无障碍列表会将其显示为“受限设置控制”。\n\n打开应用信息并从菜单中选择“允许受限设置”，或在电脑上运行：\n\n^2\n\n两种方式任选其一，之后开关即可正常工作。</string>
+    <string name="dialog_adb_pairing_accessibility_enable">自动配对通过 Shizuku 的无障碍服务从系统弹窗中读取配对码，因此需要启用该服务，且只在配对期间生效：找到配对码后服务会自动关闭，或在一分钟后关闭以节省电量。Shizuku 通常可以自行启用该服务，但这需要 WRITE_SECURE_SETTINGS 权限，全新安装时尚未授予。\n\n在下一界面启用服务、在“手动”中自行输入配对码，或一次性授予权限：\n\nadb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="dialog_adb_pairing_open_app_info">应用信息</string>
     <string name="dialog_adb_pairing_accessibility_navigate">请按以下步骤开始配对：\n- 进入“开发者选项”\n- 启用“无线调试”\n- 点按“无线调试”\n- 点按“使用配对码配对设备”。Shizuku 会自动检测配对码。</string>
     <string name="adb_pairing_requires_multi_window">请先进入分屏（多窗口）模式。</string>
     <string name="adb_pairing_requires_multi_window_reason">系统要求配对对话框始终可见。只有使用分屏模式才能让此应用和系统对话框同时可见。</string>

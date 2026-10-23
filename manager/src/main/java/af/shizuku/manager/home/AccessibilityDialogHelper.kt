@@ -3,18 +3,15 @@ package af.shizuku.manager.home
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.Settings
 import android.text.Spannable
 import android.text.SpannableString
-import android.text.TextUtils
 import android.text.style.TypefaceSpan
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import rikka.core.content.asActivity
 import timber.log.Timber
 import af.shizuku.manager.R
 import af.shizuku.manager.adb.AdbPairingAccessibilityService
-import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 
 fun Context.showAccessibilityDialog() {
@@ -27,52 +24,77 @@ fun Context.showAccessibilityDialog() {
     host.run {
         val hasWriteSecureSettings = (checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED)
 
-        val installer = packageManager.getInstallerPackageName(packageName)
-        val isInstalledByPlayOrAdb = (installer == "com.android.vending") || (installer == null)
-        val hasAccessRestrictedSettings = isInstalledByPlayOrAdb || Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE
-
         if (isAccessibilityEnabled()) {
             showNavigateDialog()
         } else if (hasWriteSecureSettings) {
             if (enableAccessibilityService()) return
-            showPermissionDialog()
-        } else if (!hasAccessRestrictedSettings) {
-            showPermissionDialog()
+            showEnableDialog()
         } else {
             showEnableDialog()
         }
     }
 }
 
-private fun Context.showPermissionDialog() {
-    val permissionName = "ACCESS_RESTRICTED_SETTINGS"
-    val permissionCommand = "adb shell cmd appops set $packageName $permissionName allow"
-    val styledPermissionCommand =
-        SpannableString(permissionCommand).apply {
-            setSpan(TypefaceSpan("monospace"), 0, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
+/**
+ * The one dialog between the automated way and nothing happening, and it names both reasons the
+ * switch can refuse to move.
+ *
+ * A fresh install has no WRITE_SECURE_SETTINGS, so it cannot turn the service on by itself; and
+ * Android's restricted settings keep the accessibility switch of an app that did not come from
+ * an app store greyed out and inert, which is what the list shows as "Controlled by Restricted
+ * Setting". The second one cannot be read back from the platform - the app-op behind it reports
+ * the same state before and after Android decides to grey the row - so it is described rather
+ * than detected, and the same dialog has to serve both: sending somebody to a dead switch with
+ * no explanation is exactly how they end up hunting through App info by themselves.
+ */
+private fun Context.showEnableDialog() {
+    // The reason this dialog is here, then the whole of what the greyed-out row means and both
+    // ways to open it: the App info menu on the phone, the command with a computer attached.
+    val message = pairingEnableMessage()
 
     MaterialAlertDialogBuilder(this)
-        .setTitle(android.R.string.dialog_alert_title)
-        .setMessage(
-            TextUtils.expandTemplate(
-                getString(R.string.dialog_adb_pairing_accessibility_permission_template),
-                permissionName,
-                styledPermissionCommand,
-            ),
-        ).setPositiveButton(R.string.action_continue) { _, _ -> showEnableDialog() }
+        .setTitle(R.string.dialog_adb_pairing_title)
+        .setMessage(message)
+        .setPositiveButton(R.string.enable) { _, _ ->
+            SettingsPage.Accessibility.launch(this)
+        }
+        .setNeutralButton(R.string.dialog_adb_pairing_open_app_info) { _, _ ->
+            SettingsPage.ApplicationDetails.launch(this)
+        }
         .setNegativeButton(android.R.string.cancel, null)
         .show()
 }
 
-private fun Context.showEnableDialog() {
-    MaterialAlertDialogBuilder(this)
-        .setTitle(R.string.dialog_adb_pairing_title)
-        .setMessage(R.string.dialog_adb_pairing_accessibility_enable)
-        .setPositiveButton(R.string.enable) { _, _ ->
-            SettingsPage.Accessibility.launch(this)
-        }.setNegativeButton(android.R.string.cancel, null)
-        .show()
+/**
+ * The two paragraphs of the dialog, with the one ADB command in them set in monospace.
+ *
+ * The placeholders are filled in here rather than with TextUtils.expandTemplate: that one parses
+ * the whole message as one template and throws for a placeholder a translation carries over from
+ * a string it no longer belongs to, and a dialog is a poor place to crash.
+ */
+private fun Context.pairingEnableMessage(): CharSequence {
+    val command = "adb shell cmd appops set $packageName ACCESS_RESTRICTED_SETTINGS allow"
+    val text = buildString {
+        append(getString(R.string.dialog_adb_pairing_accessibility_enable))
+        append("\n\n")
+        append(
+            getString(R.string.dialog_adb_pairing_accessibility_permission_template)
+                .replace("^1", "ACCESS_RESTRICTED_SETTINGS")
+                .replace("^2", command),
+        )
+    }
+
+    return SpannableString(text).apply {
+        val start = indexOf(command)
+        if (start >= 0) {
+            setSpan(
+                TypefaceSpan("monospace"),
+                start,
+                start + command.length,
+                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+        }
+    }
 }
 
 private fun Context.showNavigateDialog() {

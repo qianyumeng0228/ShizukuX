@@ -1,5 +1,19 @@
+<!--
+    The pairing dialog, and nothing else.
+
+    Every accessibility service is a promise about what it will look at, and the promise is this
+    declaration: a service that names no packages is registered for every app on the device, which
+    is what a scanner calls a screen reader that can read a bank app. `com.android.settings` is
+    where phones put "Pair with device" and `com.android.tv.settings` is where TVs put it; both
+    are needed here because this fork reads the dialog on phones as well as driving it on TV.
+
+    Keep in step with hostsPairingDialog() in AdbPairingAccessibilityService, which applies the
+    same rule to the windows it walks: a device whose dialog is hosted by some other settings app
+    needs that name added here, or the service is never handed its events at all.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:description="@string/accessibility_service_description"
+    android:packageNames="com.android.settings,com.android.tv.settings"
     android:accessibilityFlags="flagDefault|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
     android:accessibilityEventTypes="typeWindowContentChanged|typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"

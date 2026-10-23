@@ -41,8 +41,10 @@
     <string name="dialog_adb_pairing_accessibility_permission">在 Android 14，使用套件安裝器安裝或更新 Shizuku
         會取消用於開啟無障礙服務配對的 ^1 權限。\n\n透過運行下面的 ADB 指令重新授權：\n\n^2\n\n運行指令之後，你可以繼續配對程序。\n\n備註：你可以透過 ADB 安裝
         Shizuku 繞過此限制。</string>
+    <string name="dialog_adb_pairing_accessibility_permission_template">Android 會阻止從應用程式商店之外安裝的應用開啟此開關。允許 ^1 應用程式操作即可開啟無障礙服務。無障礙清單會將其顯示為「受限設定控制」。\n\n開啟應用程式資訊並從選單中選擇「允許受限設定」，或在電腦上執行：\n\n^2\n\n兩種方式擇一即可，之後開關即可正常運作。</string>
     <string name="dialog_adb_pairing_accessibility_enable">
-        請啟用無障礙服務以開始配對流程。這讓雫能偵測到配對代碼。\n\n無障礙服務會在找到代碼後或1分鐘後關閉以節省能源。</string>
+        自動配對會透過 Shizuku 的無障礙服務從系統彈窗中讀取配對碼，因此需要啟用該服務，且只在配對期間生效：找到配對碼後服務會自動關閉，或在一分鐘後關閉以節省電量。Shizuku 通常可以自行啟用該服務，但這需要 WRITE_SECURE_SETTINGS 權限，全新安裝時尚未授予。\n\n在下一畫面啟用服務、在「手動」中自行輸入配對碼，或一次性授予權限：\n\nadb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SETTINGS</string>
+    <string name="dialog_adb_pairing_open_app_info">應用程式資訊</string>
     <string name="dialog_adb_pairing_accessibility_navigate">請依照以下步驟開始配對：\n- 進入「開發者選項」\n-
         啟用「USB偵錯」與「無線除錯」\n- 點選「無線偵錯」左側\n- 點擊「使用配對碼裝置」。 Shizuku 將自動檢測配對碼。</string>
     <string name="adb_pairing_requires_multi_window">請先進入「分割畫面」(多視窗) 模式。</string>

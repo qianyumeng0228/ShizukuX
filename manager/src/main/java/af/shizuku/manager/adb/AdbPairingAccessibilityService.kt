@@ -2,6 +2,9 @@ package af.shizuku.manager.adb
 import af.shizuku.manager.R
 
 import android.accessibilityservice.AccessibilityService
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.content.BroadcastReceiver
@@ -12,6 +15,7 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import kotlin.coroutines.resume
 import timber.log.Timber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +23,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.PreferenceAdbKeyStore
@@ -46,6 +52,23 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         /** Broadcast back when enabling failed; caller falls back to manual. */
         const val ACTION_AUTO_WIRELESS_FAILED = "af.shizuku.manager.action.AUTO_WIRELESS_FAILED"
         private const val AUTO_PAIRING_TIMEOUT_MS = 90_000L
+
+        /** How many times a settings event re-reads the active window after the event stream
+         *  stops. Android 17's pairing dialog sends no event of its own: the code arrives in
+         *  the window just after the tap that opened it. */
+        private const val READ_ATTEMPTS = 15
+        private const val READ_INTERVAL_MS = 400L
+
+        /** Long enough for mDNS pairing-port discovery to answer, short enough to report a failure. */
+        private const val PAIRING_DISCOVERY_TIMEOUT_MS = 8_000L
+
+        /** The name a settings app carries — the whole of what this service reads. Matched by
+         *  the word rather than an exact list: phones put the dialog in com.android.settings,
+         *  TVs in com.android.tv.settings, and an OEM variant still says "settings". */
+        private const val SETTINGS = "settings"
+
+        private fun hostsPairingDialog(packageName: String?): Boolean =
+            packageName?.contains(SETTINGS, ignoreCase = true) == true
     }
 
     @Volatile
@@ -54,6 +77,31 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     var password: String? = null
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val handler = Handler(Looper.getMainLooper())
+
+    /** Reads left in the burst that follows a settings event (see [readAgain]). */
+    private var readsLeft = 0
+
+    /** Re-reads the active window after the event stream stopped, until both code and port are
+     *  known or the burst runs out — Android 17's pairing dialog sends no event of its own, so
+     *  the code arrives in the window just after the tap that opened it. */
+    private val readAgain = object : Runnable {
+        override fun run() {
+            if (port != null && password != null) return
+            scanActiveWindow()
+            if ((port == null || password == null) && readsLeft-- > 0) {
+                handler.postDelayed(this, READ_INTERVAL_MS)
+            }
+        }
+    }
+
+    /** True while mDNS pairing-port discovery is in flight (Android 17 dialog has no address). */
+    private val mdnsDiscoveryActive = AtomicBoolean(false)
+
+    /** Host used by the current pairing attempt; the mDNS fallback may surface a real interface. */
+    @Volatile
+    private var pairHost = "127.0.0.1"
 
     /** Accessibility window id the current candidates were found in. */
     @Volatile
@@ -167,6 +215,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(readAgain)
         runCatching { unregisterReceiver(autoPairReceiver) }
         serviceScope.cancel()
         super.onDestroy()
@@ -175,6 +224,10 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
         if (port != null && password != null) return
+        // The pairing dialog always lives in the settings app; ignore every other window rather
+        // than reading content we have no reason to look at (mirrors the packageNames declaration
+        // in accessibility_service_config.xml).
+        if (!hostsPairingDialog(event.packageName?.toString())) return
         Log.i("AdbAccessibility", "EVENT type=" + event.eventType + " win=" + event.windowId + " cls=" + event.className + " pkg=" + event.packageName)
         Timber.tag("AdbAccessibility").d(
             "Event type=%d windowId=%d source=%s",
@@ -245,123 +298,206 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             r
         }
         try {
-            // Active (one-tap) mode: once we're on the wireless-debugging page, click the
-            // "pair with pairing code" button for the user.
-            if (autoPairRequested && !autoPairClicked && port == null && password == null) {
-                findAndClickPairButton(windowRoot)
-            }
-            // Active mode: flip the wireless-debugging switch on the developer-options page.
-            if (autoWirelessRequested && !autoWirelessClicked) {
-                clickWirelessDebuggingSwitch(windowRoot)
-            }
-            if (port == null) {
-                findPortInNode(windowRoot)
-            }
-            if (port != null && password == null) {
-                findPasswordInNode(windowRoot)
-            }
+            scanWindowRoot(windowRoot)
         } finally {
             for (node in windowChain) {
                 try { node.recycle() } catch (e: Throwable) {}
             }
         }
 
+        // Android 17's pairing dialog sends no event after the tap that opens it; the code
+        // arrives a moment later. Keep re-reading the active window for a few seconds — the
+        // burst stops as soon as both code and port are known (or the mDNS fallback engages).
+        if (port == null || password == null) {
+            handler.removeCallbacks(readAgain)
+            readsLeft = READ_ATTEMPTS
+            readAgain.run()
+        }
+
+        startPairingIfReady()
+    }
+
+    /** Scans one window root: drives the active-mode buttons, then finds port and code. */
+    private fun scanWindowRoot(root: AccessibilityNodeInfo?) {
+        if (root == null) return
+        // Active (one-tap) mode: once we're on the wireless-debugging page, click the
+        // "pair with pairing code" button for the user.
+        if (autoPairRequested && !autoPairClicked && port == null && password == null) {
+            findAndClickPairButton(root)
+        }
+        // Active mode: flip the wireless-debugging switch on the developer-options page.
+        if (autoWirelessRequested && !autoWirelessClicked) {
+            clickWirelessDebuggingSwitch(root)
+        }
+        if (port == null) {
+            findPortInNode(root)
+        }
+        if (port != null && password == null) {
+            findPasswordInNode(root)
+        }
+    }
+
+    /** Scans the currently focused window; used by the [readAgain] burst after the event stream
+     *  stopped (Android 17 pairing dialog sends no event of its own). */
+    private fun scanActiveWindow() {
+        val root = runCatching { rootInActiveWindow }.getOrNull() ?: return
+        try {
+            scanWindowRoot(root)
+        } finally {
+            try { root.recycle() } catch (e: Throwable) {}
+        }
+    }
+
+    /**
+     * The pairing port the device advertises, for a dialog that prints no address (Android 17
+     * folds it away behind "Additional device addresses"). The code still comes from the dialog.
+     *
+     * Returns null if nothing answers within the timeout, which is the same situation as a
+     * dialog whose address cannot be read: the attempt is reported as a failed connection rather
+     * than left hanging.
+     */
+    private suspend fun discoverPairingEndpoint(
+        timeoutMs: Long = PAIRING_DISCOVERY_TIMEOUT_MS
+    ): Pair<String, Int>? = withTimeoutOrNull(timeoutMs) {
+        suspendCancellableCoroutine { continuation ->
+            lateinit var mdns: AdbMdns
+            mdns = AdbMdns(this@AdbPairingAccessibilityService, AdbMdns.TLS_PAIRING) { port ->
+                if (port > 0 && continuation.isActive) {
+                    mdns.stop()
+                    continuation.resume(mdns.resolvedHost to port)
+                }
+            }
+            continuation.invokeOnCancellation { mdns.stop() }
+            mdns.start()
+        }
+    }
+
+    /** Starts the pairing client once both code and port are known; when only the code is known
+     *  (Android 17 dialog hides the address behind "Additional device addresses"), the port is
+     *  discovered over mDNS first, the way the notification flow has always found it. */
+    private fun startPairingIfReady() {
         val currentPort = port
         val currentPassword = password
-        if (currentPort != null && currentPassword != null) {
-            val portValue = currentPort
-            val passwordValue = currentPassword
-            Log.i("AdbAccessibility", "PAIRING start host=127.0.0.1 port=" + portValue + " code=" + passwordValue)
-
-            serviceScope.launch {
-                val host = "127.0.0.1"
-
-                val key = try {
-                    AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
-                } catch (e: Throwable) {
-                    Timber.tag("AdbAccessibility").e(e, "Failed to load AdbKey")
-                    Sentry.captureException(e)
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.adb_error_key_store), Toast.LENGTH_LONG).show()
+        if (currentPort == null || currentPassword == null) {
+            // Android 11+ only: below R there is no wireless debugging, hence no pairing port
+            // to discover. (AdbMdns itself is @RequiresApi(R).)
+            if (currentPassword != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
+                && mdnsDiscoveryActive.compareAndSet(false, true)
+            ) {
+                Log.i("AdbAccessibility", "PORT missing, discovering pairing endpoint over mDNS")
+                serviceScope.launch {
+                    val endpoint = discoverPairingEndpoint()
+                    if (endpoint == null) {
+                        Log.w("AdbAccessibility", "No pairing endpoint found (mDNS timed out)")
+                        mdnsDiscoveryActive.set(false)
+                        return@launch
                     }
-                    disableSelf()
-                    return@launch
+                    val (host, portValue) = endpoint
+                    // The code may have been cleared by a window switch while discovery ran.
+                    if (password == null) {
+                        mdnsDiscoveryActive.set(false)
+                        return@launch
+                    }
+                    pairHost = host
+                    port = portValue
+                    mdnsDiscoveryActive.set(false)
+                    startPairingIfReady()
                 }
+            }
+            return
+        }
 
-                AdbPairingClient(host, portValue, passwordValue, key).runCatching {
-                    start()
-                }.onFailure {
-                    Log.i("AdbAccessibility", "PAIRING failed: " + it.javaClass.simpleName + ": " + it.message)
-                    Timber.tag("AdbAccessibility").w(it, "Pairing attempt failed; will retry on next event")
-                    when (it) {
-                        // Deterministic failures — retrying cannot help.
-                        is AdbInvalidPairingCodeException, is AdbKeyException -> {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(
-                                    this@AdbPairingAccessibilityService,
-                                    if (it is AdbInvalidPairingCodeException) {
-                                        getString(R.string.paring_code_is_wrong)
-                                    } else {
-                                        getString(R.string.adb_error_key_store)
-                                    },
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                            if (autoPairRequested) sendAutoPairingFailed()
-                            resetAutoPairing()
-                            disableSelf()
-                        }
-                        // Transient failures (pairing server still binding, connect refused,
-                        // TLS handshake race): clear the candidates so the next event rescans
-                        // the same window and retries. The 60s budget (started when the code
-                        // was found) still bounds this, and window switches reset it.
-                        else -> {
-                            port = null
-                            password = null
-                        }
-                    }
-                }.onSuccess {
-                    if (it) {
-                        Log.i("AdbAccessibility", "PAIRING succeeded")
-                        Sentry.addBreadcrumb(Breadcrumb("Pairing client succeeded").apply {
-                            category = "adb.pairing"
-                        })
+        val portValue = currentPort
+        val passwordValue = currentPassword
+        val host = pairHost
+        Log.i("AdbAccessibility", "PAIRING start host=" + host + " port=" + portValue + " code=" + passwordValue)
+
+        serviceScope.launch {
+            val key = try {
+                AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizukux")
+            } catch (e: Throwable) {
+                Timber.tag("AdbAccessibility").e(e, "Failed to load AdbKey")
+                Sentry.captureException(e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.adb_error_key_store), Toast.LENGTH_LONG).show()
+                }
+                disableSelf()
+                return@launch
+            }
+
+            AdbPairingClient(host, portValue, passwordValue, key).runCatching {
+                start()
+            }.onFailure {
+                Log.i("AdbAccessibility", "PAIRING failed: " + it.javaClass.simpleName + ": " + it.message)
+                Timber.tag("AdbAccessibility").w(it, "Pairing attempt failed; will retry on next event")
+                when (it) {
+                    // Deterministic failures — retrying cannot help.
+                    is AdbInvalidPairingCodeException, is AdbKeyException -> {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(
                                 this@AdbPairingAccessibilityService,
-                                "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
+                                if (it is AdbInvalidPairingCodeException) {
+                                    getString(R.string.paring_code_is_wrong)
+                                } else {
+                                    getString(R.string.adb_error_key_store)
+                                },
                                 Toast.LENGTH_LONG
                             ).show()
-                            // The auto-pair path is independent of AdbPairingService: if that
-                            // service was started (home card "pairing" flow / tutorial) it may
-                            // still be foreground-searching. Stop it so the "searching for
-                            // pairing service" notification does not linger after success, and
-                            // broadcast success so a waiting StarterActivity continues its flow.
-                            runCatching {
-                                stopService(Intent(this@AdbPairingAccessibilityService, AdbPairingService::class.java))
-                            }
-                            runCatching {
-                                sendBroadcast(
-                                    Intent(AdbPairingService.ACTION_PAIRING_SUCCEEDED)
-                                        .setPackage(packageName)
-                                        .putExtra(AdbPairingService.EXTRA_PORT, portValue)
-                                        .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                                )
-                            }
-                            val intent = Intent(this@AdbPairingAccessibilityService, MainActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                            }
-                            startActivity(intent)
                         }
-                    } else {
-                        Sentry.addBreadcrumb(Breadcrumb("Pairing client returned false").apply {
-                            category = "adb.pairing"
-                            level = SentryLevel.WARNING
-                        })
+                        if (autoPairRequested) sendAutoPairingFailed()
+                        resetAutoPairing()
+                        disableSelf()
                     }
-                    resetAutoPairing()
-                    disableSelf()
+                    // Transient failures (pairing server still binding, connect refused,
+                    // TLS handshake race): clear the candidates so the next event rescans
+                    // the same window and retries. The 60s budget (started when the code
+                    // was found) still bounds this, and window switches reset it.
+                    else -> {
+                        port = null
+                        password = null
+                    }
                 }
+            }.onSuccess {
+                if (it) {
+                    Log.i("AdbAccessibility", "PAIRING succeeded")
+                    Sentry.addBreadcrumb(Breadcrumb("Pairing client succeeded").apply {
+                        category = "adb.pairing"
+                    })
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(
+                            this@AdbPairingAccessibilityService,
+                            "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        // The auto-pair path is independent of AdbPairingService: if that
+                        // service was started (home card "pairing" flow / tutorial) it may
+                        // still be foreground-searching. Stop it so the "searching for
+                        // pairing service" notification does not linger after success, and
+                        // broadcast success so a waiting StarterActivity continues its flow.
+                        runCatching {
+                            stopService(Intent(this@AdbPairingAccessibilityService, AdbPairingService::class.java))
+                        }
+                        runCatching {
+                            sendBroadcast(
+                                Intent(AdbPairingService.ACTION_PAIRING_SUCCEEDED)
+                                    .setPackage(packageName)
+                                    .putExtra(AdbPairingService.EXTRA_PORT, portValue)
+                                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                            )
+                        }
+                        val intent = Intent(this@AdbPairingAccessibilityService, MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        }
+                        startActivity(intent)
+                    }
+                } else {
+                    Sentry.addBreadcrumb(Breadcrumb("Pairing client returned false").apply {
+                        category = "adb.pairing"
+                        level = SentryLevel.WARNING
+                    })
+                }
+                resetAutoPairing()
+                disableSelf()
             }
         }
     }
