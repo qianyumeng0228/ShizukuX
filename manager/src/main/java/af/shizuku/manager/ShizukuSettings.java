@@ -28,6 +28,7 @@ public class ShizukuSettings {
     public static class Keys {
         public static final String KEY_START_ON_BOOT = "start_on_boot";
         public static final String KEY_WATCHDOG = "watchdog";
+        public static final String KEY_WATCHDOG_CRASH_ALERTS = "watchdog_crash_alerts";
         public static final String KEY_AUTO_RESTORE_DEVELOPER_OPTIONS = "auto_restore_developer_options";
         public static final String KEY_TCP_MODE = "tcp_mode";
         public static final String KEY_TCP_PORT = "tcp_port";
@@ -500,6 +501,11 @@ public class ShizukuSettings {
 
     public static boolean isWatchdogRunning() {
         return WatchdogService.isRunning();
+    }
+
+    /** Whether the watchdog posts crash heads-up notifications when it restarts the server after a crash. Default ON. */
+    public static boolean isWatchdogCrashAlertsEnabled() {
+        return getPreferences().getBoolean(Keys.KEY_WATCHDOG_CRASH_ALERTS, true);
     }
 
     /** External relay auto-activation toggle (Scene ADB mode / Brevent). Default OFF. */

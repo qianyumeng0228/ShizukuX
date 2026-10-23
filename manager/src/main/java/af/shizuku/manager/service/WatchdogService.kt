@@ -25,6 +25,7 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.utils.StockShizukuCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import java.util.concurrent.atomic.AtomicBoolean
 
 class WatchdogService : Service() {
@@ -33,6 +34,8 @@ class WatchdogService : Service() {
     private var consecutiveCrashes = 0
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var job: Job? = null
+    private var pendingRecoveryJob: Job? = null
+    private var stabilityJob: Job? = null
     private var intentionalStop = false
 
     // Returns false on failure so callers can bail out via stopSelf() instead of crashing
@@ -89,21 +92,58 @@ class WatchdogService : Service() {
         job = scope.launch {
             ShizukuStateMachine.asFlow().collectLatest { state ->
                 if (state == ShizukuStateMachine.State.CRASHED) {
+                    // The server is no longer RUNNING, so the stability window ends here:
+                    // left armed, it would fire while the server is dead and reset
+                    // consecutiveCrashes, making the next crash look like a first restart.
+                    stabilityJob?.cancel()
+                    // A recovery job armed by an earlier first restart is stale too: the
+                    // server just died again, so what that job waits for is a later
+                    // restart's business now. Left armed, its timeout would post a
+                    // duplicate heads-up for this same outage, or a later restart's
+                    // server would be logged as "came back after restart #1".
+                    pendingRecoveryJob?.cancel()
                     val now = System.currentTimeMillis()
                     val cooldown = backoffMs(consecutiveCrashes)
                     if (now - lastRestartMs > cooldown) {
+                        val wasFirstRestart = (consecutiveCrashes == 0)
                         consecutiveCrashes++
                         lastRestartMs = now
-                        showCrashNotification()
+                        if (!wasFirstRestart) {
+                            showCrashNotification()
+                        }
                         ActivityLogManager.log("Shizuku", applicationContext.packageName, "Watchdog: restarting after crash #$consecutiveCrashes")
+                        if (wasFirstRestart) {
+                            pendingRecoveryJob?.cancel()
+                            pendingRecoveryJob = scope.launch {
+                                val cameBack = withTimeoutOrNull(RECOVERY_WAIT_MS) {
+                                    if (ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING) {
+                                        true
+                                    } else {
+                                        ShizukuStateMachine.asFlow().first { it == ShizukuStateMachine.State.RUNNING }
+                                        true
+                                    }
+                                } ?: false
+                                if (cameBack) {
+                                    ActivityLogManager.log("Shizuku", applicationContext.packageName, "Watchdog: the server came back after restart #1")
+                                } else {
+                                    showCrashNotification()
+                                }
+                            }
+                        }
                         ShizukuReceiverStarter.start(applicationContext)
                         Timber.tag(TAG).d("Watchdog: restart #$consecutiveCrashes (cooldown was ${cooldown}ms)")
                     } else {
                         Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms / ${cooldown}ms)")
                     }
                 } else if (state == ShizukuStateMachine.State.RUNNING) {
-                    // Reset backoff counter once service is confirmed stable
-                    consecutiveCrashes = 0
+                    // Not pendingRecoveryJob: RUNNING is exactly what the recovery check
+                    // waits for, and both run on the main dispatcher, so cancelling here
+                    // would kill that check before it logs the recovery.
+                    stabilityJob?.cancel()
+                    stabilityJob = scope.launch {
+                        delay(STABILITY_WINDOW_MS)
+                        consecutiveCrashes = 0
+                    }
                 }
             }
         }
@@ -124,6 +164,8 @@ class WatchdogService : Service() {
     }
 
     override fun onDestroy() {
+        stabilityJob?.cancel()
+        pendingRecoveryJob?.cancel()
         job?.cancel()
         scope.cancel()
         isRunning.set(false)
@@ -169,6 +211,15 @@ class WatchdogService : Service() {
     }
 
     private fun showCrashNotification() {
+        if (!ShizukuSettings.isWatchdogCrashAlertsEnabled()) {
+            return
+        }
+        val now = System.currentTimeMillis()
+        if (now - lastCrashNotificationMs < CRASH_NOTIFICATION_COOLDOWN_MS) {
+            return
+        }
+        lastCrashNotificationMs = now
+
         val channelId = CRASH_CHANNEL_ID
         val channelName = "Crash Reports"
 
@@ -177,7 +228,7 @@ class WatchdogService : Service() {
             val channel = NotificationChannel(
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_LOW
             )
             nm.createNotificationChannel(channel)
         }
@@ -230,8 +281,19 @@ class WatchdogService : Service() {
         const val WATCHDOG_CHANNEL_ID = "shizuku_watchdog"
         const val CRASH_CHANNEL_ID = "crash_reports"
 
+        /** How long a first restart waits for RUNNING before the crash heads-up is posted:
+         * a successful restart took ~11 s on an API 34 emulator, a loaded device's first start 32 s. */
+        private const val RECOVERY_WAIT_MS = 60_000L
+
+        /** How long the server must remain RUNNING before consecutive crash count resets. */
+        private const val STABILITY_WINDOW_MS = 60_000L
+
         private const val BASE_COOLDOWN_MS = 5_000L
         private const val MAX_COOLDOWN_MS = 300_000L   // 5 min cap
+        private const val CRASH_NOTIFICATION_COOLDOWN_MS = 60_000L
+
+        @Volatile
+        private var lastCrashNotificationMs = 0L
         private val isRunning = AtomicBoolean(false)
 
         fun backoffMs(crashes: Int): Long =

@@ -425,6 +425,8 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="settings_use_system_color">Use system theme color</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">Automatically restart Shizuku after a crash or unexpected stop. Cannot reconnect when the underlying network disconnects (e.g. USB cable unplugged while using RNDIS/USB ADB).</string>
+    <string name="settings_watchdog_crash_alerts">Crash notifications</string>
+    <string name="settings_watchdog_crash_alerts_summary">Post a silent notification when the watchdog restarts the service after a crash</string>
     <string name="settings_anti_kill_guide">Anti-kill setup guide</string>
     <string name="settings_anti_kill_guide_summary">Keep ShizukuX alive in the background so the server and app authorizations survive system cleanup</string>
     <string name="anti_kill_dialog_title">Stop the system from killing ShizukuX</string>

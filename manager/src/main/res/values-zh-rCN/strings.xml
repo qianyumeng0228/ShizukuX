@@ -236,6 +236,8 @@
     <string name="settings_wallpaper_original">原版</string>
     <string name="settings_watchdog">Watchdog</string>
     <string name="settings_watchdog_summary">如果 Shizuku 崩溃，则自动重启</string>
+    <string name="settings_watchdog_crash_alerts">崩溃通知</string>
+    <string name="settings_watchdog_crash_alerts_summary">Watchdog 在崩溃后重启服务时发送静默通知</string>
     <string name="settings_anti_kill_guide">防杀设置引导</string>
     <string name="settings_anti_kill_guide_summary">防止系统清理后台导致 Shizuku 服务停止、已授权应用失效</string>
     <string name="anti_kill_dialog_title">防止 ShizukuX 被系统清理</string>
