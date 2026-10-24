@@ -15,6 +15,7 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 import timber.log.Timber
 import android.content.ContentResolver
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import java.io.File
 import java.io.FileInputStream
@@ -153,42 +154,33 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
                 var backedUpSomething = false
 
+                // NOTE: wrap each pfd in its own use{} around writeBackupStream (via the
+                // streamPfdToBackup helper). writeBackupStream can return false WITHOUT
+                // invoking the write block (SAF createDocument/openOutputStream failure),
+                // in which case the old inline `pfd.use{}` inside the block never ran and
+                // the server pipe's read-side fd leaked — one fd per failed backup,
+                // accumulating until the process was reaped.
                 val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (e: Exception) {
                     Timber.w(e, "streamDataDir failed for $pkg")
                     null
                 }
-                if (dataPfd != null) {
-                    if (writeBackupStream(safTreeUri, outputDir, pkg, "data.tar.gz", cr) { out ->
-                        dataPfd.use { pfd ->
-                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
-                        }
-                    }) backedUpSomething = true
-                }
+                if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr))
+                    backedUpSomething = true
 
                 val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (e: Exception) {
                     Timber.w(e, "backupExternalData failed for $pkg")
                     null
                 }
-                if (extPfd != null) {
-                    if (writeBackupStream(safTreeUri, outputDir, pkg, "external.tar.gz", cr) { out ->
-                        extPfd.use { pfd ->
-                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
-                        }
-                    }) backedUpSomething = true
-                }
+                if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr))
+                    backedUpSomething = true
 
                 // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
                 val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (e: Exception) {
                     Timber.w(e, "backupObbData failed for $pkg")
                     null
                 }
-                if (obbPfd != null) {
-                    if (writeBackupStream(safTreeUri, outputDir, pkg, "obb.tar.gz", cr) { out ->
-                        obbPfd.use { pfd ->
-                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
-                        }
-                    }) backedUpSomething = true
-                }
+                if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr))
+                    backedUpSomething = true
 
                 if (backedUpSomething) {
                     val outputDesc = if (safTreeUri != null) {
@@ -242,6 +234,37 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             } finally {
                 _busyPackages.value = _busyPackages.value - pkg
             }
+        }
+    }
+
+    /**
+     * Stream a server-provided [ParcelFileDescriptor] (read end of a pipe) to a backup output,
+     * guaranteeing the pfd is closed on EVERY path.
+     *
+     * Regression (P2 #5): previously each call site inlined `writeBackupStream(...) { out -> pfd.use { ...copyTo... } }`.
+     * When SAF createDocument / openOutputStream failed, [writeBackupStream] returned `false` WITHOUT
+     * invoking the write block — so `pfd.use{}` never ran and the server pipe's read-side fd leaked.
+     * A backup that failed 1–3 times (data/ext/obb) leaked 1–3 fds per package; repeated backups
+     * accumulated fds / pipe buffers until the app process PSS climbed (~2.5 GB) and LMK reaped it.
+     *
+     * Here the pfd is wrapped in its own `use{}` around the whole [writeBackupStream] call, so the
+     * read end is released whether or not the output document was ever opened. The copy itself uses
+     * an 8 KB streaming `copyTo` (no ByteArray whole-buffer accumulation).
+     */
+    private fun streamPfdToBackup(
+        pfd: ParcelFileDescriptor,
+        safTreeUri: Uri?,
+        outputDir: File?,
+        pkg: String,
+        fileName: String,
+        cr: ContentResolver
+    ): Boolean = pfd.use { pf ->
+        // The FileInputStream wraps pf's OWN fd. Do NOT close it explicitly / in its own use{}:
+        // pfd.use (above) is the single owner that closes the fd once — an extra close here would
+        // be a double close. If writeBackupStream never invokes the block (SAF output open
+        // failure), the stream is never constructed and pfd.use still releases the read end.
+        writeBackupStream(safTreeUri, outputDir, pkg, fileName, cr) { out ->
+            FileInputStream(pf.fileDescriptor).copyTo(out)
         }
     }
 
@@ -334,24 +357,15 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
                     var backedUpSomething = false
                     val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
-                    if (dataPfd != null) {
-                        if (writeBackupStream(safTreeUri, outputDir, pkg, "data.tar.gz", cr) { out ->
-                            dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-                        }) backedUpSomething = true
-                    }
+                    if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr))
+                        backedUpSomething = true
                     val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
-                    if (extPfd != null) {
-                        if (writeBackupStream(safTreeUri, outputDir, pkg, "external.tar.gz", cr) { out ->
-                            extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-                        }) backedUpSomething = true
-                    }
+                    if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr))
+                        backedUpSomething = true
                     // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
                     val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
-                    if (obbPfd != null) {
-                        if (writeBackupStream(safTreeUri, outputDir, pkg, "obb.tar.gz", cr) { out ->
-                            obbPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-                        }) backedUpSomething = true
-                    }
+                    if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr))
+                        backedUpSomething = true
                     if (backedUpSomething) succeeded++ else failed++
                 } catch (e: Exception) {
                     Timber.e(e, "Batch backup failed for $pkg")
@@ -393,18 +407,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         try { ShizukuXAPI.BackupRestoreExtra.forceStop(pkg) } catch (_: Exception) {}
         // Internal data (requires app debuggable — caller must prepareTempDebug first)
         val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
-        if (dataPfd != null) {
-            if (writeBackupStream(safTreeUri, null, pkg, dataName, cr) { out ->
-                dataPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-            }) { backedUpSomething = true; internalBackedUp = true }
+        if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, null, pkg, dataName, cr)) {
+            backedUpSomething = true; internalBackedUp = true
         }
         // External data (shell-level, no debuggable required)
         val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
-        if (extPfd != null) {
-            if (writeBackupStream(safTreeUri, null, pkg, extName, cr) { out ->
-                extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
-            }) backedUpSomething = true
-        }
+        if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, null, pkg, extName, cr))
+            backedUpSomething = true
         if (backedUpSomething && (!requireInternal || internalBackedUp)) {
             PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp, safTreeUri, cr)
             return timestamp
