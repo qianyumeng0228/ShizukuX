@@ -21,6 +21,7 @@
             android:src="@drawable/ic_wadb_24" />
 
         <TextView
+            android:id="@android:id/title"
             style="@style/CardTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

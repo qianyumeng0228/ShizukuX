@@ -268,17 +268,25 @@ class StartWirelessAdbViewHolder(
             if (rootRestart) R.string.home_root_button_restart else R.string.home_root_button_start
         )
 
-        // Description: on rooted devices show the root/Sui description; on non-rooted devices
-        // keep the wireless (or pre-11) description set in init().
-        val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
-        if (isRootPath) {
+        // 4.1 merged card: title + description follow the *runtime* root state (service
+        // running as uid=0, signaled by HomeAdapter via data == rootRestart), NOT the
+        // device's Root capability. On Xiaomi 13 Pro + SukiSU, EnvironmentUtils.isRooted()
+        // returns false inside the app process even when Shizuku itself was started as root,
+        // so keying off isRootPath left the card stuck on the wireless-debug copy.
+        binding.title.setText(if (rootRestart) R.string.home_root_title else R.string.home_wireless_adb_title)
+        binding.text1.text = if (rootRestart) {
             binding.text1.movementMethod = LinkMovementMethod.getInstance()
-            binding.text1.text = context.getString(
+            context.getString(
                 R.string.home_root_description,
                 "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
                 "Sui"
-            ).toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-        }
+            )
+        } else if (EnvironmentUtils.isTlsSupported()) {
+            binding.text1.movementMethod = LinkMovementMethod.getInstance()
+            context.getString(R.string.home_wireless_adb_description)
+        } else {
+            context.getString(R.string.home_wireless_adb_description_pre_11)
+        }.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
 
         // Secondary "PC ADB command" viewer: pre-Android-11 devices need it (the old StartAdb
         // card's sole purpose); also surfaced when the user explicitly enabled show_start_adb_home.
