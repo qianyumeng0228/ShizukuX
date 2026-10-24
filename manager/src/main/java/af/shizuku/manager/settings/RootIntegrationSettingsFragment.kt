@@ -143,6 +143,12 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
 
         // Preset SU Path Picker helper
         val suPathPref = findPreference<androidx.preference.EditTextPreference>("custom_su_path")
+        // Show the currently-selected su path inline; fall back to the "Default (auto-detect)"
+        // label when blank. Mirrors the tcp_port summaryProvider pattern in BehaviorSettingsFragment.
+        suPathPref?.summaryProvider = Preference.SummaryProvider<androidx.preference.EditTextPreference> { pref ->
+            val text = pref.text
+            if (text.isNullOrEmpty()) context.getString(R.string.root_su_path_default) else text
+        }
         suPathPref?.setOnPreferenceChangeListener { _, newValue ->
             val path = (newValue as? String).orEmpty().trim()
             // Empty = reset to default (always valid). Non-empty must be an absolute path
