@@ -118,9 +118,6 @@
     <string name="home_automation_dialog_label_class">Klasa</string>
     <string name="home_automation_dialog_label_target">Cel</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Przewodnik dla programistów</string>
-    <string name="home_learn_more_description">Dowiedz się, jak tworzyć aplikacje z wykorzystaniem
-        Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Wymagany dodatkowy krok</string>
     <string name="home_adb_is_limited_description">Producent urządzenia ograniczył uprawnienia ADB i

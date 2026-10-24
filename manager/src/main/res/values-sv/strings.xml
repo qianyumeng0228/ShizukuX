@@ -119,8 +119,6 @@
     <string name="home_automation_dialog_label_class">Klass</string>
     <string name="home_automation_dialog_label_target">Mål</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Utvecklarguide</string>
-    <string name="home_learn_more_description">Lär dig hur du utvecklar med Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Du behöver ta ett extra steg</string>
     <string name="home_adb_is_limited_description">Din enhetstillverkare har begränsade

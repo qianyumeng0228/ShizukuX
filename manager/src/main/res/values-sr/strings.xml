@@ -120,8 +120,6 @@
     <string name="home_automation_dialog_label_class">Класа</string>
     <string name="home_automation_dialog_label_target">Циљ</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Водич за програмере</string>
-    <string name="home_learn_more_description">Научите како да развијате уз Шизуку</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Морате направити додатни корак</string>
     <string name="home_adb_is_limited_description">Произвођач вашег уређаја је ограничио adb дозволе

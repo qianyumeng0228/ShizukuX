@@ -219,8 +219,6 @@
     <string name="home_automation_token_encrypt_failed">Token محفوظ کرنے میں ناکامی — دوبارہ کوشش کریں</string>
 
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Developer guide</string>
-    <string name="home_learn_more_description">Shizuku کے ساتھ develop کرنے کا طریقہ سیکھیں</string>
 
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">آپ کو ایک اضافی مرحلہ مکمل کرنا ہوگا</string>
@@ -681,8 +679,6 @@
     <string name="dialog_stop_message">Shizuku service روک دی جائے گی۔</string>
 
     <!-- Notification -->
-    <string name="notification_channel_automation">Automation</string>
-    <string name="notification_automation_title">Automation چل رہا ہے</string>
     <string name="notification_channel_service_status">Service start status</string>
     <string name="notification_service_starting">Shizuku service شروع ہو رہی ہے…</string>
     <string name="notification_service_start_failed">Shizuku service شروع کرنے میں ناکامی۔</string>

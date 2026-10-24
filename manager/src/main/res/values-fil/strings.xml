@@ -124,8 +124,6 @@
     <string name="home_automation_dialog_label_class">Klase</string>
     <string name="home_automation_dialog_label_target">Target</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Gabay ng developer</string>
-    <string name="home_learn_more_description">Matuto kung paano mag-develop gamit ang Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">May mga karagdagang hakbang kang dapat gawin</string>
     <string name="home_adb_is_limited_description">Pinaghigpitan ng gumawa ng device mo ang

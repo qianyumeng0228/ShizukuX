@@ -33,12 +33,6 @@
             android:icon="@drawable/ic_science_24" />
 
         <Preference
-            android:key="activity_log"
-            android:title="@string/settings_activity_log"
-            android:icon="@drawable/ic_history_24"
-            android:dependency="enable_activity_log" />
-
-        <Preference
             android:key="update_app_database"
             android:title="@string/settings_update_app_database"
             android:summary="@string/settings_update_app_database_summary"

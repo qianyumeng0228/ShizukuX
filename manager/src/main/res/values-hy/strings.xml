@@ -121,9 +121,6 @@
     <string name="home_automation_dialog_label_class">Դաս</string>
     <string name="home_automation_dialog_label_target">Նպատակակետ</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Մշակողի ուղեցույց</string>
-    <string name="home_learn_more_description">Սովորեք ծրագրավորել Shizuku-ով կամ Shizuku-ն ուրիշ
-        ծրագրերի հետ օգտագործել</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Դուք պետք է լրացուցիչ քայլ կատարեք</string>
     <string name="home_adb_is_limited_description">Ձեր սարքի արտադրողը սահմանափակել է adb

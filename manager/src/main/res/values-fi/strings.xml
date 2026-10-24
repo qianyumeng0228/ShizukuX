@@ -119,8 +119,6 @@
     <string name="home_automation_dialog_label_class">Luokka</string>
     <string name="home_automation_dialog_label_target">Kohde</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Kehittäjän opas</string>
-    <string name="home_learn_more_description">Opi kehittymään Shizukun kanssa</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Sinun täytyy ottaa ylimääräinen askel</string>
     <string name="home_adb_is_limited_description">Laitevalmistajasi on rajoittanut adb-oikeuksia,

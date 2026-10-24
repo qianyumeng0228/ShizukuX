@@ -30,7 +30,6 @@ class HomeAdapter(
         const val ID_START_ROOT = 3L
         const val ID_START_WADB = 4L
         const val ID_START_ADB = 5L
-        const val ID_LEARN_MORE = 6L
         const val ID_ADB_PERMISSION_LIMITED = 7L
         const val ID_AUTOMATION = 8L
         const val ID_COMPANION = 9L
@@ -41,7 +40,7 @@ class HomeAdapter(
         const val ID_BACKUP_APPS = 15L
 
         private val DEFAULT_ORDER = listOf(
-            ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_PERMISSION_MANAGER, ID_LEARN_MORE, ID_COMPANION
+            ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_PERMISSION_MANAGER, ID_COMPANION
         )
     }
 
@@ -234,8 +233,6 @@ class HomeAdapter(
                 ID_BACKUP_APPS -> addItem(AppBackupViewHolder.CREATOR, status, id)
                 ID_DEVICE_CONTROL -> addItem(DeviceControlViewHolder.CREATOR, status, id)
                 ID_PERMISSION_MANAGER -> addItem(PermissionManagerViewHolder.CREATOR, status, id)
-                ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
-                    addItem(LearnMoreViewHolder.CREATOR, null, id)
                 ID_COMPANION -> {
                     // The compat hub is what lets third-party apps detect ShizukuX, so surface
                     // this card whenever it still needs action — the hub isn't installed yet, or

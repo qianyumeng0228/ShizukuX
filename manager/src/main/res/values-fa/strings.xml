@@ -116,8 +116,6 @@
     <string name="home_automation_dialog_label_class">کلاس</string>
     <string name="home_automation_dialog_label_target">هدف</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">راهنمای توسعه‌دهنده</string>
-    <string name="home_learn_more_description">یاد بگیرید که چگونه با Shizuku توسعه دهید</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">شما باید یک قدم اضافی بردارید</string>
     <string name="home_adb_is_limited_description">سازنده دستگاه شما مجوزهای adb را محدود کرده است و

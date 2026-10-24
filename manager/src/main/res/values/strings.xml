@@ -309,8 +309,6 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="home_automation_token_encrypt_failed">Failed to secure the token — try again</string>
 
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Developer guide</string>
-    <string name="home_learn_more_description">Learn how to develop with Shizuku</string>
 
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">You need to take an extra step</string>
@@ -858,8 +856,6 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="dialog_stop_message">Shizuku service will be stopped.</string>
 
     <!-- Notification -->
-    <string name="notification_channel_automation">Network monitor</string>
-    <string name="notification_automation_title">Watching for known networks to auto-start ShizukuX</string>
     <string name="notification_channel_service_status">Service start status</string>
     <string name="notification_service_starting">Shizuku service is starting…</string>
     <string name="notification_service_start_failed">Start Shizuku service failed.</string>

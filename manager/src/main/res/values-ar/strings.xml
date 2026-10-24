@@ -117,8 +117,6 @@
     <string name="home_automation_dialog_label_class">فصل</string>
     <string name="home_automation_dialog_label_target">هدف</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">دليل المطور</string>
-    <string name="home_learn_more_description">تعلم كيف تطور مع Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">أنت بحاجة إلى اتخاذ خطوة إضافية</string>
     <string name="home_adb_is_limited_description">قامت الشركة المصنعة لجهازك بتقييد أذونات adb ولن

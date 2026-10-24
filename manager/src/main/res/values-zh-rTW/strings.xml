@@ -93,8 +93,6 @@
     <string name="home_automation_dialog_label_class">類別名</string>
     <string name="home_automation_dialog_label_target">目標</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">開發者指南</string>
-    <string name="home_learn_more_description">瞭解如何使用 Shizuku 開發</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">您需要進行額外的步驟</string>
     <string name="home_adb_is_limited_description">您的裝置製造商限制了 ADB 的權限，使用 Shizuku

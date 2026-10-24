@@ -9,7 +9,6 @@ import rikka.core.content.asActivity
 import androidx.core.content.ContextCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeBannerStatusBinding
-import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.ProjectLinks
 import rikka.html.text.HtmlCompat
@@ -23,7 +22,7 @@ import rikka.shizuku.ShizukuApiConstants
  * Merged hero header: the themed wallpaper banner is the card background, with the live
  * server-status content overlaid on a readable bottom scrim. Combines the previously separate
  * decorative banner and the status card into one compact card while keeping every status-card
- * feature — status dot, running/not-running title & summary, activity-log & diagnostics chips,
+ * feature — status dot, running/not-running title & summary, the diagnostics chip,
  * and the sentry-offline notice.
  */
 class HomeBannerStatusViewHolder(
@@ -41,7 +40,6 @@ class HomeBannerStatusViewHolder(
     private inline val textView get() = binding.text1
     private inline val summaryView get() = binding.text2
     private inline val iconView get() = binding.icon
-    private inline val logChip get() = binding.btnActivityLog
     private inline val diagnosticsChip get() = binding.btnDiagnostics
     private inline val statusIndicator get() = binding.statusIndicator
     private inline val sentryButton get() = binding.btnSentryOffline
@@ -126,7 +124,7 @@ class HomeBannerStatusViewHolder(
         sentryButton.visibility = if (af.shizuku.manager.ShizukuSettings.isSentryLimitReached()) View.VISIBLE else View.GONE
         sentryButton.setOnClickListener {
             // MaterialAlertDialogBuilder needs Activity theme; resolve via asActivity
-            // (same guard as logChip/diagnosticsChip in this file + AccessibilityDialogHelper).
+            // (same guard as the diagnosticsChip in this file + AccessibilityDialogHelper).
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
             com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.sentry_offline_notice_title)
@@ -167,15 +165,6 @@ class HomeBannerStatusViewHolder(
             }
         }
 
-        logChip.visibility = if (ok && af.shizuku.manager.ShizukuSettings.showActivityLogHome()) View.VISIBLE else View.GONE
-        logChip.setOnClickListener {
-            val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
-            activity.startWithSceneTransition(
-                android.content.Intent(activity, af.shizuku.manager.activitylog.ActivityLogActivity::class.java),
-                iconView, "icon_server_status"
-            )
-        }
-
         diagnosticsChip.visibility = if (ok) View.VISIBLE else View.GONE
         diagnosticsChip.setOnClickListener {
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
@@ -194,7 +183,6 @@ class HomeBannerStatusViewHolder(
 
         textView.setTextColor(textColor)
         summaryView.setTextColor(textColor)
-        logChip.setTextColor(textColor)
         diagnosticsChip.setTextColor(textColor)
 
         // Overlaid status icon: a clean glyph tinted with the semantic color — no pill background

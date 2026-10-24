@@ -122,8 +122,6 @@
     <string name="home_automation_dialog_label_class">வர்க்கம்</string>
     <string name="home_automation_dialog_label_target">இலக்கு</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">டெவலப்பர் வழிகாட்டி</string>
-    <string name="home_learn_more_description">ஷிசுகுவுடன் எவ்வாறு உருவாக்குவது என்பதை அறிக</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">நீங்கள் ஒரு கூடுதல் படி எடுக்க வேண்டும்.</string>
     <string name="home_adb_is_limited_description">உங்கள் சாதன உற்பத்தியாளர் adb அனுமதிகளை

@@ -198,8 +198,6 @@
     <string name="home_automation_dialog_label_class">类名</string>
     <string name="home_automation_dialog_label_target">目标</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">了解 Shizuku</string>
-    <string name="home_learn_more_description">了解如何使用 Shizuku 进行开发</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">您需要进行额外的步骤</string>
     <string name="home_adb_is_limited_description">您的设备制造商限制了 ADB 的权限，使用 Shizuku
@@ -819,8 +817,6 @@
     <string name="about_qq_group_copied"><![CDATA[群号已复制，请在 QQ 中搜索加入]]></string>
     <string name="start"><![CDATA[开始]]></string>
     <string name="stop"><![CDATA[停止]]></string>
-    <string name="notification_channel_automation"><![CDATA[自动化服务]]></string>
-    <string name="notification_automation_title"><![CDATA[自动化运行]]></string>
     <string name="notification_auth_missing_title"><![CDATA[需要身份验证令牌]]></string>
     <string name="notification_auth_missing_message"><![CDATA[请在 Intent 中添加“auth”额外参数。您可以点按应用中的“查看意图”来找到令牌。]]></string>
     <string name="notification_auth_invalid_title"><![CDATA[无效的身份验证令牌]]></string>

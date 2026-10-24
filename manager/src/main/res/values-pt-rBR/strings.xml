@@ -207,8 +207,6 @@
     <string name="home_automation_token_encrypt_failed">Falha ao proteger o token — tente novamente</string>
 
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Guia do desenvolvedor</string>
-    <string name="home_learn_more_description">Saiba como desenvolver com o Shizuku</string>
 
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Você precisa realizar uma etapa extra</string>
@@ -650,8 +648,6 @@
     <string name="dialog_stop_message">O serviço do Shizuku será interrompido.</string>
 
     <!-- Notification -->
-    <string name="notification_channel_automation">Serviço de automação</string>
-    <string name="notification_automation_title">Automação em execução</string>
     <string name="notification_channel_service_status">Status de início do serviço</string>
     <string name="notification_service_starting">O serviço do Shizuku está iniciando…</string>
     <string name="notification_service_start_failed">Falha ao iniciar o serviço do Shizuku.</string>

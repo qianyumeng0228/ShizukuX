@@ -196,8 +196,6 @@
     <string name="home_automation_regenerate_token"><![CDATA[重新生成令牌？]]></string>
     <string name="home_automation_regenerate_token_message"><![CDATA[您需要使用新令牌重新配置 Intent。]]></string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title"><![CDATA[开发者指南]]></string>
-    <string name="home_learn_more_description"><![CDATA[了解如何使用 Shizuku 进行开发]]></string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title"><![CDATA[您需要额外一步操作]]></string>
     <string name="home_adb_is_limited_description"><![CDATA[您的设备厂商限制了 adb 权限，使用 Shizuku 的应用将无法正常工作。

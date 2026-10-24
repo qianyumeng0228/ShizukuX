@@ -121,8 +121,6 @@
     <string name="home_automation_dialog_label_class">კლასი</string>
     <string name="home_automation_dialog_label_target">სამიზნე</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">დეველოპერის სახელმძღვანელო</string>
-    <string name="home_learn_more_description">ისწავლეთ როგორ განვითარდეთ Shizuku-სთან ერთად</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">თქვენ უნდა გადადგათ დამატებითი ნაბიჯი</string>
     <string name="home_adb_is_limited_description">თქვენი მოწყობილობის მწარმოებელმა შეზღუდა adb

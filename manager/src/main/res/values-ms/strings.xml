@@ -121,8 +121,6 @@
     <string name="home_automation_dialog_label_class">Kelas</string>
     <string name="home_automation_dialog_label_target">Sasaran</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Panduan pembangun</string>
-    <string name="home_learn_more_description">Ketahui cara membangun dengan Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Anda perlu mengambil langkah tambahan</string>
     <string name="home_adb_is_limited_description">Pengilang peranti anda telah mengehadkan

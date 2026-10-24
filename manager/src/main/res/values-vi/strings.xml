@@ -116,9 +116,6 @@
     <string name="home_automation_dialog_label_class">Lớp học</string>
     <string name="home_automation_dialog_label_target">Mục tiêu</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Hướng dẫn dành cho nhà phát triển</string>
-    <string name="home_learn_more_description">Tìm hiểu cách phát triển với Shizuku hoặc tải ứng
-        dụng bằng Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Bạn cần phải thực hiện thêm một bước</string>
     <string name="home_adb_is_limited_description">Nhà sản xuất thiết bị của bạn đã hạn chế quyền

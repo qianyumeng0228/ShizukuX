@@ -121,8 +121,6 @@
     <string name="home_automation_dialog_label_class">Classe</string>
     <string name="home_automation_dialog_label_target">Bersaglio</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Guida per gli sviluppatori</string>
-    <string name="home_learn_more_description">Impara a sviluppare con Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Devi fare un passo in più</string>
     <string name="home_adb_is_limited_description">Il produttore del dispositivo dispone di

@@ -99,8 +99,6 @@
     <string name="home_automation_dialog_label_class">수업</string>
     <string name="home_automation_dialog_label_target">목표</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">개발자 가이드</string>
-    <string name="home_learn_more_description">Shizuku로 개발하는 방법 알아보기</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">추가 단계를 진행해야 합니다</string>
     <string name="home_adb_is_limited_description">디바이스 제조업체에서 ADB 권한을 제한하여 Shizuku를 사용하는 앱이 제대로

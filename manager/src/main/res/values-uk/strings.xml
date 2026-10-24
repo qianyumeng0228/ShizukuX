@@ -125,8 +125,6 @@
     <string name="home_automation_dialog_label_class">Клас</string>
     <string name="home_automation_dialog_label_target">Ціль</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Посібник розробника</string>
-    <string name="home_learn_more_description">Дізнайтеся, як розробляти з Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Потрібен ще один крок</string>
     <string name="home_adb_is_limited_description">Виробник вашого пристрою обмежив права ADB,

@@ -124,8 +124,6 @@
     <string name="home_automation_dialog_label_class">Classe</string>
     <string name="home_automation_dialog_label_target">Objetivo</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Guia do desenvolvedor</string>
-    <string name="home_learn_more_description">Aprenda a desenvolver com Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Você precisa dar um passo extra</string>
     <string name="home_adb_is_limited_description">O fabricante do dispositivo restringiu as

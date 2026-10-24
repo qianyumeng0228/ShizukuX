@@ -221,8 +221,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     if (simpleName == "BackgroundServiceStartNotAllowedException" ||
                         (throwable is IllegalStateException &&
                             (throwable.message?.contains("startForegroundService") == true ||
-                                // Plain startService() from background on API 31+ (AutomationService /
-                                // ShizukuLiveService). Already caught at the call site; expected, not a bug.
+                                // Plain startService() from background on API 31+ (ShizukuLiveService).
+                                // Already caught at the call site; expected, not a bug.
                                 throwable.message?.contains("Not allowed to start service") == true))) {
                         return@setBeforeSend null
                     }
@@ -248,8 +248,8 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     }
 
                     // 8. Drop the OEM WifiInfo-redaction SecurityException thrown out of
-                    //    ConnectivityManager.getNetworkCapabilities() on some ROMs — already caught
-                    //    defensively (AutomationService.checkNetworkState); non-eliminable from app code.
+                    //    ConnectivityManager.getNetworkCapabilities() on some ROMs — non-eliminable
+                    //    from app code.
                     if (throwable is SecurityException &&
                         (message.contains("ACCESS_WIFI_STATE") || message.contains("getNetworkCapabilities"))) {
                         return@setBeforeSend null
@@ -465,18 +465,6 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 }
                 af.shizuku.manager.receiver.WatchdogAlarmReceiver.schedule(this)
             }
-        }
-
-        try {
-            af.shizuku.manager.automation.registerDefaultRules()
-            val automationIntent = Intent(this, af.shizuku.manager.automation.AutomationService::class.java)
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                startForegroundService(automationIntent)
-            } else {
-                startService(automationIntent)
-            }
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to start AutomationService")
         }
 
         Shizuku.addLogListener { appName, packageName, action ->

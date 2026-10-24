@@ -115,8 +115,6 @@
     <string name="home_automation_dialog_label_class">ระดับ</string>
     <string name="home_automation_dialog_label_target">เป้า</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">คู่มือนักพัฒนา</string>
-    <string name="home_learn_more_description">เรียนรู้การพัฒนาเพื่อใช้ร่วมกันกับ Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">คุณต้องทำขั้นตอนเพิ่มเติม</string>
     <string name="home_adb_is_limited_description">ผู้ผลิตอุปกรณ์ของคุณ จำกัดการอนุญาต adb

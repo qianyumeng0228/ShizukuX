@@ -120,9 +120,6 @@
     <string name="home_automation_dialog_label_class">Sinif</string>
     <string name="home_automation_dialog_label_target">Hədəf</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Tərtibatçı təlimatı</string>
-    <string name="home_learn_more_description">Necə Shizuku dəstəkli proqram hazırlaya biləcəyinizi
-        öyrənin və ya Shizuku dəstəkli proqramları əldə edin</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Əlavə bir addım atmalısan</string>
     <string name="home_adb_is_limited_description">Cihaz istehsalçınız adb icazələrini

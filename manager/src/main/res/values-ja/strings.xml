@@ -98,8 +98,6 @@
     <string name="home_automation_dialog_label_class">クラス</string>
     <string name="home_automation_dialog_label_target">ターゲット</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">開発者ガイド</string>
-    <string name="home_learn_more_description">Shizukuを使った開発方法、Shizukuを使ったアプリの入手方法について学ぶことができます</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">もう一段階行う必要がある</string>
     <string name="home_adb_is_limited_description">お使いの端末製造元は adb 権限を制限しており､ Shizuku

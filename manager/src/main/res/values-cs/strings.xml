@@ -83,8 +83,6 @@
     <string name="home_automation_dialog_label_class">Třída</string>
     <string name="home_automation_dialog_label_target">Cíl</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Průvodce pro vývojáře</string>
-    <string name="home_learn_more_description">Naučte se, jak vyvíjet aplikace s pomocí Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Je třeba udělat jeden krok navíc</string>
     <string name="home_adb_is_limited_description">Výrobce vašeho zařízení omezil přístup k adb a aplikace používající Shizuku by kvůli tomu nefungovaly správně.

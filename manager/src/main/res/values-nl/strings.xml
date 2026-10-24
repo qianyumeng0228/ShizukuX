@@ -120,8 +120,6 @@
     <string name="home_automation_dialog_label_class">Klasse</string>
     <string name="home_automation_dialog_label_target">Doel</string>
     <!-- Home - Learn more -->
-    <string name="home_learn_more_title">Ontwikkelaarsgids</string>
-    <string name="home_learn_more_description">Leer hoe je ontwikkelt met Shizuku</string>
     <!-- Home - Adb permissions limited -->
     <string name="home_adb_is_limited_title">Je moet een extra stap nemen</string>
     <string name="home_adb_is_limited_description">De fabrikant van je apparaat heeft ADB-rechten

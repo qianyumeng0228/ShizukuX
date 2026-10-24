@@ -1,5 +1,4 @@
 package af.shizuku.manager.settings
-import af.shizuku.manager.activitylog.ActivityLogActivity
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -76,11 +75,6 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
 
         findPreference<Preference>("service_doctor")?.setOnPreferenceClickListener {
             startActivity(Intent(context, ServiceDoctorActivity::class.java))
-            true
-        }
-
-        findPreference<Preference>("activity_log")?.setOnPreferenceClickListener {
-            startActivity(Intent(context, ActivityLogActivity::class.java))
             true
         }
 
