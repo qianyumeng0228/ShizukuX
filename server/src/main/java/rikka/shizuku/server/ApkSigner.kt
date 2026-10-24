@@ -1,6 +1,7 @@
 package rikka.shizuku.server
 
-import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.RandomAccessFile
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.KeyPairGenerator
@@ -8,7 +9,6 @@ import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.Signature
-import java.security.cert.X509Certificate
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -18,8 +18,13 @@ import java.util.Base64
  * Signs an APK with V1 (JAR) + V2 signatures using an ephemeral RSA-2048 key.
  * No external tools required — pure JVM crypto from ART's built-in providers.
  *
+ * Streamed: the input APK (e.g. a 2 GB game split) is copied entry-by-entry off disk,
+ * and the V2 signing block is spliced into the file with a RandomAccessFile tail rewrite.
+ * The whole APK is NEVER materialized in a ByteArray — a 2 GB readBytes() on
+ * com.tencent.tmgp.pubgmhd's arm64 split crashed the server with OOM.
+ *
  * Usage:
- *   val signed = ApkSigner.sign(patchedApkBytes)
+ *   ApkSigner.signFile(srcApk, outApk, patchManifest = true)
  */
 internal object ApkSigner {
 
@@ -51,7 +56,7 @@ internal object ApkSigner {
     private fun seq(vararg items: ByteArray)  = tlv(0x30, concat(*items))
     private fun set(vararg items: ByteArray)  = tlv(0x31, concat(*items))
     private fun oid(vararg arcs: Int): ByteArray {
-        val body = ByteArrayOutputStream()
+        val body = java.io.ByteArrayOutputStream()
         body.write(arcs[0] * 40 + arcs[1])
         for (i in 2 until arcs.size) {
             val v = arcs[i]
@@ -84,7 +89,7 @@ internal object ApkSigner {
     // Encode a positive BigInteger-style byte array with a leading 0x00 if high bit set
     private fun posInt(b: ByteArray) = int(if (b[0].toInt() and 0x80 != 0) byteArrayOf(0) + b else b)
 
-    // ── X.509 self-signed certificate (DER) ────────────────────────────────
+    // ── X.509 self-signed certificate (DER) ─────────────────────────────────
 
     private val certDer: ByteArray by lazy { buildCert() }
 
@@ -122,71 +127,85 @@ internal object ApkSigner {
         return seq(tbsCert, sigAlg, bits(rawSig))
     }
 
-    // ── V1 Signing (JAR / MANIFEST.MF + CERT.SF + CERT.RSA) ───────────────
+    // ── V1 Signing (JAR / MANIFEST.MF + CERT.SF + CERT.RSA), streaming ──────
 
     private fun sha256b64(data: ByteArray): String =
         Base64.getEncoder().encodeToString(MessageDigest.getInstance("SHA-256").digest(data))
 
-    private fun manifestSection(name: String, data: ByteArray): String {
-        val sb = StringBuilder()
-        sb.append("Name: $name\r\n")
-        sb.append("SHA-256-Digest: ${sha256b64(data)}\r\n")
-        sb.append("\r\n")
-        return sb.toString()
-    }
-
     /**
-     * Strips old META-INF signature files and re-signs with V1.
-     * Returns the new ZIP bytes (unsigned entries only + new META-INF/).
+     * Streams the whole APK from [src] to [dst] as a freshly deflated ZIP, strips old
+     * META-INF signature entries, accumulates per-entry SHA-256 digests while streaming,
+     * then writes new MANIFEST.MF / CERT.SF / CERT.RSA.
+     * If [patchManifest] is true, the small AndroidManifest.xml entry (<100 KB) is buffered,
+     * passed through [ApkBinaryXmlPatcher.patch] (debuggable=true) and written back patched.
      */
-    private fun signV1(entries: List<Pair<String, ByteArray>>): ByteArray {
+    private fun signV1Stream(src: File, dst: File, patchManifest: Boolean) {
         val manifest = StringBuilder()
         manifest.append("Manifest-Version: 1.0\r\nCreated-By: 1.0 (ShizukuX)\r\n\r\n")
+        // (entry name, raw manifest-section bytes) pairs, kept for CERT.SF building.
+        val sections = mutableListOf<Pair<String, ByteArray>>()
 
-        val sections = StringBuilder()
-        for ((name, data) in entries) {
-            val section = manifestSection(name, data)
-            manifest.append(section)
-            sections.append(section)
+        ZipInputStream(src.inputStream().buffered()).use { zis ->
+            ZipOutputStream(dst.outputStream().buffered()).use { zos ->
+                zos.setMethod(ZipOutputStream.DEFLATED)
+                val buf = ByteArray(64 * 1024)
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    val upper = name.uppercase()
+                    val isOldSig = name.startsWith("META-INF/") && (
+                        upper.endsWith(".SF") || upper.endsWith(".RSA") ||
+                        upper.endsWith(".DSA") || upper.endsWith(".EC") ||
+                        name == "META-INF/MANIFEST.MF"
+                    )
+                    if (!isOldSig) {
+                        val md = MessageDigest.getInstance("SHA-256")
+                        zos.putNextEntry(ZipEntry(name))
+                        if (patchManifest && name == "AndroidManifest.xml") {
+                            // Manifest is tiny: buffer it, patch, digest the patched bytes.
+                            val raw = zis.readBytes()
+                            val patched = ApkBinaryXmlPatcher.patch(raw)
+                            md.update(patched)
+                            zos.write(patched)
+                        } else {
+                            var n: Int
+                            while (zis.read(buf).also { n = it } > 0) {
+                                md.update(buf, 0, n)
+                                zos.write(buf, 0, n)
+                            }
+                        }
+                        zos.closeEntry()
+                        val section = "Name: $name\r\nSHA-256-Digest: ${sha256b64(md.digest())}\r\n\r\n"
+                        manifest.append(section)
+                        sections.add(name to section.toByteArray(Charsets.UTF_8))
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+
+                // CERT.SF
+                val mfBytes = manifest.toString().toByteArray(Charsets.UTF_8)
+                val sf = StringBuilder()
+                sf.append("Signature-Version: 1.0\r\n")
+                sf.append("SHA-256-Digest-Manifest: ${sha256b64(mfBytes)}\r\n")
+                sf.append("Created-By: 1.0 (ShizukuX)\r\n\r\n")
+                for ((name, sectionBytes) in sections) {
+                    sf.append("Name: $name\r\n")
+                    sf.append("SHA-256-Digest: ${sha256b64(sectionBytes)}\r\n\r\n")
+                }
+                val sfBytes = sf.toString().toByteArray(Charsets.UTF_8)
+                val certRsa = buildPkcs7(sfBytes)
+
+                fun addMeta(name: String, data: ByteArray) {
+                    val e = ZipEntry(name); e.method = ZipEntry.DEFLATED
+                    zos.putNextEntry(e); zos.write(data); zos.closeEntry()
+                }
+                addMeta("META-INF/MANIFEST.MF", mfBytes)
+                addMeta("META-INF/CERT.SF", sfBytes)
+                addMeta("META-INF/CERT.RSA", certRsa)
+                zos.finish()
+            }
         }
-
-        val mfBytes = manifest.toString().toByteArray(Charsets.UTF_8)
-
-        // CERT.SF
-        val sf = StringBuilder()
-        sf.append("Signature-Version: 1.0\r\n")
-        sf.append("SHA-256-Digest-Manifest: ${sha256b64(mfBytes)}\r\n")
-        sf.append("Created-By: 1.0 (ShizukuX)\r\n\r\n")
-        for ((name, data) in entries) {
-            val section = manifestSection(name, data)
-            val sectionBytes = section.toByteArray(Charsets.UTF_8)
-            sf.append("Name: $name\r\n")
-            sf.append("SHA-256-Digest: ${sha256b64(sectionBytes)}\r\n")
-            sf.append("\r\n")
-        }
-        val sfBytes = sf.toString().toByteArray(Charsets.UTF_8)
-
-        // CERT.RSA — PKCS#7 detached signature
-        val certRsa = buildPkcs7(sfBytes)
-
-        // Repack ZIP
-        val out = ByteArrayOutputStream()
-        val zos = ZipOutputStream(out)
-        zos.setMethod(ZipOutputStream.DEFLATED)
-        for ((name, data) in entries) {
-            zos.putNextEntry(ZipEntry(name))
-            zos.write(data)
-            zos.closeEntry()
-        }
-        fun addMeta(name: String, data: ByteArray) {
-            val e = ZipEntry(name); e.method = ZipEntry.DEFLATED
-            zos.putNextEntry(e); zos.write(data); zos.closeEntry()
-        }
-        addMeta("META-INF/MANIFEST.MF", mfBytes)
-        addMeta("META-INF/CERT.SF", sfBytes)
-        addMeta("META-INF/CERT.RSA", certRsa)
-        zos.finish()
-        return out.toByteArray()
     }
 
     // PKCS#7 SignedData (detached, no content, SHA-256, RSA)
@@ -236,7 +255,7 @@ internal object ApkSigner {
         return seq(oidSignedData, ctx(0, signedData))
     }
 
-    // ── V2 APK Signature Block ──────────────────────────────────────────────
+    // ── V2 APK Signature Block (file-based, chunked digests) ─────────────────
 
     private fun Int.le(): ByteArray = ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(this).array()
     private fun Long.le(): ByteArray = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putLong(this).array()
@@ -246,12 +265,44 @@ internal object ApkSigner {
 
     private const val CHUNK_SIZE = 1024 * 1024  // 1 MB
 
-    private fun digestSection(data: ByteArray, offset: Int, length: Int): List<ByteArray> {
+    /** Stream [file][offset, offset+length) and return one SHA-256 chunk digest per 1 MB chunk. */
+    private fun digestSectionFile(file: File, offset: Long, length: Long): List<ByteArray> {
         val chunks = mutableListOf<ByteArray>()
-        var pos = offset
-        val end = offset + length
-        while (pos < end) {
-            val chunkLen = minOf(CHUNK_SIZE, end - pos)
+        if (length <= 0) return chunks
+        file.inputStream().use { fi ->
+            var skipped = 0L
+            while (skipped < offset) {
+                val s = fi.skip(offset - skipped)
+                if (s <= 0) break
+                skipped += s
+            }
+            val buf = ByteArray(CHUNK_SIZE)
+            var remaining = length
+            while (remaining > 0) {
+                val want = minOf(CHUNK_SIZE.toLong(), remaining).toInt()
+                var read = 0
+                while (read < want) {
+                    val n = fi.read(buf, read, want - read)
+                    if (n < 0) break
+                    read += n
+                }
+                if (read <= 0) break
+                val md = MessageDigest.getInstance("SHA-256")
+                md.update(0xa5.toByte())
+                md.update(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(read).array())
+                md.update(buf, 0, read)
+                chunks.add(md.digest())
+                remaining -= read.toLong()
+            }
+        }
+        return chunks
+    }
+
+    private fun digestSectionBytes(data: ByteArray): List<ByteArray> {
+        val chunks = mutableListOf<ByteArray>()
+        var pos = 0
+        while (pos < data.size) {
+            val chunkLen = minOf(CHUNK_SIZE, data.size - pos)
             val md = MessageDigest.getInstance("SHA-256")
             md.update(0xa5.toByte())
             md.update(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(chunkLen).array())
@@ -270,27 +321,38 @@ internal object ApkSigner {
         return md.digest()
     }
 
-    private fun locateZipSections(apk: ByteArray): Triple<Int, Int, Int> {
-        // Locate EOCD by scanning backwards for signature 0x06054b50
-        var eocdOffset = apk.size - 22
-        while (eocdOffset >= 0) {
-            val sig = ByteBuffer.wrap(apk, eocdOffset, 4).order(ByteOrder.LITTLE_ENDIAN).int
-            if (sig == 0x06054b50) break
-            eocdOffset--
+    /** Locates the EOCD record in [file] by scanning its tail; returns its offset. */
+    private fun locateEocd(file: File): Long {
+        RandomAccessFile(file, "r").use { raf ->
+            val len = raf.length()
+            val scanLen = minOf(len, 65557L).toInt()
+            raf.seek(len - scanLen)
+            val tail = ByteArray(scanLen)
+            raf.readFully(tail)
+            for (i in (scanLen - 22) downTo 0) {
+                if (ByteBuffer.wrap(tail, i, 4).order(ByteOrder.LITTLE_ENDIAN).int == 0x06054b50) {
+                    return len - scanLen + i
+                }
+            }
         }
-        if (eocdOffset < 0) error("No EOCD found")
-        val cdOffset = ByteBuffer.wrap(apk, eocdOffset + 16, 4).order(ByteOrder.LITTLE_ENDIAN).int
-        val cdSize   = ByteBuffer.wrap(apk, eocdOffset + 12, 4).order(ByteOrder.LITTLE_ENDIAN).int
-        return Triple(cdOffset, cdSize, eocdOffset)
+        error("No EOCD found in signed APK")
     }
 
-    private fun buildV2Block(apkBeforeBlock: ByteArray, cdBytes: ByteArray, eocdWithNewOffset: ByteArray): ByteArray {
-        val sec1 = digestSection(apkBeforeBlock, 0, apkBeforeBlock.size)
-        val sec2 = digestSection(cdBytes, 0, cdBytes.size)
-        val sec3 = digestSection(eocdWithNewOffset, 0, eocdWithNewOffset.size)
+    private fun readAt(raf: RandomAccessFile, offset: Long, length: Int): ByteArray {
+        val buf = ByteArray(length)
+        raf.seek(offset)
+        raf.readFully(buf)
+        return buf
+    }
 
-        val allChunks = sec1 + sec2 + sec3
-        val apkDigest = topLevelDigest(allChunks)
+    private fun patchEocdOffset(eocd: ByteArray, newCdOffset: Long): ByteArray {
+        val result = eocd.copyOf()
+        ByteBuffer.wrap(result, 16, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(newCdOffset.toInt())
+        return result
+    }
+
+    private fun buildV2Block(sec1: List<ByteArray>, sec2: List<ByteArray>, sec3: List<ByteArray>): ByteArray {
+        val apkDigest = topLevelDigest(sec1 + sec2 + sec3)
 
         // Signed data structure for V2
         val algoId     = 0x0103.le()   // RSASSA-PKCS1-v1_5 with SHA2-256
@@ -309,70 +371,62 @@ internal object ApkSigner {
         val sigs     = lengthPrefixed(sigPair)
 
         // Public key (SubjectPublicKeyInfo DER)
-        val pubKeyBytes = publicKey.encoded
-        val pubKeyLp    = lengthPrefixed(pubKeyBytes)
+        val pubKeyLp  = lengthPrefixed(publicKey.encoded)
 
         val signer      = lengthPrefixed(signedData + sigs + pubKeyLp)
         val signerList  = lengthPrefixed(signer)
 
         // ID-value pair for V2 block (ID = 0x7109871a)
-        val blockId  = 0x7109871a.le()
-        val idValue  = lengthPrefixed64(blockId + signerList)
+        val idValue  = lengthPrefixed64(0x7109871a.le() + signerList)
 
-        // APK Signing Block
-        val idValues   = idValue
-        val blockSize  = (idValues.size + 8 + 16).toLong()  // pairs + size64 + magic
-        return blockSize.le() + idValues + blockSize.le() + "APK Sig Block 42".toByteArray(Charsets.US_ASCII)
-    }
-
-    private fun updateEocdCdOffset(eocd: ByteArray, newCdOffset: Int): ByteArray {
-        val result = eocd.copyOf()
-        ByteBuffer.wrap(result, 16, 4).order(ByteOrder.LITTLE_ENDIAN).putInt(newCdOffset)
-        return result
+        // APK Signing Block: [size64][id-values][size64][magic]
+        val blockSize  = (idValue.size + 8 + 16).toLong()
+        return blockSize.le() + idValue + blockSize.le() + "APK Sig Block 42".toByteArray(Charsets.US_ASCII)
     }
 
     // ── Public entry point ──────────────────────────────────────────────────
 
     /**
-     * Strip old signatures, add V1+V2 signatures. Returns the signed APK bytes.
+     * Strip old signatures and add V1+V2 signatures, streaming off disk.
+     * [src] and [dst] are on-disk APK files; no whole-APK byte array is ever allocated.
+     * If [patchManifest] is true, the base APK's AndroidManifest.xml entry is patched
+     * to debuggable=true before signing.
      */
-    fun sign(apkBytes: ByteArray): ByteArray {
-        // 1. Read all entries, strip old META-INF sig files
-        val entries = mutableListOf<Pair<String, ByteArray>>()
-        ZipInputStream(apkBytes.inputStream()).use { zis ->
-            var entry = zis.nextEntry
-            while (entry != null) {
-                val name = entry.name
-                if (!name.startsWith("META-INF/") || name == "META-INF/") {
-                    entries.add(name to zis.readBytes())
-                } else {
-                    val upper = name.uppercase()
-                    // Keep only non-signature META-INF entries
-                    if (!upper.endsWith(".SF") && !upper.endsWith(".RSA") &&
-                        !upper.endsWith(".DSA") && !upper.endsWith(".EC") &&
-                        upper != "META-INF/MANIFEST.MF") {
-                        entries.add(name to zis.readBytes())
-                    }
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
+    fun signFile(src: File, dst: File, patchManifest: Boolean): Boolean = try {
+        signV1Stream(src, dst, patchManifest)
+
+        // V2: locate the central directory, digest the file in 1 MB chunks, splice the block in.
+        val eocdOffset = locateEocd(dst)
+        val cdOffset: Long
+        val cdBytes: ByteArray
+        val eocdBytes: ByteArray
+        RandomAccessFile(dst, "r").use { raf ->
+            cdOffset = ByteBuffer.wrap(readAt(raf, eocdOffset + 16, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
+            val cdSize = ByteBuffer.wrap(readAt(raf, eocdOffset + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
+            cdBytes = readAt(raf, cdOffset, cdSize.toInt())
+            eocdBytes = readAt(raf, eocdOffset, (dst.length() - eocdOffset).toInt())
         }
 
-        // 2. Build V1-signed ZIP (MANIFEST.MF + CERT.SF + CERT.RSA inside)
-        val v1Apk = signV1(entries)
-
-        // 3. Insert V2 signing block before the Central Directory
-        val (cdOffset, cdSize, eocdOffset) = locateZipSections(v1Apk)
-        val cdBytes   = v1Apk.copyOfRange(cdOffset, cdOffset + cdSize)
-        val eocdBytes = v1Apk.copyOfRange(eocdOffset, v1Apk.size)
-
-        val v2Block = buildV2Block(v1Apk.copyOfRange(0, cdOffset), cdBytes, updateEocdCdOffset(eocdBytes, cdOffset /* placeholder for size calc */))
+        val sec1 = digestSectionFile(dst, 0L, cdOffset)
+        // NOTE: section-3 digest covers the EOCD with the OLD cdOffset — matching the
+        // original in-memory implementation ("placeholder for size calc"); the on-disk EOCD
+        // below is rewritten with the final offset. V1 verification is authoritative for install.
+        val sec3 = digestSectionBytes(patchEocdOffset(eocdBytes, cdOffset))
+        val v2Block = buildV2Block(sec1, digestSectionBytes(cdBytes), sec3)
 
         val newCdOffset = cdOffset + v2Block.size
-        val eocdPatched = updateEocdCdOffset(eocdBytes, newCdOffset)
+        val eocdPatched = patchEocdOffset(eocdBytes, newCdOffset)
 
-        // Rebuild: [entries section][v2 block][central directory][eocd]
-        return v1Apk.copyOfRange(0, cdOffset) + v2Block + cdBytes + eocdPatched
+        RandomAccessFile(dst, "rw").use { rafw ->
+            rafw.setLength(cdOffset)
+            rafw.seek(cdOffset)
+            rafw.write(v2Block)
+            rafw.write(cdBytes)
+            rafw.write(eocdPatched)
+        }
+        true
+    } catch (_: Exception) {
+        dst.delete()
+        false
     }
 }

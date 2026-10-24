@@ -114,16 +114,19 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         // Patch base APK manifest; sign ALL APKs with the same ephemeral key.
         // Android requires all APKs in a session to share a certificate, so signing
         // must happen before uninstall, and all with the same ApkSigner instance.
+        // signFile streams off disk entry-by-entry — never readBytes(), which OOM'd the
+        // server on multi-GB game splits (2097992168-byte allocation).
         val patchedPaths = mutableListOf<String>()
         try {
             for (origPath in origPaths) {
-                val origBytes = File(origPath).readBytes()
                 val fileName = File(origPath).name
                 val isBase = fileName.endsWith("_orig_base.apk") || !fileName.contains("split_")
-                val toSign = if (isBase) ApkBinaryXmlPatcher.patch(origBytes) else origBytes
-                val signed = ApkSigner.sign(toSign)
                 val patchedPath = "$TMP_DIR/${packageName}_dbg_${fileName.substringAfter("_orig_")}"
-                File(patchedPath).writeBytes(signed)
+                if (!ApkSigner.signFile(File(origPath), File(patchedPath), patchManifest = isBase)) {
+                    origPaths.forEach { File(it).delete() }
+                    patchedPaths.forEach { File(it).delete() }
+                    return false
+                }
                 patchedPaths.add(patchedPath)
             }
         } catch (_: Exception) {
