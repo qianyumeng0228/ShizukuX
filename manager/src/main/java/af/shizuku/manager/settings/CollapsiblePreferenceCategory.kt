@@ -15,6 +15,7 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
 ) : PreferenceCategory(context, attrs) {
 
     private var expanded = false
+    private var isAnimating = false
     var onExpansionChanged: ((Boolean) -> Unit)? = null
 
     private var defaultExpanded = false
@@ -53,11 +54,17 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
             return
         }
 
-        // Sync arrow to current state without animation on first bind
+        // Cancel any in-flight animator before snapping to current state on rebind —
+        // otherwise a running ViewPropertyAnimator takes priority over the direct rotation setter
+        // and can leave the arrow pointing the wrong way for the actual expanded state.
+        arrow?.animate()?.cancel()
         arrow?.rotation = if (expanded) 180f else 0f
         updateExpandedStateDescription(holder.itemView)
 
         holder.itemView.setOnClickListener {
+            // Guard against fast double-taps: a second tap before the arrow finishes rotating
+            // would flip `expanded` twice and leave the arrow snapped to the wrong angle.
+            if (isAnimating) return@setOnClickListener
             expanded = !expanded
             if (shouldPersist()) persistBoolean(expanded)
             // Animate arrow with M3E spring-style motion
@@ -65,6 +72,8 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
                 ?.rotation(if (expanded) 180f else 0f)
                 ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(300))
                 ?.setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
+                ?.withStartAction { isAnimating = true }
+                ?.withEndAction { isAnimating = false }
                 ?.start()
             // updateChildren() already notifies the adapter per child via Preference.setVisible();
             // an additional notifyChanged() here used to schedule a rebind of this same header
