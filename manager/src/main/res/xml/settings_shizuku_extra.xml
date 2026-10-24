@@ -32,7 +32,7 @@
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
             android:key="category_connectivity"
             android:title="@string/settings_networking_connectivity_category_title"
-            android:defaultValue="false">
+            android:defaultValue="true">
 
             <af.shizuku.manager.settings.ExtraFeaturePreference
                 android:key="network_governor_plus_enabled"
@@ -67,7 +67,7 @@
             <af.shizuku.manager.settings.CollapsiblePreferenceCategory
                 android:key="category_external_relay"
                 android:title="@string/settings_external_relay_category_title"
-                android:defaultValue="false">
+                android:defaultValue="true">
 
                 <Preference
                     android:key="external_relay_manager"
@@ -82,7 +82,7 @@
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
             android:key="category_system"
             android:title="@string/settings_system_performance_category_title"
-            android:defaultValue="false">
+            android:defaultValue="true">
 
             <af.shizuku.manager.settings.ExtraFeaturePreference
                 android:key="activity_manager_plus_enabled"
@@ -119,7 +119,7 @@
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
             android:key="category_security"
             android:title="@string/settings_security_access_category_title"
-            android:defaultValue="false">
+            android:defaultValue="true">
 
             <af.shizuku.manager.settings.ExtraFeaturePreference
                 android:key="dhizuku_mode"
@@ -201,7 +201,7 @@
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
             android:key="category_storage"
             android:title="@string/settings_storage_files_category_title"
-            android:defaultValue="false">
+            android:defaultValue="true">
 
             <af.shizuku.manager.settings.ExtraFeaturePreference
                 android:key="storage_proxy_enabled"
@@ -218,7 +218,7 @@
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
             android:key="category_backup"
             android:title="@string/settings_backup_restore_category_title"
-            android:defaultValue="false">
+            android:defaultValue="true">
 
             <Preference
                 android:key="backup_settings"

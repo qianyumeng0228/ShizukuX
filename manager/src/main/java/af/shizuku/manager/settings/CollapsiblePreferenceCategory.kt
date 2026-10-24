@@ -1,6 +1,7 @@
 package af.shizuku.manager.settings
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.AttributeSet
 import androidx.core.view.ViewCompat
 import androidx.preference.Preference
@@ -16,6 +17,7 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
 
     private var expanded = false
     private var isAnimating = false
+    private var lastToggleStart = 0L
     var onExpansionChanged: ((Boolean) -> Unit)? = null
 
     private var defaultExpanded = false
@@ -58,21 +60,33 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
         // otherwise a running ViewPropertyAnimator takes priority over the direct rotation setter
         // and can leave the arrow pointing the wrong way for the actual expanded state.
         arrow?.animate()?.cancel()
+        // Self-heal: RecyclerView rebinds can cancel the arrow animation via the line above.
+        // ViewPropertyAnimator.cancel() normally runs withEndAction, but when the cancel races
+        // with the animation's start frame it is not guaranteed; a stale isAnimating=true would
+        // then swallow every later click (the reported "second tap does nothing"). Force-release
+        // here so the guard below only ever throttles genuine double-taps.
+        isAnimating = false
         arrow?.rotation = if (expanded) 180f else 0f
         updateExpandedStateDescription(holder.itemView)
 
         holder.itemView.setOnClickListener {
             // Guard against fast double-taps: a second tap before the arrow finishes rotating
-            // would flip `expanded` twice and leave the arrow snapped to the wrong angle.
-            if (isAnimating) return@setOnClickListener
+            // would flip `expanded` twice and leave the arrow snapped to the wrong angle. The
+            // time window makes the guard self-healing - if an animation is ever stuck (cancelled
+            // without withEndAction), clicks resume once 400 ms has passed instead of being
+            // swallowed forever.
+            if (isAnimating && SystemClock.elapsedRealtime() - lastToggleStart < 400L) return@setOnClickListener
             expanded = !expanded
             if (shouldPersist()) persistBoolean(expanded)
+            // Set the flag synchronously instead of in withStartAction so the double-tap guard
+            // is active from the instant of the tap, not from the animation's first frame.
+            isAnimating = true
+            lastToggleStart = SystemClock.elapsedRealtime()
             // Animate arrow with M3E spring-style motion
             arrow?.animate()
                 ?.rotation(if (expanded) 180f else 0f)
                 ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(300))
                 ?.setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
-                ?.withStartAction { isAnimating = true }
                 ?.withEndAction { isAnimating = false }
                 ?.start()
             // updateChildren() already notifies the adapter per child via Preference.setVisible();
