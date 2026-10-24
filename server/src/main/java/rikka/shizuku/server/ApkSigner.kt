@@ -419,16 +419,25 @@ internal object ApkSigner {
             eocdBytes = readAt(raf, eocdOffset, (dst.length() - eocdOffset).toInt())
         }
 
+        // sec1 covers [0, blockStart): the signing block is spliced immediately BEFORE the
+        // central directory, so blockStart == the ORIGINAL cdOffset. The verifier hashes the
+        // file prefix the same way regardless of the block being inserted in between.
         val sec1 = digestSectionFile(dst, 0L, cdOffset)
-        // NOTE: section-3 digest covers the EOCD with the OLD cdOffset — matching the
-        // original in-memory implementation ("placeholder for size calc"); the on-disk EOCD
-        // below is rewritten with the final offset. V1 verification is authoritative for install.
-        val sec3 = digestSectionBytes(patchEocdOffset(eocdBytes, cdOffset))
+
+        // Two-pass sec3: the on-disk EOCD's cdOffset field must equal newCdOffset, but
+        // newCdOffset depends on the block size, which depends on sec3 itself. One iteration
+        // suffices — every length prefix in the block is a fixed-width 4-byte LE value and every
+        // embedded digest is a fixed 32-byte SHA-256, so the block size is invariant to its own
+        // content:
+        //   pass0: size the block against a placeholder EOCD (cdOffset = original)
+        val pass0 = buildV2Block(sec1, digestSectionBytes(cdBytes),
+            digestSectionBytes(patchEocdOffset(eocdBytes, cdOffset)))
+        val newCdOffset = cdOffset + pass0.size
+        //   final: digest the EOCD exactly as it will sit on disk (cdOffset = newCdOffset)
         Log.i("ShizukuX-Sign", "buildV2Block begin")
+        val sec3 = digestSectionBytes(patchEocdOffset(eocdBytes, newCdOffset))
         val v2Block = buildV2Block(sec1, digestSectionBytes(cdBytes), sec3)
         Log.i("ShizukuX-Sign", "buildV2Block done size=${v2Block.size}")
-
-        val newCdOffset = cdOffset + v2Block.size
         Log.i("ShizukuX-Sign", "splice newCd=$newCdOffset block=${v2Block.size}")
         val eocdPatched = patchEocdOffset(eocdBytes, newCdOffset)
 
