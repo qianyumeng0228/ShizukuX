@@ -771,7 +771,7 @@
     <string name="settings_main_nav_app_interactions_summary">Gestures، long-press actions اور install verification</string>
     <string name="settings_main_nav_startup_behavior_title">Startup &amp; Behavior</string>
     <string name="settings_main_nav_startup_behavior_summary">Boot options، watchdog، network اور activity status</string>
-    <string name="settings_main_nav_advanced_diagnostics_title">Advanced &amp; Diagnostics</string>
+    <string name="settings_main_nav_advanced_diagnostics_title">Diagnostics Center</string>
     <string name="settings_main_nav_advanced_diagnostics_summary">Logs، ADB tools اور troubleshooting</string>
     <string name="settings_main_nav_about_summary">Version، licenses اور updates</string>
     <string name="settings_accent_violet_applied">Midnight Violet لاگو ہو گیا</string>

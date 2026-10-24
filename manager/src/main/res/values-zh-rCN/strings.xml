@@ -403,6 +403,8 @@
     <string name="settings_main_category_capabilities">功能</string>
     <string name="settings_main_category_personalization">个性化</string>
     <string name="settings_main_category_system">系统</string>
+    <string name="settings_main_category_core_services">核心服务与授权</string>
+    <string name="settings_main_category_diagnostics_help">诊断与帮助</string>
     <string name="settings_main_nav_feature_hub_title">功能中心</string>
     <string name="settings_main_nav_feature_hub_summary">管理 ShizukuX 专属功能</string>
     <string name="settings_main_nav_root_compat_title">Root 与兼容性</string>
@@ -412,7 +414,7 @@
     <string name="settings_main_nav_app_interactions_summary">手势、长按操作和安装验证</string>
     <string name="settings_main_nav_startup_behavior_title">启动与行为</string>
     <string name="settings_main_nav_startup_behavior_summary">开机选项、Watchdog、网络和活动状态</string>
-    <string name="settings_main_nav_advanced_diagnostics_title">高级与诊断</string>
+    <string name="settings_main_nav_advanced_diagnostics_title">诊断中心</string>
     <string name="settings_main_nav_advanced_diagnostics_summary">日志、ADB 工具和故障排查</string>
     <string name="settings_main_nav_about_summary">版本、许可和更新</string>
 

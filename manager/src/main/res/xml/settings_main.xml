@@ -3,7 +3,27 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:title="@string/settings_main_category_capabilities"
+        android:title="@string/settings_main_category_core_services"
+        app:collapsible="false">
+
+        <Preference
+            android:key="nav_behavior"
+            android:title="@string/settings_main_nav_startup_behavior_title"
+            android:summary="@string/settings_main_nav_startup_behavior_summary"
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
+
+        <af.shizuku.manager.settings.ExtraNavPreference
+            android:key="nav_root_integration"
+            android:title="@string/settings_main_nav_root_compat_title"
+            android:summary="@string/settings_main_nav_root_compat_summary"
+            android:icon="@drawable/ic_shield_24"
+            android:fragment="af.shizuku.manager.settings.RootIntegrationSettingsFragment" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:title="@string/settings_category_advanced_features"
         app:collapsible="false">
 
         <af.shizuku.manager.settings.ExtraNavPreference
@@ -12,13 +32,6 @@
             android:summary="@string/settings_main_nav_feature_hub_summary"
             android:icon="@drawable/ic_bolt_24"
             android:fragment="af.shizuku.manager.settings.ShizukuExtraSettingsFragment" />
-
-        <af.shizuku.manager.settings.ExtraNavPreference
-            android:key="nav_root_integration"
-            android:title="@string/settings_main_nav_root_compat_title"
-            android:summary="@string/settings_main_nav_root_compat_summary"
-            android:icon="@drawable/ic_shield_24"
-            android:fragment="af.shizuku.manager.settings.RootIntegrationSettingsFragment" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
@@ -43,15 +56,8 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:title="@string/settings_main_category_system"
+        android:title="@string/settings_main_category_diagnostics_help"
         app:collapsible="false">
-
-        <Preference
-            android:key="nav_behavior"
-            android:title="@string/settings_main_nav_startup_behavior_title"
-            android:summary="@string/settings_main_nav_startup_behavior_summary"
-            android:icon="@drawable/ic_settings_suggest_24"
-            android:fragment="af.shizuku.manager.settings.BehaviorSettingsFragment" />
 
         <Preference
             android:key="nav_advanced"
@@ -59,12 +65,6 @@
             android:summary="@string/settings_main_nav_advanced_diagnostics_summary"
             android:icon="@drawable/ic_terminal_24"
             android:fragment="af.shizuku.manager.settings.AdvancedSettingsFragment" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:title="@string/settings_about"
-        app:collapsible="false">
 
         <Preference
             android:key="nav_about"

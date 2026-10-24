@@ -992,6 +992,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_main_category_capabilities">Capabilities</string>
     <string name="settings_main_category_personalization">Personalization</string>
     <string name="settings_main_category_system">System</string>
+    <string name="settings_main_category_core_services">Core Services &amp; Authorization</string>
+    <string name="settings_main_category_diagnostics_help">Diagnostics &amp; Help</string>
     <string name="settings_main_nav_feature_hub_title">Feature Hub</string>
     <string name="settings_main_nav_feature_hub_summary">Manage exclusive Extra capabilities</string>
     <string name="settings_main_nav_root_compat_title">Root &amp; Compatibility</string>
@@ -1001,7 +1003,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_main_nav_app_interactions_summary">Gestures, long-press actions, and install verification</string>
     <string name="settings_main_nav_startup_behavior_title">Startup &amp; Behavior</string>
     <string name="settings_main_nav_startup_behavior_summary">Boot options, watchdog, network, and activity status</string>
-    <string name="settings_main_nav_advanced_diagnostics_title">Advanced &amp; Diagnostics</string>
+    <string name="settings_main_nav_advanced_diagnostics_title">Diagnostics Center</string>
     <string name="settings_main_nav_advanced_diagnostics_summary">Logs, ADB tools, and troubleshooting</string>
     <string name="settings_main_nav_about_summary">Version, licenses, and updates</string>
     <string name="settings_accent_violet_applied">Midnight Violet applied</string>

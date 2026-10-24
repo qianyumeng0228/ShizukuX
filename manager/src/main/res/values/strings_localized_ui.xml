@@ -13,7 +13,7 @@
     <string name="settings_system_category">System</string>
     <string name="settings_startup_behavior_title">Startup &amp; Behavior</string>
     <string name="settings_startup_behavior_summary">Boot options, watchdog, network, and activity status</string>
-    <string name="settings_advanced_diagnostics_title">Advanced &amp; Diagnostics</string>
+    <string name="settings_advanced_diagnostics_title">Diagnostics Center</string>
     <string name="settings_advanced_diagnostics_summary">Logs, ADB tools, and troubleshooting</string>
     <string name="settings_about_category">About</string>
     <string name="settings_about_title">About</string>

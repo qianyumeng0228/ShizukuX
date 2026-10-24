@@ -13,7 +13,7 @@
     <string name="settings_system_category">系统</string>
     <string name="settings_startup_behavior_title">启动与行为</string>
     <string name="settings_startup_behavior_summary">开机选项、看门狗、网络和活动状态</string>
-    <string name="settings_advanced_diagnostics_title">高级与诊断</string>
+    <string name="settings_advanced_diagnostics_title">诊断中心</string>
     <string name="settings_advanced_diagnostics_summary">日志、ADB 工具和故障排查</string>
     <string name="settings_about_category">关于</string>
     <string name="settings_about_title">关于</string>
