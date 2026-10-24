@@ -53,6 +53,90 @@
             android:summary="%s"
             android:icon="@drawable/ic_smartphone_24" />
 
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="window_manager_plus_enabled"
+            android:title="@string/settings_window_tuner_title"
+            android:summary="@string/settings_window_manager_plus_summary"
+            android:icon="@drawable/ic_window_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_window_manager_plus_title"
+            app:infoDetail="@string/help_window_manager_plus_detail"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="overlay_manager_plus_enabled"
+            android:title="@string/settings_theming_bridge_title"
+            android:summary="@string/settings_overlay_manager_plus_summary"
+            android:icon="@drawable/ic_palette_24"
+            android:defaultValue="false"
+            android:dependency="window_manager_plus_enabled"
+            app:infoTitle="@string/help_overlay_manager_plus_title"
+            app:infoDetail="@string/help_overlay_manager_plus_detail"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="ai_core_plus_enabled"
+            android:title="@string/settings_ai_bridge_npu_title"
+            android:summary="@string/settings_ai_core_plus_summary"
+            android:icon="@drawable/ic_integration_instructions_24"
+            android:defaultValue="false"
+            app:infoTitle="@string/help_ai_core_plus_title"
+            app:infoDetail="@string/help_ai_core_plus_detail"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="ai_core_master_enabled"
+            android:title="@string/settings_ai_core_master_title"
+            android:summary="@string/settings_ai_core_master_summary"
+            android:icon="@drawable/ic_integration_instructions_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_plus_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="npu_acceleration_enabled"
+            android:title="@string/settings_npu_acceleration_title"
+            android:summary="@string/settings_npu_acceleration_summary"
+            android:icon="@drawable/ic_settings_suggest_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_master_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="native_window_crawler_enabled"
+            android:title="@string/settings_window_hierarchy_crawler_title"
+            android:summary="@string/settings_window_hierarchy_crawler_summary"
+            android:icon="@drawable/ic_code_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_master_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="ai_core_experimental_enabled"
+            android:title="@string/settings_experimental_ai_automation_title"
+            android:summary="@string/settings_experimental_ai_automation_summary"
+            android:icon="@drawable/ic_science_24"
+            android:defaultValue="false"
+            android:dependency="ai_core_plus_enabled"
+            app:badgeType="experimental" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="software_keystore_fallback_enabled"
+            android:title="@string/settings_software_keystore_fallback_title"
+            android:summary="@string/settings_software_keystore_fallback_summary"
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false"
+            app:severityBadge="risky" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="samsung_system_uid_escalation_enabled"
+            android:title="@string/settings_samsung_system_uid_title"
+            android:summary="@string/settings_samsung_system_uid_summary"
+            android:icon="@drawable/ic_warning_24"
+            android:defaultValue="false"
+            app:badgeType="root"
+            app:severityBadge="dangerous" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
 </PreferenceScreen>

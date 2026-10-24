@@ -406,31 +406,14 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
             "avf_manager_enabled" to "avf_manager",
             "storage_proxy_enabled" to "storage_proxy",
             "continuity_bridge_enabled" to "continuity_bridge",
-            "ai_core_plus_enabled" to "ai_core_plus",
-            "ai_core_master_enabled" to "ai_core_master",
-            "npu_acceleration_enabled" to "npu_acceleration",
-            "native_window_crawler_enabled" to "native_window_crawler",
-            "ai_core_experimental_enabled" to "ai_core_experimental",
-            "window_manager_plus_enabled" to "window_manager_plus",
-            "overlay_manager_plus_enabled" to "overlay_manager_plus",
             "network_governor_plus_enabled" to "network_governor_plus",
             "activity_manager_plus_enabled" to "activity_manager_plus",
             "shadow_binder_enabled" to "shadow_binder",
             "binder_firewall_enabled" to "binder_firewall",
-            "binder_logging_enabled" to "binder_logging",
-            "samsung_system_uid_escalation_enabled" to "samsung_system_uid_escalation",
-            "software_keystore_fallback_enabled" to "software_keystore_fallback"
+            "binder_logging_enabled" to "binder_logging"
         )
         val experimentalKeys = setOf(
-            "avf_manager_enabled",
-            "ai_core_master_enabled",
-            "npu_acceleration_enabled",
-            "native_window_crawler_enabled",
-            "ai_core_experimental_enabled",
-            "vector_enabled",
-            "experimental_root_compat",
-            "spoof_device_enabled",
-            "samsung_system_uid_escalation_enabled"
+            "avf_manager_enabled"
         )
 
         plusKeys.forEach { (prefKey, featureName) ->
@@ -439,54 +422,18 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
                 if (enabled && experimentalKeys.contains(prefKey)) {
                     showExperimentalWarning(prefKey) {
                         preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, true)?.apply()
-                        // Cascade child state BEFORE syncing so the server sees a consistent
-                        // parent+child snapshot (disabling a parent force-unchecks children).
-                        updatePlusFeatureDependency(prefKey, true)
                         ShizukuSettings.syncAllExtraFeaturesToServer()
                     }
                     false // Handle manually after dialog
                 } else {
                     preferenceManager.sharedPreferences?.edit()?.putBoolean(prefKey, enabled)?.apply()
-                    updatePlusFeatureDependency(prefKey, enabled)
                     ShizukuSettings.syncAllExtraFeaturesToServer()
                     true
                 }
             }
         }
 
-        findPreference<Preference>("spoof_target")?.setOnPreferenceChangeListener { _, newValue ->
-            preferenceManager.sharedPreferences?.edit()?.putString("spoof_target", newValue as String)?.apply()
-            ShizukuSettings.syncAllExtraFeaturesToServer()
-            true
-        }
-
         findPreference<Preference>(KEY_SHADOW_BINDER_HIDDEN_PACKAGES)?.setOnPreferenceChangeListener { _, _ ->
-            ShizukuSettings.syncAllExtraFeaturesToServer()
-            true
-        }
-
-        findPreference<Preference>("ai_core_plus_enabled")?.setOnPreferenceChangeListener { _, newValue ->
-            val enabled = newValue as? Boolean ?: false
-            if (enabled) {
-                val lock = BiometricLock(requireActivity())
-                if (lock.canAuthenticate(requireContext())) {
-                    lock.authenticate({
-                        ShizukuSettings.setAICoreExtraEnabled(true)
-                        ShizukuSettings.syncAllExtraFeaturesToServer()
-                        activity?.runOnUiThread {
-                            findPreference<TwoStatePreference>("ai_core_plus_enabled")?.isChecked = true
-                            updatePlusFeatureDependency("ai_core_plus_enabled", true)
-                        }
-                    }, { _ -> /* Ignore or show toast */ })
-                    return@setOnPreferenceChangeListener false
-                }
-            }
-            // fallback / standard or disabling
-            preferenceManager.sharedPreferences?.edit()?.putBoolean("ai_core_plus_enabled", enabled)?.apply()
-            // Cascade child state BEFORE syncing: disabling ai_core_plus force-unchecks the
-            // AI sub-features, and the server gates NPU/window/automation on those child flags
-            // (not on ai_core_plus), so they must be false in prefs before the sync runs.
-            updatePlusFeatureDependency("ai_core_plus_enabled", enabled)
             ShizukuSettings.syncAllExtraFeaturesToServer()
             true
         }
@@ -839,14 +786,6 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
                 "com.arlosoft.macrodroid" to "MacroDroid",
                 "net.dinglisch.android.taskerm" to "Tasker"
             ),
-            "window_manager_plus_enabled" to listOf(
-                "com.arlosoft.macrodroid" to "MacroDroid",
-                "com.isaiasmatewos.taskbar" to "Taskbar"
-            ),
-            "overlay_manager_plus_enabled" to listOf(
-                "project.vivid.hex.nx" to "Hex Installer",
-                "tk.wasdennnoch.substratumlite" to "Substratum Lite"
-            ),
             "network_governor_plus_enabled" to listOf(
                 "dev.ukanth.ufirewall" to "AFWall+"
             ),
@@ -890,14 +829,6 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
         updatePreferenceDependency("avf_manager_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("storage_proxy_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("continuity_bridge_enabled", customApiEnabled, hideDisabled)
-        updatePreferenceDependency("ai_core_plus_enabled", customApiEnabled, hideDisabled)
-        val aiCoreExtraEnabled = ShizukuSettings.isAICoreExtraEnabled() && customApiEnabled
-        updatePreferenceDependency("ai_core_master_enabled", aiCoreExtraEnabled, hideDisabled)
-        updatePreferenceDependency("ai_core_experimental_enabled", aiCoreExtraEnabled, hideDisabled)
-        val aiCoreMasterEnabled = ShizukuSettings.isAiCoreMasterEnabled() && aiCoreExtraEnabled
-        updatePreferenceDependency("npu_acceleration_enabled", aiCoreMasterEnabled, hideDisabled)
-        updatePreferenceDependency("native_window_crawler_enabled", aiCoreMasterEnabled, hideDisabled)
-        updatePreferenceDependency("window_manager_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("network_governor_plus_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("activity_manager_plus_enabled", customApiEnabled, hideDisabled)
 
@@ -907,10 +838,6 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
         // their visibility here (Scene relay does not require the enhanced API).
         updatePreferenceDependency("binder_firewall_enabled", customApiEnabled, hideDisabled)
         updatePreferenceDependency("category_external_relay", true, hideDisabled)
-
-        // These also depend on window_manager_plus_enabled
-        val windowManagerExtraEnabled = ShizukuSettings.isWindowManagerPlusEnabled() && customApiEnabled
-        updatePreferenceDependency("overlay_manager_plus_enabled", windowManagerExtraEnabled, hideDisabled)
 
         // Force RecyclerView to recalculate layout after hiding/showing items.
         // Guard: PreferenceFragmentCompat.getListView() throws (not returns null) before
@@ -935,30 +862,6 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
                 isChecked = false
             }
             isVisible = if (hideIfDisabled) parentEnabled else true
-        }
-    }
-
-    private fun updatePlusFeatureDependency(prefKey: String, newValue: Boolean) {
-        val hideDisabled = ShizukuSettings.isHideDisabledPlusFeaturesEnabled()
-        val customApiEnabled = ShizukuSettings.isCustomApiEnabled()
-        when (prefKey) {
-            "window_manager_plus_enabled" -> {
-                updatePreferenceDependency("overlay_manager_plus_enabled", newValue && customApiEnabled, hideDisabled)
-            }
-            "ai_core_plus_enabled" -> {
-                val active = newValue && customApiEnabled
-                updatePreferenceDependency("ai_core_master_enabled", active, hideDisabled)
-                updatePreferenceDependency("ai_core_experimental_enabled", active, hideDisabled)
-                val masterActive = ShizukuSettings.isAiCoreMasterEnabled() && active
-                updatePreferenceDependency("npu_acceleration_enabled", masterActive, hideDisabled)
-                updatePreferenceDependency("native_window_crawler_enabled", masterActive, hideDisabled)
-            }
-            "ai_core_master_enabled" -> {
-                val aiCoreExtraActive = ShizukuSettings.isAICoreExtraEnabled() && customApiEnabled
-                val active = newValue && aiCoreExtraActive
-                updatePreferenceDependency("npu_acceleration_enabled", active, hideDisabled)
-                updatePreferenceDependency("native_window_crawler_enabled", active, hideDisabled)
-            }
         }
     }
 }
