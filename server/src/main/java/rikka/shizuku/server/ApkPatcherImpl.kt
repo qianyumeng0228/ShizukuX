@@ -1,7 +1,6 @@
 package rikka.shizuku.server
 
 import android.os.ParcelFileDescriptor
-import android.util.Log
 import af.shizuku.server.IApkPatcher
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
@@ -52,19 +51,6 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
-    // Diagnostic-only: run a command and capture stdout + stderr + exit code.
-    private fun execResult(vararg args: String): Triple<String, String, Int> = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try {
-            val out = proc.inputStream.bufferedReader().readText().trim()
-            val err = proc.errorStream.bufferedReader().readText().trim()
-            Triple(out, err, proc.waitFor())
-        } finally { proc.destroy() }
-    } catch (e: Exception) {
-        Log.w("ShizukuX-Patch", "execResult failed: ${args.joinToString(" ")}", e)
-        Triple("", "", -1)
-    }
-
     private fun findAllApks(packageName: String): List<String> {
         val out = ShellExecutor.exec("pm", "path", packageName)
         return out.lines()
@@ -85,12 +71,8 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
             if (grantPerms) add("-g")
         }
         val sessionOut = ShellExecutor.exec(*sessionArgs.toTypedArray())
-        Log.i("ShizukuX-Patch", "install-create out=$sessionOut")
         val sessionId = Regex("\\[(\\d+)]").find(sessionOut)?.groupValues?.get(1)?.toIntOrNull()
-            ?: run {
-                Log.e("ShizukuX-Patch", "install-create no session id out=$sessionOut")
-                return false
-            }
+            ?: return false
 
         for (path in apkPaths) {
             // Derive the canonical split name from the filename (strip our temp prefix)
@@ -100,30 +82,20 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 fileName.contains("_dbg_")  -> fileName.substringAfter("_dbg_")
                 else                        -> fileName
             }
-            val (wOut, wErr, wCode) = execResult("pm", "install-write", sessionId.toString(), splitName, path)
-            Log.i("ShizukuX-Patch", "install-write name=$splitName out=$wOut err=$wErr code=$wCode")
-            if (wCode != 0) {
-                Log.e("ShizukuX-Patch", "install-write failed name=$splitName out=$wOut err=$wErr code=$wCode")
+            if (ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path) != 0) {
                 ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
                 return false
             }
         }
-        val (cOut, cErr, cCode) = execResult("pm", "install-commit", sessionId.toString())
-        Log.i("ShizukuX-Patch", "install-commit out=$cOut err=$cErr code=$cCode")
-        return cCode == 0
+        return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
     }
 
     override fun prepareTempDebug(packageName: String?): Boolean {
-        Log.i("ShizukuX-Patch", "prepareTempDebug $packageName")
         if (packageName.isNullOrBlank()) return false
         if (sessions.containsKey(packageName)) return true
 
         val apkPaths = findAllApks(packageName)
-        Log.i("ShizukuX-Patch", "apks=$apkPaths")
-        if (apkPaths.isEmpty()) {
-            Log.w("ShizukuX-Patch", "no apks")
-            return false
-        }
+        if (apkPaths.isEmpty()) return false
 
         File(TMP_DIR).mkdirs()
 
@@ -132,9 +104,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         for (path in apkPaths) {
             val fileName = File(path).name  // base.apk, split_config.arm64_v8a.apk, etc.
             val dest = "$TMP_DIR/${packageName}_orig_$fileName"
-            val cpCode = ShellExecutor.execCode("cp", path, dest)
-            if (cpCode != 0) {
-                Log.e("ShizukuX-Patch", "cp failed src=$path dst=$dest code=$cpCode")
+            if (ShellExecutor.execCode("cp", path, dest) != 0) {
                 origPaths.forEach { File(it).delete() }
                 return false
             }
@@ -153,37 +123,31 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 val isBase = fileName.endsWith("_orig_base.apk") || !fileName.contains("split_")
                 val patchedPath = "$TMP_DIR/${packageName}_dbg_${fileName.substringAfter("_orig_")}"
                 if (!ApkSigner.signFile(File(origPath), File(patchedPath), patchManifest = isBase)) {
-                    Log.e("ShizukuX-Patch", "signFile failed: $origPath -> $patchedPath")
                     origPaths.forEach { File(it).delete() }
                     patchedPaths.forEach { File(it).delete() }
                     return false
                 }
                 patchedPaths.add(patchedPath)
             }
-        } catch (e: Exception) {
-            Log.e("ShizukuX-Patch", "sign loop exception", e)
+        } catch (_: Exception) {
             origPaths.forEach { File(it).delete() }
             patchedPaths.forEach { File(it).delete() }
             return false
         }
 
         // pm uninstall -k preserves all app data
-        val uninstallCode = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName)
-        if (uninstallCode != 0) {
-            Log.e("ShizukuX-Patch", "uninstall failed code=$uninstallCode")
+        if (ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
             origPaths.forEach { File(it).delete() }
             patchedPaths.forEach { File(it).delete() }
             return false
         }
 
         val installed = installViaSession(patchedPaths)
-        Log.i("ShizukuX-Patch", "install patched result=$installed")
         patchedPaths.forEach { File(it).delete() }
 
         if (!installed) {
             // Attempt recovery by reinstalling the originals
-            val recover = installViaSession(origPaths)
-            Log.e("ShizukuX-Patch", "install failed, recovery reinstall originals result=$recover")
+            installViaSession(origPaths)
             origPaths.forEach { File(it).delete() }
             return false
         }

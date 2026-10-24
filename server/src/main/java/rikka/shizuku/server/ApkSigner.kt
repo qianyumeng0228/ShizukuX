@@ -1,6 +1,5 @@
 package rikka.shizuku.server
 
-import android.util.Log
 import java.io.File
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -147,7 +146,6 @@ internal object ApkSigner {
         manifest.append("Manifest-Version: 1.0\r\nCreated-By: 1.0 (ShizukuX)\r\n\r\n")
         // (entry name, raw manifest-section bytes) pairs, kept for CERT.SF building.
         val sections = mutableListOf<Pair<String, ByteArray>>()
-        var entries = 0
 
         ZipInputStream(src.inputStream().buffered()).use { zis ->
             ZipOutputStream(dst.outputStream().buffered()).use { zos ->
@@ -168,12 +166,7 @@ internal object ApkSigner {
                         if (patchManifest && name == "AndroidManifest.xml") {
                             // Manifest is tiny: buffer it, patch, digest the patched bytes.
                             val raw = zis.readBytes()
-                            val patched = try {
-                                ApkBinaryXmlPatcher.patch(raw)
-                            } catch (e: Exception) {
-                                Log.e("ShizukuX-Sign", "manifest patch failed name=$name", e)
-                                throw e
-                            }
+                            val patched = ApkBinaryXmlPatcher.patch(raw)
                             md.update(patched)
                             zos.write(patched)
                         } else {
@@ -187,7 +180,6 @@ internal object ApkSigner {
                         val section = "Name: $name\r\nSHA-256-Digest: ${sha256b64(md.digest())}\r\n\r\n"
                         manifest.append(section)
                         sections.add(name to section.toByteArray(Charsets.UTF_8))
-                        entries++
                     }
                     zis.closeEntry()
                     entry = zis.nextEntry
@@ -216,12 +208,10 @@ internal object ApkSigner {
                 zos.finish()
             }
         }
-        Log.i("ShizukuX-Sign", "V1 done entries=$entries")
     }
 
     // PKCS#7 SignedData (detached, no content, SHA-256, RSA)
     private fun buildPkcs7(toBeSigned: ByteArray): ByteArray {
-        Log.i("ShizukuX-Sign", "buildPkcs7 size=${toBeSigned.size}")
         val oidData           = oid(1, 2, 840, 113549, 1, 7, 1)
         val oidSignedData     = oid(1, 2, 840, 113549, 1, 7, 2)
         val oidSha256         = oid(2, 16, 840, 1, 101, 3, 4, 2, 1)
@@ -419,14 +409,12 @@ internal object ApkSigner {
 
         // V2: locate the central directory, digest the file in 1 MB chunks, splice the block in.
         val eocdOffset = locateEocd(dst)
-        Log.i("ShizukuX-Sign", "eocdOffset=$eocdOffset")
         val cdOffset: Long
         val cdBytes: ByteArray
         val eocdBytes: ByteArray
         RandomAccessFile(dst, "r").use { raf ->
             cdOffset = ByteBuffer.wrap(readAt(raf, eocdOffset + 16, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
             val cdSize = ByteBuffer.wrap(readAt(raf, eocdOffset + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
-            Log.i("ShizukuX-Sign", "eocd=$eocdOffset cdOffset=$cdOffset cdSize=$cdSize")
             cdBytes = readAt(raf, cdOffset, cdSize.toInt())
             eocdBytes = readAt(raf, eocdOffset, (dst.length() - eocdOffset).toInt())
         }
@@ -438,13 +426,10 @@ internal object ApkSigner {
         // cdOffset must equal newCdOffset, but newCdOffset depends on the block size; block size
         // is invariant to its own content (fixed-width length prefixes, fixed-size digests), so a
         // single iteration converges.
-        Log.i("ShizukuX-Sign", "buildV2Block begin")
         val pass0 = buildV2Block(contentDigest(dst, cdOffset, cdBytes, patchEocdOffset(eocdBytes, cdOffset)))
         val newCdOffset = cdOffset + pass0.size
         val eocdPatched = patchEocdOffset(eocdBytes, newCdOffset)
         val v2Block = buildV2Block(contentDigest(dst, cdOffset, cdBytes, eocdPatched))
-        Log.i("ShizukuX-Sign", "buildV2Block done size=${v2Block.size}")
-        Log.i("ShizukuX-Sign", "splice newCd=$newCdOffset block=${v2Block.size}")
 
         RandomAccessFile(dst, "rw").use { rafw ->
             rafw.setLength(cdOffset)
@@ -454,8 +439,7 @@ internal object ApkSigner {
             rafw.write(eocdPatched)
         }
         true
-    } catch (e: Exception) {
-        Log.e("ShizukuX-Sign", "signFile failed for ${src.name}", e)
+    } catch (_: Exception) {
         dst.delete()
         false
     }
