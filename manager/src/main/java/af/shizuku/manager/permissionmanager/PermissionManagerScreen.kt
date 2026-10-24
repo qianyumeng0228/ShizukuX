@@ -95,7 +95,7 @@ fun PermissionManagerScreen(onBackClick: () -> Unit) {
         withContext(Dispatchers.IO) {
             val packages = pm.getInstalledPackages(0)
             val list = packages.mapNotNull { pi ->
-                val label = try { pm.getApplicationLabel(pi.applicationInfo).toString() } catch (_: Exception) { pi.packageName }
+                val label = try { pm.getApplicationLabel(pi.applicationInfo ?: return@mapNotNull null).toString() } catch (_: Exception) { pi.packageName }
                 AppItem(pi.packageName, label)
             }.sortedBy { it.label.lowercase() }
             allApps = list
