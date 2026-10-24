@@ -30,15 +30,23 @@ class DeviceControlExtraImpl : IDeviceControlExtra.Stub() {
 
     private fun exec(vararg args: String): String = try {
         val proc = ProcessBuilder(*args).redirectErrorStream(true).start()
-        val out = proc.inputStream.bufferedReader().readText()
-        if (!proc.waitFor(10, TimeUnit.SECONDS)) proc.destroy()
-        out.trim()
+        try {
+            val out = proc.inputStream.bufferedReader().readText()
+            if (!proc.waitFor(10, TimeUnit.SECONDS)) proc.destroy()
+            out.trim()
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     private fun execBool(vararg args: String): Boolean = try {
         val proc = ProcessBuilder(*args).redirectErrorStream(true).start()
-        proc.inputStream.use { it.bufferedReader().readText() }
-        proc.waitFor(10, TimeUnit.SECONDS) && proc.exitValue() == 0
+        try {
+            proc.inputStream.use { it.bufferedReader().readText() }
+            proc.waitFor(10, TimeUnit.SECONDS) && proc.exitValue() == 0
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { false }
 
     private fun settingsPut(namespace: String, key: String, value: String): Boolean {

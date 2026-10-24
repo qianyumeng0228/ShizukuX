@@ -45,14 +45,19 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
-        drainQuietly(proc.errorStream)
-        val out = proc.inputStream.bufferedReader().readText().trim()
-        proc.waitFor()
-        out
+        try {
+            drainQuietly(proc.errorStream)
+            val out = proc.inputStream.bufferedReader().readText().trim()
+            proc.waitFor()
+            out
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     private fun execExit(vararg args: String): Int = try {
-        Runtime.getRuntime().exec(args).waitFor()
+        val proc = Runtime.getRuntime().exec(args)
+        try { proc.waitFor() } finally { proc.destroy() }
     } catch (_: Exception) { -1 }
 
     private fun pipe(vararg args: String): ParcelFileDescriptor? = try {
@@ -60,13 +65,17 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         Thread {
             try {
                 val proc = Runtime.getRuntime().exec(args)
-                drainQuietly(proc.errorStream)
-                proc.inputStream.use { src ->
-                    ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
-                        src.copyTo(dst)
+                try {
+                    drainQuietly(proc.errorStream)
+                    proc.inputStream.use { src ->
+                        ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
+                            src.copyTo(dst)
+                        }
                     }
+                    proc.waitFor()
+                } finally {
+                    proc.destroy()
                 }
-                proc.waitFor()
             } catch (_: Exception) {
                 try { writeSide.close() } catch (_: Exception) {}
             }
@@ -252,7 +261,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
                     proc.outputStream.runCatching { close() }
                 }
             }.also { it.isDaemon = true }.start()
-            proc.waitFor() == 0
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 
@@ -316,7 +325,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
                     proc.outputStream.runCatching { close() }
                 }
             }.also { it.isDaemon = true }.start()
-            proc.waitFor() == 0
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 
@@ -328,7 +337,8 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     override fun abandonInstallSession(sessionId: Int) {
         if (sessionId < 0) return
         try {
-            Runtime.getRuntime().exec(arrayOf("pm", "install-abandon", sessionId.toString())).waitFor()
+            val proc = Runtime.getRuntime().exec(arrayOf("pm", "install-abandon", sessionId.toString()))
+            try { proc.waitFor() } finally { proc.destroy() }
         } catch (_: Exception) {}
     }
 
@@ -488,7 +498,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
                     proc.outputStream.runCatching { close() }
                 }
             }.also { it.isDaemon = true }.start()
-            proc.waitFor() == 0
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 

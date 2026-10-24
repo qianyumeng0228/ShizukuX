@@ -6,11 +6,19 @@ import af.shizuku.server.IDisplayTunerExtra
 class DisplayTunerExtraImpl : IDisplayTunerExtra.Stub() {
 
     private fun exec(vararg args: String): Boolean = try {
-        Runtime.getRuntime().exec(args).waitFor() == 0
+        val proc = Runtime.getRuntime().exec(args)
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     private fun execOutput(vararg args: String): String = try {
-        Runtime.getRuntime().exec(args).inputStream.bufferedReader().readText().trim()
+        val proc = Runtime.getRuntime().exec(args)
+        try {
+            val text = proc.inputStream.bufferedReader().use { it.readText().trim() }
+            proc.waitFor()
+            text
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     override fun setDisplaySize(width: Int, height: Int): Boolean {

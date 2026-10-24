@@ -9,7 +9,14 @@ import java.nio.file.Files
 class AppInspectorImpl : IAppInspector.Stub() {
 
     private fun execOutput(vararg args: String): String = try {
-        Runtime.getRuntime().exec(args).inputStream.bufferedReader().readText().trim()
+        val proc = Runtime.getRuntime().exec(args)
+        try {
+            val text = proc.inputStream.bufferedReader().use { it.readText().trim() }
+            proc.waitFor()
+            text
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     private fun pipeProcess(vararg args: String): ParcelFileDescriptor? = try {
@@ -17,12 +24,16 @@ class AppInspectorImpl : IAppInspector.Stub() {
         Thread {
             try {
                 val proc = Runtime.getRuntime().exec(args)
-                proc.inputStream.use { src ->
-                    ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
-                        src.copyTo(dst)
+                try {
+                    proc.inputStream.use { src ->
+                        ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
+                            src.copyTo(dst)
+                        }
                     }
+                    proc.waitFor()
+                } finally {
+                    proc.destroy()
                 }
-                proc.waitFor()
             } catch (_: Exception) {
                 try { writeSide.close() } catch (_: Exception) {}
             }
@@ -42,8 +53,8 @@ class AppInspectorImpl : IAppInspector.Stub() {
     override fun dumpHeap(pid: Int, destPath: String?): Boolean {
         if (pid <= 0 || destPath.isNullOrBlank()) return false
         return try {
-            Runtime.getRuntime().exec(arrayOf("am", "dumpheap", pid.toString(), destPath))
-                .waitFor() == 0
+            val proc = Runtime.getRuntime().exec(arrayOf("am", "dumpheap", pid.toString(), destPath))
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 

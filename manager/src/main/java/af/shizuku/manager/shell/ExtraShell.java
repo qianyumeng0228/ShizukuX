@@ -91,7 +91,8 @@ public class ExtraShell {
         try {
             String[] cmd = mode.isEmpty() ? new String[]{"reboot"} : new String[]{"reboot", mode};
             LOGGER.i("Rebooting to " + (mode.isEmpty() ? "system" : mode) + "...");
-            Runtime.getRuntime().exec(cmd).waitFor();
+            Process p = Runtime.getRuntime().exec(cmd);
+            try { p.waitFor(); } finally { p.destroy(); }
         } catch (Exception e) {
             LOGGER.e(e, "Reboot failed");
         }

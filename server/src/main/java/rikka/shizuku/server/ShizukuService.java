@@ -301,14 +301,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         try {
             if (Build.VERSION.SDK_INT >= 32) { // Android 12L+ (also affects Android 12 which is 31)
                 // Disable monitor (Android 13+)
-                Runtime.getRuntime().exec(new String[]{"sh", "-c", "settings put global settings_enable_monitor_phantom_procs false"}).waitFor();
-                
+                Process p1 = Runtime.getRuntime().exec(new String[]{"sh", "-c", "settings put global settings_enable_monitor_phantom_procs false"});
+                try { p1.waitFor(); } finally { p1.destroy(); }
+
                 // Disable device_config sync (Android 12+)
-                Runtime.getRuntime().exec(new String[]{"sh", "-c", "/system/bin/device_config set_sync_disabled_for_tests persistent"}).waitFor();
-                
+                Process p2 = Runtime.getRuntime().exec(new String[]{"sh", "-c", "/system/bin/device_config set_sync_disabled_for_tests persistent"});
+                try { p2.waitFor(); } finally { p2.destroy(); }
+
                 // Increase max phantom processes limit (Android 12+)
-                Runtime.getRuntime().exec(new String[]{"sh", "-c", "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"}).waitFor();
-                
+                Process p3 = Runtime.getRuntime().exec(new String[]{"sh", "-c", "/system/bin/device_config put activity_manager max_phantom_processes 2147483647"});
+                try { p3.waitFor(); } finally { p3.destroy(); }
+
                 LOGGER.i("Phantom Process Killer mitigation applied");
             }
         } catch (Exception e) {
@@ -1032,7 +1035,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             new java.io.File(proxyDir).mkdirs();
                             java.io.File dest = new java.io.File(proxyPath);
                             if (!dest.exists()) {
-                                Runtime.getRuntime().exec(new String[]{"cp", target, proxyPath}).waitFor();
+                                Process p = Runtime.getRuntime().exec(new String[]{"cp", target, proxyPath});
+                                try { p.waitFor(); } finally { p.destroy(); }
                             }
                             ready = dest.exists() && dest.length() > 0;
                         } catch (Exception e) {
@@ -1360,8 +1364,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (perm.contains("WRITE_SECURE_SETTINGS") || perm.contains("DUMP") || perm.contains("PACKAGE_USAGE_STATS")) {
                             try {
                                 // waitFor() reaps the child (and lets the grant land before we
-                                // report success); without it each call leaks a zombie + its fds.
-                                Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm}).waitFor();
+                                // report success); destroy() closes the handle when done.
+                                Process p = Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm});
+                                try { p.waitFor(); } finally { p.destroy(); }
                                 return newProcessInternal(new String[]{"true"}, env, dir);
                             } catch (Exception e) {
                                 LOGGER.e("SUBridge: pm grant failed", e);
@@ -2677,9 +2682,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 }
             }
             // Also try to grant WRITE_SECURE_SETTINGS and DUMP directly via shell.
-            // waitFor() reaps the child; without it each call leaks a zombie process + its fds.
-            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.WRITE_SECURE_SETTINGS"}).waitFor();
-            Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.DUMP"}).waitFor();
+            // waitFor() reaps the child; destroy() closes the handle when done.
+            Process p1 = Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.WRITE_SECURE_SETTINGS"});
+            try { p1.waitFor(); } finally { p1.destroy(); }
+            Process p2 = Runtime.getRuntime().exec(new String[]{"pm", "grant", packageName, "android.permission.DUMP"});
+            try { p2.waitFor(); } finally { p2.destroy(); }
         } catch (Exception e) {
             LOGGER.e(e, "Plus: AppOps elevation failed for " + packageName);
         }

@@ -128,6 +128,7 @@ class StorageProxyImpl : IStorageProxy.Stub() {
                     }
                     fos.close()
                 } catch (_: Exception) {}
+                try { process.waitFor() } finally { process.destroy() }
             }.start()
             readSide
         } catch (e: Exception) {
@@ -149,8 +150,8 @@ class StorageProxyImpl : IStorageProxy.Stub() {
                     ?.takeIf { InputValidationUtils.isValidPackageName(it) }
                     ?: return false
                 return try {
-                    Runtime.getRuntime().exec(arrayOf("run-as", pkg, "cp", srcPath, destPath!!))
-                        .waitFor() == 0
+                    val proc = Runtime.getRuntime().exec(arrayOf("run-as", pkg, "cp", srcPath, destPath!!))
+                    try { proc.waitFor() == 0 } finally { proc.destroy() }
                 } catch (_: Exception) { false }
             }
             false

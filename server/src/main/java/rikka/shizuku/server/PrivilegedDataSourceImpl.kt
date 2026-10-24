@@ -12,9 +12,13 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
 
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
-        val out = proc.inputStream.bufferedReader().readText().trim()
-        proc.waitFor()
-        out
+        try {
+            val out = proc.inputStream.bufferedReader().readText().trim()
+            proc.waitFor()
+            out
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     private fun pipeProcess(vararg args: String): ParcelFileDescriptor? = try {
@@ -22,12 +26,16 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
         Thread {
             try {
                 val proc = Runtime.getRuntime().exec(args)
-                proc.inputStream.use { src ->
-                    ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
-                        src.copyTo(dst)
+                try {
+                    proc.inputStream.use { src ->
+                        ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
+                            src.copyTo(dst)
+                        }
                     }
+                    proc.waitFor()
+                } finally {
+                    proc.destroy()
                 }
-                proc.waitFor()
             } catch (_: Exception) {
                 try { writeSide.close() } catch (_: Exception) {}
             }
@@ -64,7 +72,8 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
         pipeProcess("screencap", "-p")
 
     override fun injectTap(x: Int, y: Int): Boolean = try {
-        Runtime.getRuntime().exec(arrayOf("input", "tap", x.toString(), y.toString())).waitFor() == 0
+        val proc = Runtime.getRuntime().exec(arrayOf("input", "tap", x.toString(), y.toString()))
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     override fun injectText(text: String?): Boolean {
@@ -72,21 +81,24 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
         return try {
             // 'input text' requires spaces encoded as %s
             val escaped = text.replace(" ", "%s")
-            Runtime.getRuntime().exec(arrayOf("input", "text", escaped)).waitFor() == 0
+            val proc = Runtime.getRuntime().exec(arrayOf("input", "text", escaped))
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 
     override fun injectSwipe(startX: Int, startY: Int, endX: Int, endY: Int, durationMs: Int): Boolean = try {
-        Runtime.getRuntime().exec(arrayOf(
+        val proc = Runtime.getRuntime().exec(arrayOf(
             "input", "swipe",
             startX.toString(), startY.toString(),
             endX.toString(), endY.toString(),
             durationMs.coerceAtLeast(1).toString()
-        )).waitFor() == 0
+        ))
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     override fun injectKeyEvent(keyCode: Int): Boolean = try {
-        Runtime.getRuntime().exec(arrayOf("input", "keyevent", keyCode.toString())).waitFor() == 0
+        val proc = Runtime.getRuntime().exec(arrayOf("input", "keyevent", keyCode.toString()))
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     // ── SMS (READ_SMS — SYSTEM_FIXED) ─────────────────────────────────────────
@@ -117,12 +129,13 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
         // would work if we had a Context. Without one, use the telephony service call directly.
         return try {
             // Attempt via 'am broadcast' to the default SMS app — reliable on Android 5+
-            Runtime.getRuntime().exec(arrayOf(
+            val proc = Runtime.getRuntime().exec(arrayOf(
                 "am", "broadcast",
                 "-a", "android.provider.Telephony.SMS_DELIVER",
                 "--es", "recipient", recipient,
                 "--es", "body", body
-            )).waitFor() == 0
+            ))
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 
@@ -268,9 +281,9 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
             else -> return false
         }
         return try {
-            Runtime.getRuntime()
+            val proc = Runtime.getRuntime()
                 .exec(arrayOf("appops", "set", packageName, op, modeArg))
-                .waitFor() == 0
+            try { proc.waitFor() == 0 } finally { proc.destroy() }
         } catch (_: Exception) { false }
     }
 
@@ -291,7 +304,8 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
     // ── Keyguard (CONTROL_KEYGUARD — install permission) ─────────────────────
 
     override fun dismissKeyguard(): Boolean = try {
-        Runtime.getRuntime().exec(arrayOf("wm", "dismiss-keyguard")).waitFor() == 0
+        val proc = Runtime.getRuntime().exec(arrayOf("wm", "dismiss-keyguard"))
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     // ── WiFi (READ_WIFI_CREDENTIAL — install permission) ─────────────────────

@@ -125,14 +125,17 @@ class ContinuityBridgeImpl : IContinuityBridge.Stub() {
             val process = Runtime.getRuntime().exec(
                 arrayOf("settings", "get", "global", "continuity_devices")
             )
-            val reader = process.inputStream.bufferedReader()
-            val output = reader.readLine()
-            process.waitFor()
+            try {
+                val output = process.inputStream.bufferedReader().use { it.readLine() }
+                process.waitFor()
 
-            if (output != null && output != "null" && output.isNotBlank()) {
-                val devices = output.split(",").filter { it.isNotBlank() }
-                Log.d(TAG, "Found ${devices.size} devices from settings")
-                return devices
+                if (output != null && output != "null" && output.isNotBlank()) {
+                    val devices = output.split(",").filter { it.isNotBlank() }
+                    Log.d(TAG, "Found ${devices.size} devices from settings")
+                    return devices
+                }
+            } finally {
+                process.destroy()
             }
 
             Log.d(TAG, "No eligible devices found")

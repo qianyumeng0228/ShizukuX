@@ -227,14 +227,22 @@ class RootIntegrationSettingsFragment : BaseSettingsFragment() {
     private fun isBootloaderUnlocked(): Boolean {
         try {
             val process = Runtime.getRuntime().exec(arrayOf("getprop", "ro.boot.flash.locked"))
-            val reader = java.io.BufferedReader(java.io.InputStreamReader(process.inputStream))
-            val locked = reader.readLine()
-            if (locked == "0") return true
+            try {
+                val locked = process.inputStream.bufferedReader().use { it.readLine() }
+                process.waitFor()
+                if (locked == "0") return true
+            } finally {
+                process.destroy()
+            }
 
             val process2 = Runtime.getRuntime().exec(arrayOf("getprop", "ro.boot.verifiedbootstate"))
-            val reader2 = java.io.BufferedReader(java.io.InputStreamReader(process2.inputStream))
-            val state = reader2.readLine()
-            if (state == "orange") return true
+            try {
+                val state = process2.inputStream.bufferedReader().use { it.readLine() }
+                process2.waitFor()
+                if (state == "orange") return true
+            } finally {
+                process2.destroy()
+            }
         } catch (e: Exception) {
             // Ignore
         }

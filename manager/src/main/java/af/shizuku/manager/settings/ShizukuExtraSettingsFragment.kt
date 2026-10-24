@@ -658,9 +658,13 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
     private fun isDeviceRooted(): Boolean {
         return try {
             val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "id"))
-            val output = process.inputStream.bufferedReader().readText()
-            process.waitFor()
-            output.contains("uid=0")
+            try {
+                val output = process.inputStream.bufferedReader().readText()
+                process.waitFor()
+                output.contains("uid=0")
+            } finally {
+                process.destroy()
+            }
         } catch (e: Exception) {
             false
         }
@@ -679,14 +683,18 @@ class ShizukuExtraSettingsFragment : BaseSettingsFragment() {
         lifecycleScope.launch(Dispatchers.IO) {
             val result = try {
                 val process = Runtime.getRuntime().exec(arrayOf("su", "-c", command))
-                val stdout = process.inputStream.bufferedReader().readText()
-                val stderr = process.errorStream.bufferedReader().readText()
-                val exitCode = process.waitFor()
-                if (exitCode == 0 && (stdout + stderr).contains("Success")) {
-                    Result.success(Unit)
-                } else {
-                    val error = (stdout + stderr).trim().ifEmpty { "exit code $exitCode" }
-                    Result.failure(Exception(error))
+                try {
+                    val stdout = process.inputStream.bufferedReader().readText()
+                    val stderr = process.errorStream.bufferedReader().readText()
+                    val exitCode = process.waitFor()
+                    if (exitCode == 0 && (stdout + stderr).contains("Success")) {
+                        Result.success(Unit)
+                    } else {
+                        val error = (stdout + stderr).trim().ifEmpty { "exit code $exitCode" }
+                        Result.failure(Exception(error))
+                    }
+                } finally {
+                    process.destroy()
                 }
             } catch (e: Exception) {
                 Result.failure(e)

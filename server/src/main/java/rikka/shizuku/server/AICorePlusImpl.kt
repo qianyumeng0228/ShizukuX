@@ -162,8 +162,8 @@ class AICorePlusImpl(
         return try {
             // argv exec avoids the persistent `sh` pipe so untrusted text can't break out of shell quoting
             automationBridge?.simulateText(text) ?: run {
-                Runtime.getRuntime().exec(arrayOf("input", "text", text))
-                true
+                val proc = Runtime.getRuntime().exec(arrayOf("input", "text", text))
+                try { proc.waitFor() == 0 } finally { proc.destroy() }
             }
         } catch (e: Exception) {
             false

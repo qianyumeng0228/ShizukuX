@@ -16,13 +16,18 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
 
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
-        val out = proc.inputStream.bufferedReader().readText().trim()
-        proc.waitFor()
-        out
+        try {
+            val out = proc.inputStream.bufferedReader().readText().trim()
+            proc.waitFor()
+            out
+        } finally {
+            proc.destroy()
+        }
     } catch (_: Exception) { "" }
 
     private fun execCode(vararg args: String): Int = try {
-        Runtime.getRuntime().exec(args).waitFor()
+        val proc = Runtime.getRuntime().exec(args)
+        try { proc.waitFor() } finally { proc.destroy() }
     } catch (_: Exception) { -1 }
 
     private fun pipe(vararg args: String): ParcelFileDescriptor? = try {
@@ -30,12 +35,16 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         Thread {
             try {
                 val proc = Runtime.getRuntime().exec(args)
-                proc.inputStream.use { src ->
-                    ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
-                        src.copyTo(dst)
+                try {
+                    proc.inputStream.use { src ->
+                        ParcelFileDescriptor.AutoCloseOutputStream(writeSide).use { dst ->
+                            src.copyTo(dst)
+                        }
                     }
+                    proc.waitFor()
+                } finally {
+                    proc.destroy()
                 }
-                proc.waitFor()
             } catch (_: Exception) {
                 try { writeSide.close() } catch (_: Exception) {}
             }
@@ -54,7 +63,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 proc.outputStream.runCatching { close() }
             }
         }.also { it.isDaemon = true }.start()
-        proc.waitFor() == 0
+        try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
     private fun findAllApks(packageName: String): List<String> {
