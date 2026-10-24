@@ -385,6 +385,7 @@
     <!-- Shizuku+ Features -->
     <string name="settings_shizuku_plus_features">Shizuku+ Features</string>
     <string name="settings_permission_level_category_title">Permission Level</string>
+    <string name="settings_main_nav_permission_level_summary">Device Owner (DO) and Dhizuku mode</string>
     <string name="settings_device_owner_entry_title">Device Owner (DO)</string>
     <string name="settings_dhizuku_mode">Dhizuku Mode</string>
     <string name="settings_dhizuku_mode_summary">Dhizuku کو سپورٹ کرنے والی ایپس کو Device Owner (DevicePolicyManager) privileges دیں۔</string>

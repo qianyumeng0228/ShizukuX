@@ -31,7 +31,8 @@ object SettingsSearchEngine {
         R.xml.settings_developer_options to "af.shizuku.manager.settings.DeveloperOptionsFragment",
         R.xml.settings_root_integration to "af.shizuku.manager.settings.RootIntegrationSettingsFragment",
         R.xml.settings_app_management to "af.shizuku.manager.settings.AppManagementSettingsFragment",
-        R.xml.settings_about to "af.shizuku.manager.settings.AboutSettingsFragment"
+        R.xml.settings_about to "af.shizuku.manager.settings.AboutSettingsFragment",
+        R.xml.settings_device_owner to "af.shizuku.manager.settings.DeviceOwnerSettingsFragment"
     )
 
     fun init(context: Context) {
