@@ -115,6 +115,8 @@
     <string name="settings_shell_accelerator_title">Shell Accelerator</string>
     <string name="settings_vm_manager_title">VM Manager</string>
     <string name="settings_security_access_category_title">Security &amp; Access</string>
+    <string name="settings_permission_level_category_title">Permission Level</string>
+    <string name="settings_device_owner_entry_title">Device Owner (DO)</string>
     <string name="settings_device_owner_tools_category_title">Device Owner Tools</string>
     <string name="settings_screen_capture_lockdown_title">Screen Capture Lockdown</string>
     <string name="settings_screen_capture_lockdown_summary">Disable screenshots and screen recordings globally across the device</string>

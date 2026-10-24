@@ -65,9 +65,13 @@ class SettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Clear Device Owner button — only visible when app holds DO status
+        // Clear Device Owner button — only visible when app holds DO status.
+        // Declared via setChildAvailable() (not isVisible) so the "Device Owner (DO)"
+        // collapsible category's updateChildren() never resurrects these rows on
+        // expand/collapse when the app does not hold DO status.
+        val doCategory = findPreference<CollapsiblePreferenceCategory>("category_device_owner")
         val clearDoPref = findPreference<Preference>("clear_device_owner")
-        clearDoPref?.isVisible = isDeviceOwnerActive(requireContext())
+        doCategory?.setChildAvailable("clear_device_owner", isDeviceOwnerActive(requireContext()))
         clearDoPref?.setOnPreferenceClickListener {
             val ctx = context ?: return@setOnPreferenceClickListener true
             showClearDeviceOwnerDialog(ctx)
@@ -76,7 +80,7 @@ class SettingsFragment : BaseSettingsFragment() {
 
         // Transfer Device Owner button — only visible when app holds DO status
         val transferDoPref = findPreference<Preference>("transfer_device_owner")
-        transferDoPref?.isVisible = isDeviceOwnerActive(requireContext())
+        doCategory?.setChildAvailable("transfer_device_owner", isDeviceOwnerActive(requireContext()))
         transferDoPref?.setOnPreferenceClickListener {
             val ctx = context ?: return@setOnPreferenceClickListener true
             showTransferDeviceOwnerDialog(ctx)
@@ -196,9 +200,14 @@ class SettingsFragment : BaseSettingsFragment() {
             pref.isChecked = true
             ShizukuSettings.setDhizukuModeEnabled(true)
         }
-        // Show/hide the Clear Owner and Transfer Owner buttons based on active status
-        findPreference<Preference>("clear_device_owner")?.isVisible = active
-        findPreference<Preference>("transfer_device_owner")?.isVisible = active
+        // Show/hide the Clear Owner and Transfer Owner buttons based on active status.
+        // Must go through the collapsible category's unavailable-child mechanism: a plain
+        // isVisible= assignment here is overwritten by updateChildren() on every expand/
+        // collapse of the "Device Owner (DO)" category, leaking both rows when inactive.
+        findPreference<CollapsiblePreferenceCategory>("category_device_owner")?.apply {
+            setChildAvailable("clear_device_owner", active)
+            setChildAvailable("transfer_device_owner", active)
+        }
     }
 
     private fun showClearDeviceOwnerDialog(ctx: Context) {

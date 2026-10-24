@@ -115,6 +115,8 @@
     <string name="settings_shell_accelerator_title">Shell 加速器</string>
     <string name="settings_vm_manager_title">虚拟机管理器</string>
     <string name="settings_security_access_category_title">安全与访问</string>
+    <string name="settings_permission_level_category_title">权限等级</string>
+    <string name="settings_device_owner_entry_title">设备所有者（DO）</string>
     <string name="settings_device_owner_tools_category_title">设备所有者工具</string>
     <string name="settings_screen_capture_lockdown_title">屏幕捕获锁定</string>
     <string name="settings_screen_capture_lockdown_summary">全局禁止截图和录屏</string>
