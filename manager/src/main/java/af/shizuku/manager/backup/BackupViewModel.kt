@@ -177,6 +177,19 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     }) backedUpSomething = true
                 }
 
+                // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
+                val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (e: Exception) {
+                    Timber.w(e, "backupObbData failed for $pkg")
+                    null
+                }
+                if (obbPfd != null) {
+                    if (writeBackupStream(safTreeUri, outputDir, pkg, "obb.tar.gz", cr) { out ->
+                        obbPfd.use { pfd ->
+                            FileInputStream(pfd.fileDescriptor).use { input -> input.copyTo(out) }
+                        }
+                    }) backedUpSomething = true
+                }
+
                 if (backedUpSomething) {
                     val outputDesc = if (safTreeUri != null) {
                         safTreeUri.lastPathSegment ?: "backup folder"
@@ -330,6 +343,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     if (extPfd != null) {
                         if (writeBackupStream(safTreeUri, outputDir, pkg, "external.tar.gz", cr) { out ->
                             extPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
+                        }) backedUpSomething = true
+                    }
+                    // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
+                    val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
+                    if (obbPfd != null) {
+                        if (writeBackupStream(safTreeUri, outputDir, pkg, "obb.tar.gz", cr) { out ->
+                            obbPfd.use { pfd -> FileInputStream(pfd.fileDescriptor).use { it.copyTo(out) } }
                         }) backedUpSomething = true
                     }
                     if (backedUpSomething) succeeded++ else failed++
