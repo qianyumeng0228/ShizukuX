@@ -2625,7 +2625,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public IPackageGovernorExtra getPackageGovernorExtra() {
         enforceCallingPermission("getPackageGovernorExtra");
-        if (!isFeatureEnabled("package_governor_extra")) return null;
+        // No feature gate: the manager never syncs a "package_governor_extra" key, so this check
+        // was permanently false and the permission-manager grant/revoke path silently returned
+        // null. Mirrors getBackupRestoreExtra()/getDeviceControlExtra(), which are ungated.
         return packageGovernorExtra;
     }
 
