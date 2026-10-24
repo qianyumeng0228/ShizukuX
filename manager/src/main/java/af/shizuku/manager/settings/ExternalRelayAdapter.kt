@@ -1,4 +1,4 @@
-package af.shizuku.manager.widget
+package af.shizuku.manager.settings
 
 import android.content.Context
 import android.provider.Settings

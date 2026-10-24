@@ -491,7 +491,7 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
     }
 }
 
-class AppListItemDecoration(context: Context) : af.shizuku.manager.widget.M3ECardItemDecoration(context) {
+class AppListItemDecoration(context: Context) : af.shizuku.manager.utils.M3ECardItemDecoration(context) {
     private val dividerInset = 72f * density // icon width + margins
 
     override fun getDividerInset(view: View): Float = dividerInset

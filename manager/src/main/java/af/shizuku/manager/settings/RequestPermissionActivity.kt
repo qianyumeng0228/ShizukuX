@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.DhizukuAppManager
-import af.shizuku.manager.widget.DhizukuAppsAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.rosan.dhizuku.aidl.IDhizukuRequestPermissionListener
 import timber.log.Timber

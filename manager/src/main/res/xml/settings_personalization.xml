@@ -213,21 +213,9 @@
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
-            android:key="show_learn_more_home"
-            android:title="@string/settings_show_learn_more_home"
-            android:icon="@drawable/ic_outline_info_24"
-            android:defaultValue="true" />
-
-        <SwitchPreferenceCompat
             android:key="show_start_adb_home"
             android:title="@string/settings_show_start_adb_home"
             android:icon="@drawable/ic_adb_24"
-            android:defaultValue="true" />
-
-        <SwitchPreferenceCompat
-            android:key="show_activity_log_home"
-            android:title="@string/settings_show_activity_log_home"
-            android:icon="@drawable/ic_article_24"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat

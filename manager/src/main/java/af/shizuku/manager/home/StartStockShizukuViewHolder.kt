@@ -33,12 +33,10 @@ class StartStockShizukuViewHolder(
     }
 
     private inline val start get() = binding.button1
-    private inline val restart get() = binding.button2
 
     init {
         val listener = View.OnClickListener { v: View -> onStartClicked(v) }
         start.setOnClickListener(listener)
-        restart.visibility = View.GONE
         binding.text1.movementMethod = LinkMovementMethod.getInstance()
     }
 

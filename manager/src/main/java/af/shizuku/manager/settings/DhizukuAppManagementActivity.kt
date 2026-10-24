@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.RecyclerView
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.database.DhizukuAppManager
-import af.shizuku.manager.widget.DhizukuAppsAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

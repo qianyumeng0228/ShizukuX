@@ -34,9 +34,7 @@ class HomeLayoutSimulatorPreference @JvmOverloads constructor(
         val keys = listOf(
             "show_start_adb_home" to Pair(R.id.sim_start_adb, R.id.eye_start_adb),
             "show_terminal_home" to Pair(R.id.sim_terminal, R.id.eye_terminal),
-            "show_automation_home" to Pair(R.id.sim_automation, R.id.eye_automation),
-            "show_activity_log_home" to Pair(R.id.sim_activity_log, R.id.eye_activity_log),
-            "show_learn_more_home" to Pair(R.id.sim_learn_more, R.id.eye_learn_more)
+            "show_automation_home" to Pair(R.id.sim_automation, R.id.eye_automation)
         )
 
         for ((prefKey, views) in keys) {

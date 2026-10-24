@@ -17,7 +17,6 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.SettingsHelper
-import af.shizuku.manager.widget.ExternalRelayAdapter
 
 /**
  * External relay authorization management screen.

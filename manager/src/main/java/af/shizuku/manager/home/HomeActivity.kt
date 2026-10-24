@@ -39,8 +39,6 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbPairingService
 import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.app.SnackbarHelper
-import af.shizuku.manager.databinding.AboutDialogBinding
-import af.shizuku.manager.databinding.HomeActivityBinding
 import af.shizuku.manager.home.showAccessibilityDialog
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.management.AppsViewModel
@@ -78,7 +76,6 @@ open class HomeActivity : AppActivity(), MavericksView {
     private val homeModel: HomeViewModel by viewModel()
     private val appsModel: AppsViewModel by viewModels()
     private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
-    private var versionClickCount = 0
     private var wallpaperTheme by mutableStateOf("white_miku")
 
     // Bumped on every onResume to force the Compose content to recompose, so settings changed

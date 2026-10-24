@@ -350,7 +350,6 @@
     <string name="settings_report_bug">Reportar um bug</string>
     <string name="settings_activity_log">Registro de atividades</string>
     <string name="settings_activity_log_empty">Nenhuma atividade registrada ainda.</string>
-    <string name="settings_activity_log_clear">Limpar registros</string>
     <string name="settings_enable_activity_log">Ativar registro de atividades</string>
     <string name="settings_enable_activity_log_summary">Registrar e exibir chamadas e eventos da API do Shizuku na tela inicial.</string>
     <string name="settings_show_activity_log_home">Exibir Registro de Atividades</string>

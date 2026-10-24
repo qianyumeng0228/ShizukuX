@@ -191,9 +191,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         val switchKeys = listOf(
             "show_start_adb_home",
             "show_terminal_home",
-            "show_automation_home",
-            "show_activity_log_home",
-            "show_learn_more_home"
+            "show_automation_home"
         )
 
         for (prefKey in switchKeys) {

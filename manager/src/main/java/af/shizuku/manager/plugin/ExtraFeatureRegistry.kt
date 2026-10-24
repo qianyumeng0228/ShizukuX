@@ -8,10 +8,4 @@ object ExtraFeatureRegistry {
     fun register(module: ExtraFeatureModule) {
         if (modules.none { it.id == module.id }) modules.add(module)
     }
-
-    @Synchronized
-    fun all(): List<ExtraFeatureModule> = modules.toList()
-
-    @Synchronized
-    fun find(id: String): ExtraFeatureModule? = modules.find { it.id == id }
 }

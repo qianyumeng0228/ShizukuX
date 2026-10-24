@@ -1,4 +1,4 @@
-package af.shizuku.manager.widget;
+package af.shizuku.manager.utils;
 
 import android.content.Context;
 import android.graphics.Rect;

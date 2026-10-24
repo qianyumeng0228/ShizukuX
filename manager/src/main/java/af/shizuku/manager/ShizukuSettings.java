@@ -50,8 +50,6 @@ public class ShizukuSettings {
         // Home screen visibility (ShizukuX additions)
         public static final String KEY_SHOW_TERMINAL_HOME = "show_terminal_home";
         public static final String KEY_SHOW_AUTOMATION_HOME = "show_automation_home";
-        public static final String KEY_SHOW_LEARN_MORE_HOME = "show_learn_more_home";
-        public static final String KEY_SHOW_ACTIVITY_LOG_HOME = "show_activity_log_home";
         public static final String KEY_ENABLE_ACTIVITY_LOG = "enable_activity_log";
         public static final String KEY_ACTIVITY_LOG_RETENTION = "activity_log_retention";
         public static final String KEY_LAST_DB_UPDATE = "last_db_update";
@@ -671,16 +669,6 @@ public class ShizukuSettings {
     public static boolean showAutomationHome() {
         SharedPreferences p = getPreferences();
         return p == null || p.getBoolean(Keys.KEY_SHOW_AUTOMATION_HOME, true);
-    }
-
-    public static boolean showLearnMoreHome() {
-        SharedPreferences p = getPreferences();
-        return p == null || p.getBoolean(Keys.KEY_SHOW_LEARN_MORE_HOME, true);
-    }
-
-    public static boolean showActivityLogHome() {
-        SharedPreferences p = getPreferences();
-        return p == null || p.getBoolean(Keys.KEY_SHOW_ACTIVITY_LOG_HOME, true);
     }
 
     public static boolean isActivityLogEnabled() {

@@ -75,6 +75,42 @@ object SettingsSearchEngine {
                 android.util.Log.w("SettingsSearchEngine", "Failed to index preferences from XML", e)
             }
         }
+
+        // Index the top-level navigation entries of settings_main.xml itself. These are the
+        // section-jump entries (Feature Hub, Root Compat, Appearance, App Interactions, Startup
+        // Behavior, Advanced/Diagnostics, About) and were previously unsearchable because only the
+        // sub-screens in `screens` were walked. Each entry carries android:fragment pointing at
+        // the fragment it opens, so tapping a search result navigates exactly like tapping the
+        // entry on the main screen.
+        try {
+            val parser = context.resources.getXml(R.xml.settings_main)
+            var eventType = parser.eventType
+            var currentCategory: String? = null
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    val tagName = parser.name
+                    if (tagName == "PreferenceCategory" ||
+                        tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
+                        tagName.endsWith("PreferenceCategory")) {
+                        val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                        currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
+                    } else if (tagName != "PreferenceScreen") {
+                        val key = parser.getAttributeValue(namespace, "key")
+                        val targetFragment = parser.getAttributeValue(namespace, "fragment")
+                        val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                        val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
+                        val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
+                        val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
+                        if (!title.isNullOrBlank() && !targetFragment.isNullOrBlank()) {
+                            items.add(SettingItem(key, title, summary, currentCategory, targetFragment, R.xml.settings_main))
+                        }
+                    }
+                }
+                eventType = parser.next()
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("SettingsSearchEngine", "Failed to index settings_main nav entries", e)
+        }
         indexedItems = items
     }
 

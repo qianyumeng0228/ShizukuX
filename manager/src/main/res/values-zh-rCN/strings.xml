@@ -30,7 +30,6 @@
     <string name="settings_version">版本</string>
     <string name="settings_developer_options_revealed">开发者选项已开启！</string>
     <string name="settings_developer_options_click_more">再点击 %d 次以开启开发者选项。</string>
-    <string name="settings_activity_log_clear">清除日志</string>
     
     <string name="root_hub_title">Root 兼容性中心</string>
     <string name="root_hub_global_config_title">全局 SU 设置</string>
@@ -594,8 +593,8 @@
     <string name="export_diagnostics_failed"><![CDATA[收集诊断信息失败]]></string>
     <string name="settings_show_activity_log_home"><![CDATA[显示活动日志]]></string>
     <string name="settings_home_visibility"><![CDATA[主屏幕可见性]]></string>
-    <string name="settings_update_app_database"><![CDATA[更新应用数据库]]></string>
-    <string name="settings_update_app_database_summary"><![CDATA[从 GitHub 获取最新的应用说明和增强建议。]]></string>
+    <string name="settings_update_app_database"><![CDATA[刷新应用增强数据库]]></string>
+    <string name="settings_update_app_database_summary"><![CDATA[从 GitHub 刷新最新的应用说明与增强建议。]]></string>
     <string name="settings_update_app_database_success"><![CDATA[数据库更新成功]]></string>
     <string name="settings_update_app_database_error"><![CDATA[更新数据库失败]]></string>
     <string name="settings_show_terminal_home"><![CDATA[显示终端（rish）]]></string>

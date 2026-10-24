@@ -241,8 +241,14 @@ class AICoreExtraService : AccessibilityService() {
     }
 
     /**
-     * Schedule a high-priority task on the Neural Processing Unit (NPU).
-     * Stub for AICore 5 advanced methods.
+     * PLACEHOLDER — experimental stub. No actual NPU scheduling is performed.
+     *
+     * This method is part of the AICore+ AIDL surface reserved for future Neural
+     * Processing Unit integration. Today it only logs the call and returns success
+     * without dispatching anything to a vendor-specific NPU service. The NPU settings
+     * switch and its UI entry are intentionally retained so a real implementation can
+     * be filled in later; do not treat the `true` return value as evidence that any
+     * workload actually ran on the NPU.
      */
     fun scheduleNPULoad(params: android.os.Bundle): Boolean {
         if (!af.shizuku.manager.ShizukuSettings.isAICoreExperimentalEnabled()) return false

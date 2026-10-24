@@ -315,7 +315,7 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         onResult(false)
     }
 
-    protected class SettingsItemDecoration(context: Context) : af.shizuku.manager.widget.M3ECardItemDecoration(context) {
+    protected class SettingsItemDecoration(context: Context) : af.shizuku.manager.utils.M3ECardItemDecoration(context) {
         override fun getItemOffsets(outRect: android.graphics.Rect, view: View, parent: RecyclerView, state: RecyclerView.State) {
             val pos = parent.getChildAdapterPosition(view)
             if (pos == RecyclerView.NO_POSITION) return

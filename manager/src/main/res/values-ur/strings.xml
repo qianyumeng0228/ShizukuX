@@ -361,7 +361,6 @@
     <string name="settings_report_bug">بگ رپورٹ کریں</string>
     <string name="settings_activity_log">سرگرمی کا لاگ</string>
     <string name="settings_activity_log_empty">ابھی تک کوئی سرگرمی ریکارڈ نہیں ہوئی۔</string>
-    <string name="settings_activity_log_clear">لاگز صاف کریں</string>
     <string name="settings_enable_activity_log">سرگرمی کا لاگ فعال کریں</string>
     <string name="settings_enable_activity_log_summary">Shizuku API calls اور events کو home screen پر ریکارڈ اور دکھائیں۔</string>
     <string name="settings_show_activity_log_home">Activity Log دکھائیں</string>
