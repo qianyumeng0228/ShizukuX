@@ -32,6 +32,11 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
     private lateinit var watchdogPreference: TwoStatePreference
     private lateinit var tcpModePreference: TwoStatePreference
     private lateinit var tcpPortPreference: EditTextPreference
+    private lateinit var networkCategory: CollapsiblePreferenceCategory
+    // True when tcp_mode is logically available on this device (TLS-capable or TV).
+    // Used to gate syncTcpPortVisibility() so a non-TLS device's setChildAvailable(false)
+    // hide is not overridden by a direct isVisible write.
+    private var tcpModeAvailable = false
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
         if (ShizukuStateMachine.isRunning()) {
@@ -48,6 +53,7 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
         watchdogPreference = requireNotNull(findPreference(KEY_WATCHDOG))
         tcpModePreference = requireNotNull(findPreference(KEY_TCP_MODE))
         tcpPortPreference = requireNotNull(findPreference(KEY_TCP_PORT))
+        networkCategory = requireNotNull(findPreference("category_network"))
 
         startOnBootPreference.apply {
             isChecked = ShizukuSettings.getStartOnBoot(context)
@@ -102,6 +108,7 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
 
         tcpModePreference.apply {
             if (EnvironmentUtils.isTlsSupported()) {
+                tcpModeAvailable = true
                 summary = context.getString(R.string.settings_tcp_mode_summary)
                 icon = maybeGetRestartIcon(KEY_TCP_MODE)
                 setOnPreferenceChangeListener { _, newValue ->
@@ -123,10 +130,14 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
                     false
                 }
             } else if (EnvironmentUtils.isTelevision()) {
+                tcpModeAvailable = true
                 isEnabled = false
                 isChecked = true
             } else {
-                isVisible = false
+                // Non-TLS device: hide tcp_mode and tcp_port through the category so
+                // expand/collapse cycles don't accidentally restore them.
+                networkCategory.setChildAvailable(KEY_TCP_MODE, false)
+                networkCategory.setChildAvailable(KEY_TCP_PORT, false)
             }
         }
 
@@ -280,7 +291,12 @@ class BehaviorSettingsFragment : BaseSettingsFragment(), SharedPreferences.OnSha
     }
 
     private fun syncTcpPortVisibility() {
-        tcpPortPreference.isVisible = tcpModePreference.isVisible && tcpModePreference.isChecked
+        // Route through setChildAvailable so expand/collapse cycles don't fight us.
+        // Only act when tcp_mode is logically available on this device; otherwise the
+        // non-TLS branch has already marked tcp_port unavailable and we must not undo it.
+        if (tcpModeAvailable) {
+            networkCategory.setChildAvailable(KEY_TCP_PORT, tcpModePreference.isChecked)
+        }
     }
 
     override fun onResume() {
