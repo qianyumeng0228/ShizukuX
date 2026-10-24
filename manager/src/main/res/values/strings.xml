@@ -1531,4 +1531,31 @@ This action cannot be undone. Continue?</string>
     <string name="backup_history_clear_all">Clear all</string>
     <string name="backup_history_clear_all_confirm">Clear all restore history? This cannot be undone.</string>
     <string name="backup_history_cleared">All history cleared</string>
+    <!-- Permission Manager card &amp; screen (P2-2, upstream 2f38b4da) -->
+    <string name="home_permission_manager_title">Permission Manager</string>
+    <string name="home_permission_manager_summary">Grant shell-level permissions to any app without root</string>
+    <string name="permission_manager_search_hint">Search apps…</string>
+    <string name="permission_manager_no_apps">No apps found</string>
+    <string name="permission_manager_no_permissions">No runtime or privileged permissions declared</string>
+    <string name="permission_manager_section_privileged">Privileged Permissions (shell-grantable)</string>
+    <string name="permission_manager_section_runtime">Runtime Permissions</string>
+    <string name="permission_manager_privileged_note">These permissions are normally restricted to system or root apps, but can be granted by the ADB shell process. Useful for backup apps (Neo Backup, Swift Backup) that need DUMP, READ_LOGS, or similar access.</string>
+    <string name="nav_back">Back</string>
+    <!-- Device Control home card (P2-1) -->
+    <string name="home_device_control_title">Device Control</string>
+    <string name="home_device_control_summary">Quick system settings and power control via Shizuku</string>
+    <!-- mDNS blocked suggestion (P2-5, upstream 97a33728) -->
+    <string name="wadb_mdns_blocked_title">mDNS discovery repeatedly failing</string>
+    <string name="wadb_mdns_blocked_text">Port discovery keeps timing out. Your device may be blocking multicast traffic (common on Vivo/FunTouchOS). Try enabling TCP Mode in settings for a reliable connection without Wi-Fi.</string>
+    <string name="wadb_mdns_switch_tcp_action">Open TCP Settings</string>
+    <!-- Personalization controls (P2-3, upstream a2f7d959) -->
+    <string name="settings_bold_typography">Bold Typography</string>
+    <string name="settings_bold_typography_summary">Use heavier font weights for headings, independent of One UI theme</string>
+    <string name="settings_expanded_headers">Expanded Headers</string>
+    <string name="settings_expanded_headers_summary">Use large top app bars in settings without full One UI</string>
+    <string name="settings_corner_rounding_override">Corner Rounding</string>
+    <string name="settings_follow_system_animations">Follow System Animations</string>
+    <string name="settings_follow_system_animations_summary">Reads ANIMATOR_DURATION_SCALE from system developer options</string>
+    <string name="settings_follow_system_haptics">Follow System Haptics</string>
+    <string name="settings_follow_system_haptics_summary">Respects system haptic feedback setting</string>
 </resources>

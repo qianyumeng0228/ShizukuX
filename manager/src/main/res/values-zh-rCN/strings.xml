@@ -1247,4 +1247,31 @@
         <item>2</item>
         <item>3</item>
     </string-array>
+    <!-- 权限管理器卡片与页面（P2-2） -->
+    <string name="home_permission_manager_title">权限管理器</string>
+    <string name="home_permission_manager_summary">无需 root，为任意应用授予 shell 级权限</string>
+    <string name="permission_manager_search_hint">搜索应用…</string>
+    <string name="permission_manager_no_apps">未找到应用</string>
+    <string name="permission_manager_no_permissions">未声明运行时或特权权限</string>
+    <string name="permission_manager_section_privileged">特权权限（可由 shell 授予）</string>
+    <string name="permission_manager_section_runtime">运行时权限</string>
+    <string name="permission_manager_privileged_note">这些权限通常仅限系统或 root 应用使用，但可通过 ADB shell 进程授予。适用于需要 DUMP、READ_LOGS 等权限的备份应用（Neo Backup、Swift Backup 等）。</string>
+    <string name="nav_back">返回</string>
+    <!-- 设备控制主页卡片（P2-1） -->
+    <string name="home_device_control_title">设备控制</string>
+    <string name="home_device_control_summary">通过 Shizuku 快捷调节系统设置与电源</string>
+    <!-- mDNS 阻断建议（P2-5） -->
+    <string name="wadb_mdns_blocked_title">mDNS 端口发现多次超时</string>
+    <string name="wadb_mdns_blocked_text">端口发现持续超时，设备可能屏蔽了组播流量（Vivo/FunTouchOS 常见）。请在设置中开启 TCP 模式，以获得不依赖 Wi-Fi 的可靠连接。</string>
+    <string name="wadb_mdns_switch_tcp_action">打开 TCP 设置</string>
+    <!-- 个性化控件（P2-3） -->
+    <string name="settings_bold_typography">粗体排版</string>
+    <string name="settings_bold_typography_summary">标题与标题文字使用更粗字重（独立于 One UI 主题）</string>
+    <string name="settings_expanded_headers">展开式标题栏</string>
+    <string name="settings_expanded_headers_summary">在设置页使用大标题栏（无需启用完整 One UI）</string>
+    <string name="settings_corner_rounding_override">圆角覆盖</string>
+    <string name="settings_follow_system_animations">跟随系统动画速度</string>
+    <string name="settings_follow_system_animations_summary">读取开发者选项中的动画时长缩放</string>
+    <string name="settings_follow_system_haptics">跟随系统触感反馈</string>
+    <string name="settings_follow_system_haptics_summary">遵循系统触感反馈开关</string>
 </resources>
