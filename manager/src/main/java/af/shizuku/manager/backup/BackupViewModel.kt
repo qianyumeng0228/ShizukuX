@@ -201,6 +201,37 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Restores external data for [entry] from [externalTarUri] (a SAF document Uri pointing to an
+     * external.tar.gz file produced by a prior backup or by a compatible tool like
+     * Swift Backup / Neo Backup). Streams it to
+     * [ShizukuXAPI.BackupRestoreExtra.restoreExternalData], which extracts it into
+     * /sdcard/Android/data/<pkg>/ via shell privilege. Port of upstream f43a0a65.
+     */
+    fun restoreExternalData(entry: AppEntry, externalTarUri: Uri) {
+        val pkg = entry.packageName
+        if (pkg in _busyPackages.value) return
+        viewModelScope.launch(Dispatchers.IO) {
+            _busyPackages.value = _busyPackages.value + pkg
+            try {
+                ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
+                val cr = getApplication<Application>().contentResolver
+                val ok = cr.openFileDescriptor(externalTarUri, "r")?.use { pfd ->
+                    ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
+                } ?: run {
+                    _events.emit(BackupEvent.Failure("Could not open backup file for $pkg"))
+                    return@launch
+                }
+                _events.emit(BackupEvent.RestoreComplete(pkg, ok))
+            } catch (e: Exception) {
+                Timber.e(e, "restoreExternalData failed for $pkg")
+                _events.emit(BackupEvent.Failure("Restore failed for $pkg: ${e.message}"))
+            } finally {
+                _busyPackages.value = _busyPackages.value - pkg
+            }
+        }
+    }
+
     private fun writeBackupStream(
         safTreeUri: Uri?,
         outputDir: File?,
