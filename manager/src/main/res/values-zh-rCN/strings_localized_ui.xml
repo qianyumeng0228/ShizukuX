@@ -52,7 +52,6 @@
     <string name="settings_home_screen_category_title">主页</string>
     <string name="settings_language_category_title">语言</string>
     <string name="settings_appearance_title_short">外观</string>
-    <string name="settings_advanced_title_short">高级与诊断</string>
     <string name="settings_app_interactions_title_short">应用交互</string>
     <string name="settings_behavior_title_short">启动与行为</string>
     <string name="settings_root_compatibility_title_short">Root 与兼容性</string>

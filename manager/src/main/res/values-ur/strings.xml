@@ -759,9 +759,7 @@
     <string name="settings_category_material_you">Material You</string>
     <string name="settings_category_language">زبان</string>
     <string name="settings_category_appearance">ظاہری شکل</string>
-    <string name="settings_main_category_capabilities">صلاحیتیں</string>
     <string name="settings_main_category_personalization">Personalization</string>
-    <string name="settings_main_category_system">سسٹم</string>
     <string name="settings_main_nav_feature_hub_title">Feature Hub</string>
     <string name="settings_main_nav_feature_hub_summary">Exclusive Plus capabilities manage کریں</string>
     <string name="settings_main_nav_root_compat_title">Root &amp; Compatibility</string>

@@ -400,9 +400,7 @@
     <string name="settings_category_material_you">Material You</string>
     <string name="settings_category_language">语言</string>
 
-    <string name="settings_main_category_capabilities">功能</string>
     <string name="settings_main_category_personalization">个性化</string>
-    <string name="settings_main_category_system">系统</string>
     <string name="settings_main_category_core_services">核心服务与授权</string>
     <string name="settings_main_category_diagnostics_help">诊断与帮助</string>
     <string name="settings_main_nav_feature_hub_title">功能中心</string>

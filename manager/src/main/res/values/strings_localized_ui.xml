@@ -52,7 +52,6 @@
     <string name="settings_home_screen_category_title">Home Screen</string>
     <string name="settings_language_category_title">Language</string>
     <string name="settings_appearance_title_short">Appearance</string>
-    <string name="settings_advanced_title_short">Advanced &amp; Diagnostics</string>
     <string name="settings_app_interactions_title_short">App Interactions</string>
     <string name="settings_behavior_title_short">Startup &amp; Behavior</string>
     <string name="settings_root_compatibility_title_short">Root &amp; Compatibility</string>
