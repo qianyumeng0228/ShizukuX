@@ -39,9 +39,10 @@ class HomeAdapter(
         // 12 reserved (upstream DeviceControl id) — ShizukuX uses 14 below to keep F1/F2 ids distinct.
         const val ID_PERMISSION_MANAGER = 13L
         const val ID_DEVICE_CONTROL = 14L
+        const val ID_BACKUP_APPS = 15L
 
         private val DEFAULT_ORDER = listOf(
-            ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_DEVICE_CONTROL, ID_PERMISSION_MANAGER, ID_LEARN_MORE, ID_COMPANION
+            ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_PERMISSION_MANAGER, ID_LEARN_MORE, ID_COMPANION
         )
     }
 
@@ -231,6 +232,7 @@ class HomeAdapter(
                     addItem(AutomationViewHolder.CREATOR, null, id)
                 // No dedicated setting key exists for these cards, so they are always visible
                 // (hidden only via edit-mode long-press), matching upstream behavior.
+                ID_BACKUP_APPS -> addItem(AppBackupViewHolder.CREATOR, status, id)
                 ID_DEVICE_CONTROL -> addItem(DeviceControlViewHolder.CREATOR, status, id)
                 ID_PERMISSION_MANAGER -> addItem(PermissionManagerViewHolder.CREATOR, status, id)
                 ID_LEARN_MORE -> if (isEditMode || ShizukuSettings.showLearnMoreHome())
