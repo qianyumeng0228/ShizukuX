@@ -1,6 +1,7 @@
 package rikka.shizuku.server
 
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import af.shizuku.server.IApkPatcher
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
@@ -71,8 +72,12 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
             if (grantPerms) add("-g")
         }
         val sessionOut = ShellExecutor.exec(*sessionArgs.toTypedArray())
+        Log.i("ShizukuX-Patch", "install-create out=$sessionOut")
         val sessionId = Regex("\\[(\\d+)]").find(sessionOut)?.groupValues?.get(1)?.toIntOrNull()
-            ?: return false
+            ?: run {
+                Log.e("ShizukuX-Patch", "install-create no session id out=$sessionOut")
+                return false
+            }
 
         for (path in apkPaths) {
             // Derive the canonical split name from the filename (strip our temp prefix)
@@ -82,20 +87,30 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 fileName.contains("_dbg_")  -> fileName.substringAfter("_dbg_")
                 else                        -> fileName
             }
-            if (ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path) != 0) {
+            val writeCode = ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path)
+            Log.i("ShizukuX-Patch", "install-write name=$splitName code=$writeCode")
+            if (writeCode != 0) {
+                Log.e("ShizukuX-Patch", "install-write failed name=$splitName code=$writeCode")
                 ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
                 return false
             }
         }
-        return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
+        val commitCode = ShellExecutor.execCode("pm", "install-commit", sessionId.toString())
+        Log.i("ShizukuX-Patch", "install-commit code=$commitCode")
+        return commitCode == 0
     }
 
     override fun prepareTempDebug(packageName: String?): Boolean {
+        Log.i("ShizukuX-Patch", "prepareTempDebug $packageName")
         if (packageName.isNullOrBlank()) return false
         if (sessions.containsKey(packageName)) return true
 
         val apkPaths = findAllApks(packageName)
-        if (apkPaths.isEmpty()) return false
+        Log.i("ShizukuX-Patch", "apks=$apkPaths")
+        if (apkPaths.isEmpty()) {
+            Log.w("ShizukuX-Patch", "no apks")
+            return false
+        }
 
         File(TMP_DIR).mkdirs()
 
@@ -104,7 +119,9 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         for (path in apkPaths) {
             val fileName = File(path).name  // base.apk, split_config.arm64_v8a.apk, etc.
             val dest = "$TMP_DIR/${packageName}_orig_$fileName"
-            if (ShellExecutor.execCode("cp", path, dest) != 0) {
+            val cpCode = ShellExecutor.execCode("cp", path, dest)
+            if (cpCode != 0) {
+                Log.e("ShizukuX-Patch", "cp failed src=$path dst=$dest code=$cpCode")
                 origPaths.forEach { File(it).delete() }
                 return false
             }
@@ -123,31 +140,37 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 val isBase = fileName.endsWith("_orig_base.apk") || !fileName.contains("split_")
                 val patchedPath = "$TMP_DIR/${packageName}_dbg_${fileName.substringAfter("_orig_")}"
                 if (!ApkSigner.signFile(File(origPath), File(patchedPath), patchManifest = isBase)) {
+                    Log.e("ShizukuX-Patch", "signFile failed: $origPath -> $patchedPath")
                     origPaths.forEach { File(it).delete() }
                     patchedPaths.forEach { File(it).delete() }
                     return false
                 }
                 patchedPaths.add(patchedPath)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("ShizukuX-Patch", "sign loop exception", e)
             origPaths.forEach { File(it).delete() }
             patchedPaths.forEach { File(it).delete() }
             return false
         }
 
         // pm uninstall -k preserves all app data
-        if (ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
+        val uninstallCode = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName)
+        if (uninstallCode != 0) {
+            Log.e("ShizukuX-Patch", "uninstall failed code=$uninstallCode")
             origPaths.forEach { File(it).delete() }
             patchedPaths.forEach { File(it).delete() }
             return false
         }
 
         val installed = installViaSession(patchedPaths)
+        Log.i("ShizukuX-Patch", "install patched result=$installed")
         patchedPaths.forEach { File(it).delete() }
 
         if (!installed) {
             // Attempt recovery by reinstalling the originals
-            installViaSession(origPaths)
+            val recover = installViaSession(origPaths)
+            Log.e("ShizukuX-Patch", "install failed, recovery reinstall originals result=$recover")
             origPaths.forEach { File(it).delete() }
             return false
         }
