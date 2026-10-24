@@ -89,14 +89,30 @@ fun PermissionManagerScreen(onBackClick: () -> Unit) {
         appPerms = emptyList()
     }
 
-    // Load app list on open
+    // Load app list on open. Prefer the privileged server-side package query: under HyperOS
+    // app-visibility privacy restrictions local pm.getInstalledPackages(0) returns only this
+    // app (even with QUERY_ALL_PACKAGES granted), while the shell-uid server sees all 149+
+    // third-party packages. Fall back to the local query when Shizuku is not running — the
+    // fallback list may be incomplete on restricted devices.
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
-            val packages = pm.getInstalledPackages(0)
-            val list = packages.mapNotNull { pi ->
-                val label = try { pm.getApplicationLabel(pi.applicationInfo ?: return@mapNotNull null).toString() } catch (_: Exception) { pi.packageName }
-                AppItem(pi.packageName, label)
-            }.sortedBy { it.label.lowercase() }
+            val ipcList = runCatching {
+                val service = IShizukuService.Stub.asInterface(Shizuku.getBinder())
+                val bundles = service.backupRestoreExtra?.listInstalledPackages(false)
+                if (bundles.isNullOrEmpty()) null
+                else bundles.mapNotNull { b ->
+                    val pkg = b.getString("packageName") ?: return@mapNotNull null
+                    AppItem(pkg, b.getString("label") ?: pkg)
+                }
+            }.getOrNull()
+
+            val list = (ipcList ?: run {
+                val packages = pm.getInstalledPackages(0)
+                packages.mapNotNull { pi ->
+                    val label = try { pm.getApplicationLabel(pi.applicationInfo ?: return@mapNotNull null).toString() } catch (_: Exception) { pi.packageName }
+                    AppItem(pi.packageName, label)
+                }
+            }).sortedBy { it.label.lowercase() }
             allApps = list
             isLoadingApps = false
         }
