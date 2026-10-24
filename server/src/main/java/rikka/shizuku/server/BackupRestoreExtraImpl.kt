@@ -35,6 +35,18 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     private fun callingUserId(): Int = Binder.getCallingUid() / 100000
 
+    // Server-side PackageManager: the server runs at shell uid (2000) and sees ALL packages,
+    // unlike the app process's own PackageManager which HyperOS privacy restrictions shrink to
+    // just the caller. Resolved via the ActivityThread system-context fallback, the same path
+    // InstalledPackagesCompat already uses in the no-application-context server runtime.
+    private val packageManager: android.content.pm.PackageManager? by lazy {
+        try {
+            val at = Class.forName("android.app.ActivityThread").getMethod("systemMain").invoke(null)
+            val ctx = at.javaClass.getMethod("getSystemContext").invoke(at)
+            ctx.javaClass.getMethod("getPackageManager").invoke(ctx) as? android.content.pm.PackageManager
+        } catch (_: Exception) { null }
+    }
+
     // Reads and discards a stream on a daemon thread, so a chatty child process can't
     // fill its stderr/stdout pipe buffer and deadlock the copy we actually care about.
     private fun drainQuietly(stream: InputStream) {
@@ -109,6 +121,11 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
                             putBoolean("isDebuggable", flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
                             putBoolean("allowBackup", flags and android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP != 0)
                             putBoolean("isFrozen", ai?.enabled == false)
+                            // App display name via the server's (shell-uid, all-packages-visible) PackageManager;
+                            // falls back to packageName if label resolution is unavailable on this build.
+                            putString("label", ai?.let { a ->
+                                runCatching { packageManager?.getApplicationLabel(a)?.toString() }.getOrNull()
+                            } ?: pi.packageName)
                         }
                     }
             }
