@@ -52,6 +52,19 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         try { proc.waitFor() == 0 } finally { proc.destroy() }
     } catch (_: Exception) { false }
 
+    // Diagnostic-only: run a command and capture stdout + stderr + exit code.
+    private fun execResult(vararg args: String): Triple<String, String, Int> = try {
+        val proc = Runtime.getRuntime().exec(args)
+        try {
+            val out = proc.inputStream.bufferedReader().readText().trim()
+            val err = proc.errorStream.bufferedReader().readText().trim()
+            Triple(out, err, proc.waitFor())
+        } finally { proc.destroy() }
+    } catch (e: Exception) {
+        Log.w("ShizukuX-Patch", "execResult failed: ${args.joinToString(" ")}", e)
+        Triple("", "", -1)
+    }
+
     private fun findAllApks(packageName: String): List<String> {
         val out = ShellExecutor.exec("pm", "path", packageName)
         return out.lines()
@@ -87,17 +100,17 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 fileName.contains("_dbg_")  -> fileName.substringAfter("_dbg_")
                 else                        -> fileName
             }
-            val writeCode = ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path)
-            Log.i("ShizukuX-Patch", "install-write name=$splitName code=$writeCode")
-            if (writeCode != 0) {
-                Log.e("ShizukuX-Patch", "install-write failed name=$splitName code=$writeCode")
+            val (wOut, wErr, wCode) = execResult("pm", "install-write", sessionId.toString(), splitName, path)
+            Log.i("ShizukuX-Patch", "install-write name=$splitName out=$wOut err=$wErr code=$wCode")
+            if (wCode != 0) {
+                Log.e("ShizukuX-Patch", "install-write failed name=$splitName out=$wOut err=$wErr code=$wCode")
                 ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
                 return false
             }
         }
-        val commitCode = ShellExecutor.execCode("pm", "install-commit", sessionId.toString())
-        Log.i("ShizukuX-Patch", "install-commit code=$commitCode")
-        return commitCode == 0
+        val (cOut, cErr, cCode) = execResult("pm", "install-commit", sessionId.toString())
+        Log.i("ShizukuX-Patch", "install-commit out=$cOut err=$cErr code=$cCode")
+        return cCode == 0
     }
 
     override fun prepareTempDebug(packageName: String?): Boolean {
