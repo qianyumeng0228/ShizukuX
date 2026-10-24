@@ -33,6 +33,66 @@
             android:icon="@drawable/ic_bolt_24"
             android:fragment="af.shizuku.manager.settings.ShizukuExtraSettingsFragment" />
 
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="dhizuku_mode"
+            android:title="@string/settings_dhizuku_mode"
+            android:summary="@string/settings_dhizuku_mode_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            app:infoTitle="@string/help_dhizuku_title"
+            app:infoDetail="@string/help_dhizuku_detail"
+            app:badgeType="plus" />
+
+        <!-- Only shown when app is active Device Owner; tapping clears DO status -->
+        <Preference
+            android:key="clear_device_owner"
+            android:title="@string/settings_clear_device_owner"
+            android:summary="@string/settings_clear_device_owner_summary"
+            android:icon="@drawable/ic_delete_24"
+            android:visible="false" />
+
+        <!-- Only shown when app is active Device Owner; tapping transfers DO to another app -->
+        <Preference
+            android:key="transfer_device_owner"
+            android:title="@string/settings_transfer_device_owner"
+            android:summary="@string/settings_transfer_device_owner_summary"
+            android:icon="@drawable/ic_swap_horiz_24"
+            android:visible="false" />
+
+        <!-- Dhizuku app management: list & control which apps may use the Dhizuku API -->
+        <Preference
+            android:key="dhizuku_app_management"
+            android:title="@string/dhizuku_app_management_title"
+            android:summary="@string/dhizuku_app_management_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
+
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_dhizuku_admin"
+            android:title="@string/settings_device_owner_tools_category_title"
+            android:dependency="dhizuku_mode"
+            android:defaultValue="false">
+
+            <SwitchPreferenceCompat
+                android:key="dhizuku_disable_screencap"
+                android:title="@string/settings_screen_capture_lockdown_title"
+                android:summary="@string/settings_screen_capture_lockdown_summary"
+                android:icon="@drawable/ic_visibility_off_24"
+                android:defaultValue="false" />
+
+            <SwitchPreferenceCompat
+                android:key="dhizuku_disallow_usb"
+                android:title="@string/settings_usb_data_lockdown_title"
+                android:summary="@string/settings_usb_data_lockdown_summary"
+                android:icon="@drawable/ic_shield_24"
+                android:defaultValue="false" />
+
+            <af.shizuku.manager.settings.AppPickerPreference
+                android:key="dhizuku_suspended_packages"
+                android:title="@string/settings_suspended_applications_title"
+                android:summary="@string/settings_suspended_applications_summary"
+                android:icon="@drawable/ic_science_24" />
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory

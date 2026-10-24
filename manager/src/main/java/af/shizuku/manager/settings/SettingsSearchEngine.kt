@@ -101,8 +101,13 @@ object SettingsSearchEngine {
                         val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
                         val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
                         val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
-                        if (!title.isNullOrBlank() && !targetFragment.isNullOrBlank()) {
-                            items.add(SettingItem(key, title, summary, currentCategory, targetFragment, R.xml.settings_main))
+                        // Navigation entries (with android:fragment) open their target screen from a
+                        // search hit, exactly like tapping them. Inline controls placed directly on
+                        // the main screen (e.g. the Dhizuku mode card) have no fragment of their own;
+                        // index them against the main screen so a search hit opens settings_main and
+                        // shows the entry in place.
+                        if (!title.isNullOrBlank()) {
+                            items.add(SettingItem(key, title, summary, currentCategory, targetFragment ?: "af.shizuku.manager.settings.SettingsFragment", R.xml.settings_main))
                         }
                     }
                 }

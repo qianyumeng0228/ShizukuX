@@ -29,11 +29,151 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.database.AppContextManager
 import af.shizuku.manager.utils.ProjectLinks
+import af.shizuku.manager.backup.BackupRestoreManager
+import af.shizuku.manager.backup.BackupKeyUnavailableException
+import af.shizuku.manager.backup.CryptoUtils
+import af.shizuku.manager.security.BiometricLock
+import androidx.biometric.BiometricPrompt
+import android.security.keystore.KeyPermanentlyInvalidatedException
+import javax.crypto.AEADBadTagException
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import androidx.preference.TwoStatePreference
+import androidx.activity.result.contract.ActivityResultContracts
 
 class AdvancedSettingsFragment : BaseSettingsFragment() {
 
     override fun getTitle(): CharSequence? = getString(R.string.settings_advanced_diagnostics_title)
+
+    // e.message is often null for keystore/cipher exceptions (#315's "Backup failed: null"), and
+    // KeyPermanentlyInvalidatedException needs a message explaining it's unrecoverable rather
+    // than a raw exception string (#332) - encryption self-heals from this in CryptoUtils, but
+    // decryption of an existing backup genuinely can't.
+    private fun backupErrorMessage(ctx: Context, prefixRes: Int, isRestore: Boolean, e: Exception): String = when (e) {
+        is KeyPermanentlyInvalidatedException ->
+            ctx.getString(
+                if (isRestore) {
+                    R.string.settings_backup_key_invalidated_restore
+                } else {
+                    R.string.settings_backup_key_invalidated_backup
+                },
+                ctx.getString(prefixRes)
+            )
+        // The key was destroyed (uninstall/reinstall or cleared data) — explain, don't show a raw error (#370).
+        is BackupKeyUnavailableException ->
+            ctx.getString(R.string.settings_backup_key_unavailable, ctx.getString(prefixRes))
+        // A valid key exists but can't authenticate this ciphertext: the backup was made by a
+        // different install, is corrupt, or was tampered with. GCM's tag check is exactly what
+        // catches that — surface it as a clear cause instead of "AEADBadTagException" (#370).
+        is AEADBadTagException ->
+            ctx.getString(R.string.settings_backup_decryption_failed_install, ctx.getString(prefixRes))
+        else -> ctx.getString(R.string.settings_error_with_detail, ctx.getString(prefixRes), e.message ?: e.javaClass.simpleName)
+    }
+
+    private val createPlainBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        try {
+            val payload = BackupRestoreManager.createPlainBackupPayload(ctx)
+            ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+            }
+            Toast.makeText(ctx, R.string.settings_plain_backup_exported, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(ctx, R.string.settings_backup_operation_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val createBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        val lock = BiometricLock(requireActivity())
+        val useAuth = lock.canAuthenticate(ctx)
+
+        if (!useAuth) {
+            try {
+                val cipher = CryptoUtils.getCipherForEncryption(userAuthRequired = false)
+                val payload = BackupRestoreManager.createBackupPayload(ctx, cipher)
+                ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                    OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+                }
+                Toast.makeText(ctx, R.string.settings_backup_exported, Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(ctx, backupErrorMessage(ctx, R.string.settings_backup_failed_prefix, false, e), Toast.LENGTH_LONG).show()
+            }
+            return@registerForActivityResult
+        }
+
+        try {
+            val cipher = CryptoUtils.getCipherForEncryption(userAuthRequired = true)
+            lock.authenticate(onSuccess = { crypto ->
+                try {
+                    val payload = BackupRestoreManager.createBackupPayload(ctx, crypto?.cipher ?: cipher)
+                    ctx.contentResolver.openOutputStream(uri)?.use { os ->
+                        OutputStreamWriter(os, Charsets.UTF_8).use { it.write(payload) }
+                    }
+                Toast.makeText(ctx, R.string.settings_backup_exported, Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, backupErrorMessage(ctx, R.string.settings_backup_failed_prefix, false, e), Toast.LENGTH_LONG).show()
+                }
+            }, onError = { errCode ->
+                Toast.makeText(ctx, ctx.getString(R.string.settings_authentication_failed, errCode), Toast.LENGTH_SHORT).show()
+            }, crypto = BiometricPrompt.CryptoObject(cipher))
+        } catch (e: Exception) {
+            Toast.makeText(ctx, R.string.settings_backup_operation_failed, Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private val restoreBackupLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext()
+        val lock = BiometricLock(requireActivity())
+        val useAuth = lock.canAuthenticate(ctx)
+
+        try {
+            val payload = ctx.contentResolver.openInputStream(uri)?.use { `is` ->
+                InputStreamReader(`is`, Charsets.UTF_8).readText()
+            } ?: return@registerForActivityResult
+
+            // Auto-detect format: plain (v2) backups skip encryption entirely.
+            if (!BackupRestoreManager.isEncrypted(payload)) {
+                try {
+                    BackupRestoreManager.restoreFromPlainPayload(ctx, payload)
+                    Toast.makeText(ctx, R.string.settings_backup_restored_restart, Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, R.string.settings_restore_operation_failed, Toast.LENGTH_LONG).show()
+                }
+                return@registerForActivityResult
+            }
+
+            val iv = BackupRestoreManager.extractIv(payload)
+
+            if (!useAuth) {
+                try {
+                    val cipher = CryptoUtils.getCipherForDecryption(iv, userAuthRequired = false)
+                    BackupRestoreManager.restoreFromPayload(ctx, payload, cipher)
+                    Toast.makeText(ctx, R.string.settings_backup_restored_restart, Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, backupErrorMessage(ctx, R.string.settings_restore_failed_prefix, true, e), Toast.LENGTH_LONG).show()
+                }
+                return@registerForActivityResult
+            }
+
+            val cipher = CryptoUtils.getCipherForDecryption(iv, userAuthRequired = true)
+            lock.authenticate(onSuccess = { crypto ->
+                try {
+                    BackupRestoreManager.restoreFromPayload(ctx, payload, crypto?.cipher ?: cipher)
+                    Toast.makeText(ctx, R.string.settings_backup_restored_restart, Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    Toast.makeText(ctx, backupErrorMessage(ctx, R.string.settings_restore_failed_prefix, true, e), Toast.LENGTH_LONG).show()
+                }
+            }, onError = { errCode ->
+                Toast.makeText(ctx, ctx.getString(R.string.settings_authentication_failed, errCode), Toast.LENGTH_SHORT).show()
+            }, crypto = BiometricPrompt.CryptoObject(cipher))
+        } catch (e: Exception) {
+            Toast.makeText(ctx, R.string.settings_restore_operation_failed, Toast.LENGTH_LONG).show()
+        }
+    }
 
     override fun onCreateSettingsPreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings_advanced, rootKey)
@@ -105,6 +245,38 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
 
         findPreference<TwoStatePreference>(KEY_ENABLE_ACTIVITY_LOG)?.setOnPreferenceChangeListener { _, _ ->
             ShizukuSettings.syncAllExtraFeaturesToServer()
+            true
+        }
+
+        val backupSettingsPref = findPreference<Preference>("backup_settings")
+        backupSettingsPref?.setOnPreferenceClickListener {
+            val dateStr = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.settings_export_backup_title)
+                .setItems(arrayOf(
+                    getString(R.string.settings_encrypted_backup_option),
+                    getString(R.string.settings_plain_backup_option)
+                )) { _, which ->
+                    try {
+                        when (which) {
+                            0 -> createBackupLauncher.launch("ShizukuX_Settings_$dateStr.json")
+                            1 -> createPlainBackupLauncher.launch("ShizukuX_Settings_plain_$dateStr.json")
+                        }
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        Toast.makeText(requireContext(), R.string.settings_no_file_manager_save, Toast.LENGTH_LONG).show()
+                    }
+                }
+                .show()
+            true
+        }
+
+        val restoreSettingsPref = findPreference<Preference>("restore_settings")
+        restoreSettingsPref?.setOnPreferenceClickListener {
+            try {
+                restoreBackupLauncher.launch(arrayOf("application/json", "*/*"))
+            } catch (e: android.content.ActivityNotFoundException) {
+                Toast.makeText(requireContext(), R.string.settings_no_file_manager_open, Toast.LENGTH_LONG).show()
+            }
             true
         }
 
