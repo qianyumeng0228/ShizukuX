@@ -9,6 +9,7 @@ import android.os.Build
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.service.WatchdogService
 import af.shizuku.manager.utils.ShizukuStateMachine
+import af.shizuku.manager.worker.WatchdogWorker
 import timber.log.Timber
 
 /**
@@ -35,7 +36,14 @@ class WatchdogAlarmReceiver : BroadcastReceiver() {
 
         if (!WatchdogService.isRunning()) {
             Timber.tag(TAG).w("WatchdogService found dead by alarm re-arm; restarting")
-            WatchdogService.start(context)
+            // Android 15+ (API 35 / VANILLA_ICE_CREAM) blocks startForegroundService() from a
+            // BroadcastReceiver while the device is locked. Route through an expedited
+            // WorkManager one-shot on those versions so WatchdogService.start() is allowed.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+                WatchdogWorker.scheduleOneTimeHeal(context.applicationContext)
+            } else {
+                WatchdogService.start(context)
+            }
         }
         ShizukuStateMachine.update()
 
