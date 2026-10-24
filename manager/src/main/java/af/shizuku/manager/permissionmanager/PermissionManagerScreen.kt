@@ -57,6 +57,90 @@ private val PRIVILEGED_PERMISSIONS = setOf(
     "android.permission.FORCE_STOP_PACKAGES",
 )
 
+// Chinese display labels for common runtime/privileged permissions. The permission row shows
+// shortName (last path segment) with a localized label where known, falling back to the raw
+// short name. Keyed by short name (e.g. "CAMERA").
+private val PERM_SHORT_LABELS = mapOf(
+    // runtime (dangerous)
+    "CAMERA" to "相机",
+    "RECORD_AUDIO" to "麦克风",
+    "READ_PHONE_STATE" to "读取手机状态",
+    "CALL_PHONE" to "拨打电话",
+    "READ_CALL_LOG" to "读取通话记录",
+    "WRITE_CALL_LOG" to "写入通话记录",
+    "ADD_VOICEMAIL" to "添加语音邮件",
+    "USE_SIP" to "使用 SIP",
+    "PROCESS_OUTGOING_CALLS" to "处理拨出电话",
+    "READ_CONTACTS" to "读取联系人",
+    "WRITE_CONTACTS" to "写入联系人",
+    "GET_ACCOUNTS" to "获取账户",
+    "READ_EXTERNAL_STORAGE" to "读取外部存储",
+    "WRITE_EXTERNAL_STORAGE" to "写入外部存储",
+    "READ_MEDIA_IMAGES" to "读取图片",
+    "READ_MEDIA_VIDEO" to "读取视频",
+    "READ_MEDIA_AUDIO" to "读取音频",
+    "READ_MEDIA_VISUAL_USER_SELECTED" to "访问媒体选取内容",
+    "ACCESS_MEDIA_LOCATION" to "访问媒体位置信息",
+    "ACCESS_FINE_LOCATION" to "精确位置",
+    "ACCESS_COARSE_LOCATION" to "粗略位置",
+    "ACCESS_BACKGROUND_LOCATION" to "后台位置",
+    "READ_SMS" to "读取短信",
+    "RECEIVE_SMS" to "接收短信",
+    "SEND_SMS" to "发送短信",
+    "READ_WAP_PUSH" to "读取 WAP 推送",
+    "RECEIVE_WAP_PUSH" to "接收 WAP 推送",
+    "RECEIVE_MMS" to "接收彩信",
+    "READ_CLIPBOARD_IN_HONORED_APP" to "读取剪贴板",
+    "READ_CALENDAR" to "读取日历",
+    "WRITE_CALENDAR" to "写入日历",
+    "BODY_SENSORS" to "身体传感器",
+    "BODY_SENSORS_BACKGROUND" to "后台身体传感器",
+    "ACTIVITY_RECOGNITION" to "活动识别",
+    "POST_NOTIFICATIONS" to "发送通知",
+    "BLUETOOTH_SCAN" to "扫描蓝牙设备",
+    "BLUETOOTH_CONNECT" to "连接蓝牙设备",
+    "BLUETOOTH_ADVERTISE" to "蓝牙广播",
+    "UWB_RANGING" to "UWB 测距",
+    "USE_SENSOR_PRIVACY" to "传感器隐私",
+    "NEARBY_WIFI_DEVICES" to "附近的 Wi-Fi 设备",
+    "MANAGE_OWN_CALL_LOG" to "管理自己的通话记录",
+    // privileged (signature / shell-grantable)
+    "READ_LOGS" to "读取日志",
+    "DUMP" to "系统转储",
+    "PACKAGE_USAGE_STATS" to "使用情况访问",
+    "WRITE_SECURE_SETTINGS" to "写入安全设置",
+    "READ_FRAME_BUFFER" to "读取帧缓冲",
+    "INTERACT_ACROSS_USERS" to "跨用户交互",
+    "INTERACT_ACROSS_USERS_FULL" to "跨用户完全交互",
+    "MANAGE_USB" to "管理 USB",
+    "BATTERY_STATS" to "电池统计",
+    "MOUNT_UNMOUNT_FILESYSTEMS" to "挂载/卸载文件系统",
+    "INSTALL_PACKAGES" to "安装应用",
+    "DELETE_PACKAGES" to "删除应用",
+    "CHANGE_NETWORK_STATE" to "更改网络状态",
+    "CHANGE_WIFI_STATE" to "更改 Wi-Fi 状态",
+    "ACCESS_WIFI_STATE" to "读取 Wi-Fi 状态",
+    "MANAGE_NETWORK_POLICY" to "管理网络策略",
+    "CONNECTIVITY_INTERNAL" to "内部网络连接",
+    "OBSERVE_APP_USAGE" to "观察应用使用",
+    "GET_APP_OPS_STATS" to "获取 AppOps 统计",
+    "MANAGE_APP_OPS_MODES" to "管理 AppOps 模式",
+    "CHANGE_COMPONENT_ENABLED_STATE" to "更改组件启用状态",
+    "FORCE_STOP_PACKAGES" to "强制停止应用",
+    "WRITE_SETTINGS" to "修改系统设置",
+    "SYSTEM_ALERT_WINDOW" to "悬浮窗",
+    "REQUEST_INSTALL_PACKAGES" to "安装未知应用",
+    "MANAGE_EXTERNAL_STORAGE" to "管理所有文件",
+    "QUERY_ALL_PACKAGES" to "查询所有应用",
+    "READ_PRIVILEGED_PHONE_STATE" to "读取受保护电话状态",
+    "READ_BASIC_PHONE_STATE" to "读取基础电话状态",
+)
+
+private fun permShortLabel(name: String): String {
+    val short = name.substringAfterLast('.')
+    return PERM_SHORT_LABELS[short] ?: short
+}
+
 data class AppItem(
     val packageName: String,
     val label: String,
@@ -469,9 +553,9 @@ private fun loadPermissions(pm: PackageManager, packageName: String): List<PermI
                 if (isPriv) PermissionInfo.PROTECTION_SIGNATURE else continue
             }
             when {
-                isPriv -> result.add(PermItem(name, name.substringAfterLast('.'), isGranted, isPrivileged = true))
+                isPriv -> result.add(PermItem(name, permShortLabel(name), isGranted, isPrivileged = true))
                 protection == PermissionInfo.PROTECTION_DANGEROUS ->
-                    result.add(PermItem(name, name.substringAfterLast('.'), isGranted, isPrivileged = false))
+                    result.add(PermItem(name, permShortLabel(name), isGranted, isPrivileged = false))
             }
         }
         // Sort: privileged first (by name), then runtime (by name)

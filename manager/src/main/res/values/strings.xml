@@ -1489,6 +1489,12 @@ Please try the command-line method instead.</string>
     <string name="settings_search">Search</string>
     <string name="home_backup_summary_saf">Backups saved to %1$s</string>
 
+    <string name="backup_history_scope">Scope: %1$s</string>
+    <string name="backup_history_status">Status: %1$s</string>
+    <string name="backup_status_success">Success</string>
+    <string name="backup_status_failed">Failed</string>
+    <string name="backup_history_rollback_from">(Rollback from %1$s)</string>
+
     <string name="device_control_animations_tile">Animations</string>
     <string name="device_control_operation_failed">Operation failed</string>
     <string name="device_control_service_not_available">Shizuku service not available</string>

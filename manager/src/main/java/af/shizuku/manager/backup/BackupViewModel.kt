@@ -127,7 +127,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 applyFilter()
             } catch (e: Exception) {
                 Timber.e(e, "loadApps failed")
-                _state.value = UiState.Error(e.message ?: "Unknown error")
+                _state.value = UiState.Error(e.message ?: "未知错误")
             }
         }
     }
@@ -184,17 +184,17 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
                 if (backedUpSomething) {
                     val outputDesc = if (safTreeUri != null) {
-                        safTreeUri.lastPathSegment ?: "backup folder"
+                        safTreeUri.lastPathSegment ?: "备份文件夹"
                     } else {
-                        outputDir?.absolutePath ?: "backup folder"
+                        outputDir?.absolutePath ?: "备份文件夹"
                     }
                     _events.emit(BackupEvent.BackupComplete(pkg, outputDesc))
                 } else {
-                    _events.emit(BackupEvent.Failure("No data could be read for $pkg. The app may block backup access."))
+                    _events.emit(BackupEvent.Failure("无法读取 $pkg 的数据，应用可能阻止了备份访问"))
                 }
             } catch (e: Exception) {
                 Timber.e(e, "Backup failed for $pkg")
-                _events.emit(BackupEvent.Failure("Backup failed for $pkg: ${e.message}"))
+                _events.emit(BackupEvent.Failure("备份 $pkg 失败：${e.message}"))
             } finally {
                 if (prepared) {
                     try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (ex: Exception) {
@@ -224,13 +224,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 val ok = cr.openFileDescriptor(externalTarUri, "r")?.use { pfd ->
                     ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
                 } ?: run {
-                    _events.emit(BackupEvent.Failure("Could not open backup file for $pkg"))
+                    _events.emit(BackupEvent.Failure("无法打开 $pkg 的备份文件"))
                     return@launch
                 }
                 _events.emit(BackupEvent.RestoreComplete(pkg, ok))
             } catch (e: Exception) {
                 Timber.e(e, "restoreExternalData failed for $pkg")
-                _events.emit(BackupEvent.Failure("Restore failed for $pkg: ${e.message}"))
+                _events.emit(BackupEvent.Failure("恢复 $pkg 失败：${e.message}"))
             } finally {
                 _busyPackages.value = _busyPackages.value - pkg
             }
@@ -376,9 +376,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             val outputDesc = if (safTreeUri != null) {
-                safTreeUri.lastPathSegment ?: "backup folder"
+                safTreeUri.lastPathSegment ?: "备份文件夹"
             } else {
-                outputDir?.absolutePath ?: "backup folder"
+                outputDir?.absolutePath ?: "备份文件夹"
             }
             _batchProgress.value = BatchProgress(current = total, total = total, succeeded = succeeded, failed = failed)
             _events.emit(BackupEvent.BatchComplete(succeeded, failed, outputDesc))
@@ -636,7 +636,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 _events.emit(BackupEvent.FreezeChanged(pkg, nowFrozen))
             } catch (e: Exception) {
                 Timber.e(e, "toggleFreeze failed for $pkg")
-                _events.emit(BackupEvent.Failure("Freeze toggle failed: ${e.message}"))
+                _events.emit(BackupEvent.Failure("冻结/解冻失败：${e.message}"))
             }
         }
     }

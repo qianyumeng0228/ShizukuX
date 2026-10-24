@@ -49,9 +49,9 @@ object RestoreHistoryManager {
         fun formatTime(): String = DISPLAY_FORMAT.format(Date(timestamp))
 
         fun scopeDisplay(): String = when (scope) {
-            "internal" -> "Internal only"
-            "external" -> "External only"
-            "both" -> "Internal + External"
+            "internal" -> "仅内部数据"
+            "external" -> "仅外部数据"
+            "both" -> "内部 + 外部数据"
             else -> scope
         }
     }

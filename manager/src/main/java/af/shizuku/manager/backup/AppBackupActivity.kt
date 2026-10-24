@@ -459,7 +459,12 @@ class AppBackupActivity : AppBarActivity() {
                 // Show options dialog for the selected entry
                 MaterialAlertDialogBuilder(this)
                     .setTitle(entry.appLabel)
-                    .setMessage("${entry.formatTime()}\nScope: ${entry.scopeDisplay()}\nStatus: ${if (entry.success) "Success" else "Failed"}${if (entry.isRollback) "\n(Rollback from ${entry.snapshotTimestamp?.let { PreRestoreManager.formatForDisplay(it) } ?: "?"})" else ""}")
+                    .setMessage(
+                        "${entry.formatTime()}\n" +
+                            getString(R.string.backup_history_scope, entry.scopeDisplay()) + "\n" +
+                            getString(R.string.backup_history_status, getString(if (entry.success) R.string.backup_status_success else R.string.backup_status_failed)) +
+                            (if (entry.isRollback) "\n" + getString(R.string.backup_history_rollback_from, entry.snapshotTimestamp?.let { PreRestoreManager.formatForDisplay(it) } ?: "?") else "")
+                    )
                     .setPositiveButton(R.string.backup_rollback_action) { _, _ ->
                         if (entry.success && !entry.isRollback) {
                             showSnapshotSelectionDialog(entry.packageName)
