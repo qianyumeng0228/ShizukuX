@@ -110,7 +110,9 @@ internal object ApkSigner {
         val serial = posInt(byteArrayOf(0x01))
 
         val tbsCert = seq(
-            ctx(0, byteArrayOf(0x02)),  // version = v3
+            // version = v3: [0] EXPLICIT INTEGER 2 → A0 03 02 01 02 (content must be a full
+            // INTEGER DER, not the raw 0x02 byte — OpenSSL would read the wrong tag/length next).
+            ctx(0, int(byteArrayOf(0x02))),
             serial,
             sigAlg,
             name,           // issuer
