@@ -27,16 +27,19 @@ import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.home.showAccessibilityDialog
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.receiver.NotifCancelReceiver
+import af.shizuku.manager.starter.Starter
 import af.shizuku.manager.starter.StarterActivity
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.IconStyleHelper
 import rikka.core.content.asActivity
+import rikka.core.util.ClipboardUtils
 import rikka.html.text.HtmlCompat
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
 import com.airbnb.mvrx.withState
 import af.shizuku.manager.utils.MotionUtils.applySpringTouch
+import android.widget.Toast
 
 class StartWirelessAdbViewHolder(
     private val binding: HomeStartWirelessAdbBinding,
@@ -95,6 +98,27 @@ class StartWirelessAdbViewHolder(
             // A stale STARTING state from a previously failed start must NOT block entry —
             // that deadlocked the button with "Shizuku is already starting" forever.
             if (StarterActivity.isActive) {
+                return@setOnClickListener
+            }
+
+            // 4.1 merged "start service" card: on rooted devices (or Samsung system-uid
+            // escalation), the primary button routes through the root starter instead of the
+            // wireless-debugging flow. This replaces the former standalone StartRoot card.
+            val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
+            if (isRootPath) {
+                val rootIntent = Intent(context, StarterActivity::class.java).apply {
+                    if (ShizukuSettings.isSamsungSystemUidEscalationEnabled() && !EnvironmentUtils.isRooted()) {
+                        putExtra(StarterActivity.EXTRA_IS_SYSTEM, true)
+                    } else {
+                        putExtra(StarterActivity.EXTRA_IS_ROOT, true)
+                    }
+                }
+                val rootActivity = context.asActivity<android.app.Activity>()
+                if (rootActivity != null) {
+                    rootActivity.startWithSceneTransition(rootIntent, binding.icon, "icon_root")
+                } else {
+                    context.startActivity(rootIntent)
+                }
                 return@setOnClickListener
             }
 
@@ -191,11 +215,74 @@ class StartWirelessAdbViewHolder(
             binding.button3.isVisible = false
             binding.button4.isVisible = false
         }
+
+        // 4.1 merged card: secondary "PC ADB command" viewer, migrated from the former
+        // StartAdb card. Visibility is controlled in onBind() (pre-11 always; Android 11+ only
+        // when the user explicitly enabled show_start_adb_home).
+        binding.button5.setOnClickListener { v: View ->
+            val activity = v.context.asActivity<android.app.Activity>() ?: return@setOnClickListener
+            MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.home_adb_button_view_command)
+                .setMessage(
+                    HtmlCompat.fromHtml(
+                        activity.getString(
+                            R.string.home_adb_dialog_view_command_message,
+                            Starter.adbCommand
+                        )
+                    )
+                )
+                .setPositiveButton(R.string.home_adb_dialog_view_command_copy_button) { _, _ ->
+                    if (ClipboardUtils.put(activity, Starter.adbCommand)) {
+                        Toast.makeText(
+                            activity,
+                            activity.getString(R.string.toast_copied_to_clipboard),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .setNeutralButton(R.string.home_adb_dialog_view_command_button_send) { _, _ ->
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, Starter.adbCommand)
+                    }
+                    activity.startActivity(
+                        Intent.createChooser(
+                            sendIntent,
+                            activity.getString(R.string.home_adb_dialog_view_command_button_send)
+                        )
+                    )
+                }
+                .show()
+        }
     }
 
     override fun onBind() {
         HomeEditMode.applyOverlay(containerBinding)
         IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_start_wireless_adb")
+
+        // 4.1 merged card: primary button label toggles Start/Restart based on whether the
+        // service is already running via root (data == rootRestart, passed from HomeAdapter).
+        val rootRestart = data == true
+        binding.button1.text = context.getString(
+            if (rootRestart) R.string.home_root_button_restart else R.string.home_root_button_start
+        )
+
+        // Description: on rooted devices show the root/Sui description; on non-rooted devices
+        // keep the wireless (or pre-11) description set in init().
+        val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
+        if (isRootPath) {
+            binding.text1.movementMethod = LinkMovementMethod.getInstance()
+            binding.text1.text = context.getString(
+                R.string.home_root_description,
+                "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
+                "Sui"
+            ).toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
+        }
+
+        // Secondary "PC ADB command" viewer: pre-Android-11 devices need it (the old StartAdb
+        // card's sole purpose); also surfaced when the user explicitly enabled show_start_adb_home.
+        binding.button5.isVisible = !EnvironmentUtils.isTlsSupported() || ShizukuSettings.showStartAdbHome()
     }
 
     @RequiresApi(Build.VERSION_CODES.R)

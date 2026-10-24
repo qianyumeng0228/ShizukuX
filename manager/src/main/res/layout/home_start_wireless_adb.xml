@@ -69,7 +69,15 @@
         android:text="@string/home_wireless_adb_one_tap_button"
         android:contentDescription="@string/accessibility_button_one_tap"
         app:icon="@drawable/ic_bolt_24" />
-        
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/button5"
+        style="@style/CardButton"
+        android:text="@string/home_adb_button_view_command"
+        android:contentDescription="@string/accessibility_button_view_command"
+        android:visibility="gone"
+        app:icon="@drawable/ic_code_24" />
+
     </LinearLayout>
 
 </LinearLayout>

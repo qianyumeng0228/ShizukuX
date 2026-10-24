@@ -27,20 +27,21 @@ class HomeAdapter(
         const val ID_STATUS = 0L
         const val ID_APPS = 1L
         const val ID_TERMINAL = 2L
-        const val ID_START_ROOT = 3L
-        const val ID_START_WADB = 4L
-        const val ID_START_ADB = 5L
+        // 3/4/5 retired (former ID_START_ROOT / ID_START_WADB / ID_START_ADB) — merged into ID_START below.
+        // Free slot 6 reused for the merged "start service" card (7=ADB_PERMISSION_LIMITED; 12 reserved upstream).
+        const val ID_START = 6L
         const val ID_ADB_PERMISSION_LIMITED = 7L
         const val ID_AUTOMATION = 8L
         const val ID_COMPANION = 9L
         const val ID_START_VIA_STOCK = 10L
         // 12 reserved (upstream DeviceControl id) — ShizukuX uses 14 below to keep F1/F2 ids distinct.
+        // ID_PERMISSION_MANAGER (13) is now a fixed-area card, intentionally excluded from DEFAULT_ORDER.
         const val ID_PERMISSION_MANAGER = 13L
         const val ID_DEVICE_CONTROL = 14L
         const val ID_BACKUP_APPS = 15L
 
         private val DEFAULT_ORDER = listOf(
-            ID_TERMINAL, ID_START_ROOT, ID_START_WADB, ID_START_ADB, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_PERMISSION_MANAGER, ID_COMPANION
+            ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
@@ -209,6 +210,10 @@ class HomeAdapter(
         if (adbPermission) {
             addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS); fixedCardCount++
         }
+        // Permission manager has no visibility gate (always-on once authorized); promoted to the
+        // fixed area so it sits next to "Shizuku authorization management" and cannot be
+        // reordered/hidden via edit mode. (4.1 Item A)
+        addItem(PermissionManagerViewHolder.CREATOR, status, ID_PERMISSION_MANAGER); fixedCardCount++
         if (running && !adbPermission) {
             addItem(AdbPermissionLimitedViewHolder.CREATOR, status, ID_ADB_PERMISSION_LIMITED); fixedCardCount++
         }
@@ -220,19 +225,17 @@ class HomeAdapter(
             when (id) {
                 ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                     addItem(TerminalViewHolder.CREATOR, status, id)
-                ID_START_ROOT -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled())))
-                    addItem(StartRootViewHolder.CREATOR, rootRestart, id)
-                ID_START_WADB -> if (isEditMode || (isPrimaryUser && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0)))
-                    addItem(startWadbCreator, null, id)
-                ID_START_ADB -> if (isEditMode || (isPrimaryUser && ShizukuSettings.showStartAdbHome()))
-                    addItem(StartAdbViewHolder.CREATOR, null, id)
+                // Merged "start service" card (4.1 Item B): replaces the former root / wireless /
+                // PC-ADB three cards. Visibility is the OR of the three original gates; the
+                // ViewHolder itself picks root vs. wireless at click time based on device state.
+                ID_START -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled() || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0 || ShizukuSettings.showStartAdbHome())))
+                    addItem(startWadbCreator, rootRestart, id)
                 ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
                     addItem(AutomationViewHolder.CREATOR, null, id)
                 // No dedicated setting key exists for these cards, so they are always visible
                 // (hidden only via edit-mode long-press), matching upstream behavior.
                 ID_BACKUP_APPS -> addItem(AppBackupViewHolder.CREATOR, status, id)
                 ID_DEVICE_CONTROL -> addItem(DeviceControlViewHolder.CREATOR, status, id)
-                ID_PERMISSION_MANAGER -> addItem(PermissionManagerViewHolder.CREATOR, status, id)
                 ID_COMPANION -> {
                     // The compat hub is what lets third-party apps detect ShizukuX, so surface
                     // this card whenever it still needs action — the hub isn't installed yet, or
