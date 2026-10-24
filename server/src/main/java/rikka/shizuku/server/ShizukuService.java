@@ -1685,8 +1685,28 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         String target = cmd[cmd.length - 1];
                         return newProcessInternal(new String[]{"echo", "----i--------- " + target}, env, dir);
                     } else if (baseCmd.equals("chmod") || baseCmd.equals("chown")) {
-                        LOGGER.i("SUBridge: intercepting " + baseCmd + ", returning mock success");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        // Try the real command first (shell UID may own the target), and only
+                        // fall back to a mock success when it actually fails — previously we
+                        // always returned mock, which hid real permission errors and skipped
+                        // legitimate chmod/chown on shell-writable paths.
+                        LOGGER.i("SUBridge: trying real " + baseCmd + " before mock fallback: " + String.join(" ", cmd));
+                        java.lang.Process p = null;
+                        try {
+                            p = Runtime.getRuntime().exec(cmd);
+                            int exitCode = p.waitFor();
+                            if (exitCode == 0) {
+                                LOGGER.i("SUBridge: " + baseCmd + " succeeded for real, returning real process");
+                                return newProcessInternal(cmd, env, dir);
+                            } else {
+                                LOGGER.w("SUBridge: " + baseCmd + " exited with " + exitCode + ", falling back to mock success");
+                                return newProcessInternal(new String[]{"true"}, env, dir);
+                            }
+                        } catch (Exception e) {
+                            LOGGER.w(e, "SUBridge: " + baseCmd + " exec threw, falling back to mock success");
+                            return newProcessInternal(new String[]{"true"}, env, dir);
+                        } finally {
+                            if (p != null) p.destroy();
+                        }
                     } else if (baseCmd.equals("iptables") || baseCmd.equals("ip6tables")) {
                         String fullCmd = String.join(" ", cmd);
                         if (fullCmd.contains("--uid-owner")) {
