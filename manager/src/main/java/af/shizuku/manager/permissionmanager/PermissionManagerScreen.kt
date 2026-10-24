@@ -5,7 +5,6 @@ import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -253,10 +252,18 @@ private fun AppRow(app: AppItem, onClick: () -> Unit) {
         }.getOrNull()
     }
 
+    // Use Material3's clickable Card overload rather than Modifier.clickable: the latter reads
+    // LocalIndication, and on Compose Foundation 1.7+ that threw
+    // "clickable only supports IndicationNodeFactory instances provided to LocalIndication"
+    // when a legacy Indication was in scope (SHIZUKUPLUS-72 / #309).
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -296,6 +303,7 @@ private fun AppRow(app: AppItem, onClick: () -> Unit) {
             tint = MaterialTheme.colorScheme.outline,
             modifier = Modifier.size(20.dp)
         )
+    }
     }
 }
 
@@ -393,11 +401,17 @@ private fun PermSectionHeader(title: String) {
 
 @Composable
 private fun PermToggleRow(perm: PermItem, onToggle: (PermItem, Boolean) -> Unit) {
-    // Row handles the click; Switch.onCheckedChange=null avoids double-firing.
+    // Card(onClick) handles the click; Switch.onCheckedChange=null avoids double-firing.
+    // Modifier.clickable would read LocalIndication and crash on Compose Foundation 1.7+
+    // with a legacy Indication in scope (SHIZUKUPLUS-72 / #309).
+    Card(
+        onClick = { onToggle(perm, !perm.isGranted) },
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onToggle(perm, !perm.isGranted) }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -417,6 +431,7 @@ private fun PermToggleRow(perm: PermItem, onToggle: (PermItem, Boolean) -> Unit)
             )
         }
         Switch(checked = perm.isGranted, onCheckedChange = null)
+    }
     }
 }
 
