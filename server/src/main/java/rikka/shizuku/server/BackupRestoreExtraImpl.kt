@@ -602,22 +602,45 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun freezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return ShellExecutor.execCode("pm", "disable-user", "--user", "0", packageName) == 0
+        val ok = ShellExecutor.execCode("pm", "disable-user", "--user", "0", packageName) == 0
+        if (ok) frozenCache = null   // state changed → drop frozen-package cache
+        return ok
     }
 
     override fun unfreezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return ShellExecutor.execCode("pm", "enable", "--user", "0", packageName) == 0
+        val ok = ShellExecutor.execCode("pm", "enable", "--user", "0", packageName) == 0
+        if (ok) frozenCache = null   // state changed → drop frozen-package cache
+        return ok
+    }
+
+    // Frozen (disabled) package set. Built with ONE `pm list packages -d` call instead of
+    // one `pm dump <pkg>` per package (~700-1000 ms each → 149 packages ≈ 2 min).
+    // Invalidate on freeze/unfreeze and after a short TTL (installs/uninstalls by other
+    // callers land within the window). Semantics identical to the old pm dump parse:
+    // disabled = enabled state DISABLED(2)/DISABLED_USER(3) — exactly what `pm list -d` reports.
+    @Volatile private var frozenCache: Set<String>? = null
+    @Volatile private var frozenCacheTime: Long = 0L
+    private val frozenCacheTtlMs = 15_000L
+
+    private fun refreshFrozenCache() {
+        frozenCache = try {
+            exec("pm", "list", "packages", "-d").lines()
+                .map { it.removePrefix("package:").trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+        } catch (_: Exception) { emptySet() }
+        frozenCacheTime = System.currentTimeMillis()
     }
 
     override fun isAppFrozen(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        val dump = exec("pm", "dump", packageName)
-        // "enabled=3" means COMPONENT_ENABLED_STATE_DISABLED_USER
-        return dump.lines().any { line ->
-            val t = line.trim()
-            t.startsWith("enabled=") && (t.contains("=3") || t.contains("=2"))
+        var cache = frozenCache
+        if (cache == null || System.currentTimeMillis() - frozenCacheTime > frozenCacheTtlMs) {
+            refreshFrozenCache()
+            cache = frozenCache
         }
+        return cache?.contains(packageName) == true
     }
 
     // ── SMS Restore ───────────────────────────────────────────────────────────
