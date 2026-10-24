@@ -202,10 +202,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final DeviceControlExtraImpl deviceControlExtra = new DeviceControlExtraImpl();
     private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl();
 
-    private void grantRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
-        Android17Compat.grantRuntimePermission(packageName, permName, userId);
-    }
-
     // Re-grants the OS-level runtime permission for every already-authorized app on each server
     // start. Prior to the 741df2f4 fix (2026-07-19), grantRuntimePermission silently failed because
     // no installed package defined moe.shizuku.manager.permission.API_V23 — so apps authorized
@@ -251,50 +247,6 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         }
         LOGGER.i("migratePermissionGrants: granted/refreshed %d permission(s)", migrated);
         configManager.markPermGrantMigrationDone();
-    }
-
-    private void revokeRuntimePermissionRobust(String packageName, String permName, int userId) throws Throwable {
-        try {
-            PermissionManagerApis.revokeRuntimePermission(packageName, permName, userId);
-        } catch (Throwable e) {
-            if (Build.VERSION.SDK_INT >= 34) {
-                try {
-                    Object permissionManager = ServiceManager.getService("permissionmgr");
-                    Object iPermissionManager = Class.forName("android.permission.IPermissionManager$Stub")
-                            .getMethod("asInterface", IBinder.class)
-                            .invoke(null, permissionManager);
-                    for (java.lang.reflect.Method m : iPermissionManager.getClass().getMethods()) {
-                        if (m.getName().equals("revokeRuntimePermission")) {
-                            Class<?>[] params = m.getParameterTypes();
-                            if (params.length == 3) {
-                                m.invoke(iPermissionManager, packageName, permName, userId);
-                                return;
-                            } else if (params.length == 4) {
-                                if (params[2] == String.class) {
-                                    m.invoke(iPermissionManager, packageName, permName, "default:0", userId);
-                                } else if (params[2] == int.class) {
-                                    m.invoke(iPermissionManager, packageName, permName, 0, userId);
-                                } else {
-                                    m.invoke(iPermissionManager, packageName, permName, null, userId);
-                                }
-                                return;
-                            } else if (params.length == 5) {
-                                // Sometimes it has a reason string too
-                                if (params[2] == String.class) {
-                                    m.invoke(iPermissionManager, packageName, permName, "default:0", userId, "Shizuku");
-                                } else if (params[2] == int.class) {
-                                    m.invoke(iPermissionManager, packageName, permName, 0, userId, "Shizuku");
-                                }
-                                return;
-                            }
-                        }
-                    }
-                } catch (Throwable refE) {
-                    LOGGER.w("revokeRuntimePermission reflection fallback failed", refE);
-                }
-            }
-            throw new Exception("revokeRuntimePermission failed", e);
-        }
     }
 
     private void disablePhantomProcessKiller() {
