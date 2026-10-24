@@ -73,14 +73,14 @@ class DeviceControlActivity : AppCompatActivity() {
         })
 
         // Set initial volume
-        runSafe("getVolume") {
+        runSafe("读取音量") {
             val vol = DeviceControlManager.getStreamVolume(3)
             if (vol >= 0) volumeSeek.progress = vol
             true
         }
 
         // Set initial brightness (read current system value)
-        runSafe("getBrightness") {
+        runSafe("读取亮度") {
             val bright = DeviceControlManager.getSetting("system", "screen_brightness")?.toIntOrNull()
             if (bright != null) brightnessSeek.progress = bright
             true
@@ -91,13 +91,13 @@ class DeviceControlActivity : AppCompatActivity() {
 
         // ── Power ─────────────────────────────────────────────────────────────
         findViewById<Button>(R.id.btn_reboot).setOnClickListener {
-            runSafe("reboot") { DeviceControlManager.reboot(null) }
+            runSafe("重启") { DeviceControlManager.reboot(null) }
         }
         findViewById<Button>(R.id.btn_reboot_recovery).setOnClickListener {
-            runSafe("reboot(recovery)") { DeviceControlManager.reboot("recovery") }
+            runSafe("重启到 Recovery") { DeviceControlManager.reboot("recovery") }
         }
         findViewById<Button>(R.id.btn_shutdown).setOnClickListener {
-            runSafe("shutdown") { DeviceControlManager.shutdown() }
+            runSafe("关机") { DeviceControlManager.shutdown() }
         }
     }
 
@@ -118,14 +118,14 @@ class DeviceControlActivity : AppCompatActivity() {
     private fun runSafe(label: String, block: () -> Boolean) {
         try {
             if (!Shizuku.pingBinder()) {
-                setStatus("ERROR: Shizuku binder not available")
-                Toast.makeText(this, "Shizuku service not running", Toast.LENGTH_SHORT).show()
+                setStatus("错误：Shizuku Binder 不可用")
+                Toast.makeText(this, "Shizuku 服务未运行", Toast.LENGTH_SHORT).show()
                 return
             }
             val ok = block()
-            setStatus("$label: ${if (ok) "OK" else "FAILED (returned false)"}")
+            setStatus("$label：${if (ok) "成功" else "失败（返回 false）"}")
         } catch (e: Exception) {
-            setStatus("$label: ERROR - ${e.message}")
+            setStatus("$label：错误 - ${e.message}")
         }
     }
 
