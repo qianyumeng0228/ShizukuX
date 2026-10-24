@@ -1,38 +1,23 @@
 package rikka.shizuku.server
 
 import af.shizuku.server.IPackageGovernorExtra
+import rikka.shizuku.server.util.ShellExecutor
 
 class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
 
-    private fun exec(vararg args: String): Boolean = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try { proc.waitFor() == 0 } finally { proc.destroy() }
-    } catch (_: Exception) { false }
-
-    private fun execOutput(vararg args: String): String = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try {
-            val text = proc.inputStream.bufferedReader().use { it.readText().trim() }
-            proc.waitFor()
-            text
-        } finally {
-            proc.destroy()
-        }
-    } catch (_: Exception) { "" }
-
     override fun grantPermission(packageName: String?, permission: String?): Boolean {
         if (packageName.isNullOrBlank() || permission.isNullOrBlank()) return false
-        return exec("pm", "grant", "--user", "0", packageName, permission)
+        return ShellExecutor.execBool("pm", "grant", "--user", "0", packageName, permission)
     }
 
     override fun revokePermission(packageName: String?, permission: String?): Boolean {
         if (packageName.isNullOrBlank() || permission.isNullOrBlank()) return false
-        return exec("pm", "revoke", "--user", "0", packageName, permission)
+        return ShellExecutor.execBool("pm", "revoke", "--user", "0", packageName, permission)
     }
 
     override fun getGrantedPermissions(packageName: String?): List<String> {
         if (packageName.isNullOrBlank()) return emptyList()
-        val output = execOutput("pm", "dump", packageName)
+        val output = ShellExecutor.exec("pm", "dump", packageName)
         val granted = mutableListOf<String>()
         var inGrantedSection = false
         for (line in output.lines()) {
@@ -48,51 +33,51 @@ class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
 
     override fun uninstallForUser(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return exec("pm", "uninstall", "--user", "0", packageName)
+        return ShellExecutor.execBool("pm", "uninstall", "--user", "0", packageName)
     }
 
     override fun restoreSystemApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return exec("pm", "install-existing", "--user", "0", packageName)
+        return ShellExecutor.execBool("pm", "install-existing", "--user", "0", packageName)
     }
 
     override fun suspendApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return exec("pm", "suspend", "--user", "0", packageName)
+        return ShellExecutor.execBool("pm", "suspend", "--user", "0", packageName)
     }
 
     override fun unsuspendApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return exec("pm", "unsuspend", "--user", "0", packageName)
+        return ShellExecutor.execBool("pm", "unsuspend", "--user", "0", packageName)
     }
 
     override fun isAppSuspended(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        val output = execOutput("pm", "dump", packageName)
+        val output = ShellExecutor.exec("pm", "dump", packageName)
         return output.lines().any { it.trim() == "suspended=true" }
     }
 
     override fun installApk(apkPath: String?): Boolean {
         if (apkPath.isNullOrBlank()) return false
-        return exec("pm", "install", "-g", apkPath)
+        return ShellExecutor.execBool("pm", "install", "-g", apkPath)
     }
 
     override fun isAppDebuggable(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
         // run-as exits 0 only when the app is debuggable; non-zero means not debuggable or not installed.
-        return exec("run-as", packageName, "true")
+        return ShellExecutor.execBool("run-as", packageName, "true")
     }
 
     override fun isBackupAllowed(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        val output = execOutput("pm", "dump", packageName)
+        val output = ShellExecutor.exec("pm", "dump", packageName)
         // pm dump shows "allowBackup=true" or "allowBackup=false" in the package info block
         return output.lines().any { it.trim().equals("allowBackup=true", ignoreCase = true) }
     }
 
     override fun getAppDataDir(packageName: String?): String? {
         if (packageName.isNullOrBlank()) return null
-        val output = execOutput("pm", "dump", packageName)
+        val output = ShellExecutor.exec("pm", "dump", packageName)
         // Parse "dataDir=/data/data/com.example.app" from pm dump output
         for (line in output.lines()) {
             val trimmed = line.trim()

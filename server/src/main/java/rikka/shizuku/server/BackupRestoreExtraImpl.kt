@@ -10,6 +10,7 @@ import android.util.Log
 import af.shizuku.common.compat.InstalledPackagesCompat
 import af.shizuku.server.IBackupRestoreExtra
 import rikka.shizuku.server.util.InputValidationUtils
+import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.io.InputStream
 import java.util.concurrent.CountDownLatch
@@ -43,6 +44,11 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         }.also { it.isDaemon = true }.start()
     }
 
+    // NOTE: this private exec intentionally drains proc.errorStream on a daemon thread (see
+    // drainQuietly): pm/dumpsys/bmgr output can be chatty on stderr and a filled stderr pipe
+    // buffer would deadlock the stdout read. ShellExecutor.exec does not drain stderr, so this
+    // helper stays local for the output-reading calls; exit-code-only calls below go through
+    // ShellExecutor.execCode.
     private fun exec(vararg args: String): String = try {
         val proc = Runtime.getRuntime().exec(args)
         try {
@@ -54,11 +60,6 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             proc.destroy()
         }
     } catch (_: Exception) { "" }
-
-    private fun execExit(vararg args: String): Int = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try { proc.waitFor() } finally { proc.destroy() }
-    } catch (_: Exception) { -1 }
 
     private fun pipe(vararg args: String): ParcelFileDescriptor? = try {
         val (readSide, writeSide) = ParcelFileDescriptor.createPipe()
@@ -185,7 +186,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun forceStop(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return execExit("am", "force-stop", packageName) == 0
+        return ShellExecutor.execCode("am", "force-stop", packageName) == 0
     }
 
     override fun clearAppData(packageName: String?): Boolean {
@@ -224,7 +225,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         } catch (e: Exception) {
             Log.w(TAG, "clearAppData IPC failed for $packageName, falling back", e)
         }
-        return execExit("pm", "clear", packageName) == 0
+        return ShellExecutor.execCode("pm", "clear", packageName) == 0
     }
 
     // ── ADB Backup / Restore ──────────────────────────────────────────────────
@@ -331,15 +332,12 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun commitInstallSession(sessionId: Int): Boolean {
         if (sessionId < 0) return false
-        return execExit("pm", "install-commit", sessionId.toString()) == 0
+        return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
     }
 
     override fun abandonInstallSession(sessionId: Int) {
         if (sessionId < 0) return
-        try {
-            val proc = Runtime.getRuntime().exec(arrayOf("pm", "install-abandon", sessionId.toString()))
-            try { proc.waitFor() } finally { proc.destroy() }
-        } catch (_: Exception) {}
+        ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
     }
 
     // ── Permission State ──────────────────────────────────────────────────────
@@ -395,7 +393,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         for (perm in permissions) {
             val name = perm.getString("name") ?: continue
             if (!perm.getBoolean("granted", false)) continue
-            if (execExit("pm", "grant", packageName, name) == 0) count++
+            if (ShellExecutor.execCode("pm", "grant", packageName, name) == 0) count++
         }
         return count
     }
@@ -409,7 +407,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun requestBmgrBackup(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return execExit("bmgr", "backup", packageName) == 0
+        return ShellExecutor.execCode("bmgr", "backup", packageName) == 0
     }
 
     override fun listBmgrBackupSets(): List<Bundle> {
@@ -467,7 +465,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         var count = 0
         for (key in settings.keySet()) {
             val value = settings.getString(key) ?: continue
-            if (execExit("settings", "put", ns, key, value) == 0) count++
+            if (ShellExecutor.execCode("settings", "put", ns, key, value) == 0) count++
         }
         return count
     }
@@ -571,12 +569,12 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun freezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return execExit("pm", "disable-user", "--user", "0", packageName) == 0
+        return ShellExecutor.execCode("pm", "disable-user", "--user", "0", packageName) == 0
     }
 
     override fun unfreezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
-        return execExit("pm", "enable", "--user", "0", packageName) == 0
+        return ShellExecutor.execCode("pm", "enable", "--user", "0", packageName) == 0
     }
 
     override fun isAppFrozen(packageName: String?): Boolean {
@@ -600,7 +598,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             val date    = msg.getLong("date", System.currentTimeMillis())
             val type    = msg.getInt("type", 1)
             val read    = msg.getInt("read", 1)
-            val result = execExit(
+            val result = ShellExecutor.execCode(
                 "content", "insert",
                 "--uri", "content://sms",
                 "--bind", "address:s:$address",
@@ -618,11 +616,11 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
 
     override fun revokeRuntimePermission(packageName: String?, permission: String?): Boolean {
         if (packageName.isNullOrBlank() || permission.isNullOrBlank()) return false
-        return execExit("pm", "revoke", packageName, permission) == 0
+        return ShellExecutor.execCode("pm", "revoke", packageName, permission) == 0
     }
 
     override fun grantRuntimePermission(packageName: String?, permission: String?): Boolean {
         if (packageName.isNullOrBlank() || permission.isNullOrBlank()) return false
-        return execExit("pm", "grant", packageName, permission) == 0
+        return ShellExecutor.execCode("pm", "grant", packageName, permission) == 0
     }
 }

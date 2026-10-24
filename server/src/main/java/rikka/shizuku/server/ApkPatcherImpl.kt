@@ -2,6 +2,7 @@ package rikka.shizuku.server
 
 import android.os.ParcelFileDescriptor
 import af.shizuku.server.IApkPatcher
+import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
@@ -13,22 +14,6 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
 
     // pkg → list of saved original APK paths (base first, then splits)
     private val sessions = ConcurrentHashMap<String, List<String>>()
-
-    private fun exec(vararg args: String): String = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try {
-            val out = proc.inputStream.bufferedReader().readText().trim()
-            proc.waitFor()
-            out
-        } finally {
-            proc.destroy()
-        }
-    } catch (_: Exception) { "" }
-
-    private fun execCode(vararg args: String): Int = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try { proc.waitFor() } finally { proc.destroy() }
-    } catch (_: Exception) { -1 }
 
     private fun pipe(vararg args: String): ParcelFileDescriptor? = try {
         val (readSide, writeSide) = ParcelFileDescriptor.createPipe()
@@ -67,7 +52,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
     } catch (_: Exception) { false }
 
     private fun findAllApks(packageName: String): List<String> {
-        val out = exec("pm", "path", packageName)
+        val out = ShellExecutor.exec("pm", "path", packageName)
         return out.lines()
             .filter { it.startsWith("package:") }
             .map { it.removePrefix("package:").trim() }
@@ -85,7 +70,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
             add("pm"); add("install-create")
             if (grantPerms) add("-g")
         }
-        val sessionOut = exec(*sessionArgs.toTypedArray())
+        val sessionOut = ShellExecutor.exec(*sessionArgs.toTypedArray())
         val sessionId = Regex("\\[(\\d+)]").find(sessionOut)?.groupValues?.get(1)?.toIntOrNull()
             ?: return false
 
@@ -97,12 +82,12 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
                 fileName.contains("_dbg_")  -> fileName.substringAfter("_dbg_")
                 else                        -> fileName
             }
-            if (execCode("pm", "install-write", sessionId.toString(), splitName, path) != 0) {
-                execCode("pm", "install-abandon", sessionId.toString())
+            if (ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path) != 0) {
+                ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
                 return false
             }
         }
-        return execCode("pm", "install-commit", sessionId.toString()) == 0
+        return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
     }
 
     override fun prepareTempDebug(packageName: String?): Boolean {
@@ -119,7 +104,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         for (path in apkPaths) {
             val fileName = File(path).name  // base.apk, split_config.arm64_v8a.apk, etc.
             val dest = "$TMP_DIR/${packageName}_orig_$fileName"
-            if (execCode("cp", path, dest) != 0) {
+            if (ShellExecutor.execCode("cp", path, dest) != 0) {
                 origPaths.forEach { File(it).delete() }
                 return false
             }
@@ -148,7 +133,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         }
 
         // pm uninstall -k preserves all app data
-        if (execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
+        if (ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
             origPaths.forEach { File(it).delete() }
             patchedPaths.forEach { File(it).delete() }
             return false
@@ -184,7 +169,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         if (packageName.isNullOrBlank()) return false
         val origPaths = sessions[packageName] ?: return false
 
-        val ok = execCode("pm", "uninstall", "--user", "0", "-k", packageName) == 0 &&
+        val ok = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) == 0 &&
                  installViaSession(origPaths)
 
         sessions.remove(packageName)

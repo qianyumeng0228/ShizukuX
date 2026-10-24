@@ -2,41 +2,26 @@ package rikka.shizuku.server
 
 import android.os.Bundle
 import af.shizuku.server.IDisplayTunerExtra
+import rikka.shizuku.server.util.ShellExecutor
 
 class DisplayTunerExtraImpl : IDisplayTunerExtra.Stub() {
 
-    private fun exec(vararg args: String): Boolean = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try { proc.waitFor() == 0 } finally { proc.destroy() }
-    } catch (_: Exception) { false }
-
-    private fun execOutput(vararg args: String): String = try {
-        val proc = Runtime.getRuntime().exec(args)
-        try {
-            val text = proc.inputStream.bufferedReader().use { it.readText().trim() }
-            proc.waitFor()
-            text
-        } finally {
-            proc.destroy()
-        }
-    } catch (_: Exception) { "" }
-
     override fun setDisplaySize(width: Int, height: Int): Boolean {
         if (width <= 0 || height <= 0) return resetDisplaySize()
-        return exec("wm", "size", "${width}x${height}")
+        return ShellExecutor.execBool("wm", "size", "${width}x${height}")
     }
 
-    override fun resetDisplaySize(): Boolean = exec("wm", "size", "reset")
+    override fun resetDisplaySize(): Boolean = ShellExecutor.execBool("wm", "size", "reset")
 
     override fun setDisplayDensity(dpi: Int): Boolean {
         if (dpi <= 0) return resetDisplayDensity()
-        return exec("wm", "density", dpi.toString())
+        return ShellExecutor.execBool("wm", "density", dpi.toString())
     }
 
-    override fun resetDisplayDensity(): Boolean = exec("wm", "density", "reset")
+    override fun resetDisplayDensity(): Boolean = ShellExecutor.execBool("wm", "density", "reset")
 
     override fun getDisplaySize(): Bundle {
-        val output = execOutput("wm", "size")
+        val output = ShellExecutor.exec("wm", "size")
         val bundle = Bundle()
         var hasOverride = false
         for (line in output.lines()) {
@@ -67,7 +52,7 @@ class DisplayTunerExtraImpl : IDisplayTunerExtra.Stub() {
     }
 
     override fun getDisplayDensity(): Int {
-        val output = execOutput("wm", "density")
+        val output = ShellExecutor.exec("wm", "density")
         var density = -1
         for (line in output.lines()) {
             val lower = line.lowercase()
@@ -79,7 +64,7 @@ class DisplayTunerExtraImpl : IDisplayTunerExtra.Stub() {
     }
 
     override fun getPhysicalDensity(): Int {
-        val output = execOutput("wm", "density")
+        val output = ShellExecutor.exec("wm", "density")
         for (line in output.lines()) {
             if (line.lowercase().startsWith("physical")) {
                 return line.substringAfterLast(":").trim().toIntOrNull() ?: -1

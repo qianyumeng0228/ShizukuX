@@ -6,6 +6,7 @@ import android.os.IBinder
 import android.os.ServiceManager
 import android.util.Log
 import af.shizuku.server.IWindowManagerExtra
+import rikka.shizuku.server.util.ShellExecutor
 
 /**
  * Implementation of WindowManagerPlus using Android's window management APIs.
@@ -64,10 +65,7 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
 
             // Fallback: Use settings command
             val value = if (enabled) "1" else "0"
-            val proc = Runtime.getRuntime().exec(
-                arrayOf("settings", "put", "global", "force_resizable_activities", value)
-            )
-            try { proc.waitFor() } finally { proc.destroy() }
+            ShellExecutor.execCode("settings", "put", "global", "force_resizable_activities", value)
             Log.d(TAG, "Set force_resizable_activities setting to $value")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set force resizable for $packageName", e)
@@ -120,10 +118,7 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
 
             // Fallback: Use am command
             if (region != null) {
-                val proc = Runtime.getRuntime().exec(
-                    arrayOf("am", "task", "lock", taskId.toString())
-                )
-                try { proc.waitFor() } finally { proc.destroy() }
+                ShellExecutor.execBool("am", "task", "lock", taskId.toString())
                 Log.d(TAG, "Locked task $taskId using am command")
             }
         } catch (e: Exception) {
@@ -204,23 +199,14 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
 
         try {
             // Store bubble bar settings in secure settings
-            val proc = Runtime.getRuntime().exec(
-                arrayOf("settings", "put", "secure", "bubble_bar_position", position)
-            )
-            try { proc.waitFor() } finally { proc.destroy() }
+            ShellExecutor.execCode("settings", "put", "secure", "bubble_bar_position", position)
 
             settings?.getString("visibility")?.let { vis ->
-                val proc2 = Runtime.getRuntime().exec(
-                    arrayOf("settings", "put", "secure", "bubble_bar_visibility", vis)
-                )
-                try { proc2.waitFor() } finally { proc2.destroy() }
+                ShellExecutor.execCode("settings", "put", "secure", "bubble_bar_visibility", vis)
             }
 
             settings?.getString("size")?.let { sz ->
-                val proc3 = Runtime.getRuntime().exec(
-                    arrayOf("settings", "put", "secure", "bubble_bar_size", sz)
-                )
-                try { proc3.waitFor() } finally { proc3.destroy() }
+                ShellExecutor.execCode("settings", "put", "secure", "bubble_bar_size", sz)
             }
 
             Log.d(TAG, "Bubble bar configuration saved")
@@ -298,10 +284,7 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
 
             // Fallback: Try cmd window command (may not work on all devices)
             val state = if (enabled) "true" else "false"
-            val proc = Runtime.getRuntime().exec(
-                arrayOf("cmd", "window", "set-always-on-top", taskId.toString(), state)
-            )
-            try { proc.waitFor() } finally { proc.destroy() }
+            ShellExecutor.execBool("cmd", "window", "set-always-on-top", taskId.toString(), state)
             Log.d(TAG, "Executed cmd window command for always-on-top")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set always-on-top for task $taskId", e)
@@ -312,8 +295,7 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
         try {
             val value = if (enabled) "full" else "none"
             // Use 'policy' command if available, otherwise fallback to settings
-            val proc = Runtime.getRuntime().exec(arrayOf("settings", "put", "global", "policy_control", "immersive.full=*=$value"))
-            try { proc.waitFor() } finally { proc.destroy() }
+            ShellExecutor.execCode("settings", "put", "global", "policy_control", "immersive.full=*=$value")
         } catch (e: Exception) {
             // Ignore
         }
@@ -323,13 +305,10 @@ class WindowManagerPlusImpl : IWindowManagerExtra.Stub() {
         try {
             // Samsung DeX often locks to 60Hz. Bypassing SemRefreshRateManager via settings.
             val value = if (enabled) "1" else "0"
-            val proc = Runtime.getRuntime().exec(arrayOf("settings", "put", "system", "min_refresh_rate", if (enabled) "120.0" else "60.0"))
-            try { proc.waitFor() } finally { proc.destroy() }
-            val proc2 = Runtime.getRuntime().exec(arrayOf("settings", "put", "system", "peak_refresh_rate", if (enabled) "120.0" else "60.0"))
-            try { proc2.waitFor() } finally { proc2.destroy() }
+            ShellExecutor.execCode("settings", "put", "system", "min_refresh_rate", if (enabled) "120.0" else "60.0")
+            ShellExecutor.execCode("settings", "put", "system", "peak_refresh_rate", if (enabled) "120.0" else "60.0")
             // Samsung specific DeX flag
-            val proc3 = Runtime.getRuntime().exec(arrayOf("settings", "put", "global", "dex_force_high_refresh_rate", value))
-            try { proc3.waitFor() } finally { proc3.destroy() }
+            ShellExecutor.execCode("settings", "put", "global", "dex_force_high_refresh_rate", value)
         } catch (e: Exception) {
             // Ignore
         }

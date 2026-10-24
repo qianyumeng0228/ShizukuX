@@ -9,6 +9,7 @@ import android.util.Log
 import af.shizuku.server.IStorageProxy
 import rikka.shizuku.server.util.BinderCallLogger
 import rikka.shizuku.server.util.InputValidationUtils
+import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 
 class StorageProxyImpl : IStorageProxy.Stub() {
@@ -160,10 +161,7 @@ class StorageProxyImpl : IStorageProxy.Stub() {
                 val pkg = extractPackageName(srcPath)
                     ?.takeIf { InputValidationUtils.isValidPackageName(it) }
                     ?: return false
-                return try {
-                    val proc = Runtime.getRuntime().exec(arrayOf("run-as", pkg, "cp", srcPath, destPath!!))
-                    try { proc.waitFor() == 0 } finally { proc.destroy() }
-                } catch (_: Exception) { false }
+                return ShellExecutor.execBool("run-as", pkg, "cp", srcPath, destPath!!)
             }
             false
         }
