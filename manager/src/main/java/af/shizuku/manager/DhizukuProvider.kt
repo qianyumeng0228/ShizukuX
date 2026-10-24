@@ -115,10 +115,24 @@ class DhizukuProvider : ContentProvider() {
             // descriptor BINDER_DESCRIPTOR to ask us to forward a transact() call
             // to another binder using *our* identity (Device Owner).
             if (code == TRANSACT_CODE_REMOTE_BINDER) {
-                data.enforceInterface(BINDER_DESCRIPTOR)
+                // Security gate first — must run before consuming any parcel data.
+                // enforceCallingPermission() verifies caller identity (Dhizuku app DB with
+                // signature check, falling back to Shizuku authorization) and throws
+                // SecurityException on denial; it is a stricter equivalent of the upstream
+                // isCallerAuthorized() gate.
                 enforceCallingPermission("remote_transact")
 
-                val targetBinder = data.readStrongBinder()
+                // Dhizuku clients may write several interface descriptor variants. Samsung
+                // Knox on Android 16 can throw from enforceInterface() *before* consuming the
+                // descriptor token, leaving data position at 0; readStrongBinder() would then
+                // read the descriptor bytes as a binder and corrupt the relay ("Binder
+                // invocation to an incorrect interface"). Skipping the descriptor with
+                // readString() is safe here: the authorization gate above is the real
+                // security boundary; the descriptor is Dhizuku-internal bookkeeping.
+                data.setDataPosition(0)
+                data.readString() // consume/skip the interface descriptor token
+
+                val targetBinder = data.readStrongBinder() ?: return false
                 val targetCode = data.readInt()
                 val targetFlags = data.readInt()
 
