@@ -275,52 +275,62 @@ internal object ApkSigner {
 
     private const val CHUNK_SIZE = 1024 * 1024  // 1 MB
 
-    /** Stream [file][offset, offset+length) and return one SHA-256 chunk digest per 1 MB chunk. */
-    private fun digestSectionFile(file: File, offset: Long, length: Long): List<ByteArray> {
-        val chunks = mutableListOf<ByteArray>()
-        if (length <= 0) return chunks
-        file.inputStream().use { fi ->
-            var skipped = 0L
-            while (skipped < offset) {
-                val s = fi.skip(offset - skipped)
-                if (s <= 0) break
-                skipped += s
+    /** One 1 MB chunk digest: SHA-256(0xa5 || uint32LE(len) || chunkBytes), per AOSP. */
+    private fun chunkDigest(data: ByteArray, offset: Int, len: Int): ByteArray {
+        val md = MessageDigest.getInstance("SHA-256")
+        md.update(0xa5.toByte())
+        md.update(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(len).array())
+        md.update(data, offset, len)
+        return md.digest()
+    }
+
+    /**
+     * AOSP APK Signature Scheme v2 content digest: streams file[0, prefixLen) then tail1 then
+     * tail2 as ONE continuous byte stream, sliced into [CHUNK_SIZE] chunks (chunk boundaries do
+     * NOT respect section splits), then top-level SHA-256(0x5a || uint32LE(chunkCount) || chunkDigests).
+     * Memory-safe: only a 1 MB staging buffer, never materializes the file prefix.
+     */
+    private fun contentDigest(file: File, prefixLen: Long, tail1: ByteArray, tail2: ByteArray): ByteArray {
+        val chunkDigests = mutableListOf<ByteArray>()
+        val buf = ByteArray(CHUNK_SIZE)
+        var bufPos = 0
+
+        fun feed(data: ByteArray, offset: Int, len: Int) {
+            var pos = offset
+            var remaining = len
+            while (remaining > 0) {
+                val n = minOf(CHUNK_SIZE - bufPos, remaining)
+                System.arraycopy(data, pos, buf, bufPos, n)
+                bufPos += n
+                pos += n
+                remaining -= n
+                if (bufPos == CHUNK_SIZE) {
+                    chunkDigests.add(chunkDigest(buf, 0, CHUNK_SIZE))
+                    bufPos = 0
+                }
             }
-            val buf = ByteArray(CHUNK_SIZE)
-            var remaining = length
+        }
+
+        file.inputStream().use { fi ->
+            val tmp = ByteArray(CHUNK_SIZE)
+            var remaining = prefixLen
             while (remaining > 0) {
                 val want = minOf(CHUNK_SIZE.toLong(), remaining).toInt()
                 var read = 0
                 while (read < want) {
-                    val n = fi.read(buf, read, want - read)
+                    val n = fi.read(tmp, read, want - read)
                     if (n < 0) break
                     read += n
                 }
                 if (read <= 0) break
-                val md = MessageDigest.getInstance("SHA-256")
-                md.update(0xa5.toByte())
-                md.update(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(read).array())
-                md.update(buf, 0, read)
-                chunks.add(md.digest())
+                feed(tmp, 0, read)
                 remaining -= read.toLong()
             }
         }
-        return chunks
-    }
-
-    private fun digestSectionBytes(data: ByteArray): List<ByteArray> {
-        val chunks = mutableListOf<ByteArray>()
-        var pos = 0
-        while (pos < data.size) {
-            val chunkLen = minOf(CHUNK_SIZE, data.size - pos)
-            val md = MessageDigest.getInstance("SHA-256")
-            md.update(0xa5.toByte())
-            md.update(ByteBuffer.allocate(4).order(ByteOrder.LITTLE_ENDIAN).putInt(chunkLen).array())
-            md.update(data, pos, chunkLen)
-            chunks.add(md.digest())
-            pos += chunkLen
-        }
-        return chunks
+        feed(tail1, 0, tail1.size)
+        feed(tail2, 0, tail2.size)
+        if (bufPos > 0) chunkDigests.add(chunkDigest(buf, 0, bufPos))
+        return topLevelDigest(chunkDigests)
     }
 
     private fun topLevelDigest(chunkDigests: List<ByteArray>): ByteArray {
@@ -361,21 +371,21 @@ internal object ApkSigner {
         return result
     }
 
-    private fun buildV2Block(sec1: List<ByteArray>, sec2: List<ByteArray>, sec3: List<ByteArray>): ByteArray {
-        val apkDigest = topLevelDigest(sec1 + sec2 + sec3)
-
+    private fun buildV2Block(apkDigest: ByteArray): ByteArray {
         // Signed data structure for V2
         val algoId     = 0x0103.le()   // RSASSA-PKCS1-v1_5 with SHA2-256
         val digestPair = lengthPrefixed(algoId + lengthPrefixed(apkDigest))
         val digests    = lengthPrefixed(digestPair)
         val certs      = lengthPrefixed(lengthPrefixed(certDer))
         val attributes = lengthPrefixed(ByteArray(0))  // empty
-        val signedData = lengthPrefixed(digests + certs + attributes)
+        // Signed-data field CONTENT: the RSA signature is computed over digests||certs||attributes
+        // WITHOUT the outer uint32 length prefix — AOSP strips that prefix before verifying.
+        val signedDataContent = digests + certs + attributes
 
         // Signature
         val rawSig = Signature.getInstance("SHA256withRSA").apply {
             initSign(privateKey)
-            update(signedData)
+            update(signedDataContent)
         }.sign()
         val sigPair  = lengthPrefixed(algoId + lengthPrefixed(rawSig))
         val sigs     = lengthPrefixed(sigPair)
@@ -383,7 +393,7 @@ internal object ApkSigner {
         // Public key (SubjectPublicKeyInfo DER)
         val pubKeyLp  = lengthPrefixed(publicKey.encoded)
 
-        val signer      = lengthPrefixed(signedData + sigs + pubKeyLp)
+        val signer      = lengthPrefixed(lengthPrefixed(signedDataContent) + sigs + pubKeyLp)
         val signerList  = lengthPrefixed(signer)
 
         // ID-value pair for V2 block (ID = 0x7109871a)
@@ -419,27 +429,20 @@ internal object ApkSigner {
             eocdBytes = readAt(raf, eocdOffset, (dst.length() - eocdOffset).toInt())
         }
 
-        // sec1 covers [0, blockStart): the signing block is spliced immediately BEFORE the
-        // central directory, so blockStart == the ORIGINAL cdOffset. The verifier hashes the
-        // file prefix the same way regardless of the block being inserted in between.
-        val sec1 = digestSectionFile(dst, 0L, cdOffset)
-
-        // Two-pass sec3: the on-disk EOCD's cdOffset field must equal newCdOffset, but
-        // newCdOffset depends on the block size, which depends on sec3 itself. One iteration
-        // suffices — every length prefix in the block is a fixed-width 4-byte LE value and every
-        // embedded digest is a fixed 32-byte SHA-256, so the block size is invariant to its own
-        // content:
-        //   pass0: size the block against a placeholder EOCD (cdOffset = original)
-        val pass0 = buildV2Block(sec1, digestSectionBytes(cdBytes),
-            digestSectionBytes(patchEocdOffset(eocdBytes, cdOffset)))
-        val newCdOffset = cdOffset + pass0.size
-        //   final: digest the EOCD exactly as it will sit on disk (cdOffset = newCdOffset)
+        // AOSP v2 content digest over the two continuous sections:
+        //   section1 = file[0, cdOffset)        (block start == original cdOffset)
+        //   section2 = cdBytes || eocdPatched   (CD + EOCD as CONTINUOUS bytes)
+        // Chunked at 1 MB boundaries across section boundaries. Two passes: the on-disk EOCD's
+        // cdOffset must equal newCdOffset, but newCdOffset depends on the block size; block size
+        // is invariant to its own content (fixed-width length prefixes, fixed-size digests), so a
+        // single iteration converges.
         Log.i("ShizukuX-Sign", "buildV2Block begin")
-        val sec3 = digestSectionBytes(patchEocdOffset(eocdBytes, newCdOffset))
-        val v2Block = buildV2Block(sec1, digestSectionBytes(cdBytes), sec3)
+        val pass0 = buildV2Block(contentDigest(dst, cdOffset, cdBytes, patchEocdOffset(eocdBytes, cdOffset)))
+        val newCdOffset = cdOffset + pass0.size
+        val eocdPatched = patchEocdOffset(eocdBytes, newCdOffset)
+        val v2Block = buildV2Block(contentDigest(dst, cdOffset, cdBytes, eocdPatched))
         Log.i("ShizukuX-Sign", "buildV2Block done size=${v2Block.size}")
         Log.i("ShizukuX-Sign", "splice newCd=$newCdOffset block=${v2Block.size}")
-        val eocdPatched = patchEocdOffset(eocdBytes, newCdOffset)
 
         RandomAccessFile(dst, "rw").use { rafw ->
             rafw.setLength(cdOffset)
