@@ -150,6 +150,27 @@ object ShizukuReceiverStarter {
 
     private fun rootStart(context: Context) {
         Sentry.addBreadcrumb(Breadcrumb("Background Root start initiated").apply { category = "shizuku.starter" })
+
+        // Live pre-flight before doing anything that can kill an existing server.
+        //
+        // starter.cpp unconditionally runs kill_old_processes() on every invocation: any
+        // shizuku_plus_server found by name gets SIGKILL'd before a new instance is spawned.
+        // The guard in start() above only trusts ShizukuStateMachine.isRunning(), which is the
+        // in-memory/persisted state — stale when the server was started *outside* this app
+        // (e.g. the documented manual `su -c "nohup libshizuku.so --apk=… &"` path). On a
+        // cold-started process the persisted state is STOPPED, so start() proceeded, the
+        // healthy manual server was killed, and the freshly spawned instance then crashed with
+        // ClassNotFoundException for rikka.shizuku.server.ShizukuService (the "double failure"
+        // seen on device). Ping the binder right now: if a server is actually alive, skip the
+        // start entirely and never kill it.
+        if (ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) {
+            Sentry.addBreadcrumb(Breadcrumb("Background Root start skipped: server already alive").apply {
+                category = "shizuku.starter"
+                level = io.sentry.SentryLevel.INFO
+            })
+            return
+        }
+
         if (!Shell.getShell().isRoot) {
             Sentry.addBreadcrumb(Breadcrumb("Background Root start failed - no root").apply {
                 category = "shizuku.starter"
@@ -162,7 +183,26 @@ object ShizukuReceiverStarter {
 
         try {
             ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-            val result = Shell.cmd(Starter.internalCommand).exec()
+
+            // Resolve the CURRENT on-disk base.apk via `pm path` — the same derivation the
+            // stable manual command uses (nativeLibDir/apkPath are taken from `pm path`).
+            // Starter.internalCommand bakes in applicationInfo.sourceDir, which can reference a
+            // stale apk on this device (process kept alive across an update, or an early
+            // direct-boot context); app_process then loads that apk's dex and cannot find
+            // rikka.shizuku.server.ShizukuService -> ClassNotFoundException. pm path always
+            // returns the installed, canonical base.apk; fall back to sourceDir only if it
+            // somehow fails.
+            val pkg = context.packageName
+            val apkPath = try {
+                Shell.cmd("pm path $pkg").exec().out.firstOrNull { it.startsWith("package:") }
+                    ?.removePrefix("package:")?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+            } catch (e: Exception) {
+                null
+            } ?: context.applicationInfo.sourceDir
+
+            val command = "${Starter.userCommand} --apk='$apkPath'"
+            val result = Shell.cmd(command).exec()
             if (!result.isSuccess) {
                 // libsu doesn't throw on a non-zero exit. Without this check the state machine is
                 // left in STARTING, which update() preserves indefinitely while the binder is dead —
