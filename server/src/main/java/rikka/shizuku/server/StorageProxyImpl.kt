@@ -1,13 +1,24 @@
 package rikka.shizuku.server
 
+import android.os.Binder
 import android.os.Bundle
+import android.os.Parcel
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
+import android.util.Log
 import af.shizuku.server.IStorageProxy
+import rikka.shizuku.server.util.BinderCallLogger
 import rikka.shizuku.server.util.InputValidationUtils
 import java.io.File
 
 class StorageProxyImpl : IStorageProxy.Stub() {
+
+    override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
+        BinderCallLogger.log(Log.isLoggable("BinderCall", Log.INFO),
+            IStorageProxy.Stub::class.java, code, Binder.getCallingUid())
+        return super.onTransact(code, data, reply, flags)
+    }
+
     override fun openFile(path: String?, mode: Int): ParcelFileDescriptor? {
         if (!InputValidationUtils.isSafePath(path)) return null
         return try {
