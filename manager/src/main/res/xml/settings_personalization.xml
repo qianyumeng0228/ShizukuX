@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_color_theme"
@@ -48,6 +49,13 @@
             android:defaultValue="false"
             android:dependency="oneui_theme_enabled"
             android:icon="@drawable/ic_settings_suggest_24" />
+
+        <SwitchPreferenceCompat
+            android:key="bold_typography"
+            android:title="@string/settings_bold_typography"
+            android:summary="@string/settings_bold_typography_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_code_24" />
 
         <rikka.preference.SimpleMenuPreference
             android:key="wallpaper_theme"
@@ -100,12 +108,28 @@
             android:entryValues="@array/icon_color_modes_value"
             android:icon="@drawable/ic_palette_24" />
 
+        <rikka.preference.SimpleMenuPreference
+            android:key="corner_rounding_override"
+            android:title="@string/settings_corner_rounding_override"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="default"
+            android:entries="@array/corner_rounding_entries"
+            android:entryValues="@array/corner_rounding_values"
+            android:icon="@drawable/ic_window_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_motion"
         android:title="@string/settings_motion_category_title"
         android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="follow_system_animations"
+            android:title="@string/settings_follow_system_animations"
+            android:summary="@string/settings_follow_system_animations_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_settings_suggest_24" />
 
         <SwitchPreferenceCompat
             android:key="expressive_animations"
@@ -131,6 +155,13 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_vibration_24" />
 
+        <SwitchPreferenceCompat
+            android:key="follow_system_haptics"
+            android:title="@string/settings_follow_system_haptics"
+            android:summary="@string/settings_follow_system_haptics_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_bolt_24" />
+
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
@@ -151,6 +182,13 @@
             android:summary="@string/settings_blur_ui_summary"
             android:defaultValue="false"
             android:icon="@drawable/ic_palette_24" />
+
+        <SwitchPreferenceCompat
+            android:key="expanded_headers_enabled"
+            android:title="@string/settings_expanded_headers"
+            android:summary="@string/settings_expanded_headers_summary"
+            android:defaultValue="false"
+            android:icon="@drawable/ic_outline_expand_more_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

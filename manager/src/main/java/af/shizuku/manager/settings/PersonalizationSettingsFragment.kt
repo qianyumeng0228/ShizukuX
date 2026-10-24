@@ -236,6 +236,31 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        // P2-3 personalization overlays (a2f7d959): bold typography / expanded headers /
+        // corner rounding all feed into ThemeDelegateImpl's themeKey cache, so a non-recreate
+        // onThemeChanged() re-resolves the overlay stack on the next theme lookup.
+        findPreference<Preference>(KEY_BOLD_TYPOGRAPHY)?.setOnPreferenceChangeListener { _, _ ->
+            applyTheme(requiresRecreate = false)
+            true
+        }
+        findPreference<Preference>(KEY_EXPANDED_HEADERS)?.setOnPreferenceChangeListener { _, _ ->
+            applyTheme(requiresRecreate = false)
+            true
+        }
+        findPreference<Preference>(KEY_CORNER_ROUNDING_OVERRIDE)?.setOnPreferenceChangeListener { _, _ ->
+            applyTheme(requiresRecreate = false)
+            true
+        }
+        // Follow-system animations/haptics don't change XML overlay composition but do
+        // change the effective duration scale / haptic gate; re-evaluate on next frame.
+        findPreference<Preference>(KEY_FOLLOW_SYSTEM_ANIMATIONS)?.setOnPreferenceChangeListener { _, _ ->
+            applyTheme(requiresRecreate = false)
+            true
+        }
+        findPreference<Preference>(KEY_FOLLOW_SYSTEM_HAPTICS)?.setOnPreferenceChangeListener { _, _ ->
+            true
+        }
+
         // 4. Language & System
         languagePreference = requireNotNull(findPreference(KEY_LANGUAGE))
         translationPreference = requireNotNull(findPreference(KEY_TRANSLATION))
