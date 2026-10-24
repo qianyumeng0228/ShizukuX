@@ -37,6 +37,13 @@
             android:defaultValue="true"
             android:icon="@drawable/ic_server_restart" />
 
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_developer_options"
+        android:title="@string/settings_developer_options_restore_category_title"
+        android:defaultValue="true">
+
         <SwitchPreferenceCompat
             android:key="auto_restore_developer_options"
             android:summary="@string/settings_auto_restore_dev_options_summary"
@@ -81,7 +88,7 @@
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_activity"
-        android:title="@string/settings_activity_status_category_title"
+        android:title="@string/settings_live_activity_usb_category_title"
         android:defaultValue="true">
 
         <SwitchPreferenceCompat

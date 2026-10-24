@@ -21,208 +21,218 @@
         android:defaultValue="true"
         app:badgeType="plus" />
 
+    <!-- Umbrella shell: the three global items above stay at the page root; every per-domain
+         advanced-feature category below is nested inside this one. CollapsiblePreferenceCategory
+         nesting is already proven inside category_connectivity / category_security. -->
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_connectivity"
-        android:title="@string/settings_networking_connectivity_category_title"
+        android:key="category_advanced_features"
+        android:title="@string/settings_category_advanced_features"
         android:defaultValue="false">
 
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="network_governor_plus_enabled"
-            android:title="@string/settings_dns_governor_title"
-            android:summary="@string/settings_network_governor_plus_summary"
-            android:icon="@drawable/ic_lan_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_network_governor_plus_title"
-            app:infoDetail="@string/help_network_governor_plus_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="binder_firewall_enabled"
-            android:title="@string/settings_binder_firewall"
-            android:summary="@string/settings_binder_firewall_summary"
-            android:icon="@drawable/ic_shield_24"
-            android:defaultValue="false"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="continuity_bridge_enabled"
-            android:title="@string/settings_continuity_bridge_title"
-            android:summary="@string/settings_continuity_bridge_summary"
-            android:icon="@drawable/ic_devices_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_continuity_bridge_title"
-            app:infoDetail="@string/help_continuity_bridge_detail"
-            app:badgeType="plus" />
-
-        <!-- External relay authorization: ShizukuX acts as a middle-man to grant ADB-level
-             access to apps that do not declare Shizuku permissions themselves (e.g. Scene). -->
         <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-            android:key="category_external_relay"
-            android:title="@string/settings_external_relay_category_title"
+            android:key="category_connectivity"
+            android:title="@string/settings_networking_connectivity_category_title"
+            android:defaultValue="false">
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="network_governor_plus_enabled"
+                android:title="@string/settings_dns_governor_title"
+                android:summary="@string/settings_network_governor_plus_summary"
+                android:icon="@drawable/ic_lan_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_network_governor_plus_title"
+                app:infoDetail="@string/help_network_governor_plus_detail"
+                app:badgeType="plus" />
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="binder_firewall_enabled"
+                android:title="@string/settings_binder_firewall"
+                android:summary="@string/settings_binder_firewall_summary"
+                android:icon="@drawable/ic_shield_24"
+                android:defaultValue="false"
+                app:badgeType="plus" />
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="continuity_bridge_enabled"
+                android:title="@string/settings_continuity_bridge_title"
+                android:summary="@string/settings_continuity_bridge_summary"
+                android:icon="@drawable/ic_devices_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_continuity_bridge_title"
+                app:infoDetail="@string/help_continuity_bridge_detail"
+                app:badgeType="plus" />
+
+            <!-- External relay authorization: ShizukuX acts as a middle-man to grant ADB-level
+                 access to apps that do not declare Shizuku permissions themselves (e.g. Scene). -->
+            <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+                android:key="category_external_relay"
+                android:title="@string/settings_external_relay_category_title"
+                android:defaultValue="false">
+
+                <Preference
+                    android:key="external_relay_manager"
+                    android:title="@string/settings_external_relay_manager_title"
+                    android:summary="@string/settings_external_relay_manager_summary"
+                    android:icon="@drawable/ic_devices_24" />
+
+            </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_system"
+            android:title="@string/settings_system_performance_category_title"
+            android:defaultValue="false">
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="activity_manager_plus_enabled"
+                android:title="@string/settings_process_control_title"
+                android:summary="@string/settings_activity_manager_plus_summary"
+                android:icon="@drawable/ic_bolt_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_activity_manager_plus_title"
+                app:infoDetail="@string/help_activity_manager_plus_detail"
+                app:badgeType="plus" />
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="shell_interceptor_enabled"
+                android:title="@string/settings_shell_accelerator_title"
+                android:summary="@string/settings_shell_interceptor_summary"
+                android:icon="@drawable/ic_terminal_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_shell_interceptor_title"
+                app:infoDetail="@string/help_shell_interceptor_detail"
+                app:badgeType="plus" />
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="avf_manager_enabled"
+                android:title="@string/settings_vm_manager_title"
+                android:summary="@string/settings_avf_manager_summary"
+                android:icon="@drawable/ic_server_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_avf_manager_title"
+                app:infoDetail="@string/help_avf_manager_detail"
+                app:badgeType="plus" />
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_security"
+            android:title="@string/settings_security_access_category_title"
+            android:defaultValue="false">
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="dhizuku_mode"
+                android:title="@string/settings_dhizuku_mode"
+                android:summary="@string/settings_dhizuku_mode_summary"
+                android:icon="@drawable/ic_admin_panel_settings_24"
+                app:infoTitle="@string/help_dhizuku_title"
+                app:infoDetail="@string/help_dhizuku_detail"
+                app:badgeType="plus" />
+
+            <!-- Only shown when app is active Device Owner; tapping clears DO status -->
+            <Preference
+                android:key="clear_device_owner"
+                android:title="@string/settings_clear_device_owner"
+                android:summary="@string/settings_clear_device_owner_summary"
+                android:icon="@drawable/ic_delete_24"
+                android:visible="false" />
+
+            <!-- Only shown when app is active Device Owner; tapping transfers DO to another app -->
+            <Preference
+                android:key="transfer_device_owner"
+                android:title="@string/settings_transfer_device_owner"
+                android:summary="@string/settings_transfer_device_owner_summary"
+                android:icon="@drawable/ic_swap_horiz_24"
+                android:visible="false" />
+
+            <!-- Dhizuku app management: list & control which apps may use the Dhizuku API -->
+            <Preference
+                android:key="dhizuku_app_management"
+                android:title="@string/dhizuku_app_management_title"
+                android:summary="@string/dhizuku_app_management_summary"
+                android:icon="@drawable/ic_admin_panel_settings_24" />
+
+            <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+                android:key="category_dhizuku_admin"
+                android:title="@string/settings_device_owner_tools_category_title"
+                android:dependency="dhizuku_mode"
+                android:defaultValue="false">
+
+                <SwitchPreferenceCompat
+                    android:key="dhizuku_disable_screencap"
+                    android:title="@string/settings_screen_capture_lockdown_title"
+                    android:summary="@string/settings_screen_capture_lockdown_summary"
+                    android:icon="@drawable/ic_visibility_off_24"
+                    android:defaultValue="false" />
+
+                <SwitchPreferenceCompat
+                    android:key="dhizuku_disallow_usb"
+                    android:title="@string/settings_usb_data_lockdown_title"
+                    android:summary="@string/settings_usb_data_lockdown_summary"
+                    android:icon="@drawable/ic_shield_24"
+                    android:defaultValue="false" />
+
+                <af.shizuku.manager.settings.AppPickerPreference
+                    android:key="dhizuku_suspended_packages"
+                    android:title="@string/settings_suspended_applications_title"
+                    android:summary="@string/settings_suspended_applications_summary"
+                    android:icon="@drawable/ic_science_24" />
+
+            </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="shadow_binder_enabled"
+                android:title="@string/settings_shadow_binder"
+                android:summary="@string/settings_shadow_binder_summary"
+                android:icon="@drawable/ic_science_24"
+                android:defaultValue="false"
+                app:badgeType="plus" />
+
+            <af.shizuku.manager.settings.AppPickerPreference
+                android:key="shadow_binder_hidden_packages"
+                android:title="@string/settings_shadow_binder_hidden_packages"
+                android:summary="@string/settings_shadow_binder_hidden_packages_summary"
+                android:icon="@drawable/ic_visibility_24"
+                android:dependency="shadow_binder_enabled" />
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_storage"
+            android:title="@string/settings_storage_files_category_title"
+            android:defaultValue="false">
+
+            <af.shizuku.manager.settings.ExtraFeaturePreference
+                android:key="storage_proxy_enabled"
+                android:title="@string/settings_storage_bridge_title"
+                android:summary="@string/settings_storage_proxy_summary"
+                android:icon="@drawable/ic_folder_24"
+                android:defaultValue="true"
+                app:infoTitle="@string/help_storage_proxy_title"
+                app:infoDetail="@string/help_storage_proxy_detail"
+                app:badgeType="plus" />
+
+        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
+        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+            android:key="category_backup"
+            android:title="@string/settings_backup_restore_category_title"
             android:defaultValue="false">
 
             <Preference
-                android:key="external_relay_manager"
-                android:title="@string/settings_external_relay_manager_title"
-                android:summary="@string/settings_external_relay_manager_summary"
-                android:icon="@drawable/ic_devices_24" />
+                android:key="backup_settings"
+                android:title="@string/settings_backup_title"
+                android:summary="@string/settings_backup_summary"
+                android:icon="@drawable/ic_folder_24" />
+
+            <Preference
+                android:key="restore_settings"
+                android:title="@string/settings_restore_title"
+                android:summary="@string/settings_restore_summary"
+                android:icon="@drawable/ic_install_24" />
 
         </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_system"
-        android:title="@string/settings_system_performance_category_title"
-        android:defaultValue="false">
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="activity_manager_plus_enabled"
-            android:title="@string/settings_process_control_title"
-            android:summary="@string/settings_activity_manager_plus_summary"
-            android:icon="@drawable/ic_bolt_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_activity_manager_plus_title"
-            app:infoDetail="@string/help_activity_manager_plus_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="shell_interceptor_enabled"
-            android:title="@string/settings_shell_accelerator_title"
-            android:summary="@string/settings_shell_interceptor_summary"
-            android:icon="@drawable/ic_terminal_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_shell_interceptor_title"
-            app:infoDetail="@string/help_shell_interceptor_detail"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="avf_manager_enabled"
-            android:title="@string/settings_vm_manager_title"
-            android:summary="@string/settings_avf_manager_summary"
-            android:icon="@drawable/ic_server_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_avf_manager_title"
-            app:infoDetail="@string/help_avf_manager_detail"
-            app:badgeType="plus" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_security"
-        android:title="@string/settings_security_access_category_title"
-        android:defaultValue="false">
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="dhizuku_mode"
-            android:title="@string/settings_dhizuku_mode"
-            android:summary="@string/settings_dhizuku_mode_summary"
-            android:icon="@drawable/ic_admin_panel_settings_24"
-            app:infoTitle="@string/help_dhizuku_title"
-            app:infoDetail="@string/help_dhizuku_detail"
-            app:badgeType="plus" />
-
-        <!-- Only shown when app is active Device Owner; tapping clears DO status -->
-        <Preference
-            android:key="clear_device_owner"
-            android:title="@string/settings_clear_device_owner"
-            android:summary="@string/settings_clear_device_owner_summary"
-            android:icon="@drawable/ic_delete_24"
-            android:visible="false" />
-
-        <!-- Only shown when app is active Device Owner; tapping transfers DO to another app -->
-        <Preference
-            android:key="transfer_device_owner"
-            android:title="@string/settings_transfer_device_owner"
-            android:summary="@string/settings_transfer_device_owner_summary"
-            android:icon="@drawable/ic_swap_horiz_24"
-            android:visible="false" />
-
-        <!-- Dhizuku app management: list & control which apps may use the Dhizuku API -->
-        <Preference
-            android:key="dhizuku_app_management"
-            android:title="@string/dhizuku_app_management_title"
-            android:summary="@string/dhizuku_app_management_summary"
-            android:icon="@drawable/ic_admin_panel_settings_24" />
-
-        <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-            android:key="category_dhizuku_admin"
-            android:title="@string/settings_device_owner_tools_category_title"
-            android:dependency="dhizuku_mode"
-            android:defaultValue="false">
-
-            <SwitchPreferenceCompat
-                android:key="dhizuku_disable_screencap"
-                android:title="@string/settings_screen_capture_lockdown_title"
-                android:summary="@string/settings_screen_capture_lockdown_summary"
-                android:icon="@drawable/ic_visibility_off_24"
-                android:defaultValue="false" />
-
-            <SwitchPreferenceCompat
-                android:key="dhizuku_disallow_usb"
-                android:title="@string/settings_usb_data_lockdown_title"
-                android:summary="@string/settings_usb_data_lockdown_summary"
-                android:icon="@drawable/ic_shield_24"
-                android:defaultValue="false" />
-
-            <af.shizuku.manager.settings.AppPickerPreference
-                android:key="dhizuku_suspended_packages"
-                android:title="@string/settings_suspended_applications_title"
-                android:summary="@string/settings_suspended_applications_summary"
-                android:icon="@drawable/ic_science_24" />
-
-        </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="shadow_binder_enabled"
-            android:title="@string/settings_shadow_binder"
-            android:summary="@string/settings_shadow_binder_summary"
-            android:icon="@drawable/ic_science_24"
-            android:defaultValue="false"
-            app:badgeType="plus" />
-
-        <af.shizuku.manager.settings.AppPickerPreference
-            android:key="shadow_binder_hidden_packages"
-            android:title="@string/settings_shadow_binder_hidden_packages"
-            android:summary="@string/settings_shadow_binder_hidden_packages_summary"
-            android:icon="@drawable/ic_visibility_24"
-            android:dependency="shadow_binder_enabled" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_storage"
-        android:title="@string/settings_storage_files_category_title"
-        android:defaultValue="false">
-
-        <af.shizuku.manager.settings.ExtraFeaturePreference
-            android:key="storage_proxy_enabled"
-            android:title="@string/settings_storage_bridge_title"
-            android:summary="@string/settings_storage_proxy_summary"
-            android:icon="@drawable/ic_folder_24"
-            android:defaultValue="true"
-            app:infoTitle="@string/help_storage_proxy_title"
-            app:infoDetail="@string/help_storage_proxy_detail"
-            app:badgeType="plus" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_backup"
-        android:title="@string/settings_backup_restore_category_title"
-        android:defaultValue="false">
-
-        <Preference
-            android:key="backup_settings"
-            android:title="@string/settings_backup_title"
-            android:summary="@string/settings_backup_summary"
-            android:icon="@drawable/ic_folder_24" />
-
-        <Preference
-            android:key="restore_settings"
-            android:title="@string/settings_restore_title"
-            android:summary="@string/settings_restore_summary"
-            android:icon="@drawable/ic_install_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 

@@ -40,6 +40,8 @@
     <string name="settings_auto_reconnect_summary">运行轻量级 mDNS 监听器，在 ADB 守护进程因休眠或 Doze 断开后自动重新绑定服务。</string>
     <string name="settings_network_category_title">网络</string>
     <string name="settings_activity_status_category_title">活动与状态</string>
+    <string name="settings_developer_options_restore_category_title">开发者选项恢复</string>
+    <string name="settings_live_activity_usb_category_title">实时活动与 USB</string>
     <string name="settings_debug_diagnostics_category_title">调试与诊断</string>
 
     <string name="settings_color_theme_category_title">颜色与主题</string>
@@ -124,6 +126,7 @@
     <string name="settings_storage_files_category_title">存储与文件</string>
     <string name="settings_storage_bridge_title">存储桥接</string>
     <string name="settings_backup_restore_category_title">备份与恢复</string>
+    <string name="settings_category_advanced_features">高级功能</string>
     <string name="settings_backup_title">备份设置</string>
     <string name="settings_backup_summary">使用生物识别加密安全导出配置和增强功能。</string>
     <string name="settings_restore_title">恢复设置</string>

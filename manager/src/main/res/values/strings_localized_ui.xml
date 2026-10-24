@@ -40,6 +40,8 @@
     <string name="settings_auto_reconnect_summary">Run a lightweight mDNS listener to automatically rebind the server if the ADB daemon drops on sleep or doze.</string>
     <string name="settings_network_category_title">Network</string>
     <string name="settings_activity_status_category_title">Activity &amp; Status</string>
+    <string name="settings_developer_options_restore_category_title">Developer Options Restore</string>
+    <string name="settings_live_activity_usb_category_title">Live Activity &amp; USB</string>
     <string name="settings_debug_diagnostics_category_title">Debug &amp; Diagnostics</string>
 
     <string name="settings_color_theme_category_title">Color &amp; Theme</string>
@@ -124,6 +126,7 @@
     <string name="settings_storage_files_category_title">Storage &amp; Files</string>
     <string name="settings_storage_bridge_title">Storage Bridge</string>
     <string name="settings_backup_restore_category_title">Backup &amp; Restore</string>
+    <string name="settings_category_advanced_features">Advanced Features</string>
     <string name="settings_backup_title">Backup Settings</string>
     <string name="settings_backup_summary">Export your configurations and enhancements securely using Biometric encryption.</string>
     <string name="settings_restore_title">Restore Settings</string>
