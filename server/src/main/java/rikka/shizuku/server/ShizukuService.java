@@ -2618,7 +2618,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public IStatusBarGovernorExtra getStatusBarGovernorExtra() {
         enforceCallingPermission("getStatusBarGovernorExtra");
-        if (!isFeatureEnabled("status_bar_governor_extra")) return null;
+        // No feature gate: the manager never syncs a "status_bar_governor_extra" key, so the
+        // check was permanently false and the interface always returned null. Mirrors
+        // getPackageGovernorExtra()/getBackupRestoreExtra()/getDeviceControlExtra().
         return statusBarGovernorExtra;
     }
 
@@ -2634,7 +2636,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public IDisplayTunerExtra getDisplayTunerExtra() {
         enforceCallingPermission("getDisplayTunerExtra");
-        if (!isFeatureEnabled("display_tuner_extra")) return null;
+        // No feature gate: the manager never syncs a "display_tuner_extra" key, so the check
+        // was permanently false and the interface always returned null. Mirrors
+        // getPackageGovernorExtra()/getBackupRestoreExtra()/getDeviceControlExtra().
         return displayTunerExtra;
     }
 
