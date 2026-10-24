@@ -46,9 +46,6 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     private val _grantedCount = MutableLiveData<Resource<Int>>()
     val grantedCount = _grantedCount as LiveData<Resource<Int>>
 
-    private val _hiddenCount = MutableLiveData<Int>(hiddenPackages.size)
-    val hiddenCount = _hiddenCount as LiveData<Int>
-
     fun setSortOrder(order: SortOrder) {
         sortOrder = order
         prefs.edit().putString(KEY_SORT, order.name).apply()
@@ -68,14 +65,12 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
     fun hidePackage(packageName: String) {
         hiddenPackages.add(packageName)
         prefs.edit().putStringSet(KEY_HIDDEN, hiddenPackages.toSet()).apply()
-        _hiddenCount.value = hiddenPackages.size
         applyFiltersAndSort()
     }
 
     fun unhidePackage(packageName: String) {
         hiddenPackages.remove(packageName)
         prefs.edit().putStringSet(KEY_HIDDEN, hiddenPackages.toSet()).apply()
-        _hiddenCount.value = hiddenPackages.size
         applyFiltersAndSort()
     }
 
@@ -108,7 +103,6 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     applyFiltersAndSort()
                 }
                 _grantedCount.postValue(Resource.success(granted))
-                _hiddenCount.postValue(hiddenPackages.size)
             } catch (e: CancellationException) {
                 // ignore
             } catch (e: Throwable) {
@@ -161,20 +155,6 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                 _packages.postValue(Resource.error(e, null))
             }
         }
-    }
-
-    /**
-     * For HiddenAppsActivity to get ONLY hidden apps
-     */
-    fun getHiddenPackagesResource(): LiveData<Resource<List<PackageInfo>>> {
-        val ld = MutableLiveData<Resource<List<PackageInfo>>>()
-        viewModelScope.launch(Dispatchers.IO) {
-            val pm = appContext.packageManager
-            val list = rawPackages.filter { it.packageName in hiddenPackages }
-                .sortedBy { it.applicationInfo?.loadLabel(pm)?.toString()?.lowercase() ?: it.packageName }
-            ld.postValue(Resource.success(list))
-        }
-        return ld
     }
 
     companion object {

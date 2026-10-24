@@ -338,7 +338,6 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_filter_denied">Denied</string>
     <string name="app_management_filter_hidden">Hidden</string>
     <string name="app_management_action_sort">Sort</string>
-    <string name="app_management_action_hidden_apps">Hidden apps</string>
     <string name="app_management_sort_a_to_z">Name (A–Z)</string>
     <string name="app_management_sort_last_installed">Last installed</string>
     <string name="app_management_sort_last_updated">Last updated</string>
@@ -765,7 +764,6 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="doctor_check_server">Shizuku server: %1$s</string>
     <string name="doctor_check_server_version">Server version</string>
     <string name="doctor_tip_server_version"><![CDATA[The server did not report its version (home shows “version 0”), meaning it did not start correctly or is being restricted. On OPPO/OnePlus, close “permission monitor” in Developer options (a separate ColorOS 12+ switch; if absent, switch the device language to English and turn off "Disable system optimization"), then reboot the phone.]]></string>
-    <string name="doctor_check_background">Background limits: %1$s</string>
     <string name="doctor_check_accessibility">Accessibility service</string>
     <string name="doctor_check_maximum_restrictions">Maximum Restrictions (One UI 8)</string>
     <string name="doctor_status_ok">OK</string>

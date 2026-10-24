@@ -139,8 +139,6 @@
     <string name="settings_window_hierarchy_crawler_summary">允许 AI 自动化在无需无障碍服务的情况下读取当前窗口层级</string>
     <string name="settings_experimental_ai_automation_title">实验性 AI 自动化</string>
     <string name="settings_experimental_ai_automation_summary">启用手势模拟、像素捕获和文本注入，以支持 AI 驱动的自动化</string>
-    <string name="settings_software_keystore_fallback_title">软件 KeyStore 备用方案</string>
-    <string name="settings_software_keystore_fallback_summary">如果设备硬件 KeyStore 失败（例如 Samsung Knox），允许使用软件静态 AES 密钥加密缓存 ADB RSA 私钥。可减少配对提示，但会降低安全性。</string>
     <string name="settings_samsung_system_uid_title">Samsung System UID 提权</string>
     <string name="settings_samsung_system_uid_summary">尝试利用未修补 Samsung 设备上的特定漏洞提权到 UID 1000（system），风险自负。</string>
 

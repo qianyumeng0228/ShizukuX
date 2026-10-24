@@ -22,11 +22,6 @@
     </item>
 
     <item
-        android:id="@+id/action_hidden_apps"
-        android:title="@string/app_management_action_hidden_apps"
-        app:showAsAction="never" />
-
-    <item
         android:id="@+id/action_root_compat"
         android:title="@string/su_bridge_title"
         app:showAsAction="never" />

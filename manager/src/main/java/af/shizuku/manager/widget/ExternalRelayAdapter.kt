@@ -15,8 +15,8 @@ import com.google.android.material.materialswitch.MaterialSwitch
 /**
  * Adapter for the external relay authorization screen ([af.shizuku.manager.settings.ExternalRelayActivity]).
  *
- * Lists an auto-authorization header (toggle + accessibility enable), relay entries for Scene and
- * Brevent, plus a placeholder for future apps.
+ * Lists an auto-authorization header (toggle + accessibility enable), then relay entries for
+ * Scene and Brevent.
  */
 class ExternalRelayAdapter(
     private val context: Context,
@@ -33,7 +33,6 @@ class ExternalRelayAdapter(
         private const val TYPE_OWNER = 1
         private const val TYPE_SCENE = 2
         private const val TYPE_BREVENT = 3
-        private const val TYPE_PLACEHOLDER = 4
 
         /** Component name of the external-relay auto-activation accessibility service. */
         private fun autoServiceComponent(packageName: String): String =
@@ -48,7 +47,6 @@ class ExternalRelayAdapter(
         items.add(TYPE_OWNER)
         items.add(TYPE_SCENE)
         items.add(TYPE_BREVENT)
-        items.add(TYPE_PLACEHOLDER)
     }
 
     override fun getItemViewType(position: Int): Int = items[position]
@@ -68,9 +66,7 @@ class ExternalRelayAdapter(
             TYPE_BREVENT -> BreventViewHolder(
                 inflater.inflate(R.layout.item_external_relay_brevent, parent, false)
             )
-            else -> PlaceholderViewHolder(
-                inflater.inflate(R.layout.item_external_relay_placeholder, parent, false)
-            )
+            else -> error("Unexpected view type $viewType")
         }
     }
 
@@ -80,7 +76,6 @@ class ExternalRelayAdapter(
             is OwnerViewHolder -> vh.bind()
             is SceneViewHolder -> vh.bind()
             is BreventViewHolder -> vh.bind()
-            is PlaceholderViewHolder -> vh.bind()
         }
     }
 
@@ -199,12 +194,6 @@ class ExternalRelayAdapter(
                 statusText.visibility = android.view.View.VISIBLE
                 onActivateBrevent()
             }
-        }
-    }
-
-    inner class PlaceholderViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
-        fun bind() {
-            // Static placeholder card; nothing to bind today.
         }
     }
 }

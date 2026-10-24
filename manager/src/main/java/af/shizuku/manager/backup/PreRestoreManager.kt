@@ -133,26 +133,4 @@ object PreRestoreManager {
         val raw = prefs.getString(packageName, null) ?: return emptyList()
         return raw.split(",").filter { it.isNotBlank() }
     }
-
-    /** Get the newest snapshot timestamp for a package, or null if none. */
-    fun getNewestSnapshot(context: Context, packageName: String): String? {
-        return getSnapshots(context, packageName).firstOrNull()
-    }
-
-    /** Clear all snapshot records for a package. */
-    fun clearSnapshots(context: Context, packageName: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().remove(packageName).apply()
-    }
-
-    /** Remove a specific snapshot timestamp from a package's records. */
-    fun removeSnapshot(context: Context, packageName: String, timestamp: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val remaining = getSnapshots(context, packageName).filter { it != timestamp }
-        if (remaining.isEmpty()) {
-            prefs.edit().remove(packageName).apply()
-        } else {
-            prefs.edit().putString(packageName, remaining.joinToString(",")).apply()
-        }
-    }
 }

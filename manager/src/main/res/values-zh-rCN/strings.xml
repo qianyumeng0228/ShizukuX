@@ -527,7 +527,6 @@
     <string name="app_management_filter_denied"><![CDATA[被拒绝]]></string>
     <string name="app_management_filter_hidden"><![CDATA[已隐藏]]></string>
     <string name="app_management_action_sort"><![CDATA[排序]]></string>
-    <string name="app_management_action_hidden_apps"><![CDATA[隐藏的应用]]></string>
     <string name="app_management_sort_a_to_z"><![CDATA[名称（A-Z）]]></string>
     <string name="app_management_sort_last_installed"><![CDATA[上次安装]]></string>
     <string name="app_management_sort_last_updated"><![CDATA[最后更新]]></string>
@@ -783,7 +782,6 @@
     <string name="doctor_check_server"><![CDATA[Shizuku 服务：%1$s]]></string>
     <string name="doctor_check_server_version"><![CDATA[服务端版本]]></string>
     <string name="doctor_tip_server_version"><![CDATA[服务端未返回版本号（首页显示“版本 0”），说明服务端未正常启动或被系统限制。OPPO/一加请确认已关闭开发者选项中的“权限监控”（ColorOS 12+ 独立开关），没有则切英文语言关闭 "Disable system optimization"，然后重启手机。]]></string>
-    <string name="doctor_check_background"><![CDATA[后台限制：%1$s]]></string>
     <string name="doctor_check_accessibility"><![CDATA[无障碍服务]]></string>
     <string name="doctor_check_maximum_restrictions"><![CDATA[最大限制（One UI 8）]]></string>
     <string name="doctor_status_ok"><![CDATA[正常]]></string>

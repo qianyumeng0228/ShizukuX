@@ -260,15 +260,6 @@ class ServiceDoctorActivity : AppBarActivity() {
             tips.add("• " + getString(R.string.doctor_tip_secure_folder))
         }
 
-        // 9. Background Limits (Android 14+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            checks.add(DoctorCheck(
-                getString(R.string.doctor_check_background, ""),
-                getString(R.string.doctor_status_ok),
-                true
-            ))
-        }
-
         // 10. Phantom Process Killer (Android 12+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             checks.add(DoctorCheck(

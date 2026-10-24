@@ -226,7 +226,6 @@
     <string name="app_management_filter_denied"><![CDATA[已拒绝]]></string>
     <string name="app_management_filter_hidden"><![CDATA[已隐藏]]></string>
     <string name="app_management_action_sort"><![CDATA[排序]]></string>
-    <string name="app_management_action_hidden_apps"><![CDATA[隐藏的应用]]></string>
     <string name="app_management_sort_a_to_z"><![CDATA[名称（A–Z）]]></string>
     <string name="app_management_sort_last_installed"><![CDATA[最近安装]]></string>
     <string name="app_management_sort_last_updated"><![CDATA[最近更新]]></string>
@@ -556,7 +555,6 @@
     <string name="doctor_check_secure_settings"><![CDATA[安全设置：%1$s]]></string>
     <string name="doctor_check_permission"><![CDATA[ADB 权限：%1$s]]></string>
     <string name="doctor_check_server"><![CDATA[Shizuku 服务：%1$s]]></string>
-    <string name="doctor_check_background"><![CDATA[后台限制：%1$s]]></string>
     <string name="doctor_status_ok"><![CDATA[正常]]></string>
     <string name="doctor_status_running"><![CDATA[运行中]]></string>
     <string name="doctor_status_stopped"><![CDATA[已停止]]></string>

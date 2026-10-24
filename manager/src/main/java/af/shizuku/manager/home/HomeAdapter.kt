@@ -24,7 +24,6 @@ class HomeAdapter(
 ) : IdBasedRecyclerViewAdapter(ArrayList()) {
 
     companion object {
-        const val ID_BANNER = -1L
         const val ID_STATUS = 0L
         const val ID_APPS = 1L
         const val ID_TERMINAL = 2L

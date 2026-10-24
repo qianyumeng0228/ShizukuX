@@ -31,10 +31,6 @@ object DeviceControlManager {
 
     fun setNfc(enabled: Boolean): Boolean = dc().setNfcEnabled(enabled)
 
-    // ── USB ───────────────────────────────────────────────────────────────────
-
-    fun setUsbFunction(function: String): Boolean = dc().setUsbFunction(function)
-
     // ── Power ─────────────────────────────────────────────────────────────────
     // NOTE: These require REBOOT permission which shell uid (2000) does NOT have.
     // They will return false on ADB mode. Only work reliably on root.
@@ -63,8 +59,6 @@ object DeviceControlManager {
 
     fun setAutoBrightness(enabled: Boolean): Boolean = dc().setAutoBrightnessEnabled(enabled)
 
-    fun setScreenTimeout(ms: Int): Boolean = dc().setScreenTimeout(ms)
-
     fun setAutoRotate(enabled: Boolean): Boolean = dc().setAutoRotateEnabled(enabled)
 
     // ── Audio ─────────────────────────────────────────────────────────────────
@@ -75,14 +69,9 @@ object DeviceControlManager {
 
     // ── System Appearance ─────────────────────────────────────────────────────
 
-    fun setFontScale(scale: Float): Boolean = dc().setFontScale(scale)
-
     fun setAnimations(enabled: Boolean): Boolean = dc().setAnimationsEnabled(enabled)
 
     // ── Settings convenience ──────────────────────────────────────────────────
-
-    fun putSetting(namespace: String, key: String, value: String): Boolean =
-        dc().putSetting(namespace, key, value)
 
     fun getSetting(namespace: String, key: String): String? = dc().getSetting(namespace, key)
 }

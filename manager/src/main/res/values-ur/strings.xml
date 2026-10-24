@@ -248,7 +248,6 @@
     <string name="app_management_filter_denied">مسترد</string>
     <string name="app_management_filter_hidden">چھپی ہوئی</string>
     <string name="app_management_action_sort">ترتیب دیں</string>
-    <string name="app_management_action_hidden_apps">چھپی ہوئی ایپس</string>
     <string name="app_management_sort_a_to_z">نام (A–Z)</string>
     <string name="app_management_sort_last_installed">حال ہی میں انسٹال شدہ</string>
     <string name="app_management_sort_last_updated">حال ہی میں اپ ڈیٹ شدہ</string>
@@ -613,7 +612,6 @@
     <string name="doctor_check_root">Root access</string>
     <string name="doctor_check_secure_settings">Secure Settings</string>
     <string name="doctor_check_server">Shizuku server</string>
-    <string name="doctor_check_background">Background limits</string>
     <string name="doctor_status_ok">ٹھیک ہے</string>
     <string name="doctor_status_running">چل رہا ہے</string>
     <string name="doctor_status_stopped">بند ہے</string>

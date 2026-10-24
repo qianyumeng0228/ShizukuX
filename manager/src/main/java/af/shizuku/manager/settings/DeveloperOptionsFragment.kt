@@ -113,7 +113,6 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
             "npu_acceleration_enabled" to "npu_acceleration",
             "native_window_crawler_enabled" to "native_window_crawler",
             "ai_core_experimental_enabled" to "ai_core_experimental",
-            "software_keystore_fallback_enabled" to "software_keystore_fallback",
             "samsung_system_uid_escalation_enabled" to "samsung_system_uid_escalation"
         )
         val experimentalKeys = setOf(

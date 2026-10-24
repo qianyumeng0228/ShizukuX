@@ -112,7 +112,6 @@ public class ShizukuSettings {
 
         // Long-press action toggles (ShizukuX additions)
         public static final String KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED = "samsung_system_uid_escalation_enabled";
-        public static final String KEY_SOFTWARE_KEYSTORE_FALLBACK_ENABLED = "software_keystore_fallback_enabled";
         public static final String KEY_OVERLAY_FS_PROXY_ENABLED = "overlay_fs_proxy_enabled";
         public static final String KEY_ROOT_KERNEL_GHOSTING_ENABLED = "root_kernel_ghosting_enabled";
         public static final String KEY_ROOT_PARTITION_GHOSTING_ENABLED = "root_partition_ghosting_enabled";
@@ -467,11 +466,6 @@ public class ShizukuSettings {
 
     public static boolean isSamsungSystemUidEscalationEnabled() {
         return getPreferences().getBoolean(Keys.KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED, false);
-    }
-
-    public static boolean isSoftwareKeystoreFallbackEnabled() {
-        SharedPreferences p = getPreferences();
-        return p != null && p.getBoolean(Keys.KEY_SOFTWARE_KEYSTORE_FALLBACK_ENABLED, false);
     }
 
     public static boolean isOverlayFsProxyEnabled() {
@@ -1200,7 +1194,6 @@ public class ShizukuSettings {
                 service.updateExtraFeatureEnabled("shadow_binder", isShadowBinderEnabled());
                 service.setExtraSetting("shadow_hidden_packages", getShadowBinderHiddenPackages());
                 service.updateExtraFeatureEnabled("samsung_system_uid_escalation", isSamsungSystemUidEscalationEnabled());
-                service.updateExtraFeatureEnabled("software_keystore_fallback", isSoftwareKeystoreFallbackEnabled());
                 service.updateExtraFeatureEnabled("overlay_fs_proxy", isOverlayFsProxyEnabled());
                 service.updateExtraFeatureEnabled("root_kernel_ghosting", isRootKernelGhostingEnabled());
                 service.updateExtraFeatureEnabled("root_partition_ghosting", isRootPartitionGhostingEnabled());

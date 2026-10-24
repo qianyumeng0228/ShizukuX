@@ -202,7 +202,6 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
             SortOrder.LAST_UPDATED -> R.id.sort_last_updated
         }
         menu.findItem(sortId)?.isChecked = true
-        menu.findItem(R.id.action_hidden_apps)?.isVisible = false
         return true
     }
 

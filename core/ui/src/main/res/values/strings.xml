@@ -196,7 +196,6 @@
     <string name="app_management_filter_denied">Denied</string>
     <string name="app_management_filter_hidden">Hidden</string>
     <string name="app_management_action_sort">Sort</string>
-    <string name="app_management_action_hidden_apps">Hidden apps</string>
     <string name="app_management_sort_a_to_z">Name (A–Z)</string>
     <string name="app_management_sort_last_installed">Last installed</string>
     <string name="app_management_sort_last_updated">Last updated</string>
@@ -522,7 +521,6 @@
     <string name="doctor_check_secure_settings">Secure Settings: %1$s</string>
     <string name="doctor_check_permission">ADB permission: %1$s</string>
     <string name="doctor_check_server">Shizuku server: %1$s</string>
-    <string name="doctor_check_background">Background limits: %1$s</string>
     <string name="doctor_status_ok">OK</string>
     <string name="doctor_status_running">Running</string>
     <string name="doctor_status_stopped">Stopped</string>

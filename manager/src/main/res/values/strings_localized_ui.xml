@@ -139,8 +139,6 @@
     <string name="settings_window_hierarchy_crawler_summary">Allow AI automation to read the active window view hierarchy without Accessibility Services</string>
     <string name="settings_experimental_ai_automation_title">Experimental AI Automation</string>
     <string name="settings_experimental_ai_automation_summary">Enable gesture simulation, pixel capture, and text injection for AI-driven automation</string>
-    <string name="settings_software_keystore_fallback_title">Software KeyStore Fallback</string>
-    <string name="settings_software_keystore_fallback_summary">Allows caching the ADB RSA Private Key encrypted with a software-based static AES key if your device\'s hardware KeyStore fails (for example, Samsung Knox). Reduces pairing prompts but decreases security.</string>
     <string name="settings_samsung_system_uid_title">Samsung System UID Escalation</string>
     <string name="settings_samsung_system_uid_summary">Attempt to escalate to UID 1000 (system) using an exploit specific to unpatched Samsung devices (by pascua28). Use at your own risk.</string>
 

@@ -236,7 +236,6 @@
     <string name="app_management_filter_denied">Negado</string>
     <string name="app_management_filter_hidden">Oculto</string>
     <string name="app_management_action_sort">Ordenar</string>
-    <string name="app_management_action_hidden_apps">Aplicativos ocultos</string>
     <string name="app_management_sort_a_to_z">Nome (A–Z)</string>
     <string name="app_management_sort_last_installed">Instalado por último</string>
     <string name="app_management_sort_last_updated">Atualizado por último</string>
@@ -597,7 +596,6 @@
     <string name="doctor_check_secure_settings">Configurações Seguras: %1$s</string>
     <string name="doctor_check_permission">Permissão ADB: %1$s</string>
     <string name="doctor_check_server">Servidor Shizuku: %1$s</string>
-    <string name="doctor_check_background">Limites em segundo plano: %1$s</string>
     <string name="doctor_status_ok">OK</string>
     <string name="doctor_status_running">Em execução</string>
     <string name="doctor_status_stopped">Parado</string>
