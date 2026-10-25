@@ -8,7 +8,7 @@ val mainHandler by lazy {
     Handler(Looper.getMainLooper())
 }
 
-private val workerThread by lazy(LazyThreadSafetyMode.NONE) {
+private val workerThread by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
     HandlerThread("Worker").apply { start() }
 }
 

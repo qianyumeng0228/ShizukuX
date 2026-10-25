@@ -19,9 +19,13 @@ object ApkChangedObservers {
         // so we need to watch the parent folder
 
         val path = File(apkPath).parent ?: return
-        val observer = observers.getOrPut(path) {
-            ApkChangedObserver(path).apply {
-                startWatching()
+        // getOrPut on a synchronizedMap is not atomic; hold the monitor for the whole
+        // check-then-insert (audit slice4 P2-1).
+        val observer = synchronized(observers) {
+            observers.getOrPut(path) {
+                ApkChangedObserver(path).apply {
+                    startWatching()
+                }
             }
         }
         observer.addListener(listener)
@@ -31,23 +35,30 @@ object ApkChangedObservers {
     fun stop(listener: ApkChangedListener) {
         val pathToRemove = mutableListOf<String>()
 
-        for ((path, observer) in observers) {
-            observer.removeListener(listener)
+        // Iteration must happen under the map monitor; iterating a synchronizedMap
+        // outside it can throw ConcurrentModificationException (audit slice4 P2-1).
+        synchronized(observers) {
+            for ((path, observer) in observers) {
+                observer.removeListener(listener)
 
-            if (!observer.hasListeners()) {
-                pathToRemove.add(path)
+                if (!observer.hasListeners()) {
+                    pathToRemove.add(path)
+                }
             }
         }
 
         for (path in pathToRemove) {
-            observers.remove(path)?.stopWatching()
+            val observer = synchronized(observers) { observers.remove(path) } ?: continue
+            observer.stopWatching()
         }
     }
 }
 
 class ApkChangedObserver(private val path: String) : FileObserver(path, DELETE) {
 
-    private val listeners = mutableSetOf<ApkChangedListener>()
+    // Mutated from binder threads, iterated on the inotify callback thread (line ~onEvent)
+    // — guard every access (audit slice4 P2-1).
+    private val listeners = Collections.synchronizedSet(mutableSetOf<ApkChangedListener>())
 
     fun addListener(listener: ApkChangedListener): Boolean {
         return listeners.add(listener)
@@ -70,7 +81,9 @@ class ApkChangedObserver(private val path: String) : FileObserver(path, DELETE) 
 
         if (path == "base.apk") {
             stopWatching()
-            ArrayList(listeners).forEach { it.onApkChanged() }
+            synchronized(listeners) {
+                ArrayList(listeners).forEach { it.onApkChanged() }
+            }
         }
     }
 

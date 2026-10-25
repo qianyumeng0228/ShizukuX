@@ -2,6 +2,7 @@ package rikka.shizuku.server
 
 import android.os.ParcelFileDescriptor
 import af.shizuku.server.IApkPatcher
+import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
@@ -90,9 +91,16 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
     }
 
-    override fun prepareTempDebug(packageName: String?): Boolean {
-        if (packageName.isNullOrBlank()) return false
-        if (sessions.containsKey(packageName)) return true
+    override fun prepareTempDebug(rawPackageName: String?): Boolean {
+        // Reject names containing '/', '..' or shell metacharacters before the value is
+        // interpolated into `/data/data/$packageName` and passed to pm (audit slice4 P1-3).
+        val packageName = rawPackageName ?: return false
+        if (!InputValidationUtils.isValidPackageName(packageName)) return false
+
+        // Serialize prepare/restore: two binder threads must not both pass the
+        // containsKey gate and run the uninstall/reinstall dance concurrently.
+        synchronized(this) {
+        if (sessions[packageName] != null) return true
 
         val apkPaths = findAllApks(packageName)
         if (apkPaths.isEmpty()) return false
@@ -154,22 +162,24 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
 
         sessions[packageName] = origPaths
         return true
+        }
     }
 
     override fun streamDataDir(packageName: String?): ParcelFileDescriptor? {
-        if (packageName.isNullOrBlank()) return null
+        if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return null
         if (!sessions.containsKey(packageName)) return null
         return pipe("run-as", packageName, "tar", "-czf", "-", "-C", "/data/data/$packageName", ".")
     }
 
     override fun restoreDataDir(packageName: String?, tarStream: ParcelFileDescriptor?): Boolean {
-        if (packageName.isNullOrBlank() || tarStream == null) return false
+        if (packageName == null || !InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
         if (!sessions.containsKey(packageName)) return false
         return pipeFrom(tarStream, "run-as", packageName, "tar", "-xzf", "-", "-C", "/data/data/$packageName")
     }
 
     override fun restoreOriginal(packageName: String?): Boolean {
-        if (packageName.isNullOrBlank()) return false
+        if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return false
+        synchronized(this) {
         val origPaths = sessions[packageName] ?: return false
 
         val ok = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) == 0 &&
@@ -178,10 +188,11 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         sessions.remove(packageName)
         origPaths.forEach { File(it).delete() }
         return ok
+        }
     }
 
     override fun streamOriginalApk(packageName: String?): ParcelFileDescriptor? {
-        if (packageName.isNullOrBlank()) return null
+        if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return null
         // Stream the base APK (prefer explicit base.apk, fall back to first)
         val origPath = sessions[packageName]
             ?.firstOrNull { it.endsWith("_orig_base.apk") }
@@ -191,7 +202,7 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
     }
 
     override fun isTempDebugging(packageName: String?): Boolean {
-        if (packageName.isNullOrBlank()) return false
+        if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return false
         return sessions.containsKey(packageName)
     }
 

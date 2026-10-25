@@ -56,7 +56,14 @@ class AppInspectorImpl : IAppInspector.Stub() {
                 val psOutput = ShellExecutor.exec("ps", "-A", "-o", "PID,NAME")
                 val pids = psOutput.lines()
                     .drop(1) // skip "PID NAME" header
-                    .filter { it.contains(packageName) }
+                    // Match the NAME column as an exact process token — the app process
+                    // ("com.foo") or a suffix process ("com.foo:push"). A bare contains()
+                    // would also catch unrelated processes whose name merely embeds the
+                    // package string (audit slice4 P2-3).
+                    .filter { line ->
+                        val name = line.trim().split("\\s+".toRegex()).getOrNull(1) ?: return@filter false
+                        name == packageName || name.startsWith("$packageName:")
+                    }
                     .mapNotNull { it.trim().split("\\s+".toRegex()).firstOrNull()?.toIntOrNull() }
 
                 if (pids.isEmpty()) {

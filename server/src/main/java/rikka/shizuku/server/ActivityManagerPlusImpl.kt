@@ -48,7 +48,11 @@ class ActivityManagerPlusImpl : IActivityManagerExtra.Stub() {
 
     override fun isAppFrozen(packageName: String?): Boolean {
         if (packageName == null) return false
-        return ShellExecutor.exec("pm", "list", "packages", "-d", packageName).contains(packageName)
+        // `pm list packages -d` prints "package:<path>=<pkg>"; match the exact "=<pkg>"
+        // token, or a bare substring hit also fires for com.foo.bar when probing com.foo
+        // (audit slice4 P2-3).
+        return ShellExecutor.exec("pm", "list", "packages", "-d", packageName).lines()
+            .any { it.substringAfter('=').trim() == packageName }
     }
 
     override fun setAppProcessLimit(limit: Int) {

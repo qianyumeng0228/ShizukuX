@@ -254,7 +254,11 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             method.invoke(pm, packageName, observer, userId)
             // Only trust the IPC path if the observer actually reported success in time;
             // otherwise fall through to the `pm clear` fallback rather than lying.
-            if (latch.await(30, TimeUnit.SECONDS) && succeeded.get()) return true
+            // Bounded wait: the observer callback normally lands within ~1-3s; a wedged
+            // system_server must not park this binder thread for 30s (audit slice4 P1-4).
+            // On timeout we fall through to the `pm clear` fallback anyway, so shortening
+            // the bound only changes how quickly that fallback engages.
+            if (latch.await(10, TimeUnit.SECONDS) && succeeded.get()) return true
         } catch (e: Exception) {
             Log.w(TAG, "clearAppData IPC failed for $packageName, falling back", e)
         }

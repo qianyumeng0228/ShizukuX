@@ -265,9 +265,18 @@ public class BinderSender {
         // ClientRecord's new 300ms freeze-delivery retries are posted on, and queuing behind this
         // loop would blow past their intended delay. Only the scheduling wait uses that handler;
         // the actual work runs on its own one-shot thread.
-        HandlerUtil.getMainHandler().postDelayed(
-                () -> new Thread(BinderSender::catchUpAlreadyRunningClients, "ShizukuCatchUp").start(),
-                2000);
+        try {
+            android.os.Handler main = HandlerUtil.getMainHandler();
+            main.postDelayed(
+                    () -> new Thread(BinderSender::catchUpAlreadyRunningClients, "ShizukuCatchUp").start(),
+                    2000);
+        } catch (Throwable t) {
+            // On the normal startup path setMainHandler() runs before register(); a null
+            // guard covers any unusual path that gets here first. Don't crash register() —
+            // run the catch-up pass inline on a one-shot thread instead (audit P3-5).
+            LOGGER.w("main handler not ready at register time; running catch-up inline", t);
+            new Thread(BinderSender::catchUpAlreadyRunningClients, "ShizukuCatchUp").start();
+        }
     }
 
     // AOSP's ActivityManager.PROCESS_STATE_NONEXISTENT (frameworks/base ProcessStateEnum.aidl) -

@@ -17,8 +17,13 @@ class AICorePlusImpl(
 ) : IAICoreExtra.Stub() {
     companion object {
         private const val TAG = "AICorePlusImpl"
+        // Upper bound on one persistent-sh write; beyond this we treat sh as wedged.
+        private const val WRITE_TIMEOUT_SECONDS = 5L
     }
 
+    // Written on the registerAIAutomationBridge binder thread, read on injectInput /
+    // screenshot binder threads — must be visible cross-thread (audit P2-6).
+    @Volatile
     private var automationBridge: af.shizuku.server.IAIAutomationBridge? = null
 
     fun setAutomationBridge(bridge: af.shizuku.server.IAIAutomationBridge?) {
@@ -111,30 +116,74 @@ class AICorePlusImpl(
     private var inputShellProcess: Process? = null
     private var inputShellWriter: java.io.OutputStreamWriter? = null
 
-    private fun injectInput(cmd: String): Boolean {
-        return try {
-            synchronized(this) {
-                if (inputShellProcess != null) { // If a process exists, check if it's still alive
-                    try {
-                        inputShellProcess!!.exitValue() // succeeds → process has died
-                        inputShellProcess = null
-                        inputShellWriter = null
-                    } catch (_: IllegalThreadStateException) { /* Still running */ }
+    // Serializes all persistent-sh writes on one daemon thread; the caller bounds the wait
+    // with future.get() so a wedged sh (e.g. `input tap` against a frozen display, which
+    // stops draining its stdin) is detected, destroyed and restarted instead of poisoning
+    // the singleton and parking every binder thread on the monitor forever (audit P1-5).
+    private val inputDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
+        Thread(r, "AICoreInput").apply { isDaemon = true }
+    }
+
+    private fun startShellDrainThread(stream: java.io.InputStream) {
+        val t = Thread {
+            try {
+                val buf = ByteArray(8192)
+                while (true) {
+                    if (stream.read(buf) == -1) break
                 }
-                if (inputShellProcess == null) {
-                    inputShellProcess = Runtime.getRuntime().exec("sh")
-                    inputShellWriter = java.io.OutputStreamWriter(inputShellProcess!!.outputStream)
-                }
-                inputShellWriter?.write("$cmd\n")
-                inputShellWriter?.flush()
+            } catch (_: Exception) {
             }
-            true
-        } catch (e: Exception) {
+        }
+        t.isDaemon = true
+        t.start()
+    }
+
+    private fun injectInput(cmd: String): Boolean {
+        val task = inputDispatcher.submit<Boolean> {
+            try {
+                synchronized(this) {
+                    if (inputShellProcess != null) { // If a process exists, check if it's still alive
+                        try {
+                            inputShellProcess!!.exitValue() // succeeds → process has died
+                            inputShellProcess = null
+                            inputShellWriter = null
+                        } catch (_: IllegalThreadStateException) { /* Still running */ }
+                    }
+                    if (inputShellProcess == null) {
+                        inputShellProcess = Runtime.getRuntime().exec("sh")
+                        // Drain sh's stdout/stderr on daemon threads: if a foreground child
+                        // (e.g. `input swipe`) fills the ~64KB pipe buffer, sh blocks and
+                        // our stdin write would block along with it.
+                        startShellDrainThread(inputShellProcess!!.inputStream)
+                        startShellDrainThread(inputShellProcess!!.errorStream)
+                        inputShellWriter = java.io.OutputStreamWriter(inputShellProcess!!.outputStream)
+                    }
+                    inputShellWriter?.write("$cmd\n")
+                    inputShellWriter?.flush()
+                }
+                true
+            } catch (e: Exception) {
+                synchronized(this) {
+                    inputShellProcess?.destroy()
+                    inputShellProcess = null
+                    inputShellWriter = null
+                }
+                false
+            }
+        }
+        return try {
+            task.get(WRITE_TIMEOUT_SECONDS, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (e: java.util.concurrent.TimeoutException) {
+            // sh is wedged: destroying it makes the blocked writer's write() fail with
+            // EPIPE so the queued task completes; clear references so the next call
+            // starts a fresh shell.
             synchronized(this) {
                 inputShellProcess?.destroy()
                 inputShellProcess = null
                 inputShellWriter = null
             }
+            false
+        } catch (e: Exception) {
             false
         }
     }

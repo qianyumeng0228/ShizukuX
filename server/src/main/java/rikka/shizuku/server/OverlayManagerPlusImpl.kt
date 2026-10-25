@@ -120,8 +120,10 @@ class OverlayManagerPlusImpl : IOverlayManagerExtra.Stub() {
 
     override fun prepareShadowMount(callingPackage: String?, partition: String?): Boolean {
         if (callingPackage == null || partition == null) return false
-        Log.i(TAG, "Ghost Bridge: Preparing shadow mount for partition $partition requested by $callingPackage")
-        // Mock success for Ghost Bridge emulation. Actual overlay logic requires root/magisk module to mount OverlayFS
+        // Deliberately a mock-success: a real overlay mount needs a root/Magisk module and
+        // is out of scope. Log at WARN so callers (and debug logs) can see the mount was
+        // *not* actually prepared, instead of silently believing it was (audit P3-9).
+        Log.w(TAG, "Ghost Bridge: shadow mount for partition $partition requested by $callingPackage is mocked (no real OverlayFS mount performed)")
         return true
     }
 }

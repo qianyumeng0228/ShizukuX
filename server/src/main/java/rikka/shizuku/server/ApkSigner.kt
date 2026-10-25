@@ -413,10 +413,18 @@ internal object ApkSigner {
         val cdBytes: ByteArray
         val eocdBytes: ByteArray
         RandomAccessFile(dst, "r").use { raf ->
-            cdOffset = ByteBuffer.wrap(readAt(raf, eocdOffset + 16, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
-            val cdSize = ByteBuffer.wrap(readAt(raf, eocdOffset + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).int.toLong()
+            // EOCD fields are unsigned 32-bit; reading them as signed int and then
+            // toLong() sign-extends values >= 0x80000000 (a >2GB central directory would
+            // read as a negative length and blow up in readAt). Read unsigned, and
+            // reject archives whose CD exceeds what a single Int buffer can hold rather
+            // than silently truncating (audit slice4 P2-7).
+            cdOffset = Integer.toUnsignedLong(ByteBuffer.wrap(readAt(raf, eocdOffset + 16, 4)).order(ByteOrder.LITTLE_ENDIAN).int)
+            val cdSize = Integer.toUnsignedLong(ByteBuffer.wrap(readAt(raf, eocdOffset + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).int)
+            if (cdSize > Int.MAX_VALUE) error("central directory too large to sign: $cdSize bytes")
             cdBytes = readAt(raf, cdOffset, cdSize.toInt())
-            eocdBytes = readAt(raf, eocdOffset, (dst.length() - eocdOffset).toInt())
+            val eocdLen = dst.length() - eocdOffset
+            if (eocdLen > Int.MAX_VALUE) error("EOCD record too large: $eocdLen bytes")
+            eocdBytes = readAt(raf, eocdOffset, eocdLen.toInt())
         }
 
         // AOSP v2 content digest over the two continuous sections:

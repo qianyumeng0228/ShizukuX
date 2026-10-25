@@ -2807,7 +2807,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         return checkExtraFeatureEnabled(key);
     }
 
-    private af.shizuku.server.IAIAutomationBridge aiAutomationBridge;
+    // Written on the registerAIAutomationBridge binder thread, read on injectInput /
+    // screenshot binder threads — must be visible cross-thread (audit P2-6).
+    private volatile af.shizuku.server.IAIAutomationBridge aiAutomationBridge;
 
     @Override
     public void registerAIAutomationBridge(af.shizuku.server.IAIAutomationBridge bridge) {

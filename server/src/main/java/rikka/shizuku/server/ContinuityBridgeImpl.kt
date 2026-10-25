@@ -80,7 +80,17 @@ class ContinuityBridgeImpl : IContinuityBridge.Stub() {
             // Link to death for cleanup when listener dies
             listener.linkToDeath({
                 Log.d(TAG, "Continuity listener died, cleaning up")
-                // Cleanup would happen here in a full implementation
+                // Best-effort unregistration from the handoff service so the remote side
+                // does not keep a dead binder reference. Not all Handoff builds expose an
+                // unregister method; missing ones are simply skipped (audit P2-2).
+                try {
+                    val handoffService = getHandoffService()
+                    val unregister = handoffService?.javaClass?.methods
+                        ?.firstOrNull { it.name == "unregisterListener" && it.parameterTypes.size == 1 }
+                    unregister?.invoke(handoffService, listener)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to unregister dead continuity listener", e)
+                }
             }, 0)
 
             if (android.os.Build.VERSION.SDK_INT >= 35) {
