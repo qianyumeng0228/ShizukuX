@@ -272,8 +272,7 @@
                     android:layout_marginTop="8sp"
                     android:textIsSelectable="true"
                     android:textColor="?android:textColorSecondary"
-                    android:fontFamily="monospace"
-                    tools:text="@string/terminal_tutorial_3_command" />
+                    android:fontFamily="monospace" />
 
                 <TextView
                     android:id="@+id/summary2"
@@ -326,8 +325,7 @@
                     android:layout_marginTop="8sp"
                     android:textIsSelectable="true"
                     android:textColor="?android:textColorSecondary"
-                    android:fontFamily="monospace"
-                    tools:text="@string/terminal_tutorial_3_command" />
+                    android:fontFamily="monospace" />
 
             </LinearLayout>
 

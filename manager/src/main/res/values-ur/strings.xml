@@ -157,8 +157,8 @@
     <string name="terminal_tutorial_export_summary">فائلیں (%1$s، %2$s، %3$s اور %4$s) ایک نئے فولڈر میں ایکسپورٹ کریں۔</string>
     <string name="terminal_tutorial_copy_command">cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files</string>
     <string name="terminal_tutorial_copy_summary"><![CDATA[یہ ایکسپورٹ کی گئی فائلوں کو آپ کی terminal ایپ کی نجی اسٹوریج میں کاپی کرتا ہے۔ آپ اپنی <font face="monospace">.bashrc</font> یا <font face="monospace">.zshrc</font> میں %1$s، %2$s اور %3$s کے لیے aliases بھی شامل کر سکتے ہیں۔]]></string>
-    <string name="terminal_tutorial_run_command">sh /path/to/%1$s</string>
-    <string name="terminal_tutorial_run_plus_command">sh /path/to/plus [کمانڈ]</string>
+    <string name="terminal_tutorial_run_command">sh %1$s</string>
+    <string name="terminal_tutorial_run_plus_command">sh %1$s [کمانڈ]</string>
 
     <!-- Adb Pairing Dialog -->
     <string name="adb_pairing_searching">جوڑا بنانے کی سروس تلاش کی جا رہی ہے…</string>

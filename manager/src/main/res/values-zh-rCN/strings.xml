@@ -211,9 +211,9 @@
     <string name="home_terminal_title">在终端应用中使用 Shizuku</string>
     <string name="home_terminal_description">通过 Shizuku 在终端应用中运行 Shell 命令</string>
     <string name="terminal_tutorial_miui">用户反映 MIUI 破坏了导出功能所使用的存储访问框架。</string>
-    <string name="terminal_tutorial_miui_2">如果您使用 MIUI，可能需要从 Shizuku APK 的 assets 目录中提取该文件。</string>
+    <string name="terminal_tutorial_miui_2">如果您使用 MIUI，可能需要从 Shizuku APK 的 assets 目录中提取这些文件。</string>
     <string name="terminal_tutorial_1">将文件导出到新文件夹。</string>
-    <string name="terminal_tutorial_1_description">将导出两个文件： %1$s 和 %2$s。如果所选文件夹中已存在这些文件，则会将其删除。</string>
+    <string name="terminal_tutorial_1_description">将导出四个文件：%1$s、%2$s、%3$s 和 %4$s。如果所选文件夹中已存在这些文件，则会将其删除。</string>
     <string name="terminal_export_files">导出文件</string>
     <string name="terminal_tutorial_2">使用终端应用将文件复制到其私有文件目录。</string>
     <string name="terminal_tutorial_2_description">提示：如果终端应用的主目录（~）位于私有文件目录中，将文件放在那里即可直接运行 %1$s，无需输入路径。\n\n否则，可以在终端应用的 %3$s 配置文件中为 %2$s 创建别名。</string>
@@ -498,8 +498,8 @@
     <string name="terminal_tutorial_export_summary"><![CDATA[将 %1$s、%2$s、%3$s 和 %4$s 导出到新文件夹。]]></string>
     <string name="terminal_tutorial_copy_command"><![CDATA[cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files]]></string>
     <string name="terminal_tutorial_copy_summary"><![CDATA[这会将导出的文件复制到终端应用的私有存储中。您还可以将 %1$s、%2$s 和 %3$s 添加到&lt;font face=\"monospace\"&gt;.bashrc&lt;/font&gt;或&lt;font face=\"monospace\"&gt;.zshrc&lt;/font&gt;。]]></string>
-    <string name="terminal_tutorial_run_command"><![CDATA[sh /path/to/%1$s]]></string>
-    <string name="terminal_tutorial_run_plus_command"><![CDATA[sh /path/to/plus [command]]]></string>
+    <string name="terminal_tutorial_run_command"><![CDATA[sh %1$s]]></string>
+    <string name="terminal_tutorial_run_plus_command"><![CDATA[sh %1$s [command]]]></string>
     <string name="adb_pairing_searching"><![CDATA[正在搜索配对服务...]]></string>
     <string name="adb_pairing_status_pairing"><![CDATA[正在与设备配对...]]></string>
     <string name="adb_pairing_status_failed"><![CDATA[配对失败。]]></string>
