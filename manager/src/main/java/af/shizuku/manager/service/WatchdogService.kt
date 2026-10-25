@@ -36,6 +36,7 @@ class WatchdogService : Service() {
     private var job: Job? = null
     private var pendingRecoveryJob: Job? = null
     private var stabilityJob: Job? = null
+    private var degradedRetryJob: Job? = null
     private var intentionalStop = false
 
     // Returns false on failure so callers can bail out via stopSelf() instead of crashing
@@ -109,19 +110,39 @@ class WatchdogService : Service() {
                         consecutiveCrashes++
                         lastRestartMs = now
                         if (consecutiveCrashes > MAX_AUTO_RESTARTS) {
-                            // v24 (power): the server environment is broken — 5+ consecutive
-                            // crash loops (≈25 min of attempts across the 5s→5min backoff
-                            // ladder). Spawning su every MAX_COOLDOWN_MS only to fail again
-                            // burns battery for zero recovery, so degrade to notifications only:
-                            // each further CRASHED tick posts the crash alert (60s-cooldown
-                            // gated) and never touches su again. A successful RUNNING
-                            // transition resets the counter via the stability window, which
-                            // automatically re-arms auto-restart once the user fixes the
-                            // environment (e.g. starts the server manually).
+                            // v25: degraded mode — long-cooldown probing instead of v24's
+                            // permanent notify-only suspension. A stuck server can outlive the
+                            // transient cause of its crash loop (an OEM freezer lift, a dropped
+                            // su grant that the user re-allows, an adbd/wifi rearm), and a dead
+                            // StateMachine never re-fires this flow, so a periodic probe is the
+                            // only way to pick the environment back up without user action.
+                            // This mirrors the classic watchdog idiom (KernelSU / SukiSU-Ultra /
+                            // upstream Shizuku): never give up, just back off to a long cadence.
+                            // Every DEGRADED_COOLDOWN_MS the probe runs ShizukuReceiverStarter.start()
+                            // (which honours the launch mode + the ADB-precondition/root fallback in
+                            // start()), the 60s crash-notification cooldown still gates alerts, and
+                            // a successful RUNNING resets the counter via the stability window,
+                            // cancelling this loop and restoring normal backoff restarts.
+                            showCrashNotification()
                             ActivityLogManager.log(
                                 "Shizuku", applicationContext.packageName,
-                                "Watchdog: auto-restart suspended after $consecutiveCrashes consecutive crashes (environment broken); notifying only"
+                                "Watchdog: auto-restart degraded after $consecutiveCrashes crashes; probing every ${DEGRADED_COOLDOWN_MS / 60_000L}min"
                             )
+                            if (degradedRetryJob == null) {
+                                degradedRetryJob = scope.launch {
+                                    while (isActive) {
+                                        delay(DEGRADED_COOLDOWN_MS)
+                                        showCrashNotification()
+                                        ActivityLogManager.log(
+                                            "Shizuku", applicationContext.packageName,
+                                            "Watchdog: degraded environment probe"
+                                        )
+                                        withContext(Dispatchers.IO) {
+                                            ShizukuReceiverStarter.start(applicationContext)
+                                        }
+                                    }
+                                }
+                            }
                             return@collectLatest
                         }
                         if (!wasFirstRestart) {
@@ -146,12 +167,13 @@ class WatchdogService : Service() {
                                 }
                             }
                         }
-                        // rootStart() synchronously spawns the su process (Shell.getShell().isRoot +
-                        // Shell.cmd(...).exec(), typically 1-5 s, timeout 20-30 s). Running it on
-                        // Dispatchers.Main here froze the UI into an ANR and, because WatchdogService
-                        // is a foreground service, fed the crash listener into a restart-block-ANR
-                        // loop. Hop to IO for the blocking su shell; the log/notification calls
-                        // around it remain on the main dispatcher.
+                        // start() spawns the su process — the root probe is now bounded
+                        // (hasRootWithTimeout, 5s) and the su shell itself typically takes
+                        // 1-5 s, timeout 20-30 s. Running it on Dispatchers.Main here froze the
+                        // UI into an ANR and, because WatchdogService is a foreground service,
+                        // fed the crash listener into a restart-block-ANR loop. Hop to IO for
+                        // the blocking su shell; the log/notification calls around it remain
+                        // on the main dispatcher.
                         withContext(Dispatchers.IO) {
                             ShizukuReceiverStarter.start(applicationContext)
                         }
@@ -164,6 +186,11 @@ class WatchdogService : Service() {
                     // waits for, and both run on the main dispatcher, so cancelling here
                     // would kill that check before it logs the recovery.
                     stabilityJob?.cancel()
+                    // A successful RUNNING also proves the degraded probe found the
+                    // environment healed — stop probing; the stability window below resets
+                    // consecutiveCrashes and normal backoff restarts take over.
+                    degradedRetryJob?.cancel()
+                    degradedRetryJob = null
                     stabilityJob = scope.launch {
                         delay(STABILITY_WINDOW_MS)
                         consecutiveCrashes = 0
@@ -190,6 +217,7 @@ class WatchdogService : Service() {
     override fun onDestroy() {
         stabilityJob?.cancel()
         pendingRecoveryJob?.cancel()
+        degradedRetryJob?.cancel()
         job?.cancel()
         scope.cancel()
         isRunning.set(false)
@@ -316,8 +344,11 @@ class WatchdogService : Service() {
         private const val MAX_COOLDOWN_MS = 300_000L   // 5 min cap
         private const val CRASH_NOTIFICATION_COOLDOWN_MS = 60_000L
 
-        /** Consecutive crash loop threshold after which auto-restart suspends (notify-only). */
+        /** Consecutive crash loop threshold after which auto-restart degrades to long-cooldown probes. */
         private const val MAX_AUTO_RESTARTS = 5
+
+        /** Degraded-mode probe cadence: one ShizukuReceiverStarter.start() attempt every 15 min. */
+        private const val DEGRADED_COOLDOWN_MS = 15 * 60 * 1000L
 
         @Volatile
         private var lastCrashNotificationMs = 0L

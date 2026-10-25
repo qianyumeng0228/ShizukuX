@@ -953,6 +953,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <!-- WADB Starter -->
     <string name="wadb_notification_title">Starting Shizuku…</string>
     <string name="wadb_notification_wifi_required">Awaiting Wi-Fi connection before proceeding</string>
+    <string name="wadb_notification_unavailable">Wireless debugging is unavailable and the device is not rooted; the service cannot be started automatically</string>
     <string name="wadb_notification_retry">Waiting to retry</string>
     <string name="wadb_error_title">Error while starting on boot</string>
     <string name="wadb_error_notify_dev">Tap to notify the developer.</string>

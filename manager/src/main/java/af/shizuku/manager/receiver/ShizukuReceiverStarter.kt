@@ -28,11 +28,19 @@ import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.common.util.UserHandleCompat
 import af.shizuku.manager.worker.AdbStartWorker
 import rikka.shizuku.Shizuku
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 object ShizukuReceiverStarter {
 
     const val NOTIFICATION_ID = 1447
     private const val CHANNEL_ID = "AdbStartWorker"
+
+    /** App-lifetime scope for the v25 async ADB→root fallback probe. */
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     enum class WorkerState {
         AWAITING_WIFI,
@@ -51,10 +59,34 @@ object ShizukuReceiverStarter {
             rootStart(context)
         } else if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
-                AdbStartWorker.enqueue(context)
-                val initialState = if (EnvironmentUtils.getAdbTcpPort() > 0 && !EnvironmentUtils.isWifiRequired())
-                    WorkerState.RUNNING else WorkerState.AWAITING_WIFI
-                updateNotification(context, initialState)
+                // v25: probe the wireless-debugging preconditions before committing to
+                // AdbStartWorker. v24 on-device testing showed the watchdog recovering into a
+                // dead end when SP mode=ADB but wireless debugging was never armed (no TCP port /
+                // tcp mode off): the worker's mDNS discovery then times out and the server never
+                // comes up. If the ADB path can't work here but the device is rooted, fall back to
+                // rootStart (which keeps all its defences: binder preflight, pm path resolution,
+                // recoverFromFailedStart); if neither path is available, tell the user explicitly
+                // instead of failing silently. Mirrors the "try the configured path, degrade to
+                // what the device can actually do" recovery thinking of KernelSU/SukiSU daemons.
+                val adbUsable = EnvironmentUtils.getAdbTcpPort() > 0 && !EnvironmentUtils.isWifiRequired()
+                if (!adbUsable) {
+                    // v25 fallback: root probe is async — start() runs on the main thread
+                    // from receivers and inside withContext(IO) from the watchdog, and libsu's
+                    // probe can block on a pending grant prompt. Never block the caller;
+                    // bound the probe to 5s and fall through to the notification branch.
+                    scope.launch {
+                        if (hasRootWithTimeout()) {
+                            withContext(Dispatchers.IO) { rootStart(context) }
+                        } else {
+                            showUnavailableNotification(context)
+                        }
+                    }
+                } else if (adbUsable) {
+                    AdbStartWorker.enqueue(context)
+                    updateNotification(context, WorkerState.RUNNING)
+                } else {
+                    showUnavailableNotification(context)
+                }
             } else {
                 showPermissionErrorNotification(context)
             }
@@ -254,5 +286,56 @@ object ShizukuReceiverStarter {
             .build()
 
         nm.notify(NOTIFICATION_ID, notification)
+    }
+
+    /** v25: ADB launch was requested but wireless debugging is not armed AND the device is not
+     *  rooted, so neither the ADB nor the root path can start the service. Post an explicit
+     *  notification instead of failing silently (previously the worker would just time out). */
+    private fun showUnavailableNotification(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.wadb_notification_title),
+                NotificationManager.IMPORTANCE_LOW
+            )
+            nm.createNotificationChannel(channel)
+        }
+
+        val msg = context.getString(R.string.wadb_notification_unavailable)
+        nm.notify(NOTIFICATION_ID, buildNotification(context, msg))
+    }
+
+    /** v25: bounded root probe for the background (watchdog/receiver) ADB→root fallback.
+     *  libsu's `Shell.getShell().isRoot` blocks the calling thread on the su spawn — when the
+     *  app holds no root grant (or the manager prompt cannot be answered headless) that call
+     *  wedges the recovery flow indefinitely, and a coroutine timeout cannot interrupt a
+     *  blocking call anyway. Probe on a daemon thread and bound the wait with a latch instead:
+     *  a pending prompt times out as "no root" after 5s and the caller falls through to the
+     *  notification branch; the daemon thread may still sit on a prompt the user can answer
+     *  later, which does not block any state-machine flow. */
+    private suspend fun hasRootWithTimeout(): Boolean {
+        return withContext(Dispatchers.IO) {
+            val result = arrayOf(false)
+            val latch = java.util.concurrent.CountDownLatch(1)
+            val t = Thread {
+                try {
+                    result[0] = Shell.getShell().isRoot
+                } catch (e: Exception) {
+                    result[0] = false
+                } finally {
+                    latch.countDown()
+                }
+            }.apply {
+                isDaemon = true
+                start()
+            }
+            try {
+                latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+            result[0]
+        }
     }
 }
