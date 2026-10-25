@@ -268,13 +268,21 @@ class StartWirelessAdbViewHolder(
             if (rootRestart) R.string.home_root_button_restart else R.string.home_root_button_start
         )
 
-        // 4.1 merged card: title + description follow the *runtime* root state (service
-        // running as uid=0, signaled by HomeAdapter via data == rootRestart), NOT the
-        // device's Root capability. On Xiaomi 13 Pro + SukiSU, EnvironmentUtils.isRooted()
-        // returns false inside the app process even when Shizuku itself was started as root,
-        // so keying off isRootPath left the card stuck on the wireless-debug copy.
-        binding.title.setText(if (rootRestart) R.string.home_root_title else R.string.home_wireless_adb_title)
-        binding.text1.text = if (rootRestart) {
+        // v27 (root-entry discoverability): the card used to key its title/description off the
+        // *runtime* state only (service running as uid=0, i.e. rootRestart) — so on a rooted
+        // device whose server had not yet been started via root, the card showed the
+        // wireless-debugging copy and users could not find the root start entry at all
+        // ("root启动在哪里"). Now the Root copy also applies when the device itself can start
+        // via root (isRootPath — the same gate the primary button's click routing uses); the
+        // running-state flag only switches the button Start/Restart and keeps the copy correct
+        // for the already-root-running case. (v26 F1 fixed EnvironmentUtils.isRooted() so it
+        // reports true in-app on rooted devices like Xiaomi 13 Pro + SukiSU, which is what the
+        // old comment below this code could not rely on.)
+        val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
+        binding.title.setText(
+            if (rootRestart || isRootPath) R.string.home_root_title else R.string.home_wireless_adb_title
+        )
+        binding.text1.text = if (rootRestart || isRootPath) {
             binding.text1.movementMethod = LinkMovementMethod.getInstance()
             context.getString(
                 R.string.home_root_description,
