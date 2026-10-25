@@ -71,14 +71,14 @@
             android:key="verify_apk_local"
             android:title="@string/verify_local_signature_title"
             android:summary="@string/verify_local_signature_summary"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:icon="@drawable/ic_shield_24" />
 
         <SwitchPreferenceCompat
             android:key="verify_apk_fdroid"
             android:title="@string/verify_fdroid_index_title"
             android:summary="@string/verify_fdroid_index_summary"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:icon="@drawable/ic_folder_24" />
 
         <SwitchPreferenceCompat

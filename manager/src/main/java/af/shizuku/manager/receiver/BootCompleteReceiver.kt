@@ -70,14 +70,24 @@ class BootCompleteReceiver : BroadcastReceiver() {
                 LockedBootStartService.start(context)
             }
         } else {
-            try {
-                ShizukuReceiverStarter.start(context)
-            } catch (e: Exception) {
-                // LOCKED_BOOT_COMPLETED fires during direct boot, before credential-encrypted storage
-                // is available — WorkManager can't initialize and prefs may be inaccessible. This is
-                // expected; the later BOOT_COMPLETED (post-unlock) handles auto-start. Catch broadly so
-                // no variant crashes the receiver, and log at warn (breadcrumb, not a billed Sentry event).
-                Timber.tag("BootCompleteReceiver").w(e, "Auto-start skipped (service not ready, e.g. direct boot)")
+            // rootStart() spawns the su shell synchronously (1-30 s). A manifest BroadcastReceiver's
+            // onReceive runs on the main thread with a ~10s budget before the system reclaims the
+            // process, so an inline start() blocked on su made root boot auto-start unreliable.
+            // goAsync() + Dispatchers.IO runs the blocking start off the main thread and keeps the
+            // receiver alive until it returns. Mirrors the developer-options / bridge branches above.
+            val pending = goAsync()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    ShizukuReceiverStarter.start(context)
+                } catch (e: Exception) {
+                    // LOCKED_BOOT_COMPLETED fires during direct boot, before credential-encrypted storage
+                    // is available — WorkManager can't initialize and prefs may be inaccessible. This is
+                    // expected; the later BOOT_COMPLETED (post-unlock) handles auto-start. Catch broadly so
+                    // no variant crashes the receiver, and log at warn (breadcrumb, not a billed Sentry event).
+                    Timber.tag("BootCompleteReceiver").w(e, "Auto-start skipped (service not ready, e.g. direct boot)")
+                } finally {
+                    pending.finish()
+                }
             }
         }
         try {

@@ -35,19 +35,27 @@ class AutoBrightnessTileService : TileService() {
                 val ok = DeviceControlManager.setAutoBrightness(target)
                 if (ok) {
                     updateTileState(target)
-                    Toast.makeText(
-                        this@AutoBrightnessTileService,
-                        if (target) R.string.device_control_autobrightness_on else R.string.device_control_autobrightness_off,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(
+                        if (target) R.string.device_control_autobrightness_on else R.string.device_control_autobrightness_off
+                    )
                 } else {
-                    Toast.makeText(this@AutoBrightnessTileService, R.string.device_control_operation_failed, Toast.LENGTH_SHORT).show()
+                    showToast(R.string.device_control_operation_failed)
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@AutoBrightnessTileService, R.string.device_control_service_not_available, Toast.LENGTH_SHORT).show()
+                // Toast needs a Looper on the calling thread (API < 30); post to main thread.
+                // The previous catch-block second Toast on this bare thread was itself throwing
+                // and killing the process.
+                showToast(R.string.device_control_service_not_available)
             } finally {
                 busy = false
             }
+        }
+    }
+
+    /** Toast from a worker thread: always hop to the main looper first. */
+    private fun showToast(resId: Int) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(this@AutoBrightnessTileService, resId, Toast.LENGTH_SHORT).show()
         }
     }
 

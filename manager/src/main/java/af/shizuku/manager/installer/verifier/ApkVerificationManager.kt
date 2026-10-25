@@ -32,9 +32,13 @@ class ApkVerificationManager(
         val detailsBuilder = StringBuilder()
 
         for (client in clients) {
-            // Check if the client is enabled in settings
-            // F-Droid and Local Signature are enabled by default (true), others default to false
-            val isEnabledByDefault = client.preferenceKey in listOf("verify_apk_fdroid", "verify_apk_local")
+            // Check if the client is enabled in settings.
+            // NOTE: the F-Droid index and Local Signature clients are currently placeholders —
+            // they perform NO real check yet still returned isSafe=true with "matches" wording,
+            // which fabricated a clean bill of health. They default to OFF until the real index/
+            // signature comparison is implemented; users opting in see an honest "not actually
+            // verified" detail. VirusTotal/Pithus default false as before.
+            val isEnabledByDefault = client.preferenceKey in emptyList<String>()
             if (sharedPreferences.getBoolean(client.preferenceKey, isEnabledByDefault)) {
                 val result = client.verifyApk(apkFile, sha256)
                 activeMethods.add(client.name)

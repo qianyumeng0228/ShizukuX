@@ -1,6 +1,7 @@
 package af.shizuku.manager.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.SystemClock
 import android.util.AttributeSet
 import androidx.core.view.ViewCompat
@@ -8,6 +9,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceManager
 import androidx.preference.PreferenceViewHolder
+import androidx.preference.TwoStatePreference
 import af.shizuku.manager.R
 
 class CollapsiblePreferenceCategory @JvmOverloads constructor(
@@ -27,6 +29,10 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
     // based on OS version or another setting). Such children must stay hidden even when the
     // category is expanded, and the collapse toggle must not resurrect them.
     private val unavailableChildKeys = mutableSetOf<String>()
+
+    // Re-evaluated on each shared-prefs change while attached: when a dependency switch flips,
+    // dependents must appear/disappear immediately rather than waiting for a manual expand cycle.
+    private var prefsListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
     init {
         layoutResource = R.layout.collapsible_preference_category_card
@@ -137,8 +143,47 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
     private fun updateChildren() {
         for (i in 0 until preferenceCount) {
             val child = getPreference(i)
-            child.isVisible = expanded && !unavailableChildKeys.contains(child.key)
+            child.isVisible = expanded &&
+                !unavailableChildKeys.contains(child.key) &&
+                dependencySatisfied(child)
         }
+    }
+
+    /** androidx treats `android:dependency` as disabling (greying) the dependent, not hiding it.
+     *  Inside a collapsible card we instead hide dependents whose dependency is not met, so
+     *  expanding never resurrects a row belonging to a disabled switch. This mirrors the
+     *  framework bookkeeping: child.mDependencyMet == !dependency.shouldDisableDependents(),
+     *  where a TwoStatePreference disables dependents when unchecked and a plain Preference
+     *  when disabled.
+     *
+     *  The shared-prefs value is authoritative rather than dep.isChecked because the owning
+     *  fragment's onPreferenceChangeListener persists the new value to SharedPreferences
+     *  BEFORE SwitchPreferenceCompat.setChecked() updates mChecked. Our own
+     *  OnSharedPreferenceChangeListener then fires with dep.isChecked still holding the OLD
+     *  value; the second persist (inside setChecked) writes an unchanged value and does not
+     *  notify again, so reading mChecked would freeze the dependent in the WRONG visibility
+     *  (inverted dependency behavior). Reading the already-updated SP value avoids the race.
+     *  The in-memory Preference is still consulted when the key was never persisted. */
+    private fun dependencySatisfied(child: Preference): Boolean {
+        val depKey = child.dependency ?: return true
+        val sp = preferenceManager?.sharedPreferences
+        if (sp != null && sp.contains(depKey)) {
+            return sp.getBoolean(depKey, false)
+        }
+        var dep: Preference? = findPreference<Preference>(depKey)
+        if (dep == null) {
+            dep = preferenceManager?.preferenceScreen?.findPreference<Preference>(depKey)
+        }
+        val resolved = dep ?: return true
+        return if (resolved is TwoStatePreference) resolved.isChecked else resolved.isEnabled
+    }
+
+    private fun childDependencyKeys(): Set<String> {
+        val keys = mutableSetOf<String>()
+        for (i in 0 until preferenceCount) {
+            getPreference(i).dependency?.let { keys.add(it) }
+        }
+        return keys
     }
 
     override fun onAttachedToHierarchy(preferenceManager: PreferenceManager) {
@@ -149,12 +194,32 @@ class CollapsiblePreferenceCategory @JvmOverloads constructor(
             expanded = getPersistedBoolean(defaultExpanded)
         }
         updateChildren()
+        // React to dependency switches toggling while expanded (see field comment). Observing
+        // shared-prefs writes — instead of setOnPreferenceChangeListener — never clobbers the
+        // fragment's own listeners on the same switch.
+        if (prefsListener == null) {
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                if (key != null && childDependencyKeys().contains(key)) {
+                    updateChildren()
+                }
+            }
+            prefsListener = listener
+            preferenceManager.sharedPreferences?.registerOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    override fun onDetached() {
+        super.onDetached()
+        prefsListener?.let { preferenceManager?.sharedPreferences?.unregisterOnSharedPreferenceChangeListener(it) }
+        prefsListener = null
     }
 
     override fun addPreference(preference: Preference): Boolean {
         val result = super.addPreference(preference)
         if (result) {
-            preference.isVisible = expanded && !unavailableChildKeys.contains(preference.key)
+            preference.isVisible = expanded &&
+                !unavailableChildKeys.contains(preference.key) &&
+                dependencySatisfied(preference)
         }
         return result
     }

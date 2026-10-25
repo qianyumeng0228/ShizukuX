@@ -130,7 +130,15 @@ class WatchdogService : Service() {
                                 }
                             }
                         }
-                        ShizukuReceiverStarter.start(applicationContext)
+                        // rootStart() synchronously spawns the su process (Shell.getShell().isRoot +
+                        // Shell.cmd(...).exec(), typically 1-5 s, timeout 20-30 s). Running it on
+                        // Dispatchers.Main here froze the UI into an ANR and, because WatchdogService
+                        // is a foreground service, fed the crash listener into a restart-block-ANR
+                        // loop. Hop to IO for the blocking su shell; the log/notification calls
+                        // around it remain on the main dispatcher.
+                        withContext(Dispatchers.IO) {
+                            ShizukuReceiverStarter.start(applicationContext)
+                        }
                         Timber.tag(TAG).d("Watchdog: restart #$consecutiveCrashes (cooldown was ${cooldown}ms)")
                     } else {
                         Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms / ${cooldown}ms)")

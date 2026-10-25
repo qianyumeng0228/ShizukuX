@@ -267,8 +267,8 @@
     <string name="verification_method_fdroid_index">F-Droid / IzzyOnDroid Offline Index</string>
     <string name="verification_method_pithus">Pithus Threat Intel</string>
     <string name="verification_method_virustotal">VirusTotal API</string>
-    <string name="verification_detail_signature_matches">Signature matches locally.</string>
-    <string name="verification_detail_fdroid_hash_matches">Hash matches offline F-Droid repository index.</string>
+    <string name="verification_detail_signature_matches">Not actually checked yet: local signature comparison is not implemented.</string>
+    <string name="verification_detail_fdroid_hash_matches">Not actually checked yet: offline F-Droid index is not parsed.</string>
     <string name="verification_detail_hash_not_found">Hash not in database.</string>
     <string name="verification_detail_http_skipped">HTTP %1$d, skipped.</string>
     <string name="verification_detail_risk_score">Risk score %1$d/100.</string>

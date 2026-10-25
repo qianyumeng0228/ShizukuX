@@ -35,19 +35,27 @@ class AutoRotateTileService : TileService() {
                 val ok = DeviceControlManager.setAutoRotate(target)
                 if (ok) {
                     updateTileState(target)
-                    Toast.makeText(
-                        this@AutoRotateTileService,
-                        if (target) R.string.device_control_autorotate_on else R.string.device_control_autorotate_off,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(
+                        if (target) R.string.device_control_autorotate_on else R.string.device_control_autorotate_off
+                    )
                 } else {
-                    Toast.makeText(this@AutoRotateTileService, R.string.device_control_operation_failed, Toast.LENGTH_SHORT).show()
+                    showToast(R.string.device_control_operation_failed)
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@AutoRotateTileService, R.string.device_control_service_not_available, Toast.LENGTH_SHORT).show()
+                // Toast needs a Looper on the calling thread (API < 30); post to main thread.
+                // The previous catch-block second Toast on this bare thread was itself throwing
+                // and killing the process.
+                showToast(R.string.device_control_service_not_available)
             } finally {
                 busy = false
             }
+        }
+    }
+
+    /** Toast from a worker thread: always hop to the main looper first. */
+    private fun showToast(resId: Int) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(this@AutoRotateTileService, resId, Toast.LENGTH_SHORT).show()
         }
     }
 

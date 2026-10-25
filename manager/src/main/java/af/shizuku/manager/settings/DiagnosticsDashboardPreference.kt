@@ -135,8 +135,13 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                         }
                     }
                     "dhizuku_not_owner" -> {
+                        // Flattened ComponentName: the receiver is compiled under the namespace
+                        // (af.shizuku.manager), NOT the applicationId (xyz.shizuku.extra.api). A
+                        // relative ".admin.DhizukuAdminReceiver" is resolved by dpm against the
+                        // package name, yielding xyz.shizuku.extra.api.admin... which does not exist.
+                        // Use the full class name, matching DeviceOwnerSettingsFragment.
                         val cmd = "adb shell dpm set-device-owner " +
-                            "${context.packageName}/.admin.DhizukuAdminReceiver"
+                            "${context.packageName}/af.shizuku.manager.admin.DhizukuAdminReceiver"
                         MaterialAlertDialogBuilder(context)
                             .setTitle(R.string.diagnostics_device_owner_setup_title)
                             .setMessage(context.getString(R.string.diagnostics_device_owner_setup_message, cmd))

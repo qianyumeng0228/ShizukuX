@@ -35,19 +35,29 @@ class AirplaneModeTileService : TileService() {
                 val ok = DeviceControlManager.setAirplaneMode(target)
                 if (ok) {
                     updateTileState(target)
-                    Toast.makeText(
-                        this@AirplaneModeTileService,
-                        if (target) R.string.device_control_airplane_on else R.string.device_control_airplane_off,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast(
+                        if (target) R.string.device_control_airplane_on else R.string.device_control_airplane_off
+                    )
                 } else {
-                    Toast.makeText(this@AirplaneModeTileService, R.string.device_control_operation_failed, Toast.LENGTH_SHORT).show()
+                    showToast(R.string.device_control_operation_failed)
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@AirplaneModeTileService, R.string.device_control_service_not_available, Toast.LENGTH_SHORT).show()
+                // Toast cannot be constructed on a thread without a Looper (API < 30 throws
+                // "Can't toast on a thread that has not called Looper.prepare()"); post it to
+                // the main thread. The previous catch-block second Toast on this same bare
+                // thread was itself throwing and killing the process.
+                showToast(R.string.device_control_service_not_available)
             } finally {
                 busy = false
             }
+        }
+    }
+
+    /** Toast from a worker thread: always hop to the main looper first (API 24-29 Toast
+     *  construction requires a Looper on the calling thread). */
+    private fun showToast(resId: Int) {
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(this@AirplaneModeTileService, resId, Toast.LENGTH_SHORT).show()
         }
     }
 

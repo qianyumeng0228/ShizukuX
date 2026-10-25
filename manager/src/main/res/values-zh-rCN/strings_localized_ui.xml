@@ -266,8 +266,8 @@
     <string name="verification_method_fdroid_index">F-Droid / IzzyOnDroid 离线索引</string>
     <string name="verification_method_pithus">Pithus 威胁情报</string>
     <string name="verification_method_virustotal">VirusTotal API</string>
-    <string name="verification_detail_signature_matches">本地签名匹配。</string>
-    <string name="verification_detail_fdroid_hash_matches">哈希与离线 F-Droid 仓库索引匹配。</string>
+    <string name="verification_detail_signature_matches">尚未实际校验：本地签名比对功能未实现。</string>
+    <string name="verification_detail_fdroid_hash_matches">尚未实际校验：未解析离线 F-Droid 索引。</string>
     <string name="verification_detail_hash_not_found">数据库中没有此哈希。</string>
     <string name="verification_detail_http_skipped">HTTP %1$d，已跳过。</string>
     <string name="verification_detail_risk_score">风险分数 %1$d/100。</string>
