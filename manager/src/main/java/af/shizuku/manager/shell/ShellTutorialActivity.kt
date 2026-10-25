@@ -35,7 +35,7 @@ class ShellTutorialActivity : AppBarActivity() {
 
         private val SH_NAME = "rish"
         private val DEX_NAME = "rish_shizuku.dex"
-        private val PLUS_NAME = "plus"
+        private val PLUS_NAME = "extra"
         private val SU_NAME = "su"
     }
 
@@ -166,7 +166,7 @@ class ShellTutorialActivity : AppBarActivity() {
             val plusPath = af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath(PLUS_NAME) ?: "/sdcard/$PLUS_NAME"
 
             val rishCmd = getString(R.string.terminal_tutorial_run_command, rishPath)
-            val plusCmd = getString(R.string.terminal_tutorial_run_plus_command) + " (sh $plusPath)"
+            val plusCmd = getString(R.string.terminal_tutorial_run_plus_command, plusPath)
             command3.text = "$rishCmd\n\n$plusCmd"
 
             button1.setOnClickListener {
