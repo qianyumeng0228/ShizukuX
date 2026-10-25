@@ -336,7 +336,7 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
             return
         }
         // Scan all apps that declare a DeviceAdminReceiver via the DEVICE_ADMIN_ENABLED action.
-        val pm = ctx.packageName
+        val selfPackage = ctx.packageName
         val candidates = mutableListOf<Pair<String, android.content.ComponentName>>()
         val seenPackages = mutableSetOf<String>()
         try {
@@ -347,7 +347,7 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
                 val activityInfo = resolveInfo.activityInfo ?: continue
                 val packageName = activityInfo.packageName
                 android.util.Log.d("ShizukuXTransfer", "found receiver: $packageName/${activityInfo.name}")
-                if (packageName == pm) continue // skip self
+                if (packageName == selfPackage) continue // skip self
                 if (seenPackages.contains(packageName)) continue // dedupe by package: some apps declare multiple DPC receivers
                 seenPackages.add(packageName)
                 val name = activityInfo.name

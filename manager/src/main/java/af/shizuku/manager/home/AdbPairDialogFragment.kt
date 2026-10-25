@@ -90,7 +90,7 @@ class AdbPairDialogFragment : DialogFragment() {
                 return@setOnClickListener
             }
 
-            val password = codeEditText?.text.toString() ?: ""
+            val password = codeEditText?.text?.toString() ?: ""
 
             viewModel.run(port, password)
         }

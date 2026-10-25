@@ -362,7 +362,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
 
             localizedLocales.add(
                 if (index != currentLocaleIndex) {
-                    "$localeName<br><small>$localizedLocaleName<small>".toHtml()
+                    "$localeName<br><small>$localizedLocaleName</small>".toHtml()
                 } else {
                     localizedLocaleName
                 }

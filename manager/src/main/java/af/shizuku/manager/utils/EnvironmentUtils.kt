@@ -39,6 +39,13 @@ object EnvironmentUtils {
     @Volatile
     private var isRootedCached: Boolean? = null
 
+    @Volatile
+    private var isRootedCheckedAt: Long = 0L
+
+    /** Re-probe after this long: a root grant can be given/revoked in the external root manager
+     *  (SukiSU/KernelSU) while the app stays alive, so the cached answer should not be permanent. */
+    private const val ROOT_CHECK_TTL_MS = 5 * 60 * 1000L
+
     init {
         // Still prewarm in background to avoid any potential main thread hit during class load
         startRootCheck()
@@ -46,28 +53,49 @@ object EnvironmentUtils {
 
     /** Kick off an early root-availability check. Safe to call multiple times. */
     fun prewarmAsync() {
-        if (isRootedCached == null) startRootCheck()
+        if (isRootedCached == null || System.currentTimeMillis() - isRootedCheckedAt > ROOT_CHECK_TTL_MS) startRootCheck()
     }
 
     private fun startRootCheck() {
-        if (isRootedCached != null) return
+        if (isRootedCached != null && System.currentTimeMillis() - isRootedCheckedAt <= ROOT_CHECK_TTL_MS) return
         val t = Thread({
-            if (isRootedCached == null) {
-                isRootedCached = try { checkSuExists() } catch (_: Exception) { false }
+            if (isRootedCached == null || System.currentTimeMillis() - isRootedCheckedAt > ROOT_CHECK_TTL_MS) {
+                isRootedCached = try { checkRootCapability() } catch (_: Exception) { false }
+                isRootedCheckedAt = System.currentTimeMillis()
             }
         }, "root-check")
         t.isDaemon = true
         t.start()
     }
 
-    /** Returns the cached root-check result, or computes it synchronously if not yet available. */
+    /** Returns the cached root-check result, or computes it synchronously if not yet available /
+     *  stale (TTL elapsed). The synchronous path only runs file stats + the libsu grant query,
+     *  both fast; no su process is spawned. */
     fun isRooted(): Boolean {
         var result = isRootedCached
-        if (result == null) {
-            result = try { checkSuExists() } catch (_: Exception) { false }
+        if (result == null || System.currentTimeMillis() - isRootedCheckedAt > ROOT_CHECK_TTL_MS) {
+            result = try { checkRootCapability() } catch (_: Exception) { false }
             isRootedCached = result
+            isRootedCheckedAt = System.currentTimeMillis()
         }
         return result
+    }
+
+    /** Root capability = su binary the app can actually stat (Magisk-style installs) OR the
+     *  libsu root-grant query. The file-stat half alone is unreliable on KernelSU/SukiSU devices
+     *  under enforcing SELinux: /system/bin/su carries a su_exec label that untrusted_app cannot
+     *  stat, so File.exists() silently returns false and the cached result reads "no root" even
+     *  though the device is rooted and the app is granted su. isAppGrantedRoot() answers the
+     *  exact question the UI gates need ("can THIS app use root") by querying the root manager's
+     *  grant record via libsu's service without spawning an su process. */
+    private fun checkRootCapability(): Boolean {
+        if (checkSuExists()) return true
+        return try {
+            // libsu returns Boolean? (null = unknown); treat only true as rooted.
+            com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun checkSuExists(): Boolean {
