@@ -352,7 +352,6 @@
     <string name="settings_activity_log_empty">Nenhuma atividade registrada ainda.</string>
     <string name="settings_enable_activity_log">Ativar registro de atividades</string>
     <string name="settings_enable_activity_log_summary">Registrar e exibir chamadas e eventos da API do Shizuku na tela inicial.</string>
-    <string name="settings_show_activity_log_home">Exibir Registro de Atividades</string>
     <string name="settings_home_visibility">Visibilidade da tela inicial</string>
     <string name="settings_update_app_database">Atualizar banco de dados de aplicativos</string>
     <string name="settings_update_app_database_summary">Buscar as descrições de aplicativos e sugestões de aprimoramento mais recentes do GitHub.</string>
@@ -360,8 +359,7 @@
     <string name="settings_update_app_database_error">Falha ao atualizar o banco de dados</string>
     <string name="settings_show_terminal_home">Exibir Terminal (rish)</string>
     <string name="settings_show_automation_home">Exibir Automação</string>
-    <string name="settings_show_learn_more_home">Exibir Guia do Desenvolvedor</string>
-    <string name="settings_show_start_adb_home">Exibir Configuração de ADB com Fio</string>
+    <string name="settings_show_start_adb_home">Exibir Configuração de ADB</string>
     <string name="home_edit_mode_hint">Segure a alça para arrastar. Toque em × para remover um cartão.</string>
     <string name="settings_advanced">Avançado</string>
     <string name="settings_legacy_pairing">Pareamento legado</string>
@@ -759,7 +757,7 @@
     <string name="accessibility_icon_terminal">Ícone de terminal</string>
     <string name="accessibility_icon_adb">Ícone ADB</string>
     <string name="accessibility_icon_root">Ícone de acesso root</string>
-    <string name="accessibility_icon_wireless_adb">Ícone de ADB sem fio</string>
+    <string name="accessibility_icon_wireless_adb">Ícone de Configuração de ADB</string>
     <string name="accessibility_icon_automation">Ícone de automação</string>
     <string name="accessibility_icon_learn_more">Ícone de saiba mais</string>
     <string name="accessibility_icon_warning">Ícone de aviso</string>

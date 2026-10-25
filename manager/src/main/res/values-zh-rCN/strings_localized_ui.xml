@@ -160,7 +160,7 @@
     <string name="diagnostic_dismiss">忽略</string>
     <string name="home_layout_simulator_title">主页布局模拟器</string>
     <string name="home_layout_simulator_shizuku">ShizukuX</string>
-    <string name="home_layout_simulator_wireless_adb">无线 ADB</string>
+    <string name="home_layout_simulator_wireless_adb">ADB 设置</string>
     <string name="home_layout_simulator_terminal_apps">终端应用</string>
     <string name="home_layout_simulator_automation">自动化</string>
     <string name="home_layout_simulator_activity_logs">活动日志</string>

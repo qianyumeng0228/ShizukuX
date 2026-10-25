@@ -598,7 +598,6 @@
     <string name="export_diagnostics_copy"><![CDATA[复制全部]]></string>
     <string name="export_diagnostics_copied"><![CDATA[已复制到剪贴板]]></string>
     <string name="export_diagnostics_failed"><![CDATA[收集诊断信息失败]]></string>
-    <string name="settings_show_activity_log_home"><![CDATA[显示活动日志]]></string>
     <string name="settings_home_visibility"><![CDATA[主屏幕可见性]]></string>
     <string name="settings_update_app_database"><![CDATA[刷新应用增强数据库]]></string>
     <string name="settings_update_app_database_summary"><![CDATA[从 GitHub 刷新最新的应用说明与增强建议。]]></string>
@@ -606,8 +605,7 @@
     <string name="settings_update_app_database_error"><![CDATA[更新数据库失败]]></string>
     <string name="settings_show_terminal_home"><![CDATA[显示终端（rish）]]></string>
     <string name="settings_show_automation_home"><![CDATA[显示自动化]]></string>
-    <string name="settings_show_learn_more_home"><![CDATA[显示开发者指南]]></string>
-    <string name="settings_show_start_adb_home"><![CDATA[显示有线 ADB 设置]]></string>
+    <string name="settings_show_start_adb_home"><![CDATA[显示 ADB 设置]]></string>
     <string name="settings_show_backup_apps_home"><![CDATA[显示应用备份]]></string>
     <string name="settings_show_device_control_home"><![CDATA[显示设备控制]]></string>
     <string name="home_edit_mode_hint"><![CDATA[按住拖动手柄进行排序。点按 × 可移除卡片。]]></string>
@@ -894,7 +892,7 @@
     <string name="accessibility_icon_terminal"><![CDATA[终端图标]]></string>
     <string name="accessibility_icon_adb"><![CDATA[ADB 图标]]></string>
     <string name="accessibility_icon_root"><![CDATA[Root 权限图标]]></string>
-    <string name="accessibility_icon_wireless_adb"><![CDATA[无线 ADB 图标]]></string>
+    <string name="accessibility_icon_wireless_adb"><![CDATA[ADB 设置图标]]></string>
     <string name="accessibility_icon_automation"><![CDATA[自动化图标]]></string>
     <string name="accessibility_icon_learn_more"><![CDATA[了解更多图标]]></string>
     <string name="accessibility_icon_warning"><![CDATA[警告图标]]></string>

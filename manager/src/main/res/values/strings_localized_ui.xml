@@ -160,7 +160,7 @@
     <string name="diagnostic_dismiss">Dismiss</string>
     <string name="home_layout_simulator_title">Dashboard Layout Simulator</string>
     <string name="home_layout_simulator_shizuku">ShizukuX</string>
-    <string name="home_layout_simulator_wireless_adb">Wireless ADB</string>
+    <string name="home_layout_simulator_wireless_adb">ADB Setup</string>
     <string name="home_layout_simulator_terminal_apps">Terminal Apps</string>
     <string name="home_layout_simulator_automation">Automation</string>
     <string name="home_layout_simulator_activity_logs">Activity Logs</string>

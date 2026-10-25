@@ -370,7 +370,6 @@
     <string name="settings_activity_log_empty">ابھی تک کوئی سرگرمی ریکارڈ نہیں ہوئی۔</string>
     <string name="settings_enable_activity_log">سرگرمی کا لاگ فعال کریں</string>
     <string name="settings_enable_activity_log_summary">Shizuku API calls اور events کو home screen پر ریکارڈ اور دکھائیں۔</string>
-    <string name="settings_show_activity_log_home">Activity Log دکھائیں</string>
     <string name="settings_home_visibility">Home screen visibility</string>
     <string name="settings_update_app_database">ایپ ڈیٹا بیس اپ ڈیٹ کریں</string>
     <string name="settings_update_app_database_summary">GitHub سے تازہ ترین app descriptions اور enhancement suggestions حاصل کریں۔</string>
@@ -378,8 +377,7 @@
     <string name="settings_update_app_database_error">ڈیٹا بیس اپ ڈیٹ کرنے میں ناکامی</string>
     <string name="settings_show_terminal_home">Terminal (rish) دکھائیں</string>
     <string name="settings_show_automation_home">Automation دکھائیں</string>
-    <string name="settings_show_learn_more_home">Developer Guide دکھائیں</string>
-    <string name="settings_show_start_adb_home">Wired ADB Setup دکھائیں</string>
+    <string name="settings_show_start_adb_home">ADB Setup دکھائیں</string>
     <string name="settings_show_backup_apps_home">App Backup دکھائیں</string>
     <string name="settings_show_device_control_home">Device Control دکھائیں</string>
     <string name="home_edit_mode_hint">گرفت کو دبا کر گھسیٹیں۔ کارڈ ہٹانے کے لیے × پر ٹیپ کریں۔</string>
@@ -811,7 +809,7 @@
     <string name="accessibility_icon_terminal">Terminal icon</string>
     <string name="accessibility_icon_adb">ADB icon</string>
     <string name="accessibility_icon_root">Root access icon</string>
-    <string name="accessibility_icon_wireless_adb">Wireless ADB icon</string>
+    <string name="accessibility_icon_wireless_adb">ADB Setup icon</string>
     <string name="accessibility_icon_automation">Automation icon</string>
     <string name="accessibility_icon_learn_more">Learn more icon</string>
     <string name="accessibility_icon_warning">Warning icon</string>
