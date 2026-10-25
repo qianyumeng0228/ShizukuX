@@ -124,6 +124,24 @@ object ShizukuReceiverStarter {
      * kill through the privileged process API ensures it works for both adb and root launches.
      */
     fun killServerProcess() {
+        // v27 (manual-stop self-heal): the starter supervisor (starter.cpp start_server /
+        // supervise_server) is the process that restarts a SIGKILLed shizuku_plus_server after
+        // 5s ("restarting shizuku_server in 5 seconds (attempt 1/5)..."), with a crash counter
+        // capped at 5 and reset whenever the server survived >= 60s. Killing only the server
+        // leaves the supervisor alive, so a manual Stop self-heals seconds later and the user's
+        // explicit intent is silently ignored (this is the "手动停止后软件会自启" bug). Kill the
+        // supervisor FIRST so the 5s restart window never opens; the server kill then terminates
+        // the actual service. The match is exact enough: the supervisor's argv is the
+        // libshizuku.so path (+ --apk=...), and no app-facing process (xyz.shizuku.extra.api /
+        // app_process / adbd / the server itself) carries "libshizuku.so" in its cmdline — so
+        // unlike `pkill -f shizuku` (which hit the manager's own cmdline on a v25 test) this
+        // cannot self-kill or touch unrelated processes.
+        runCatching {
+            af.shizuku.manager.database.ShizukuProcessUtils.runPrivilegedCapture(
+                arrayOf("pkill", "-f", "libshizuku.so")
+            )
+        }.onFailure { Timber.tag(AppConstants.TAG).w(it, "pkill libshizuku.so supervisor failed") }
+
         runCatching {
             af.shizuku.manager.database.ShizukuProcessUtils.runPrivilegedCapture(
                 arrayOf("pkill", "-f", "shizuku_plus_server")
