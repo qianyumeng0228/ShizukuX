@@ -43,8 +43,9 @@ object EnvironmentUtils {
     private var isRootedCheckedAt: Long = 0L
 
     /** Re-probe after this long: a root grant can be given/revoked in the external root manager
-     *  (SukiSU/KernelSU) while the app stays alive, so the cached answer should not be permanent. */
-    private const val ROOT_CHECK_TTL_MS = 5 * 60 * 1000L
+     *  (SukiSU/KernelSU) while the app stays alive, so the cached answer should not be permanent.
+     *  30s keeps the home start card's launch-mode label in sync with the real grant state. */
+    private const val ROOT_CHECK_TTL_MS = 30 * 1000L
 
     init {
         // Still prewarm in background to avoid any potential main thread hit during class load
@@ -82,17 +83,33 @@ object EnvironmentUtils {
     }
 
     /** Root capability = su binary the app can actually stat (Magisk-style installs) OR the
-     *  libsu root-grant query. The file-stat half alone is unreliable on KernelSU/SukiSU devices
-     *  under enforcing SELinux: /system/bin/su carries a su_exec label that untrusted_app cannot
-     *  stat, so File.exists() silently returns false and the cached result reads "no root" even
-     *  though the device is rooted and the app is granted su. isAppGrantedRoot() answers the
-     *  exact question the UI gates need ("can THIS app use root") by querying the root manager's
-     *  grant record via libsu's service without spawning an su process. */
+     *  libsu root-grant query OR a direct su probe. The file-stat half alone is unreliable on
+     *  KernelSU/SukiSU devices under enforcing SELinux: /system/bin/su carries a su_exec label
+     *  that untrusted_app cannot stat, so File.exists() silently returns false and the cached
+     *  result reads "no root" even though the device is rooted and the app is granted su.
+     *  isAppGrantedRoot() answers the exact question the UI gates need ("can THIS app use root")
+     *  by querying the root manager's grant record via libsu's service without spawning an su
+     *  process, but on KernelSU/SukiSU under enforcing it can also report false before any
+     *  libsu root shell has been built. probeSuAccess() is the final fallback that spawns
+     *  `su -c id` directly; on a grant-listed app the root manager answers within a second
+     *  without a prompt, on non-rooted devices exec fails immediately, and the 2s bound keeps
+     *  the synchronous isRooted() path safe. */
     private fun checkRootCapability(): Boolean {
         if (checkSuExists()) return true
+        if (Shell.isAppGrantedRoot() == true) return true
+        return probeSuAccess()
+    }
+
+    /** Direct su probe: `su -c id` must print uid=0 for this app. 2s bound; on a granted app
+     *  the root manager returns immediately, on ungranted devices KernelSU/SukiSU remember the
+     *  denial so no prompt is re-shown every call. */
+    private fun probeSuAccess(): Boolean {
         return try {
-            // libsu returns Boolean? (null = unknown); treat only true as rooted.
-            com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true
+            val p = ProcessBuilder("su", "-c", "id").redirectErrorStream(true).start()
+            val granted = p.waitFor(2, java.util.concurrent.TimeUnit.SECONDS) && p.inputStream
+                .bufferedReader().use { it.readText().contains("uid=0") }
+            if (!granted && p.isAlive) p.destroyForcibly()
+            granted
         } catch (_: Exception) {
             false
         }
