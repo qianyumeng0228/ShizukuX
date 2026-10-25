@@ -219,6 +219,13 @@
     <string name="terminal_tutorial_2_description">提示：如果终端应用的主目录（~）位于私有文件目录中，将文件放在那里即可直接运行 %1$s，无需输入路径。\n\n否则，可以在终端应用的 %3$s 配置文件中为 %2$s 创建别名。</string>
     <string name="terminal_tutorial_3">使用以下命令打开 Shell 或运行 ShizukuX 命令：</string>
     <string name="rish_description"><![CDATA[使用 %1$s，您可以在任意终端应用中连接到由 Shizuku 运行的 Shell 并与之交互。<p>点按以阅读 %1$s 的使用说明。]]></string>
+    <string name="terminal_console_title">立即试用：通过 Shizuku 运行一条 Shell 命令</string>
+    <string name="terminal_console_hint">例如 echo hello</string>
+    <string name="terminal_console_run">运行</string>
+    <string name="terminal_console_output_empty">命令输出将显示在这里。</string>
+    <string name="terminal_console_not_running">Shizuku 未运行——请先启动服务，再在此运行命令。</string>
+    <string name="terminal_console_empty_command">请先输入命令。</string>
+    <string name="terminal_console_process_null">错误：Shizuku 返回了空的 Shell 进程。</string>
     <!-- Settings -->
     <string name="settings_title">设置</string>
     <string name="settings_behavior">行为</string>
@@ -601,6 +608,8 @@
     <string name="settings_show_automation_home"><![CDATA[显示自动化]]></string>
     <string name="settings_show_learn_more_home"><![CDATA[显示开发者指南]]></string>
     <string name="settings_show_start_adb_home"><![CDATA[显示有线 ADB 设置]]></string>
+    <string name="settings_show_backup_apps_home"><![CDATA[显示应用备份]]></string>
+    <string name="settings_show_device_control_home"><![CDATA[显示设备控制]]></string>
     <string name="home_edit_mode_hint"><![CDATA[按住拖动手柄进行排序。点按 × 可移除卡片。]]></string>
     <string name="settings_reset_adb_keys"><![CDATA[重置 ADB 密钥]]></string>
     <string name="settings_reset_adb_keys_summary"><![CDATA[删除现有的 ADB 密钥和证书。配对卡住或密钥库损坏时可以尝试此操作。]]></string>

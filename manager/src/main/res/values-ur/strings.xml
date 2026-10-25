@@ -279,6 +279,13 @@
     <string name="terminal_tutorial_2_description">مشورہ: اگر آپ کی terminal ایپ کی home directory (~) نجی files directory میں ہے تو فائلیں وہاں رکھنے سے %1$s کو path لکھے بغیر چلایا جا سکے گا۔\n\nورنہ اپنی terminal ایپ کی %3$s configuration file میں %2$s کے لیے alias بنا سکتے ہیں۔</string>
     <string name="terminal_tutorial_3">Shell کھولیں یا Shizuku+ کمانڈ چلائیں:</string>
     <string name="rish_description"><![CDATA[%1$s کے ساتھ آپ کسی بھی terminal ایپ میں shell کمانڈز چلا سکتے ہیں۔<p>اسے استعمال کرنے کا طریقہ جاننے کے لیے ٹیپ کریں۔]]></string>
+    <string name="terminal_console_title">ابھی آزمائیں: Shizuku کے ذریعے shell کمانڈ چلائیں</string>
+    <string name="terminal_console_hint">مثال: echo hello</string>
+    <string name="terminal_console_run">چلائیں</string>
+    <string name="terminal_console_output_empty">کمانڈ کا آؤٹ پٹ یہاں ظاہر ہوگا۔</string>
+    <string name="terminal_console_not_running">Shizuku نہیں چل رہا — کمانڈ چلانے کے لیے پہلے اسے شروع کریں۔</string>
+    <string name="terminal_console_empty_command">پہلے ایک کمانڈ درج کریں۔</string>
+    <string name="terminal_console_process_null">خرابی: Shizuku نے خالی shell پروسیس واپس کیا۔</string>
 
     <!-- Settings — swipe customisation -->
     <string name="settings_swipe_right">دائیں swipe کی کارروائی</string>
@@ -373,6 +380,8 @@
     <string name="settings_show_automation_home">Automation دکھائیں</string>
     <string name="settings_show_learn_more_home">Developer Guide دکھائیں</string>
     <string name="settings_show_start_adb_home">Wired ADB Setup دکھائیں</string>
+    <string name="settings_show_backup_apps_home">App Backup دکھائیں</string>
+    <string name="settings_show_device_control_home">Device Control دکھائیں</string>
     <string name="home_edit_mode_hint">گرفت کو دبا کر گھسیٹیں۔ کارڈ ہٹانے کے لیے × پر ٹیپ کریں۔</string>
     <string name="settings_advanced">Advanced</string>
     <string name="settings_legacy_pairing">Legacy pairing</string>

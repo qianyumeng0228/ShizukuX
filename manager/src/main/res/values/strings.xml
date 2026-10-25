@@ -370,6 +370,13 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="terminal_tutorial_2_description">Tip: If your terminal app\'s home directory (~) is in the private files directory, placing the files there will allow you to run %1$s without writing the path.\n\nOtherwise, you can create an alias for %2$s in your terminal app\'s %3$s configuration file.</string>
     <string name="terminal_tutorial_3">Open a shell or run a ShizukuX command:</string>
     <string name="rish_description"><![CDATA[With %1$s, you can run shell commands in any terminal app.<p>Tap to learn more about how to use it.]]></string>
+    <string name="terminal_console_title">Try it now: run a shell command through Shizuku</string>
+    <string name="terminal_console_hint">e.g. echo hello</string>
+    <string name="terminal_console_run">Run</string>
+    <string name="terminal_console_output_empty">Command output will appear here.</string>
+    <string name="terminal_console_not_running">Shizuku is not running — start it to run commands here.</string>
+    <string name="terminal_console_empty_command">Enter a command first.</string>
+    <string name="terminal_console_process_null">err: Shizuku returned a null shell process.</string>
 
     <!-- Settings — swipe customisation -->
     <string name="settings_swipe_right">Swipe right action</string>
@@ -506,6 +513,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_show_automation_home">Show Automation</string>
     <string name="settings_show_learn_more_home">Show Developer Guide</string>
     <string name="settings_show_start_adb_home">Show Wired ADB Setup</string>
+    <string name="settings_show_backup_apps_home">Show App Backup</string>
+    <string name="settings_show_device_control_home">Show Device Control</string>
     <string name="home_edit_mode_hint">Hold the grip to drag. Tap × to remove a card.</string>
     <string name="settings_advanced">Advanced</string>
     <string name="settings_legacy_pairing">Legacy pairing</string>
@@ -1437,6 +1446,8 @@ Please try the command-line method instead.</string>
     <string name="accessibility_sim_toggle_automation">Toggle Automation card visibility</string>
     <string name="accessibility_sim_toggle_activity_log">Toggle Activity Log card visibility</string>
     <string name="accessibility_sim_toggle_learn_more">Toggle Learn More card visibility</string>
+    <string name="accessibility_sim_toggle_backup_apps">Toggle App Backup card visibility</string>
+    <string name="accessibility_sim_toggle_device_control">Toggle Device Control card visibility</string>
 
     <!-- Device Control -->
     <string name="device_control_title">Device Control</string>

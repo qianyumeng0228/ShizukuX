@@ -22,8 +22,8 @@ import rikka.shizuku.ShizukuApiConstants
  * Merged hero header: the themed wallpaper banner is the card background, with the live
  * server-status content overlaid on a readable bottom scrim. Combines the previously separate
  * decorative banner and the status card into one compact card while keeping every status-card
- * feature — status dot, running/not-running title & summary, the diagnostics chip,
- * and the sentry-offline notice.
+ * feature — status dot, running/not-running title & summary, the activity-log & diagnostics
+ * chips, and the sentry-offline notice.
  */
 class HomeBannerStatusViewHolder(
     private val binding: HomeBannerStatusBinding,
@@ -40,6 +40,7 @@ class HomeBannerStatusViewHolder(
     private inline val textView get() = binding.text1
     private inline val summaryView get() = binding.text2
     private inline val iconView get() = binding.icon
+    private inline val logChip get() = binding.btnActivityLog
     private inline val diagnosticsChip get() = binding.btnDiagnostics
     private inline val statusIndicator get() = binding.statusIndicator
     private inline val sentryButton get() = binding.btnSentryOffline
@@ -165,6 +166,18 @@ class HomeBannerStatusViewHolder(
             }
         }
 
+        // Same visibility gate as the diagnostics chip: only while the service is running.
+        // Click lands on the diagnostics hub directly on its activity-log tab (the single
+        // consolidated log surface after P1's dedup).
+        logChip.visibility = if (ok) View.VISIBLE else View.GONE
+        logChip.setOnClickListener {
+            val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
+            activity.startActivity(
+                android.content.Intent(activity, SystemHubActivity::class.java)
+                    .putExtra(SystemHubActivity.EXTRA_INITIAL_PAGE, SystemHubActivity.PAGE_ACTIVITY_LOG)
+            )
+        }
+
         diagnosticsChip.visibility = if (ok) View.VISIBLE else View.GONE
         diagnosticsChip.setOnClickListener {
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
@@ -183,6 +196,7 @@ class HomeBannerStatusViewHolder(
 
         textView.setTextColor(textColor)
         summaryView.setTextColor(textColor)
+        logChip.setTextColor(textColor)
         diagnosticsChip.setTextColor(textColor)
 
         // Overlaid status icon: a clean glyph tinted with the semantic color — no pill background

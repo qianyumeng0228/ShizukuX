@@ -18,8 +18,11 @@ import af.shizuku.manager.utils.CustomTabsHelper
 import rikka.compatibility.DeviceCompatibility
 import rikka.html.text.HtmlCompat
 import rikka.insets.*
+import rikka.shizuku.Shizuku
 
 class ShellTutorialActivity : AppBarActivity() {
+
+    private lateinit var binding: TerminalTutorialActivityBinding
 
     companion object {
 
@@ -111,7 +114,7 @@ class ShellTutorialActivity : AppBarActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val binding = TerminalTutorialActivityBinding.bind(rootView)
+        binding = TerminalTutorialActivityBinding.bind(rootView)
 
         binding.header.apply {
             headerIcon.setImageResource(R.drawable.ic_terminal_24)
@@ -176,6 +179,80 @@ class ShellTutorialActivity : AppBarActivity() {
                 }
             }
             button2.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.RISH.get()) }
+
+            // --- in-app shell console (one-shot command runner through Shizuku, uid 2000) ---
+            if (!Shizuku.pingBinder()) {
+                consoleInput.isEnabled = false
+                consoleRun.isEnabled = false
+                consoleOutput.text = getString(R.string.terminal_console_not_running)
+            }
+            consoleRun.setOnClickListener { runConsoleCommand() }
+            consoleInput.setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
+                    runConsoleCommand(); true
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
+    private fun runConsoleCommand() {
+        if (!Shizuku.pingBinder()) {
+            android.widget.Toast.makeText(
+                this, R.string.terminal_console_not_running, android.widget.Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        val cmd = binding.consoleInput.text.toString().trim()
+        if (cmd.isEmpty()) {
+            android.widget.Toast.makeText(
+                this, R.string.terminal_console_empty_command, android.widget.Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        binding.consoleRun.isEnabled = false
+        binding.consoleOutput.append("$ $cmd\n")
+        java.util.concurrent.CompletableFuture.supplyAsync { runShellOnce(cmd) }
+            .whenComplete { out, _ ->
+                runOnUiThread {
+                    binding.consoleOutput.append(out + "\n\n")
+                    binding.consoleInput.text?.clear()
+                    binding.consoleRun.isEnabled = true
+                }
+            }
+    }
+
+    /**
+     * Runs one [cmd] as `sh -c` through a Shizuku shell process and returns its merged output.
+     *
+     * Mirrors the defensive pattern already used by DiagnosticsExporter.runShell /
+     * SceneRelayManager.runShell: stderr is merged into stdout (`2>&1`) so a chatty stderr can
+     * never fill the pipe buffer and deadlock a sequential read; the read happens on a worker
+     * thread; a command that never finishes is force-destroyed after 10s; and we deliberately
+     * never call waitFor()/exitValue() — on some OEM builds (OPPO ColorOS, Android 16)
+     * ShizukuProcess.exitValue() throws IllegalArgumentException instead of
+     * IllegalThreadStateException, and reading the merged stream to EOF is equivalent.
+     */
+    private fun runShellOnce(cmd: String): String {
+        return try {
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, null)
+                ?: return getString(R.string.terminal_console_process_null)
+            val read = java.util.concurrent.CompletableFuture.supplyAsync {
+                try {
+                    p.inputStream.bufferedReader().use { it.readText() }
+                } catch (e: Throwable) {
+                    ""
+                }
+            }
+            try {
+                read.get(10, java.util.concurrent.TimeUnit.SECONDS).trim()
+            } catch (e: java.util.concurrent.TimeoutException) {
+                try { p.destroy() } catch (e2: Throwable) { /* already dead */ }
+                "(timeout after 10s — killed)"
+            }
+        } catch (e: Throwable) {
+            "err:${e.javaClass.simpleName}:${e.message}"
         }
     }
 }

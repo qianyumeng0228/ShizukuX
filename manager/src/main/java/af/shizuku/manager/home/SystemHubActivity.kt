@@ -14,6 +14,10 @@ class SystemHubActivity : AppActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Optional deep-link to a specific hub page (e.g. the home "activity log" chip opens
+        // straight on the log tab). Default 0 = metrics, which keeps the diagnostics-chip
+        // entry behavior unchanged.
+        val initialPage = intent?.getIntExtra(EXTRA_INITIAL_PAGE, PAGE_METRICS) ?: PAGE_METRICS
         setContent {
             AppTheme(
                 darkTheme = isSystemInDarkTheme(),
@@ -21,9 +25,16 @@ class SystemHubActivity : AppActivity() {
                 isOneUi = ShizukuSettings.isOneUiThemeEnabled()
             ) {
                 SystemHubScreen(
-                    onBackClick = { finish() }
+                    onBackClick = { finish() },
+                    initialPage = initialPage
                 )
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_INITIAL_PAGE = "af.shizuku.manager.home.EXTRA_INITIAL_PAGE"
+        const val PAGE_METRICS = 0
+        const val PAGE_ACTIVITY_LOG = 1
     }
 }

@@ -61,6 +61,79 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- In-app one-shot shell console: lets the user actually run a command through
+             Shizuku (uid 2000) on this very page, instead of only reading rish instructions. -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/consoleCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="?colorSurfaceContainerHigh"
+            app:cardElevation="0dp"
+            app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerExtraLarge">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/consoleTitle"
+                    style="@style/TerminalTutorialText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/terminal_console_title"
+                    android:textAppearance="?textAppearanceTitleSmall"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/consoleOutput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="?colorSurface"
+                    android:fontFamily="monospace"
+                    android:minHeight="96dp"
+                    android:padding="8dp"
+                    android:text="@string/terminal_console_output_empty"
+                    android:textColor="?android:textColorSecondary"
+                    android:textIsSelectable="true" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <EditText
+                        android:id="@+id/consoleInput"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:fontFamily="monospace"
+                        android:hint="@string/terminal_console_hint"
+                        android:imeOptions="actionSend"
+                        android:inputType="textNoSuggestions|textMultiLine"
+                        android:maxLines="3"
+                        android:singleLine="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/consoleRun"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/terminal_console_run"
+                        android:textAllCaps="false" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/miui"
             style="@style/DialogCard"

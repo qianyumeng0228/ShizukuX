@@ -147,6 +147,16 @@ class AppBackupActivity : AppBarActivity() {
                 viewModel.batchRunning.collect { running ->
                     backupAllItem?.isEnabled = !running
                     binding.batchProgressPanel.visibility = if (running) View.VISIBLE else View.GONE
+                    // The 64dp top padding is only needed while the batch progress panel is shown
+                    // on top of the list; when it is hidden, keep the list compact (16dp) instead
+                    // of leaving a large fixed blank (user report: 备份页顶部大空白).
+                    val padTop = (if (running) 64 else 16) * resources.displayMetrics.density
+                    binding.recyclerView.setPadding(
+                        binding.recyclerView.paddingLeft,
+                        padTop.toInt(),
+                        binding.recyclerView.paddingRight,
+                        binding.recyclerView.paddingBottom
+                    )
                 }
             }
         }

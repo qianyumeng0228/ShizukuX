@@ -232,10 +232,13 @@ class HomeAdapter(
                     addItem(startWadbCreator, rootRestart, id)
                 ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
                     addItem(AutomationViewHolder.CREATOR, null, id)
-                // No dedicated setting key exists for these cards, so they are always visible
-                // (hidden only via edit-mode long-press), matching upstream behavior.
-                ID_BACKUP_APPS -> addItem(AppBackupViewHolder.CREATOR, status, id)
-                ID_DEVICE_CONTROL -> addItem(DeviceControlViewHolder.CREATOR, status, id)
+                // These cards gained dedicated visibility keys (show_backup_apps_home /
+                // show_device_control_home), wired to the Appearance switches and the home
+                // layout simulator. Default true preserves the previous always-visible behavior.
+                ID_BACKUP_APPS -> if (isEditMode || ShizukuSettings.showBackupAppsHome())
+                    addItem(AppBackupViewHolder.CREATOR, status, id)
+                ID_DEVICE_CONTROL -> if (isEditMode || ShizukuSettings.showDeviceControlHome())
+                    addItem(DeviceControlViewHolder.CREATOR, status, id)
                 ID_COMPANION -> {
                     // The compat hub is what lets third-party apps detect ShizukuX, so surface
                     // this card whenever it still needs action — the hub isn't installed yet, or

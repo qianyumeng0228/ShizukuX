@@ -25,9 +25,10 @@ import af.shizuku.manager.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SystemHubScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    initialPage: Int = 0
 ) {
-    val pagerState = rememberPagerState(pageCount = { 2 })
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(

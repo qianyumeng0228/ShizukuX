@@ -165,6 +165,8 @@
     <string name="home_layout_simulator_automation">Automation</string>
     <string name="home_layout_simulator_activity_logs">Activity Logs</string>
     <string name="home_layout_simulator_developer_guide">Developer Guide</string>
+    <string name="home_layout_simulator_backup_apps">App Backup</string>
+    <string name="home_layout_simulator_device_control">Device Control</string>
     <string name="home_layout_simulator_hint">Tap simulated blocks in the mockup device to instantly toggle their visibility on the main home screen.</string>
 
     <string name="fake_adb_allow_title">Allow fake ADB connection?</string>

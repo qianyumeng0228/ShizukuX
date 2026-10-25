@@ -157,9 +157,9 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
 
-            <!-- Block 4: Activity Log -->
+            <!-- Block 4: App Backup -->
             <LinearLayout
-                android:id="@+id/sim_activity_log"
+                android:id="@+id/sim_backup_apps"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -169,11 +169,11 @@
                 android:gravity="center_vertical"
                 android:clickable="true"
                 android:focusable="true"
-                android:contentDescription="@string/accessibility_sim_toggle_activity_log">
+                android:contentDescription="@string/accessibility_sim_toggle_backup_apps">
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    android:src="@drawable/ic_article_24"
+                    android:src="@drawable/ic_folder_24"
                     android:tint="?colorOnSurfaceVariant"
                     android:importantForAccessibility="no" />
                 <TextView
@@ -181,11 +181,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
-                    android:text="@string/home_layout_simulator_activity_logs"
+                    android:text="@string/home_layout_simulator_backup_apps"
                     android:textSize="10sp"
                     android:textColor="?colorOnSurfaceVariant" />
                 <ImageView
-                    android:id="@+id/eye_activity_log"
+                    android:id="@+id/eye_backup_apps"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:src="@drawable/ic_visibility_24"
@@ -193,9 +193,9 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
 
-            <!-- Block 5: Learn More -->
+            <!-- Block 5: Device Control -->
             <LinearLayout
-                android:id="@+id/sim_learn_more"
+                android:id="@+id/sim_device_control"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -204,11 +204,11 @@
                 android:gravity="center_vertical"
                 android:clickable="true"
                 android:focusable="true"
-                android:contentDescription="@string/accessibility_sim_toggle_learn_more">
+                android:contentDescription="@string/accessibility_sim_toggle_device_control">
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    android:src="@drawable/ic_outline_info_24"
+                    android:src="@drawable/ic_devices_24"
                     android:tint="?colorOnSurfaceVariant"
                     android:importantForAccessibility="no" />
                 <TextView
@@ -216,11 +216,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
-                    android:text="@string/home_layout_simulator_developer_guide"
+                    android:text="@string/home_layout_simulator_device_control"
                     android:textSize="10sp"
                     android:textColor="?colorOnSurfaceVariant" />
                 <ImageView
-                    android:id="@+id/eye_learn_more"
+                    android:id="@+id/eye_device_control"
                     android:layout_width="14dp"
                     android:layout_height="14dp"
                     android:src="@drawable/ic_visibility_24"

@@ -219,6 +219,18 @@
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
+            android:key="show_backup_apps_home"
+            android:title="@string/settings_show_backup_apps_home"
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="show_device_control_home"
+            android:title="@string/settings_show_device_control_home"
+            android:icon="@drawable/ic_devices_24"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
             android:key="companion_mode"
             android:title="@string/settings_companion_mode"
             android:summary="@string/settings_companion_mode_summary"

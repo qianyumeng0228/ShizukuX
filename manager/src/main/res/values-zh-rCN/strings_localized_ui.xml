@@ -165,6 +165,8 @@
     <string name="home_layout_simulator_automation">自动化</string>
     <string name="home_layout_simulator_activity_logs">活动日志</string>
     <string name="home_layout_simulator_developer_guide">开发者指南</string>
+    <string name="home_layout_simulator_backup_apps">应用备份</string>
+    <string name="home_layout_simulator_device_control">设备控制</string>
     <string name="home_layout_simulator_hint">点击模拟设备中的模块，即可立即切换它们在主页上的显示状态。</string>
     <string name="fake_adb_allow_title">允许模拟的 ADB 连接？</string>
     <string name="fake_adb_allow_message">有应用尝试通过本地模拟的 ADB 服务连接 ShizukuX。\n\nRSA 密钥指纹：\n%1$s</string>
