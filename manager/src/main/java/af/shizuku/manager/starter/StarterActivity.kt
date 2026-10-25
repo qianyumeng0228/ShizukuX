@@ -876,7 +876,13 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             )
             delay(1200)
             continueAfterSetup()
+            return
         }
+        // No WRITE_SECURE_SETTINGS and not Device Owner: canArm=false leaves the flow stuck on
+        // "正在自动开启无线调试…" forever with nobody flipping the switch — the "无法激活" case.
+        // Mirror the pairing-assistant timeout fallback: switch the step to a manual instruction.
+        Timber.tag("StarterActivity").w("Cannot auto-enable wireless debugging (no WRITE_SECURE_SETTINGS / not DO); falling back to manual")
+        fallbackToManualWireless()
     }
 
     private fun isWifiConnected(): Boolean {
@@ -898,8 +904,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             return Pair(intentPort, true)
         }
         val sysPropPort = EnvironmentUtils.getAdbTcpPort()
+        // Wireless debugging (TLS) exposes the random port via service.adb.tls.port when adbd
+        // is listening; the plaintext tcp.port read above returns -1 for TLS mode, so without
+        // this the flow waits out the full mDNS timeout even though adbd is already up.
+        val tlsPort = runCatching {
+            android.os.SystemProperties.getInt("service.adb.tls.port", -1)
+        }.getOrDefault(-1)
         val lastPort = ShizukuSettings.getLastPort()
-        for (p in listOf(sysPropPort, lastPort).distinct()) {
+        for (p in listOf(sysPropPort, tlsPort, lastPort).distinct()) {
             if (p in 1..65535) {
                 if (canConnect(p)) return Pair(p, true)
             }
@@ -938,7 +950,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         // AdbMdns.start() can throw (e.g. SecurityException when local-network permission
         // was revoked after the flow started) — degrade to "no port" instead of crashing.
         return try {
-            withTimeoutOrNull(10000) {
+            withTimeoutOrNull(5000) {
                 suspendCancellableCoroutine { cont ->
                     val done = AtomicBoolean(false)
                     var mdns: AdbMdns? = null
