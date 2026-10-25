@@ -71,15 +71,26 @@ object EnvironmentUtils {
 
     /** Returns the cached root-check result, or computes it synchronously if not yet available /
      *  stale (TTL elapsed). The synchronous path only runs file stats + the libsu grant query,
-     *  both fast; no su process is spawned. */
+     *  both fast; the spawn-based su probe is always deferred to the background startRootCheck()
+     *  so no UI thread ever blocks on a root-manager prompt. The background probe overwrites the
+     *  cache afterwards, so the home card converges to the real grant state within one TTL. */
     fun isRooted(): Boolean {
         var result = isRootedCached
         if (result == null || System.currentTimeMillis() - isRootedCheckedAt > ROOT_CHECK_TTL_MS) {
-            result = try { checkRootCapability() } catch (_: Exception) { false }
+            result = try { checkRootCapabilityFast() } catch (_: Exception) { false }
             isRootedCached = result
             isRootedCheckedAt = System.currentTimeMillis()
+            // Kick the background full probe (stat + libsu + direct su spawn) so a root grant
+            // given since the fast check is picked up without blocking this call.
+            startRootCheck()
         }
         return result
+    }
+
+    /** Fast synchronous half: no su process is ever spawned on the calling thread. */
+    private fun checkRootCapabilityFast(): Boolean {
+        if (checkSuExists()) return true
+        return Shell.isAppGrantedRoot() == true
     }
 
     /** Root capability = su binary the app can actually stat (Magisk-style installs) OR the
