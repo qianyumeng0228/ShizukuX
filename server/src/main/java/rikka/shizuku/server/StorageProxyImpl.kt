@@ -54,8 +54,14 @@ class StorageProxyImpl : IStorageProxy.Stub() {
             // so shell metacharacters in path can't break out of the quoted argument.
             val cmd = arrayOf("sh", "-c", "cat \"\$1\" > /proc/self/fd/${writeSide.fd}", "sh", path)
             Runtime.getRuntime().exec(cmd)
-            
-            // The shell process will exit once cat is done. 
+
+            // Close our own copy of the write end right after exec: the child has
+            // already inherited the fd, so its writes still reach the pipe, but the
+            // read side now sees EOF as soon as cat exits (audit slice4 P0-2 — the
+            // leaked write PFD previously made readers block forever).
+            writeSide.close()
+
+            // The shell process will exit once cat is done.
             // We return the read side of the pipe.
             readSide
         } catch (e: Exception) {

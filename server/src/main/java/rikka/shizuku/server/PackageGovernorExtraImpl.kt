@@ -1,6 +1,7 @@
 package rikka.shizuku.server
 
 import af.shizuku.server.IPackageGovernorExtra
+import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
 
 class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
@@ -59,6 +60,12 @@ class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
 
     override fun installApk(apkPath: String?): Boolean {
         if (apkPath.isNullOrBlank()) return false
+        // Only accept files under the sanctioned path prefixes and with a real .apk
+        // extension, so an authorized caller cannot point `pm install -g` (which
+        // auto-grants every runtime permission) at an arbitrary dropped file
+        // (audit slice4 P0-3). The install -g behavior itself is unchanged.
+        if (!InputValidationUtils.isSafePath(apkPath)) return false
+        if (!apkPath.endsWith(".apk", ignoreCase = true)) return false
         return ShellExecutor.execBool("pm", "install", "-g", apkPath)
     }
 

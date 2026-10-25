@@ -928,6 +928,32 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     /**
+     * Quote a caller-supplied argument so it can be safely interpolated into a
+     * `sh -c` script (audit slice4 P0-1). Any value containing a shell metacharacter
+     * is rejected (returns null) rather than sanitized: under the interceptors in
+     * newProcessInternal the legitimate values (numeric pids, process/package names,
+     * /system/app paths, archive paths) never contain these characters, so rejecting
+     * them closes the injection surface without weakening the existing mappings.
+     *
+     * @return the argument wrapped in single quotes, or null if it is unsafe.
+     */
+    private static String shellQuoteForIntercept(String arg) {
+        if (arg == null) return null;
+        for (int i = 0; i < arg.length(); i++) {
+            char c = arg.charAt(i);
+            if (c == ';' || c == '&' || c == '|' || c == '`' || c == '$'
+                    || c == '(' || c == ')' || c == '"' || c == '\'' || c == '\\'
+                    || c == '*' || c == '?' || c == '[' || c == ']'
+                    || c == '{' || c == '}' || c == '<' || c == '>'
+                    || c == '#' || c == '~' || c == '!'
+                    || c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                return null;
+            }
+        }
+        return "'" + arg + "'";
+    }
+
+    /**
      * Translate a per-app iptables rule ("... --uid-owner <uid> ...") into a real framework
      * restriction. Firewall apps (AFWall+, NetGuard shell mode) emit these to block a UID's
      * traffic, but shell UID (2000) cannot touch kernel netfilter tables. INetworkPolicyManager
@@ -1611,9 +1637,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             }
                         }
                         if (targetPath != null) {
+                            String qPath = shellQuoteForIntercept(targetPath);
+                            if (qPath == null) {
+                                LOGGER.w("SUBridge: refusing rm intercept, unsafe path: " + targetPath);
+                                return newProcessInternal(new String[]{"false"}, env, dir);
+                            }
                             LOGGER.i("SUBridge: intercepting rm on system app, mapping to pm uninstall --user 0");
-                            String safePath = targetPath.replace("'", "'\\''");
-                            String script = "PKG=$(pm list packages -f | grep '" + safePath + "' | sed 's/.*=//' | head -n 1); " +
+                            String script = "PKG=$(pm list packages -f | grep " + qPath + " | sed 's/.*=//' | head -n 1); " +
                                             "if [ ! -z \"$PKG\" ]; then pm uninstall -k --user 0 \"$PKG\"; else false; fi";
                             return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
                         }
@@ -1621,17 +1651,36 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     } else if (baseCmd.equals("kill")) {
                         String pid = cmd[cmd.length - 1]; // PID is usually the last argument
                         if (pid.matches("\\d+")) {
+                            // Quote every argument; previously only the trailing numeric pid
+                            // was checked and flags like "-9; touch /data/local/tmp/pwn" were
+                            // interpolated unquoted into the script (audit slice4 P0-1).
+                            StringBuilder killArgs = new StringBuilder();
+                            boolean argsSafe = true;
+                            for (int i = 1; i < cmd.length; i++) {
+                                String q = shellQuoteForIntercept(cmd[i]);
+                                if (q == null) { argsSafe = false; break; }
+                                if (i > 1) killArgs.append(' ');
+                                killArgs.append(q);
+                            }
+                            if (!argsSafe) {
+                                LOGGER.w("SUBridge: refusing kill intercept, unsafe args");
+                                return newProcessInternal(new String[]{"false"}, env, dir);
+                            }
                             LOGGER.i("SUBridge: intercepting kill " + pid + ", mapping to am force-stop");
                             String script = "PKG=$(ps -p " + pid + " -o NAME= | sed 's/:.*//' | tr -d '[:space:]'); " +
-                                            "if [ ! -z \"$PKG\" ] && [ \"$PKG\" != \"sh\" ] && [ \"$PKG\" != \"su\" ]; then am force-stop \"$PKG\"; else kill " + String.join(" ", java.util.Arrays.copyOfRange(cmd, 1, cmd.length)) + "; fi";
+                                            "if [ ! -z \"$PKG\" ] && [ \"$PKG\" != \"sh\" ] && [ \"$PKG\" != \"su\" ]; then am force-stop \"$PKG\"; else kill " + killArgs + "; fi";
                             return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("pkill") || baseCmd.equals("killall")) {
                         String target = cmd[cmd.length - 1]; // Target name is usually the last argument
+                        String qTarget = shellQuoteForIntercept(target);
+                        if (qTarget == null) {
+                            LOGGER.w("SUBridge: refusing " + baseCmd + " intercept, unsafe target: " + target);
+                            return newProcessInternal(new String[]{"false"}, env, dir);
+                        }
                         LOGGER.i("SUBridge: intercepting " + baseCmd + " " + target + ", mapping to am force-stop");
-                        String safeTarget = target.replace("\"", "\\\"");
-                        String script = "if [ ! -z \"" + safeTarget + "\" ] && [ \"" + safeTarget + "\" != \"sh\" ] && [ \"" + safeTarget + "\" != \"su\" ]; then am force-stop \"" + safeTarget + "\"; else false; fi";
+                        String script = "if [ ! -z " + qTarget + " ] && [ " + qTarget + " != \"sh\" ] && [ " + qTarget + " != \"su\" ]; then am force-stop " + qTarget + "; else false; fi";
                         return newProcessInternal(new String[]{"sh", "-c", script}, env, dir);
                     } else if (baseCmd.equals("insmod") || baseCmd.equals("rmmod") || baseCmd.equals("modprobe")) {
                         if (isFeatureEnabled("root_kernel_ghosting_enabled")) {
@@ -1757,17 +1806,31 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             boolean isRestore = fullCmd.contains("-x") || fullCmd.contains("--extract");
                             boolean isGzip = fullCmd.contains("-z") || fullCmd.contains("--gzip") || (archivePath != null && archivePath.endsWith(".gz"));
 
+                            // The regex above only strips '/' and whitespace from targetPkg,
+                            // so "com.foo$(id)" would otherwise interpolate; archivePath comes
+                            // straight from argv and was previously concatenated unquoted
+                            // (audit slice4 P0-1).
+                            String qPkg = shellQuoteForIntercept(targetPkg);
+                            if (qPkg == null) {
+                                LOGGER.w("SUBridge: refusing tar/cp intercept, unsafe package: " + targetPkg);
+                                return newProcessInternal(new String[]{"false"}, env, dir);
+                            }
                             if (archivePath != null) {
+                                String qArchive = shellQuoteForIntercept(archivePath);
+                                if (qArchive == null) {
+                                    LOGGER.w("SUBridge: refusing tar/cp intercept, unsafe archive path: " + archivePath);
+                                    return newProcessInternal(new String[]{"false"}, env, dir);
+                                }
                                 if (isRestore) {
                                     String restoreCmd = "(printf 'ANDROID BACKUP\\n1\\n1\\nnone\\n' ; ";
-                                    if (isGzip) restoreCmd += "gunzip -c " + archivePath;
-                                    else restoreCmd += "cat " + archivePath;
+                                    if (isGzip) restoreCmd += "gunzip -c " + qArchive;
+                                    else restoreCmd += "cat " + qArchive;
                                     restoreCmd += ") | bu restore";
                                     return newProcessInternal(new String[]{"sh", "-c", restoreCmd}, env, dir);
                                 } else {
-                                    String backupCmd = "bu backup -apk -obb " + targetPkg + " | tail -c +25 ";
+                                    String backupCmd = "bu backup -apk -obb " + qPkg + " | tail -c +25 ";
                                     if (isGzip) backupCmd += "| gzip -c ";
-                                    backupCmd += "> " + archivePath;
+                                    backupCmd += "> " + qArchive;
                                     return newProcessInternal(new String[]{"sh", "-c", backupCmd}, env, dir);
                                 }
                             } else {
@@ -1775,7 +1838,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                     String restoreCmd = "(printf 'ANDROID BACKUP\\n1\\n1\\nnone\\n' ; cat) | bu restore";
                                     return newProcessInternal(new String[]{"sh", "-c", restoreCmd}, env, dir);
                                 } else {
-                                    String backupCmd = "bu backup -apk -obb " + targetPkg + " | tail -c +25";
+                                    String backupCmd = "bu backup -apk -obb " + qPkg + " | tail -c +25";
                                     return newProcessInternal(new String[]{"sh", "-c", backupCmd}, env, dir);
                                 }
                             }
