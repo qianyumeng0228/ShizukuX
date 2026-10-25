@@ -108,6 +108,22 @@ class WatchdogService : Service() {
                         val wasFirstRestart = (consecutiveCrashes == 0)
                         consecutiveCrashes++
                         lastRestartMs = now
+                        if (consecutiveCrashes > MAX_AUTO_RESTARTS) {
+                            // v24 (power): the server environment is broken — 5+ consecutive
+                            // crash loops (≈25 min of attempts across the 5s→5min backoff
+                            // ladder). Spawning su every MAX_COOLDOWN_MS only to fail again
+                            // burns battery for zero recovery, so degrade to notifications only:
+                            // each further CRASHED tick posts the crash alert (60s-cooldown
+                            // gated) and never touches su again. A successful RUNNING
+                            // transition resets the counter via the stability window, which
+                            // automatically re-arms auto-restart once the user fixes the
+                            // environment (e.g. starts the server manually).
+                            ActivityLogManager.log(
+                                "Shizuku", applicationContext.packageName,
+                                "Watchdog: auto-restart suspended after $consecutiveCrashes consecutive crashes (environment broken); notifying only"
+                            )
+                            return@collectLatest
+                        }
                         if (!wasFirstRestart) {
                             showCrashNotification()
                         }
@@ -299,6 +315,9 @@ class WatchdogService : Service() {
         private const val BASE_COOLDOWN_MS = 5_000L
         private const val MAX_COOLDOWN_MS = 300_000L   // 5 min cap
         private const val CRASH_NOTIFICATION_COOLDOWN_MS = 60_000L
+
+        /** Consecutive crash loop threshold after which auto-restart suspends (notify-only). */
+        private const val MAX_AUTO_RESTARTS = 5
 
         @Volatile
         private var lastCrashNotificationMs = 0L

@@ -39,6 +39,11 @@ class ShizukuLiveService : Service() {
                         @Suppress("DEPRECATION")
                         stopForeground(true)
                     }
+                    // v24 (power): with the server down there is nothing to advertise, so don't
+                    // keep the process resident just for a dormant foreground service — the
+                    // RUNNING-transition listener in ShizukuApplication re-arms this service
+                    // whenever the server comes back, and the cold-start path also starts it.
+                    stopSelf()
                 }
             }
         }

@@ -161,9 +161,12 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 options.environment = if (BuildConfig.DEBUG) "development" else "production"
                 options.dist = "${BuildConfig.VERSION_CODE}"
 
-                // Session tracking for crash-free rate
+                // Session tracking for crash-free rate. 60s instead of Sentry's 30s default:
+                // the auto-session tracker is a periodic timer that wakes the process on a
+                // schedule; halving its frequency costs nothing for crash-free-rate accuracy
+                // (v24 power). Crash-event capture itself is unaffected.
                 options.isEnableAutoSessionTracking = true
-                options.sessionTrackingIntervalMillis = 30000L
+                options.sessionTrackingIntervalMillis = 60000L
 
                 // Include breadcrumbs for navigation tracking
                 options.maxBreadcrumbs = 100
@@ -427,6 +430,32 @@ class ShizukuApplication : Application(), Configuration.Provider {
                         af.shizuku.manager.database.RootCompatHelper.deployBridgeToTmp(this@ShizukuApplication)
                     } catch (e: Exception) {
                         Timber.tag("ShizukuApplication").w(e, "SU bridge redeploy on service start skipped")
+                    }
+                }
+        }
+
+        // v24 (power): ShizukuLiveService stopSelf()s while the server is down (no more
+        // process-resident idle foreground service). Re-arm it on every RUNNING transition
+        // so the Live Activity notification comes back without keeping the process alive
+        // during downtime. startForegroundService on the same service is idempotent
+        // (extra onStartCommand, no new instance); the cold-start path in onCreate() covers
+        // the case where this coroutine never ran (process recreated while already RUNNING).
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+            ShizukuStateMachine.asFlow()
+                .distinctUntilChanged()
+                .filter { it == ShizukuStateMachine.State.RUNNING }
+                .collect {
+                    if (ShizukuSettings.getWatchdog() && ShizukuSettings.isLiveActivityEnabled()) {
+                        try {
+                            val intent = Intent(this@ShizukuApplication, af.shizuku.manager.service.ShizukuLiveService::class.java)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                startForegroundService(intent)
+                            } else {
+                                startService(intent)
+                            }
+                        } catch (e: Exception) {
+                            Timber.tag("ShizukuApplication").w(e, "Failed to re-start ShizukuLiveService on RUNNING")
+                        }
                     }
                 }
         }

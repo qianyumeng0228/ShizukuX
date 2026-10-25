@@ -45,6 +45,14 @@ class WatchdogAlarmReceiver : BroadcastReceiver() {
                 WatchdogService.start(context)
             }
         }
+
+        // v24 (power) note: the 15-min RTC_WAKEUP cadence and Doze-compatible exact/inexact
+        // fallback were already in place (INTERVAL_MS / setExactAndAllowWhileIdle /
+        // setAndAllowWhileIdle). A short-circuit was trialled (skip update() while the watchdog
+        // service is alive and the screen is interactive) and REVERTED after on-device testing:
+        // update() is the alarm's last-resort freshness check when the binder-death callback is
+        // delayed or missed, and at one call per 15 min its cost is negligible — the short-circuit
+        // saved ~nothing while adding a real state-staleness risk.
         ShizukuStateMachine.update()
 
         schedule(context.applicationContext)
