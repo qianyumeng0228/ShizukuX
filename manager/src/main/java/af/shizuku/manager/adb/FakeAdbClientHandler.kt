@@ -22,6 +22,11 @@ class FakeAdbClientHandler(
     companion object {
         private const val TAG = "FakeAdbClient"
         private const val PREFS_NAME = "fake_adb_keys"
+        private const val PREF_KEYS = "keys"
+        /** Newline-delimited "<uid>\t<pubkey>" entries binding each authorized ADB public key
+         *  to the loopback UID that owns it. Keys authorized before this binding existed have
+         *  no entry here and are adopted on first valid signature (see loop()). */
+        private const val PREF_KEY_UIDS = "key_uids"
         private const val MAX_ADB_PAYLOAD_SIZE = 16 * 1024 * 1024 // 16MB, well above real adb's ~1MB max payload
 
         // Multiplexing
@@ -32,6 +37,11 @@ class FakeAdbClientHandler(
     private val outputStream = DataOutputStream(socket.getOutputStream())
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    /** UID of the app that dialed us over 127.0.0.1, resolved from /proc/net/tcp{,6}.
+     *  Null when it cannot be determined on this OEM; the auth flow then falls back to
+     *  requiring cryptographic proof (a valid signature) and rejects no-proof handshakes. */
+    private val peerUid: Int? = resolvePeerUid()
 
     // We only support one active session per connection, but could support multiple
     private val activeProcesses = ConcurrentHashMap<Int, ShizukuRemoteProcess>()
@@ -49,6 +59,8 @@ class FakeAdbClientHandler(
         java.security.SecureRandom().nextBytes(token)
         writeMessage(AdbMessage(AdbProtocol.A_AUTH, AdbProtocol.ADB_AUTH_TOKEN, 0, token))
 
+        Timber.tag(TAG).i("Accepted loopback connection, peer uid=$peerUid")
+
         var authenticated = false
         while (!authenticated) {
             msg = readMessage()
@@ -58,8 +70,14 @@ class FakeAdbClientHandler(
                         Timber.tag(TAG).w("AUTH_SIGNATURE with null data — ignoring")
                         continue
                     }
-                    if (verifySignature(token, signature)) {
+                    val matchedKey = findVerifiedKey(token, signature)
+                    if (matchedKey != null) {
                         authenticated = true
+                        // A valid RSA signature proves the peer holds the private key for this
+                        // authorized public key. Bind (or re-bind) the key to the connecting app's
+                        // loopback UID. Rebinding on every successful signature is safe (malware
+                        // cannot sign) and self-heals across reinstalls that re-UID the package.
+                        if (peerUid != null) bindKeyToUid(matchedKey, peerUid)
                         writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
                     } else {
                         // Send another token, prompt client to try next key or send public key
@@ -75,13 +93,34 @@ class FakeAdbClientHandler(
                     Timber.tag(TAG).i("Received public key: $pubKeyStr")
 
                     if (isKeyAuthorized(pubKeyStr)) {
-                        authenticated = true
-                        writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
+                        // HARDENED (loopback privilege-escalation fix): presenting an
+                        // already-authorized public key proves nothing by itself — no signature,
+                        // no proof of holding the matching private key. A well-formed ADB client
+                        // whose key we already know would have produced a valid AUTH_SIGNATURE on
+                        // the previous token and never reach this branch. Accept this degenerate
+                        // case only when we can positively identify the peer as the UID that owns
+                        // the key (or our own process for self-tests); otherwise fail closed by
+                        // dropping the connection. This stops any local app from replaying a known
+                        // pubkey to obtain privileged shell on 127.0.0.1:15555.
+                        val boundUid = boundUidFor(pubKeyStr)
+                        val selfUid = android.os.Process.myUid()
+                        if (peerUid != null && (peerUid == selfUid || peerUid == boundUid)) {
+                            authenticated = true
+                            writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
+                        } else {
+                            Timber.tag(TAG).w(
+                                "Rejecting no-proof AUTH_RSAPUBLICKEY for known key: peer uid=$peerUid, bound uid=$boundUid"
+                            )
+                            return // closes the socket via socket.use{}; the accept loop is untouched
+                        }
                     } else {
                         // Prompt user
                         val allowed = promptUserForPairingBlocking(pubKeyStr)
                         if (allowed) {
                             authorizeKey(pubKeyStr)
+                            // Record which app requested pairing so a different (possibly malicious)
+                            // local app cannot later reuse this key merely by presenting its pubkey.
+                            if (peerUid != null) bindKeyToUid(pubKeyStr, peerUid)
                             authenticated = true
                             writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
                         } else {
@@ -194,8 +233,11 @@ class FakeAdbClientHandler(
         }
     }
 
-    private fun verifySignature(token: ByteArray, signature: ByteArray): Boolean {
-        val allKeys = prefs.getStringSet("keys", emptySet()) ?: emptySet()
+    /** Returns the authorized public key whose private key produced [signature] over [token],
+     *  or null when no stored key verifies it. A non-null result is proof the peer holds the
+     *  corresponding private key. */
+    private fun findVerifiedKey(token: ByteArray, signature: ByteArray): String? {
+        val allKeys = prefs.getStringSet(PREF_KEYS, emptySet()) ?: emptySet()
         for (keyStr in allKeys) {
             try {
                 val pubKey = parseAdbPublicKey(keyStr)
@@ -217,23 +259,96 @@ class FakeAdbClientHandler(
                         break
                     }
                 }
-                if (match) return true
+                if (match) return keyStr
             } catch (e: Exception) {
                 Timber.tag(TAG).e(e, "Error verifying signature")
             }
         }
-        return false
+        return null
     }
 
     private fun isKeyAuthorized(pubKeyStr: String): Boolean {
-        val allKeys = prefs.getStringSet("keys", emptySet()) ?: emptySet()
+        val allKeys = prefs.getStringSet(PREF_KEYS, emptySet()) ?: emptySet()
         return allKeys.contains(pubKeyStr)
     }
 
     private fun authorizeKey(pubKeyStr: String) {
-        val allKeys = prefs.getStringSet("keys", emptySet())?.toMutableSet() ?: mutableSetOf()
+        val allKeys = prefs.getStringSet(PREF_KEYS, emptySet())?.toMutableSet() ?: mutableSetOf()
         allKeys.add(pubKeyStr)
-        prefs.edit().putStringSet("keys", allKeys).apply()
+        prefs.edit().putStringSet(PREF_KEYS, allKeys).apply()
+    }
+
+    /** Look up the loopback UID bound to [pubKeyStr], or null when the key predates binding. */
+    private fun boundUidFor(pubKeyStr: String): Int? {
+        val raw = prefs.getString(PREF_KEY_UIDS, null) ?: return null
+        raw.lineSequence().forEach { line ->
+            val tab = line.indexOf('\t')
+            if (tab > 0 && line.substring(tab + 1) == pubKeyStr) {
+                return line.substring(0, tab).toIntOrNull()
+            }
+        }
+        return null
+    }
+
+    /** Bind [pubKeyStr] to [uid], replacing any previous binding for that key. */
+    private fun bindKeyToUid(pubKeyStr: String, uid: Int) {
+        val raw = prefs.getString(PREF_KEY_UIDS, null)
+        val kept = raw?.lineSequence()?.filter { line ->
+            val tab = line.indexOf('\t')
+            tab <= 0 || line.substring(tab + 1) != pubKeyStr
+        }?.filter { it.isNotBlank() }?.joinToString("\n").orEmpty()
+        val updated = if (kept.isEmpty()) "$uid\t$pubKeyStr" else "$kept\n$uid\t$pubKeyStr"
+        prefs.edit().putString(PREF_KEY_UIDS, updated).apply()
+    }
+
+    /**
+     * Resolve the UID of the app that dialed us over the loopback TCP connection.
+     *
+     * TCP sockets have no SO_PEERCRED (that is AF_UNIX only), so we read the world-readable
+     * /proc/net/tcp{,6} tables. The accepted socket's remote port is the client's source
+     * port; the client's own socket row has `local = 127.0.0.1:<clientPort>` and
+     * `rem = 127.0.0.1:<localPort>`, and that row's `uid` column is the client's euid. Returns
+     * null when the table cannot be read or the row is absent (race/OEM variant) — callers
+     * then fall back to requiring cryptographic proof rather than trusting the peer.
+     */
+    private fun resolvePeerUid(): Int? {
+        val clientPort = socket.port
+        val serverPort = socket.localPort
+        if (clientPort <= 0 || serverPort <= 0) return null
+        for (path in arrayOf("/proc/net/tcp", "/proc/net/tcp6")) {
+            val uid = try {
+                parsePeerUidFromProcTcp(path, clientPort, serverPort)
+            } catch (e: Exception) {
+                null
+            }
+            if (uid != null) return uid
+        }
+        return null
+    }
+
+    private fun parsePeerUidFromProcTcp(path: String, clientPort: Int, serverPort: Int): Int? {
+        val file = java.io.File(path)
+        if (!file.canRead()) return null
+        val lines = file.readLines()
+        if (lines.isEmpty()) return null
+        val headerCols = lines[0].trim().split(Regex("\\s+"))
+        val uidIdx = headerCols.indexOf("uid")
+        if (uidIdx < 0) return null
+        // Ports in /proc/net/tcp are uppercase hex without leading zeros; compare case-insensitively.
+        val wantLocalPort = clientPort.toString(16)
+        val wantRemPort = serverPort.toString(16)
+        for (i in 1 until lines.size) {
+            val cols = lines[i].trim().split(Regex("\\s+"))
+            if (cols.size <= uidIdx || cols.size < 3) continue
+            val localPort = cols[1].substringAfter(':', "")
+            val remPort = cols[2].substringAfter(':', "")
+            if (localPort.equals(wantLocalPort, ignoreCase = true) &&
+                remPort.equals(wantRemPort, ignoreCase = true)
+            ) {
+                return cols[uidIdx].toIntOrNull()
+            }
+        }
+        return null
     }
 
     private fun promptUserForPairingBlocking(pubKeyStr: String): Boolean {

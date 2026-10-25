@@ -108,8 +108,12 @@ class HomeBannerStatusViewHolder(
             }
         )
 
-        // Pulse animation for Starting/Running state
-        if (state == af.shizuku.manager.utils.ShizukuStateMachine.State.STARTING || ok) {
+        // Pulse animation for Starting/Running state — only when expressive animations are
+        // enabled; the running-state pulse would otherwise animate indefinitely (1.5s loop)
+        // even while the home screen is on screen, wasting battery/GPU (see HomeScreen.kt:140
+        // for the same gate).
+        if (af.shizuku.manager.ShizukuSettings.isExpressiveAnimationsEnabled() &&
+            (state == af.shizuku.manager.utils.ShizukuStateMachine.State.STARTING || ok)) {
             val pulse = android.view.animation.AlphaAnimation(0.4f, 1.0f).apply {
                 duration = if (ok) 1500 else 600
                 repeatMode = android.view.animation.Animation.REVERSE

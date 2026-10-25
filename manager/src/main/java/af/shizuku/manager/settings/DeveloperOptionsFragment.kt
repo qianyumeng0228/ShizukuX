@@ -78,24 +78,28 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
                         .setTitle(if (hasLastCrash) R.string.manual_report_last_crash_title else R.string.manual_report_title)
                         .setMessage(R.string.manual_report_summary)
                         .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
-                            val report = CrashReporter.generateReport(ctx)
-                            val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
-                                ctx.getString(R.string.manual_report_clipboard_label), report))
+                            lifecycleScope.launch {
+                                val report = CrashReporter.generateReport(ctx)
+                                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText(
+                                    ctx.getString(R.string.manual_report_clipboard_label), report))
 
-                            Toast.makeText(ctx, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
+                                Toast.makeText(ctx, R.string.manual_report_toast_copied, Toast.LENGTH_LONG).show()
 
-                            val url = CrashReporter.getGitHubReportUrl(ctx)
-                            CustomTabsHelper.launchUrlOrCopy(ctx, url)
+                                val url = CrashReporter.getGitHubReportUrl(ctx)
+                                CustomTabsHelper.launchUrlOrCopy(ctx, url)
 
-                            if (hasLastCrash) {
-                                CrashHandler.clearLastCrash(ctx)
+                                if (hasLastCrash) {
+                                    CrashHandler.clearLastCrash(ctx)
+                                }
                             }
                         }
                         .setNeutralButton(R.string.manual_report_copied_dialog_share) { _, _ ->
-                            CrashReporter.shareAsFile(ctx)
-                            if (hasLastCrash) {
-                                CrashHandler.clearLastCrash(ctx)
+                            lifecycleScope.launch {
+                                CrashReporter.shareAsFile(ctx)
+                                if (hasLastCrash) {
+                                    CrashHandler.clearLastCrash(ctx)
+                                }
                             }
                         }
                         .setNegativeButton(android.R.string.cancel, null)

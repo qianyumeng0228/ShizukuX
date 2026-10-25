@@ -1206,24 +1206,31 @@ public class ShizukuSettings {
                     try {
                         android.net.Uri uri = android.net.Uri.parse(suPathUri);
                         String docId = android.provider.DocumentsContract.getTreeDocumentId(uri);
-                        if (docId != null && docId.startsWith("raw:")) {
-                            docId = docId.substring("raw:".length());
-                        }
-                        String resolvedPath = null;
-                        if (docId.startsWith("primary:")) {
-                            String relative = docId.substring("primary:".length());
-                            resolvedPath = "/storage/emulated/0/" + (relative.isEmpty() ? "" : relative + "/") + "su";
-                        } else if (docId.contains(":")) {
-                            String[] parts = docId.split(":");
-                            if (parts.length > 1) {
-                                resolvedPath = "/storage/" + parts[0] + "/" + parts[1] + "/su";
+                        if (docId == null) {
+                            // Non-tree URI (e.g. a bare content: or file: reference that slipped
+                            // through). Without a docId we cannot resolve a filesystem path; skip
+                            // rather than NPE-ing into the outer catch and silently failing.
+                            Timber.tag("ShizukuSettings").w("getTreeDocumentId returned null for suPathUri=%s", suPathUri);
+                        } else {
+                            if (docId.startsWith("raw:")) {
+                                docId = docId.substring("raw:".length());
                             }
-                        } else if (docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies")) {
-                            resolvedPath = "/storage/emulated/0/" + docId + "/su";
-                        }
+                            String resolvedPath = null;
+                            if (docId.startsWith("primary:")) {
+                                String relative = docId.substring("primary:".length());
+                                resolvedPath = "/storage/emulated/0/" + (relative.isEmpty() ? "" : relative + "/") + "su";
+                            } else if (docId.contains(":")) {
+                                String[] parts = docId.split(":");
+                                if (parts.length > 1) {
+                                    resolvedPath = "/storage/" + parts[0] + "/" + parts[1] + "/su";
+                                }
+                            } else if (docId.startsWith("Download") || docId.startsWith("Documents") || docId.startsWith("Movies")) {
+                                resolvedPath = "/storage/emulated/0/" + docId + "/su";
+                            }
 
-                        if (resolvedPath != null) {
-                            service.setExtraSetting("su_path", resolvedPath);
+                            if (resolvedPath != null) {
+                                service.setExtraSetting("su_path", resolvedPath);
+                            }
                         }
                     } catch (Exception e) {
                         Timber.tag("ShizukuSettings").w(e, "failed to update su_path");

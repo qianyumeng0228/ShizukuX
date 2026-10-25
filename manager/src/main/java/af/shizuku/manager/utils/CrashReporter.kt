@@ -8,13 +8,22 @@ import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.ActivityLogManager
 import com.topjohnwu.superuser.Shell
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 object CrashReporter {
 
-    fun generateReport(context: Context): String {
+    /**
+     * Build the manual crash report.
+     *
+     * This blocks on (a) [Shell.isAppGrantedRoot] (cold su spawn, 1-5s on first call) and
+     * (b) `logcat -d` (a child process + pipe read). Both must not run on the main thread —
+     * the function is therefore suspend and hops to [Dispatchers.IO] internally.
+     */
+    suspend fun generateReport(context: Context): String = withContext(Dispatchers.IO) {
         val sb = StringBuilder()
 
         // 1. Header
@@ -95,13 +104,13 @@ object CrashReporter {
         }
         sb.append("```\n")
 
-        return sb.toString()
+        sb.toString()
     }
 
     /**
-     * Generate a pre-filled GitHub issue URL
+     * Generate a pre-filled GitHub issue URL. Suspends on [generateReport].
      */
-    fun getGitHubReportUrl(context: Context): String {
+    suspend fun getGitHubReportUrl(context: Context): String {
         val report = generateReport(context)
         val title = "Manual Crash Report: ${Build.MANUFACTURER} ${Build.MODEL} (Android ${Build.VERSION.RELEASE})"
         return ProjectLinks.NEW_PREFILLED_ISSUE +
@@ -110,9 +119,10 @@ object CrashReporter {
     }
 
     /**
-     * Share the report as a .txt file
+     * Write the report to a cache file and launch the share chooser. Suspends on
+     * [generateReport]; the rest (file IO, Intent) is cheap.
      */
-    fun shareAsFile(context: Context) {
+    suspend fun shareAsFile(context: Context) {
         val report = generateReport(context)
         val dir = context.cacheDir ?: context.filesDir ?: return
         val file = File(dir, "shizuku_extra_crash_report.txt")

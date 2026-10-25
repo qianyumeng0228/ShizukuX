@@ -158,6 +158,16 @@ class UpdateManager(private val context: Context) {
     private fun monitorDownload(downloadId: Long, file: File, versionName: String) {
         monitorJob?.cancel()
         monitorJob = scope.launch {
+            // Consecutive times the DownloadManager row for [downloadId] was missing. If the
+            // user cleared the download or the system dropped the row, polling forever would
+            // leak a Cursor every 500ms and burn battery. Give up after N consecutive misses.
+            var missingRowCount = 0
+            val maxMissingRows = 10
+            // Progress-notification throttle: notify at most when the percentage moved
+            // >=2 points or >=2s elapsed, instead of once per 500ms tick (2 notifies/sec
+            // while downloading burns battery and CPU on notification re-render).
+            var lastNotifiedPercent = -1
+            var lastNotifyTimeMs = 0L
             while (isActive) {
                 try {
                     val query = DownloadManager.Query().setFilterById(downloadId)
@@ -171,17 +181,34 @@ class UpdateManager(private val context: Context) {
                         null
                     }
 
-                    if (cursor != null && cursor.moveToFirst()) {
-                        val statusIdx = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
-                        val progressIdx = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
-                        val totalIdx = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
-                        val status = if (statusIdx >= 0) cursor.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
-                        val progress = if (progressIdx >= 0) cursor.getLong(progressIdx) else 0L
-                        val total = if (totalIdx >= 0) cursor.getLong(totalIdx) else 0L
+                    if (cursor == null) {
+                        delay(500)
+                        continue
+                    }
+
+                    // Always close the cursor, regardless of which branch we take; previously
+                    // the close was only inside moveToFirst()==true, leaking one cursor per
+                    // 500ms tick when the download row vanished.
+                    cursor.use { c ->
+                        if (!c.moveToFirst()) {
+                            missingRowCount++
+                            if (missingRowCount >= maxMissingRows) {
+                                Timber.tag(TAG).w("Download row $downloadId missing after $missingRowCount ticks; giving up monitor")
+                                break
+                            }
+                            return@use
+                        }
+                        missingRowCount = 0
+
+                        val statusIdx = c.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                        val progressIdx = c.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                        val totalIdx = c.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                        val status = if (statusIdx >= 0) c.getInt(statusIdx) else DownloadManager.STATUS_RUNNING
+                        val progress = if (progressIdx >= 0) c.getLong(progressIdx) else 0L
+                        val total = if (totalIdx >= 0) c.getLong(totalIdx) else 0L
 
                         when (status) {
                             DownloadManager.STATUS_SUCCESSFUL -> {
-                                cursor.close()
                                 Timber.tag(TAG).d("Download completed: ${file.absolutePath}")
                                 onDownloadComplete(file, versionName)
                                 break
@@ -191,9 +218,8 @@ class UpdateManager(private val context: Context) {
                                 // STATUS_FAILED - without it "Download failed" (SHIZUKUPLUS-8H)
                                 // gives no way to tell insufficient-storage, HTTP errors, and
                                 // unresumable transfers apart.
-                                val reasonIdx = cursor.getColumnIndex(DownloadManager.COLUMN_REASON)
-                                val reason = if (reasonIdx >= 0) cursor.getInt(reasonIdx) else -1
-                                cursor.close()
+                                val reasonIdx = c.getColumnIndex(DownloadManager.COLUMN_REASON)
+                                val reason = if (reasonIdx >= 0) c.getInt(reasonIdx) else -1
                                 Timber.tag(TAG).e("Download failed (reason=$reason)")
                                 showDownloadErrorNotification(reason)
                                 break
@@ -205,10 +231,14 @@ class UpdateManager(private val context: Context) {
                                 // Update progress notification. progress/total are Long — an
                                 // Int (progress * 100) would overflow for any file over ~21.4MB.
                                 val percent = if (total > 0) (progress * 100 / total).toInt() else 0
-                                updateProgressNotification(percent, versionName)
+                                val nowMs = System.currentTimeMillis()
+                                if (percent - lastNotifiedPercent >= 2 || nowMs - lastNotifyTimeMs >= 2000) {
+                                    updateProgressNotification(percent, versionName)
+                                    lastNotifiedPercent = percent
+                                    lastNotifyTimeMs = nowMs
+                                }
                             }
                         }
-                        cursor.close()
                     }
                 } catch (e: Exception) {
                     Timber.tag(TAG).e(e, "Error monitoring download")

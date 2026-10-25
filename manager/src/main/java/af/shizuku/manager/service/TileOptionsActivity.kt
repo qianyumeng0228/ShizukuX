@@ -80,12 +80,17 @@ class TileOptionsActivity : AppCompatActivity() {
 
     private fun startShizuku() {
         ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-        if (Shell.isAppGrantedRoot() == true) {
-            Shell.cmd(Starter.internalCommand).submit {
-                ShizukuStateMachine.update()
+        // Shell.isAppGrantedRoot() can block on a cold su spawn (1-5s); do it off the main
+        // thread so the QS long-press dialog doesn't ANR.
+        kotlin.concurrent.thread(name = "tile-options-root-probe") {
+            val hasRoot = runCatching { Shell.isAppGrantedRoot() == true }.getOrDefault(false)
+            if (hasRoot) {
+                Shell.cmd(Starter.internalCommand).submit {
+                    ShizukuStateMachine.update()
+                }
+            } else {
+                runOnUiThread { AdbStartWorker.enqueue(this) }
             }
-        } else {
-            AdbStartWorker.enqueue(this)
         }
     }
 

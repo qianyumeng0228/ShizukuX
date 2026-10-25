@@ -25,20 +25,25 @@ object PreRestoreManager {
 
     private const val PREFS_NAME = "pre_restore_snapshots"
     private const val MAX_SNAPSHOTS_PER_APP = 10
-    private val TIMESTAMP_FORMAT = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US)
-    private val LEGACY_FORMAT = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US)
+
+    // SimpleDateFormat is not thread-safe. generateTimestamp() runs on an IO coroutine while
+    // formatForDisplay() runs on the main thread (rollback dialog), so sharing static instances
+    // could corrupt timestamps and break prefs↔SAF filename matching. Snapshot frequency is
+    // extremely low, so just allocate a fresh formatter per call.
+    private fun timestampFormat() = SimpleDateFormat("yyyyMMdd-HHmmss-SSS", Locale.US)
+    private fun legacyFormat() = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US)
 
     /** Generate a timestamp string for the current time. */
-    fun generateTimestamp(): String = TIMESTAMP_FORMAT.format(Date())
+    fun generateTimestamp(): String = timestampFormat().format(Date())
 
     /** Format a timestamp for display (e.g. "2026-09-24 15:30"). */
     fun formatForDisplay(timestamp: String): String {
         return try {
             val date = try {
-                TIMESTAMP_FORMAT.parse(timestamp)
+                timestampFormat().parse(timestamp)
             } catch (_: Exception) {
-                LEGACY_FORMAT.parse(timestamp)  // backward compat with pre-k2026 second-precision timestamps
-            }
+                legacyFormat().parse(timestamp)  // backward compat with pre-k2026 second-precision timestamps
+            } ?: return timestamp
             SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US).format(date)
         } catch (_: Exception) {
             timestamp

@@ -346,10 +346,31 @@ private fun AppListPane(
 private fun AppRow(app: AppItem, onClick: () -> Unit) {
     val context = LocalContext.current
     val pm = context.packageManager
-    val iconBitmap = remember(app.packageName) {
-        runCatching {
-            pm.getApplicationIcon(app.packageName).toBitmap().asImageBitmap()
-        }.getOrNull()
+    // getApplicationIcon() is a Binder IPC + toBitmap() decodes on the calling thread. Running
+    // that inside remember{} executed it synchronously during composition on the main thread,
+    // causing jank as LazyColumn rows scrolled. Load on IO and post the bitmap back.
+    var iconBitmap by remember(app.packageName) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    LaunchedEffect(app.packageName) {
+        val loaded = withContext(Dispatchers.IO) {
+            runCatching {
+                val icon = pm.getApplicationIcon(app.packageName)
+                val bmp = runCatching { icon.toBitmap() }
+                    .recoverCatching {
+                        // AdaptiveIconDrawable / StateListDrawable / LayerDrawable can
+                        // throw in toBitmap() (intrinsic size -1 etc). Rasterize manually
+                        // onto a fresh bitmap so a broken icon never nulls the row.
+                        val w = if (icon.intrinsicWidth > 0) icon.intrinsicWidth else 64
+                        val h = if (icon.intrinsicHeight > 0) icon.intrinsicHeight else 64
+                        val fallback = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+                        val canvas = android.graphics.Canvas(fallback)
+                        icon.setBounds(0, 0, w, h)
+                        icon.draw(canvas)
+                        fallback
+                    }
+                bmp.getOrNull()?.asImageBitmap()
+            }.getOrNull()
+        }
+        iconBitmap = loaded
     }
 
     // Use Material3's clickable Card overload rather than Modifier.clickable: the latter reads
@@ -367,15 +388,19 @@ private fun AppRow(app: AppItem, onClick: () -> Unit) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (iconBitmap != null) {
+        val bmp = iconBitmap
+        if (bmp != null) {
             Image(
-                bitmap = iconBitmap,
+                bitmap = bmp,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp)
             )
         } else {
             Icon(
-                painter = painterResource(R.drawable.ic_default_app_icon),
+                // drawable-v26/ic_default_app_icon is an adaptive-icon XML that Compose's
+                // painterResource cannot decode ("Only VectorDrawables and rasterized asset
+                // types are supported"); use the plain vector foreground instead.
+                painter = painterResource(R.drawable.ic_default_app_icon_foreground),
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
                 tint = MaterialTheme.colorScheme.outline

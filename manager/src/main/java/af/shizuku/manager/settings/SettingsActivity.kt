@@ -4,11 +4,14 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import af.shizuku.manager.R
 import af.shizuku.manager.settings.compose.SettingsScreen
 import af.shizuku.core.ui.AppActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 
@@ -24,7 +27,12 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
         super.onCreate(savedInstanceState)
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        SettingsSearchEngine.init(this)
+        // Indexing ~9 preference XMLs synchronously on the main thread caused jank on first
+        // settings open. Prewarm on IO; [SettingsSearchEngine.search] blocks briefly on the
+        // shared lock if a query arrives before prewarm completes.
+        lifecycleScope.launch(Dispatchers.IO) {
+            SettingsSearchEngine.init(applicationContext)
+        }
 
         currentTitle = getString(R.string.settings_title)
 

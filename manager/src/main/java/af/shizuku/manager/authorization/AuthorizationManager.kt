@@ -97,6 +97,15 @@ object AuthorizationManager {
         return pi.applicationInfo?.metaData?.getBoolean("xyz.shizuku.extra.API") == true
     }
 
+    /**
+     * Returns whether [uid] is currently granted Shizuku permission.
+     *
+     * IMPORTANT: this method may block up to ~600 ms in [Thread.sleep] back-off while
+     * retrying [Shizuku.pingBinder] after a transient binder drop. It MUST NOT be called
+     * from the main thread — callers are expected to invoke it from an IO coroutine
+     * (e.g. AppsViewModel flows). If you need the result on the UI, wrap it in
+     * `withContext(Dispatchers.IO)`.
+     */
     fun granted(packageName: String, uid: Int): Boolean {
         return try {
             // Retry pingBinder up to 3x with 200 ms back-off: a momentary binder drop

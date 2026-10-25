@@ -325,10 +325,18 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * Sequentially backs up all currently loaded (filtered) user apps.
      * Emits [BackupEvent.BatchComplete] with succeeded/failed counts when done.
+     *
+     * Uses the currently filtered list (what the user sees after typing in the search box),
+     * matching the UI. Falls back to the full [allApps] only when state is not yet Loaded.
      */
     fun backupAll(outputDir: java.io.File? = null, safTreeUri: android.net.Uri? = null) {
         if (_batchRunning.value) return
-        val apps = allApps.ifEmpty { return }
+        // If we are showing a filtered list, back up exactly what the user sees (including an
+        // empty list as a no-op). Only when state isn't Loaded yet (e.g. cold start) do we fall
+        // back to the master list.
+        val loaded = _state.value as? UiState.Loaded
+        val apps = if (loaded != null) loaded.apps else allApps
+        if (apps.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
             _batchRunning.value = true
             var succeeded = 0
@@ -537,7 +545,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Batch restore external data for multiple apps from a SAF backup directory.
-     * Emits progress via [batchProgress] and [RestoreComplete] per app.
+     * Emits progress via [batchProgress] and a single [BatchComplete] at the end.
+     * Does NOT emit [BackupEvent.RestoreComplete] per app — 30 Snackbars firing in a row
+     * would drown the user and overwrite lastRestoredPkg in the Activity.
      * Clears app data before restore to ensure clean state.
      */
     fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri, includeInternal: Boolean = true, snapshotTimestamp: String? = null, isRollback: Boolean = false) {
@@ -559,7 +569,8 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 try {
                     val ok = restoreAppData(entry, safTreeUri, includeInternal, snapshotTimestamp, isRollback)
                     if (ok) succeeded++ else failed++
-                    _events.emit(BackupEvent.RestoreComplete(pkg, ok))
+                    // Per-app RestoreComplete event intentionally skipped in batch path;
+                    // BatchComplete at the end summarizes succeeded/failed counts.
                 } catch (e: Exception) {
                     Timber.e(e, "Batch restore failed for $pkg")
                     failed++

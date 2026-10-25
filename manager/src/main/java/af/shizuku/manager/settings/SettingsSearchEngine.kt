@@ -1,7 +1,6 @@
 package af.shizuku.manager.settings
 
 import android.content.Context
-import android.content.res.XmlResourceParser
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import org.xmlpull.v1.XmlPullParser
@@ -17,10 +16,13 @@ object SettingsSearchEngine {
         val xmlResId: Int
     )
 
+    @Volatile
     private var indexedItems: List<SettingItem>? = null
 
     fun reset() {
-        indexedItems = null
+        synchronized(this) {
+            indexedItems = null
+        }
     }
 
     private val screens = mapOf(
@@ -35,6 +37,14 @@ object SettingsSearchEngine {
         R.xml.settings_device_owner to "af.shizuku.manager.settings.DeviceOwnerSettingsFragment"
     )
 
+    /**
+     * Parses all preference XMLs and builds the in-memory search index.
+     *
+     * This is a relatively expensive operation (9+ XmlResourceParser walks). Callers should
+     * invoke it from a background thread (Dispatchers.IO) — see [prewarm]. The method is
+     * synchronized so a concurrent [search] cannot observe a half-built index.
+     */
+    @Synchronized
     fun init(context: Context) {
         if (indexedItems != null) return
         val items = mutableListOf<SettingItem>()
@@ -43,34 +53,37 @@ object SettingsSearchEngine {
 
         for ((xmlId, fragmentClass) in screens) {
             try {
-                val parser = context.resources.getXml(xmlId)
-                var eventType = parser.eventType
-                var currentCategory: String? = null
+                // XmlResourceParser is AutoCloseable; previously the parser was leaked on every
+                // screen walk (no close on either success or exception path).
+                context.resources.getXml(xmlId).use { parser ->
+                    var eventType = parser.eventType
+                    var currentCategory: String? = null
 
-                while (eventType != XmlPullParser.END_DOCUMENT) {
-                    if (eventType == XmlPullParser.START_TAG) {
-                        val tagName = parser.name
-                        if (tagName == "PreferenceCategory" ||
-                            tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
-                            tagName.endsWith("PreferenceCategory")) {
+                    while (eventType != XmlPullParser.END_DOCUMENT) {
+                        if (eventType == XmlPullParser.START_TAG) {
+                            val tagName = parser.name
+                            if (tagName == "PreferenceCategory" ||
+                                tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
+                                tagName.endsWith("PreferenceCategory")) {
 
-                            val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
-                            currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
-                        } else if (tagName != "PreferenceScreen") {
-                            val key = parser.getAttributeValue(namespace, "key")
+                                val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                                currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
+                            } else if (tagName != "PreferenceScreen") {
+                                val key = parser.getAttributeValue(namespace, "key")
 
-                            val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
-                            val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
+                                val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                                val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
 
-                            val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
-                            val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
+                                val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
+                                val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
 
-                            if (!title.isNullOrBlank()) {
-                                items.add(SettingItem(key, title, summary, currentCategory, fragmentClass, xmlId))
+                                if (!title.isNullOrBlank()) {
+                                    items.add(SettingItem(key, title, summary, currentCategory, fragmentClass, xmlId))
+                                }
                             }
                         }
+                        eventType = parser.next()
                     }
-                    eventType = parser.next()
                 }
             } catch (e: Exception) {
                 android.util.Log.w("SettingsSearchEngine", "Failed to index preferences from XML", e)
@@ -84,35 +97,36 @@ object SettingsSearchEngine {
         // the fragment it opens, so tapping a search result navigates exactly like tapping the
         // entry on the main screen.
         try {
-            val parser = context.resources.getXml(R.xml.settings_main)
-            var eventType = parser.eventType
-            var currentCategory: String? = null
-            while (eventType != XmlPullParser.END_DOCUMENT) {
-                if (eventType == XmlPullParser.START_TAG) {
-                    val tagName = parser.name
-                    if (tagName == "PreferenceCategory" ||
-                        tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
-                        tagName.endsWith("PreferenceCategory")) {
-                        val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
-                        currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
-                    } else if (tagName != "PreferenceScreen") {
-                        val key = parser.getAttributeValue(namespace, "key")
-                        val targetFragment = parser.getAttributeValue(namespace, "fragment")
-                        val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
-                        val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
-                        val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
-                        val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
-                        // Navigation entries (with android:fragment) open their target screen from a
-                        // search hit, exactly like tapping them. Inline controls placed directly on
-                        // the main screen (e.g. the Dhizuku mode card) have no fragment of their own;
-                        // index them against the main screen so a search hit opens settings_main and
-                        // shows the entry in place.
-                        if (!title.isNullOrBlank()) {
-                            items.add(SettingItem(key, title, summary, currentCategory, targetFragment ?: "af.shizuku.manager.settings.SettingsFragment", R.xml.settings_main))
+            context.resources.getXml(R.xml.settings_main).use { parser ->
+                var eventType = parser.eventType
+                var currentCategory: String? = null
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    if (eventType == XmlPullParser.START_TAG) {
+                        val tagName = parser.name
+                        if (tagName == "PreferenceCategory" ||
+                            tagName == "af.shizuku.manager.settings.CollapsiblePreferenceCategory" ||
+                            tagName.endsWith("PreferenceCategory")) {
+                            val catTitleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                            currentCategory = if (catTitleResId != 0) context.getString(catTitleResId) else parser.getAttributeValue(namespace, "title")
+                        } else if (tagName != "PreferenceScreen") {
+                            val key = parser.getAttributeValue(namespace, "key")
+                            val targetFragment = parser.getAttributeValue(namespace, "fragment")
+                            val titleResId = parser.getAttributeResourceValue(namespace, "title", 0)
+                            val title = if (titleResId != 0) context.getString(titleResId) else parser.getAttributeValue(namespace, "title")
+                            val summaryResId = parser.getAttributeResourceValue(namespace, "summary", 0)
+                            val summary = if (summaryResId != 0) context.getString(summaryResId) else parser.getAttributeValue(namespace, "summary")
+                            // Navigation entries (with android:fragment) open their target screen from a
+                            // search hit, exactly like tapping them. Inline controls placed directly on
+                            // the main screen (e.g. the Dhizuku mode card) have no fragment of their own;
+                            // index them against the main screen so a search hit opens settings_main and
+                            // shows the entry in place.
+                            if (!title.isNullOrBlank()) {
+                                items.add(SettingItem(key, title, summary, currentCategory, targetFragment ?: "af.shizuku.manager.settings.SettingsFragment", R.xml.settings_main))
+                            }
                         }
                     }
+                    eventType = parser.next()
                 }
-                eventType = parser.next()
             }
         } catch (e: Exception) {
             android.util.Log.w("SettingsSearchEngine", "Failed to index settings_main nav entries", e)
@@ -121,8 +135,15 @@ object SettingsSearchEngine {
     }
 
     fun search(context: Context, query: String): List<SettingItem> {
-        init(context)
-        val items = indexedItems ?: return emptyList()
+        val items = indexedItems ?: run {
+            // Index not pre-warmed yet (e.g. process restarted after configuration change and
+            // the background prewarm is still running). Block briefly on the lock rather than
+            // returning an empty result set.
+            synchronized(this) { indexedItems } ?: run {
+                init(context)
+                indexedItems!!
+            }
+        }
         if (query.isBlank()) return emptyList()
         val q = query.trim().lowercase()
         val devUnlocked = ShizukuSettings.isVectorEnabled()
@@ -130,8 +151,8 @@ object SettingsSearchEngine {
         return items.filter { item ->
             if (!devUnlocked && item.fragmentClass == "af.shizuku.manager.settings.DeveloperOptionsFragment") return@filter false
             item.title.lowercase().contains(q) ||
-            (item.summary != null && item.summary.lowercase().contains(q)) ||
-            (item.category != null && item.category.lowercase().contains(q))
+                (item.summary != null && item.summary.lowercase().contains(q)) ||
+                (item.category != null && item.category.lowercase().contains(q))
         }
     }
 }

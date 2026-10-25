@@ -249,7 +249,8 @@ class AppPickerPreference(context: Context, attrs: AttributeSet?) : Preference(c
         summary = if (packages.isEmpty()) {
             context.getString(R.string.settings_shadow_binder_hidden_packages_summary)
         } else {
-            val scope = CoroutineScope(Dispatchers.Main)
+            // Reuse the class-level scope (cancelled in onDetached) instead of leaking a new
+            // CoroutineScope on every summary update.
             scope.launch {
                 val apps = getApps(context)
                 val selectedNames = packages.mapNotNull { pkg ->

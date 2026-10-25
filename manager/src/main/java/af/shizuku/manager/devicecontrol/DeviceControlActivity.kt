@@ -6,7 +6,11 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import af.shizuku.manager.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
 
 /**
@@ -31,14 +35,19 @@ class DeviceControlActivity : AppCompatActivity() {
         statusText = findViewById(R.id.tv_status)
         powerWarning = findViewById(R.id.tv_power_warning)
 
-        // Check if power operations are available (root only); disable buttons in ADB mode
-        val powerAvailable = try { DeviceControlManager.isPowerAvailable() } catch (_: Exception) { false }
-        if (powerAvailable) {
-            powerWarning.visibility = android.view.View.GONE
-        } else {
-            // ADB mode (shell uid 2000 lacks REBOOT permission) — disable power buttons
-            listOf(R.id.btn_reboot, R.id.btn_reboot_recovery, R.id.btn_shutdown).forEach { id ->
-                findViewById<Button>(id).isEnabled = false
+        // Check if power operations are available (root only); disable buttons in ADB mode.
+        // isPowerAvailable() is a binder IPC — do it off the main thread.
+        lifecycleScope.launch {
+            val powerAvailable = withContext(Dispatchers.IO) {
+                runCatching { DeviceControlManager.isPowerAvailable() }.getOrDefault(false)
+            }
+            if (isFinishing) return@launch
+            if (powerAvailable) {
+                powerWarning.visibility = android.view.View.GONE
+            } else {
+                listOf(R.id.btn_reboot, R.id.btn_reboot_recovery, R.id.btn_shutdown).forEach { id ->
+                    findViewById<Button>(id).isEnabled = false
+                }
             }
         }
 
@@ -72,18 +81,20 @@ class DeviceControlActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        // Set initial volume
-        runSafe("读取音量") {
-            val vol = DeviceControlManager.getStreamVolume(3)
+        // Set initial volume / brightness. Both are binder reads; move off main thread.
+        // These read-then-update-UI flows can't use runSafe (which runs the whole block on IO);
+        // we need the IPC on IO but the SeekBar.progress write back on main.
+        lifecycleScope.launch {
+            val vol = withContext(Dispatchers.IO) {
+                runCatching { DeviceControlManager.getStreamVolume(3) }.getOrDefault(-1)
+            }
             if (vol >= 0) volumeSeek.progress = vol
-            true
         }
-
-        // Set initial brightness (read current system value)
-        runSafe("读取亮度") {
-            val bright = DeviceControlManager.getSetting("system", "screen_brightness")?.toIntOrNull()
+        lifecycleScope.launch {
+            val bright = withContext(Dispatchers.IO) {
+                runCatching { DeviceControlManager.getSetting("system", "screen_brightness")?.toIntOrNull() }.getOrNull()
+            }
             if (bright != null) brightnessSeek.progress = bright
-            true
         }
 
         // ── System Appearance ─────────────────────────────────────────────────
@@ -115,17 +126,26 @@ class DeviceControlActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Runs a [block] (which performs a Shizuku binder IPC) off the main thread and reports
+     * the result via [statusText]. Previously every toggle click ran its binder call on the
+     * main thread, freezing the UI on slow servers/OEM builds.
+     */
     private fun runSafe(label: String, block: () -> Boolean) {
-        try {
-            if (!Shizuku.pingBinder()) {
-                setStatus("错误：Shizuku Binder 不可用")
-                Toast.makeText(this, "Shizuku 服务未运行", Toast.LENGTH_SHORT).show()
-                return
+        lifecycleScope.launch {
+            try {
+                val alive = withContext(Dispatchers.IO) { Shizuku.pingBinder() }
+                if (!alive) {
+                    setStatus("错误：Shizuku Binder 不可用")
+                    Toast.makeText(this@DeviceControlActivity, "Shizuku 服务未运行", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                // The block itself may contain binder calls; run it on IO.
+                val ok = withContext(Dispatchers.IO) { block() }
+                setStatus("$label：${if (ok) "成功" else "失败（返回 false）"}")
+            } catch (e: Exception) {
+                setStatus("$label：错误 - ${e.message}")
             }
-            val ok = block()
-            setStatus("$label：${if (ok) "成功" else "失败（返回 false）"}")
-        } catch (e: Exception) {
-            setStatus("$label：错误 - ${e.message}")
         }
     }
 

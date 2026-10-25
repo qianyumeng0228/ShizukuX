@@ -3,6 +3,11 @@ package af.shizuku.manager.shell
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContracts
@@ -38,75 +43,81 @@ class ShellTutorialActivity : AppBarActivity() {
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree: Uri? ->
             if (tree == null) return@registerForActivityResult
 
-            val cr = contentResolver
-            val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
-            val child =
-                DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+            // SAF query + createDocument + asset streaming copy (the dex is several MB) can
+            // take hundreds of ms on slow storage. The ActivityResult callback runs on the
+            // main thread; move the whole export onto IO and only post the Toast back.
+            lifecycleScope.launch {
+                val (successCount, totalCount) = withContext(Dispatchers.IO) {
+                    val cr = contentResolver
+                    val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+                    val child =
+                        DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
 
-            cr.query(
-                child,
-                arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME),
-                null,
-                null,
-                null
-            )?.use {
-                while (it.moveToNext()) {
-                    val id = it.getString(0)
-                    val name = it.getString(1)
-                    if (name == SH_NAME || name == DEX_NAME || name == PLUS_NAME || name == SU_NAME) {
-                        DocumentsContract.deleteDocument(cr, DocumentsContract.buildDocumentUriUsingTree(tree, id))
-                    }
-                }
-            }
-
-            fun writeToDocument(name: String): Boolean {
-                val documentUri = try {
-                    DocumentsContract.createDocument(contentResolver, doc, "application/octet-stream", name)
-                } catch (e: Exception) {
-                    // The parent tree URI can be stale/revoked (removed SD card, cleared permission);
-                    // createDocument then throws FileNotFoundException (SHIZUKUPLUS-84). Don't crash.
-                    Timber.tag(TAG).e(e, "Failed to create document for $name (tree unavailable?)")
-                    return false
-                }
-                if (documentUri == null) {
-                    Timber.tag(TAG).e("Failed to create document for $name")
-                    return false
-                }
-
-                return try {
-                    cr.openOutputStream(documentUri)?.use { outputStream ->
-                        assets.open(name).use { inputStream ->
-                            inputStream.copyTo(outputStream)
+                    cr.query(
+                        child,
+                        arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+                        null,
+                        null,
+                        null
+                    )?.use {
+                        while (it.moveToNext()) {
+                            val id = it.getString(0)
+                            val name = it.getString(1)
+                            if (name == SH_NAME || name == DEX_NAME || name == PLUS_NAME || name == SU_NAME) {
+                                DocumentsContract.deleteDocument(cr, DocumentsContract.buildDocumentUriUsingTree(tree, id))
+                            }
                         }
                     }
-                    true
-                } catch (e: Exception) {
-                    Timber.tag(TAG).e(e, "Failed to write $name to document")
-                    try {
-                        DocumentsContract.deleteDocument(contentResolver, documentUri)
-                    } catch (deleteEx: Exception) {
-                        Timber.tag(TAG).e(deleteEx, "Failed to delete incomplete document for $name")
+
+                    fun writeToDocument(name: String): Boolean {
+                        val documentUri = try {
+                            DocumentsContract.createDocument(contentResolver, doc, "application/octet-stream", name)
+                        } catch (e: Exception) {
+                            // The parent tree URI can be stale/revoked (removed SD card, cleared permission);
+                            // createDocument then throws FileNotFoundException (SHIZUKUPLUS-84). Don't crash.
+                            Timber.tag(TAG).e(e, "Failed to create document for $name (tree unavailable?)")
+                            return false
+                        }
+                        if (documentUri == null) {
+                            Timber.tag(TAG).e("Failed to create document for $name")
+                            return false
+                        }
+
+                        return try {
+                            cr.openOutputStream(documentUri)?.use { outputStream ->
+                                assets.open(name).use { inputStream ->
+                                    inputStream.copyTo(outputStream)
+                                }
+                            }
+                            true
+                        } catch (e: Exception) {
+                            Timber.tag(TAG).e(e, "Failed to write $name to document")
+                            try {
+                                DocumentsContract.deleteDocument(contentResolver, documentUri)
+                            } catch (deleteEx: Exception) {
+                                Timber.tag(TAG).e(deleteEx, "Failed to delete incomplete document for $name")
+                            }
+                            false
+                        }
                     }
-                    false
+
+                    val results = listOf(SH_NAME, DEX_NAME, PLUS_NAME, SU_NAME).map { writeToDocument(it) }
+                    ShizukuSettings.setExportDirUri(tree.toString())
+                    results.count { it } to results.size
                 }
+
+                if (isFinishing || isDestroyed) return@launch
+                val toastMsg = if (successCount == totalCount) {
+                    getString(R.string.shell_export_success)
+                } else if (successCount == 0) {
+                    getString(R.string.shell_export_failed)
+                } else {
+                    getString(R.string.shell_export_partial, successCount, totalCount)
+                }
+                Toast.makeText(this@ShellTutorialActivity, toastMsg,
+                    if (successCount == totalCount) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
+                ).show()
             }
-
-            val results = listOf(SH_NAME, DEX_NAME, PLUS_NAME, SU_NAME).map { writeToDocument(it) }
-            val successCount = results.count { it }
-            val totalCount = results.size
-
-            ShizukuSettings.setExportDirUri(tree.toString())
-
-            val toastMsg = if (successCount == totalCount) {
-                getString(R.string.shell_export_success)
-            } else if (successCount == 0) {
-                getString(R.string.shell_export_failed)
-            } else {
-                getString(R.string.shell_export_partial, successCount, totalCount)
-            }
-            android.widget.Toast.makeText(this@ShellTutorialActivity, toastMsg,
-                if (successCount == totalCount) android.widget.Toast.LENGTH_SHORT else android.widget.Toast.LENGTH_LONG
-            ).show()
         }
 
     override fun getLayoutId() = R.layout.terminal_tutorial_activity

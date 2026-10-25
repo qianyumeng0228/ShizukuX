@@ -77,20 +77,22 @@ class ShizukuTileService : TileService() {
                 ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)
                 updateTile()
             } else {
-                // Attempt to start silently if root is available
-                if (com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true) {
-                    ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-                    updateTile()
-                    com.topjohnwu.superuser.Shell.cmd(af.shizuku.manager.starter.Starter.internalCommand)
-                        .submit {
-                            ShizukuStateMachine.update()
-                            updateTile()
-                        }
-                } else {
-                    // Attempt to start WADB via Worker
-                    ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
-                    updateTile()
-                    af.shizuku.manager.worker.AdbStartWorker.enqueue(this)
+                // Optimistically flip to STARTING so the tile doesn't feel dead while we probe
+                // root. Shell.isAppGrantedRoot() can spawn a cold su process (1-5s); running it
+                // on the QSTile main thread would ANR the shade.
+                ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
+                updateTile()
+                kotlin.concurrent.thread(name="shizuku-tile-root-probe") {
+                    val hasRoot = runCatching { com.topjohnwu.superuser.Shell.isAppGrantedRoot() == true }.getOrDefault(false)
+                    if (hasRoot) {
+                        com.topjohnwu.superuser.Shell.cmd(af.shizuku.manager.starter.Starter.internalCommand)
+                            .submit {
+                                ShizukuStateMachine.update()
+                                updateTile()
+                            }
+                    } else {
+                        af.shizuku.manager.worker.AdbStartWorker.enqueue(this@ShizukuTileService)
+                    }
                 }
             }
         } catch (e: Exception) {

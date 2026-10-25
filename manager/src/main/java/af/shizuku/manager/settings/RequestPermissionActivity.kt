@@ -96,7 +96,10 @@ class RequestPermissionActivity : AppCompatActivity() {
             DhizukuAppManager.setAllowed(targetUid, signature, allowed)
             Timber.tag(TAG).i("uid=$targetUid result=${if (allowed) "granted" else "denied"}")
         }
-        listener?.onRequestPermission(grantResult)
+        // The client app may have died/unbound during the dialog; a dead binder would otherwise
+        // throw DeadObjectException (a RuntimeException) and crash this activity.
+        runCatching { listener?.onRequestPermission(grantResult) }
+            .onFailure { Timber.tag(TAG).w(it, "onRequestPermission callback failed (client likely dead)") }
     }
 
     private fun parseIntent(intent: Intent?): Boolean {

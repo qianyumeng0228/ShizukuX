@@ -139,6 +139,24 @@ class MainActivity : HomeActivity() {
         }
     }
 
+    /**
+     * Entry point for migrating settings from the legacy `moe.shizuku.privileged.api` package.
+     *
+     * NOTE (audit A5-12): as of HEAD 46f93c65 this method is intentionally NOT called from
+     * [onCreate]. It is kept in place because:
+     *  - The migration UI strings live in res/strings.xml (owned by the res/values* track)
+     *    and removing this code would orphan them without a matching res cleanup.
+     *  - [MigrationHelper.migrateSettings] itself is correct: it reads the old prefs via
+     *    `Shell.cmd("cat ...")` (root), not via direct file IO, so the SELinux concern raised
+     *    in slice3 P2-5 does not apply.
+     *  - Wiring it back (gated on `MigrationHelper.isOldPackageInstalled(this) &&
+     *    !ShizukuSettings.hasMigrationBeenOffered()`) is a first-run behavior change for
+     *    legacy users; that decision should be made by product, not by a bug-fix patch.
+     *
+     * To re-enable: call this from onCreate after super.onCreate() under the gating
+     * condition above, and call ShizukuSettings.setMigrationOffered() once the dialog has
+     * been shown.
+     */
     private fun showMigrationDialog() {
         lifecycleScope.launch {
             val hasRoot = withContext(Dispatchers.IO) { MigrationHelper.isRootAvailable() }
@@ -174,8 +192,10 @@ class MainActivity : HomeActivity() {
                 .setTitle(R.string.manual_report_title)
                 .setMessage(R.string.crash_detected_dialog_message)
                 .setPositiveButton(R.string.manual_report_button_github) { _, _ ->
-                    af.shizuku.manager.utils.CrashReporter.shareAsFile(this)
-                    af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)
+                    lifecycleScope.launch {
+                        af.shizuku.manager.utils.CrashReporter.shareAsFile(this@MainActivity)
+                        af.shizuku.manager.utils.CrashHandler.clearLastCrash(this@MainActivity)
+                    }
                 }
                 .setNegativeButton(R.string.crash_detected_dialog_ignore) { _, _ ->
                     af.shizuku.manager.utils.CrashHandler.clearLastCrash(this)

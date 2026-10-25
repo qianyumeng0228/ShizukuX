@@ -255,6 +255,10 @@ class AppBackupActivity : AppBarActivity() {
         menuInflater.inflate(R.menu.app_backup_menu, menu)
         menu.findItem(R.id.action_show_system)?.isChecked = includeSystem
         backupAllItem = menu.findItem(R.id.action_backup_all)
+        // Menu rebuilds (e.g. after invalidateOptionsMenu / selection-mode toggle) create a
+        // fresh "backup all" item that defaults to enabled; sync with the actual batch state so
+        // the button isn't clickable-no-op during a running batch.
+        backupAllItem?.isEnabled = !viewModel.batchRunning.value
 
         // Add choose export directory as a dynamic menu item
         menu.add(0, MENU_CHOOSE_DIR, 100, R.string.backup_choose_export_dir)
