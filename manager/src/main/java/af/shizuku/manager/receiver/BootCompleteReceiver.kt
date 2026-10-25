@@ -75,6 +75,15 @@ class BootCompleteReceiver : BroadcastReceiver() {
             // process, so an inline start() blocked on su made root boot auto-start unreliable.
             // goAsync() + Dispatchers.IO runs the blocking start off the main thread and keeps the
             // receiver alive until it returns. Mirrors the developer-options / bridge branches above.
+            //
+            // v26 (Boot sync): no extra delayed-retry layer is needed here. start()'s ADB branch
+            // now probes availability as `getAdbTcpPort() > 0` — the persist.adb.tcp.port property
+            // survives reboots and is already readable at BOOT_COMPLETED, so a configured wireless
+            // debugging is detected immediately even if Wi-Fi is not connected yet; AdbStartWorker
+            // owns the readiness semantics (AWAITING_WIFI notification, live-port probe, mDNS
+            // discovery, retries). Only a genuinely missing port falls through to the root fallback /
+            // unavailable notification, matching the watchdog recovery semantics. (LOCKED_BOOT_COMPLETED
+            // keeps its own direct-boot path above: rootStart cannot run before credential unlock.)
             val pending = goAsync()
             CoroutineScope(Dispatchers.IO).launch {
                 try {

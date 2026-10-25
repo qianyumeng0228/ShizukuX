@@ -120,6 +120,10 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
                     if (position >= 0) {
                         listView?.smoothScrollToPosition(position)
                         listView?.postDelayed({
+                            // Guard against the fragment being paused/detached before the 400ms
+                            // delay elapses: running the animation (and requireContext()/background
+                            // restore) on a recycled holder would be a visual glitch.
+                            if (!isResumed) return@postDelayed
                             val holder = listView?.findViewHolderForAdapterPosition(position)
                             holder?.itemView?.let { itemView ->
                                 val defaultBg = itemView.background

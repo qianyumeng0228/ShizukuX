@@ -109,10 +109,13 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
         }
 
         // ---- Plus experimental features (moved from Feature Hub developer bucket) ----
+        // ai_core_plus_enabled intentionally excluded here: it receives a dedicated
+        // OnPreferenceChangeListener below (biometric-auth-gated enable). Listing it in
+        // plusKeys first would register a listener that is immediately overwritten by that
+        // dedicated block (setOnPreferenceChangeListener replaces, not accumulates).
         val plusKeys = listOf(
             "window_manager_plus_enabled" to "window_manager_plus",
             "overlay_manager_plus_enabled" to "overlay_manager_plus",
-            "ai_core_plus_enabled" to "ai_core_plus",
             "ai_core_master_enabled" to "ai_core_master",
             "npu_acceleration_enabled" to "npu_acceleration",
             "native_window_crawler_enabled" to "native_window_crawler",

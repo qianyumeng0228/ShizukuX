@@ -119,13 +119,32 @@ class AICoreExtraService : AccessibilityService() {
      */
     fun getWindowHierarchyStream(): android.os.ParcelFileDescriptor? = dumpHierarchyStream()
 
+    /** Minimal XML attribute text escaper: prevents a quote/ampersand in node text or
+     *  contentDescription from breaking the dump XML (e.g. a password field whose text contains
+     *  a `""). Boolean attributes below are unaffected. */
+    private fun escapeXmlAttr(s: CharSequence?): String {
+        if (s == null) return ""
+        val out = StringBuilder(s.length)
+        for (c in s) {
+            when (c) {
+                '&' -> out.append("&amp;")
+                '<' -> out.append("&lt;")
+                '>' -> out.append("&gt;")
+                '"' -> out.append("&quot;")
+                '\'' -> out.append("&apos;")
+                else -> out.append(c)
+            }
+        }
+        return out.toString()
+    }
+
     private fun buildXml(node: AccessibilityNodeInfo, sb: StringBuilder, depth: Int) {
         val indent = "  ".repeat(depth)
         sb.append(indent).append("<node")
-        sb.append(" class=\"").append(node.className).append("\"")
-        if (!node.text.isNullOrEmpty()) sb.append(" text=\"").append(node.text).append("\"")
-        if (!node.contentDescription.isNullOrEmpty()) sb.append(" content-desc=\"").append(node.contentDescription).append("\"")
-        if (!node.viewIdResourceName.isNullOrEmpty()) sb.append(" resource-id=\"").append(node.viewIdResourceName).append("\"")
+        sb.append(" class=\"").append(escapeXmlAttr(node.className)).append("\"")
+        if (!node.text.isNullOrEmpty()) sb.append(" text=\"").append(escapeXmlAttr(node.text)).append("\"")
+        if (!node.contentDescription.isNullOrEmpty()) sb.append(" content-desc=\"").append(escapeXmlAttr(node.contentDescription)).append("\"")
+        if (!node.viewIdResourceName.isNullOrEmpty()) sb.append(" resource-id=\"").append(escapeXmlAttr(node.viewIdResourceName)).append("\"")
         sb.append(" checkable=\"").append(node.isCheckable).append("\"")
         sb.append(" checked=\"").append(node.isChecked).append("\"")
         sb.append(" clickable=\"").append(node.isClickable).append("\"")

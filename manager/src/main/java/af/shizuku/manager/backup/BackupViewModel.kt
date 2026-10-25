@@ -316,7 +316,11 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             out.use { block(it) }
             return true
         } else {
-            val pkgDir = File(outputDir!!, pkg).also { it.mkdirs() }
+            // Neither SAF tree nor outputDir set: defensive guard instead of `outputDir!!` NPE.
+            // All call sites currently guarantee one is non-null, but a future caller that forgets
+            // would otherwise crash the IO coroutine (only surfaced as a Failure event).
+            val dir = outputDir ?: return false
+            val pkgDir = File(dir, pkg).also { it.mkdirs() }
             FileOutputStream(File(pkgDir, fileName)).use { block(it) }
             return true
         }

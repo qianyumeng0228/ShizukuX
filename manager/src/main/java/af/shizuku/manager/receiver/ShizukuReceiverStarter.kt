@@ -68,7 +68,18 @@ object ShizukuReceiverStarter {
                 // recoverFromFailedStart); if neither path is available, tell the user explicitly
                 // instead of failing silently. Mirrors the "try the configured path, degrade to
                 // what the device can actually do" recovery thinking of KernelSU/SukiSU daemons.
-                val adbUsable = EnvironmentUtils.getAdbTcpPort() > 0 && !EnvironmentUtils.isWifiRequired()
+                //
+                // v26 (Boot sync): the availability probe is `getAdbTcpPort() > 0` — the
+                // persist.adb.tcp.port property existing means wireless debugging has been
+                // configured (the property survives reboots and is readable at BOOT_COMPLETED),
+                // so it is NOT "unavailable" even if Wi-Fi is not connected yet: AdbStartWorker
+                // itself owns the readiness semantics (live-port probe, mDNS discovery, the
+                // AWAITING_WIFI notification and retry loop). Dropping the v25 `&& !isWifiRequired()`
+                // clause fixes a false negative: wireless-debugging users (tcp_mode=false) were
+                // classified as unavailable and wrongly diverted to the root fallback/notification
+                // on every boot and crash recovery. Only a missing port (never configured, or the
+                // property lost) is treated as unavailable and falls through to root/notify.
+                val adbUsable = EnvironmentUtils.getAdbTcpPort() > 0
                 if (!adbUsable) {
                     // v25 fallback: root probe is async — start() runs on the main thread
                     // from receivers and inside withContext(IO) from the watchdog, and libsu's

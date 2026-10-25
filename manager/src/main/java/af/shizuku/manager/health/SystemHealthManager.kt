@@ -9,6 +9,15 @@ data class SystemHealthData(
     val binderLatencyMs: Float // Placeholder for aggregated latency
 )
 
+/**
+ * Scaffolding for a future system-health dashboard.
+ *
+ * Currently has **no callers** anywhere in the manager module (grep-verified 2026-10-25).
+ * Kept rather than deleted because it is isolated (object singleton, not referenced from
+ * Manifest/UI) and may be wired up later. **Warning**: [getSystemHealth] runs blocking
+ * `Shell.cmd(...).exec()` calls — do NOT call it from the main thread; if it is ever wired
+ * to a UI surface, wrap it in `Dispatchers.IO` first.
+ */
 object SystemHealthManager {
     fun getSystemHealth(): SystemHealthData {
         var cpuTemp = 0f
