@@ -36,7 +36,7 @@ Shizuku lets ordinary apps call system-level APIs directly through a privileged 
 <a name="quickstart"></a>
 ## 🚀 Quick Start
 
-1. Download the latest **Standard** APK from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) and install it (choose the **Drop-In** variant if you need to coexist with the original Shizuku).
+1. Download the latest **Standard** APK from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) and install it (independent package `xyz.shizuku.extra.api`, coexists with the original Shizuku; the **Drop-In** variant installs under the original package name as a replacement and cannot coexist).
 2. Open the app and start the service with **Wireless debugging / PC ADB / Root** (activation takes ~9 seconds).
 3. Grant Shizuku permission to the apps you want to use.
 

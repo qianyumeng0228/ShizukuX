@@ -36,7 +36,7 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 <a name="quickstart"></a>
 ## 🚀 快速开始
 
-1. 在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 下载最新 **标准版** APK 并安装（需要原版 Shizuku 共存时选 Drop-In 版）。
+1. 在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 下载最新 **标准版** APK 并安装（独立包名 `xyz.shizuku.extra.api`，可与原版 Shizuku 共存；**Drop-In 版**以原版包名安装、用于替换，不可共存）。
 2. 打开应用，按提示用 **无线调试 / 电脑 ADB / Root** 之一启动服务（激活约 9 秒）。
 3. 在应用内授权需要 Shizuku 权限的应用，即可开始使用。
 
