@@ -2,7 +2,7 @@
 
 # ShizukuX
 
-[简体中文](./README.md) | **English**
+[简体中文](./README.md) · **English** · [繁體中文](./README.zh-TW.md) · [日本語](./README.ja.md) · [Deutsch](./README.de.md) · [Français](./README.fr.md) · [Español](./README.es.md) · [Português](./README.pt-PT.md) · [Italiano](./README.it.md) · [한국어](./README.ko.md) · [Português (Brasil)](./README.pt-BR.md)
 
 **Android privileged process manager for advanced users**
 

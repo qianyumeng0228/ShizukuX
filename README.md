@@ -2,7 +2,7 @@
 
 # ShizukuX
 
-**简体中文** | [English](./README.en.md)
+**简体中文** · [English](./README.en.md) · [繁體中文](./README.zh-TW.md) · [日本語](./README.ja.md) · [Deutsch](./README.de.md) · [Français](./README.fr.md) · [Español](./README.es.md) · [Português](./README.pt-PT.md) · [Italiano](./README.it.md) · [한국어](./README.ko.md) · [Português (Brasil)](./README.pt-BR.md)
 
 **面向高级用户的 Android 特权进程管理器**
 
