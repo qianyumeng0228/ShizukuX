@@ -13,11 +13,36 @@ Shizuku lets ordinary apps call system-level APIs directly through a privileged 
 [![Stars](https://img.shields.io/github/stars/qianyumeng0228/ShizukuX?style=for-the-badge&color=bfb330&labelColor=807820)](https://github.com/qianyumeng0228/ShizukuX/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/qianyumeng0228/ShizukuX/total?style=for-the-badge&color=bf7830&labelColor=805020)](https://github.com/qianyumeng0228/ShizukuX/releases)
 [![Latest Release](https://img.shields.io/github/v/release/qianyumeng0228/ShizukuX?style=for-the-badge&color=3060bf&labelColor=204080&label=Latest)](https://github.com/qianyumeng0228/ShizukuX/releases/latest)
+[![License](https://img.shields.io/github/license/qianyumeng0228/ShizukuX?style=for-the-badge&color=30bf60&labelColor=208040)](LICENSE)
 
 > **Heritage note**: ShizukuX is the renamed continuation of ShizukuPlus (qianyumeng0228) with Chinese localization; ShizukuPlus itself is a fork of thejaustin/ShizukuPlus and thedjchi/Shizuku, ultimately tracing back to RikkaApps' Shizuku project. ShizukuX is an independently maintained community fork and has **no affiliation, endorsement, or partnership** with **RikkaApps/Shizuku, thedjchi/Shizuku, thejaustin/ShizukuPlus, or their maintainers**. All upstream copyright and attribution notices are fully preserved (see [LICENSE](LICENSE), [NOTICE](NOTICE), [CHANGES.md](CHANGES.md)).
 
 </div>
 
+## 📑 Table of Contents
+
+- [🚀 Quick Start](#quickstart)
+- [⬇️ Download](#download)
+- [✨ Core Features](#features)
+- [🛡️ Stability & Security](#security)
+- [🚀 Extra API Enhancements](#extra-api)
+- [🔌 Third-party App Compatibility](#compat)
+- [☑️ System Requirements](#requirements)
+- [📱 Developer Guide & Docs](#developer-guide)
+- [🗂️ Repository Layout](#repo-layout)
+- [📦 Recent Releases](#releases)
+- [🙏 Acknowledgements & License](#credits)
+
+<a name="quickstart"></a>
+## 🚀 Quick Start
+
+1. Download the latest **Standard** APK from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) and install it (choose the **Drop-In** variant if you need to coexist with the original Shizuku).
+2. Open the app and start the service with **Wireless debugging / PC ADB / Root** (activation takes ~9 seconds).
+3. Grant Shizuku permission to the apps you want to use.
+
+> Step-by-step guides, common errors and troubleshooting (currently in Chinese) are in [docs/zh-CN/index.md](docs/zh-CN/index.md).
+
+<a name="download"></a>
 ## ⬇️ Download
 
 Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases). Every release ships the following three APKs:
@@ -31,6 +56,7 @@ Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228
 - Stable releases are tagged with an **`r` series** (e.g. `v13.7.0.r2002`), pre-releases with a **`k` series** (e.g. `v13.7.0.k2016`); both ship the same three APKs.
 - See each release's notes for details and [CHANGELOG.md](CHANGELOG.md) for the full history.
 
+<a name="features"></a>
 ## ✨ Core Features
 
 *   **Universal permission provider**: a single interface unifying **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** as permission sources.
@@ -53,6 +79,7 @@ Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228
 *   **Built-in feature guidance**: every enhancement ships an info icon explaining its purpose in plain language.
 *   **Quick Settings tiles**: view and toggle service status from the notification shade (plus device-control tiles: airplane mode, animations, brightness, rotation).
 
+<a name="security"></a>
 ## 🛡️ Stability & Security
 
 *   **Third-party client compatibility (AIDL transaction-code offsets)**: works with official v13.7+ and LSPatch-style clients that use offset AIDL transaction codes — permission requests are no longer misrouted to another call.
@@ -65,6 +92,7 @@ Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228
 *   **Manual stop stays stopped**: stopping the service also stops the starter supervisor, so it no longer "revives" 5 seconds after you tap Stop.
 *   **Battery-friendly**: animations follow the system motion toggle, metrics polling is throttled, download notifications are throttled by percentage, and idle states no longer keep a process resident.
 
+<a name="extra-api"></a>
 ## 🚀 Extra API Enhancements
 
 ShizukuX provides exclusive system interfaces that the original Shizuku **does not have**, for advanced automation and tooling:
@@ -99,6 +127,7 @@ Everything in ShizukuX is optional. Toggle features under the **Extra features**
 *   Home screen card display
 *   Activity log
 
+<a name="compat"></a>
 ## 🔌 Third-party App Compatibility
 
 ShizukuX installs under its own package name (`xyz.shizuku.extra.api`) and can coexist with the original Shizuku. Since most Shizuku apps only check for the `moe.shizuku.privileged.api` package name, ShizukuX ships a lightweight **Compat Hub** — a tiny companion app that registers that package name and forwards binder/permission requests to ShizukuX.
@@ -111,6 +140,7 @@ ShizukuX installs under its own package name (`xyz.shizuku.extra.api`) and can c
 
 You can also install the **drop-in variant**, which registers directly as `moe.shizuku.privileged.api` (do not install it alongside the original Shizuku).
 
+<a name="requirements"></a>
 ## ☑️ System Requirements
 
 **Minimum: Android 7+ · Fully supported up to Android 17 (SDK 37)**
@@ -122,11 +152,14 @@ You can also install the **drop-in variant**, which registers directly as `moe.s
 
 On **Android 16+**, ShizukuX requests the new local network protection permission to keep wireless debugging discovery and pairing working; on **Android 17**, it transparently handles the hidden API `deviceId` change so authorized apps remain visible and permission grants keep working.
 
-## 📱 Developer Guide
 <a name="developer-guide"></a>
+## 📱 Developer Guide & Docs
 
 Documentation for the exclusive Extra APIs lives in [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) (the `api` submodule of this repository points to it). Maintainers of Shizuku forks who want to migrate onto ShizukuX can follow [FORK_MIGRATION.md](FORK_MIGRATION.md).
 
+End-user documentation (currently in Chinese: service connection, knowledge base, permissions, Dhizuku mode, etc.) is in [docs/zh-CN/index.md](docs/zh-CN/index.md).
+
+<a name="repo-layout"></a>
 ## 🗂️ Repository Layout
 
 | Directory | Description |
@@ -141,6 +174,7 @@ Documentation for the exclusive Extra APIs lives in [ShizukuX-API](https://githu
 | `common/` / `app-process/` / `database/` | Shared code, standalone process wrapper, database layer |
 | `docs/` | Documentation (in-app help and update notes link here) |
 
+<a name="releases"></a>
 ## 📦 Recent Releases
 
 | Version | Type | Date | Highlights |
@@ -152,9 +186,10 @@ Documentation for the exclusive Extra APIs lives in [ShizukuX-API](https://githu
 
 For the complete changelog see [CHANGELOG.md](CHANGELOG.md) and the per-release [Release Notes](https://github.com/qianyumeng0228/ShizukuX/releases).
 
+<a name="credits"></a>
 ## 🙏 Acknowledgements & License
 
-ShizukuX is a community-driven enhanced fork originating from [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku) (itself a fork of [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku)), continued through [ShizukuPlus](https://github.com/qianyumeng0228/ShizukuPlus). This project has **no affiliation** with the original RikkaApps team.
+ShizukuX is a community-driven enhanced fork — see the heritage note at the top of this document for lineage and disclaimer.
 
 Thanks to the following upstream contributors and projects whose work made ShizukuX possible:
 
@@ -183,32 +218,7 @@ Thanks to the following upstream contributors and projects whose work made Shizu
 
 ### Open Source Libraries
 
-| Library | Author | License |
-|---------|--------|---------|
-| [AndroidX Jetpack](https://developer.android.com/jetpack) | Google / AOSP | Apache 2.0 |
-| [Material Components](https://github.com/material-components/material-components-android) | Google | Apache 2.0 |
-| [Material Symbols](https://fonts.google.com/icons) | Google | Apache 2.0 |
-| [Kotlin / Coroutines / Serialization](https://github.com/JetBrains/kotlin) | JetBrains | Apache 2.0 |
-| [RikkaX Libraries](https://github.com/RikkaApps) (appcompat, material, insets, html, recyclerview, preference, lifecycle, parcelablelist) | Rikka | Apache 2.0 |
-| [Hidden API / Refine](https://github.com/RikkaApps/HiddenApiCompat) | Rikka | Apache 2.0 |
-| [Mavericks (MvRx)](https://github.com/airbnb/mavericks) | Airbnb | Apache 2.0 |
-| [Lottie](https://github.com/airbnb/lottie-android) | Airbnb | Apache 2.0 |
-| [Coil](https://github.com/coil-kt/coil) | Coil Contributors | Apache 2.0 |
-| [Koin](https://github.com/InsertKoinIO/koin) | Koin Contributors | Apache 2.0 |
-| [Timber](https://github.com/JakeWharton/timber) | Jake Wharton | Apache 2.0 |
-| [libsu](https://github.com/topjohnwu/libsu) | topjohnwu | Apache 2.0 |
-| [AndroidHiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) | LSPosed | Apache 2.0 |
-| [libcxx](https://github.com/lsposed/libcxx) | LSPosed / LLVM | Apache 2.0 + LLVM Exception |
-| [AppIconLoader](https://github.com/zhanghai/AppIconLoader) | Zhang Hai | Apache 2.0 |
-| [BoringSSL (NDK)](https://github.com/vvb2060/ndk-boringssl) | vvb2060 / Google | Apache 2.0 / ISC |
-| [Gson](https://github.com/google/gson) | Google | Apache 2.0 |
-| [LeakCanary](https://github.com/square/leakcanary) | Square | Apache 2.0 |
-| [AboutLibraries](https://github.com/mikepenz/AboutLibraries) | Mike Penz | Apache 2.0 |
-| [Bouncy Castle](https://www.bouncycastle.org/) | Legion of Bouncy Castle | MIT |
-| [Sentry Android SDK](https://github.com/getsentry/sentry-java) | Sentry | MIT |
-| [SQLite (C Recovery API / CLI)](https://sqlite.org/) | D. Richard Hipp / SQLite Consortium | Public Domain |
-
-Full license texts for each library: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | [NOTICE](NOTICE)
+This project uses the following key open-source libraries (full list and per-library license texts in [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) and [NOTICE](NOTICE)): AndroidX Jetpack, Material Components, Kotlin / Coroutines, RikkaX Libraries, Mavericks, Lottie, Coil, Koin, Timber, libsu, AndroidHiddenApiBypass, Gson, LeakCanary, AboutLibraries, Bouncy Castle, Sentry, SQLite, and more.
 
 ## 📃 License
 
@@ -222,3 +232,10 @@ Full license texts for each library: [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICEN
 - Thanks to **aragortsantiago6-beep**, **Scoop2389** (Pixel 9a), and **ConversionRituals** (Xiaomi) for on-device Android 16/17 testing, crash reports, and logs that drove the SDK 37 hidden API and local network protection compatibility fixes (#317, #323).
 - Thanks to **gmm96** for multiple rounds of logcat debugging that finally isolated the Cached Apps Freezer binder delivery bug (#371).
 - Thanks to **[odorizzioficial](https://github.com/odorizzioficial)** for a complete Brazilian Portuguese translation (#409) and a detailed report on Samsung "Sleeping apps" watchdog freezes (#415).
+
+## 🤝 Contributing & Support
+
+- Report issues and suggestions: [GitHub Issues](https://github.com/qianyumeng0228/ShizukuX/issues)
+- Development: see [CONTRIBUTING.md](CONTRIBUTING.md)
+- Security vulnerabilities: see [SECURITY.md](SECURITY.md)
+- Full changelog: [CHANGELOG.md](CHANGELOG.md) · [CHANGES.md](CHANGES.md)

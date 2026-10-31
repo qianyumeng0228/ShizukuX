@@ -13,11 +13,36 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 [![Stars](https://img.shields.io/github/stars/qianyumeng0228/ShizukuX?style=for-the-badge&color=bfb330&labelColor=807820)](https://github.com/qianyumeng0228/ShizukuX/stargazers)
 [![Downloads](https://img.shields.io/github/downloads/qianyumeng0228/ShizukuX/total?style=for-the-badge&color=bf7830&labelColor=805020)](https://github.com/qianyumeng0228/ShizukuX/releases)
 [![Latest Release](https://img.shields.io/github/v/release/qianyumeng0228/ShizukuX?style=for-the-badge&color=3060bf&labelColor=204080&label=Latest)](https://github.com/qianyumeng0228/ShizukuX/releases/latest)
+[![License](https://img.shields.io/github/license/qianyumeng0228/ShizukuX?style=for-the-badge&color=30bf60&labelColor=208040)](LICENSE)
 
 > **继承说明**：ShizukuX 由 ShizukuPlus（qianyumeng0228）改名并中文本地化而来，是 ShizukuPlus 的更名延续；ShizukuPlus 本身是 thejaustin/ShizukuPlus 与 thedjchi/Shizuku 的分支，最终追溯至 RikkaApps 的 Shizuku 项目。ShizukuX 是一个独立维护的社区分支，与 **RikkaApps/Shizuku、thedjchi/Shizuku、thejaustin/ShizukuPlus 及其维护者均无任何隶属、背书或合作关系**。全部上游版权与署名声明均完整保留（见 [LICENSE](LICENSE)、[NOTICE](NOTICE)、[CHANGES.md](CHANGES.md)）。
 
 </div>
 
+## 📑 目录
+
+- [🚀 快速开始](#quickstart)
+- [⬇️ 下载](#download)
+- [✨ 核心功能](#features)
+- [🛡️ 稳定性与安全](#security)
+- [🚀 Extra API 增强能力](#extra-api)
+- [🔌 第三方应用兼容性](#compat)
+- [☑️ 系统要求](#requirements)
+- [📱 开发者指南与文档](#developer-guide)
+- [🗂️ 仓库结构](#repo-layout)
+- [📦 近期更新](#releases)
+- [🙏 致谢与许可证](#credits)
+
+<a name="quickstart"></a>
+## 🚀 快速开始
+
+1. 在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 下载最新 **标准版** APK 并安装（需要原版 Shizuku 共存时选 Drop-In 版）。
+2. 打开应用，按提示用 **无线调试 / 电脑 ADB / Root** 之一启动服务（激活约 9 秒）。
+3. 在应用内授权需要 Shizuku 权限的应用，即可开始使用。
+
+> 详细的分步说明、常见错误与故障排查见[中文文档](docs/zh-CN/index.md)。
+
+<a name="download"></a>
 ## ⬇️ 下载
 
 请在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 获取最新版本。每个版本均提供以下三个 APK：
@@ -31,6 +56,7 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 - 正式版以 **`r` 系列**标识（如 `v13.7.0.r2002`），预发布以 **`k` 系列**标识（如 `v13.7.0.k2016`），均包含上述三个 APK。
 - 各版本的具体更新内容见对应发布说明，完整历史见 [CHANGELOG.md](CHANGELOG.md)。
 
+<a name="features"></a>
 ## ✨ ShizukuX 核心功能
 
 *   **通用权限提供器**：一套接口统一接入 **Root**、**ADB Shell** 与 **Dhizuku（设备所有者）** 三种权限来源。
@@ -53,6 +79,7 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 *   **内置功能引导**：每个增强功能都带有说明图标，用通俗语言解释其作用。
 *   **快捷设置磁贴**：在通知栏即可查看并切换服务状态（含飞行模式、动画、亮度、旋转等设备控制磁贴）。
 
+<a name="security"></a>
 ## 🛡️ 稳定性与安全
 
 *   **第三方客户端兼容（AIDL 事务码偏移）**：兼容官方 v13.7+ 与 LSPatch 等使用偏移 AIDL 事务码的第三方客户端，授权请求不再被误判为其他调用。
@@ -65,6 +92,7 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 *   **手动停止不再自启**：停止服务时一并停掉 starter supervisor，不再出现「点了停止又复活」。
 *   **耗电优化**：动画跟随系统动效开关、指标轮询降频、下载通知按百分比节流、非运行态不再驻留进程。
 
+<a name="extra-api"></a>
 ## 🚀 Extra API 增强能力
 
 ShizukuX 提供原版 Shizuku **没有**的专属系统接口，供高级自动化与工具使用：
@@ -99,6 +127,7 @@ ShizukuX 的一切能力都是可选的。在设置的 **Extra 功能**分类中
 *   首页卡片显示
 *   活动日志
 
+<a name="compat"></a>
 ## 🔌 第三方应用兼容性
 
 ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizuku 共存。由于多数 Shizuku 应用只会检测 `moe.shizuku.privileged.api` 这个包名，ShizukuX 内置了一个轻量级 **兼容中心（Compat Hub）**——一个注册该包名的微型伴生应用，负责将 binder/权限请求转发给 ShizukuX。
@@ -111,6 +140,7 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 
 也可以安装 **直接替换版（drop-in）**，它直接以 `moe.shizuku.privileged.api` 注册（注意不要与原版 Shizuku 同时安装）。
 
+<a name="requirements"></a>
 ## ☑️ 系统要求
 
 **最低：Android 7+ · 完整支持至 Android 17（SDK 37）**
@@ -122,11 +152,14 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 
 在 **Android 16+** 上，ShizukuX 会申请新的本地网络保护权限，以保证无线调试的发现与配对功能正常；在 **Android 17** 上，它透明地处理隐藏 API `deviceId` 变更，使已授权应用依然可见、权限授予依然生效。
 
-## 📱 开发者指南
 <a name="developer-guide"></a>
+## 📱 开发者指南与文档
 
 关于专属 Extra API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。维护 Shizuku 分支并希望迁移到 ShizukuX 的开发者，可参考 [FORK_MIGRATION.md](FORK_MIGRATION.md)。
 
+面向用户的完整中文文档（服务连接、知识库、权限说明、Dhizuku 模式等）见 [docs/zh-CN/index.md](docs/zh-CN/index.md)。
+
+<a name="repo-layout"></a>
 ## 🗂️ 仓库结构
 
 | 目录 | 说明 |
@@ -141,6 +174,7 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 | `common/` / `app-process/` / `database/` | 公共代码、独立进程封装、数据库层 |
 | `docs/` | 中文文档（应用内帮助与更新说明指向这里） |
 
+<a name="releases"></a>
 ## 📦 近期更新
 
 | 版本 | 类型 | 发布日期 | 主要更新 |
@@ -152,9 +186,10 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 
 更完整的变更记录见 [CHANGELOG.md](CHANGELOG.md) 与各版本 [Release Notes](https://github.com/qianyumeng0228/ShizukuX/releases)。
 
+<a name="credits"></a>
 ## 🙏 致谢与许可证
 
-ShizukuX 是一个社区驱动的增强分支，源自 [thedjchi/Shizuku](https://github.com/thedjchi/Shizuku)（其本身是 [RikkaApps/Shizuku](https://github.com/RikkaApps/Shizuku) 的分支），并在此基础上经 [ShizukuPlus](https://github.com/qianyumeng0228/ShizukuPlus) 延续而来。本项目与原版 RikkaApps 团队**无隶属关系**。
+ShizukuX 是社区驱动的增强分支，继承关系与免责声明见文首「继承说明」。
 
 感谢以下上游贡献者与项目，是他们的工作让 ShizukuX 成为可能：
 
@@ -183,32 +218,7 @@ ShizukuX 是一个社区驱动的增强分支，源自 [thedjchi/Shizuku](https:
 
 ### 开源库
 
-| 库 | 作者 | 许可证 |
-|---------|--------|---------|
-| [AndroidX Jetpack](https://developer.android.com/jetpack) | Google / AOSP | Apache 2.0 |
-| [Material Components](https://github.com/material-components/material-components-android) | Google | Apache 2.0 |
-| [Material Symbols](https://fonts.google.com/icons) | Google | Apache 2.0 |
-| [Kotlin / Coroutines / Serialization](https://github.com/JetBrains/kotlin) | JetBrains | Apache 2.0 |
-| [RikkaX Libraries](https://github.com/RikkaApps)（appcompat、material、insets、html、recyclerview、preference、lifecycle、parcelablelist） | Rikka | Apache 2.0 |
-| [Hidden API / Refine](https://github.com/RikkaApps/HiddenApiCompat) | Rikka | Apache 2.0 |
-| [Mavericks (MvRx)](https://github.com/airbnb/mavericks) | Airbnb | Apache 2.0 |
-| [Lottie](https://github.com/airbnb/lottie-android) | Airbnb | Apache 2.0 |
-| [Coil](https://github.com/coil-kt/coil) | Coil Contributors | Apache 2.0 |
-| [Koin](https://github.com/InsertKoinIO/koin) | Koin Contributors | Apache 2.0 |
-| [Timber](https://github.com/JakeWharton/timber) | Jake Wharton | Apache 2.0 |
-| [libsu](https://github.com/topjohnwu/libsu) | topjohnwu | Apache 2.0 |
-| [AndroidHiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) | LSPosed | Apache 2.0 |
-| [libcxx](https://github.com/lsposed/libcxx) | LSPosed / LLVM | Apache 2.0 + LLVM Exception |
-| [AppIconLoader](https://github.com/zhanghai/AppIconLoader) | Zhang Hai | Apache 2.0 |
-| [BoringSSL (NDK)](https://github.com/vvb2060/ndk-boringssl) | vvb2060 / Google | Apache 2.0 / ISC |
-| [Gson](https://github.com/google/gson) | Google | Apache 2.0 |
-| [LeakCanary](https://github.com/square/leakcanary) | Square | Apache 2.0 |
-| [AboutLibraries](https://github.com/mikepenz/AboutLibraries) | Mike Penz | Apache 2.0 |
-| [Bouncy Castle](https://www.bouncycastle.org/) | Legion of Bouncy Castle | MIT |
-| [Sentry Android SDK](https://github.com/getsentry/sentry-java) | Sentry | MIT |
-| [SQLite (C Recovery API / CLI)](https://sqlite.org/) | D. Richard Hipp / SQLite Consortium | Public Domain |
-
-各库的完整许可证文本见：[OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) | [NOTICE](NOTICE)
+本项目使用了以下主要开源库（完整清单与各库许可证文本见 [OPEN_SOURCE_LICENSES.md](OPEN_SOURCE_LICENSES.md) 与 [NOTICE](NOTICE)）：AndroidX Jetpack、Material Components、Kotlin / Coroutines、RikkaX Libraries、Mavericks、Lottie、Coil、Koin、Timber、libsu、AndroidHiddenApiBypass、Gson、LeakCanary、AboutLibraries、Bouncy Castle、Sentry、SQLite 等。
 
 ## 📃 许可证
 
@@ -222,3 +232,10 @@ ShizukuX 是一个社区驱动的增强分支，源自 [thedjchi/Shizuku](https:
 - 感谢 **aragortsantiago6-beep**、**Scoop2389**（Pixel 9a）与 **ConversionRituals**（小米）的实机 Android 16/17 测试、崩溃报告与日志，推动了 SDK 37 隐藏 API 与本地网络保护兼容性修复（#317、#323）。
 - 感谢 **gmm96** 多轮 logcat 调试，最终定位了 Cached Apps Freezer 的 binder 投递 bug（#371）。
 - 感谢 **[odorizzioficial](https://github.com/odorizzioficial)** 提供完整的巴西葡萄牙语翻译（#409），以及三星 "Sleeping apps" 看门狗冻结的详细报告（#415）。
+
+## 🤝 贡献与支持
+
+- 提交问题与建议：[GitHub Issues](https://github.com/qianyumeng0228/ShizukuX/issues)
+- 参与开发：见 [CONTRIBUTING.md](CONTRIBUTING.md)
+- 安全漏洞报告：见 [SECURITY.md](SECURITY.md)
+- 完整更新历史：[CHANGELOG.md](CHANGELOG.md) · [CHANGES.md](CHANGES.md)
