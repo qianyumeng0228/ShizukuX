@@ -1,6 +1,6 @@
-# AICore+ 自动化桥
+# AICore Extra 自动化桥
 
-AICore+ 自动化桥是 ShizukuX 的专属能力，用于支持更高级的无 Root UI 自动化和屏幕上下文提取。它通过一个受控代理的 `AccessibilityService` 实现。
+AICore Extra 自动化桥是 ShizukuX 的专属能力，用于支持更高级的无 Root UI 自动化和屏幕上下文提取。它通过一个受控代理的 `AccessibilityService` 实现。
 
 ## 解决的问题
 
@@ -11,7 +11,7 @@ AICore+ 自动化桥是 ShizukuX 的专属能力，用于支持更高级的无 R
 
 ## ShizukuX 的方案
 
-ShizukuX 提供 `AICorePlusService`，这是一个集中、优化过的无障碍服务。用户启用后，已授权的 Shizuku 应用可以请求该桥代为执行操作，不需要每个应用都单独申请自己的无障碍权限。
+ShizukuX 提供 `AICoreExtraService`，这是一个集中、优化过的无障碍服务。用户启用后，已授权的 Shizuku 应用可以请求该桥代为执行操作，不需要每个应用都单独申请自己的无障碍权限。
 
 ### 能力
 

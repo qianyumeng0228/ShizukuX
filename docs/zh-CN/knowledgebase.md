@@ -106,7 +106,7 @@ adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SE
 
 ### 应用显示“需要 ShizukuX”并变灰
 
-该应用使用 ShizukuX 独有的 Plus API。当 Plus API 层被关闭时会显示此标记。请在“设置 -> ShizukuX 功能”中启用相关能力。
+该应用使用 ShizukuX 独有的 Extra API。当 Extra API 层被关闭时会显示此标记。请在“设置 -> ShizukuX 功能”中启用相关能力。
 
 ### 长按应用没有反应或选项很少
 
@@ -126,7 +126,7 @@ adb shell pm grant moe.shizuku.privileged.api android.permission.WRITE_SECURE_SE
 
 ### ShizukuX 支持 Android 14+ / One UI 8+ 吗
 
-支持。ShizukuX 专门面向三星 One UI 和 Android 14+ 的限制做了增强。Overlay Manager Plus 可以绕过这些版本中更严格的覆盖管理限制。
+支持。ShizukuX 专门面向三星 One UI 和 Android 14+ 的限制做了增强。Overlay Manager Extra 可以绕过这些版本中更严格的覆盖管理限制。
 
 ### 支持安全文件夹吗
 

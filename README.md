@@ -65,19 +65,19 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 *   **手动停止不再自启**：停止服务时一并停掉 starter supervisor，不再出现「点了停止又复活」。
 *   **耗电优化**：动画跟随系统动效开关、指标轮询降频、下载通知按百分比节流、非运行态不再驻留进程。
 
-## 🚀 Plus API 增强能力
+## 🚀 Extra API 增强能力
 
 ShizukuX 提供原版 Shizuku **没有**的专属系统接口，供高级自动化与工具使用：
 
-*   **AICore+ 自动化桥**：面向 AI 工具的无 Root 特权 UI 自动化（层级转储、点击/滑动）。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
+*   **AICore Extra 自动化桥**：面向 AI 工具的无 Root 特权 UI 自动化（层级转储、点击/滑动）。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
 *   **AVF（虚拟机）管理器**：运行带 GPU 加速的隔离 Linux/Microdroid 虚拟机。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/c8e962f6)）
 *   **特权存储代理**：对受限路径（`/data/data/`、`/data/app/`）提供鉴权访问，用于备份与文件管理。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/c8e962f6)）
 *   **设备伪装**（设置中的 *Spoof Device Identity*）：向系统呈现不同的设备信息，绕过针对特定机型的限制。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/11867f44)）
-*   **智能桥**（*AI Core Plus*）：特权 NPU 调度与屏幕上下文智能。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
-*   **Window Manager Plus**：强制自由窗口缩放、管理悬浮气泡栏与弹性覆盖层。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
-*   **系统主题桥**（*Overlay Manager Plus*）：无 Root 的 Overlay 特权管理，用于主题化（如 Hex Installer）。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7)）
+*   **智能桥**（*AI Core Extra*）：特权 NPU 调度与屏幕上下文智能。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
+*   **Window Manager Extra**：强制自由窗口缩放、管理悬浮气泡栏与弹性覆盖层。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187)）
+*   **系统主题桥**（*Overlay Manager Extra*）：无 Root 的 Overlay 特权管理，用于主题化（如 Hex Installer）。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7)）
 *   **网络与 DNS 治理器**：管理私有 DNS 与防火墙路由，支撑无 Root 的广告拦截。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7)）
-*   **深度进程控制**（*Activity Manager Plus*）：让进程管理器更激进地结束应用、设置待机分组。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7)）
+*   **深度进程控制**（*Activity Manager Extra*）：让进程管理器更激进地结束应用、设置待机分组。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7)）
 *   **连续性桥**：在多个 ShizukuX 设备之间安全传递状态与任务。（[引入记录](https://github.com/qianyumeng0228/ShizukuPlus/commit/20cf14f7)）
 
 ## 🛠️ 反向移植与性能优化
@@ -92,10 +92,10 @@ ShizukuX 提供原版 Shizuku **没有**的专属系统接口，供高级自动�
 
 ## ⚙️ 模块化控制
 
-ShizukuX 的一切能力都是可选的。在设置的 **Plus 功能**分类中可以开关：
+ShizukuX 的一切能力都是可选的。在设置的 **Extra 功能**分类中可以开关：
 
 *   透明 Shell 拦截
-*   各项 Plus API（AVF、存储、智能等）
+*   各项 Extra API（AVF、存储、智能等）
 *   首页卡片显示
 *   活动日志
 
@@ -125,14 +125,14 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 ## 📱 开发者指南
 <a name="developer-guide"></a>
 
-关于专属 Plus API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。维护 Shizuku 分支并希望迁移到 ShizukuX 的开发者，可参考 [FORK_MIGRATION.md](FORK_MIGRATION.md)。
+关于专属 Extra API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。维护 Shizuku 分支并希望迁移到 ShizukuX 的开发者，可参考 [FORK_MIGRATION.md](FORK_MIGRATION.md)。
 
 ## 🗂️ 仓库结构
 
 | 目录 | 说明 |
 |---|---|
 | `manager/` | 主应用：首页卡片、设置、权限管理、设备控制、备份/恢复、Watchdog、更新等 |
-| `server/` | 特权服务进程：ShizukuService 与全部 Plus API 实现 |
+| `server/` | 特权服务进程：ShizukuService 与全部 Extra API 实现 |
 | `core/` | 共享核心库（UI 组件、主题、字符串资源） |
 | `api/` | [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) 子模块 |
 | `compat/` | 兼容中心（Compat Hub）伴生应用 |

@@ -65,19 +65,19 @@ Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228
 *   **Manual stop stays stopped**: stopping the service also stops the starter supervisor, so it no longer "revives" 5 seconds after you tap Stop.
 *   **Battery-friendly**: animations follow the system motion toggle, metrics polling is throttled, download notifications are throttled by percentage, and idle states no longer keep a process resident.
 
-## 🚀 Plus API Enhancements
+## 🚀 Extra API Enhancements
 
 ShizukuX provides exclusive system interfaces that the original Shizuku **does not have**, for advanced automation and tooling:
 
-*   **AICore+ automation bridge**: Root-free privileged UI automation for AI tools (hierarchy dump, tap/swipe). ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
+*   **AICore Extra automation bridge**: Root-free privileged UI automation for AI tools (hierarchy dump, tap/swipe). ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
 *   **AVF (Virtual Machine) manager**: run isolated Linux/Microdroid VMs with GPU acceleration. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/c8e962f6))
 *   **Privileged storage proxy**: authenticated access to restricted paths (`/data/data/`, `/data/app/`) for backup and file management. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/c8e962f6))
 *   **Device spoofing** (*Spoof Device Identity* in Settings): present different device information to the system to bypass model-specific restrictions. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/11867f44))
-*   **Smart bridge** (*AI Core Plus*): privileged NPU scheduling and screen-context intelligence. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
-*   **Window Manager Plus**: force free-form window resizing, manage floating bubble bars and elastic overlays. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
-*   **System theme bridge** (*Overlay Manager Plus*): Root-free privileged Overlay management for theming (e.g. Hex Installer). ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7))
+*   **Smart bridge** (*AI Core Extra*): privileged NPU scheduling and screen-context intelligence. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
+*   **Window Manager Extra**: force free-form window resizing, manage floating bubble bars and elastic overlays. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/e9bd1187))
+*   **System theme bridge** (*Overlay Manager Extra*): Root-free privileged Overlay management for theming (e.g. Hex Installer). ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7))
 *   **Network & DNS governor**: manage private DNS and firewall routing to power Root-free ad blocking. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7))
-*   **Deep process control** (*Activity Manager Plus*): let process managers kill apps more aggressively and set standby buckets. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7))
+*   **Deep process control** (*Activity Manager Extra*): let process managers kill apps more aggressively and set standby buckets. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/55f6b7c7))
 *   **Continuity bridge**: securely transfer state and tasks between multiple ShizukuX devices. ([intro commit](https://github.com/qianyumeng0228/ShizukuPlus/commit/20cf14f7))
 
 ## 🛠️ Backports & Performance
@@ -92,10 +92,10 @@ Without touching a single line of code, ShizukuX makes ordinary Shizuku apps fas
 
 ## ⚙️ Modular Control
 
-Everything in ShizukuX is optional. Toggle features under the **Plus features** category in Settings:
+Everything in ShizukuX is optional. Toggle features under the **Extra features** category in Settings:
 
 *   Transparent shell interception
-*   Individual Plus APIs (AVF, storage, smart, etc.)
+*   Individual Extra APIs (AVF, storage, smart, etc.)
 *   Home screen card display
 *   Activity log
 
@@ -125,14 +125,14 @@ On **Android 16+**, ShizukuX requests the new local network protection permissio
 ## 📱 Developer Guide
 <a name="developer-guide"></a>
 
-Documentation for the exclusive Plus APIs lives in [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) (the `api` submodule of this repository points to it). Maintainers of Shizuku forks who want to migrate onto ShizukuX can follow [FORK_MIGRATION.md](FORK_MIGRATION.md).
+Documentation for the exclusive Extra APIs lives in [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) (the `api` submodule of this repository points to it). Maintainers of Shizuku forks who want to migrate onto ShizukuX can follow [FORK_MIGRATION.md](FORK_MIGRATION.md).
 
 ## 🗂️ Repository Layout
 
 | Directory | Description |
 |---|---|
 | `manager/` | Main app: home cards, settings, permission manager, device control, backup/restore, watchdog, updates |
-| `server/` | Privileged service process: ShizukuService and all Plus API implementations |
+| `server/` | Privileged service process: ShizukuService and all Extra API implementations |
 | `core/` | Shared core library (UI components, themes, string resources) |
 | `api/` | [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) submodule |
 | `compat/` | Compat Hub companion app |
