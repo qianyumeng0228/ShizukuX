@@ -20,22 +20,50 @@ Shizuku 可以让普通应用借助 **ADB / Root** 启动的特权进程，直�
 
 ## ⬇️ 下载
 
-请在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 获取最新版本，具体更新内容见各版本的发布说明。
+请在 [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases) 获取最新版本。每个版本均提供以下三个 APK：
+
+| 版本 | 包名 | 适用场景 |
+|---|---|---|
+| **标准版** | `xyz.shizuku.extra.api` | 全新安装，独立包名，可与其他 Shizuku 版本共存 |
+| **Drop-In 版** | `moe.shizuku.privileged.api` | 直接替换原版 Shizuku，兼容所有使用 Shizuku API 的应用（请勿与原版 Shizuku 同时安装） |
+| **Compat-Hub** | `moe.shizuku.privileged.api` | 兼容性伴生模块，让只检测原版包名的第三方应用识别 ShizukuX（随标准版内置，可在应用内安装/卸载） |
+
+- 正式版以 **`r` 系列**标识（如 `v13.7.0.r2002`），预发布以 **`k` 系列**标识（如 `v13.7.0.k2016`），均包含上述三个 APK。
+- 各版本的具体更新内容见对应发布说明，完整历史见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## ✨ ShizukuX 核心功能
 
 *   **通用权限提供器**：一套接口统一接入 **Root**、**ADB Shell** 与 **Dhizuku（设备所有者）** 三种权限来源。
 *   **OneUI 8+ 主题修复**：让 Hex Installer、Substratum 等主题引擎在 Android 16/17 与 OneUI 8+ 上继续正常工作。
-*   **Dhizuku 模式**：将系统 Device Owner Binder 共享给任意持有 Shizuku 权限的应用——通过 ADB 即可配置，无需 Root。
+*   **Dhizuku 模式**：将系统 Device Owner Binder 共享给任意持有 Shizuku 权限的应用——通过 ADB 即可配置，无需 Root；独立「权限等级」页统一管理 Shell / Root / DO 三种等级。
+*   **细粒度权限管理器**：按应用批量授予 / 回收 Shizuku 权限的独立界面，与首页卡片联动。
+*   **设备控制**：连接、显示、音频、电源与系统设置五大类 18 项操作（飞行模式、自动亮度、自动旋转、动画缩放、重启 / 关机等），ADB 模式下危险项自动置灰并提示。
+*   **备份与恢复**：SAF 导出到公共目录、批量备份 / 恢复（含 OBB 数据）、内部数据（`run-as` + tar）恢复，恢复前自动快照与恢复历史记录。
 *   **可定制手势**：支持左滑、右滑、长按等操作，可针对单个应用分别配置。
 *   **应用内更新日志**：更新后无需离开应用即可查看新内容。
 *   **批量管理**：多选应用，一键授予/回收权限或隐藏应用。
 *   **活动日志**：实时审计 API 调用与 `su` 桥接命令，附带应用图标并实时刷新。
 *   **Root 兼容中心**：为旧版 Root 应用提供仪表盘，支持细粒度模块控制（Magisk 伪装、自动授权、文件拦截等）。
 *   **通用 SU 自动化**：一键"魔法设置"，将所有已安装的 Root 应用指向 ShizukuX SU 桥。
-*   **服务诊断**：诊断并修复服务启动问题（含三星 Auto Blocker）。
+*   **服务诊断**：诊断并修复服务启动问题（含三星 Auto Blocker），诊断结果可一键导出崩溃堆栈。
+*   **Stealth Mode（隐藏痕迹）**：拦截 `IPackageManager` 查询，从系统应用列表中隐藏 ShizukuX 自身。
+*   **个性化控制**：加粗排版、扩展头部、圆角覆盖，动效与触感可跟随系统开关。
+*   **AMOLED 纯黑主题**：补齐全 9 个 surface token，纯黑模式下卡片不再发灰。
+*   **电池优化实时感知**：从系统设置返回即重新检查，MIUI / HyperOS「省电策略」也统一判定，弹窗不再残留。
 *   **内置功能引导**：每个增强功能都带有说明图标，用通俗语言解释其作用。
-*   **快捷设置磁贴**：在通知栏即可查看并切换服务状态。
+*   **快捷设置磁贴**：在通知栏即可查看并切换服务状态（含飞行模式、动画、亮度、旋转等设备控制磁贴）。
+
+## 🛡️ 稳定性与安全
+
+*   **第三方客户端兼容（AIDL 事务码偏移）**：兼容官方 v13.7+ 与 LSPatch 等使用偏移 AIDL 事务码的第三方客户端，授权请求不再被误判为其他调用。
+*   **ADB 代理握手鉴权**：15555 端口本地 ADB 代理验证 RSA 签名（即持有私钥）并绑定调用方 UID，伪造公钥无法绕过，第三方客户端线协议无感。
+*   **崩溃恢复链路加固**：无线调试自启前先做前提探测，未配置 TCP 端口时回退 root 启动，两者皆不可用时明确通知；连续崩溃降级非永久，15 分钟冷却后自动重新武装自动重启。
+*   **isRooted 授权探测修复**：兼容 KernelSU / SukiSU 的 SELinux Enforcing 环境——除文件 stat 外结合 libsu 授权记录（5 分钟 TTL），不再把已 Root 设备误判为无 Root。
+*   **HyperOS / MIUI 包可见性修复**：应用列表经服务端 IPC 获取（shell-uid PackageManager），解决澎湃 OS 包可见性限制导致的应用列表空白。
+*   **服务端加固**：shell 注入防护（入口统一包名正则校验，拒绝 `/`、`..`、空格）、APK Signature Scheme v2 签名正确性修复、大 APK 流式签名避免 OOM、冻结包集合缓存（`isAppFrozen` 为 O(1)）。
+*   **激活提速**：无线调试直连 `service.adb.tls.port` 端口，不再干等 mDNS 发现，激活流程从约 2 分钟降至约 9 秒。
+*   **手动停止不再自启**：停止服务时一并停掉 starter supervisor，不再出现「点了停止又复活」。
+*   **耗电优化**：动画跟随系统动效开关、指标轮询降频、下载通知按百分比节流、非运行态不再驻留进程。
 
 ## 🚀 Plus API 增强能力
 
@@ -59,7 +87,7 @@ ShizukuX 提供原版 Shizuku **没有**的专属系统接口，供高级自动�
 *   **透明 Shell 拦截器**：将常见的 `pm`、`am`、`settings` 命令路由到更快的原生 API。
 *   **本地 ADB 代理**：在 15555 端口模拟 ADB 服务端，让旧应用在无线调试关闭后仍能使用 Shizuku。
 *   **SU 桥**：为支持自定义 Root 路径的无 Root 应用，提供基于 Shizuku 的 `su` 替代方案。
-*   **`plus` 命令行工具**：可在 `rish` 内使用的特权命令行工具。
+*   **`extra` 命令行工具**：可在 `rish` 内使用的特权命令行工具。
 *   **动态应用数据库**：从 GitHub 实时同步应用描述与建议，保持界面信息最新。
 
 ## ⚙️ 模块化控制
@@ -87,7 +115,7 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 
 **最低：Android 7+ · 完整支持至 Android 17（SDK 37）**
 
-- **Root 模式**：需要已 Root 设备
+- **Root 模式**：需要已 Root 设备（兼容 Magisk / KernelSU / SukiSU / APatch 等）
 - **无线调试模式**：Android 11+ 及所有 Android TV
 - **电脑 ADB 模式**：所有设备
 - **开机自启**：仅无线调试或 Root 模式可用
@@ -97,7 +125,32 @@ ShizukuX 以独立包名（`xyz.shizuku.extra.api`）安装，可与原版 Shizu
 ## 📱 开发者指南
 <a name="developer-guide"></a>
 
-关于专属 Plus API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。
+关于专属 Plus API 的文档，见 [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API)（本仓库的 `api` 子模块即指向该仓库）。维护 Shizuku 分支并希望迁移到 ShizukuX 的开发者，可参考 [FORK_MIGRATION.md](FORK_MIGRATION.md)。
+
+## 🗂️ 仓库结构
+
+| 目录 | 说明 |
+|---|---|
+| `manager/` | 主应用：首页卡片、设置、权限管理、设备控制、备份/恢复、Watchdog、更新等 |
+| `server/` | 特权服务进程：ShizukuService 与全部 Plus API 实现 |
+| `core/` | 共享核心库（UI 组件、主题、字符串资源） |
+| `api/` | [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) 子模块 |
+| `compat/` | 兼容中心（Compat Hub）伴生应用 |
+| `shell/` | `rish` / `extra` 特权命令行工具 |
+| `starter/` | 服务启动器（ADB / Root / supervisor 拉起链路） |
+| `common/` / `app-process/` / `database/` | 公共代码、独立进程封装、数据库层 |
+| `docs/` | 中文文档（应用内帮助与更新说明指向这里） |
+
+## 📦 近期更新
+
+| 版本 | 类型 | 发布日期 | 主要更新 |
+|---|---|---|---|
+| **v13.7.0.k2016** | 预发布 | 2026-10-26 | 手动停止后不再自启、root 启动与授权状态联动（isRooted 实测兜底）、激活提速（约 2 分钟→9 秒）、终端教程页导出与命令修正 |
+| v13.7.0.k2015 | 预发布 | 2026-10-25 | 全仓 5.3 万行审查 13 项修复、无线调试自启 / 崩溃恢复链路加固、设置页按「常规/权限/服务/诊断」重排 |
+| v13.7.0.k2014 | 预发布 | 2026-10-07 | 第三方客户端 AIDL 事务码偏移兼容、设备控制 / 备份全套、Stealth Mode、AMOLED 主题修复、兼容中心一键卸载 |
+| v13.7.0.r2002 | 正式版 | 2026-09-22 | v13.7.0 正式发版线 |
+
+更完整的变更记录见 [CHANGELOG.md](CHANGELOG.md) 与各版本 [Release Notes](https://github.com/qianyumeng0228/ShizukuX/releases)。
 
 ## 🙏 致谢与许可证
 

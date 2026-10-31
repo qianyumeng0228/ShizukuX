@@ -20,22 +20,50 @@ Shizuku lets ordinary apps call system-level APIs directly through a privileged 
 
 ## ⬇️ Download
 
-Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases). See each release's notes for details.
+Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228/ShizukuX/releases). Every release ships the following three APKs:
+
+| Variant | Package | Use case |
+|---|---|---|
+| **Standard** | `xyz.shizuku.extra.api` | Fresh install under its own package name; coexists with other Shizuku builds |
+| **Drop-In** | `moe.shizuku.privileged.api` | Drop-in replacement for the original Shizuku; compatible with every Shizuku API app (do **not** install alongside the original Shizuku) |
+| **Compat-Hub** | `moe.shizuku.privileged.api` | Tiny companion that lets third-party apps detecting only the original package name see ShizukuX (bundled with the Standard APK; install/uninstall from inside the app) |
+
+- Stable releases are tagged with an **`r` series** (e.g. `v13.7.0.r2002`), pre-releases with a **`k` series** (e.g. `v13.7.0.k2016`); both ship the same three APKs.
+- See each release's notes for details and [CHANGELOG.md](CHANGELOG.md) for the full history.
 
 ## ✨ Core Features
 
 *   **Universal permission provider**: a single interface unifying **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** as permission sources.
 *   **OneUI 8+ theming fix**: keeps theme engines such as Hex Installer and Substratum working on Android 16/17 and OneUI 8+.
-*   **Dhizuku mode**: shares the system Device Owner Binder with any app holding Shizuku permission — configurable via ADB, no Root required.
+*   **Dhizuku mode**: shares the system Device Owner Binder with any app holding Shizuku permission — configurable via ADB, no Root required; a dedicated **Permission Level** page unifies Shell / Root / DO management.
+*   **Fine-grained permission manager**: a dedicated screen to grant/revoke Shizuku permissions per app in bulk, linked to the home-screen card.
+*   **Device control**: 18 operations across Connectivity / Display / Audio / Power / Settings (airplane mode, auto-brightness, auto-rotate, animation scale, reboot / shutdown, etc.); dangerous items are auto-disabled with a hint in ADB mode.
+*   **Backup & restore**: SAF export to public directories, batch backup/restore (including OBB data), internal-data restore (`run-as` + tar), pre-restore snapshots and restore history.
 *   **Customizable gestures**: swipe left, swipe right, long press and more, configurable per app.
 *   **In-app changelog**: view release highlights right after an update without leaving the app.
 *   **Batch management**: select multiple apps to grant/revoke permissions or hide them in one tap.
 *   **Activity log**: real-time audit of API calls and `su` bridge commands, with app icons and live refresh.
 *   **Root compatibility hub**: a dashboard for legacy Root apps with fine-grained module controls (Magisk spoofing, auto-grant, file interception, etc.).
 *   **Universal SU automation**: one-tap "magic settings" that points all installed Root apps at the ShizukuX SU bridge.
-*   **Service diagnostics**: diagnose and fix service startup issues (including Samsung Auto Blocker).
+*   **Service diagnostics**: diagnose and fix service startup issues (including Samsung Auto Blocker), with one-tap crash-stack export.
+*   **Stealth Mode**: intercepts `IPackageManager` queries so ShizukuX hides itself from the system app list.
+*   **Personalization controls**: bold typography, expanded headers, corner-radius overrides; animations and haptics follow the system toggle.
+*   **AMOLED pure-black theme**: all 9 surface tokens fixed so cards no longer look grey in pure-black mode.
+*   **Real-time battery-optimization detection**: re-checks on returning from system settings; MIUI / HyperOS "battery saver" policies are unified too, so stale banners disappear.
 *   **Built-in feature guidance**: every enhancement ships an info icon explaining its purpose in plain language.
-*   **Quick Settings tile**: view and toggle service status from the notification shade.
+*   **Quick Settings tiles**: view and toggle service status from the notification shade (plus device-control tiles: airplane mode, animations, brightness, rotation).
+
+## 🛡️ Stability & Security
+
+*   **Third-party client compatibility (AIDL transaction-code offsets)**: works with official v13.7+ and LSPatch-style clients that use offset AIDL transaction codes — permission requests are no longer misrouted to another call.
+*   **ADB proxy handshake authentication**: the local ADB proxy on port 15555 now verifies the RSA signature (i.e. possession of the private key) and binds the caller UID; forged public keys can no longer pass, and the wire protocol is unchanged for third-party clients.
+*   **Hardened crash-recovery chain**: wireless-debugging startup runs a precondition probe first, falls back to root startup when no TCP port is configured, and notifies clearly when neither works; crash degradation is not permanent — a 15-minute cooldown re-arms auto-restart.
+*   **isRooted detection fix**: compatible with KernelSU / SukiSU under SELinux Enforcing — besides file `stat`, it consults libsu authorization records (5-min TTL), so rooted devices are no longer misreported as unrooted.
+*   **HyperOS / MIUI package-visibility fix**: the app list is fetched over server IPC (shell-uid PackageManager), fixing blank lists caused by HyperOS package-visibility restrictions.
+*   **Server hardening**: shell-injection protection (package-name regex validation at every entry, rejecting `/`, `..`, spaces), APK Signature Scheme v2 signing correctness fixes, streaming signature for large APKs to avoid OOM, and a cached frozen-package set (`isAppFrozen` is O(1)).
+*   **Faster activation**: wireless debugging connects straight to `service.adb.tls.port` instead of waiting on mDNS discovery — activation drops from ~2 minutes to ~9 seconds.
+*   **Manual stop stays stopped**: stopping the service also stops the starter supervisor, so it no longer "revives" 5 seconds after you tap Stop.
+*   **Battery-friendly**: animations follow the system motion toggle, metrics polling is throttled, download notifications are throttled by percentage, and idle states no longer keep a process resident.
 
 ## 🚀 Plus API Enhancements
 
@@ -59,7 +87,7 @@ Without touching a single line of code, ShizukuX makes ordinary Shizuku apps fas
 *   **Transparent shell interceptor**: routes common `pm`, `am`, and `settings` commands to faster native APIs.
 *   **Local ADB proxy**: emulates an ADB server on port 15555 so legacy apps keep working with Shizuku after wireless debugging is off.
 *   **SU bridge**: a Shizuku-based `su` alternative for Root-free apps that support custom Root paths.
-*   **`plus` command-line tool**: a privileged CLI usable inside `rish`.
+*   **`extra` command-line tool**: a privileged CLI usable inside `rish`.
 *   **Dynamic app database**: syncs app descriptions and suggestions from GitHub in real time to keep the UI current.
 
 ## ⚙️ Modular Control
@@ -87,7 +115,7 @@ You can also install the **drop-in variant**, which registers directly as `moe.s
 
 **Minimum: Android 7+ · Fully supported up to Android 17 (SDK 37)**
 
-- **Root mode**: requires a rooted device
+- **Root mode**: requires a rooted device (works with Magisk / KernelSU / SukiSU / APatch, etc.)
 - **Wireless debugging mode**: Android 11+ and all Android TVs
 - **PC ADB mode**: all devices
 - **Boot startup**: available in wireless debugging or Root mode only
@@ -97,7 +125,32 @@ On **Android 16+**, ShizukuX requests the new local network protection permissio
 ## 📱 Developer Guide
 <a name="developer-guide"></a>
 
-Documentation for the exclusive Plus APIs lives in [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) (the `api` submodule of this repository points to it).
+Documentation for the exclusive Plus APIs lives in [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) (the `api` submodule of this repository points to it). Maintainers of Shizuku forks who want to migrate onto ShizukuX can follow [FORK_MIGRATION.md](FORK_MIGRATION.md).
+
+## 🗂️ Repository Layout
+
+| Directory | Description |
+|---|---|
+| `manager/` | Main app: home cards, settings, permission manager, device control, backup/restore, watchdog, updates |
+| `server/` | Privileged service process: ShizukuService and all Plus API implementations |
+| `core/` | Shared core library (UI components, themes, string resources) |
+| `api/` | [ShizukuX-API](https://github.com/qianyumeng0228/ShizukuX-API) submodule |
+| `compat/` | Compat Hub companion app |
+| `shell/` | `rish` / `extra` privileged command-line tools |
+| `starter/` | Service starter (ADB / Root / supervisor launch chain) |
+| `common/` / `app-process/` / `database/` | Shared code, standalone process wrapper, database layer |
+| `docs/` | Documentation (in-app help and update notes link here) |
+
+## 📦 Recent Releases
+
+| Version | Type | Date | Highlights |
+|---|---|---|---|
+| **v13.7.0.k2016** | Pre-release | 2026-10-26 | Manual stop stays stopped, root-aware start entry (isRooted fallback), faster activation (~2 min → 9 s), terminal-tutorial export & command fixes |
+| v13.7.0.k2015 | Pre-release | 2026-10-25 | 13 fixes from a 53k-line audit, hardened wireless-debugging auto-start / crash recovery, Settings reorganized into General / Permission / Service / Diagnostics |
+| v13.7.0.k2014 | Pre-release | 2026-10-07 | AIDL transaction-code offset compatibility, full device control / backup suite, Stealth Mode, AMOLED theme fix, one-tap Compat Hub uninstall |
+| v13.7.0.r2002 | Stable | 2026-09-22 | v13.7.0 stable line |
+
+For the complete changelog see [CHANGELOG.md](CHANGELOG.md) and the per-release [Release Notes](https://github.com/qianyumeng0228/ShizukuX/releases).
 
 ## 🙏 Acknowledgements & License
 
