@@ -1,0 +1,90 @@
+package af.shizuku.manager.module
+
+import java.io.File
+
+/**
+ * Metadata model of an installed ADB module (ported from Nightzuku's AdbModule,
+ * minus the Nightzuku-guard field).
+ */
+data class AdbModule(
+    val id: String,
+    val name: String,
+    val version: String?,
+    val versionCode: Long?,
+    val author: String?,
+    val description: String?,
+    val directory: File,
+    val banner: File?,
+    val webRoot: File?,
+    val declaresShellBridge: Boolean,
+    val actionScript: File?,
+    val serviceScript: File?,
+    val logsDir: File,
+    val sizeBytes: Long,
+    val enabled: Boolean
+) {
+    val hasWebUi: Boolean
+        get() = webRoot?.resolve("index.html")?.isFile == true ||
+            webRoot?.resolve("index.htm")?.isFile == true
+
+    val hasAction: Boolean
+        get() = actionScript?.isFile == true
+
+    val hasService: Boolean
+        get() = serviceScript?.isFile == true
+
+    val formattedSize: String
+        get() {
+            val kb = sizeBytes / 1024.0
+            if (kb < 1024.0) return "${"%.1f".format(kb)} KB"
+            return "${"%.1f".format(kb / 1024.0)} MB"
+        }
+
+    val lastActionLog: File
+        get() = logsDir.resolve("action-last.log")
+
+    val lastServiceLog: File
+        get() = logsDir.resolve("service-last.log")
+
+    val lastActionExitCode: Int?
+        get() = parseExitCode(lastActionLog)
+
+    val lastServiceExitCode: Int?
+        get() = parseExitCode(lastServiceLog)
+
+    private fun parseExitCode(logFile: File): Int? {
+        if (!logFile.isFile) return null
+        return runCatching {
+            logFile.useLines { lines ->
+                lines.firstOrNull { it.startsWith("exitCode=") }
+                    ?.substringAfter("exitCode=")
+                    ?.trim()
+                    ?.toIntOrNull()
+            }
+        }.getOrNull()
+    }
+}
+
+data class ModuleActionResult(
+    val exitCode: Int,
+    val stdout: String,
+    val stderr: String
+) {
+    val combinedOutput: String
+        get() = buildString {
+            if (stdout.isNotBlank()) append(stdout.trim())
+            if (stderr.isNotBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append(stderr.trim())
+            }
+            if (isBlank()) append("No output.")
+        }
+}
+
+data class ModuleHealthStatus(
+    val moduleId: String,
+    val healthy: Boolean,
+    val lastActionExitCode: Int? = null,
+    val lastServiceExitCode: Int? = null,
+    val issues: List<String> = emptyList()
+)

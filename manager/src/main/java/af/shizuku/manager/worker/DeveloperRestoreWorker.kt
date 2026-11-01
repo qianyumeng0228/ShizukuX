@@ -97,12 +97,12 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
             )
 
             val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_settings_outline_24)
+                .setSmallIcon(R.drawable.ic_notification_server_restart)
                 .setContentTitle(context.getString(R.string.settings_restore_wifi_notification_title))
                 .setContentText(context.getString(R.string.settings_restore_wifi_notification_text))
                 .setContentIntent(openAppIntent)
                 .addAction(
-                    R.drawable.ic_settings_outline_24,
+                    R.drawable.ic_notification_server_restart,
                     context.getString(R.string.settings_restore_wifi_notification_action),
                     wifiPendingIntent
                 )
@@ -144,7 +144,7 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
             )
 
             val nb = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_settings_outline_24)
+                .setSmallIcon(R.drawable.ic_notification_server_restart)
                 .setContentTitle(context.getString(R.string.settings_adb_security_notification_title))
                 .setContentText(
                     if (DeveloperOptionsRestorer.isUsbDebuggingEnabled(context)) {
@@ -155,7 +155,7 @@ class DeveloperRestoreWorker(context: Context, params: WorkerParameters) : Corou
                 )
                 .setContentIntent(openAppIntent)
                 .addAction(
-                    R.drawable.ic_settings_outline_24,
+                    R.drawable.ic_notification_server_restart,
                     context.getString(R.string.settings_adb_security_notification_action),
                     devOptionsPendingIntent
                 )

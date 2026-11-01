@@ -43,7 +43,10 @@ subprojects {
     detekt {
         config.setFrom(files("$rootDir/detekt.yml"))
         buildUponDefaultConfig = true
-        autoCorrect = true
+        // NOTE: autoCorrect kept OFF deliberately — P0 it rewrote 189 unrelated
+        // files via detekt-formatting before the run was aborted and reverted.
+        // The linter must report, never silently reformat.
+        autoCorrect = false
     }
 
     dependencies {
