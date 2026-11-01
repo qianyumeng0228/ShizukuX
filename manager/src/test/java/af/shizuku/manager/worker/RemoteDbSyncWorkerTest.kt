@@ -5,49 +5,61 @@ import af.shizuku.manager.database.AppContextManager
 import android.content.Context
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
-import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkConstructor
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import java.net.URL
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Test
 
-class RemoteDbSyncWorkerTest : FunSpec({
+/**
+ * P0-遗留基建修复：原实现为 Kotest FunSpec（io.kotest），在
+ * JUnit5-platform + vintage 混合环境下 runner 挂起导致全量测试卡死。
+ * 重写为 JUnit4（与 SafeExecutorTest 同风格），语义不变：
+ * 缓存新鲜 → success；网络异常 → retry。
+ */
+class RemoteDbSyncWorkerTest {
 
-    val context: Context = mockk(relaxed = true)
-    val workerParams: WorkerParameters = mockk(relaxed = true)
+    private val context: Context = mockk(relaxed = true)
+    private val workerParams: WorkerParameters = mockk(relaxed = true)
 
-    beforeTest {
+    @Before
+    fun setUp() {
         mockkStatic(ShizukuSettings::class)
         mockkObject(AppContextManager)
     }
 
-    afterTest {
+    @After
+    fun tearDown() {
         unmockkAll()
     }
 
-    test("doWork returns success when cache is fresh") {
-        // Return a recent timestamp to skip fetch
+    @Test
+    fun `doWork returns success when cache is fresh`() {
+        // Recent timestamp → skip fetch
         every { ShizukuSettings.getLastDbUpdate() } returns System.currentTimeMillis() - 1000L
 
         val worker = RemoteDbSyncWorker(context, workerParams)
-        val result = worker.doWork()
+        val result = runBlocking { worker.doWork() }
 
-        result shouldBe Result.success()
+        assertEquals(Result.success(), result)
     }
 
-    test("doWork returns retry when fetch throws exception") {
+    @Test
+    fun `doWork returns retry when fetch throws exception`() {
         every { ShizukuSettings.getLastDbUpdate() } returns 0L
 
-        mockkConstructor(URL::class)
-        every { anyConstructed<URL>().openConnection() } throws RuntimeException("Simulated network error")
+        // Network failure injected via the doFetch seam (mockkConstructor hangs JDK 21).
+        val worker = object : RemoteDbSyncWorker(context, workerParams) {
+            override fun doFetch(urlString: String): String? =
+                throw RuntimeException("Simulated network error")
+        }
+        val result = runBlocking { worker.doWork() }
 
-        val worker = RemoteDbSyncWorker(context, workerParams)
-        val result = worker.doWork()
-
-        result shouldBe Result.retry()
+        assertEquals(Result.retry(), result)
     }
-})
+}

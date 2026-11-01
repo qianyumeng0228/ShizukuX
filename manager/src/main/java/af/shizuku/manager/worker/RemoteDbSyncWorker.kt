@@ -17,7 +17,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.TimeUnit
 
-class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+open class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     companion object {
         private const val WORK_NAME = "remote_app_db_sync"
@@ -65,7 +65,14 @@ class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coroutine
         }
     }
 
-    private fun fetch(urlString: String): String? {
+    private fun fetch(urlString: String): String? = doFetch(urlString)
+
+    /**
+     * Test seam: subclasses override this to inject network failure without
+     * touching java.net.URL — mockkConstructor(URL::class) hangs the JVM under
+     * JDK 21 (P0-遗留基建修复).
+     */
+    internal open fun doFetch(urlString: String): String? {
         val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = CONNECT_TIMEOUT_MS
