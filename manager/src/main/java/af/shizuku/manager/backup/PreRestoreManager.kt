@@ -7,6 +7,7 @@ import android.provider.DocumentsContract
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import timber.log.Timber
 
 /**
  * Manages pre-restore snapshot metadata.
@@ -108,7 +109,9 @@ object PreRestoreManager {
                         try {
                             DocumentsContract.deleteDocument(cr,
                                 DocumentsContract.buildDocumentUriUsingTree(safTreeUri, fileId))
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            Timber.w(e, "Failed to delete old snapshot file %s", fileId)
+                        }
                     }
                 }
             }

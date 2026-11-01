@@ -1,12 +1,12 @@
 package rikka.shizuku.server
 
+import af.shizuku.server.IAICoreExtra
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Rect
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
-import af.shizuku.server.IAICoreExtra
 
 /**
  * Implementation of AICorePlus using Android's SurfaceControl and AI framework APIs.
@@ -17,6 +17,7 @@ class AICorePlusImpl(
 ) : IAICoreExtra.Stub() {
     companion object {
         private const val TAG = "AICorePlusImpl"
+
         // Upper bound on one persistent-sh write; beyond this we treat sh as wedged.
         private const val WRITE_TIMEOUT_SECONDS = 5L
     }
@@ -71,7 +72,7 @@ class AICorePlusImpl(
     override fun scheduleNPULoad(taskData: Bundle?): Bundle? {
         if (!service.isExtraFeatureEnabled("ai_core_plus") || !service.isExtraFeatureEnabled("ai_core_master") || !service.isExtraFeatureEnabled("npu_acceleration")) return null
         if (taskData == null) return null
-        
+
         try {
             // android.provider.Settings.System.putInt(service.contentResolver, "processing_speed", 2)
             val response = Bundle()

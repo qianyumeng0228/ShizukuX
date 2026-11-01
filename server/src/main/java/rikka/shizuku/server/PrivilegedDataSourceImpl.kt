@@ -1,8 +1,8 @@
 package rikka.shizuku.server
 
+import af.shizuku.server.IPrivilegedDataSource
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import af.shizuku.server.IPrivilegedDataSource
 import rikka.shizuku.server.util.ShellExecutor
 
 /**
@@ -73,9 +73,12 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
 
     override fun injectSwipe(startX: Int, startY: Int, endX: Int, endY: Int, durationMs: Int): Boolean =
         ShellExecutor.execBool(
-            "input", "swipe",
-            startX.toString(), startY.toString(),
-            endX.toString(), endY.toString(),
+            "input",
+            "swipe",
+            startX.toString(),
+            startY.toString(),
+            endX.toString(),
+            endY.toString(),
             durationMs.coerceAtLeast(1).toString()
         )
 
@@ -86,11 +89,11 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
 
     override fun getSmsMessages(folder: String?, maxCount: Int): List<Bundle> {
         val uriPath = when (folder?.lowercase()) {
-            "sent"   -> "content://sms/sent"
-            "draft"  -> "content://sms/draft"
+            "sent" -> "content://sms/sent"
+            "draft" -> "content://sms/draft"
             "outbox" -> "content://sms/outbox"
-            "all"    -> "content://sms"
-            else     -> "content://sms/inbox"
+            "all" -> "content://sms"
+            else -> "content://sms/inbox"
         }
         val limit = maxCount.coerceIn(1, 500)
         val output = ShellExecutor.exec(
@@ -158,9 +161,12 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
     override fun getPhoneInfo(): Bundle {
         val b = Bundle()
         // getprop gives us build properties; telephony details come from dumpsys
-        b.putString("network_operator", ShellExecutor.exec("getprop", "gsm.operator.alpha").ifEmpty {
-            ShellExecutor.exec("getprop", "ro.cdma.home.operator.alpha")
-        })
+        b.putString(
+            "network_operator",
+            ShellExecutor.exec("getprop", "gsm.operator.alpha").ifEmpty {
+                ShellExecutor.exec("getprop", "ro.cdma.home.operator.alpha")
+            }
+        )
         b.putString("sim_operator", ShellExecutor.exec("getprop", "gsm.sim.operator.alpha"))
 
         // Parse IMEI and phone number from dumpsys telephony.registry
@@ -271,11 +277,11 @@ class PrivilegedDataSourceImpl : IPrivilegedDataSource.Stub() {
         // Output: "allow", "deny", "ignore", "default", or "<op>: <mode>"
         val raw = output.substringAfterLast(":").trim().lowercase()
         return when {
-            raw.contains("allow")   -> "allow"
-            raw.contains("deny")    -> "deny"
-            raw.contains("ignore")  -> "ignore"
+            raw.contains("allow") -> "allow"
+            raw.contains("deny") -> "deny"
+            raw.contains("ignore") -> "ignore"
             raw.contains("default") -> "default"
-            else                    -> raw.ifEmpty { "" }
+            else -> raw.ifEmpty { "" }
         }
     }
 

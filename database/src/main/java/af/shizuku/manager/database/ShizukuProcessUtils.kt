@@ -1,8 +1,8 @@
 package af.shizuku.manager.database
 
-import java.io.OutputStream
 import rikka.shizuku.Shizuku
 import timber.log.Timber
+import java.io.OutputStream
 
 /** Result of a privileged command run through [ShizukuProcessUtils.runPrivilegedCapture]. */
 data class ShizukuCaptureResult(val exitCode: Int, val stdout: String, val stderr: String)
@@ -53,16 +53,20 @@ object ShizukuProcessUtils {
                     Timber.v(e, "runPrivilegedCapture: stderr drain failed")
                 }
             }
-            outT.start(); errT.start()
+            outT.start()
+            errT.start()
             if (writeStdin != null) {
                 writeStdin(process.outputStream)
             } else {
                 try { process.outputStream.close() } catch (_: Exception) {}
             }
             val exitCode = process.waitFor()
-            outT.join(joinTimeoutMs); errT.join(joinTimeoutMs)
+            outT.join(joinTimeoutMs)
+            errT.join(joinTimeoutMs)
             if (outT.isAlive || errT.isAlive) {
-                Timber.w("runPrivilegedCapture: drain thread still running after ${joinTimeoutMs}ms join timeout; output may be truncated")
+                Timber.w(
+                    "runPrivilegedCapture: drain thread still running after ${joinTimeoutMs}ms join timeout; output may be truncated"
+                )
             }
             ShizukuCaptureResult(exitCode, out.toString(), err.toString())
         } catch (e: Exception) {

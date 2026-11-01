@@ -1,7 +1,7 @@
 package rikka.shizuku.server
 
-import android.os.ParcelFileDescriptor
 import af.shizuku.server.IApkPatcher
+import android.os.ParcelFileDescriptor
 import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
@@ -68,7 +68,8 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         if (apkPaths.isEmpty()) return false
 
         val sessionArgs = buildList {
-            add("pm"); add("install-create")
+            add("pm");
+            add("install-create")
             if (grantPerms) add("-g")
         }
         val sessionOut = ShellExecutor.exec(*sessionArgs.toTypedArray())
@@ -80,8 +81,8 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
             val fileName = File(path).name
             val splitName = when {
                 fileName.contains("_orig_") -> fileName.substringAfter("_orig_")
-                fileName.contains("_dbg_")  -> fileName.substringAfter("_dbg_")
-                else                        -> fileName
+                fileName.contains("_dbg_") -> fileName.substringAfter("_dbg_")
+                else -> fileName
             }
             if (ShellExecutor.execCode("pm", "install-write", sessionId.toString(), splitName, path) != 0) {
                 ShellExecutor.execCode("pm", "install-abandon", sessionId.toString())
@@ -100,68 +101,68 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         // Serialize prepare/restore: two binder threads must not both pass the
         // containsKey gate and run the uninstall/reinstall dance concurrently.
         synchronized(this) {
-        if (sessions[packageName] != null) return true
+            if (sessions[packageName] != null) return true
 
-        val apkPaths = findAllApks(packageName)
-        if (apkPaths.isEmpty()) return false
+            val apkPaths = findAllApks(packageName)
+            if (apkPaths.isEmpty()) return false
 
-        File(TMP_DIR).mkdirs()
+            File(TMP_DIR).mkdirs()
 
-        // Save all original APKs to temp dir
-        val origPaths = mutableListOf<String>()
-        for (path in apkPaths) {
-            val fileName = File(path).name  // base.apk, split_config.arm64_v8a.apk, etc.
-            val dest = "$TMP_DIR/${packageName}_orig_$fileName"
-            if (ShellExecutor.execCode("cp", path, dest) != 0) {
+            // Save all original APKs to temp dir
+            val origPaths = mutableListOf<String>()
+            for (path in apkPaths) {
+                val fileName = File(path).name // base.apk, split_config.arm64_v8a.apk, etc.
+                val dest = "$TMP_DIR/${packageName}_orig_$fileName"
+                if (ShellExecutor.execCode("cp", path, dest) != 0) {
+                    origPaths.forEach { File(it).delete() }
+                    return false
+                }
+                origPaths.add(dest)
+            }
+
+            // Patch base APK manifest; sign ALL APKs with the same ephemeral key.
+            // Android requires all APKs in a session to share a certificate, so signing
+            // must happen before uninstall, and all with the same ApkSigner instance.
+            // signFile streams off disk entry-by-entry — never readBytes(), which OOM'd the
+            // server on multi-GB game splits (2097992168-byte allocation).
+            val patchedPaths = mutableListOf<String>()
+            try {
+                for (origPath in origPaths) {
+                    val fileName = File(origPath).name
+                    val isBase = fileName.endsWith("_orig_base.apk") || !fileName.contains("split_")
+                    val patchedPath = "$TMP_DIR/${packageName}_dbg_${fileName.substringAfter("_orig_")}"
+                    if (!ApkSigner.signFile(File(origPath), File(patchedPath), patchManifest = isBase)) {
+                        origPaths.forEach { File(it).delete() }
+                        patchedPaths.forEach { File(it).delete() }
+                        return false
+                    }
+                    patchedPaths.add(patchedPath)
+                }
+            } catch (_: Exception) {
+                origPaths.forEach { File(it).delete() }
+                patchedPaths.forEach { File(it).delete() }
+                return false
+            }
+
+            // pm uninstall -k preserves all app data
+            if (ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
+                origPaths.forEach { File(it).delete() }
+                patchedPaths.forEach { File(it).delete() }
+                return false
+            }
+
+            val installed = installViaSession(patchedPaths)
+            patchedPaths.forEach { File(it).delete() }
+
+            if (!installed) {
+                // Attempt recovery by reinstalling the originals
+                installViaSession(origPaths)
                 origPaths.forEach { File(it).delete() }
                 return false
             }
-            origPaths.add(dest)
-        }
 
-        // Patch base APK manifest; sign ALL APKs with the same ephemeral key.
-        // Android requires all APKs in a session to share a certificate, so signing
-        // must happen before uninstall, and all with the same ApkSigner instance.
-        // signFile streams off disk entry-by-entry — never readBytes(), which OOM'd the
-        // server on multi-GB game splits (2097992168-byte allocation).
-        val patchedPaths = mutableListOf<String>()
-        try {
-            for (origPath in origPaths) {
-                val fileName = File(origPath).name
-                val isBase = fileName.endsWith("_orig_base.apk") || !fileName.contains("split_")
-                val patchedPath = "$TMP_DIR/${packageName}_dbg_${fileName.substringAfter("_orig_")}"
-                if (!ApkSigner.signFile(File(origPath), File(patchedPath), patchManifest = isBase)) {
-                    origPaths.forEach { File(it).delete() }
-                    patchedPaths.forEach { File(it).delete() }
-                    return false
-                }
-                patchedPaths.add(patchedPath)
-            }
-        } catch (_: Exception) {
-            origPaths.forEach { File(it).delete() }
-            patchedPaths.forEach { File(it).delete() }
-            return false
-        }
-
-        // pm uninstall -k preserves all app data
-        if (ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) != 0) {
-            origPaths.forEach { File(it).delete() }
-            patchedPaths.forEach { File(it).delete() }
-            return false
-        }
-
-        val installed = installViaSession(patchedPaths)
-        patchedPaths.forEach { File(it).delete() }
-
-        if (!installed) {
-            // Attempt recovery by reinstalling the originals
-            installViaSession(origPaths)
-            origPaths.forEach { File(it).delete() }
-            return false
-        }
-
-        sessions[packageName] = origPaths
-        return true
+            sessions[packageName] = origPaths
+            return true
         }
     }
 
@@ -180,14 +181,14 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
     override fun restoreOriginal(packageName: String?): Boolean {
         if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return false
         synchronized(this) {
-        val origPaths = sessions[packageName] ?: return false
+            val origPaths = sessions[packageName] ?: return false
 
-        val ok = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) == 0 &&
-                 installViaSession(origPaths)
+            val ok = ShellExecutor.execCode("pm", "uninstall", "--user", "0", "-k", packageName) == 0 &&
+                installViaSession(origPaths)
 
-        sessions.remove(packageName)
-        origPaths.forEach { File(it).delete() }
-        return ok
+            sessions.remove(packageName)
+            origPaths.forEach { File(it).delete() }
+            return ok
         }
     }
 
@@ -214,7 +215,8 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         val tracked = sessions.values.flatten().toSet()
         File(TMP_DIR).listFiles()?.forEach { f ->
             if ((f.name.contains("_orig_") || f.name.contains("_dbg_")) &&
-                !tracked.contains(f.absolutePath)) {
+                !tracked.contains(f.absolutePath)
+            ) {
                 f.delete()
             }
         }

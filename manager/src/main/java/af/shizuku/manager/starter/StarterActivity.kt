@@ -1,5 +1,27 @@
 package af.shizuku.manager.starter
 
+import af.shizuku.core.ui.AppBarActivity
+import af.shizuku.manager.AppConstants.EXTRA
+import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.adb.AdbArm
+import af.shizuku.manager.adb.AdbClient
+import af.shizuku.manager.adb.AdbKey
+import af.shizuku.manager.adb.AdbKeyException
+import af.shizuku.manager.adb.AdbMdns
+import af.shizuku.manager.adb.AdbPairingAccessibilityService
+import af.shizuku.manager.adb.AdbPairingService
+import af.shizuku.manager.adb.AdbStarter
+import af.shizuku.manager.adb.PreferenceAdbKeyStore
+import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.databinding.StarterActivityBinding
+import af.shizuku.manager.home.isPairingAssistantEnabled
+import af.shizuku.manager.settings.DeviceOwnerHelper
+import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.HapticUtils
+import af.shizuku.manager.utils.IconStyleHelper
+import af.shizuku.manager.utils.SettingsPage
+import af.shizuku.manager.utils.ShizukuStateMachine
 import android.Manifest.permission.WRITE_SECURE_SETTINGS
 import android.annotation.SuppressLint
 import android.app.Application
@@ -28,18 +50,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import af.shizuku.manager.settings.DeviceOwnerHelper
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.topjohnwu.superuser.CallbackList
 import com.topjohnwu.superuser.Shell
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicBoolean
-import javax.net.ssl.SSLProtocolException
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -48,28 +62,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import af.shizuku.manager.AppConstants.EXTRA
-import af.shizuku.manager.R
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.adb.AdbArm
-import af.shizuku.manager.adb.AdbClient
-import af.shizuku.manager.adb.AdbKey
-import af.shizuku.manager.adb.AdbKeyException
-import af.shizuku.manager.adb.AdbMdns
-import af.shizuku.manager.adb.AdbPairingAccessibilityService
-import af.shizuku.manager.adb.AdbPairingService
-import af.shizuku.manager.adb.AdbStarter
-import af.shizuku.manager.adb.PreferenceAdbKeyStore
-import af.shizuku.manager.database.ActivityLogManager
-import af.shizuku.manager.home.isPairingAssistantEnabled
-import af.shizuku.manager.utils.EnvironmentUtils
-import af.shizuku.manager.utils.HapticUtils
-import af.shizuku.manager.utils.IconStyleHelper
-import af.shizuku.manager.utils.SettingsPage
-import af.shizuku.manager.utils.ShizukuStateMachine
-import af.shizuku.core.ui.AppBarActivity
-import af.shizuku.manager.databinding.StarterActivityBinding
 import timber.log.Timber
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
+import javax.net.ssl.SSLProtocolException
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 private class NotRootedException : Exception()
 
@@ -141,8 +141,11 @@ class StarterActivity : AppBarActivity() {
         val rationale = permission != null && shouldShowRequestPermissionRationale(permission)
         MaterialAlertDialogBuilder(this)
             .setMessage(
-                if (rationale) R.string.starter_local_network_permission_rationale
-                else R.string.starter_local_network_permission_denied
+                if (rationale) {
+                    R.string.starter_local_network_permission_rationale
+                } else {
+                    R.string.starter_local_network_permission_denied
+                }
             )
             .setPositiveButton(R.string.starter_go_settings) { _, _ ->
                 // A permanently denied permission can only be resolved in system settings.
@@ -191,7 +194,9 @@ class StarterActivity : AppBarActivity() {
         binding.header.apply {
             headerIcon.setImageResource(if (isRoot) R.drawable.ic_root_24 else R.drawable.ic_adb_24)
             IconStyleHelper.applyToCardIcon(
-                headerIcon, headerIcon.drawable, if (isRoot) "home_start_root" else "home_start_adb"
+                headerIcon,
+                headerIcon.drawable,
+                if (isRoot) "home_start_root" else "home_start_adb"
             )
             headerIcon.transitionName = "icon_wireless_adb"
             headerTitle.setText(
@@ -218,8 +223,10 @@ class StarterActivity : AppBarActivity() {
             logVisible = !logVisible
             binding.text1.isVisible = logVisible
             binding.logButton.setText(if (logVisible) R.string.starter_btn_hide_log else R.string.starter_btn_open_log)
-            if (logVisible) binding.scrollView.post {
-                binding.scrollView.scrollTo(0, binding.scrollView.bottom)
+            if (logVisible) {
+                binding.scrollView.post {
+                    binding.scrollView.scrollTo(0, binding.scrollView.bottom)
+                }
             }
         }
 
@@ -231,14 +238,19 @@ class StarterActivity : AppBarActivity() {
             addAction(AdbPairingAccessibilityService.ACTION_AUTO_WIRELESS_FAILED)
         }
         ContextCompat.registerReceiver(
-            this, pairingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED
+            this,
+            pairingReceiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
 
         viewModel.steps.observe(this) { renderSteps(it) }
         viewModel.output.observe(this) { sb ->
             binding.text1.text = sb.toString()
-            if (logVisible) binding.scrollView.post {
-                binding.scrollView.scrollTo(0, binding.scrollView.bottom)
+            if (logVisible) {
+                binding.scrollView.post {
+                    binding.scrollView.scrollTo(0, binding.scrollView.bottom)
+                }
             }
             if (sb.toString().contains(getString(R.string.starter_service_started))) {
                 HapticUtils.success(binding.root)
@@ -439,6 +451,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     /** One-tap assistant-acknowledgement budget: fall back to manual if nothing comes back. */
     private companion object {
         const val AUTO_ACK_TIMEOUT_MS = 30_000L
+
         // How many times the flow re-sends the auto-pairing / auto-enable broadcast before
         // falling back to manual. The pairing assistant may have just been enabled (its receiver
         // not bound yet) so the first broadcast can be silently dropped (k2013 one-tap flow-fix).
@@ -544,9 +557,13 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         wirelessAutoRetries = 0
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
-            if (root) runRootFlow()
-            else if (isSystem) runSystemFlow()
-            else runAdbFlow(port)
+            if (root) {
+                runRootFlow()
+            } else if (isSystem) {
+                runSystemFlow()
+            } else {
+                runAdbFlow(port)
+            }
         }
     }
 
@@ -558,9 +575,13 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         flowJob?.cancel()
         flowJob = viewModelScope.launch {
             val last = lastStart ?: return@launch
-            if (last.first) runRootFlow()
-            else if (last.second) runSystemFlow()
-            else runAdbFlow(last.third)
+            if (last.first) {
+                runRootFlow()
+            } else if (last.second) {
+                runSystemFlow()
+            } else {
+                runAdbFlow(last.third)
+            }
         }
     }
 
@@ -575,7 +596,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         if (!waitingForPairing) return
         waitingForPairing = false
         if (autoPairingMode) {
-            updateStep("one_tap_pairing", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_pairing_done))
+            updateStep(
+                "one_tap_pairing",
+                StepStatus.COMPLETED,
+                appContext.getString(R.string.one_tap_step_pairing_done)
+            )
             if (port in 1..65535) {
                 viewModelScope.launch { startOneTapService(port) }
             }
@@ -592,7 +617,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun fallbackToManualPairing() {
         if (!waitingForPairing) return
         if (autoPairingMode) {
-            updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_manual))
+            updateStep(
+                "one_tap_pairing",
+                StepStatus.RUNNING,
+                appContext.getString(R.string.one_tap_step_pairing_manual)
+            )
             val list = _steps.value?.toMutableList() ?: return
             val index = list.indexOfFirst { it.id == "one_tap_pairing" }
             if (index >= 0) {
@@ -675,8 +704,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun fallbackToManualWireless() {
         if (!waitingForWireless) return
         if (autoPairingMode) {
-            val hint = if (isWifiConnected()) R.string.one_tap_step_wireless_manual
-                       else R.string.one_tap_step_wireless_need_wifi
+            val hint = if (isWifiConnected()) {
+                R.string.one_tap_step_wireless_manual
+            } else {
+                R.string.one_tap_step_wireless_need_wifi
+            }
             updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(hint))
             val list = _steps.value?.toMutableList() ?: return
             val index = list.indexOfFirst { it.id == "one_tap_wireless" }
@@ -686,8 +718,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }
             return
         }
-        val hint = if (isWifiConnected()) R.string.starter_step_enable_wireless_hint
-                   else R.string.starter_step_enable_wireless_need_wifi
+        val hint = if (isWifiConnected()) {
+            R.string.starter_step_enable_wireless_hint
+        } else {
+            R.string.starter_step_enable_wireless_need_wifi
+        }
         updateStep("enable_wireless", StepStatus.RUNNING, appContext.getString(hint))
         val list = _steps.value?.toMutableList() ?: return
         val index = list.indexOfFirst { it.id == "enable_wireless" }
@@ -705,8 +740,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      */
     private fun promptWirelessNeedsWifi(stepId: String) {
         if (!waitingForWireless) return
-        val res = if (autoPairingMode) R.string.one_tap_step_wireless_need_wifi
-                  else R.string.starter_step_enable_wireless_need_wifi
+        val res = if (autoPairingMode) {
+            R.string.one_tap_step_wireless_need_wifi
+        } else {
+            R.string.starter_step_enable_wireless_need_wifi
+        }
         updateStep(stepId, StepStatus.RUNNING, appContext.getString(res))
         val list = _steps.value?.toMutableList() ?: return
         val index = list.indexOfFirst { it.id == stepId }
@@ -721,7 +759,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         if (!waitingForWireless) return
         waitingForWireless = false
         if (autoPairingMode) {
-            updateStep("one_tap_wireless", StepStatus.COMPLETED, appContext.getString(R.string.one_tap_step_wireless_done))
+            updateStep(
+                "one_tap_wireless",
+                StepStatus.COMPLETED,
+                appContext.getString(R.string.one_tap_step_wireless_done)
+            )
             viewModelScope.launch { continueOneTapFlow(null) }
             return
         }
@@ -767,13 +809,16 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 val ownerErr = DeviceOwnerHelper.enableWirelessDebugging(appContext)
                 if (ownerErr.isEmpty()) {
                     ownerEnableAttempts++
-                    insertStep(0, StarterStep(
-                        "enable_wireless",
-                        R.string.starter_step_enable_wireless,
-                        StepStatus.COMPLETED,
-                        appContext.getString(R.string.starter_step_enable_wireless_owner_auto),
-                        needsUserAction = false
-                    ))
+                    insertStep(
+                        0,
+                        StarterStep(
+                            "enable_wireless",
+                            R.string.starter_step_enable_wireless,
+                            StepStatus.COMPLETED,
+                            appContext.getString(R.string.starter_step_enable_wireless_owner_auto),
+                            needsUserAction = false
+                        )
+                    )
                     delay(1500)
                     continueAfterSetup()
                     return
@@ -782,16 +827,22 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }
             val autoWireless = autoPairingMode && appContext.isPairingAssistantEnabled() &&
                 appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
-            insertStep(0, StarterStep(
-                "enable_wireless",
-                R.string.starter_step_enable_wireless,
-                StepStatus.RUNNING,
-                appContext.getString(
-                    if (autoWireless) R.string.starter_step_enable_wireless_auto_hint
-                    else R.string.starter_step_enable_wireless_hint
-                ),
-                needsUserAction = !autoWireless
-            ))
+            insertStep(
+                0,
+                StarterStep(
+                    "enable_wireless",
+                    R.string.starter_step_enable_wireless,
+                    StepStatus.RUNNING,
+                    appContext.getString(
+                        if (autoWireless) {
+                            R.string.starter_step_enable_wireless_auto_hint
+                        } else {
+                            R.string.starter_step_enable_wireless_hint
+                        }
+                    ),
+                    needsUserAction = !autoWireless
+                )
+            )
             if (autoWireless) {
                 if (isWifiConnected()) {
                     sendAutoEnableWirelessRequest()
@@ -807,7 +858,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         updateStep("detect_port", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_port_found, port))
 
         // Step 2: check pairing.
-        updateStep("detect_pairing", StepStatus.RUNNING, appContext.getString(R.string.starter_step_detect_pairing_running))
+        updateStep(
+            "detect_pairing",
+            StepStatus.RUNNING,
+            appContext.getString(R.string.starter_step_detect_pairing_running)
+        )
         if (!paired) {
             updateStep("detect_pairing", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_need_pairing))
             waitingForPairing = true
@@ -815,22 +870,28 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             if (autoPairing) {
                 // One-tap: the pairing assistant navigates to wireless debugging, clicks the
                 // pairing button and pairs by itself; the step just shows progress.
-                insertStep(2, StarterStep(
-                    "pairing",
-                    R.string.starter_step_pairing,
-                    StepStatus.RUNNING,
-                    appContext.getString(R.string.starter_step_auto_pairing_hint),
-                    needsUserAction = false
-                ))
+                insertStep(
+                    2,
+                    StarterStep(
+                        "pairing",
+                        R.string.starter_step_pairing,
+                        StepStatus.RUNNING,
+                        appContext.getString(R.string.starter_step_auto_pairing_hint),
+                        needsUserAction = false
+                    )
+                )
                 sendAutoPairingRequest()
             } else {
-                insertStep(2, StarterStep(
-                    "pairing",
-                    R.string.starter_step_pairing,
-                    StepStatus.RUNNING,
-                    appContext.getString(R.string.starter_step_pairing_hint),
-                    needsUserAction = true
-                ))
+                insertStep(
+                    2,
+                    StarterStep(
+                        "pairing",
+                        R.string.starter_step_pairing,
+                        StepStatus.RUNNING,
+                        appContext.getString(R.string.starter_step_pairing_hint),
+                        needsUserAction = true
+                    )
+                )
                 startPairingService()
             }
             return
@@ -881,7 +942,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         // No WRITE_SECURE_SETTINGS and not Device Owner: canArm=false leaves the flow stuck on
         // "正在自动开启无线调试…" forever with nobody flipping the switch — the "无法激活" case.
         // Mirror the pairing-assistant timeout fallback: switch the step to a manual instruction.
-        Timber.tag("StarterActivity").w("Cannot auto-enable wireless debugging (no WRITE_SECURE_SETTINGS / not DO); falling back to manual")
+        Timber.tag(
+            "StarterActivity"
+        ).w("Cannot auto-enable wireless debugging (no WRITE_SECURE_SETTINGS / not DO); falling back to manual")
         fallbackToManualWireless()
     }
 
@@ -898,7 +961,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
      */
     private suspend fun detectPort(intentPort: Int?): Pair<Int, Boolean>? {
         // intentPort 连不上时不能直接失败：它很可能来自 on_device_adb_tcp 残留的 5555
-        //（adbd 停在明文模式而 key 未授权，或已被切到无线调试 TLS 模式），必须继续向下
+        // （adbd 停在明文模式而 key 未授权，或已被切到无线调试 TLS 模式），必须继续向下
         // 探测而不是把 (port, false) 直接抛给启动流程。
         if (intentPort != null && intentPort in 1..65535 && canConnect(intentPort)) {
             return Pair(intentPort, true)
@@ -922,7 +985,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         // 授权（无线调试配对 key 不通用）→ canConnect 失败；随后 mDNS 本机自发现又常
         // 不可靠 → 一键激活失败。这里清理该残留并让 adbd 回到无线调试状态，再走 mDNS。
         if (EnvironmentUtils.getAdbTcpPort() in 1..65535) {
-            Timber.tag("StarterActivity").i("on_device_adb_tcp active but unreachable; clearing it to restore wireless debugging")
+            Timber.tag(
+                "StarterActivity"
+            ).i("on_device_adb_tcp active but unreachable; clearing it to restore wireless debugging")
             withContext(Dispatchers.IO) {
                 runCatching { af.shizuku.manager.service.AdbProxyService.disableAdbTcp() }
             }
@@ -1026,7 +1091,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_running))
         val detection = detectPort(intentPort)
         if (detection == null) {
-            updateStep("one_tap_wireless", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_wireless_auto))
+            updateStep(
+                "one_tap_wireless",
+                StepStatus.RUNNING,
+                appContext.getString(R.string.one_tap_step_wireless_auto)
+            )
             waitingForWireless = true
             // Device Owner: write Settings.Global directly — no switch click, no Wi-Fi needed
             // (HyperOS disables the switch without a connected network; the write does not care).
@@ -1067,13 +1136,21 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
         // Step 2: device paired?
         if (!paired) {
-            updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_running))
+            updateStep(
+                "one_tap_pairing",
+                StepStatus.RUNNING,
+                appContext.getString(R.string.one_tap_step_pairing_running)
+            )
             waitingForPairing = true
             if (appContext.isPairingAssistantEnabled()) {
                 sendAutoPairingRequest()
             } else {
                 // Assistant off (e.g. user turned it off mid-flight): fall back to manual.
-                updateStep("one_tap_pairing", StepStatus.RUNNING, appContext.getString(R.string.one_tap_step_pairing_manual))
+                updateStep(
+                    "one_tap_pairing",
+                    StepStatus.RUNNING,
+                    appContext.getString(R.string.one_tap_step_pairing_manual)
+                )
                 val list = _steps.value?.toMutableList() ?: return
                 val index = list.indexOfFirst { it.id == "one_tap_pairing" }
                 if (index >= 0) {
@@ -1136,7 +1213,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             delay(3000)
             val redetected = detectPort(null)
             if (redetected != null) {
-                Timber.tag("StarterActivity").w(e, "Port $port failed; retrying with redetected port ${redetected.first}")
+                Timber.tag(
+                    "StarterActivity"
+                ).w(e, "Port $port failed; retrying with redetected port ${redetected.first}")
                 updateStep("start_service", StepStatus.RUNNING, appContext.getString(R.string.starter_step_connecting))
                 try {
                     AdbStarter.startAdb(appContext, redetected.first) { log(it) }
@@ -1152,7 +1231,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
         }
-        updateStep("start_service", StepStatus.COMPLETED, appContext.getString(R.string.starter_step_start_service_done))
+        updateStep(
+            "start_service",
+            StepStatus.COMPLETED,
+            appContext.getString(R.string.starter_step_start_service_done)
+        )
 
         updateStep("wait_binder", StepStatus.RUNNING, appContext.getString(R.string.starter_step_wait_binder_running))
         try {
@@ -1203,8 +1286,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
         updateStep("check_root", StepStatus.RUNNING, appContext.getString(R.string.starter_step_check_root_running))
         val rooted = withContext(Dispatchers.IO) {
-            if (Shell.getShell().isRoot) true
-            else {
+            if (Shell.getShell().isRoot) {
+                true
+            } else {
                 Shell.getCachedShell()?.close()
                 Shell.getShell().isRoot
             }
@@ -1332,8 +1416,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 if (exitCode == 0) {
                     log("\n=== SU strategy succeeded: $strategyName ===\n")
                     ShizukuStateMachine.update()
-                    ActivityLogManager.log("Shizuku", appContext.packageName,
-                        "Service started via root (custom su: $suPath, strategy: $strategyName)")
+                    ActivityLogManager.log(
+                        "Shizuku",
+                        appContext.packageName,
+                        "Service started via root (custom su: $suPath, strategy: $strategyName)"
+                    )
                     return
                 }
                 lastError = Exception("Failed to start with root (exit $exitCode, strategy: $strategyName, su: $suPath)")
@@ -1376,8 +1463,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
                 val mIntent = Intent("com.sdet.fotaagent.intent.CP_FILE")
                 mIntent.putExtra("CP_FILE", "/data")
-                mIntent.putExtra("CP_LOC", "; " + appContext.applicationInfo.nativeLibraryDir
-                        + "/libshizuku.so" + "; am force-stop com.sdet.fotaagent")
+                mIntent.putExtra(
+                    "CP_LOC",
+                    "; " + appContext.applicationInfo.nativeLibraryDir +
+                        "/libshizuku.so" + "; am force-stop com.sdet.fotaagent"
+                )
                 kotlinx.coroutines.delay(1000)
                 appContext.sendBroadcast(mIntent)
                 log("FOTA command broadcast sent!\n\n")

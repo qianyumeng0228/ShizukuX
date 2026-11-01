@@ -67,7 +67,7 @@ public class ShizukuConfigManager extends ConfigManager {
             if (parent != null && parent.exists() && parent.canWrite()) {
                 return shellFile;
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) { LOGGER.w(t, "Config parent dir check failed, falling back to /data/local/tmp"); }
         return new File("/data/local/tmp/shizuku.json");
     }
 

@@ -1,6 +1,11 @@
 package af.shizuku.manager.backup
 
+import af.shizuku.manager.utils.ShizukuStateMachine
 import android.app.Application
+import android.content.ContentResolver
+import android.net.Uri
+import android.os.ParcelFileDescriptor
+import android.provider.DocumentsContract
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -11,12 +16,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import rikka.shizuku.ShizukuXAPI
-import af.shizuku.manager.utils.ShizukuStateMachine
 import timber.log.Timber
-import android.content.ContentResolver
-import android.net.Uri
-import android.os.ParcelFileDescriptor
-import android.provider.DocumentsContract
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -62,7 +62,8 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<UiState>(UiState.Loading)
     val state: StateFlow<UiState> = _state
 
-    private val _events = MutableSharedFlow<BackupEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    private val _events =
+        MutableSharedFlow<BackupEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val events: SharedFlow<BackupEvent> = _events
 
     // Packages currently being backed up — drives per-row busy state in the adapter.
@@ -88,8 +89,11 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     private fun applyFilter() {
         if (allApps.isEmpty()) return
         val q = _query.value.trim().lowercase()
-        val filtered = if (q.isEmpty()) allApps
-        else allApps.filter { it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q) }
+        val filtered = if (q.isEmpty()) {
+            allApps
+        } else {
+            allApps.filter { it.label.lowercase().contains(q) || it.packageName.lowercase().contains(q) }
+        }
         _state.value = UiState.Loaded(filtered)
     }
 
@@ -164,23 +168,26 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     Timber.w(e, "streamDataDir failed for $pkg")
                     null
                 }
-                if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr))
+                if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr)) {
                     backedUpSomething = true
+                }
 
                 val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (e: Exception) {
                     Timber.w(e, "backupExternalData failed for $pkg")
                     null
                 }
-                if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr))
+                if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr)) {
                     backedUpSomething = true
+                }
 
                 // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
                 val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (e: Exception) {
                     Timber.w(e, "backupObbData failed for $pkg")
                     null
                 }
-                if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr))
+                if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr)) {
                     backedUpSomething = true
+                }
 
                 if (backedUpSomething) {
                     val outputDesc = if (safTreeUri != null) {
@@ -278,21 +285,29 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
     ): Boolean {
         if (safTreeUri != null) {
             val treeDocUri = DocumentsContract.buildDocumentUriUsingTree(
-                safTreeUri, DocumentsContract.getTreeDocumentId(safTreeUri)
+                safTreeUri,
+                DocumentsContract.getTreeDocumentId(safTreeUri)
             )
             // Try to reuse an existing per-package subdirectory (query first), then create if
             // absent. Some providers (e.g. Downloads) don't support MIME_TYPE_DIR and return
             // null — fall back to a flat "{pkg}_{file}" name.
             val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
-                safTreeUri, DocumentsContract.getTreeDocumentId(safTreeUri))
+                safTreeUri,
+                DocumentsContract.getTreeDocumentId(safTreeUri)
+            )
             val existingId = try { queryForDocument(childrenUri, cr, pkg) } catch (_: Exception) { null }
             val parentUri = if (existingId != null) {
                 DocumentsContract.buildDocumentUriUsingTree(safTreeUri, existingId)
-            } else try {
-                DocumentsContract.createDocument(
-                    cr, treeDocUri, DocumentsContract.Document.MIME_TYPE_DIR, pkg
-                )
-            } catch (_: Exception) { null }
+            } else {
+                try {
+                    DocumentsContract.createDocument(
+                        cr,
+                        treeDocUri,
+                        DocumentsContract.Document.MIME_TYPE_DIR,
+                        pkg
+                    )
+                } catch (_: Exception) { null }
+            }
 
             val (targetUri, targetName) = if (parentUri != null) {
                 parentUri to fileName
@@ -369,21 +384,39 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
                     var backedUpSomething = false
                     val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
-                    if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr))
+                    if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr)) {
                         backedUpSomething = true
-                    val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
-                    if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr))
+                    }
+                    val extPfd = try {
+                        ShizukuXAPI.BackupRestoreExtra.backupExternalData(
+                            pkg
+                        )
+                    } catch (_: Exception) { null }
+                    if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr)) {
                         backedUpSomething = true
+                    }
                     // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
                     val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
-                    if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr))
+                    if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr)) {
                         backedUpSomething = true
+                    }
                     if (backedUpSomething) succeeded++ else failed++
                 } catch (e: Exception) {
                     Timber.e(e, "Batch backup failed for $pkg")
                     failed++
                 } finally {
-                    if (prepared) try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (_: Exception) {}
+                    if (prepared) {
+                        try {
+                            ShizukuXAPI.ApkPatcher.restoreOriginal(
+                                pkg
+                            )
+                        } catch (e: Exception) {
+                            Timber.e(
+                                e,
+                                "restoreOriginal failed for $pkg (post-backup cleanup)"
+                            )
+                        }
+                    }
                     _busyPackages.value = _busyPackages.value - pkg
                 }
             }
@@ -408,7 +441,12 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      *
      * Returns the timestamp string if at least one component was backed up, or null on failure.
      */
-    private fun backupPreRestore(pkg: String, safTreeUri: android.net.Uri, cr: android.content.ContentResolver, requireInternal: Boolean = false): String? {
+    private fun backupPreRestore(
+        pkg: String,
+        safTreeUri: android.net.Uri,
+        cr: android.content.ContentResolver,
+        requireInternal: Boolean = false
+    ): String? {
         val timestamp = PreRestoreManager.generateTimestamp()
         val dataName = PreRestoreManager.getSnapshotFileName("data", timestamp)
         val extName = PreRestoreManager.getSnapshotFileName("external", timestamp)
@@ -416,16 +454,22 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         var internalBackedUp = false
         // Force-stop the app before snapshot to ensure a consistent tar state
         // (avoids capturing half-written files from a foreground-running app).
-        try { ShizukuXAPI.BackupRestoreExtra.forceStop(pkg) } catch (_: Exception) {}
+        try {
+            ShizukuXAPI.BackupRestoreExtra.forceStop(
+                pkg
+            )
+        } catch (e: Exception) { Timber.w(e, "forceStop failed for $pkg (pre-restore snapshot)") }
         // Internal data (requires app debuggable — caller must prepareTempDebug first)
         val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
         if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, null, pkg, dataName, cr)) {
-            backedUpSomething = true; internalBackedUp = true
+            backedUpSomething = true
+            internalBackedUp = true
         }
         // External data (shell-level, no debuggable required)
         val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
-        if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, null, pkg, extName, cr))
+        if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, null, pkg, extName, cr)) {
             backedUpSomething = true
+        }
         if (backedUpSomething && (!requireInternal || internalBackedUp)) {
             PreRestoreManager.recordSnapshot(getApplication(), pkg, timestamp, safTreeUri, cr)
             return timestamp
@@ -457,10 +501,16 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         val cr = getApplication<Application>().contentResolver
         var prepared = false
         // Determine source file names: normal restore uses data.tar.gz, rollback uses snapshot
-        val dataFileName = if (snapshotTimestamp != null)
-            PreRestoreManager.getSnapshotFileName("data", snapshotTimestamp) else "data.tar.gz"
-        val extFileName = if (snapshotTimestamp != null)
-            PreRestoreManager.getSnapshotFileName("external", snapshotTimestamp) else "external.tar.gz"
+        val dataFileName = if (snapshotTimestamp != null) {
+            PreRestoreManager.getSnapshotFileName("data", snapshotTimestamp)
+        } else {
+            "data.tar.gz"
+        }
+        val extFileName = if (snapshotTimestamp != null) {
+            PreRestoreManager.getSnapshotFileName("external", snapshotTimestamp)
+        } else {
+            "external.tar.gz"
+        }
         return try {
             // Make app debuggable so run-as can access /data/data/<pkg>/
             prepared = try {
@@ -472,7 +522,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 val preRestoreTs = backupPreRestore(pkg, safTreeUri, cr, requireInternal = includeInternal)
                 if (preRestoreTs == null) {
                     Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
-                    recordRestoreHistory(entry, includeInternal, success = false, isRollback = false, snapshotTimestamp = null)
+                    recordRestoreHistory(
+                        entry,
+                        includeInternal,
+                        success = false,
+                        isRollback = false,
+                        snapshotTimestamp = null
+                    )
                     return@restoreAppData false
                 }
             }
@@ -484,12 +540,24 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 ShizukuXAPI.BackupRestoreExtra.clearAppData(pkg)
             } catch (e: Exception) {
                 Timber.w(e, "clearAppData failed for $pkg — aborting restore to avoid mixed writes")
-                recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
+                recordRestoreHistory(
+                    entry,
+                    includeInternal,
+                    success = false,
+                    isRollback = isRollback,
+                    snapshotTimestamp = snapshotTimestamp
+                )
                 return@restoreAppData false
             }
             if (!cleared) {
                 Timber.w("clearAppData returned false for $pkg — aborting restore")
-                recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
+                recordRestoreHistory(
+                    entry,
+                    includeInternal,
+                    success = false,
+                    isRollback = isRollback,
+                    snapshotTimestamp = snapshotTimestamp
+                )
                 return@restoreAppData false
             }
 
@@ -523,28 +591,46 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             restoredSomething
         } catch (e: Exception) {
             Timber.e(e, "Restore failed for $pkg")
-            recordRestoreHistory(entry, includeInternal, success = false, isRollback = isRollback, snapshotTimestamp = snapshotTimestamp)
+            recordRestoreHistory(
+                entry,
+                includeInternal,
+                success = false,
+                isRollback = isRollback,
+                snapshotTimestamp = snapshotTimestamp
+            )
             false
         } finally {
-            if (prepared) try { ShizukuXAPI.ApkPatcher.restoreOriginal(pkg) } catch (_: Exception) {}
+            if (prepared) {
+                try {
+                    ShizukuXAPI.ApkPatcher.restoreOriginal(
+                        pkg
+                    )
+                } catch (e: Exception) { Timber.e(e, "restoreOriginal failed for $pkg (post-restore cleanup)") }
+            }
         }
     }
 
     private fun recordRestoreHistory(
-        entry: AppEntry, includeInternal: Boolean, success: Boolean,
-        isRollback: Boolean, snapshotTimestamp: String?
+        entry: AppEntry,
+        includeInternal: Boolean,
+        success: Boolean,
+        isRollback: Boolean,
+        snapshotTimestamp: String?
     ) {
         val scope = if (includeInternal) "both" else "external"
-        RestoreHistoryManager.addEntry(getApplication(), RestoreHistoryManager.Entry(
-            id = java.util.UUID.randomUUID().toString(),
-            timestamp = System.currentTimeMillis(),
-            packageName = entry.packageName,
-            appLabel = entry.label,
-            scope = scope,
-            success = success,
-            isRollback = isRollback,
-            snapshotTimestamp = snapshotTimestamp
-        ))
+        RestoreHistoryManager.addEntry(
+            getApplication(),
+            RestoreHistoryManager.Entry(
+                id = java.util.UUID.randomUUID().toString(),
+                timestamp = System.currentTimeMillis(),
+                packageName = entry.packageName,
+                appLabel = entry.label,
+                scope = scope,
+                success = success,
+                isRollback = isRollback,
+                snapshotTimestamp = snapshotTimestamp
+            )
+        )
     }
 
     /**
@@ -554,7 +640,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      * would drown the user and overwrite lastRestoredPkg in the Activity.
      * Clears app data before restore to ensure clean state.
      */
-    fun restoreAll(entries: List<AppEntry>, safTreeUri: android.net.Uri, includeInternal: Boolean = true, snapshotTimestamp: String? = null, isRollback: Boolean = false) {
+    fun restoreAll(
+        entries: List<AppEntry>,
+        safTreeUri: android.net.Uri,
+        includeInternal: Boolean = true,
+        snapshotTimestamp: String? = null,
+        isRollback: Boolean = false
+    ) {
         if (_batchRunning.value) return
         if (entries.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
@@ -591,7 +683,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      * of the SAF tree. Returns the document Uri, or null if not found.
      */
     private fun findBackupFile(
-        safTreeUri: android.net.Uri, pkg: String, fileName: String,
+        safTreeUri: android.net.Uri,
+        pkg: String,
+        fileName: String,
         cr: android.content.ContentResolver
     ): android.net.Uri? {
         return try {
@@ -600,7 +694,10 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             // First try to find the package subdirectory
             val pkgDirId = queryForDocument(childrenUri, cr, pkg)
             if (pkgDirId != null) {
-                val pkgChildrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(safTreeUri, pkgDirId)
+                val pkgChildrenUri = android.provider.DocumentsContract.buildChildDocumentsUriUsingTree(
+                    safTreeUri,
+                    pkgDirId
+                )
                 val fileId = queryForDocument(pkgChildrenUri, cr, fileName)
                 if (fileId != null) {
                     return android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, fileId)
@@ -610,14 +707,18 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             val flatId = queryForDocument(childrenUri, cr, "${pkg}_$fileName")
             if (flatId != null) {
                 android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, flatId)
-            } else null
+            } else {
+                null
+            }
         } catch (_: Exception) {
             null
         }
     }
 
     private fun queryForDocument(
-        childrenUri: android.net.Uri, cr: android.content.ContentResolver, displayName: String
+        childrenUri: android.net.Uri,
+        cr: android.content.ContentResolver,
+        displayName: String
     ): String? {
         val projection = arrayOf(
             android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,

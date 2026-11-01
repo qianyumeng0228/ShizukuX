@@ -1,5 +1,7 @@
 package rikka.shizuku.server
 
+import af.shizuku.common.compat.InstalledPackagesCompat
+import af.shizuku.server.IBackupRestoreExtra
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
@@ -7,8 +9,6 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.os.ServiceManager
 import android.util.Log
-import af.shizuku.common.compat.InstalledPackagesCompat
-import af.shizuku.server.IBackupRestoreExtra
 import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
@@ -66,8 +66,20 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     // fill its stderr/stdout pipe buffer and deadlock the copy we actually care about.
     private fun drainQuietly(stream: InputStream) {
         Thread {
-            try { stream.use { val buf = ByteArray(4096); while (it.read(buf) >= 0) { /* discard */ } } }
-            catch (_: Exception) {}
+            try {
+                stream.use {
+                    val buf = ByteArray(
+                        4096
+                    );
+                    while (it.read(buf) >= 0) { /* discard */ }
+                }
+            } catch (e: Exception) {
+                Log.w(
+                    TAG,
+                    "drainQuietly failed",
+                    e
+                )
+            }
         }.also { it.isDaemon = true }.start()
     }
 
@@ -133,15 +145,24 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
                             putInt("uid", ai?.uid ?: -1)
                             putInt("targetSdk", ai?.targetSdkVersion ?: -1)
                             putBoolean("isSystem", flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0)
-                            putBoolean("isDebuggable", flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0)
-                            putBoolean("allowBackup", flags and android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP != 0)
+                            putBoolean(
+                                "isDebuggable",
+                                flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE != 0
+                            )
+                            putBoolean(
+                                "allowBackup",
+                                flags and android.content.pm.ApplicationInfo.FLAG_ALLOW_BACKUP != 0
+                            )
                             putBoolean("isFrozen", ai?.enabled == false)
                             // App display name via the server's (shell-uid, all-packages-visible) PackageManager;
                             // loadLabel falls back inside to pm.getApplicationLabel, and any failure
                             // (unresolvable resources, null pm) falls back to the package name.
-                            putString("label", ai?.let { a ->
-                                runCatching { packageManager?.let { a.loadLabel(it) }?.toString() }.getOrNull()
-                            } ?: pi.packageName)
+                            putString(
+                                "label",
+                                ai?.let { a ->
+                                    runCatching { packageManager?.let { a.loadLabel(it) }?.toString() }.getOrNull()
+                                } ?: pi.packageName
+                            )
                         }
                     }
             }
@@ -153,10 +174,11 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             exec("pm", "list", "packages", "-d").lines()
                 .map { it.removePrefix("package:").trim() }.toHashSet()
         } catch (_: Exception) { emptySet<String>() }
-        val args = if (includeSystem)
+        val args = if (includeSystem) {
             arrayOf("pm", "list", "packages", "-f", "--show-versioncode")
-        else
+        } else {
             arrayOf("pm", "list", "packages", "-f", "--show-versioncode", "-3")
+        }
         val output = exec(*args)
         val result = mutableListOf<Bundle>()
         for (line in output.lines()) {
@@ -169,15 +191,20 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             val packageName = parts[0]
             val versionCode = parts.find { it.startsWith("versionCode:") }
                 ?.removePrefix("versionCode:")?.toLongOrNull() ?: -1L
-            result.add(Bundle().apply {
-                putString("packageName", packageName)
-                putString("versionName", "")
-                putLong("versionCode", versionCode)
-                putString("sourceDir", apkPath)
-                putBoolean("isSystem", apkPath.startsWith("/system/") || apkPath.startsWith("/product/") || apkPath.startsWith("/vendor/"))
-                putBoolean("allowBackup", true)
-                putBoolean("isFrozen", packageName in disabledPkgs)
-            })
+            result.add(
+                Bundle().apply {
+                    putString("packageName", packageName)
+                    putString("versionName", "")
+                    putLong("versionCode", versionCode)
+                    putString("sourceDir", apkPath)
+                    putBoolean(
+                        "isSystem",
+                        apkPath.startsWith("/system/") || apkPath.startsWith("/product/") || apkPath.startsWith("/vendor/")
+                    )
+                    putBoolean("allowBackup", true)
+                    putBoolean("isFrozen", packageName in disabledPkgs)
+                }
+            )
         }
         return result
     }
@@ -235,7 +262,12 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
             // IPackageDataObserver: onRemoveCompleted(String packageName, boolean succeeded) at FIRST_CALL_TRANSACTION.
             val observer = object : Binder() {
                 init { attachInterface(null, "android.content.pm.IPackageDataObserver") }
-                override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+                override fun onTransact(
+                    code: Int,
+                    data: android.os.Parcel,
+                    reply: android.os.Parcel?,
+                    flags: Int
+                ): Boolean {
                     return when (code) {
                         IBinder.FIRST_CALL_TRANSACTION -> {
                             data.enforceInterface("android.content.pm.IPackageDataObserver")
@@ -391,10 +423,17 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         for (line in output.lines()) {
             val t = line.trim()
             when {
-                t == "requested permissions:" -> { inRequested = true; inGranted = false }
-                t == "install permissions:" -> { inRequested = false; inGranted = false }
+                t == "requested permissions:" -> {
+                    inRequested = true;
+                    inGranted = false
+                }
+                t == "install permissions:" -> {
+                    inRequested = false;
+                    inGranted = false
+                }
                 t == "runtime permissions:" || t == "granted permissions:" -> {
-                    inRequested = false; inGranted = true
+                    inRequested = false;
+                    inGranted = true
                 }
                 inRequested && t.startsWith("android.permission.") -> allRuntime.add(t)
                 inRequested && t.contains(".permission.") -> allRuntime.add(t)
@@ -549,16 +588,28 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         for (line in dump.lines()) {
             val t = line.trim()
             when {
-                t.startsWith("userId=")           -> b.putInt("uid", t.removePrefix("userId=").trim().toIntOrNull() ?: -1)
-                t.startsWith("versionName=")       -> b.putString("versionName", t.removePrefix("versionName=").trim())
-                t.startsWith("dataDir=")           -> b.putString("dataDir", t.removePrefix("dataDir=").trim())
-                t.startsWith("nativeLibraryDir=")  -> b.putString("nativeLibDir", t.removePrefix("nativeLibraryDir=").trim())
-                t.startsWith("firstInstallTime=")  -> b.putString("firstInstallTime", t.removePrefix("firstInstallTime=").trim())
-                t.startsWith("lastUpdateTime=")    -> b.putString("lastUpdateTime", t.removePrefix("lastUpdateTime=").trim())
+                t.startsWith(
+                    "userId="
+                ) -> b.putInt("uid", t.removePrefix("userId=").trim().toIntOrNull() ?: -1)
+                t.startsWith("versionName=") -> b.putString("versionName", t.removePrefix("versionName=").trim())
+                t.startsWith("dataDir=") -> b.putString("dataDir", t.removePrefix("dataDir=").trim())
+                t.startsWith(
+                    "nativeLibraryDir="
+                ) -> b.putString("nativeLibDir", t.removePrefix("nativeLibraryDir=").trim())
+                t.startsWith(
+                    "firstInstallTime="
+                ) -> b.putString("firstInstallTime", t.removePrefix("firstInstallTime=").trim())
+                t.startsWith(
+                    "lastUpdateTime="
+                ) -> b.putString("lastUpdateTime", t.removePrefix("lastUpdateTime=").trim())
                 t.startsWith("versionCode=") || t.contains("versionCode=") -> {
                     // "versionCode=1234 minSdk=21 targetSdk=33"
-                    Regex("versionCode=(\\d+)").find(t)?.groupValues?.get(1)?.toLongOrNull()?.let { b.putLong("versionCode", it) }
-                    Regex("targetSdk=(\\d+)").find(t)?.groupValues?.get(1)?.toIntOrNull()?.let { b.putInt("targetSdk", it) }
+                    Regex(
+                        "versionCode=(\\d+)"
+                    ).find(t)?.groupValues?.get(1)?.toLongOrNull()?.let { b.putLong("versionCode", it) }
+                    Regex(
+                        "targetSdk=(\\d+)"
+                    ).find(t)?.groupValues?.get(1)?.toIntOrNull()?.let { b.putInt("targetSdk", it) }
                     Regex("minSdk=(\\d+)").find(t)?.groupValues?.get(1)?.toIntOrNull()?.let { b.putInt("minSdk", it) }
                 }
                 t.startsWith("pkgFlags=") || t.startsWith("flags=") -> {
@@ -607,14 +658,14 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     override fun freezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
         val ok = ShellExecutor.execCode("pm", "disable-user", "--user", "0", packageName) == 0
-        if (ok) frozenCache = null   // state changed → drop frozen-package cache
+        if (ok) frozenCache = null // state changed → drop frozen-package cache
         return ok
     }
 
     override fun unfreezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
         val ok = ShellExecutor.execCode("pm", "enable", "--user", "0", packageName) == 0
-        if (ok) frozenCache = null   // state changed → drop frozen-package cache
+        if (ok) frozenCache = null // state changed → drop frozen-package cache
         return ok
     }
 
@@ -624,6 +675,7 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
     // callers land within the window). Semantics identical to the old pm dump parse:
     // disabled = enabled state DISABLED(2)/DISABLED_USER(3) — exactly what `pm list -d` reports.
     @Volatile private var frozenCache: Set<String>? = null
+
     @Volatile private var frozenCacheTime: Long = 0L
     private val frozenCacheTtlMs = 15_000L
 
@@ -654,10 +706,10 @@ class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
         var count = 0
         for (msg in messages) {
             val address = msg.getString("address") ?: continue
-            val body    = msg.getString("body") ?: continue
-            val date    = msg.getLong("date", System.currentTimeMillis())
-            val type    = msg.getInt("type", 1)
-            val read    = msg.getInt("read", 1)
+            val body = msg.getString("body") ?: continue
+            val date = msg.getLong("date", System.currentTimeMillis())
+            val type = msg.getInt("type", 1)
+            val read = msg.getInt("read", 1)
             val result = ShellExecutor.execCode(
                 "content", "insert",
                 "--uri", "content://sms",

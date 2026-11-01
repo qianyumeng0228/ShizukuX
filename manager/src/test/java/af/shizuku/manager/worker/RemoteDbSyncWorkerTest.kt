@@ -1,10 +1,10 @@
 package af.shizuku.manager.worker
 
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.database.AppContextManager
 import android.content.Context
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.utils.AppContextManager
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.mockk.every
@@ -14,7 +14,6 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import java.net.URL
-import timber.log.Timber
 
 class RemoteDbSyncWorkerTest : FunSpec({
 

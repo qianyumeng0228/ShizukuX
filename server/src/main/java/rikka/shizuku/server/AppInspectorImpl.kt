@@ -1,8 +1,9 @@
 package rikka.shizuku.server
 
+import af.shizuku.server.IAppInspector
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import af.shizuku.server.IAppInspector
+import android.util.Log
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.nio.file.Files
@@ -200,7 +201,7 @@ class AppInspectorImpl : IAppInspector.Stub() {
                     bundle.putInt(name, pid)
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) { Log.w("AppInspectorImpl", "Failed to enumerate running processes", e) }
         return bundle
     }
 }

@@ -1,16 +1,15 @@
 package af.shizuku.manager.settings
 
+import af.shizuku.manager.R
+import af.shizuku.manager.authorization.AuthorizationManager
 import android.content.Context
 import android.widget.Toast
-import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import rikka.shizuku.Shizuku
-import af.shizuku.manager.R
-import af.shizuku.manager.authorization.AuthorizationManager
 
 /**
  * External relay authorization for apps that do not declare Shizuku permissions themselves.
@@ -42,9 +41,9 @@ object SceneRelayManager {
     // same file and `cp` would abort with "cp: ... is the same file", leaving the daemon dead.
     private const val SCENE_DIR = "$TMP/scene"
     private const val UP_SCRIPT = "$SCENE_DIR/up.sh"
-    private const val DAEMON_BIN = "$SCENE_DIR/scene-daemon"   // origin (script dir)
+    private const val DAEMON_BIN = "$SCENE_DIR/scene-daemon" // origin (script dir)
     private const val BUSYBOX_BIN = "$SCENE_DIR/busybox"
-    private const val DAEMON_TARGET = "$TMP/scene-daemon"      // final resident location
+    private const val DAEMON_TARGET = "$TMP/scene-daemon" // final resident location
 
     /** Entry paths inside Scene's APK that carry the activation payload. The daemon's entry is
      *  resolved dynamically (its path changed across Scene versions); busybox still sits here. */
@@ -106,10 +105,16 @@ object SceneRelayManager {
                 val runningPid = queryDaemonPid()
                 if (runningPid.isNotEmpty()) {
                     if (!awaitDaemonListening()) {
-                        android.util.Log.w("SceneRelay", "daemon pid=$runningPid alive but 14754 not listening; restarting")
+                        android.util.Log.w(
+                            "SceneRelay",
+                            "daemon pid=$runningPid alive but 14754 not listening; restarting"
+                        )
                         var recovered = false
                         repeat(3) {
-                            if (restartDaemon()) { recovered = true; return@repeat }
+                            if (restartDaemon()) {
+                                recovered = true;
+                                return@repeat
+                            }
                             Thread.sleep(1000)
                         }
                         if (recovered) {
@@ -145,8 +150,11 @@ object SceneRelayManager {
                             context.getString(R.string.scene_relay_already_running, runningPid)
                         )
                         sb.append("\n").append(
-                            if (granted) context.getString(R.string.scene_relay_granted)
-                            else context.getString(R.string.scene_relay_grant_failed)
+                            if (granted) {
+                                context.getString(R.string.scene_relay_granted)
+                            } else {
+                                context.getString(R.string.scene_relay_grant_failed)
+                            }
                         )
                         showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
                     }
@@ -171,8 +179,11 @@ object SceneRelayManager {
                         )
                         sb.append("\n").append(prepareError)
                         sb.append("\n").append(
-                            if (granted) context.getString(R.string.scene_relay_granted)
-                            else context.getString(R.string.scene_relay_grant_failed)
+                            if (granted) {
+                                context.getString(R.string.scene_relay_granted)
+                            } else {
+                                context.getString(R.string.scene_relay_grant_failed)
+                            }
                         )
                         withContext(Dispatchers.Main) {
                             showResult(context, R.string.scene_relay_result_title, sb.toString(), silent)
@@ -222,7 +233,10 @@ object SceneRelayManager {
                     android.util.Log.w("SceneRelay", "daemon pid=$daemonPid up but 14754 not listening; bouncing")
                     var recovered = false
                     repeat(3) {
-                        if (restartDaemon()) { recovered = true; return@repeat }
+                        if (restartDaemon()) {
+                            recovered = true;
+                            return@repeat
+                        }
                         Thread.sleep(1000)
                     }
                     if (recovered) {
@@ -271,7 +285,11 @@ object SceneRelayManager {
                 android.util.Log.w("SceneRelay", "startSceneAdbActivation cancelled")
                 throw e
             } catch (e: Exception) {
-                android.util.Log.w("SceneRelay", "startSceneAdbActivation catch: ${e.javaClass.simpleName}: ${e.message}", e)
+                android.util.Log.w(
+                    "SceneRelay",
+                    "startSceneAdbActivation catch: ${e.javaClass.simpleName}: ${e.message}",
+                    e
+                )
                 withContext(Dispatchers.Main) {
                     showResult(
                         context,
@@ -354,7 +372,9 @@ object SceneRelayManager {
         //     daemon intact, otherwise one failed activation wipes the only usable chain
         //     and Scene stays dead. The old dir is parked aside and deleted only after the
         //     new chain is verified complete.
-        runShell("rm -rf ${SCENE_DIR}.old && mv -f $SCENE_DIR ${SCENE_DIR}.old 2>/dev/null; mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR")
+        runShell(
+            "rm -rf ${SCENE_DIR}.old && mv -f $SCENE_DIR ${SCENE_DIR}.old 2>/dev/null; mkdir -p $SCENE_DIR && chmod 777 $SCENE_DIR"
+        )
 
         // a3) Scene's own runtime artifacts take precedence. Newer Scene builds (N1 2026.09+)
         //     no longer bundle the daemon inside the APK — the app writes up.sh + daemon +
@@ -367,7 +387,9 @@ object SceneRelayManager {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: Scene official up.sh found: $externalUp")
             val extDir = externalUp.substringBeforeLast('/')
             // Mirror the daemon (any plausible native binary >1MB next to up.sh) into our dir.
-            val extDaemon = runShell("find \"$extDir\" -maxdepth 2 -type f -size +1M 2>/dev/null | grep -v busybox | head -1").trim()
+            val extDaemon = runShell(
+                "find \"$extDir\" -maxdepth 2 -type f -size +1M 2>/dev/null | grep -v busybox | head -1"
+            ).trim()
             if (extDaemon.isNotEmpty()) {
                 runShell("cp \"$extDaemon\" $DAEMON_BIN && chmod 777 $DAEMON_BIN")
             }
@@ -381,10 +403,16 @@ object SceneRelayManager {
             runShell("cp \"$externalUp\" $UP_SCRIPT && chmod 777 $UP_SCRIPT")
             val daemonBytes = runShell("wc -c < $DAEMON_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
             if (daemonBytes >= 1_000_000) {
-                android.util.Log.w("SceneRelay", "prepareActivationFiles: external artifacts ready (daemon=${daemonBytes}B)")
+                android.util.Log.w(
+                    "SceneRelay",
+                    "prepareActivationFiles: external artifacts ready (daemon=${daemonBytes}B)"
+                )
                 return null
             }
-            android.util.Log.w("SceneRelay", "prepareActivationFiles: external up.sh had no usable daemon (${daemonBytes}B); falling back to APK extraction")
+            android.util.Log.w(
+                "SceneRelay",
+                "prepareActivationFiles: external up.sh had no usable daemon (${daemonBytes}B); falling back to APK extraction"
+            )
         }
 
         // a4) APK extraction (older Scene builds bundle the daemon). Extraction runs on the
@@ -408,7 +436,10 @@ object SceneRelayManager {
         // c) Extract busybox from assets/toolkit/busybox.
         val extractedBusybox = extractFromApkViaZip(apk, BUSYBOX_APK_ENTRY, BUSYBOX_BIN)
         if (!extractedDaemon || !extractedBusybox) {
-            android.util.Log.w("SceneRelay", "prepareActivationFiles: java extract failed daemon=$extractedDaemon busybox=$extractedBusybox")
+            android.util.Log.w(
+                "SceneRelay",
+                "prepareActivationFiles: java extract failed daemon=$extractedDaemon busybox=$extractedBusybox"
+            )
             restoreOldChain()
             return context.getString(R.string.scene_relay_prepare_failed) + "\n\nextract daemon=$extractedDaemon busybox=$extractedBusybox"
         }
@@ -420,7 +451,10 @@ object SceneRelayManager {
         val daemonBytes = runShell("wc -c < $DAEMON_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
         val busyboxBytes = runShell("wc -c < $BUSYBOX_BIN 2>/dev/null").trim().toLongOrNull() ?: 0L
         if (daemonBytes < 1_000_000 || busyboxBytes < 500_000) {
-            android.util.Log.w("SceneRelay", "prepareActivationFiles: extract failed (daemon=${daemonBytes}B busybox=${busyboxBytes}B)")
+            android.util.Log.w(
+                "SceneRelay",
+                "prepareActivationFiles: extract failed (daemon=${daemonBytes}B busybox=${busyboxBytes}B)"
+            )
             restoreOldChain()
             return context.getString(R.string.scene_relay_prepare_failed) +
                 "\n\ndaemon=${daemonBytes}B busybox=${busyboxBytes}B (need daemon>=1MB, busybox>=500KB)"
@@ -436,12 +470,16 @@ object SceneRelayManager {
             return context.getString(R.string.scene_relay_prepare_failed)
         }
         try {
-            val w = Shizuku.newProcess(arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT 2>&1"), null, SCENE_DIR)
+            val w = Shizuku.newProcess(
+                arrayOf("sh", "-c", "cat > $UP_SCRIPT && chmod 777 $UP_SCRIPT 2>&1"),
+                null,
+                SCENE_DIR
+            )
             w.outputStream.write(upShContent.toByteArray(Charsets.UTF_8))
             w.outputStream.flush()
             w.outputStream.close()
             val wOut = w.inputStream.bufferedReader().use { it.readText() }
-            try { w.waitFor() } catch (e: Throwable) { /* exit code optional */ }
+            try { w.waitFor() } catch (ignored: Throwable) { /* exit code optional */ }
             android.util.Log.w("SceneRelay", "write up.sh: out=$wOut")
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: write up.sh failed: $e")
@@ -504,7 +542,10 @@ object SceneRelayManager {
                     if (!name.contains("daemon", ignoreCase = true)) continue
                     if (name.endsWith(".bak") || name.endsWith(".log") || name.endsWith(".txt") ||
                         name.endsWith(".md") || name.endsWith(".sh") || name.endsWith(".json") ||
-                        name.endsWith(".xml")) continue
+                        name.endsWith(".xml")
+                    ) {
+                        continue
+                    }
                     if (fallback == null) fallback = name
                     val size = e.size
                     if (size >= 1_000_000 && (best == null || size > best.second)) {
@@ -555,7 +596,9 @@ object SceneRelayManager {
                 return false
             }
             val p = Shizuku.newProcess(
-                arrayOf("sh", "-c", "cat > \"$target\" && chmod 777 \"$target\""), null, TMP
+                arrayOf("sh", "-c", "cat > \"$target\" && chmod 777 \"$target\""),
+                null,
+                TMP
             )
             p.outputStream.write(bytes)
             p.outputStream.flush()
@@ -603,17 +646,20 @@ object SceneRelayManager {
         return try {
             val verify = Shizuku.newProcess(
                 arrayOf(
-                    "sh", "-c",
+                    "sh",
+                    "-c",
                     "pidof scene-daemon 2>/dev/null; " +
                         // Exclude our own shell ($$): some OEM pgrep -f matches the ancestor
                         // shell whose cmdline contains "scene-daemon", which would otherwise
                         // report a daemon that does not exist.
                         "pgrep -f scene-daemon 2>/dev/null | grep -vw \$\$; " +
                         "ps -A 2>/dev/null | grep scene-daemon | grep -v grep | awk '{print $2}' | head -1"
-                ), null, null
+                ),
+                null,
+                null
             )
             val vOut = verify.inputStream.bufferedReader().use { it.readText() }
-            try { verify.waitFor() } catch (e: Throwable) { /* exit code optional */ }
+            try { verify.waitFor() } catch (ignored: Throwable) { /* exit code optional */ }
             vOut.lines().firstOrNull { it.isNotBlank() }?.trim()?.split(' ')?.first()?.orEmpty().orEmpty()
         } catch (e: Throwable) {
             ""
@@ -641,12 +687,15 @@ object SceneRelayManager {
         return try {
             val p = Shizuku.newProcess(
                 arrayOf(
-                    "sh", "-c",
+                    "sh",
+                    "-c",
                     "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2 | grep -q ' 0A ' && echo YES || echo NO"
-                ), null, null
+                ),
+                null,
+                null
             )
             val out = p.inputStream.bufferedReader().use { it.readText() }
-            try { p.waitFor() } catch (e: Throwable) { /* exit code optional */ }
+            try { p.waitFor() } catch (ignored: Throwable) { /* exit code optional */ }
             out.contains("YES")
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "isDaemonListening failed: ${e.message}")
@@ -684,7 +733,9 @@ object SceneRelayManager {
      * Same resident behaviour as up.sh's non-root branch: nohup + wait for the 14754 bind.
      */
     private fun launchTopDaemon(): Boolean {
-        runShell("mkdir -p $SCENE_DIR; kill \$(pidof scene-daemon) 2>/dev/null; sleep 1; nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &")
+        runShell(
+            "mkdir -p $SCENE_DIR; kill \$(pidof scene-daemon) 2>/dev/null; sleep 1; nohup $DAEMON_TARGET > $SCENE_DIR/daemon.log 2>&1 &"
+        )
         val pid = awaitDaemonPid()
         if (pid.isEmpty()) return false
         return awaitDaemonListening()

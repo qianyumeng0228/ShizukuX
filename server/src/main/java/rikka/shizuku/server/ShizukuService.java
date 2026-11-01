@@ -675,6 +675,20 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         return isFeatureEnabled(key);
     }
 
+    /**
+     * SU Bridge mock-success helper.
+     *
+     * Returns shell `true` (exit 0) but ALWAYS logs at WARN, so a mocked/replaced command is
+     * never invisible to the user. The reason states whether the original command was
+     * translated to a real action or simply ghosted (SU Bridge's purpose is to make non-root
+     * apps believe root is present; the mock behavior is intentionally preserved).
+     */
+    private IRemoteProcess mockSuccess(String[] cmd, String[] env, String dir, String reason) {
+        String joined = (cmd == null) ? "" : String.join(" ", cmd);
+        LOGGER.w("SUBridge: mock-success [%s] reason=%s (original command NOT executed as-is)", joined, reason);
+        return newProcessInternal(new String[]{"true"}, env, dir);
+    }
+
     @Override
     protected boolean isBinderCallBlocked(int uid, String descriptor, int code) {
         if (!isFeatureEnabled("binder_firewall")) return false;
@@ -711,32 +725,51 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private static int TRANSACTION_getPackageInfo = -1;
     private static int TRANSACTION_getApplicationInfo = -1;
     private static int TRANSACTION_getPackageUid = -1;
+    private static boolean SHADOW_AVAILABLE = false;
+
+    private static int readStaticIntField(Class<?> cls, String name) throws Exception {
+        java.lang.reflect.Field f = cls.getDeclaredField(name);
+        f.setAccessible(true);
+        return f.getInt(null);
+    }
 
     static {
         try {
             Class<?> stub = Class.forName("android.content.pm.IPackageManager$Stub");
+            int ok = 0;
             try {
-                java.lang.reflect.Field f1 = stub.getDeclaredField("TRANSACTION_getPackageInfo");
-                f1.setAccessible(true);
-                TRANSACTION_getPackageInfo = f1.getInt(null);
-            } catch (Exception ignore) {}
+                TRANSACTION_getPackageInfo = readStaticIntField(stub, "TRANSACTION_getPackageInfo");
+                ok++;
+            } catch (Exception e) {
+                LOGGER.w(e, "Shadow: TRANSACTION_getPackageInfo unavailable, shadow degraded");
+            }
             try {
-                java.lang.reflect.Field f2 = stub.getDeclaredField("TRANSACTION_getApplicationInfo");
-                f2.setAccessible(true);
-                TRANSACTION_getApplicationInfo = f2.getInt(null);
-            } catch (Exception ignore) {}
+                TRANSACTION_getApplicationInfo = readStaticIntField(stub, "TRANSACTION_getApplicationInfo");
+                ok++;
+            } catch (Exception e) {
+                LOGGER.w(e, "Shadow: TRANSACTION_getApplicationInfo unavailable, shadow degraded");
+            }
             try {
-                java.lang.reflect.Field f3 = stub.getDeclaredField("TRANSACTION_getPackageUid");
-                f3.setAccessible(true);
-                TRANSACTION_getPackageUid = f3.getInt(null);
-            } catch (Exception ignore) {}
+                TRANSACTION_getPackageUid = readStaticIntField(stub, "TRANSACTION_getPackageUid");
+                ok++;
+            } catch (Exception e) {
+                LOGGER.w(e, "Shadow: TRANSACTION_getPackageUid unavailable, shadow degraded");
+            }
+            SHADOW_AVAILABLE = (ok == 3);
+            LOGGER.i("Shadow binder: %d/3 transaction codes resolved, shadow=%s", ok, SHADOW_AVAILABLE);
         } catch (Throwable t) {
-            LOGGER.e(t, "Shadow: Failed to dynamically look up IPackageManager transaction codes");
+            LOGGER.e(t, "Shadow: IPackageManager$Stub not found, shadow disabled");
         }
     }
 
     @Override
     protected boolean handleShadowBinderTransaction(IBinder target, int code, Parcel data, Parcel reply, int flags) {
+        // If the IPackageManager transaction codes could not be resolved at class-load time,
+        // do NOT take over the transaction with -1 codes (that would forward requests to the
+        // wrong transaction). Fall through to the original binder path instead.
+        if (!SHADOW_AVAILABLE) {
+            return false;
+        }
         try {
             String descriptor = target.getInterfaceDescriptor();
             // Shadowing IPackageManager to hide specific apps or spoof Magisk presence
@@ -963,24 +996,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
      *         (no --uid-owner) or every mapping attempt failed, so the caller can fall back.
      */
     private boolean mapIptablesToNetworkPolicy(String[] cmd) {
-        if (cmd == null) return false;
-        String fullCmd = String.join(" ", cmd);
-        if (!fullCmd.contains("--uid-owner")) return false;
-
-        int index = -1;
-        for (int i = 0; i < cmd.length; i++) {
-            if (cmd[i].equals("--uid-owner")) { index = i + 1; break; }
-        }
-        if (index == -1 || index >= cmd.length) return false;
-
-        int uid;
-        try {
-            uid = Integer.parseInt(cmd[index]);
-        } catch (NumberFormatException e) {
-            return false;
-        }
-        // -A/-I add a rule (restrict); -D deletes it (unrestrict).
-        boolean restricted = !fullCmd.contains("-D");
+        IptablesPolicyParser.Policy policy = IptablesPolicyParser.parse(cmd);
+        if (policy == null) return false;
+        int uid = policy.uid;
+        boolean restricted = policy.restricted;
         boolean applied = false;
 
         // Layer 1: INetworkPolicyManager.setUidPolicy (1 = POLICY_REJECT_METERED_BACKGROUND).
@@ -991,8 +1010,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             if (binder != null) {
                 Object service = Class.forName("android.net.INetworkPolicyManager$Stub")
                     .getMethod("asInterface", IBinder.class).invoke(null, binder);
-                int policy = restricted ? 1 : 0;
-                service.getClass().getMethod("setUidPolicy", int.class, int.class).invoke(service, uid, policy);
+                int policyValue = restricted ? 1 : 0;
+                service.getClass().getMethod("setUidPolicy", int.class, int.class).invoke(service, uid, policyValue);
                 LOGGER.i("SUBridge: mapped iptables --uid-owner %d to NetworkPolicy metered-bg (restricted=%b)", uid, restricted);
                 applied = true;
             }
@@ -1251,14 +1270,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
             if (isFeatureEnabled("su_bridge")) {
                 if (baseCmd.equals("supolicy") || baseCmd.equals("magiskpolicy")) {
                     LOGGER.i("SUBridge: mocking SELinux policy injection for " + baseCmd);
-                    return newProcessInternal(new String[]{"true"}, env, dir);
+                    return mockSuccess(cmd, env, dir, "SELinux policy injection mocked (supolicy/magiskpolicy)");
                 } else if ((baseCmd.equals("iptables") || baseCmd.equals("ip6tables") || baseCmd.endsWith("/iptables") || baseCmd.endsWith("/ip6tables")) && isFeatureEnabled("root_iptables_mocking")) {
                     // Prefer a real framework mapping for per-app (--uid-owner) rules: at shell UID
                     // the kernel netfilter tables are off-limits, but INetworkPolicyManager /
                     // `cmd netpolicy` can genuinely restrict a UID's traffic. Only fall back to
                     // exec (and finally to a mocked success) when no real mapping is possible.
                     if (mapIptablesToNetworkPolicy(cmd)) {
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "iptables mapped to NetworkPolicy (real effect applied)");
                     }
                     LOGGER.i("SUBridge: executing and mocking iptables command -> " + String.join(" ", cmd));
                     java.lang.Process p = null;
@@ -1269,11 +1288,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(cmd, env, dir);
                         } else {
                             LOGGER.e("SUBridge: iptables exited with error (" + exitCode + "), returning mock success");
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "iptables exec failed, mock fallback");
                         }
                     } catch (Exception e) {
                         LOGGER.e("SUBridge: iptables exec failed, returning mock success");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "iptables exec threw, mock fallback");
                     } finally {
                         if (p != null) p.destroy();
                     }
@@ -1323,12 +1342,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         LOGGER.i("SUBridge: mapping SELinux modification to AppOps elevation for caller package " + callingPkg);
                         performAppOpsElevation(callingPkg, callingUid);
                     }
-                    return newProcessInternal(new String[]{"true"}, env, dir);
+                    return mockSuccess(cmd, env, dir, "SELinux modification intercepted (root_auto_grant)");
                 } else if (baseCmd.equals("setprop") && cmd.length > 2) {
                     LOGGER.i("SUBridge: intercepted setprop " + cmd[1] + " " + cmd[2]);
                     try {
                         android.os.SystemProperties.set(cmd[1], cmd[2]);
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "setprop applied via SystemProperties");
                     } catch (Exception e) {
                         LOGGER.e("SUBridge: setprop failed", e);
                         return newProcessInternal(new String[]{"false"}, env, dir);
@@ -1343,16 +1362,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             LOGGER.e("SUBridge: shadow mount proxy failed", e);
                         }
                     }
-                    return newProcessInternal(new String[]{"true"}, env, dir);
+                    return mockSuccess(cmd, env, dir, "mount remount ghosted (overlayfs proxy)");
                 } else if (baseCmd.equals("mount") && cmd.length > 3 && String.join(" ", cmd).contains("--bind")) {
                     String fullCmd = String.join(" ", cmd);
                     LOGGER.i("SUBridge: intercepting mount --bind request: " + fullCmd);
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         // Fake success for general systemless modifications
                         LOGGER.i("SUBridge: Faking mount --bind success for systemless module compatibility");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "mount --bind ghosted (root_magisk_mocking)");
                     }
-                    return newProcessInternal(new String[]{"true"}, env, dir);
+                    return mockSuccess(cmd, env, dir, "mount --bind ghosted");
                 } else if (baseCmd.equals("losetup")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         String fullCmd = String.join(" ", cmd);
@@ -1362,12 +1381,12 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(new String[]{"echo", "/dev/block/loop99"}, env, dir);
                         }
                         // Default fake success for setting up loop device
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "losetup ghosted");
                     }
                 } else if (baseCmd.equals("mke2fs") || baseCmd.equals("mkfs.ext4") || baseCmd.equals("make_ext4fs")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking " + baseCmd + " success for systemless image creation");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "mke2fs/mkfs ghosted (root_magisk_mocking)");
                     }
                 } else if (baseCmd.equals("chroot")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
@@ -1379,7 +1398,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(chrootCmd, env, dir);
                         }
                         // Default fake success
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "chroot ghosted");
                     }
                 } else if ((baseCmd.equals("cp") || baseCmd.equals("mv") || baseCmd.equals("tar")) && (String.join(" ", cmd).contains("/data/data") || String.join(" ", cmd).contains("/system"))) {
                     if (isFeatureEnabled("root_file_interceptor")) {
@@ -1419,7 +1438,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 // report success); destroy() closes the handle when done.
                                 Process p = Runtime.getRuntime().exec(new String[]{"pm", "grant", targetPkg, perm});
                                 try { p.waitFor(); } finally { p.destroy(); }
-                                return newProcessInternal(new String[]{"true"}, env, dir);
+                                return mockSuccess(cmd, env, dir, "pm grant executed");
                             } catch (Exception e) {
                                 LOGGER.e("SUBridge: pm grant failed", e);
                             }
@@ -1452,7 +1471,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 } else if ((baseCmd.equals("test") || baseCmd.equals("[")) && cmd.length > 1 && (String.join(" ", cmd).contains("/sbin/.magisk") || String.join(" ", cmd).contains("/data/adb/magisk") || String.join(" ", cmd).contains("/dev/magisk") || String.join(" ", cmd).contains("/proc/self/mounts") || String.join(" ", cmd).matches(".*\\b(su|magisk)\\b.*"))) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
                         LOGGER.i("SUBridge: mocking test/[ for root/Magisk-related paths");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "test/[ ghosted for root paths (root_magisk_mocking)");
                     }
                 } else if (baseCmd.equals("stat") && cmd.length > 1 && String.join(" ", cmd).matches(".*\\b(su|magisk)\\b.*")) {
                     if (isFeatureEnabled("root_magisk_mocking")) {
@@ -1499,14 +1518,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             } catch (Exception e) {
                                 LOGGER.w(e, "SUBridge: resetprop could not set %s (read-only/SELinux), mocking success", name);
                             }
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "resetprop applied/mocked");
                         } else if (!rpDeleting && rpArgs.size() == 1) {
                             String value = android.os.SystemProperties.get(rpArgs.get(0), "");
                             LOGGER.i("SUBridge: resetprop read %s -> %s", rpArgs.get(0), value);
                             return newProcessInternal(new String[]{"echo", value}, env, dir);
                         }
                         LOGGER.i("SUBridge: mocking resetprop " + String.join(" ", cmd));
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "resetprop ghosted");
                     }
                 } else if (baseCmd.equals("which") && cmd.length > 1 && cmd[1].equals("su")) {
                     String customSuPath = plusSettingsMap.getOrDefault("custom_su_path", "");
@@ -1685,7 +1704,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     } else if (baseCmd.equals("insmod") || baseCmd.equals("rmmod") || baseCmd.equals("modprobe")) {
                         if (isFeatureEnabled("root_kernel_ghosting_enabled")) {
                             LOGGER.i("SUBridge: intercepting kernel module load/unload (" + baseCmd + "), returning mock success");
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "kernel module load/unload ghosted (root_kernel_ghosting)");
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("reboot")) {
@@ -1694,13 +1713,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             return newProcessInternal(new String[]{"svc", "power", "reboot", cmd[1]}, env, dir);
                         } else if (isFeatureEnabled("root_power_ghosting_enabled")) {
                             LOGGER.i("SUBridge: intercepting reboot request (ghosting): " + String.join(" ", cmd));
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "reboot ghosted (root_power_ghosting)");
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("setprop") && cmd.length > 1 && cmd[1].startsWith("ctl.")) {
                         if (isFeatureEnabled("root_power_ghosting_enabled")) {
                             LOGGER.i("SUBridge: intercepting service control (soft reboot) " + cmd[1]);
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "service control (soft reboot) ghosted (root_power_ghosting)");
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("dd") && String.join(" ", cmd).contains("/dev/block/")) {
@@ -1725,9 +1744,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         } else if (service.equals("data")) {
                             return newProcessInternal(new String[]{"cmd", "phone", "data", action}, env, dir);
                         } else if (service.equals("usb") && action.equals("setFunctions")) {
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "svc usb setFunctions unsupported, mock success");
                         } else if (service.equals("power") && action.equals("reboot")) {
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "svc power reboot unsupported, mock success");
                         }
                         return newProcessInternal(cmd, env, dir);
                     } else if (baseCmd.equals("ifconfig") && cmd.length >= 3) {
@@ -1737,7 +1756,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
                             return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
                         }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "ifconfig ghosted");
                     } else if (baseCmd.equals("ip") && cmd.length >= 4 && cmd[1].equals("link") && cmd[2].equals("set")) {
                         String iface = cmd[3];
                         String action = cmd[cmd.length - 1]; // "up" or "down" usually at the end
@@ -1745,16 +1764,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (iface.startsWith("wlan") && (action.equals("up") || action.equals("down"))) {
                             return newProcessInternal(new String[]{"cmd", "wifi", "set-wifi-enabled", action.equals("up") ? "enabled" : "disabled"}, env, dir);
                         }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "ip link set ghosted");
                     } else if (baseCmd.equals("dumpsys") && cmd.length >= 2 && (cmd[1].equals("battery") || cmd[1].equals("deviceidle"))) {
                         LOGGER.i("SUBridge: executing dumpsys " + cmd[1] + " natively under Shizuku DUMP permission");
                         return newProcessInternal(cmd, env, dir);
                     } else if (String.join(" ", cmd).contains("MASTER_CLEAR") || String.join(" ", cmd).contains("wipe_data") || (baseCmd.equals("sm") && cmd.length > 1 && cmd[1].equals("format"))) {
                         LOGGER.e("SUBridge: Intercepted highly destructive command! Ghosting success to prevent data wipe: " + String.join(" ", cmd));
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "destructive command ghosted (data wipe prevention)");
                     } else if (baseCmd.equals("chattr")) {
                         LOGGER.i("SUBridge: mocking chattr immutability applied");
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "chattr ghosted");
                     } else if (baseCmd.equals("lsattr")) {
                         LOGGER.i("SUBridge: mocking lsattr output");
                         String target = cmd[cmd.length - 1];
@@ -1774,11 +1793,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 return newProcessInternal(cmd, env, dir);
                             } else {
                                 LOGGER.w("SUBridge: " + baseCmd + " exited with " + exitCode + ", falling back to mock success");
-                                return newProcessInternal(new String[]{"true"}, env, dir);
+                                return mockSuccess(cmd, env, dir, baseCmd + " exec failed, mock fallback");
                             }
                         } catch (Exception e) {
                             LOGGER.w(e, "SUBridge: " + baseCmd + " exec threw, falling back to mock success");
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, baseCmd + " exec threw, mock fallback");
                         } finally {
                             if (p != null) p.destroy();
                         }
@@ -1786,7 +1805,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         // iptables --uid-owner <uid> → real per-app NetworkPolicy restriction (Binder IPC,
                         // with a cmd netpolicy fallback). No kernel netfilter access at shell UID.
                         mapIptablesToNetworkPolicy(cmd);
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "iptables mapped to NetworkPolicy (real effect applied)");
                     } else if ((baseCmd.equals("tar") || baseCmd.equals("cp")) && (String.join(" ", cmd).contains("/data/data/") || String.join(" ", cmd).contains("/data/app/") || String.join(" ", cmd).contains("/data/user/"))) {
                         String fullCmd = String.join(" ", cmd);
                         LOGGER.i("SUBridge: mapping backup command to native bu utility: " + fullCmd);
@@ -1843,7 +1862,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                                 }
                             }
                         }
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "tar/cp backup intercept, no archive path matched");
                     } else if (baseCmd.equals("screencap")) {
                         LOGGER.i("SUBridge: functional screencap mapping");
                         // The shell UID is allowed to run screencap
@@ -1858,13 +1877,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     String pkg = cmd[2];
                     LOGGER.i("Plus Optimization: am force-stop " + pkg + " via ActivityManagerPlus");
                     if (activityManagerExtra.deepForceStop(pkg)) {
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "am force-stop executed via ActivityManagerExtra");
                     }
                 } else if (cmd[1].equals("freeze") || cmd[1].equals("suspend")) {
                     String pkg = cmd[2];
                     LOGGER.i("Plus Optimization: am freeze " + pkg + " -> restricted bucket");
                     if (activityManagerExtra.setAppStandbyBucket(pkg, 45)) { // 45 = RESTRICTED
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "am freeze/suspend executed via ActivityManagerExtra");
                     }
                 }
             } else if (baseCmd.equals("settings") && cmd.length >= 5 && cmd[1].equals("put")) {
@@ -1879,7 +1898,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         android.os.Bundle extras = new android.os.Bundle();
                         extras.putString("value", value);
                         rikka.shizuku.server.api.IContentProviderUtils.callCompat(provider, null, "settings", "PUT_" + namespace, key, extras);
-                        return newProcessInternal(new String[]{"true"}, env, dir);
+                        return mockSuccess(cmd, env, dir, "settings put executed via provider");
                     }
                 } catch (Throwable tr) {
                     LOGGER.e(tr, "Plus Optimization: settings put failed");
@@ -1914,7 +1933,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             
                             if (targetUid != -1) {
                                 service.getClass().getMethod("setMode", int.class, int.class, String.class, int.class).invoke(service, intOp, targetUid, pkg, intMode);
-                                return newProcessInternal(new String[]{"true"}, env, dir);
+                                return mockSuccess(cmd, env, dir, "appops set executed");
                             }
                         }
                     }
@@ -1972,10 +1991,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             }
                         } else if (baseCmd.equals("rm")) {
                             if (storageProxy.delete(path)) {
-                                return newProcessInternal(new String[]{"true"}, env, dir);
+                                return mockSuccess(cmd, env, dir, "rm executed via StorageProxy");
                             }
                         } else if (baseCmd.equals("mkdir")) {
-                            return newProcessInternal(new String[]{"true"}, env, dir);
+                            return mockSuccess(cmd, env, dir, "mkdir via StorageProxy");
                         }
                     } catch (Exception e) {
                         LOGGER.e("SUBridge: StorageProxy command failed", e);

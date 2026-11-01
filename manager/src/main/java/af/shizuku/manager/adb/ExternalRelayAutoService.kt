@@ -1,5 +1,9 @@
 package af.shizuku.manager.adb
 
+import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.settings.BreventRelayManager
+import af.shizuku.manager.settings.SceneRelayManager
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -12,10 +16,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
-import af.shizuku.manager.R
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.settings.BreventRelayManager
-import af.shizuku.manager.settings.SceneRelayManager
 
 /**
  * Accessibility-based auto-activation for external relay apps (Scene / Brevent).

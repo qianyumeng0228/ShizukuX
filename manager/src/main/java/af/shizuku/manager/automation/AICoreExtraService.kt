@@ -1,13 +1,13 @@
 package af.shizuku.manager.automation
 
+import af.shizuku.server.IAIAutomationBridge
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.Path
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import timber.log.Timber
-import af.shizuku.server.IAIAutomationBridge
 import rikka.shizuku.Shizuku
+import timber.log.Timber
 
 /**
  * AICore+ Automation Bridge
@@ -22,7 +22,9 @@ class AICoreExtraService : AccessibilityService() {
             this@AICoreExtraService.simulateSwipe(x1, y1, x2, y2, duration)
         override fun simulateText(text: String?): Boolean = this@AICoreExtraService.simulateText(text ?: "")
         override fun getPixelColor(x: Int, y: Int): Int = this@AICoreExtraService.getPixelColor(x, y)
-        override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICoreExtraService.captureLayer(layerId)
+        override fun captureLayer(layerId: Int): android.graphics.Bitmap? = this@AICoreExtraService.captureLayer(
+            layerId
+        )
     }
 
     companion object {
@@ -79,7 +81,7 @@ class AICoreExtraService : AccessibilityService() {
         } finally {
             // rootInActiveWindow() nodes are caller-owned; the recursive builder only
             // recycles the children, so the root itself must be released here.
-            try { rootNode.recycle() } catch (e: Throwable) {}
+            try { rootNode.recycle() } catch (ignored: Throwable) {}
         }
         return sb.toString()
     }
@@ -143,8 +145,12 @@ class AICoreExtraService : AccessibilityService() {
         sb.append(indent).append("<node")
         sb.append(" class=\"").append(escapeXmlAttr(node.className)).append("\"")
         if (!node.text.isNullOrEmpty()) sb.append(" text=\"").append(escapeXmlAttr(node.text)).append("\"")
-        if (!node.contentDescription.isNullOrEmpty()) sb.append(" content-desc=\"").append(escapeXmlAttr(node.contentDescription)).append("\"")
-        if (!node.viewIdResourceName.isNullOrEmpty()) sb.append(" resource-id=\"").append(escapeXmlAttr(node.viewIdResourceName)).append("\"")
+        if (!node.contentDescription.isNullOrEmpty()) sb.append(
+            " content-desc=\""
+        ).append(escapeXmlAttr(node.contentDescription)).append("\"")
+        if (!node.viewIdResourceName.isNullOrEmpty()) sb.append(
+            " resource-id=\""
+        ).append(escapeXmlAttr(node.viewIdResourceName)).append("\"")
         sb.append(" checkable=\"").append(node.isCheckable).append("\"")
         sb.append(" checked=\"").append(node.isChecked).append("\"")
         sb.append(" clickable=\"").append(node.isClickable).append("\"")
@@ -231,27 +237,31 @@ class AICoreExtraService : AccessibilityService() {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultColor = android.graphics.Color.TRANSPARENT
 
-            takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : AccessibilityService.TakeScreenshotCallback {
-                override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
-                    try {
-                        val hardwareBuffer = screenshot.hardwareBuffer
-                        val bitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
-                        if (bitmap != null && x in 0 until bitmap.width && y in 0 until bitmap.height) {
-                            resultColor = bitmap.getPixel(x, y)
+            takeScreenshot(
+                android.view.Display.DEFAULT_DISPLAY,
+                mainExecutor,
+                object : AccessibilityService.TakeScreenshotCallback {
+                    override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
+                        try {
+                            val hardwareBuffer = screenshot.hardwareBuffer
+                            val bitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
+                            if (bitmap != null && x in 0 until bitmap.width && y in 0 until bitmap.height) {
+                                resultColor = bitmap.getPixel(x, y)
+                            }
+                        } finally {
+                            // The wrapped bitmap borrows the HardwareBuffer; the pixel read is done
+                            // synchronously, so the buffer can be released right away.
+                            try { screenshot.hardwareBuffer.close() } catch (ignored: Exception) {}
+                            latch.countDown()
                         }
-                    } finally {
-                        // The wrapped bitmap borrows the HardwareBuffer; the pixel read is done
-                        // synchronously, so the buffer can be released right away.
-                        try { screenshot.hardwareBuffer.close() } catch (e: Exception) {}
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        Timber.e("takeScreenshot failed with error code $errorCode")
                         latch.countDown()
                     }
                 }
-
-                override fun onFailure(errorCode: Int) {
-                    Timber.e("takeScreenshot failed with error code $errorCode")
-                    latch.countDown()
-                }
-            })
+            )
 
             latch.await(2, java.util.concurrent.TimeUnit.SECONDS)
             return resultColor
@@ -286,26 +296,30 @@ class AICoreExtraService : AccessibilityService() {
             val latch = java.util.concurrent.CountDownLatch(1)
             var resultBitmap: android.graphics.Bitmap? = null
 
-            takeScreenshot(android.view.Display.DEFAULT_DISPLAY, mainExecutor, object : AccessibilityService.TakeScreenshotCallback {
-                override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
-                    try {
-                        val hardwareBuffer = screenshot.hardwareBuffer
-                        // Convert to software bitmap so it can be returned/processed
-                        val hwBitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
-                        resultBitmap = hwBitmap?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
-                    } finally {
-                        // hwBitmap borrowed the HardwareBuffer; resultBitmap is an independent
-                        // software copy, so the buffer can be released here.
-                        try { screenshot.hardwareBuffer.close() } catch (e: Exception) {}
+            takeScreenshot(
+                android.view.Display.DEFAULT_DISPLAY,
+                mainExecutor,
+                object : AccessibilityService.TakeScreenshotCallback {
+                    override fun onSuccess(screenshot: AccessibilityService.ScreenshotResult) {
+                        try {
+                            val hardwareBuffer = screenshot.hardwareBuffer
+                            // Convert to software bitmap so it can be returned/processed
+                            val hwBitmap = android.graphics.Bitmap.wrapHardwareBuffer(hardwareBuffer, screenshot.colorSpace)
+                            resultBitmap = hwBitmap?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+                        } finally {
+                            // hwBitmap borrowed the HardwareBuffer; resultBitmap is an independent
+                            // software copy, so the buffer can be released here.
+                            try { screenshot.hardwareBuffer.close() } catch (ignored: Exception) {}
+                            latch.countDown()
+                        }
+                    }
+
+                    override fun onFailure(errorCode: Int) {
+                        Timber.e("takeScreenshot failed with error code $errorCode")
                         latch.countDown()
                     }
                 }
-
-                override fun onFailure(errorCode: Int) {
-                    Timber.e("takeScreenshot failed with error code $errorCode")
-                    latch.countDown()
-                }
-            })
+            )
 
             latch.await(3, java.util.concurrent.TimeUnit.SECONDS)
             return resultBitmap
@@ -338,7 +352,7 @@ class AICoreExtraService : AccessibilityService() {
                     putString("foreground_package", root.packageName?.toString())
                 } finally {
                     // Caller-owned node from rootInActiveWindow(); recycle to avoid the parcel leak.
-                    try { root.recycle() } catch (e: Throwable) {}
+                    try { root.recycle() } catch (ignored: Throwable) {}
                 }
             }
         }

@@ -4,6 +4,7 @@ import android.os.Build
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.KeyProperties
+import timber.log.Timber
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -48,7 +49,7 @@ object CryptoUtils {
         )
             .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
             .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            
+
         if (userAuthRequired) {
             builder.setUserAuthenticationRequired(true)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -74,7 +75,7 @@ object CryptoUtils {
             val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
             keyStore.load(null)
             keyStore.deleteEntry(keyAlias(userAuthRequired))
-        } catch (ignored: Exception) {}
+        } catch (e: Exception) { Timber.w(e, "deleteKey failed (alias ${keyAlias(userAuthRequired)})") }
     }
 
     fun getCipherForEncryption(userAuthRequired: Boolean): Cipher {

@@ -1,5 +1,11 @@
 package af.shizuku.manager.home
 
+import af.shizuku.manager.R
+import af.shizuku.manager.databinding.HomeItemContainerBinding
+import af.shizuku.manager.databinding.HomeShizukuCompanionBinding
+import af.shizuku.manager.migration.MigrationHelper
+import af.shizuku.manager.utils.IconStyleHelper
+import af.shizuku.manager.utils.StockShizukuCompat
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,13 +14,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
-import af.shizuku.manager.R
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.databinding.HomeItemContainerBinding
-import af.shizuku.manager.databinding.HomeShizukuCompanionBinding
-import af.shizuku.manager.migration.MigrationHelper
-import af.shizuku.manager.utils.IconStyleHelper
-import af.shizuku.manager.utils.StockShizukuCompat
 import com.topjohnwu.superuser.Shell
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -76,13 +75,23 @@ class ShizukuCompanionViewHolder(
     private val originalIcon = binding.icon.drawable
 
     init {
-        containerBinding.root.setOnLongClickListener { HomeEditMode.enter(); true }
+        containerBinding.root.setOnLongClickListener {
+            HomeEditMode.enter()
+            true
+        }
         containerBinding.dragHandle.apply {
             setOnTouchListener { _, event ->
-                if (event.action == MotionEvent.ACTION_DOWN) HomeEditMode.startDragCallback?.invoke(this@ShizukuCompanionViewHolder)
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    HomeEditMode.startDragCallback?.invoke(
+                        this@ShizukuCompanionViewHolder
+                    )
+                }
                 false
             }
-            setOnLongClickListener { HomeEditMode.enter(); true }
+            setOnLongClickListener {
+                HomeEditMode.enter()
+                true
+            }
         }
 
         binding.button1.setOnClickListener { v ->

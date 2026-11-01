@@ -63,6 +63,13 @@
             android:defaultValue="false" />
 
         <Preference
+            android:key="su_bridge_mock_warning"
+            android:title="@string/settings_su_bridge_mock_warning_title"
+            android:summary="@string/settings_su_bridge_mock_warning_summary"
+            android:selectable="false"
+            android:icon="@drawable/ic_warning_24" />
+
+        <Preference
             android:key="root_compatibility_hub"
             android:title="@string/su_bridge_hub_title"
             android:summary="@string/su_bridge_hub_summary"

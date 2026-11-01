@@ -43,6 +43,9 @@ jobs:
       - name: Accept SDK Licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
 
+      - name: Run Detekt
+        run: ./gradlew detekt
+
       - name: Run Lint
         run: ./gradlew :manager:lint
 

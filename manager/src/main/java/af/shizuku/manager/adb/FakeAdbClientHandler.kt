@@ -1,17 +1,13 @@
 package af.shizuku.manager.adb
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
-import android.util.Base64
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuRemoteProcess
 import timber.log.Timber
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.net.Socket
-import java.security.Signature
-import java.security.interfaces.RSAPublicKey
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -23,6 +19,7 @@ class FakeAdbClientHandler(
         private const val TAG = "FakeAdbClient"
         private const val PREFS_NAME = "fake_adb_keys"
         private const val PREF_KEYS = "keys"
+
         /** Newline-delimited "<uid>\t<pubkey>" entries binding each authorized ADB public key
          *  to the loopback UID that owns it. Keys authorized before this binding existed have
          *  no entry here and are adopted on first valid signature (see loop()). */
@@ -78,7 +75,9 @@ class FakeAdbClientHandler(
                         // loopback UID. Rebinding on every successful signature is safe (malware
                         // cannot sign) and self-heals across reinstalls that re-UID the package.
                         if (peerUid != null) bindKeyToUid(matchedKey, peerUid)
-                        writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
+                        writeMessage(
+                            AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::")
+                        )
                     } else {
                         // Send another token, prompt client to try next key or send public key
                         java.security.SecureRandom().nextBytes(token)
@@ -106,7 +105,9 @@ class FakeAdbClientHandler(
                         val selfUid = android.os.Process.myUid()
                         if (peerUid != null && (peerUid == selfUid || peerUid == boundUid)) {
                             authenticated = true
-                            writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
+                            writeMessage(
+                                AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::")
+                            )
                         } else {
                             Timber.tag(TAG).w(
                                 "Rejecting no-proof AUTH_RSAPUBLICKEY for known key: peer uid=$peerUid, bound uid=$boundUid"
@@ -122,7 +123,9 @@ class FakeAdbClientHandler(
                             // local app cannot later reuse this key merely by presenting its pubkey.
                             if (peerUid != null) bindKeyToUid(pubKeyStr, peerUid)
                             authenticated = true
-                            writeMessage(AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::"))
+                            writeMessage(
+                                AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::")
+                            )
                         } else {
                             Timber.tag(TAG).w("User denied pairing for key: $pubKeyStr")
                             return
@@ -204,7 +207,7 @@ class FakeAdbClientHandler(
                         // Actually, ADB requires us to wait for OKAY before sending another WRTE.
                         // We will just blast WRTEs for now (fake adb clients might not care).
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) { Timber.tag(TAG).w(e, "stdout relay failed") }
 
                 // Read stderr (optional, usually multiplexed in ADB but we can just blast it)
                 try {
@@ -213,7 +216,7 @@ class FakeAdbClientHandler(
                         if (r <= 0) break
                         writeMessage(AdbMessage(AdbProtocol.A_WRTE, localId, remoteId, buf.copyOf(r)))
                     }
-                } catch (e: Exception) {}
+                } catch (e: Exception) { Timber.tag(TAG).w(e, "stderr relay failed") }
 
                 // waitFor() on a ShizukuProcess can throw (OEM builds where exitValue() raises
                 // IllegalArgumentException, or a binder death mid-command). Never let that kill
@@ -226,7 +229,6 @@ class FakeAdbClientHandler(
                 activeProcesses.remove(localId)
                 writeMessage(AdbMessage(AdbProtocol.A_CLSE, localId, remoteId, ByteArray(0)))
             }.start()
-
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to start shell process")
             writeMessage(AdbMessage(AdbProtocol.A_CLSE, localId, remoteId, ByteArray(0)))

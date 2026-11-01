@@ -1,12 +1,11 @@
 package rikka.shizuku.server
 
+import af.shizuku.server.IStorageProxy
 import android.os.Binder
 import android.os.Bundle
 import android.os.Parcel
 import android.os.ParcelFileDescriptor
-import android.os.RemoteException
 import android.util.Log
-import af.shizuku.server.IStorageProxy
 import rikka.shizuku.server.util.BinderCallLogger
 import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
@@ -15,8 +14,12 @@ import java.io.File
 class StorageProxyImpl : IStorageProxy.Stub() {
 
     override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-        BinderCallLogger.log(Log.isLoggable("BinderCall", Log.INFO),
-            IStorageProxy.Stub::class.java, code, Binder.getCallingUid())
+        BinderCallLogger.log(
+            Log.isLoggable("BinderCall", Log.INFO),
+            IStorageProxy.Stub::class.java,
+            code,
+            Binder.getCallingUid()
+        )
         return super.onTransact(code, data, reply, flags)
     }
 
@@ -24,7 +27,7 @@ class StorageProxyImpl : IStorageProxy.Stub() {
         if (!InputValidationUtils.isSafePath(path)) return null
         return try {
             val file = File(path!!)
-            
+
             // Standard open
             try {
                 return ParcelFileDescriptor.open(file, mode)
@@ -41,15 +44,15 @@ class StorageProxyImpl : IStorageProxy.Stub() {
     }
 
     private fun openViaShellFallback(path: String, mode: Int): ParcelFileDescriptor? {
-        // Implementation for OneUI 8+ fallback using raw shell redirections 
+        // Implementation for OneUI 8+ fallback using raw shell redirections
         // to handle stricter storage access protection.
-        // We create a pipe and 'cat' the file into it from a shell process 
+        // We create a pipe and 'cat' the file into it from a shell process
         // that might have better namespace access on some restricted Samsung builds.
         return try {
             val pipe = ParcelFileDescriptor.createPipe()
             val readSide = pipe[0]
             val writeSide = pipe[1]
-            
+
             // Pass path as a positional arg ($1), not interpolated into the script text,
             // so shell metacharacters in path can't break out of the quoted argument.
             val cmd = arrayOf("sh", "-c", "cat \"\$1\" > /proc/self/fd/${writeSide.fd}", "sh", path)
@@ -145,7 +148,7 @@ class StorageProxyImpl : IStorageProxy.Stub() {
                         fos.write(buf, 0, read)
                     }
                     fos.close()
-                } catch (_: Exception) {}
+                } catch (e: Exception) { Log.w("StorageProxy", "Stream relay failed", e) }
                 try { process.waitFor() } finally { process.destroy() }
             }.start()
             readSide
@@ -163,7 +166,8 @@ class StorageProxyImpl : IStorageProxy.Stub() {
             true
         } catch (_: Exception) {
             if (serverUid == 2000 &&
-                (srcPath!!.startsWith("/data/data/") || srcPath.startsWith("/data/user/"))) {
+                (srcPath!!.startsWith("/data/data/") || srcPath.startsWith("/data/user/"))
+            ) {
                 val pkg = extractPackageName(srcPath)
                     ?.takeIf { InputValidationUtils.isValidPackageName(it) }
                     ?: return false
@@ -184,7 +188,8 @@ class StorageProxyImpl : IStorageProxy.Stub() {
         val dir = dirPath!!
         val pkg = packageContext?.takeIf { InputValidationUtils.isValidPackageName(it) }
         return if (pkg != null && serverUid == 2000 &&
-            (dir.startsWith("/data/data/") || dir.startsWith("/data/user/"))) {
+            (dir.startsWith("/data/data/") || dir.startsWith("/data/user/"))
+        ) {
             openViaShellPipe(arrayOf("run-as", pkg, "tar", "-czf", "-", "-C", dir, "."))
         } else {
             openViaShellPipe(arrayOf("tar", "-czf", "-", "-C", dir, "."))

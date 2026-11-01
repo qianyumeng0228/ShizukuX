@@ -1,12 +1,12 @@
 package af.shizuku.manager.utils
 
+import af.shizuku.manager.BuildConfig
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.home.isPairingAssistantEnabled
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
-import af.shizuku.manager.BuildConfig
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.home.isPairingAssistantEnabled
 import rikka.shizuku.Shizuku
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,13 +55,16 @@ object DiagnosticsExporter {
         line("HyperOS", tryGet { EnvironmentUtils.getHyperOsVersion() })
         line("Root", tryGet { EnvironmentUtils.isRooted() })
         line("SecondaryUser", tryGet { EnvironmentUtils.isSecondaryUser() })
-        line("BrandFlags", buildList {
-            if (EnvironmentUtils.isOppo()) add("OPPO")
-            if (EnvironmentUtils.isOnePlus()) add("OnePlus")
-            if (EnvironmentUtils.isXiaomi()) add("Xiaomi")
-            if (EnvironmentUtils.isSamsung()) add("Samsung")
-            if (EnvironmentUtils.isTelevision()) add("TV")
-        }.joinToString("/").ifEmpty { "generic" })
+        line(
+            "BrandFlags",
+            buildList {
+                if (EnvironmentUtils.isOppo()) add("OPPO")
+                if (EnvironmentUtils.isOnePlus()) add("OnePlus")
+                if (EnvironmentUtils.isXiaomi()) add("Xiaomi")
+                if (EnvironmentUtils.isSamsung()) add("Samsung")
+                if (EnvironmentUtils.isTelevision()) add("TV")
+            }.joinToString("/").ifEmpty { "generic" }
+        )
         sb.append('\n')
 
         sb.append("[Shizuku Server]").append('\n')
@@ -73,17 +76,26 @@ object DiagnosticsExporter {
         line("PatchVersion", tryGet { Shizuku.getServerPatchVersion() })
         line("SELinux", tryGet { Shizuku.getSELinuxContext() })
         line("CustomApi", tryGet { Shizuku.isCustomApiEnabled() })
-        line("AdbPermission(GRANT_RUNTIME_PERMISSIONS)", tryGet {
-            Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
-        })
-        line("SecureSettings(WRITE_SECURE_SETTINGS)", tryGet {
-            Shizuku.checkRemotePermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
-        })
+        line(
+            "AdbPermission(GRANT_RUNTIME_PERMISSIONS)",
+            tryGet {
+                Shizuku.checkRemotePermission("android.permission.GRANT_RUNTIME_PERMISSIONS") == PackageManager.PERMISSION_GRANTED
+            }
+        )
+        line(
+            "SecureSettings(WRITE_SECURE_SETTINGS)",
+            tryGet {
+                Shizuku.checkRemotePermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED
+            }
+        )
         sb.append('\n')
 
         sb.append("[Settings]").append('\n')
         line("ExternalRelayAuto", tryGet { ShizukuSettings.getExternalRelayAuto() })
-        line("ActivityLog", tryGet { ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_ENABLE_ACTIVITY_LOG, true) })
+        line(
+            "ActivityLog",
+            tryGet { ShizukuSettings.getPreferences().getBoolean(ShizukuSettings.Keys.KEY_ENABLE_ACTIVITY_LOG, true) }
+        )
         line("Watchdog", tryGet { ShizukuSettings.getWatchdog() })
         line("StartOnBoot", tryGet { ShizukuSettings.getStartOnBoot(context) })
         line("AutoPairing", tryGet { context.isPairingAssistantEnabled() })
@@ -92,12 +104,18 @@ object DiagnosticsExporter {
         sb.append('\n')
 
         sb.append("[Accessibility]").append('\n')
-        line("EnabledServices", tryGet {
-            Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-        } ?: "(empty)")
-        line("MasterSwitch", tryGet {
-            Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED) == 1
-        })
+        line(
+            "EnabledServices",
+            tryGet {
+                Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+            } ?: "(empty)"
+        )
+        line(
+            "MasterSwitch",
+            tryGet {
+                Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED) == 1
+            }
+        )
         sb.append('\n')
 
         sb.append("[Wireless Debugging]").append('\n')
@@ -153,7 +171,7 @@ object DiagnosticsExporter {
             try {
                 read.get(8, java.util.concurrent.TimeUnit.SECONDS).trim()
             } catch (e: java.util.concurrent.TimeoutException) {
-                try { p.destroy() } catch (e2: Throwable) { /* already dead */ }
+                try { p.destroy() } catch (ignored: Throwable) { /* already dead */ }
                 // After destroy the stream may still drain whatever is buffered; give it a
                 // short last chance, then fall back to a readable timeout marker.
                 try {
@@ -176,7 +194,9 @@ object DiagnosticsExporter {
         val sb = StringBuilder()
         if (!Shizuku.pingBinder()) {
             sb.append("\n\n==== Deep Shell Diagnostics ====\n")
-            sb.append("(Shizuku is not running — shell diagnostics skipped. Start Shizuku, reproduce the issue, then re-export.)\n")
+            sb.append(
+                "(Shizuku is not running — shell diagnostics skipped. Start Shizuku, reproduce the issue, then re-export.)\n"
+            )
             return sb.toString()
         }
         fun block(title: String, cmd: String) {
@@ -190,19 +210,40 @@ object DiagnosticsExporter {
         // has more than one user (ColorOS 应用分身 creates a persistent MultiApp user 999), any
         // active account, or an existing owner. Listing these three lets a remote report tell
         // exactly which prerequisite is blocking Dhizuku activation without a real device.
-        block("Device owner / users / provisioning", "echo '-- users --'; pm list users 2>&1; echo '-- device owner --'; dpm list-owners 2>&1; echo '-- active admins --'; if dpm help 2>&1 | grep -q 'list-active-admins'; then dpm list-active-admins 2>&1 | head -10; else echo '(list-active-admins not supported on this build)'; fi; echo '-- provisioning --'; settings get global device_provisioned 2>&1; settings get secure user_setup_complete 2>&1; echo '-- accounts --'; dumpsys account 2>&1 | grep -A 6 'Accounts:' | head -12")
-        block("/data/local/tmp (scene-related)", "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1")
-        block("Scene binaries (checksums + magic)", "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1")
+        block(
+            "Device owner / users / provisioning",
+            "echo '-- users --'; pm list users 2>&1; echo '-- device owner --'; dpm list-owners 2>&1; echo '-- active admins --'; if dpm help 2>&1 | grep -q 'list-active-admins'; then dpm list-active-admins 2>&1 | head -10; else echo '(list-active-admins not supported on this build)'; fi; echo '-- provisioning --'; settings get global device_provisioned 2>&1; settings get secure user_setup_complete 2>&1; echo '-- accounts --'; dumpsys account 2>&1 | grep -A 6 'Accounts:' | head -12"
+        )
+        block(
+            "/data/local/tmp (scene-related)",
+            "ls -la /data/local/tmp 2>&1 | grep -iE 'scene|total'; echo '-- scene dir --'; ls -la /data/local/tmp/scene 2>&1"
+        )
+        block(
+            "Scene binaries (checksums + magic)",
+            "md5sum /data/local/tmp/scene/scene-daemon /data/local/tmp/scene-daemon /data/local/tmp/scene/busybox 2>&1; echo '-- daemon magic --'; head -c 8 /data/local/tmp/scene/scene-daemon 2>&1 | od -An -tx1"
+        )
         // Scene's APK layout: the daemon entry moved between Scene versions (raw/daemon ->
         // assets/toolkit/daemon, per-ABI raw names). Listing the real entries lets a remote
         // report confirm the relay's dynamic entry resolution picked the right file.
-        block("Scene APK daemon/toolkit entries", "apk=\$(pm path com.omarea.vtools | sed 's/package://' | head -1); echo \"apk=\$apk\"; unzip -l \"\$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE 'daemon|toolkit' | head -15")
+        block(
+            "Scene APK daemon/toolkit entries",
+            "apk=\$(pm path com.omarea.vtools | sed 's/package://' | head -1); echo \"apk=\$apk\"; unzip -l \"\$apk\" 2>/dev/null | awk '{print \$1, \$4}' | grep -iE 'daemon|toolkit' | head -15"
+        )
         // Scene's official runtime artifacts: newer builds write up.sh + daemon into the app's
         // external files dir (shell-readable) and the ADB dialog just runs that up.sh. Listing
         // it tells a remote report whether the relay's external-first path found the real thing.
-        block("Scene external/cache dirs (official up.sh)", "base=/sdcard/Android/data/com.omarea.vtools; ls -la \$base 2>&1 | head -8; echo '-- files --'; ls -la \$base/files 2>&1 | head -15; echo '-- cache --'; ls -la \$base/cache 2>&1 | head -15; echo '-- find up.sh / daemon --'; find \$base -maxdepth 5 -name 'up.sh' 2>/dev/null | head -5; echo '-- daemon-ish --'; find \$base -maxdepth 5 -type f -size +1M 2>/dev/null | head -8")
-        block("System props (build/ColorOS hints)", "getprop 2>/dev/null | grep -iE 'ro.build.version|ro.product.(name|device|model)|ro.build.display|coloros|oplus|sys.oppo|ro.oplus' | head -30")
-        block("Scene / relay processes", "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765")
+        block(
+            "Scene external/cache dirs (official up.sh)",
+            "base=/sdcard/Android/data/com.omarea.vtools; ls -la \$base 2>&1 | head -8; echo '-- files --'; ls -la \$base/files 2>&1 | head -15; echo '-- cache --'; ls -la \$base/cache 2>&1 | head -15; echo '-- find up.sh / daemon --'; find \$base -maxdepth 5 -name 'up.sh' 2>/dev/null | head -5; echo '-- daemon-ish --'; find \$base -maxdepth 5 -type f -size +1M 2>/dev/null | head -8"
+        )
+        block(
+            "System props (build/ColorOS hints)",
+            "getprop 2>/dev/null | grep -iE 'ro.build.version|ro.product.(name|device|model)|ro.build.display|coloros|oplus|sys.oppo|ro.oplus' | head -30"
+        )
+        block(
+            "Scene / relay processes",
+            "ps -A 2>&1 | grep -iE 'scene|vtools'; echo 'pidof:'; pidof scene-daemon 2>&1; echo 'pgrep:'; pgrep -l scene-daemon 2>&1; echo 'port 8765:'; ss -tulnp 2>&1 | grep 8765"
+        )
         block("up.sh on disk", "wc -c /data/local/tmp/scene/up.sh 2>&1; head -12 /data/local/tmp/scene/up.sh 2>&1")
         // Trial-run the daemon for 2s and capture its real stderr + exit code. exit=124 means the
         // daemon stayed alive until timeout killed it (it CAN run); any other code plus a stderr
@@ -210,15 +251,24 @@ object DiagnosticsExporter {
         // If the daemon is already resident this reports its "address already in use" — which is
         // itself the answer (it IS running). No lasting side effect: output goes to a temp file
         // that is removed right after, and timeout reaps the process.
-        block("Daemon trial run (2s, real stderr + exit code)", "timeout 2 /data/local/tmp/scene-daemon > /data/local/tmp/scene/daemon-trial.log 2>&1; ec=\$?; cat /data/local/tmp/scene/daemon-trial.log 2>/dev/null; echo \"trial_exit=\$ec (124 = daemon alive until timeout)\"; rm -f /data/local/tmp/scene/daemon-trial.log")
+        block(
+            "Daemon trial run (2s, real stderr + exit code)",
+            "timeout 2 /data/local/tmp/scene-daemon > /data/local/tmp/scene/daemon-trial.log 2>&1; ec=\$?; cat /data/local/tmp/scene/daemon-trial.log 2>/dev/null; echo \"trial_exit=\$ec (124 = daemon alive until timeout)\"; rm -f /data/local/tmp/scene/daemon-trial.log"
+        )
         // Logcat across main/system/crash buffers: single-buffer -d can miss the SystemServer /
         // crash ring where OEM permission denials and Scene crashes show up. Bounded by tail so
         // the report stays shareable.
-        block("Logcat (main+system+crash, SX_DEBUG / SceneRelay / FATAL / scene)", "logcat -d -b main -b system -b crash -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|shizuku|ColorOS|Permission (denial|Denied)|SecurityException' | tail -200")
+        block(
+            "Logcat (main+system+crash, SX_DEBUG / SceneRelay / FATAL / scene)",
+            "logcat -d -b main -b system -b crash -v threadtime 2>&1 | grep -iE 'SX_DEBUG|SceneRelay|FATAL|AndroidRuntime|scene-daemon|omarea|shizuku|ColorOS|Permission (denial|Denied)|SecurityException' | tail -200"
+        )
         // dumpsys probes: package state tells us Scene's installed version/uid; activity
         // processes reveals whether Scene is running and its death reason; the shizuku server
         // process line confirms which privilege source is alive.
-        block("dumpsys (Scene pkg + shizuku server)", "dumpsys package com.omarea.vtools 2>&1 | grep -E 'versionCode|versionName|uid=|flags=|firstInstallTime|lastUpdateTime' | head -6; echo '-- scene/daemon in activity --'; dumpsys activity processes 2>&1 | grep -iE 'scene-daemon|omarea|vtools' | head -6; echo '-- shizuku server --'; ps -A 2>&1 | grep -iE 'shizuku|su_' | head -5")
+        block(
+            "dumpsys (Scene pkg + shizuku server)",
+            "dumpsys package com.omarea.vtools 2>&1 | grep -E 'versionCode|versionName|uid=|flags=|firstInstallTime|lastUpdateTime' | head -6; echo '-- scene/daemon in activity --'; dumpsys activity processes 2>&1 | grep -iE 'scene-daemon|omarea|vtools' | head -6; echo '-- shizuku server --'; ps -A 2>&1 | grep -iE 'shizuku|su_' | head -5"
+        )
         block("dmesg tail", "dmesg 2>&1 | tail -10")
         return sb.toString()
     }

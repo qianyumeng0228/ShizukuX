@@ -1,75 +1,59 @@
 package af.shizuku.manager.home
-import af.shizuku.core.ui.EmptyStateView
-
-import android.Manifest
-import android.app.NotificationManager
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import android.os.Bundle
-import android.os.Process
-import android.text.method.LinkMovementMethod
-import timber.log.Timber
-import android.util.TypedValue
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
-import com.airbnb.mvrx.MavericksView
-import com.airbnb.mvrx.viewModel
-import com.airbnb.mvrx.withState
-import com.airbnb.mvrx.Success
-import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.delay
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import af.shizuku.core.ui.AppActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbPairingService
-import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.app.SnackbarHelper
-import af.shizuku.manager.home.showAccessibilityDialog
+import af.shizuku.manager.home.compose.HomeScreen
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.management.AppsViewModel
+import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.settings.SettingsActivity
 import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
-import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.EnvironmentUtils
-import io.noties.markwon.Markwon
 import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.ProjectLinks
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
-import rikka.core.content.asActivity
+import android.Manifest
+import android.app.NotificationManager
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.view.View
+import android.widget.TextView
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.RecyclerView
+import com.airbnb.mvrx.MavericksView
+import com.airbnb.mvrx.Success
+import com.airbnb.mvrx.viewModel
+import com.airbnb.mvrx.withState
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
+import io.noties.markwon.Markwon
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import rikka.core.ktx.unsafeLazy
 import rikka.lifecycle.Status
 import rikka.recyclerview.addEdgeSpacing
 import rikka.recyclerview.addItemSpacing
 import rikka.recyclerview.fixEdgeEffect
 import rikka.shizuku.Shizuku
-import af.shizuku.manager.receiver.ShizukuReceiverStarter
-
-import androidx.activity.compose.setContent
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.platform.LocalContext
-import af.shizuku.core.ui.AppActivity
-import af.shizuku.manager.home.compose.HomeScreen
+import timber.log.Timber
 
 open class HomeActivity : AppActivity(), MavericksView {
 
@@ -213,50 +197,51 @@ open class HomeActivity : AppActivity(), MavericksView {
                 isOneUi = ShizukuSettings.isOneUiThemeEnabled()
             ) {
                 HomeScreen(
-                isEditMode = isEditMode,
-                showEmptyState = showEmptyState,
-                wallpaperTheme = wallpaperTheme,
-                onStopClick = {
-                    if (ShizukuStateMachine.isRunning()) {
+                    isEditMode = isEditMode,
+                    showEmptyState = showEmptyState,
+                    wallpaperTheme = wallpaperTheme,
+                    onStopClick = {
+                        if (ShizukuStateMachine.isRunning()) {
+                            MaterialAlertDialogBuilder(this)
+                                .setMessage(R.string.dialog_stop_message)
+                                .setPositiveButton(android.R.string.ok) { _, _ ->
+                                    ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                                    ShizukuReceiverStarter.killServerProcess()
+                                    runCatching { Shizuku.exit() }
+                                }
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show()
+                        }
+                    },
+                    onSettingsClick = {
+                        startActivity(Intent(this, SettingsActivity::class.java))
+                    },
+                    onHelpClick = {
                         MaterialAlertDialogBuilder(this)
-                            .setMessage(R.string.dialog_stop_message)
-                            .setPositiveButton(android.R.string.ok) { _, _ ->
-                                ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                                ShizukuReceiverStarter.killServerProcess()
-                                runCatching { Shizuku.exit() }
-                            }
-                            .setNegativeButton(android.R.string.cancel, null)
+                            .setTitle(R.string.settings_shizuku_extra_features)
+                            .setMessage(getString(R.string.help_general_plus_summary).toHtml())
+                            .setPositiveButton(android.R.string.ok, null)
                             .show()
+                    },
+                    onRestoreHomeCards = { adapter.restoreAllCards() },
+                    recyclerViewProvider = { ctx, paddingValues ->
+                        val density = ctx.resources.displayMetrics.density
+                        val top = (paddingValues.calculateTopPadding().value * density).toInt()
+                        val bottom = (paddingValues.calculateBottomPadding().value * density).toInt()
+                        // PERF: setPadding schedules requestLayout. Only touch padding when it
+                        // actually changed by at least 1px — this avoids per-frame relayout during
+                        // the collapsing topBar's scroll animation (which was causing the "stuck /
+                        // can't scroll" feel on continuous flings). The one-frame overlap on
+                        // fling-to-top is acceptable because the topBar's expand animation finishes
+                        // within a few frames and the next recomposition corrects the padding.
+                        if (kotlin.math.abs(recyclerView.paddingTop - top) > 1 ||
+                            kotlin.math.abs(recyclerView.paddingBottom - bottom) > 1
+                        ) {
+                            recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
+                        }
+                        recyclerView
                     }
-                },
-                onSettingsClick = {
-                    startActivity(Intent(this, SettingsActivity::class.java))
-                },
-                onHelpClick = {
-                    MaterialAlertDialogBuilder(this)
-                        .setTitle(R.string.settings_shizuku_extra_features)
-                        .setMessage(getString(R.string.help_general_plus_summary).toHtml())
-                        .setPositiveButton(android.R.string.ok, null)
-                        .show()
-                },
-                onRestoreHomeCards = { adapter.restoreAllCards() },
-                recyclerViewProvider = { ctx, paddingValues ->
-                    val density = ctx.resources.displayMetrics.density
-                    val top = (paddingValues.calculateTopPadding().value * density).toInt()
-                    val bottom = (paddingValues.calculateBottomPadding().value * density).toInt()
-                    // PERF: setPadding schedules requestLayout. Only touch padding when it
-                    // actually changed by at least 1px — this avoids per-frame relayout during
-                    // the collapsing topBar's scroll animation (which was causing the "stuck /
-                    // can't scroll" feel on continuous flings). The one-frame overlap on
-                    // fling-to-top is acceptable because the topBar's expand animation finishes
-                    // within a few frames and the next recomposition corrects the padding.
-                    if (kotlin.math.abs(recyclerView.paddingTop - top) > 1 ||
-                        kotlin.math.abs(recyclerView.paddingBottom - bottom) > 1) {
-                        recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
-                    }
-                    recyclerView
-                }
-            )
+                )
             }
         }
 
@@ -264,7 +249,9 @@ open class HomeActivity : AppActivity(), MavericksView {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 startActivity(android.content.Intent(this, af.shizuku.manager.starter.StarterActivity::class.java))
             }
-            "open_terminal" -> startActivity(android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java))
+            "open_terminal" -> startActivity(
+                android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java)
+            )
         }
 
         // Initial status load
@@ -277,7 +264,9 @@ open class HomeActivity : AppActivity(), MavericksView {
                 wasServiceRunning = status.isRunning
 
                 adapter.updateData()
-                ShizukuSettings.setLastLaunchMode(if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB)
+                ShizukuSettings.setLastLaunchMode(
+                    if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB
+                )
 
                 if (status.isRunning && previouslyRunning == false) {
                     recyclerView.post {
@@ -293,10 +282,11 @@ open class HomeActivity : AppActivity(), MavericksView {
                             val finalRadius = Math.hypot(view.width.toDouble(), view.height.toDouble()).toFloat()
 
                             // OneUI 8+ uses more "elastic" easing (0.22, 1, 0.36, 1)
-                            val interpolator = if (EnvironmentUtils.isOneUi8())
+                            val interpolator = if (EnvironmentUtils.isOneUi8()) {
                                 androidx.core.view.animation.PathInterpolatorCompat.create(0.22f, 1f, 0.36f, 1f)
-                            else
+                            } else {
                                 androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
+                            }
 
                             android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
                                 duration = ShizukuSettings.scaledAnimationDuration(if (EnvironmentUtils.isOneUi8()) 800L else 600L)
@@ -377,7 +367,11 @@ open class HomeActivity : AppActivity(), MavericksView {
         // column of cards leaves most of the width empty.
         val spanCount = if (resources.configuration.screenWidthDp >= 600 ||
             resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        ) 2 else 1
+        ) {
+            2
+        } else {
+            1
+        }
         val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
         layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
             // The status card (position 0) always takes the full width for visibility.
@@ -394,7 +388,9 @@ open class HomeActivity : AppActivity(), MavericksView {
         recyclerView.fixEdgeEffect()
 
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
-            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout())
+            val systemBars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
             v.setPadding(
                 systemBars.left + dexPadding,
                 v.paddingTop,
@@ -418,22 +414,29 @@ open class HomeActivity : AppActivity(), MavericksView {
         val edgeSpacingV = marginVertical - itemSpacing
 
         recyclerView.addItemSpacing(top = itemSpacing, bottom = itemSpacing)
-        recyclerView.addEdgeSpacing(top = edgeSpacingV, bottom = edgeSpacingV, left = edgeSpacingH, right = edgeSpacingH)
+        recyclerView.addEdgeSpacing(
+            top = edgeSpacingV,
+            bottom = edgeSpacingV,
+            left = edgeSpacingH,
+            right = edgeSpacingH
+        )
 
         // Drag-to-reorder support
         val dragCallback = object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
+            0
         ) {
             override fun isLongPressDragEnabled() = false
 
             override fun getMovementFlags(rv: RecyclerView, vh: RecyclerView.ViewHolder): Int {
-                return if (adapter.isDraggable(vh.adapterPosition))
+                return if (adapter.isDraggable(vh.adapterPosition)) {
                     makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
-                    else
+                } else {
                     makeMovementFlags(0, 0)
-                    }
+                }
+            }
 
-                    override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
+            override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
                 if (!adapter.isDraggable(target.adapterPosition)) return false
                 adapter.moveItem(src.adapterPosition, target.adapterPosition)
                 HapticUtils.tap(target.itemView)
@@ -523,7 +526,9 @@ open class HomeActivity : AppActivity(), MavericksView {
                                 .scaleY(1f)
                                 .alpha(1f)
                                 .setDuration(ShizukuSettings.scaledAnimationDuration(400))
-                                .setInterpolator(androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f))
+                                .setInterpolator(
+                                    androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
+                                )
                                 .start()
                         } else {
                             recyclerView.scaleX = 1f
@@ -645,7 +650,6 @@ open class HomeActivity : AppActivity(), MavericksView {
         super.onDestroy()
     }
 
-
     /**
      * Check for updates on app startup and show popup dialog
      */
@@ -699,9 +703,11 @@ open class HomeActivity : AppActivity(), MavericksView {
         dialogView.findViewById<TextView>(R.id.update_version_name).text =
             getString(R.string.update_version_name, updateInfo.versionName)
         dialogView.findViewById<TextView>(R.id.update_published_date).text =
-            if (updateInfo.publishedAt.isNotEmpty())
+            if (updateInfo.publishedAt.isNotEmpty()) {
                 getString(R.string.update_published_date, UpdateChecker.formatPublishedDate(updateInfo.publishedAt))
-            else ""
+            } else {
+                ""
+            }
         // updateInfo.releaseNotes is the raw GitHub release body (Markdown) - render it instead
         // of dumping it as plain text, which showed literal "**", "###", "|...|" table syntax
         // and bracketed links to users. Drop the "Recent Releases" rollup (table/links meant for
@@ -716,8 +722,10 @@ open class HomeActivity : AppActivity(), MavericksView {
 
         val openReleases = {
             startActivity(
-                android.content.Intent(android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse(ProjectLinks.RELEASES))
+                android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(ProjectLinks.RELEASES)
+                )
                     .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
@@ -743,5 +751,4 @@ open class HomeActivity : AppActivity(), MavericksView {
         const val EXTRA_SHOW_PAIRING_DIALOG = "show_pairing_dialog"
         const val EXTRA_START_SERVICE_VIA_WADB = "start_service_via_wadb"
     }
-
 }

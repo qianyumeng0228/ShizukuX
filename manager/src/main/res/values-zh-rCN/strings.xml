@@ -1429,4 +1429,6 @@
     <string name="accessibility_sim_toggle_backup_apps">切换“应用备份”卡片可见性</string>
     <string name="accessibility_sim_toggle_device_control">切换“设备控制”卡片可见性</string>
     <string name="settings_search">搜索</string>
+    <string name="settings_su_bridge_mock_warning_title">Root 模拟（Ghosting）说明</string>
+    <string name="settings_su_bridge_mock_warning_summary">“Root 模拟”会让应用以为你有 Root 权限。部分命令（如 reboot、dd 写分区、insmod）不会真正执行，只返回成功。如果你不确定，请保持关闭。</string>
 </resources>

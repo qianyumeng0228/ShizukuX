@@ -1,29 +1,29 @@
 package af.shizuku.manager.shell
 
+import af.shizuku.core.ui.AppBarActivity
+import af.shizuku.manager.Helps
+import af.shizuku.manager.R
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
+import af.shizuku.manager.ktx.toHtml
+import af.shizuku.manager.utils.CustomTabsHelper
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
+import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import timber.log.Timber
-import android.view.View
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.view.isVisible
-import kotlin.math.roundToInt
-import af.shizuku.manager.Helps
-import af.shizuku.manager.R
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.core.ui.AppBarActivity
-import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
-import af.shizuku.manager.ktx.toHtml
-import af.shizuku.manager.utils.CustomTabsHelper
 import rikka.compatibility.DeviceCompatibility
 import rikka.html.text.HtmlCompat
 import rikka.insets.*
 import rikka.shizuku.Shizuku
+import timber.log.Timber
+import kotlin.math.roundToInt
 
 class ShellTutorialActivity : AppBarActivity() {
 
@@ -49,13 +49,22 @@ class ShellTutorialActivity : AppBarActivity() {
             lifecycleScope.launch {
                 val (successCount, totalCount) = withContext(Dispatchers.IO) {
                     val cr = contentResolver
-                    val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+                    val doc = DocumentsContract.buildDocumentUriUsingTree(
+                        tree,
+                        DocumentsContract.getTreeDocumentId(tree)
+                    )
                     val child =
-                        DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+                        DocumentsContract.buildChildDocumentsUriUsingTree(
+                            tree,
+                            DocumentsContract.getTreeDocumentId(tree)
+                        )
 
                     cr.query(
                         child,
-                        arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_DISPLAY_NAME),
+                        arrayOf(
+                            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                            DocumentsContract.Document.COLUMN_DISPLAY_NAME
+                        ),
                         null,
                         null,
                         null
@@ -64,7 +73,10 @@ class ShellTutorialActivity : AppBarActivity() {
                             val id = it.getString(0)
                             val name = it.getString(1)
                             if (name == SH_NAME || name == DEX_NAME || name == PLUS_NAME || name == SU_NAME) {
-                                DocumentsContract.deleteDocument(cr, DocumentsContract.buildDocumentUriUsingTree(tree, id))
+                                DocumentsContract.deleteDocument(
+                                    cr,
+                                    DocumentsContract.buildDocumentUriUsingTree(tree, id)
+                                )
                             }
                         }
                     }
@@ -114,7 +126,9 @@ class ShellTutorialActivity : AppBarActivity() {
                 } else {
                     getString(R.string.shell_export_partial, successCount, totalCount)
                 }
-                Toast.makeText(this@ShellTutorialActivity, toastMsg,
+                Toast.makeText(
+                    this@ShellTutorialActivity,
+                    toastMsg,
                     if (successCount == totalCount) Toast.LENGTH_SHORT else Toast.LENGTH_LONG
                 ).show()
             }
@@ -174,7 +188,11 @@ class ShellTutorialActivity : AppBarActivity() {
                     openDocumentsTree.launch(null)
                 } catch (e: android.content.ActivityNotFoundException) {
                     Timber.tag(TAG).w("No file picker available on this device: ${e.message}")
-                    android.widget.Toast.makeText(this@ShellTutorialActivity, R.string.no_file_picker, android.widget.Toast.LENGTH_LONG).show()
+                    android.widget.Toast.makeText(
+                        this@ShellTutorialActivity,
+                        R.string.no_file_picker,
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
                 }
             }
             button2.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.RISH.get()) }
@@ -188,7 +206,8 @@ class ShellTutorialActivity : AppBarActivity() {
             consoleRun.setOnClickListener { runConsoleCommand() }
             consoleInput.setOnEditorActionListener { _, actionId, _ ->
                 if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
-                    runConsoleCommand(); true
+                    runConsoleCommand();
+                    true
                 } else {
                     false
                 }
@@ -199,14 +218,18 @@ class ShellTutorialActivity : AppBarActivity() {
     private fun runConsoleCommand() {
         if (!Shizuku.pingBinder()) {
             android.widget.Toast.makeText(
-                this, R.string.terminal_console_not_running, android.widget.Toast.LENGTH_SHORT
+                this,
+                R.string.terminal_console_not_running,
+                android.widget.Toast.LENGTH_SHORT
             ).show()
             return
         }
         val cmd = binding.consoleInput.text.toString().trim()
         if (cmd.isEmpty()) {
             android.widget.Toast.makeText(
-                this, R.string.terminal_console_empty_command, android.widget.Toast.LENGTH_SHORT
+                this,
+                R.string.terminal_console_empty_command,
+                android.widget.Toast.LENGTH_SHORT
             ).show()
             return
         }
@@ -247,7 +270,7 @@ class ShellTutorialActivity : AppBarActivity() {
             try {
                 read.get(10, java.util.concurrent.TimeUnit.SECONDS).trim()
             } catch (e: java.util.concurrent.TimeoutException) {
-                try { p.destroy() } catch (e2: Throwable) { /* already dead */ }
+                try { p.destroy() } catch (ignored: Throwable) { /* already dead */ }
                 "(timeout after 10s — killed)"
             }
         } catch (e: Throwable) {

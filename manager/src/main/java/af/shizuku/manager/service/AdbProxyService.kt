@@ -1,23 +1,19 @@
 package af.shizuku.manager.service
 
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.utils.EnvironmentUtils
 import android.app.Service
 import android.content.Intent
 import android.os.IBinder
-import timber.log.Timber
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.utils.EnvironmentUtils
 import rikka.shizuku.Shizuku
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.io.PrintWriter
+import timber.log.Timber
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket

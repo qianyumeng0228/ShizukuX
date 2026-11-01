@@ -165,10 +165,16 @@ internal object ApkBinaryXmlPatcher {
             val out = ByteArrayOutputStream()
             // UTF-16 length (1 or 2 bytes)
             val u16 = s.length
-            if (u16 >= 0x80) out.write(0x80 or (u16 ushr 8)); out.write(u16 and 0x7F)
+            if (u16 >= 0x80) {
+                out.write(0x80 or (u16 ushr 8))
+            }
+            out.write(u16 and 0x7F)
             // UTF-8 byte count (1 or 2 bytes)
             val u8 = utf8.size
-            if (u8 >= 0x80) out.write(0x80 or (u8 ushr 8)); out.write(u8 and 0x7F)
+            if (u8 >= 0x80) {
+                out.write(0x80 or (u8 ushr 8))
+            }
+            out.write(u8 and 0x7F)
             out.write(utf8)
             out.write(0)
             return out.toByteArray()

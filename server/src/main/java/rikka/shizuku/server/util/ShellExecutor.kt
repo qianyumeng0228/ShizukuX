@@ -58,7 +58,8 @@ object ShellExecutor {
             if (proc.isAlive) proc.destroy()
         }
     } catch (e: Exception) {
-        Log.w(TAG, "exec failed: ${args.joinToString(" ")}", e); ""
+        Log.w(TAG, "exec failed: ${args.joinToString(" ")}", e)
+        ""
     }
 
     fun execBool(vararg args: String): Boolean = try {
@@ -75,7 +76,8 @@ object ShellExecutor {
             if (proc.isAlive) proc.destroy()
         }
     } catch (e: Exception) {
-        Log.w(TAG, "execBool failed: ${args.joinToString(" ")}", e); false
+        Log.w(TAG, "execBool failed: ${args.joinToString(" ")}", e)
+        false
     }
 
     fun execCode(vararg args: String): Int = try {
@@ -92,6 +94,7 @@ object ShellExecutor {
             if (proc.isAlive) proc.destroy()
         }
     } catch (e: Exception) {
-        Log.w(TAG, "execCode failed: ${args.joinToString(" ")}", e); -1
+        Log.w(TAG, "execCode failed: ${args.joinToString(" ")}", e)
+        -1
     }
 }

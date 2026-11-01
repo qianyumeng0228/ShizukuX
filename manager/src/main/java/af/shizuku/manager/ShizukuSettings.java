@@ -371,7 +371,7 @@ public class ShizukuSettings {
                 String raw = Settings.Global.getString(
                     sContext.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE);
                 if (raw != null) return Float.parseFloat(raw);
-            } catch (Exception ignored) {}
+            } catch (Exception e) { Timber.tag("ShizukuSettings").w(e, "Failed to read ANIMATOR_DURATION_SCALE"); }
         }
         switch (getAnimationIntensity()) {
             case 0: return 0.4f;

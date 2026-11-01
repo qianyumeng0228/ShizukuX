@@ -1,22 +1,26 @@
 package af.shizuku.manager.adb
+import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
-
+import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.home.HomeActivity
+import af.shizuku.manager.utils.EnvironmentUtils
 import android.accessibilityservice.AccessibilityService
-import android.os.Build
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
-import android.view.accessibility.AccessibilityEvent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
+import android.util.Log
+import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import kotlin.coroutines.resume
-import timber.log.Timber
+import io.sentry.Breadcrumb
+import io.sentry.Sentry
+import io.sentry.SentryLevel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,29 +30,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import af.shizuku.manager.MainActivity
-import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.adb.PreferenceAdbKeyStore
-import af.shizuku.manager.adb.AdbKey
-import af.shizuku.manager.adb.AdbPairingClient
-import af.shizuku.manager.home.HomeActivity
-import af.shizuku.manager.utils.EnvironmentUtils
-import io.sentry.Sentry
-import io.sentry.Breadcrumb
-import io.sentry.SentryLevel
+import timber.log.Timber
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
 
 class AdbPairingAccessibilityService : AccessibilityService() {
 
     companion object {
         /** Broadcast from StarterActivity: start the fully-automatic pairing flow. */
         const val ACTION_AUTO_PAIRING = "af.shizuku.manager.action.AUTO_PAIRING"
+
         /** Broadcast back when the automatic flow could not complete; caller falls back to manual. */
         const val ACTION_AUTO_PAIRING_FAILED = "af.shizuku.manager.action.AUTO_PAIRING_FAILED"
+
         /** Broadcast from StarterActivity: automatically enable the wireless-debugging switch. */
         const val ACTION_AUTO_ENABLE_WIRELESS = "af.shizuku.manager.action.AUTO_ENABLE_WIRELESS"
+
         /** Broadcast back when wireless debugging was enabled by the assistant. */
         const val ACTION_AUTO_WIRELESS_ENABLED = "af.shizuku.manager.action.AUTO_WIRELESS_ENABLED"
+
         /** Broadcast back when enabling failed; caller falls back to manual. */
         const val ACTION_AUTO_WIRELESS_FAILED = "af.shizuku.manager.action.AUTO_WIRELESS_FAILED"
         private const val AUTO_PAIRING_TIMEOUT_MS = 90_000L
@@ -73,6 +73,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
 
     @Volatile
     var port: Int? = null
+
     @Volatile
     var password: String? = null
 
@@ -160,9 +161,11 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         Log.i("AdbAccessibility", "onServiceConnected")
-        Sentry.addBreadcrumb(Breadcrumb("ADB Pairing Accessibility Service connected").apply {
-            category = "adb.pairing"
-        })
+        Sentry.addBreadcrumb(
+            Breadcrumb("ADB Pairing Accessibility Service connected").apply {
+                category = "adb.pairing"
+            }
+        )
 
         val isTv = EnvironmentUtils.isTelevision()
 
@@ -178,8 +181,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             val intent = Intent(this, MainActivity::class.java).apply {
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_SINGLE_TOP
                 )
                 putExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, true)
             }
@@ -228,10 +231,15 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         // than reading content we have no reason to look at (mirrors the packageNames declaration
         // in accessibility_service_config.xml).
         if (!hostsPairingDialog(event.packageName?.toString())) return
-        Log.i("AdbAccessibility", "EVENT type=" + event.eventType + " win=" + event.windowId + " cls=" + event.className + " pkg=" + event.packageName)
+        Log.i(
+            "AdbAccessibility",
+            "EVENT type=" + event.eventType + " win=" + event.windowId + " cls=" + event.className + " pkg=" + event.packageName
+        )
         Timber.tag("AdbAccessibility").d(
             "Event type=%d windowId=%d source=%s",
-            event.eventType, event.windowId, event.className
+            event.eventType,
+            event.windowId,
+            event.className
         )
 
         val source = event.source ?: run {
@@ -264,16 +272,22 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             if (className.contains("AlertDialog") || className.contains("Dialog")) {
                 val text = source.text ?: ""
                 Timber.tag("AdbAccessibility").d("Samsung Dialog detected: $text")
-                Sentry.addBreadcrumb(Breadcrumb("Samsung Dialog detected").apply {
-                    category = "adb.pairing"
-                    setData("text", text.toString())
-                })
+                Sentry.addBreadcrumb(
+                    Breadcrumb("Samsung Dialog detected").apply {
+                        category = "adb.pairing"
+                        setData("text", text.toString())
+                    }
+                )
             }
         }
 
         Timber.tag("AdbAccessibility").d(
             "Event type=%d windowId=%d source=%s port=%s password=%s",
-            event.eventType, windowId, event.className, port, password?.let { "******" }
+            event.eventType,
+            windowId,
+            event.className,
+            port,
+            password?.let { "******" }
         )
 
         // Pass 1: find the pairing pop-up — an IP:port somewhere in the window tree.
@@ -301,7 +315,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             scanWindowRoot(windowRoot)
         } finally {
             for (node in windowChain) {
-                try { node.recycle() } catch (e: Throwable) {}
+                try { node.recycle() } catch (ignored: Throwable) {}
             }
         }
 
@@ -344,7 +358,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         try {
             scanWindowRoot(root)
         } finally {
-            try { root.recycle() } catch (e: Throwable) {}
+            try { root.recycle() } catch (ignored: Throwable) {}
         }
     }
 
@@ -381,8 +395,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         if (currentPort == null || currentPassword == null) {
             // Android 11+ only: below R there is no wireless debugging, hence no pairing port
             // to discover. (AdbMdns itself is @RequiresApi(R).)
-            if (currentPassword != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-                && mdnsDiscoveryActive.compareAndSet(false, true)
+            if (currentPassword != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+                mdnsDiscoveryActive.compareAndSet(false, true)
             ) {
                 Log.i("AdbAccessibility", "PORT missing, discovering pairing endpoint over mDNS")
                 serviceScope.launch {
@@ -419,7 +433,11 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 Timber.tag("AdbAccessibility").e(e, "Failed to load AdbKey")
                 Sentry.captureException(e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.adb_error_key_store), Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@AdbPairingAccessibilityService,
+                        getString(R.string.adb_error_key_store),
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
                 disableSelf()
                 return@launch
@@ -460,13 +478,17 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             }.onSuccess {
                 if (it) {
                     Log.i("AdbAccessibility", "PAIRING succeeded")
-                    Sentry.addBreadcrumb(Breadcrumb("Pairing client succeeded").apply {
-                        category = "adb.pairing"
-                    })
+                    Sentry.addBreadcrumb(
+                        Breadcrumb("Pairing client succeeded").apply {
+                            category = "adb.pairing"
+                        }
+                    )
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             this@AdbPairingAccessibilityService,
-                            "${getString(R.string.notification_adb_pairing_succeed_title)}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
+                            "${getString(
+                                R.string.notification_adb_pairing_succeed_title
+                            )}. ${getString(R.string.notification_adb_pairing_succeed_text)}",
                             Toast.LENGTH_LONG
                         ).show()
                         // The auto-pair path is independent of AdbPairingService: if that
@@ -491,10 +513,12 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                         startActivity(intent)
                     }
                 } else {
-                    Sentry.addBreadcrumb(Breadcrumb("Pairing client returned false").apply {
-                        category = "adb.pairing"
-                        level = SentryLevel.WARNING
-                    })
+                    Sentry.addBreadcrumb(
+                        Breadcrumb("Pairing client returned false").apply {
+                            category = "adb.pairing"
+                            level = SentryLevel.WARNING
+                        }
+                    )
                 }
                 resetAutoPairing()
                 disableSelf()
@@ -516,10 +540,16 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 delay(60_000)
                 if (timeoutGeneration == gen && (port == null || password == null)) {
                     Timber.tag("AdbAccessibility").w("Pairing discovery timed out")
-                    Sentry.addBreadcrumb(Breadcrumb("Pairing discovery timed out").apply {
-                        level = SentryLevel.WARNING
-                    })
-                    Toast.makeText(this@AdbPairingAccessibilityService, getString(R.string.toast_pairing_timeout), Toast.LENGTH_LONG).show()
+                    Sentry.addBreadcrumb(
+                        Breadcrumb("Pairing discovery timed out").apply {
+                            level = SentryLevel.WARNING
+                        }
+                    )
+                    Toast.makeText(
+                        this@AdbPairingAccessibilityService,
+                        getString(R.string.toast_pairing_timeout),
+                        Toast.LENGTH_LONG
+                    ).show()
                     disableSelf()
                 }
             }
@@ -599,7 +629,9 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             autoWirelessRequested = false
             runCatching {
                 sendBroadcast(
-                    Intent(ACTION_AUTO_WIRELESS_FAILED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    Intent(
+                        ACTION_AUTO_WIRELESS_FAILED
+                    ).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                 )
             }
         }
@@ -612,7 +644,9 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 autoWirelessRequested = false
                 runCatching {
                     sendBroadcast(
-                        Intent(ACTION_AUTO_WIRELESS_FAILED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        Intent(
+                            ACTION_AUTO_WIRELESS_FAILED
+                        ).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                     )
                 }
             }
@@ -631,8 +665,12 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     private fun clickWirelessDebuggingSwitch(root: AccessibilityNodeInfo?) {
         if (root == null || autoWirelessClicked) return
         val detailTexts = setOf(
-            "使用配对码配对设备", "Pair device with pairing code",
-            "已配对设备", "Paired devices", "使用配对码", "Pair with code"
+            "使用配对码配对设备",
+            "Pair device with pairing code",
+            "已配对设备",
+            "Paired devices",
+            "使用配对码",
+            "Pair with code"
         )
         if (containsAnyText(root, detailTexts)) {
             // Stage A: on the detail page — the real master switch.
@@ -651,7 +689,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                     }
                 } finally {
                     // findWirelessSwitch() returns a caller-owned node; release it after use.
-                    try { sw.recycle() } catch (e: Throwable) {}
+                    try { sw.recycle() } catch (ignored: Throwable) {}
                 }
             } else {
                 Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS on detail page; switch not found yet")
@@ -676,20 +714,20 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 Log.i("AdbAccessibility", "AUTO_ENABLE_WIRELESS clicked dev-options row; verifying after settle")
                 runCatching { target.performAction(AccessibilityNodeInfo.ACTION_CLICK) }
                 for (n in climbed) {
-                    try { n.recycle() } catch (e: Throwable) {}
+                    try { n.recycle() } catch (ignored: Throwable) {}
                 }
                 for (n in nodes) {
-                    try { n.recycle() } catch (e: Throwable) {}
+                    try { n.recycle() } catch (ignored: Throwable) {}
                 }
                 scheduleWirelessVerification()
                 return
             }
             for (n in climbed) {
-                try { n.recycle() } catch (e: Throwable) {}
+                try { n.recycle() } catch (ignored: Throwable) {}
             }
         }
         for (n in nodes) {
-            try { n.recycle() } catch (e: Throwable) {}
+            try { n.recycle() } catch (ignored: Throwable) {}
         }
     }
 
@@ -717,8 +755,8 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                     }
                 } finally {
                     // Caller-owned nodes from rootInActiveWindow()/findWirelessSwitch().
-                    try { sw?.recycle() } catch (e: Throwable) {}
-                    try { root.recycle() } catch (e: Throwable) {}
+                    try { sw?.recycle() } catch (ignored: Throwable) {}
+                    try { root.recycle() } catch (ignored: Throwable) {}
                 }
             }
         }
@@ -733,7 +771,9 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 autoWirelessRequested = false
                 runCatching {
                     sendBroadcast(
-                        Intent(ACTION_AUTO_WIRELESS_ENABLED).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                        Intent(
+                            ACTION_AUTO_WIRELESS_ENABLED
+                        ).setPackage(packageName).addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                     )
                 }
             }
@@ -751,16 +791,17 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             val rowText = try {
                 parent?.text?.toString() ?: ""
             } catch (e: Throwable) { "" }
-            try { parent?.recycle() } catch (e: Throwable) {}
+            try { parent?.recycle() } catch (ignored: Throwable) {}
             val cd = try {
                 sw.contentDescription?.toString() ?: ""
             } catch (e: Throwable) { "" }
             if (rowText.contains("无线") || rowText.contains("Wireless") ||
-                cd.contains("无线") || cd.contains("Wireless")) {
+                cd.contains("无线") || cd.contains("Wireless")
+            ) {
                 // Recycle the switches we did not return.
                 for (other in switches) {
                     if (other !== sw) {
-                        try { other.recycle() } catch (e: Throwable) {}
+                        try { other.recycle() } catch (ignored: Throwable) {}
                     }
                 }
                 return sw
@@ -769,7 +810,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val result = if (switches.size == 1) switches[0] else null
         if (result == null) {
             for (sw in switches) {
-                try { sw.recycle() } catch (e: Throwable) {}
+                try { sw.recycle() } catch (ignored: Throwable) {}
             }
         }
         return result
@@ -794,7 +835,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 // Recycle the subtree only when nothing in it landed in the result set;
                 // result nodes stay alive for the caller.
                 if (out.size == before) {
-                    try { child.recycle() } catch (e: Throwable) {}
+                    try { child.recycle() } catch (ignored: Throwable) {}
                 }
             }
         } catch (e: Throwable) {
@@ -809,7 +850,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         val result = found.isNotEmpty()
         // Only the boolean matters here; the matches themselves are never used again.
         for (node in found) {
-            try { node.recycle() } catch (e: Throwable) {}
+            try { node.recycle() } catch (ignored: Throwable) {}
         }
         return result
     }
@@ -828,8 +869,14 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     private fun findAndClickPairButton(root: AccessibilityNodeInfo?) {
         if (root == null || autoPairClicked) return
         val exactTexts = setOf(
-            "使用配对码配对设备", "使用配对码", "配对码配对", "通过配对码配对设备",
-            "Pair device with pairing code", "Pair device", "pairing code", "Pair with code"
+            "使用配对码配对设备",
+            "使用配对码",
+            "配对码配对",
+            "通过配对码配对设备",
+            "Pair device with pairing code",
+            "Pair device",
+            "pairing code",
+            "Pair with code"
         )
         val found = ArrayList<AccessibilityNodeInfo>()
         collectNodesByText(root, found, exactTexts, 0)
@@ -839,13 +886,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 autoPairClicked = true
                 Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button")
                 for (n in found) {
-                    try { n.recycle() } catch (e: Throwable) {}
+                    try { n.recycle() } catch (ignored: Throwable) {}
                 }
                 return
             }
         }
         for (n in found) {
-            try { n.recycle() } catch (e: Throwable) {}
+            try { n.recycle() } catch (ignored: Throwable) {}
         }
         // Fallback: walk again and click any clickable node whose text mentions pairing.
         // Deliberately narrow: "pair" alone would also match "Paired devices" (已配对设备)
@@ -858,13 +905,13 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 autoPairClicked = true
                 Log.i("AdbAccessibility", "AUTO_PAIRING clicked pairing button (fallback)")
                 for (n in fallback) {
-                    try { n.recycle() } catch (e: Throwable) {}
+                    try { n.recycle() } catch (ignored: Throwable) {}
                 }
                 return
             }
         }
         for (n in fallback) {
-            try { n.recycle() } catch (e: Throwable) {}
+            try { n.recycle() } catch (ignored: Throwable) {}
         }
     }
 
@@ -891,7 +938,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 // Recycle the subtree only when nothing in it landed in the result set;
                 // result nodes stay alive for the caller.
                 if (out.size == before) {
-                    try { child.recycle() } catch (e: Throwable) {}
+                    try { child.recycle() } catch (ignored: Throwable) {}
                 }
             }
         } catch (e: Throwable) {
@@ -915,20 +962,29 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 port = it
                 Log.i("AdbAccessibility", "PORT found=" + it + " text=[" + text + "] win=" + candidateWindowId)
                 Timber.tag("AdbAccessibility").i("Pairing port found: %d (window %d)", it, candidateWindowId)
-                Sentry.addBreadcrumb(Breadcrumb("Pairing port found via standard regex").apply {
-                    category = "adb.pairing"
-                })
+                Sentry.addBreadcrumb(
+                    Breadcrumb("Pairing port found via standard regex").apply {
+                        category = "adb.pairing"
+                    }
+                )
                 return
             }
             // Samsung specific: sometimes the port is in a different view or has specific labels
             if (text.contains("Port", ignoreCase = true)) {
                 fiveDigitRegex.find(text)?.value?.toIntOrNull()?.let {
                     port = it
-                    Log.i("AdbAccessibility", "PORT found(samsung)=" + it + " text=[" + text + "] win=" + candidateWindowId)
-                    Timber.tag("AdbAccessibility").i("Pairing port found via Samsung fallback: %d (window %d)", it, candidateWindowId)
-                    Sentry.addBreadcrumb(Breadcrumb("Pairing port found via Samsung fallback").apply {
-                        category = "adb.pairing"
-                    })
+                    Log.i(
+                        "AdbAccessibility",
+                        "PORT found(samsung)=" + it + " text=[" + text + "] win=" + candidateWindowId
+                    )
+                    Timber.tag(
+                        "AdbAccessibility"
+                    ).i("Pairing port found via Samsung fallback: %d (window %d)", it, candidateWindowId)
+                    Sentry.addBreadcrumb(
+                        Breadcrumb("Pairing port found via Samsung fallback").apply {
+                            category = "adb.pairing"
+                        }
+                    )
                     return
                 }
             }
@@ -941,7 +997,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 } finally {
                     // Recycle no matter how the recursion exits (including the early
                     // "port found" return); this function never hands nodes to callers.
-                    try { child.recycle() } catch (e: Throwable) {}
+                    try { child.recycle() } catch (ignored: Throwable) {}
                 }
             }
         } catch (e: Throwable) {
@@ -962,9 +1018,11 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 password = it
                 Log.i("AdbAccessibility", "PASSWORD found=" + it + " text=[" + text + "] win=" + candidateWindowId)
                 Timber.tag("AdbAccessibility").i("Pairing password found: %s (window %d)", it, candidateWindowId)
-                Sentry.addBreadcrumb(Breadcrumb("Pairing password found").apply {
-                    category = "adb.pairing"
-                })
+                Sentry.addBreadcrumb(
+                    Breadcrumb("Pairing password found").apply {
+                        category = "adb.pairing"
+                    }
+                )
                 scheduleTimeoutIfNeeded()
                 return
             }
@@ -977,7 +1035,7 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 } finally {
                     // Recycle no matter how the recursion exits (including the early
                     // "password found" return); this function never hands nodes to callers.
-                    try { child.recycle() } catch (e: Throwable) {}
+                    try { child.recycle() } catch (ignored: Throwable) {}
                 }
             }
         } catch (e: Throwable) {
@@ -991,5 +1049,4 @@ class AdbPairingAccessibilityService : AccessibilityService() {
         serviceScope.cancel()
         return super.onUnbind(intent)
     }
-
 }
