@@ -117,6 +117,12 @@ android {
     }
 }
 
+// P2-3: Rust-native adb-pairing (SPAKE2 + AES-GCM), replaces the legacy C++
+// adb_pairing.cpp implementation. Built by cargo ndk into jniLibs; must be
+// applied after the android block so the variant merge tasks exist.
+ext.rustPackages = ['adb-pairing']
+apply from: rootProject.file('gradle/rust-native.gradle')
+
 spotless {
     kotlin {
         target "**/*.kt"
@@ -276,6 +282,12 @@ dependencies {
     implementation libs.lottie
     implementation libs.markwon.core
     debugImplementation libs.leakcanary
+
+    implementation libs.androidx.tv.foundation
+    implementation libs.androidx.tv.material
+    implementation libs.wear.compose.foundation
+    implementation libs.wear.compose.material3
+    implementation libs.compose.material.icons.extended
 
     implementation libs.material
 

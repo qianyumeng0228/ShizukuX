@@ -1,0 +1,11 @@
+F:\shizukux\ShizukuX\rust\target\aarch64-linux-android\debug\deps\zeroize-cbc5ce607e064bdb.d: C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\lib.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\aarch64.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\barrier.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\stack.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\../README.md
+
+F:\shizukux\ShizukuX\rust\target\aarch64-linux-android\debug\deps\libzeroize-cbc5ce607e064bdb.rlib: C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\lib.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\aarch64.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\barrier.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\stack.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\../README.md
+
+F:\shizukux\ShizukuX\rust\target\aarch64-linux-android\debug\deps\libzeroize-cbc5ce607e064bdb.rmeta: C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\lib.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\aarch64.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\barrier.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\stack.rs C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\../README.md
+
+C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\lib.rs:
+C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\aarch64.rs:
+C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\barrier.rs:
+C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\stack.rs:
+C:\Users\32818\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\zeroize-1.9.1\src\../README.md:

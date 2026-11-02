@@ -58,6 +58,12 @@
             android:icon="@drawable/ic_visibility_off_24"
             android:defaultValue="false" />
 
+        <Preference
+            android:key="stealth_tutorial"
+            android:title="@string/settings_stealth_tutorial_entry"
+            android:summary="@string/settings_stealth_tutorial_entry_summary"
+            android:icon="@drawable/ic_visibility_off_24" />
+
         <SwitchPreferenceCompat
             android:key="hide_from_recents"
             android:title="@string/settings_hide_from_recents"

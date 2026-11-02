@@ -30,12 +30,5 @@ if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
             COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libshizuku.so")
 endif ()
 
-add_library(adb SHARED
-        adb_pairing.cpp misc.cpp)
-
-target_link_libraries(adb log boringssl::crypto_static cxx::cxx)
-
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_custom_command(TARGET adb POST_BUILD
-            COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libadb.so")
-endif ()
+# libadb.so (adb pairing) is built from Rust (rust/adb-pairing, cargo ndk) since P2-3;
+# the legacy C++ implementation in adb_pairing.cpp has been removed.

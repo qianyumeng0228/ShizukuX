@@ -7,6 +7,11 @@
          INSTALL_FAILED_DUPLICATE_PERMISSION. App management instead discovers candidate apps by
          checking their requestedPermissions for that name (no own declaration needed). -->
 
+    <!-- P2-4: androidx.wear.compose 1.7.1 declares minSdk 25 while this app keeps minSdk 24.
+         The Wear screens only render on Wear OS devices (all API 25+); on phones the classes
+         are never loaded, so forcing the merge is safe. -->
+    <uses-sdk tools:overrideLibrary="androidx.wear.compose.material.core,androidx.wear.compose.foundation,androidx.wear.compose.material3" />
+
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Best-effort only: runtime-revocable, and code falls back to an inexact wake via
          canScheduleExactAlarms() if declined/unavailable (see WatchdogAlarmReceiver). -->
@@ -161,9 +166,17 @@
             android:targetActivity=".MainActivity"
             android:exported="true" />
             
-        <activity-alias
+        <!-- P2-4: real TV Compose host (HomeCards/TV screens), reached from the
+             TV launcher through the alias below. -->
+        <activity
             android:name=".TvActivity"
-            android:targetActivity=".MainActivity"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:theme="@style/Theme" />
+
+        <activity-alias
+            android:name=".TvLauncherAlias"
+            android:targetActivity=".TvActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -191,6 +204,13 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- P2-4: stealth mode tutorial page -->
+        <activity
+            android:name=".settings.StealthModeActivity"
+            android:exported="false"
+            android:label="@string/settings_stealth_tutorial_entry"
+            android:theme="@style/Theme" />
 
         <activity
             android:name=".onboarding.OnboardingActivity"

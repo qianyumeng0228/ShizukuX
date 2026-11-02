@@ -345,6 +345,11 @@ class AdvancedSettingsFragment : BaseSettingsFragment() {
         // package name, or ComponentName construction throws "Component class ... does not exist"
         // (SHIZUKUPLUS-7R).
         val launcherAlias = ComponentName(context, "af.shizuku.manager.LauncherAlias")
+        findPreference<androidx.preference.Preference>("stealth_tutorial")?.setOnPreferenceClickListener {
+            startActivity(Intent(requireContext(), StealthModeActivity::class.java))
+            true
+        }
+
         findPreference<TwoStatePreference>("stealth_mode")?.apply {
             isChecked = ShizukuSettings.isStealthModeEnabled()
             setOnPreferenceChangeListener { pref, newValue ->

@@ -1,0 +1,1 @@
+F:\shizukux\ShizukuX\rust\target\x86_64-linux-android\debug\libadb.so: F:\shizukux\ShizukuX\rust\adb-pairing\src\cipher.rs F:\shizukux\ShizukuX\rust\adb-pairing\src\lib.rs F:\shizukux\ShizukuX\rust\adb-pairing\src\spake.rs

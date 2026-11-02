@@ -1,6 +1,8 @@
 package af.shizuku.manager.module
 
+import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import androidx.annotation.StringRes
 
 /**
  * Access-policy settings for ADB modules (local variant, ported from Nightzuku's
@@ -17,10 +19,10 @@ object ModuleSettings {
     private const val KEY_ALLOW_BACKGROUND_ACTIONS = "adb_modules_allow_background_actions"
     private const val KEY_TRUSTED_MODULES = "adb_modules_trusted_modules"
 
-    enum class AccessMode(val value: String) {
-        SAFE("safe"),
-        CUSTOM("custom"),
-        FULL("full");
+    enum class AccessMode(val value: String, @StringRes val labelRes: Int) {
+        SAFE("safe", R.string.modules_access_mode_safe),
+        CUSTOM("custom", R.string.modules_access_mode_custom),
+        FULL("full", R.string.modules_access_mode_full);
 
         companion object {
             fun fromValue(value: String?): AccessMode {
