@@ -183,6 +183,12 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
     private var state: State = State.Ready
 
     fun start(): Boolean {
+        // A port read off the screen or a notification can be garbage (e.g. 84000); Socket()
+        // would throw IllegalArgumentException instead of the pairing just failing.
+        if (port !in 1..65535) {
+            Timber.tag(TAG).w("Pairing port out of range: $port")
+            return false
+        }
         Sentry.addBreadcrumb(Breadcrumb("ADB Pairing started").apply {
             category = "adb.pairing"
             setData("host", host)
