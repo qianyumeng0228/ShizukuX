@@ -142,7 +142,7 @@ object RootCompatHelper {
     }
 
     /**
-     * Deploys the SU Bridge (su/rish/plus + rish_shizuku.dex) to /data/local/tmp via Shizuku.
+     * Deploys the SU Bridge (su/rish/extra + rish_shizuku.dex) to /data/local/tmp via Shizuku.
      *
      * This is strictly better than the user-picked storage export for making the bridge actually
      * work with third-party apps:
@@ -180,7 +180,9 @@ object RootCompatHelper {
         val files = listOf(
             "su" to "755",
             "rish" to "755",
-            "plus" to "755",
+            // The helper script asset was renamed plus -> extra (71bb739a); deploying "plus" threw
+            // FileNotFoundException and the SU Bridge never deployed.
+            "extra" to "755",
             "rish_shizuku.dex" to "444"
         )
         try {
@@ -253,7 +255,7 @@ object RootCompatHelper {
 
         // Probe A — deploy check + true privilege, via Shizuku.
         val (_, lsOut, _) = runPrivilegedCapture(arrayOf("sh", "-c",
-            "ls -l '$tmpDir'/su '$tmpDir'/rish '$tmpDir'/plus '$tmpDir'/rish_shizuku.dex 2>&1; " +
+            "ls -l '$tmpDir'/su '$tmpDir'/rish '$tmpDir'/extra '$tmpDir'/rish_shizuku.dex 2>&1; " +
                 "echo '---'; grep -m1 '^Uid:' /proc/self/status"))
         val deployed = lsOut.isNotBlank() && !lsOut.contains("No such file")
         val uid = Regex("Uid:\\s+(\\d+)").find(lsOut)?.groupValues?.get(1)?.toIntOrNull()
