@@ -9,7 +9,9 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.os.ServiceManager
 import android.util.Log
+import rikka.shizuku.server.util.ArchiveVetting
 import rikka.shizuku.server.util.InputValidationUtils
+import rikka.shizuku.server.util.PrivateStaging
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.io.InputStream
@@ -357,21 +359,28 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
         if (!InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
         val dir = "/sdcard/Android/data/$packageName"
         File(dir).mkdirs()
+        // Stage the archive so it can be vetted before anything is extracted (audit P2-1):
+        // a tar.gz carrying a symlink entry followed by a write through it would otherwise
+        // land outside the target directory, exactly as it would in restoreTarDirectory.
+        val staged = PrivateStaging.create("shizukux-restore-external")
         return try {
-            val proc = ProcessBuilder("tar", "-xzf", "-", "-C", dir).start()
-            Thread {
-                try {
-                    ParcelFileDescriptor.AutoCloseInputStream(tarStream).use { src ->
-                        proc.outputStream.use { dst -> src.copyTo(dst) }
-                    }
-                } catch (_: Exception) {
-                    proc.outputStream.runCatching { close() }
-                }
-            }.also { it.isDaemon = true }.start()
+            ParcelFileDescriptor.AutoCloseInputStream(tarStream).use { src ->
+                staged.outputStream().use { dst -> src.copyTo(dst) }
+            }
+            // An unreadable archive is left to tar to reject (silent false, as before); an
+            // archive that lists but escapes the target is a security refusal and throws.
+            ArchiveVetting.vetArchiveOrThrow(staged)
+            val proc = ProcessBuilder("tar", "-xzf", staged.path, "-C", dir).start()
             proc.waitFor() == 0
-        } catch (_: Exception) { false }
+        } catch (e: SecurityException) {
+            Log.e(TAG, "restoreExternalData refused by security check", e)
+            throw e
+        } catch (_: Exception) {
+            false
+        } finally {
+            staged.delete()
+        }
     }
-
     // ── Streaming APK Install ─────────────────────────────────────────────────
 
     override fun createInstallSession(packageName: String?): Int {

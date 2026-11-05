@@ -12,6 +12,7 @@ import rikka.hidden.compat.ActivityManagerApis
 import rikka.shizuku.server.util.ArchiveVetting
 import rikka.shizuku.server.util.BinderCallLogger
 import rikka.shizuku.server.util.InputValidationUtils
+import rikka.shizuku.server.util.PrivateStaging
 import rikka.shizuku.server.util.ShellExecutor
 import rikka.shizuku.server.util.StorageAccessPolicy
 import java.io.File
@@ -289,7 +290,9 @@ class StorageProxyImpl(
         if (tarPfd == null) return false
         // Stage the archive so it can be vetted before anything is extracted: a symlink entry
         // followed by a file written through it would land outside the allowed directory.
-        val staged = File(STAGING_DIR, "shizukux-restore-${System.nanoTime()}.archive")
+        // Owner-only staging: /data/local/tmp is world-readable, and app data passes through
+        // this file while it waits for the vetting (audit P3-4).
+        val staged = PrivateStaging.create("shizukux-restore")
         return try {
             ParcelFileDescriptor.AutoCloseInputStream(tarPfd).use { input ->
                 staged.outputStream().use { input.copyTo(it) }
@@ -329,21 +332,12 @@ class StorageProxyImpl(
      *   can distinguish "rejected by the security check" from a generic failure.
      */
     internal fun vetArchiveOrThrow(staged: File) {
-        val names = runTar("-tf", staged.path) ?: return
-        val verbose = runTar("-tvf", staged.path) ?: return
-        if (!ArchiveVetting.isSafe(names, verbose)) {
-            val reason = "Archive rejected by security check: an entry writes through a link or outside the target folder"
-            Log.e(TAG, "restoreTarDirectory refused: $reason")
-            throw SecurityException(reason)
+        try {
+            ArchiveVetting.vetArchiveOrThrow(staged)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "restoreTarDirectory refused by security check", e)
+            throw e
         }
-    }
-
-    private fun runTar(vararg args: String): List<String>? = try {
-        val proc = ProcessBuilder("tar", *args).start()
-        val lines = proc.inputStream.bufferedReader().readLines().filter { it.isNotBlank() }
-        if (proc.waitFor() == 0) lines else null
-    } catch (_: Exception) {
-        null
     }
 
     private companion object {
@@ -351,8 +345,5 @@ class StorageProxyImpl(
 
         val WRITE_MODE_BITS = ParcelFileDescriptor.MODE_WRITE_ONLY or ParcelFileDescriptor.MODE_CREATE or
             ParcelFileDescriptor.MODE_TRUNCATE or ParcelFileDescriptor.MODE_APPEND
-
-        // Writable by both the shell (2000) and root server; the manager already stages files here.
-        val STAGING_DIR = File("/data/local/tmp")
     }
 }
