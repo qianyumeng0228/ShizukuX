@@ -13,7 +13,7 @@ use rand::rngs::OsRng;
 use crate::cipher::PairingCipher;
 use crate::spake::{MESSAGE_SIZE, Spake2State, SpakeRole};
 
-const PAIRING_CONTEXT_CLASS: &str = "af/shizuku/manager/adb/AdbPairingClient$PairingContext";
+const PAIRING_CONTEXT_CLASS: &str = "af/shizuku/manager/adb/PairingContext";
 const ADB_PAIRING_CLIENT_CLASS: &str = "af/shizuku/manager/adb/AdbPairingClient";
 
 #[derive(Debug)]
@@ -271,6 +271,10 @@ pub extern "system" fn JNI_OnLoad(vm: JavaVM, _reserved: *mut c_void) -> jint {
 
     let Ok(class) = env.find_class(PAIRING_CONTEXT_CLASS) else {
         error!("Unable to find {PAIRING_CONTEXT_CLASS}.");
+        // Clear the pending JNI ClassNotFoundException so the runtime does not abort
+        // on the next JNI call. Returning JNI_ERR here causes System.loadLibrary() to
+        // throw UnsatisfiedLinkError, which the caller catches and degrades gracefully.
+        let _ = env.exception_clear();
         return JNI_ERR;
     };
 
@@ -287,6 +291,7 @@ pub extern "system" fn JNI_OnLoad(vm: JavaVM, _reserved: *mut c_void) -> jint {
         }
     } else {
         error!("Unable to find {ADB_PAIRING_CLIENT_CLASS} for available().");
+        let _ = env.exception_clear();
     }
 
     let methods = [

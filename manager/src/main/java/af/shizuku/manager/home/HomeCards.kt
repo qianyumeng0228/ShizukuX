@@ -827,7 +827,8 @@ internal fun HomeRootRow(
         title = htmlStringResource(R.string.home_root_title),
         summary = htmlStringResource(
             R.string.home_root_description,
-            "Don't kill my app!"
+            "Don't kill my app!",
+            stringResource(R.string.app_name)
         ),
         showChevron = false,
         onClick = onStartRoot,

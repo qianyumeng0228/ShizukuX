@@ -289,7 +289,7 @@ class StorageProxyImpl(
         if (tarPfd == null) return false
         // Stage the archive so it can be vetted before anything is extracted: a symlink entry
         // followed by a file written through it would land outside the allowed directory.
-        val staged = File(STAGING_DIR, "splus-restore-${System.nanoTime()}.archive")
+        val staged = File(STAGING_DIR, "shizukux-restore-${System.nanoTime()}.archive")
         return try {
             ParcelFileDescriptor.AutoCloseInputStream(tarPfd).use { input ->
                 staged.outputStream().use { input.copyTo(it) }
