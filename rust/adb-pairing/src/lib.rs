@@ -255,7 +255,9 @@ extern "system" fn native_destroy<'local>(_env: JNIEnv<'local>, _this: JObject<'
     drop(unsafe { Box::from_raw(ptr as *mut PairingContext) });
 }
 
-extern "system" fn native_available<'local>(_env: JNIEnv<'local>, _this: JObject<'local>) -> jboolean {
+// Registered against AdbPairingClient.available(), which is @JvmStatic, so the receiver is a
+// class reference; the ABI is the same as JObject but the parameter documents that contract.
+extern "system" fn native_available<'local>(_env: JNIEnv<'local>, _class: JClass<'local>) -> jboolean {
     // The Rust pairing library is built into the APK; availability is a build-time
     // property. Always report available once the library has been loaded.
     JNI_TRUE
