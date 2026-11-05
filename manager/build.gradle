@@ -345,8 +345,8 @@ android {
 }
 
 sentry {
-    org = "af-developments"
-    projectName = "shizukuplus"
+    org = "qianyumeng0228"
+    projectName = "shizukux"
     def sentryToken = System.getenv("SENTRY_AUTH_TOKEN") ?: project.findProperty("SENTRY_AUTH_TOKEN")
     authToken = sentryToken ?: ""
     
