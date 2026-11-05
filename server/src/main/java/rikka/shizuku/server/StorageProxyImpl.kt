@@ -321,22 +321,21 @@ class StorageProxyImpl(
     }
 
     /**
-     * Security gate for a staged restore archive. Refusals are loud: the caller
-     * (a client app over the binder) has to be able to distinguish "rejected by
-     * the security check" from a generic failure. Throws SecurityException.
+     * Security gate for a staged restore archive. Two distinct failure modes:
+     * - the archive cannot even be listed (corrupt / unreadable): return silently,
+     *   restoreTarDirectory reports a plain false, same as before 8ab9bec6;
+     * - the archive lists but contains entries that write through a link or outside
+     *   the target folder: refuse loudly with SecurityException so the binder caller
+     *   can distinguish "rejected by the security check" from a generic failure.
      */
     internal fun vetArchiveOrThrow(staged: File) {
-        if (!isArchiveSafe(staged)) {
+        val names = runTar("-tf", staged.path) ?: return
+        val verbose = runTar("-tvf", staged.path) ?: return
+        if (!ArchiveVetting.isSafe(names, verbose)) {
             val reason = "Archive rejected by security check: an entry writes through a link or outside the target folder"
             Log.e(TAG, "restoreTarDirectory refused: $reason")
             throw SecurityException(reason)
         }
-    }
-
-    private fun isArchiveSafe(archive: File): Boolean {
-        val names = runTar("-tf", archive.path) ?: return false
-        val verbose = runTar("-tvf", archive.path) ?: return false
-        return ArchiveVetting.isSafe(names, verbose)
     }
 
     private fun runTar(vararg args: String): List<String>? = try {
