@@ -208,7 +208,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final PrivilegedDataSourceImpl privilegedDataSource = new PrivilegedDataSourceImpl(() -> isRiskyBinderAllowed("PrivilegedDataSource", FEATURE_UNRESTRICTED_PERSONAL_DATA));
     private final BackupRestoreExtraImpl backupRestoreExtra = new BackupRestoreExtraImpl(() -> isRiskyBinderAllowed("BackupRestoreExtra", FEATURE_UNRESTRICTED_APP_DATA));
     private final DeviceControlExtraImpl deviceControlExtra = new DeviceControlExtraImpl(() -> isRiskyBinderAllowed("DeviceControlExtra", FEATURE_UNRESTRICTED_PERSONAL_DATA));
-    private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl(() -> isFeatureEnabled(FEATURE_UNRESTRICTED_APP_DATA));
+    private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl(() -> isRiskyBinderAllowed("ApkPatcher", FEATURE_UNRESTRICTED_APP_DATA));
 
     // Re-grants the OS-level runtime permission for every already-authorized app on each server
     // start. Prior to the 741df2f4 fix (2026-07-19), grantRuntimePermission silently failed because
@@ -453,10 +453,14 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         long now = android.os.SystemClock.elapsedRealtime();
         long[] cached = trustedPermissionCache.get(name);
         if (cached != null && now - cached[1] < TRUSTED_PERMISSION_TTL_MS) return cached[0] == 1;
+        // Resolve in the caller's user: the manager may live in a work profile or a cloned
+        // user, where user 0's copy says nothing about the grant we are looking at.
+        int userId = UserHandleCompat.getUserId(Binder.getCallingUid());
         boolean trusted = false;
+        boolean transientFailure = false;
         for (String pkg : PERMISSION_DEFINERS) {
             try {
-                PackageInfo pi = Android17Compat.getPackageInfo(pkg, PackageManager.GET_PERMISSIONS, 0);
+                PackageInfo pi = Android17Compat.getPackageInfo(pkg, PackageManager.GET_PERMISSIONS, userId);
                 if (pi == null || pi.permissions == null) continue;
                 for (android.content.pm.PermissionInfo p : pi.permissions) {
                     if (name.equals(p.name) &&
@@ -467,10 +471,13 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 }
             } catch (Throwable tr) {
                 LOGGER.w(tr, "isTrustedPermission %s in %s", name, pkg);
+                transientFailure = true;
             }
             if (trusted) break;
         }
-        trustedPermissionCache.put(name, new long[] {trusted ? 1 : 0, now});
+        // A transient PM failure is not evidence that the permission is untrusted; caching it
+        // would deny every caller for the whole TTL window. Re-ask on the next call instead.
+        if (!transientFailure) trustedPermissionCache.put(name, new long[] {trusted ? 1 : 0, now});
         return trusted;
     }
 
