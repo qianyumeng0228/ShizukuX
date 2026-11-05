@@ -15,7 +15,13 @@ import java.util.concurrent.TimeUnit
  * Ported from upstream ShizukuPlus DeviceControlPlusImpl (r2647), adapted to ShizukuX
  * Extra naming and local exec helpers (ShizukuX has no shared ShellExecutor).
  */
-class DeviceControlExtraImpl : IDeviceControlExtra.Stub() {
+/** @param allowed whether the calling app may use this binder right now (see [rikka.shizuku.server.util.RiskyBinderGate]). */
+class DeviceControlExtraImpl(private val allowed: java.util.function.BooleanSupplier) : IDeviceControlExtra.Stub() {
+
+    override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+        rikka.shizuku.server.util.RiskyBinderGate.enforce(code, allowed, "DeviceControlExtra")
+        return super.onTransact(code, data, reply, flags)
+    }
 
     companion object {
         private const val TAG = "DeviceControlExtra"

@@ -131,4 +131,27 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_debug_p3"
+        android:title="@string/settings_developer_category_debug"
+        android:defaultValue="false">
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="unrestricted_app_data"
+            android:title="@string/settings_unrestricted_app_data_title"
+            android:summary="@string/settings_unrestricted_app_data_summary"
+            android:icon="@drawable/ic_folder_24"
+            android:defaultValue="false"
+            app:severityBadge="dangerous" />
+
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="unrestricted_personal_data"
+            android:title="@string/settings_unrestricted_personal_data_title"
+            android:summary="@string/settings_unrestricted_personal_data_summary"
+            android:icon="@drawable/ic_shield_24"
+            android:defaultValue="false"
+            app:severityBadge="dangerous" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
 </PreferenceScreen>

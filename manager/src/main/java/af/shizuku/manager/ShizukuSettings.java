@@ -85,6 +85,12 @@ public class ShizukuSettings {
         public static final String KEY_VECTOR_ENABLED = "vector_enabled";
         public static final String KEY_HIDE_DISABLED_PLUS_FEATURES = "hide_disabled_plus_features";
 
+        // P3 security hardening (ShizukuPlus 954b6293): opt-in escape hatches that bypass
+        // per-app storage guards. Default off; enabling requires the confirmation dialog in
+        // DeveloperOptionsFragment.
+        public static final String KEY_UNRESTRICTED_APP_DATA = "unrestricted_app_data";
+        public static final String KEY_UNRESTRICTED_PERSONAL_DATA = "unrestricted_personal_data";
+
         // Home card extras (ShizukuX additions)
         public static final String KEY_SHOW_START_ADB_HOME = "show_start_adb_home";
         public static final String KEY_SHOW_BACKUP_APPS_HOME = "show_backup_apps_home";
@@ -980,6 +986,26 @@ public class ShizukuSettings {
         if (p != null) p.edit().putBoolean(Keys.KEY_EXPERIMENTAL_ROOT_COMPAT, enable).apply();
     }
 
+    public static boolean isUnrestrictedAppDataEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_UNRESTRICTED_APP_DATA, false);
+    }
+
+    public static void setUnrestrictedAppDataEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_UNRESTRICTED_APP_DATA, enable).apply();
+    }
+
+    public static boolean isUnrestrictedPersonalDataEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_UNRESTRICTED_PERSONAL_DATA, false);
+    }
+
+    public static void setUnrestrictedPersonalDataEnabled(boolean enable) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_UNRESTRICTED_PERSONAL_DATA, enable).apply();
+    }
+
     public static boolean isSpoofDeviceEnabled() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_SPOOF_DEVICE_ENABLED, false);
@@ -1200,6 +1226,8 @@ public class ShizukuSettings {
                 service.updateExtraFeatureEnabled("root_power_ghosting", isRootPowerGhostingEnabled());
                 service.updateExtraFeatureEnabled("bootloader_flash_ota", isBootloaderFlashOtaEnabled());
                 service.updateExtraFeatureEnabled("bootloader_fastbootd_reboot", isBootloaderFastbootdRebootEnabled());
+                service.updateExtraFeatureEnabled("unrestricted_app_data", isUnrestrictedAppDataEnabled());
+                service.updateExtraFeatureEnabled("unrestricted_personal_data", isUnrestrictedPersonalDataEnabled());
 
                 String suPathUri = getExportDirUri();
                 if (suPathUri != null) {

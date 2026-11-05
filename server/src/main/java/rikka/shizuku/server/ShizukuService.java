@@ -185,8 +185,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private volatile int secondaryManagerAppId;
     // uptimeMillis of the last on-demand manager-appId re-resolve (throttle; see checkCallerManagerPermission).
     private volatile long lastManagerAppIdRefresh;
+    // Developer options that bring back the riskier third-party APIs; both default off.
+    // "App data": other apps' private files (Storage Bridge, temp-debug, BackupRestoreExtra).
+    // "Personal data": SMS, contacts, location, clipboard, screenshots, input, logcat, reboot.
+    private static final String FEATURE_UNRESTRICTED_APP_DATA = "unrestricted_app_data";
+    private static final String FEATURE_UNRESTRICTED_PERSONAL_DATA = "unrestricted_personal_data";
+
     private final VirtualMachineManagerImpl virtualMachineManager = new VirtualMachineManagerImpl();
-    private final StorageProxyImpl storageProxy = new StorageProxyImpl();
+    private final StorageProxyImpl storageProxy = new StorageProxyImpl(
+            () -> isFeatureEnabled(FEATURE_UNRESTRICTED_APP_DATA),
+            () -> isRiskyBinderAllowed("StorageProxy.openContentUri", FEATURE_UNRESTRICTED_PERSONAL_DATA));
     private final AICorePlusImpl aiCoreExtra;
     private final WindowManagerPlusImpl windowManagerExtra = new WindowManagerPlusImpl();
     private final ContinuityBridgeImpl continuityBridge = new ContinuityBridgeImpl();
@@ -196,11 +204,11 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private final StatusBarGovernorExtraImpl statusBarGovernorExtra = new StatusBarGovernorExtraImpl();
     private final PackageGovernorExtraImpl packageGovernorExtra = new PackageGovernorExtraImpl();
     private final DisplayTunerExtraImpl displayTunerExtra = new DisplayTunerExtraImpl();
-    private final AppInspectorImpl appInspector = new AppInspectorImpl();
-    private final PrivilegedDataSourceImpl privilegedDataSource = new PrivilegedDataSourceImpl();
-    private final BackupRestoreExtraImpl backupRestoreExtra = new BackupRestoreExtraImpl();
-    private final DeviceControlExtraImpl deviceControlExtra = new DeviceControlExtraImpl();
-    private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl();
+    private final AppInspectorImpl appInspector = new AppInspectorImpl(() -> isRiskyBinderAllowed("AppInspector", FEATURE_UNRESTRICTED_PERSONAL_DATA));
+    private final PrivilegedDataSourceImpl privilegedDataSource = new PrivilegedDataSourceImpl(() -> isRiskyBinderAllowed("PrivilegedDataSource", FEATURE_UNRESTRICTED_PERSONAL_DATA));
+    private final BackupRestoreExtraImpl backupRestoreExtra = new BackupRestoreExtraImpl(() -> isRiskyBinderAllowed("BackupRestoreExtra", FEATURE_UNRESTRICTED_APP_DATA));
+    private final DeviceControlExtraImpl deviceControlExtra = new DeviceControlExtraImpl(() -> isRiskyBinderAllowed("DeviceControlExtra", FEATURE_UNRESTRICTED_PERSONAL_DATA));
+    private final ApkPatcherImpl apkPatcher = new ApkPatcherImpl(() -> isFeatureEnabled(FEATURE_UNRESTRICTED_APP_DATA));
 
     // Re-grants the OS-level runtime permission for every already-authorized app on each server
     // start. Prior to the 741df2f4 fix (2026-07-19), grantRuntimePermission silently failed because
@@ -428,15 +436,57 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         return true;
     }
 
+    // Packages allowed to define a Shizuku API permission: the two manager flavors, the second of
+    // which shares its package name with the Compat Hub and stock Shizuku.
+    private static final String[] PERMISSION_DEFINERS = {
+            ServerConstants.PLUS_APPLICATION_ID, ServerConstants.DROPIN_APPLICATION_ID
+    };
+    private static final long TRUSTED_PERMISSION_TTL_MS = 10_000;
+    private final java.util.concurrent.ConcurrentHashMap<String, long[]> trustedPermissionCache =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Whether [name] is defined, as a dangerous (user-granted) permission, by a package in
+     * {@link #PERMISSION_DEFINERS}. Cached briefly: it runs on every binder call's permission check.
+     */
+    private boolean isTrustedPermission(String name) {
+        long now = android.os.SystemClock.elapsedRealtime();
+        long[] cached = trustedPermissionCache.get(name);
+        if (cached != null && now - cached[1] < TRUSTED_PERMISSION_TTL_MS) return cached[0] == 1;
+        boolean trusted = false;
+        for (String pkg : PERMISSION_DEFINERS) {
+            try {
+                PackageInfo pi = Android17Compat.getPackageInfo(pkg, PackageManager.GET_PERMISSIONS, 0);
+                if (pi == null || pi.permissions == null) continue;
+                for (android.content.pm.PermissionInfo p : pi.permissions) {
+                    if (name.equals(p.name) &&
+                        (p.protectionLevel & android.content.pm.PermissionInfo.PROTECTION_MASK_BASE) == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS) {
+                        trusted = true;
+                        break;
+                    }
+                }
+            } catch (Throwable tr) {
+                LOGGER.w(tr, "isTrustedPermission %s in %s", name, pkg);
+            }
+            if (trusted) break;
+        }
+        trustedPermissionCache.put(name, new long[] {trusted ? 1 : 0, now});
+        return trusted;
+    }
+
     private int checkCallingPermission() {
         try {
             int pid = Binder.getCallingPid();
             int uid = Binder.getCallingUid();
-            if (ActivityManagerApis.checkPermission(ServerConstants.PERMISSION, pid, uid) == PackageManager.PERMISSION_GRANTED)
+            // An OS grant only counts when one of our packages (or stock Shizuku) defines the
+            // permission as dangerous. A permission no trusted package defines can be declared by
+            // any app as "normal" and is then granted at install, which was a silent
+            // authorization. PERMISSION_LEGACY is defined by nothing, so it is never accepted.
+            if (isTrustedPermission(ServerConstants.PERMISSION) &&
+                ActivityManagerApis.checkPermission(ServerConstants.PERMISSION, pid, uid) == PackageManager.PERMISSION_GRANTED)
                 return PackageManager.PERMISSION_GRANTED;
-            if (ActivityManagerApis.checkPermission(ServerConstants.PERMISSION_LEGACY, pid, uid) == PackageManager.PERMISSION_GRANTED)
-                return PackageManager.PERMISSION_GRANTED;
-            if (ActivityManagerApis.checkPermission(ServerConstants.PERMISSION_ORIGINAL, pid, uid) == PackageManager.PERMISSION_GRANTED)
+            if (isTrustedPermission(ServerConstants.PERMISSION_ORIGINAL) &&
+                ActivityManagerApis.checkPermission(ServerConstants.PERMISSION_ORIGINAL, pid, uid) == PackageManager.PERMISSION_GRANTED)
                 return PackageManager.PERMISSION_GRANTED;
             return PackageManager.PERMISSION_DENIED;
         } catch (Throwable tr) {
@@ -564,11 +614,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         reply.putInt(BIND_APPLICATION_SERVER_PATCH_VERSION, ShizukuApiConstants.SERVER_PATCH_VERSION);
         if (!isManager) {
             ClientRecord record = Objects.requireNonNull(clientRecord);
-            // When the server runs as root, all attached clients are automatically granted access.
-            // This lets apps like Swift Backup work without an explicit grant dialog in root mode.
-            if (OsUtils.getUid() == 0 && !record.allowed) {
-                record.allowed = true;
-            }
+            // Root mode asks like ADB mode does. It used to allow every attached client, and any
+            // app can obtain the binder, so every app on a rooted device got root silently.
             reply.putBoolean(BIND_APPLICATION_PERMISSION_GRANTED, record.allowed);
             reply.putBoolean(BIND_APPLICATION_SHOULD_SHOW_REQUEST_PERMISSION_RATIONALE, false);
             try {
@@ -2138,9 +2185,10 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 }
 
                 try {
-                    if (Android17Compat.checkPermission(PERMISSION, uid) == PackageManager.PERMISSION_GRANTED ||
-                        Android17Compat.checkPermission(ServerConstants.PERMISSION_LEGACY, uid) == PackageManager.PERMISSION_GRANTED ||
-                        Android17Compat.checkPermission(ServerConstants.PERMISSION_ORIGINAL, uid) == PackageManager.PERMISSION_GRANTED) {
+                    // Same trust rule as checkCallingPermission().
+                    if ((isTrustedPermission(PERMISSION) && Android17Compat.checkPermission(PERMISSION, uid) == PackageManager.PERMISSION_GRANTED) ||
+                        (isTrustedPermission(ServerConstants.PERMISSION_ORIGINAL) &&
+                            Android17Compat.checkPermission(ServerConstants.PERMISSION_ORIGINAL, uid) == PackageManager.PERMISSION_GRANTED)) {
                         return ConfigManager.FLAG_ALLOWED;
                     }
                 } catch (Throwable e) {
@@ -2727,24 +2775,37 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     @Override
     public IAppInspector getAppInspector() {
         enforceCallingPermission("getAppInspector");
+        if (!isRiskyBinderAllowed("getAppInspector", FEATURE_UNRESTRICTED_PERSONAL_DATA)) return null;
         return appInspector;
     }
 
     @Override
     public IPrivilegedDataSource getPrivilegedDataSource() {
         enforceCallingPermission("getPrivilegedDataSource");
+        if (!isRiskyBinderAllowed("getPrivilegedDataSource", FEATURE_UNRESTRICTED_PERSONAL_DATA)) return null;
         return privilegedDataSource;
     }
 
     @Override
     public IBackupRestoreExtra getBackupRestoreExtra() {
         enforceCallingPermission("getBackupRestoreExtra");
+        if (!isRiskyBinderAllowed("getBackupRestoreExtra", FEATURE_UNRESTRICTED_APP_DATA)) return null;
         return backupRestoreExtra;
+    }
+
+    /**
+     * The manager always gets the risky sub-binders (its own backup screen uses BackupRestoreExtra);
+     * third-party apps only while the user has turned on the matching developer option.
+     */
+    private boolean isRiskyBinderAllowed(String func, String featureKey) {
+        if (isFeatureEnabled(featureKey)) return true;
+        return checkCallerManagerPermission(func, Binder.getCallingUid(), Binder.getCallingPid());
     }
 
     @Override
     public IDeviceControlExtra getDeviceControlExtra() {
         enforceCallingPermission("getDeviceControlExtra");
+        if (!isRiskyBinderAllowed("getDeviceControlExtra", FEATURE_UNRESTRICTED_PERSONAL_DATA)) return null;
         return deviceControlExtra;
     }
 

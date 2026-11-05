@@ -4,6 +4,11 @@ All notable changes to ShizukuX (formerly ShizukuPlus) are documented here.
 
 ## [Unreleased]
 
+### 🔒 Security
+
+- **Ported the upstream ShizukuPlus security fixes reported in [#7](https://github.com/qianyumeng0228/ShizukuX/issues/7)** — Fake Local ADB now proves key possession (full PKCS#1 v1.5 signature check, 30 s handshake timeout, bounded signature attempts) instead of trusting a decrypt-and-compare token tail, and pairing prompts are per-request with a 60 s timeout and an MD5 fingerprint; any app could steer a service start by handing launch-mode/port extras to the exported `StarterActivity`, which is now unexported behind a no-extras trampoline; the ADB private key is excluded from settings backups; an OS grant of the API permission now only counts when a ShizukuX / Drop-In / Compat Hub package defines it as dangerous, and root mode no longer auto-allows every attached client; third-party access to other apps' private data and to personal data (Storage Bridge, app inspector, privileged data source, backup/restore, device control, temp-debug patching) now requires the two new "Unrestricted app data" / "Personal data & device control" developer options, with archive entries vetted before extraction.
+- **Removed the inherited Sentry DSN from `gradle.properties`** ([#6](https://github.com/qianyumeng0228/ShizukuX/issues/6)) — crash reports no longer go to the upstream ShizukuPlus Sentry project. The DSN now comes from the `SENTRY_DSN` CI secret, and builds without it simply skip crash reporting.
+
 ### 🐛 Bug Fixes
 
 #### Server / Service

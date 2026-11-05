@@ -17,7 +17,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
-class BackupRestoreExtraImpl : IBackupRestoreExtra.Stub() {
+/** @param allowed whether the calling app may use this binder right now (see [rikka.shizuku.server.util.RiskyBinderGate]). */
+class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupplier) : IBackupRestoreExtra.Stub() {
+
+    override fun onTransact(code: Int, data: android.os.Parcel, reply: android.os.Parcel?, flags: Int): Boolean {
+        rikka.shizuku.server.util.RiskyBinderGate.enforce(code, allowed, "BackupRestoreExtra")
+        return super.onTransact(code, data, reply, flags)
+    }
 
     companion object {
         private const val TAG = "BackupRestoreExtra"

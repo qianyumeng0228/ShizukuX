@@ -2,14 +2,22 @@ package rikka.shizuku.server
 
 import af.shizuku.server.IApkPatcher
 import android.os.ParcelFileDescriptor
+import android.util.Log
 import rikka.shizuku.server.util.InputValidationUtils
 import rikka.shizuku.server.util.ShellExecutor
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
-class ApkPatcherImpl : IApkPatcher.Stub() {
+/**
+ * @param unrestricted the "Unrestricted app data access" developer option. Making an app
+ *     debuggable lets the shell read and replace its private data, so starting a temp-debug
+ *     session or moving data through one needs it on. Restoring the original APK never does,
+ *     so turning the option off can't strand a patched app.
+ */
+class ApkPatcherImpl(private val unrestricted: java.util.function.BooleanSupplier) : IApkPatcher.Stub() {
 
     companion object {
+        private const val TAG = "ApkPatcher"
         private const val TMP_DIR = "/data/local/tmp/splus_td"
     }
 
@@ -92,10 +100,17 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
         return ShellExecutor.execCode("pm", "install-commit", sessionId.toString()) == 0
     }
 
+    private fun dataAccessAllowed(): Boolean {
+        if (unrestricted.asBoolean) return true
+        Log.w(TAG, "temp-debug data access refused: developer option off")
+        return false
+    }
+
     override fun prepareTempDebug(rawPackageName: String?): Boolean {
         // Reject names containing '/', '..' or shell metacharacters before the value is
         // interpolated into `/data/data/$packageName` and passed to pm (audit slice4 P1-3).
         val packageName = rawPackageName ?: return false
+        if (!dataAccessAllowed()) return false
         if (!InputValidationUtils.isValidPackageName(packageName)) return false
 
         // Serialize prepare/restore: two binder threads must not both pass the
@@ -168,12 +183,14 @@ class ApkPatcherImpl : IApkPatcher.Stub() {
 
     override fun streamDataDir(packageName: String?): ParcelFileDescriptor? {
         if (packageName == null || !InputValidationUtils.isValidPackageName(packageName)) return null
+        if (!dataAccessAllowed()) return null
         if (!sessions.containsKey(packageName)) return null
         return pipe("run-as", packageName, "tar", "-czf", "-", "-C", "/data/data/$packageName", ".")
     }
 
     override fun restoreDataDir(packageName: String?, tarStream: ParcelFileDescriptor?): Boolean {
         if (packageName == null || !InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
+        if (!dataAccessAllowed()) return false
         if (!sessions.containsKey(packageName)) return false
         return pipeFrom(tarStream, "run-as", packageName, "tar", "-xzf", "-", "-C", "/data/data/$packageName")
     }

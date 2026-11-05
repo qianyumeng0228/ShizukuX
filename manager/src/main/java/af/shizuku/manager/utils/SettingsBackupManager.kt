@@ -17,6 +17,9 @@ object SettingsBackupManager {
         ShizukuSettings.Keys.KEY_LAST_UPDATE_CHECK,
         ShizukuSettings.Keys.KEY_LAST_CHECK_FAILED,
         ShizukuSettings.Keys.KEY_MIGRATION_OFFERED,
+        // PreferenceAdbKeyStore stores the (encrypted) ADB private key under this literal key
+        // (ShizukuPlus 9385a7cf): restore would install an app whose signing identity we no longer hold.
+        "adbkey"
     )
 
     /** Use the same storage context as ShizukuSettings (device protected storage on API 24+). */

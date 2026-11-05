@@ -46,6 +46,53 @@ class DeveloperOptionsFragment : BaseSettingsFragment() {
             }
         }
 
+        // Unrestricted app data / personal data (ShizukuPlus 954b6293): these escape hatches
+        // bypass per-app storage guards, so enabling requires an explicit confirmation dialog.
+        findPreference<TwoStatePreference>(KEY_UNRESTRICTED_APP_DATA)?.setOnPreferenceChangeListener { _, v ->
+            val enabled = v as? Boolean ?: false
+            if (enabled) {
+                showDialog(
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setIcon(R.drawable.ic_warning_24)
+                        .setTitle(R.string.settings_unrestricted_app_data_title)
+                        .setMessage(R.string.settings_unrestricted_app_data_dialog_message)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            ShizukuSettings.setUnrestrictedAppDataEnabled(true)
+                            findPreference<TwoStatePreference>(KEY_UNRESTRICTED_APP_DATA)?.isChecked = true
+                            ShizukuSettings.syncAllExtraFeaturesToServer()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                )
+                false
+            } else {
+                ShizukuSettings.setUnrestrictedAppDataEnabled(false)
+                ShizukuSettings.syncAllExtraFeaturesToServer()
+                true
+            }
+        }
+        findPreference<TwoStatePreference>(KEY_UNRESTRICTED_PERSONAL_DATA)?.setOnPreferenceChangeListener { _, v ->
+            val enabled = v as? Boolean ?: false
+            if (enabled) {
+                showDialog(
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setIcon(R.drawable.ic_warning_24)
+                        .setTitle(R.string.settings_unrestricted_personal_data_title)
+                        .setMessage(R.string.settings_unrestricted_personal_data_dialog_message)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            ShizukuSettings.setUnrestrictedPersonalDataEnabled(true)
+                            findPreference<TwoStatePreference>(KEY_UNRESTRICTED_PERSONAL_DATA)?.isChecked = true
+                            ShizukuSettings.syncAllExtraFeaturesToServer()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                )
+                false
+            } else {
+                ShizukuSettings.setUnrestrictedPersonalDataEnabled(false)
+                ShizukuSettings.syncAllExtraFeaturesToServer()
+                true
+            }
+        }
+
         // Device Identity Spoofing
         findPreference<TwoStatePreference>(KEY_SPOOF_DEVICE_ENABLED)?.apply {
             isChecked = ShizukuSettings.isSpoofDeviceEnabled()

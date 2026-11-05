@@ -293,9 +293,18 @@
             android:name=".shell.ShellTutorialActivity"
             android:exported="false"
             android:label="@string/home_terminal_title" />
+        <!-- StarterActivity itself is no longer exported: it reads launch-mode/port extras off
+             the incoming intent, so any app could steer how the service starts. ExternalStartActivity
+             is the exported trampoline that forwards with safe, manager-chosen extras only. -->
         <activity
             android:name=".starter.StarterActivity"
+            android:exported="false"
+            android:label="@string/starter" />
+        <activity
+            android:name=".starter.ExternalStartActivity"
             android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
             android:label="@string/starter">
             <intent-filter>
                 <action android:name="af.shizuku.manager.action.START_SERVICE" />
