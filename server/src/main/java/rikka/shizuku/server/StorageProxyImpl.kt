@@ -294,13 +294,7 @@ class StorageProxyImpl(
             ParcelFileDescriptor.AutoCloseInputStream(tarPfd).use { input ->
                 staged.outputStream().use { input.copyTo(it) }
             }
-            if (!isArchiveSafe(staged)) {
-                val reason = "Archive rejected by security check: an entry writes through a link or outside the target folder"
-                Log.e(TAG, "restoreTarDirectory refused: $reason")
-                // Surface the refusal to the caller instead of returning false silently:
-                // SecurityException travels across the binder and the client can show it.
-                throw SecurityException(reason)
-            }
+            vetArchiveOrThrow(staged)
             val cmd = if (InputValidationUtils.isValidPackageName(packageContext) && serverUid == 2000 && isAppDataPath(dir)) {
                 arrayOf("run-as", packageContext!!, "tar", "-xf", "-", "-C", dir)
             } else {
@@ -314,11 +308,28 @@ class StorageProxyImpl(
                 Log.e(TAG, "restoreTarDirectory exitCode=$exitCode: $output")
             }
             exitCode == 0
+        } catch (e: SecurityException) {
+            // A vetting refusal must reach the caller across the binder, not be folded
+            // into a generic "restore failed". The staged file is still removed by finally.
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "restoreTarDirectory failed", e)
             false
         } finally {
             staged.delete()
+        }
+    }
+
+    /**
+     * Security gate for a staged restore archive. Refusals are loud: the caller
+     * (a client app over the binder) has to be able to distinguish "rejected by
+     * the security check" from a generic failure. Throws SecurityException.
+     */
+    internal fun vetArchiveOrThrow(staged: File) {
+        if (!isArchiveSafe(staged)) {
+            val reason = "Archive rejected by security check: an entry writes through a link or outside the target folder"
+            Log.e(TAG, "restoreTarDirectory refused: $reason")
+            throw SecurityException(reason)
         }
     }
 
