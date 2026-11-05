@@ -295,8 +295,11 @@ class StorageProxyImpl(
                 staged.outputStream().use { input.copyTo(it) }
             }
             if (!isArchiveSafe(staged)) {
-                Log.e(TAG, "restoreTarDirectory refused: archive writes through a link or outside the folder")
-                return false
+                val reason = "Archive rejected by security check: an entry writes through a link or outside the target folder"
+                Log.e(TAG, "restoreTarDirectory refused: $reason")
+                // Surface the refusal to the caller instead of returning false silently:
+                // SecurityException travels across the binder and the client can show it.
+                throw SecurityException(reason)
             }
             val cmd = if (InputValidationUtils.isValidPackageName(packageContext) && serverUid == 2000 && isAppDataPath(dir)) {
                 arrayOf("run-as", packageContext!!, "tar", "-xf", "-", "-C", dir)
