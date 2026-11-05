@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textColor="?colorOnSurface"
-        tools:text="Version 13.6.0.r1489-shizukuplus" />
+        tools:text="Version 13.7.0.k2016" />
 
     <TextView
         android:id="@+id/update_published_date"
