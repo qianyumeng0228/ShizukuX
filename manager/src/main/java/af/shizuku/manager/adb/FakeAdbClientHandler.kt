@@ -137,7 +137,9 @@ class FakeAdbClientHandler(
                                 AdbMessage(AdbProtocol.A_CNXN, AdbProtocol.A_VERSION, AdbProtocol.A_MAXDATA, "device::")
                             )
                         } else {
-                            Timber.tag(TAG).w("User denied pairing for key: $pubKeyStr")
+                            Timber.tag(TAG).w(
+                                "User denied pairing for key ${FakeAdbPairingActivity.fingerprint(pubKeyStr)}"
+                            )
                             return
                         }
                     }

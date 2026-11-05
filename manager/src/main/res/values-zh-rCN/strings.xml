@@ -955,6 +955,14 @@
     <string name="settings_developer_options_summary"><![CDATA[虚拟化、设备欺骗和实验功能]]></string>
     <string name="settings_developer_category_virtualization"><![CDATA[虚拟化]]></string>
     <string name="settings_developer_category_experimental"><![CDATA[实验性功能]]></string>
+    <string name="settings_developer_category_unrestricted_access"><![CDATA[无限制访问（有风险）]]></string>
+    <string name="settings_developer_category_unrestricted_access_summary"><![CDATA[绕过单个应用存储与个人数据保护的高风险选项]]></string>
+    <string name="settings_unrestricted_app_data_title"><![CDATA[无限制访问应用数据]]></string>
+    <string name="settings_unrestricted_app_data_summary"><![CDATA[绕过分区存储限制。应用可读写任意应用的 /data/data/ 目录，并绕过 AppInspector 的备份限制。关闭后恢复保护。]]></string>
+    <string name="settings_unrestricted_app_data_dialog_message"><![CDATA[无限制访问应用数据后，已授权的应用可读写本机任意应用的 /data/data/ 目录，这会绕过标准的分区存储保护。是否继续？]]></string>
+    <string name="settings_unrestricted_personal_data_title"><![CDATA[无限制访问个人数据]]></string>
+    <string name="settings_unrestricted_personal_data_summary"><![CDATA[允许存储桥的 openContentUri 读取任意由 Provider 支持的内容 URI。关闭后要求逐 URI 授权。]]></string>
+    <string name="settings_unrestricted_personal_data_dialog_message"><![CDATA[无限制访问个人数据后，任意已授权应用都可通过存储桥打开 content:// URI。是否继续？]]></string>
     <string name="settings_auto_update_title"><![CDATA[自动检查更新]]></string>
     <string name="settings_auto_update_summary"><![CDATA[应用启动时自动检查新版本]]></string>
     <string name="settings_auto_install_title"><![CDATA[自动安装更新]]></string>

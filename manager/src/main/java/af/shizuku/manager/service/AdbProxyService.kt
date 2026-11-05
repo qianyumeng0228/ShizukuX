@@ -18,6 +18,7 @@ import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketException
+import java.util.concurrent.Semaphore
 
 /**
  * Local ADB-bypass proxy that accepts connections on 127.0.0.1:15555.
@@ -129,6 +130,8 @@ class AdbProxyService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var serverSocket: ServerSocket? = null
     private var serverJob: Job? = null
+    /** Bounds simultaneously served loopback sessions (audit P3-12). */
+    private val connectionSlots = Semaphore(16)
     private var isProxyRunning = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -156,7 +159,20 @@ class AdbProxyService : Service() {
                 while (isActive) {
                     try {
                         val client = socket.accept()
-                        launch { handleClient(client) }
+                        // Bound concurrent sessions: without a cap a local app could open
+                        // loopback connections in a loop and pull one coroutine per socket.
+                        if (!connectionSlots.tryAcquire()) {
+                            Timber.tag(TAG).w("Too many concurrent connections; rejecting")
+                            runCatching { client.close() }
+                            continue
+                        }
+                        launch {
+                            try {
+                                handleClient(client)
+                            } finally {
+                                connectionSlots.release()
+                            }
+                        }
                     } catch (e: SocketException) {
                         if (isActive) Timber.tag(TAG).e(e, "Server socket error")
                         break

@@ -303,6 +303,7 @@
         <activity
             android:name=".starter.ExternalStartActivity"
             android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay"
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:label="@string/starter">

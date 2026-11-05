@@ -1109,6 +1109,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_developer_category_virtualization">Virtualization</string>
     <string name="settings_developer_category_experimental">Experimental</string>
     <string name="settings_developer_category_debug">Debug</string>
+    <string name="settings_developer_category_unrestricted_access">Unrestricted access (risky)</string>
+    <string name="settings_developer_category_unrestricted_access_summary">Escape hatches that bypass per-app storage and personal-data guards</string>
     <string name="settings_unrestricted_app_data_title">Unrestricted app data access</string>
     <string name="settings_unrestricted_app_data_summary">Bypasses scoped-storage restrictions. Apps can read/write /data/data/ of any package, bypassing AppInspector backup restrictions. Disable to re-impose guards.</string>
     <string name="settings_unrestricted_app_data_dialog_message">Unrestricted app data access lets authorized apps read and write /data/data/ of ANY package on this device. This bypasses standard scoped storage protections. Continue?</string>

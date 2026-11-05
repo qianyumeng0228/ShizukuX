@@ -16,11 +16,18 @@ object SettingsBackupManager {
         ShizukuSettings.Keys.KEY_REMOTE_DB_JSON,
         ShizukuSettings.Keys.KEY_LAST_UPDATE_CHECK,
         ShizukuSettings.Keys.KEY_LAST_CHECK_FAILED,
-        ShizukuSettings.Keys.KEY_MIGRATION_OFFERED,
-        // PreferenceAdbKeyStore stores the (encrypted) ADB private key under this literal key
-        // (ShizukuPlus 9385a7cf): restore would install an app whose signing identity we no longer hold.
-        "adbkey"
+        ShizukuSettings.Keys.KEY_MIGRATION_OFFERED
     )
+
+    /**
+     * Preference keys with this prefix hold the (encrypted) ADB private key
+     * (ShizukuPlus 9385a7cf): restore would install an app whose signing identity the device
+     * no longer holds. Matched by prefix so future keys with the same prefix are covered too.
+     */
+    private val EXCLUDED_KEY_PREFIXES = arrayOf("adbkey")
+
+    private fun isExcluded(key: String): Boolean =
+        key in EXCLUDED_KEYS || EXCLUDED_KEY_PREFIXES.any { key.startsWith(it) }
 
     /** Use the same storage context as ShizukuSettings (device protected storage on API 24+). */
     private fun getPrefs(context: Context): SharedPreferences {
@@ -37,7 +44,7 @@ object SettingsBackupManager {
         val json = JSONObject()
         json.put(VERSION_KEY, BACKUP_VERSION)
         for ((key, value) in prefs.all) {
-            if (key in EXCLUDED_KEYS) continue
+            if (isExcluded(key)) continue
             when (value) {
                 is Boolean -> json.put(key, value)
                 is Int -> json.put(key, value)

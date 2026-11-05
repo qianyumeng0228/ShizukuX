@@ -132,8 +132,9 @@
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_debug_p3"
-        android:title="@string/settings_developer_category_debug"
+        android:key="category_unrestricted_access"
+        android:title="@string/settings_developer_category_unrestricted_access"
+        android:summary="@string/settings_developer_category_unrestricted_access_summary"
         android:defaultValue="false">
 
         <af.shizuku.manager.settings.ExtraFeaturePreference
