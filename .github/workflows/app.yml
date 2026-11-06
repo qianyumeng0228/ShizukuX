@@ -334,6 +334,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # :manager:buildRustDebug shells out to `cargo ndk`, so this job needs the same
+      # Rust toolchain setup as the build job - without it the smoke test dies in
+      # configuration/execution with `error: no such command: ndk`.
+      - name: Add Android Rust targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
       - name: Enable KVM hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
