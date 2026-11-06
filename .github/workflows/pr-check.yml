@@ -40,6 +40,11 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # gradle/rust-native.gradle shells out to `cargo ndk`, which the hosted runner
+      # does not ship with its Rust toolchain.
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked
+
       - name: Accept SDK Licenses
         run: yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
 
