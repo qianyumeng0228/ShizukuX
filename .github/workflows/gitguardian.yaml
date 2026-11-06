@@ -7,12 +7,32 @@ jobs:
     name: GitGuardian scan
     runs-on: ubuntu-latest
     steps:
+      # ggshield needs a GitGuardian API key. Without one it exits with
+      # "Error: Invalid GitGuardian API key.", which turned every push and every PR red
+      # even though nothing was wrong with the code being pushed. Probe for the key
+      # first and skip the scan when it is absent.
+      # security.yml still runs Gitleaks + TruffleHog, so secret coverage is not lost;
+      # adding GITGUARDIAN_API_KEY to the repository secrets re-enables this job as-is.
+      - name: Check for a configured API key
+        id: key
+        env:
+          GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+        run: |
+          if [ -n "$GITGUARDIAN_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GITGUARDIAN_API_KEY is not configured; skipping the GitGuardian scan. Gitleaks and TruffleHog still scan for committed secrets."
+          fi
+
       - name: Checkout
+        if: steps.key.outputs.configured == 'true'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # fetch all history so multiple commits can be scanned
-          
+
       - name: GitGuardian scan
+        if: steps.key.outputs.configured == 'true'
         uses: GitGuardian/ggshield/actions/secret@v1.51.0
         env:
           GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
