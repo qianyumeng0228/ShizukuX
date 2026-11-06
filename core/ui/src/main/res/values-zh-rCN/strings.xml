@@ -134,8 +134,6 @@
     <string name="terminal_tutorial_export_summary"><![CDATA[将文件（%1$s、%2$s、%3$s 和 %4$s）导出到一个新文件夹。]]></string>
     <string name="terminal_tutorial_copy_command"><![CDATA[cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files]]></string>
     <string name="terminal_tutorial_copy_summary"><![CDATA[这会将这些文件复制到您的终端应用的私有存储中。您还可以在 .bashrc 或 .zshrc 中为 %1$s、%2$s 和 %3$s 添加别名。]]></string>
-    <string name="terminal_tutorial_run_command"><![CDATA[sh /path/to/%1$s]]></string>
-    <string name="terminal_tutorial_run_plus_command"><![CDATA[sh /path/to/plus [command]]]></string>
     <!-- Adb Pairing Dialog -->
     <string name="adb_pairing_searching"><![CDATA[正在搜索配对服务…]]></string>
     <string name="adb_pairing_status_pairing"><![CDATA[正在与设备配对…]]></string>

@@ -292,7 +292,14 @@ class StorageProxyImpl(
         // followed by a file written through it would land outside the allowed directory.
         // Owner-only staging: /data/local/tmp is world-readable, and app data passes through
         // this file while it waits for the vetting (audit P3-4).
-        val staged = PrivateStaging.create("shizukux-restore")
+        val staged = try {
+            PrivateStaging.create("shizukux-restore")
+        } catch (e: Exception) {
+            // The staging file cannot be created owner-only: refuse rather than extract from a
+            // path another app could read (PrivateStaging fails closed).
+            Log.e(TAG, "restoreTarDirectory: cannot create private staging file", e)
+            return false
+        }
         return try {
             ParcelFileDescriptor.AutoCloseInputStream(tarPfd).use { input ->
                 staged.outputStream().use { input.copyTo(it) }

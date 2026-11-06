@@ -358,11 +358,21 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
     override fun restoreExternalData(packageName: String?, tarStream: ParcelFileDescriptor?): Boolean {
         if (!InputValidationUtils.isValidPackageName(packageName) || tarStream == null) return false
         val dir = "/sdcard/Android/data/$packageName"
-        File(dir).mkdirs()
+        if (!File(dir).exists() && !File(dir).mkdirs()) {
+            Log.w(TAG, "restoreExternalData: cannot create staging target $dir")
+            return false
+        }
         // Stage the archive so it can be vetted before anything is extracted (audit P2-1):
         // a tar.gz carrying a symlink entry followed by a write through it would otherwise
         // land outside the target directory, exactly as it would in restoreTarDirectory.
-        val staged = PrivateStaging.create("shizukux-restore-external")
+        val staged = try {
+            PrivateStaging.create("shizukux-restore-external")
+        } catch (e: Exception) {
+            // PrivateStaging fails closed when it cannot make the file owner-only; restoring from
+            // a world-readable staging file would be worse than a plain failure.
+            Log.e(TAG, "restoreExternalData: cannot create private staging file", e)
+            return false
+        }
         return try {
             ParcelFileDescriptor.AutoCloseInputStream(tarStream).use { src ->
                 staged.outputStream().use { dst -> src.copyTo(dst) }
@@ -371,7 +381,13 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
             // into a plain false, as before); one that lists but escapes the target is a
             // security refusal and throws.
             ArchiveVetting.vetArchiveOrThrow(staged)
-            val proc = ProcessBuilder("tar", "-xzf", staged.path, "-C", dir).start()
+            // Merge stderr into stdout and drain it: tar prints one line per extracted entry and
+            // the error text on stderr, and a full pipe buffer blocks the child before waitFor()
+            // returns on a large archive (audit P2).
+            val proc = ProcessBuilder("tar", "-xzf", staged.path, "-C", dir)
+                .redirectErrorStream(true)
+                .start()
+            proc.inputStream.bufferedReader().forEachLine { }
             proc.waitFor() == 0
         } catch (e: SecurityException) {
             Log.e(TAG, "restoreExternalData refused by security check", e)

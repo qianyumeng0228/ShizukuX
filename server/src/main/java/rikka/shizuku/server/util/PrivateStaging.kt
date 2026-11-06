@@ -22,14 +22,23 @@ object PrivateStaging {
     fun create(prefix: String): File {
         val dir = File(DIR).apply { mkdirs() }
         val file = File(dir, "$prefix-${System.nanoTime()}.archive")
-        file.createNewFile()
+        if (!file.createNewFile()) {
+            throw IllegalStateException("Could not create staging file in $DIR")
+        }
         // Strip group/other first, then grant the owner: granting owner-first would leave a
         // window in which the freshly created file is still group/other readable.
-        file.setReadable(false, false)
-        file.setWritable(false, false)
-        file.setExecutable(false, false)
-        file.setReadable(true, true)
-        file.setWritable(true, true)
+        // chmod is best-effort on some filesystems and reports failure only through its return
+        // value, so a false here means the file may still carry the umask default. Refuse it
+        // instead of handing a possibly world-readable archive to the extractor (audit P3-4).
+        val tightened = file.setReadable(false, false) &&
+            file.setWritable(false, false) &&
+            file.setExecutable(false, false) &&
+            file.setReadable(true, true) &&
+            file.setWritable(true, true)
+        if (!tightened) {
+            file.delete()
+            throw IllegalStateException("Could not restrict staging file permissions in $DIR")
+        }
         return file
     }
 }

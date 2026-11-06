@@ -260,21 +260,15 @@ class ActivityManagerPlusImpl : IActivityManagerExtra.Stub() {
     }
 
     override fun clearAppData(packageName: String?): Boolean {
-        if (packageName == null) return false
-        // Primary: IPackageManager.clearApplicationUserData with a blocking observer
-        try {
-            val pm = packageManagerService() ?: error("no package service")
-            val latch = java.util.concurrent.CountDownLatch(1)
-            val observer = createPackageDataObserver(latch)
-            val method = pm.javaClass.methods.firstOrNull { it.name == "clearApplicationUserData" }
-                ?: error("clearApplicationUserData not found")
-            method.invoke(pm, packageName, observer, callingUserId())
-            latch.await(5, java.util.concurrent.TimeUnit.SECONDS)
-            return true
-        } catch (e: Exception) {
-            Log.w(TAG, "clearAppData IPC failed for $packageName, falling back to exec", e)
-        }
-        if (!InputValidationUtils.isValidPackageName(packageName)) return false
-        return ShellExecutor.execBool("pm", "clear", "--user", "0", packageName)
+        val name = packageName ?: return false
+        if (!InputValidationUtils.isValidPackageName(name)) return false
+        // The reflection path used to sit here: IPackageManager.clearApplicationUserData takes a
+        // hidden `IPackageDataObserver`, and this module cannot construct one — nothing in the
+        // hidden-API stub exposes that type, so every call passed a plain Binder, failed invoke()'s
+        // argument type check and fell through to exec while logging an exception (audit P2).
+        // Removing the always-failing attempt leaves the path that actually ran, and that path is
+        // now audited: the package name is validated above, the target user is the calling user
+        // instead of a hard-coded 0, and pm's own completion decides the result.
+        return ShellExecutor.execBool("pm", "clear", "--user", callingUserId().toString(), name)
     }
 }

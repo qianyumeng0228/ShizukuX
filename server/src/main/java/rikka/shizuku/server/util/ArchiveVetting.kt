@@ -2,6 +2,7 @@ package rikka.shizuku.server.util
 
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicReference
 
 /**
  * Decides whether a tar archive is safe to extract into a directory (ShizukuPlus f850e52b).
@@ -116,7 +117,8 @@ object ArchiveVetting {
         when (vetArchive(archive)) {
             Verdict.SAFE -> Unit
             Verdict.UNREADABLE -> throw IOException(
-                "Archive could not be listed for the security check"
+                "Archive could not be listed for the security check" +
+                    (lastTarError.get()?.let { ": $it" } ?: "")
             )
             Verdict.UNSAFE -> throw SecurityException(
                 "Archive rejected by security check: an entry writes through a link or outside the target folder"
@@ -149,13 +151,39 @@ object ArchiveVetting {
         return normalized.filter { it.isNotEmpty() && head.endsWith(it) }.maxByOrNull { it.length }
     }
 
+    /**
+     * stderr text from the last failed tar run. Kept only for diagnosis: the pipe must be drained
+     * or a failure that prints enough detail deadlocks the process before waitFor() returns.
+     */
+    private val lastTarError = AtomicReference<String?>(null)
+
     private fun runTar(vararg args: String): List<String>? = try {
         val proc = ProcessBuilder("tar", *args).start()
+        val stderr = StringBuilder()
+        val drain = Thread {
+            proc.errorStream.bufferedReader().forEachLine {
+                if (stderr.length < MAX_TAR_ERR_CHARS) stderr.appendLine(it)
+            }
+        }
+        drain.isDaemon = true
+        drain.start()
         val lines = proc.inputStream.bufferedReader().readLines().filter { it.isNotBlank() }
-        if (proc.waitFor() == 0) lines else null
-    } catch (_: Exception) {
+        val code = proc.waitFor()
+        drain.join(THREAD_JOIN_MS)
+        if (code == 0) {
+            lastTarError.set(null)
+            lines
+        } else {
+            lastTarError.set(stderr.toString().trim().ifEmpty { "tar exited with code $code" })
+            null
+        }
+    } catch (e: Exception) {
+        lastTarError.set(e.message ?: e.javaClass.simpleName)
         null
     }
+
+    private const val MAX_TAR_ERR_CHARS = 4096
+    private const val THREAD_JOIN_MS = 1_000L
 
     /** "./a//b/" -> "a/b"; null when absolute or climbing out with "..". */
     private fun normalize(name: String): String? {

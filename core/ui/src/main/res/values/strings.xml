@@ -115,8 +115,6 @@
     <string name="terminal_tutorial_export_summary">Export the files (%1$s, %2$s, %3$s, and %4$s) to a new folder.</string>
     <string name="terminal_tutorial_copy_command">cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files</string>
     <string name="terminal_tutorial_copy_summary">This copies the exported files to your terminal app\'s private storage. You can also add aliases for %1$s, %2$s, and %3$s in your &lt;font face=\"monospace\"&gt;.bashrc&lt;/font&gt; or &lt;font face=\"monospace\"&gt;.zshrc&lt;/font&gt;.</string>
-    <string name="terminal_tutorial_run_command">sh /path/to/%1$s</string>
-    <string name="terminal_tutorial_run_plus_command">sh /path/to/plus [command]</string>
     <!-- Adb Pairing Dialog -->
     <string name="adb_pairing_searching">Searching for pairing service…</string>
     <string name="adb_pairing_status_pairing">Pairing with device…</string>
