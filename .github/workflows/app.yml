@@ -160,7 +160,21 @@ jobs:
         id: buildWithGradle
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null || true
-          [ -n "$SENTRY_DSN" ] && echo "SENTRY_DSN=${SENTRY_DSN}" >> gradle.properties || true
+          # Prefer the explicit secret; fall back to the project's client key stored in Sentry so a
+          # missing or blank secret cannot silently ship a build with crash reporting disabled.
+          if [ -z "$SENTRY_DSN" ] && [ -n "$SENTRY_AUTH_TOKEN" ]; then
+            SENTRY_DSN=$(curl -sS -H "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+              "https://sentry.io/api/0/projects/qianyumeng0228/shizukux/keys/" \
+              | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((k["dsn"] for k in d if k.get("isActive")), ""))' 2>/dev/null || true)
+            echo "Sentry client key lookup: $([ -n "$SENTRY_DSN" ] && echo ok || echo failed)"
+          fi
+
+          if [ -n "$SENTRY_DSN" ]; then
+            echo "SENTRY_DSN=${SENTRY_DSN}" >> gradle.properties
+            echo "SENTRY_DSN injected (length ${#SENTRY_DSN})"
+          else
+            echo "::warning::SENTRY_DSN is empty - crash reporting will be disabled in this build"
+          fi
 
           # Extract version from build.gradle
           BASE_VERSION=$(grep "baseVersionName =" build.gradle | cut -d'"' -f2)
@@ -241,13 +255,24 @@ jobs:
             mv "$PLUS_FILE" "$PLUS_RENAMED"
             mv "$DROPIN_FILE" "$DROPIN_RENAMED"
 
-            # Also collect the compat stub APK (built by copyCompatApkRelease as a dependency)
-            COMPAT_FILE=$(find compat/build/outputs/apk/release -name "*.apk" -type f | head -1)
+            # Also collect the compat stub APK (built by copyCompatApkRelease as a dependency).
+            # Copy, do not move: the Gradle build tree is not a stable hand-off location, and the
+            # previous mv-based flow produced an empty upload on CI while the step still reported
+            # success. Prefer a signed APK over an unsigned one when both are present.
+            COMPAT_FILE=$(find compat/build/outputs/apk/release -name "*.apk" -type f ! -name "*-unsigned.apk" | head -1)
+            if [ -z "$COMPAT_FILE" ]; then
+              COMPAT_FILE=$(find compat/build/outputs/apk/release -name "*.apk" -type f | head -1)
+            fi
             if [ -n "$COMPAT_FILE" ]; then
               sign_apk "$COMPAT_FILE"
-              COMPAT_RENAMED="$(dirname "$COMPAT_FILE")/shizuku-compat.apk"
-              mv "$COMPAT_FILE" "$COMPAT_RENAMED"
-              echo "compatPath=${COMPAT_RENAMED}" >> $GITHUB_OUTPUT
+              mkdir -p dist
+              cp -f "$COMPAT_FILE" dist/shizuku-compat.apk
+              ls -l dist/shizuku-compat.apk
+              echo "compatPath=dist/shizuku-compat.apk" >> $GITHUB_OUTPUT
+            else
+              echo "Error: no compat release APK found"
+              ls -la compat/build/outputs/apk/release || true
+              exit 1
             fi
 
             echo "artifactName=shizukux.apk" >> $GITHUB_OUTPUT
@@ -280,6 +305,7 @@ jobs:
         with:
           name: shizuku-compat.apk
           path: ${{ steps.buildWithGradle.outputs.compatPath }}
+          if-no-files-found: error
 
       - name: Upload Version File
         uses: actions/upload-artifact@v4
