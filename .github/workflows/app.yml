@@ -368,12 +368,10 @@ jobs:
             # (candidates: connectedDropinDebugAndroidTest, connectedShizukuxDebugAndroidTest) -
             # target the Shizukux flavor, the standard build this workflow otherwise treats as
             # primary (see the Plus-vs-Drop-In asset selection in the release job below).
-            set +e
-            ./gradlew :manager:connectedShizukuxDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest --stacktrace > smoke-test.log 2>&1
-            gradle_status=$?
-            cat smoke-test.log
-            grep -E "PASSED|FAILED|ERROR" smoke-test.log || true
-            exit $gradle_status
+            # Keep the whole run in ONE shell line: this runner executes each script line in its
+            # own `sh -c`, so a separate `gradle_status=$?` would read the wrong exit status and
+            # the captured log would never be printed.
+            ./gradlew :manager:connectedShizukuxDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=af.shizuku.manager.JniSmokeTest --stacktrace > smoke-test.log 2>&1; status=$?; tail -n 200 smoke-test.log; exit $status
 
       - name: Upload smoke test results
         if: always()
@@ -381,6 +379,13 @@ jobs:
         with:
           name: smoke-test-results
           path: manager/build/outputs/androidTest-results/
+
+      - name: Upload smoke test log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-log
+          path: smoke-test.log
 
   release:
     needs: [build, lint]
