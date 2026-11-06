@@ -165,10 +165,16 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         int parentSlashBack = dirName.lastIndexOf('\\');
         int parentStart = Math.max(parentSlash, parentSlashBack) + 1;
         String seg = dirName.substring(parentStart);
-        int dash = seg.lastIndexOf('-');
-        if (dash <= 0) return null;
-        String pkg = seg.substring(0, dash);
-        if (pkg.indexOf('.') < 0 || pkg.contains("/") || pkg.contains("\\")) return null;
+        // Split at the FIRST '-', not the last one: the directory suffix appended after the package
+        // name is base64url, which may itself contain '-' (e.g.
+        // "xyz.shizuku.extra.api.debug-1LP-XsFb8Vf5cl_0NbPOgA=="). Stripping at the last dash left
+        // "xyz.shizuku.extra.api.debug-1LP", a package that does not exist, so self-resolution
+        // silently failed and the DROPIN fallback below adopted a *different* installed package as
+        // the manager - every call from the real (debug) manager was then rejected as unauthorized.
+        // Android package names cannot contain '-', so the first dash is always the separator.
+        int dash = seg.indexOf('-');
+        String pkg = dash > 0 ? seg.substring(0, dash) : seg;
+        if (pkg.indexOf('.') < 0 || pkg.contains("/") || pkg.contains("\\") || pkg.endsWith(".")) return null;
         return pkg;
     }
 
