@@ -71,7 +71,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       # gradle/rust-native.gradle shells out to `cargo ndk`, which the hosted runner
-      # does not ship with its Rust toolchain.
+      # does not ship with its Rust toolchain, nor the Android std targets it needs.
+      - name: Add Android Rust targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
 
@@ -140,7 +143,10 @@ jobs:
           build-scan-terms-of-use-agree: "yes"
 
       # gradle/rust-native.gradle shells out to `cargo ndk`, which the hosted runner
-      # does not ship with its Rust toolchain.
+      # does not ship with its Rust toolchain, nor the Android std targets it needs.
+      - name: Add Android Rust targets
+        run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --locked
 
