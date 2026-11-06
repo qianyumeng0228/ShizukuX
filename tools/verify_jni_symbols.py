@@ -160,6 +160,12 @@ def verify(path):
 
 
 def main(paths):
+    # CI passes both the main and the drop-in APK; a variant that was not built
+    # arrives as an empty string and must not be treated as a missing file.
+    paths = [p for p in paths if p and p.strip()]
+    if not paths:
+        print("no APK path given")
+        return 2
     failed = False
     for path in paths:
         problems = verify(path)

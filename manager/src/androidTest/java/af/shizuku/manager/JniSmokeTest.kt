@@ -17,6 +17,14 @@ import org.junit.runner.RunWith
  * If libadb_loads_without_crash passes, the JNI_OnLoad + RegisterNatives path is
  * confirmed healthy. If it SEGFAULTs or SIGABRTs, this test suite fails in CI and
  * blocks the release.
+ *
+ * Coverage boundary: androidTest is assembled against the debug variant, which has
+ * minification disabled, so this suite can never catch a ProGuard/R8 rename. The
+ * minified release surface is covered by tools/verify_jni_symbols.py, which runs in
+ * CI right after the release build and inspects the shipped dex (see the
+ * "Verify JNI symbols survived R8" step in .github/workflows/app.yml). Keep the two
+ * in sync when adding a native method: this test proves the binding works, the CI
+ * check proves R8 did not rename it.
  */
 @RunWith(AndroidJUnit4::class)
 class JniSmokeTest {
