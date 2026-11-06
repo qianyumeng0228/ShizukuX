@@ -155,6 +155,7 @@
     <string name="adb_pairing_requires_multi_window">请先进入分屏（多窗口）模式。</string>
     <string name="adb_pairing_requires_multi_window_reason">系统要求配对对话框始终可见。只有使用分屏模式才能让此应用和系统对话框同时可见。</string>
     <string name="adb_error_key_store">无法生成无线调试密钥。\n这可能是因为此设备上的 KeyStore 机制已损坏。</string>
+    <string name="adb_error_lib_unavailable">配对组件不可用：本安装包缺少 ADB 原生库支持。</string>
     <string name="adb_stopping_tcp">关闭 TCP 端口</string>
     <string name="adb_error_stop_tcp">通过 TCP 停止 ADB 失败</string>
     <string name="adb_pair_required">请先进行配对步骤。</string>
@@ -1297,6 +1298,8 @@
     <string name="backup_badge_no_backup">禁止备份</string>
     <string name="backup_batch_complete">已备份 %1$d 个应用至 %3$s（%2$d 个失败）</string>
     <string name="backup_batch_progress">正在备份 %1$d/%2$d：%3$s</string>
+    <string name="backup_restore_batch_complete">已恢复 %1$d 个应用（%2$d 个失败）</string>
+    <string name="backup_restore_batch_progress">正在恢复 %1$d/%2$d：%3$s</string>
     <string name="backup_choose_export_dir">选择备份目录</string>
     <string name="backup_export_dir_set">备份将保存至：%1$s</string>
     <string name="backup_exported_success">备份导出成功</string>
@@ -1325,6 +1328,7 @@
     <string name="backup_restore_confirm_title">确认恢复</string>
     <string name="backup_restore_failed">恢复失败：%1$s</string>
     <string name="backup_restore_include_internal">同时恢复内部应用数据（/data/data/）</string>
+    <string name="backup_restore_scope_notice">外部数据与 OBB（/sdcard/Android/data、/sdcard/Android/obb）始终恢复。</string>
     <string name="backup_restore_no_apps">未选择有效的恢复应用</string>
     <string name="backup_restore_no_dir">未配置备份目录。请先选择包含备份文件的目录。</string>
     <string name="backup_restore_selected">恢复所选</string>

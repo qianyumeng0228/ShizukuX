@@ -82,7 +82,7 @@ object PreRestoreManager {
         }
     }
 
-    /** Best-effort delete data+external snapshot files for a timestamp from SAF. */
+    /** Best-effort delete data+external+obb snapshot files for a timestamp from SAF. */
     private fun deleteSnapshotFilesSaf(
         packageName: String, timestamp: String,
         safTreeUri: Uri, cr: ContentResolver
@@ -99,7 +99,10 @@ object PreRestoreManager {
                 listOf(childrenUri)  // flat name: {pkg}_data.pre-restore.{ts}.tar.gz
             }
             for (searchUri in searchUris) {
-                for (type in listOf("data", "external")) {
+                // "obb" must be listed here too: since the snapshot now captures OBB, an
+                // evicted snapshot that skipped it would strand obb.pre-restore.* files
+                // forever (MAX_SNAPSHOTS_PER_APP eviction is the only cleanup path).
+                for (type in listOf("data", "external", "obb")) {
                     val fileName = if (pkgDirId != null)
                         getSnapshotFileName(type, timestamp)
                     else

@@ -4,6 +4,22 @@
     native <methods>;
 }
 
+# libadb.so (built from rust/adb-pairing) resolves its JNI surface by hard-coded names at
+# JNI_OnLoad: class "af/shizuku/manager/adb/PairingContext" plus methods nativeConstructor /
+# nativeMsg / nativeInitCipher / nativeEncrypt / nativeDecrypt / nativeDestroy, and
+# AdbPairingClient.available()Z. -keepclasseswithmembernames above is the allowshrinking
+# variant, so R8 still renamed/dropped members and RegisterNatives failed for PairingContext
+# (devices log "Unable to register the PairingContext native methods"), JNI_OnLoad returned
+# JNI_ERR and every pairing attempt died with:
+#   UnsatisfiedLinkError: JNI_OnLoad failed on a previous attempt to load libadb.so
+# Reproduced on bc757a76 (Android 16, release 13.6.0.r2678): the pairing code and port were
+# read correctly, then the client class-init crashed before a single byte was exchanged.
+-keep class af.shizuku.manager.adb.PairingContext { *; }
+-keep class af.shizuku.manager.adb.PairingContext$* { *; }
+-keepclasseswithmembers,includedescriptorclasses class af.shizuku.manager.adb.AdbPairingClient {
+    native <methods>;
+}
+
 # Keep the CREATOR field on every Parcelable. Android's default ProGuard config
 # normally supplies this, but the manager module REPLACES the defaults
 # (build.gradle: proguardFiles = ["proguard-rules.pro"]), so R8 was stripping

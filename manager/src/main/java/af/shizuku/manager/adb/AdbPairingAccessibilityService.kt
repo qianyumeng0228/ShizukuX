@@ -443,8 +443,27 @@ class AdbPairingAccessibilityService : AccessibilityService() {
                 return@launch
             }
 
-            AdbPairingClient(host, portValue, passwordValue, key).runCatching {
-                start()
+            // A build whose libadb.so cannot load (ABI missing, JNI_OnLoad rejected) must fail
+            // once with a clear message instead of retrying on every window event forever.
+            if (!AdbPairingClient.ensureLibraryLoaded()) {
+                Log.i("AdbAccessibility", "PAIRING unavailable: libadb.so not loaded")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@AdbPairingAccessibilityService,
+                        getString(R.string.adb_error_lib_unavailable),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                if (autoPairRequested) sendAutoPairingFailed()
+                resetAutoPairing()
+                disableSelf()
+                return@launch
+            }
+
+            // The constructor now validates the native library, so it must stay inside
+            // runCatching — a throw here would otherwise escape into the service scope.
+            runCatching {
+                AdbPairingClient(host, portValue, passwordValue, key).start()
             }.onFailure {
                 Log.i("AdbAccessibility", "PAIRING failed: " + it.javaClass.simpleName + ": " + it.message)
                 Timber.tag("AdbAccessibility").w(it, "Pairing attempt failed; will retry on next event")

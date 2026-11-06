@@ -168,7 +168,8 @@ class AppBackupActivity : AppBarActivity() {
                         val pct = if (progress.total > 0) (progress.current * 100 / progress.total) else 0
                         binding.batchProgressBar.progress = pct
                         binding.batchProgressText.text = getString(
-                            R.string.backup_batch_progress,
+                            if (progress.isRestore) R.string.backup_restore_batch_progress
+                            else R.string.backup_batch_progress,
                             progress.current, progress.total, progress.currentPkg
                         )
                     }
@@ -187,11 +188,14 @@ class AppBackupActivity : AppBarActivity() {
                                 Snackbar.LENGTH_LONG
                             ).show()
                         is BackupViewModel.BackupEvent.BatchComplete -> {
-                            val snackbar = Snackbar.make(
-                                rootView,
-                                getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path),
-                                Snackbar.LENGTH_LONG
-                            )
+                            // A batch restore used to render with the backup wording, so the
+                            // user was told "已备份 N 个应用至 restore" after a restore.
+                            val msg = if (event.isRestore) {
+                                getString(R.string.backup_restore_batch_complete, event.succeeded, event.failed)
+                            } else {
+                                getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path)
+                            }
+                            val snackbar = Snackbar.make(rootView, msg, Snackbar.LENGTH_LONG)
                             snackbar.setAction(R.string.backup_history_action) { showRestoreHistory() }
                             snackbar.show()
                         }
@@ -383,11 +387,17 @@ class AppBackupActivity : AppBarActivity() {
             isChecked = true
             setPadding(0, (16 * resources.displayMetrics.density).toInt(), 0, 0)
         }
+        val scopeNotice = android.widget.TextView(this).apply {
+            text = getString(R.string.backup_restore_scope_notice)
+            textSize = 12f
+            setPadding(0, (8 * resources.displayMetrics.density).toInt(), 0, 0)
+        }
         val dialogView = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding((24 * resources.displayMetrics.density).toInt(), 0,
                 (24 * resources.displayMetrics.density).toInt(), 0)
             addView(includeInternalCheckbox)
+            addView(scopeNotice)
         }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.backup_restore_confirm_title)

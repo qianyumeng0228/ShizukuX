@@ -290,6 +290,14 @@ pub extern "system" fn JNI_OnLoad(vm: JavaVM, _reserved: *mut c_void) -> jint {
         }];
         if let Err(source) = env.register_native_methods(client_class, &available_method) {
             error!("Unable to register AdbPairingClient.available: {source}");
+            // RegisterNatives leaves a pending java.lang.NoSuchMethodError behind. JNI
+            // requires every later call with a pending exception to fail, so without
+            // clearing it here the PairingContext registration below — which actually
+            // matters — also fails and JNI_OnLoad returns JNI_ERR. That is exactly how a
+            // single renamed method (R8) turned into a completely unusable libadb.so:
+            // the device logged both "Unable to register ...available" AND
+            // "Unable to register the PairingContext native methods".
+            let _ = env.exception_clear();
         }
     } else {
         error!("Unable to find {ADB_PAIRING_CLIENT_CLASS} for available().");

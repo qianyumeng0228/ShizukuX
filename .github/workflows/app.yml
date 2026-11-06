@@ -280,6 +280,19 @@ jobs:
             echo "dropinPath=${DROPIN_RENAMED}" >> $GITHUB_OUTPUT
           fi
 
+      # rust/adb-pairing binds its JNI surface by hard-coded name at JNI_OnLoad, so R8 must
+      # not rename PairingContext / AdbPairingClient or their native methods. The 13.6.0.r2678
+      # release renamed available(), RegisterNatives left a pending exception, the next
+      # registration failed too, JNI_OnLoad returned JNI_ERR and ADB pairing was dead on a
+      # real device while debug builds (no shrinking) kept working. This step fails CI
+      # instead of letting that reach users again.
+      - name: Verify JNI symbols survived R8
+        if: ${{ env.IS_DEBUG == 'false' }}
+        run: |
+          python3 tools/verify_jni_symbols.py \
+            "${{ steps.buildWithGradle.outputs.filePath }}" \
+            "${{ steps.buildWithGradle.outputs.dropinPath }}"
+
       - name: Upload Sentry Debug Symbols
         if: ${{ env.SENTRY_AUTH_TOKEN != '' && env.IS_DEBUG == 'false' }}
         continue-on-error: true

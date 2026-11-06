@@ -182,6 +182,18 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
     private var pairingContext: PairingContext? = null
     private var state: State = State.Ready
 
+    init {
+        // PairingContext reaches nativeConstructor as soon as pairing starts. Failing here
+        // turns "the native library is gone" into an ordinary exception the caller can report,
+        // instead of a class-init crash that takes the process down.
+        if (!ensureLibraryLoaded()) {
+            throw IllegalStateException(
+                "libadb.so unavailable — ADB pairing cannot start",
+                libraryLoadError
+            )
+        }
+    }
+
     fun start(): Boolean {
         // A port read off the screen or a notification can be garbage (e.g. 84000); Socket()
         // would throw IllegalArgumentException instead of the pairing just failing.
@@ -367,8 +379,40 @@ class AdbPairingClient(private val host: String, private val port: Int, private 
 
     companion object {
 
-        init {
-            System.loadLibrary("adb")
+        private const val kLibraryName = "adb"
+
+        /**
+         * Null when libadb.so loaded successfully, otherwise the failure that prevented it.
+         *
+         * This was a bare `init { System.loadLibrary("adb") }`. A failed load threw
+         * UnsatisfiedLinkError out of companion class-init — Throwable from <clinit> cannot
+         * be caught by the caller, so the first pairing attempt killed the whole app process
+         * (observed on bc757a76: JNI_OnLoad -> JNI_ERR -> FATAL EXCEPTION right after the
+         * pairing code had been read correctly). ShizukuApplication already degrades
+         * gracefully on the same failure; the client now does too.
+         */
+        private var libraryLoadError: Throwable? = null
+
+        @Volatile
+        private var libraryProbed = false
+
+        /** Attempts the one process-wide load of libadb.so. @return true when it is usable. */
+        @JvmStatic
+        fun ensureLibraryLoaded(): Boolean {
+            if (libraryProbed) return libraryLoadError == null
+            synchronized(this) {
+                if (!libraryProbed) {
+                    try {
+                        System.loadLibrary(kLibraryName)
+                        libraryLoadError = null
+                    } catch (t: Throwable) {
+                        libraryLoadError = t
+                        Timber.tag(TAG).e(t, "libadb.so failed to load — ADB pairing unavailable")
+                    }
+                    libraryProbed = true
+                }
+            }
+            return libraryLoadError == null
         }
 
         @JvmStatic

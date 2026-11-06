@@ -823,6 +823,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="backup_menu_search">Search apps</string>
     <string name="backup_menu_backup_all">Backup all apps</string>
     <string name="backup_batch_complete">Backed up %1$d apps to %3$s (%2$d failed)</string>
+    <string name="backup_restore_batch_complete">Restored %1$d apps (%2$d failed)</string>
     <string name="backup_menu_show_system">Show system apps</string>
     <string name="backup_badge_no_backup">no-backup</string>
     <string name="backup_failed_generic">Backup failed: %1$s</string>
@@ -949,6 +950,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="starter_done">Done</string>
     <string name="adb_error_timeout">Service did not start in time. Please ensure Wireless Debugging is enabled and try again.</string>
     <string name="adb_error_generic">An unexpected error occurred. Please try again.</string>
+    <string name="adb_error_lib_unavailable">Pairing unavailable: this build is missing the native ADB library.</string>
 
     <!-- WADB Starter -->
     <string name="wadb_notification_title">Starting Shizuku…</string>
@@ -1511,6 +1513,7 @@ Please try the command-line method instead.</string>
     <string name="device_control_operation_failed">Operation failed</string>
     <string name="device_control_service_not_available">Shizuku service not available</string>
     <string name="backup_batch_progress">Backing up %1$d/%2$d: %3$s</string>
+    <string name="backup_restore_batch_progress">Restoring %1$d/%2$d: %3$s</string>
 
     <string name="backup_restore_selected">Restore selected</string>
     <string name="backup_select_all">Select all</string>
@@ -1532,6 +1535,7 @@ This action cannot be undone. Continue?</string>
     <string name="device_control_autobrightness_tile">Auto Brightness</string>
     <string name="device_control_autorotate_tile">Auto Rotate</string>
     <string name="backup_restore_include_internal">Also restore internal app data (/data/data/)</string>
+    <string name="backup_restore_scope_notice">External data and OBB (/sdcard/Android/data, /sdcard/Android/obb) are always restored.</string>
     <string name="backup_restore_auto_backup_notice">⚠ Current data will be automatically backed up (with .pre-restore suffix) before restore. If backup fails, restore will be aborted to protect your data.</string>
     <string name="backup_action_restore">Restore</string>
 

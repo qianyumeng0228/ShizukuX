@@ -42,6 +42,8 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         val currentPkg: String = "",
         val succeeded: Int = 0,
         val failed: Int = 0,
+        /** True for a batch restore, false for a batch backup — picks the progress wording. */
+        val isRestore: Boolean = false,
     )
 
     sealed class UiState {
@@ -53,7 +55,17 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
     sealed class BackupEvent {
         data class BackupComplete(val pkg: String, val path: String) : BackupEvent()
-        data class BatchComplete(val succeeded: Int, val failed: Int, val path: String) : BackupEvent()
+        /**
+         * A batch finished. [isRestore] separates the two very different operations this one
+         * event used to carry: restoreAll() emitted BatchComplete too, so the Activity rendered
+         * a restore with the backup wording ("已备份 N 个应用至 restore").
+         */
+        data class BatchComplete(
+            val succeeded: Int,
+            val failed: Int,
+            val path: String,
+            val isRestore: Boolean = false
+        ) : BackupEvent()
         data class RestoreComplete(val pkg: String, val success: Boolean) : BackupEvent()
         data class FreezeChanged(val pkg: String, val nowFrozen: Boolean) : BackupEvent()
         data class Failure(val msg: String) : BackupEvent()
@@ -315,6 +327,21 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 treeDocUri to "${pkg}_$fileName"
             }
 
+            // SAF providers never overwrite: createDocument() on a name that already exists
+            // silently succeeds as "data.tar.gz (1)" and leaves the previous archive in place.
+            // Observed on device for all three legs (data/external/obb) — and because the
+            // restore side matched display names exactly, a second backup followed by a
+            // restore kept reading the FIRST backup while the UI reported success.
+            // Clear the canonical name AND any "(n)" copies left behind by earlier builds,
+            // so the directory holds exactly one archive per leg again.
+            val staleChildrenId = try { DocumentsContract.getDocumentId(targetUri) } catch (_: Exception) { null }
+            if (staleChildrenId != null) {
+                val staleChildrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(
+                    safTreeUri, staleChildrenId
+                )
+                deleteBackupDuplicates(safTreeUri, staleChildrenUri, cr, targetName)
+            }
+
             val fileUri = try {
                 DocumentsContract.createDocument(cr, targetUri, "application/octet-stream", targetName)
             } catch (e: Exception) {
@@ -450,6 +477,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         val timestamp = PreRestoreManager.generateTimestamp()
         val dataName = PreRestoreManager.getSnapshotFileName("data", timestamp)
         val extName = PreRestoreManager.getSnapshotFileName("external", timestamp)
+        val obbName = PreRestoreManager.getSnapshotFileName("obb", timestamp)
         var backedUpSomething = false
         var internalBackedUp = false
         // Force-stop the app before snapshot to ensure a consistent tar state
@@ -468,6 +496,12 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
         // External data (shell-level, no debuggable required)
         val extPfd = try { ShizukuXAPI.BackupRestoreExtra.backupExternalData(pkg) } catch (_: Exception) { null }
         if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, null, pkg, extName, cr)) {
+            backedUpSomething = true
+        }
+        // OBB data — without it a rollback re-creates the same hole the restore path had:
+        // the live OBB would survive untouched while data/external revert to the snapshot.
+        val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
+        if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, null, pkg, obbName, cr)) {
             backedUpSomething = true
         }
         if (backedUpSomething && (!requireInternal || internalBackedUp)) {
@@ -510,6 +544,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             PreRestoreManager.getSnapshotFileName("external", snapshotTimestamp)
         } else {
             "external.tar.gz"
+        }
+        // OBB sits under /sdcard/Android/obb/<pkg>/ — external storage, not /data/data/,
+        // so it rides with the external leg and is restored regardless of includeInternal.
+        val obbFileName = if (snapshotTimestamp != null) {
+            PreRestoreManager.getSnapshotFileName("obb", snapshotTimestamp)
+        } else {
+            "obb.tar.gz"
         }
         return try {
             // Make app debuggable so run-as can access /data/data/<pkg>/
@@ -587,6 +628,23 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 Timber.w("No external.tar.gz found for $pkg (external data skip)")
             }
 
+            // 3. Restore OBB data (/sdcard/Android/obb/<pkg>/)
+            // The backup side has always written obb.tar.gz (data/external/obb are produced
+            // together), but nothing ever consumed it: restore stopped after external data.
+            // An app with OBB assets (games, large resource packs) therefore came back with
+            // its data intact and its OBB directory empty — unlaunchable, with no error shown.
+            // Verified on device bc757a76 (Android 16): after deleting main.obb, restoring
+            // reproduced neither the file nor an obb.pre-restore snapshot.
+            val obbUri = findBackupFile(safTreeUri, pkg, obbFileName, cr)
+            if (obbUri != null) {
+                val ok = cr.openFileDescriptor(obbUri, "r")?.use { pfd ->
+                    ShizukuXAPI.BackupRestoreExtra.restoreObbData(pkg, pfd)
+                } ?: false
+                if (ok) restoredSomething = true
+            } else {
+                Timber.d("No obb.tar.gz found for $pkg (obb data skip)")
+            }
+
             recordRestoreHistory(entry, includeInternal, restoredSomething, isRollback, snapshotTimestamp)
             restoredSomething
         } catch (e: Exception) {
@@ -660,7 +718,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 index++
                 _batchProgress.value = BatchProgress(
                     current = index, total = total, currentPkg = pkg,
-                    succeeded = succeeded, failed = failed
+                    succeeded = succeeded, failed = failed, isRestore = true
                 )
                 try {
                     val ok = restoreAppData(entry, safTreeUri, includeInternal, snapshotTimestamp, isRollback)
@@ -672,8 +730,10 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     failed++
                 }
             }
-            _batchProgress.value = BatchProgress(current = total, total = total, succeeded = succeeded, failed = failed)
-            _events.emit(BackupEvent.BatchComplete(succeeded, failed, "restore"))
+            _batchProgress.value = BatchProgress(
+                current = total, total = total, succeeded = succeeded, failed = failed, isRestore = true
+            )
+            _events.emit(BackupEvent.BatchComplete(succeeded, failed, "restore", isRestore = true))
             _batchRunning.value = false
         }
     }
@@ -698,13 +758,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     safTreeUri,
                     pkgDirId
                 )
-                val fileId = queryForDocument(pkgChildrenUri, cr, fileName)
+                val fileId = queryLatestDocument(pkgChildrenUri, cr, fileName)
                 if (fileId != null) {
                     return android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, fileId)
                 }
             }
             // Fallback: try flat name "{pkg}_{fileName}" (Downloads provider)
-            val flatId = queryForDocument(childrenUri, cr, "${pkg}_$fileName")
+            val flatId = queryLatestDocument(childrenUri, cr, "${pkg}_$fileName")
             if (flatId != null) {
                 android.provider.DocumentsContract.buildDocumentUriUsingTree(safTreeUri, flatId)
             } else {
@@ -733,6 +793,97 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         return null
+    }
+
+    /**
+     * Resolves [baseName] — or any "baseName (n)" duplicate a SAF provider created — to the
+     * NEWEST document id.
+     *
+     * A provider that cannot overwrite (Downloads, external storage) answers a second
+     * createDocument() with "data.tar.gz (1)" and leaves the first archive untouched.
+     * The restore path used to match display names exactly, so it kept resolving the stale
+     * file: backups looked successful while every restore silently replayed the oldest data.
+     * Deleting the previous document in writeBackupStream() prevents new duplicates; this
+     * newest-wins lookup also recovers directories that already contain historical copies.
+     */
+    private fun queryLatestDocument(
+        childrenUri: android.net.Uri,
+        cr: android.content.ContentResolver,
+        baseName: String
+    ): String? {
+        val projection = arrayOf(
+            android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED
+        )
+        val duplicate = Regex(
+            "^" + java.util.regex.Pattern.quote(baseName) + " \\(\\d+\\)$"
+        )
+        var bestId: String? = null
+        var bestStamp = Long.MIN_VALUE
+        cr.query(childrenUri, projection, null, null, null)?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val name = try { cursor.getString(1) } catch (_: Exception) { null } ?: continue
+                if (name != baseName && !duplicate.matches(name)) continue
+                // Providers may omit last_modified; treat that as oldest so a named
+                // canonical file still wins over an undated duplicate.
+                val stamp = try {
+                    if (cursor.isNull(2)) 0L else cursor.getLong(2)
+                } catch (_: Exception) { 0L }
+                if (bestId == null || stamp >= bestStamp) {
+                    bestId = cursor.getString(0)
+                    bestStamp = stamp
+                }
+            }
+        }
+        return bestId
+    }
+
+    /**
+     * Deletes every document in [childrenUri] whose display name is [baseName] or a
+     * provider-generated "baseName (n)" copy.
+     *
+     * Without this, each backup leg only ever replaced the canonical name: the second
+     * backup produced "data.tar.gz (1)" and the third "(2)", so the directory grew one
+     * stale archive per backup for the life of the install (and the restore path had to
+     * rely on newest-wins to avoid replaying the oldest one). Deleting all copies restores
+     * the invariant that one package directory holds exactly one archive per leg.
+     */
+    private fun deleteBackupDuplicates(
+        safTreeUri: android.net.Uri,
+        childrenUri: android.net.Uri,
+        cr: android.content.ContentResolver,
+        baseName: String
+    ) {
+        val projection = arrayOf(
+            android.provider.DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            android.provider.DocumentsContract.Document.COLUMN_DISPLAY_NAME
+        )
+        val match = Regex(
+            "^" + java.util.regex.Pattern.quote(baseName) + "( \\(\\d+\\))?$"
+        )
+        try {
+            cr.query(childrenUri, projection, null, null, null)?.use { cursor ->
+                while (cursor.moveToNext()) {
+                    val name = try { cursor.getString(1) } catch (_: Exception) { null } ?: continue
+                    if (!match.matches(name)) continue
+                    val id = try { cursor.getString(0) } catch (_: Exception) { null } ?: continue
+                    try {
+                        DocumentsContract.deleteDocument(
+                            cr,
+                            DocumentsContract.buildDocumentUriUsingTree(safTreeUri, id)
+                        )
+                        Timber.d("Removed previous $name before writing")
+                    } catch (e: Exception) {
+                        // Provider refused the delete. findBackupFile's newest-wins lookup
+                        // still resolves the freshly written copy, so restore stays correct.
+                        Timber.w(e, "Could not delete previous $name; newest-wins lookup applies")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Could not enumerate children for $baseName: ${e.message}")
+        }
     }
 
     fun toggleFreeze(entry: AppEntry) {
