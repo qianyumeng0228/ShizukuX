@@ -1,6 +1,7 @@
 package rikka.shizuku.server.util
 
 import java.io.File
+import java.io.IOException
 
 /**
  * Decides whether a tar archive is safe to extract into a directory (ShizukuPlus f850e52b).
@@ -29,7 +30,7 @@ object ArchiveVetting {
      *     the entry type, and links print "->" (toybox) or "link to" (GNU) after the name.
      */
     fun isSafe(names: List<String>, verbose: List<String>): Boolean {
-        val normalized = names.map { normalize(it) ?: return false }
+        val normalized = names.map { normalize(stripLinkTarget(it)) ?: return false }
 
         // Entry type comes from the verbose listing. toybox and GNU both emit one line per
         // entry, so the two listings line up 1:1 for ordinary archives and the check is exact.
@@ -104,12 +105,19 @@ object ArchiveVetting {
 
     /**
      * Security gate for a staged archive that is about to be extracted. Refusals are loud:
-     * they travel back to the caller as SecurityException. An archive tar cannot even list
-     * is left to the caller as a generic failure (silent false), as it was before 8ab9bec6.
+     * they travel back to the caller as SecurityException. An archive tar cannot list is
+     * refused as well, but as an IOException: the gate must never pass an archive it could
+     * not read. A check that fails while the extractor still succeeds is a silent bypass, so
+     * the gate is closed wherever its capability and the extractor's overlap. Callers fold
+     * every non-security exception into a plain `false`, which is the outcome an unreadable
+     * archive produced before 8ab9bec6 too.
      */
     fun vetArchiveOrThrow(archive: File) {
         when (vetArchive(archive)) {
-            Verdict.SAFE, Verdict.UNREADABLE -> Unit
+            Verdict.SAFE -> Unit
+            Verdict.UNREADABLE -> throw IOException(
+                "Archive could not be listed for the security check"
+            )
             Verdict.UNSAFE -> throw SecurityException(
                 "Archive rejected by security check: an entry writes through a link or outside the target folder"
             )
@@ -117,6 +125,19 @@ object ArchiveVetting {
     }
 
     private fun hasLinkMarker(line: String): Boolean = " -> " in line || " link to " in line
+
+    /**
+     * Entry name with any link target trimmed off. GNU prints the bare name for `tar -tf`, but
+     * toybox prints "name -> target" for a symlink even without -v (toybox 0.8.12-android on the
+     * test device does), so the name-only listing can already carry the arrow. Left in place,
+     * normalize() accepts that tail as part of the name, the link is recorded under a path no
+     * entry ever matches, and an archive that writes through it vets as SAFE (real-device finding
+     * 2026-11-06). Trimming keeps `names` and `verbose` describing the same entry.
+     */
+    private fun stripLinkTarget(name: String): String {
+        val arrow = listOf(" -> ", " link to ").map { name.indexOf(it) }.filter { it >= 0 }.minOrNull()
+        return if (arrow != null) name.substring(0, arrow) else name
+    }
 
     /**
      * Longest entry name that the verbose line ends with (before a link marker, if any).

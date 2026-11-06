@@ -367,8 +367,9 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
             ParcelFileDescriptor.AutoCloseInputStream(tarStream).use { src ->
                 staged.outputStream().use { dst -> src.copyTo(dst) }
             }
-            // An unreadable archive is left to tar to reject (silent false, as before); an
-            // archive that lists but escapes the target is a security refusal and throws.
+            // An archive the gate cannot list is refused before extraction (IOException folds
+            // into a plain false, as before); one that lists but escapes the target is a
+            // security refusal and throws.
             ArchiveVetting.vetArchiveOrThrow(staged)
             val proc = ProcessBuilder("tar", "-xzf", staged.path, "-C", dir).start()
             proc.waitFor() == 0

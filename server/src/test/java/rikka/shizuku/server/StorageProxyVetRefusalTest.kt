@@ -1,9 +1,9 @@
 package rikka.shizuku.server
 
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.io.IOException
 import java.util.Random
 
 /**
@@ -16,6 +16,10 @@ import java.util.Random
  * - df25d9bf then split the gate's two failure modes: an unreadable archive stays
  *   a silent false (pre-8ab9bec6 behaviour), while an archive that lists but
  *   contains escaping/link entries must throw SecurityException.
+ * - 2026-11-06: the unreadable branch is no longer waved through. It is refused as
+ *   IOException, which the caller folds into the same plain false, so the extractor
+ *   never runs on an archive the gate could not read. A gate that cannot read what
+ *   the extractor can is a fail-open bypass, not a generic failure.
  *
  * Note on scope: this exercises [StorageProxyImpl.vetArchiveOrThrow] directly.
  * The full restoreTarDirectory path is not unit-testable on a desktop host
@@ -25,17 +29,19 @@ import java.util.Random
 class StorageProxyVetRefusalTest {
 
     @Test
-    fun `unreadable archive stays silent - no SecurityException`() {
+    fun `unreadable archive is refused as IOException - not a security refusal`() {
         val staged = File.createTempFile("ssu-vet-", ".archive")
         try {
-            // Garbage bytes are not a tar: tar -tf rejects them. A corrupt archive
-            // is a generic restore failure, not a security refusal: must NOT throw.
+            // Garbage bytes are not a tar: tar -tf rejects them. That is a generic restore
+            // failure, not a security finding, so it must not surface as SecurityException.
+            // It is still refused (IOException) so nothing is extracted from an archive the
+            // gate could not read.
             val bytes = ByteArray(600)
             Random().nextBytes(bytes)
             staged.writeBytes(bytes)
 
             val impl = StorageProxyImpl({ true }, { true })
-            assertDoesNotThrow { impl.vetArchiveOrThrow(staged) }
+            assertThrows(IOException::class.java) { impl.vetArchiveOrThrow(staged) }
         } finally {
             staged.delete()
         }

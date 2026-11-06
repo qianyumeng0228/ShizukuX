@@ -325,8 +325,9 @@ class StorageProxyImpl(
 
     /**
      * Security gate for a staged restore archive. Two distinct failure modes:
-     * - the archive cannot even be listed (corrupt / unreadable): return silently,
-     *   restoreTarDirectory reports a plain false, same as before 8ab9bec6;
+     * - the archive cannot be listed (corrupt / unreadable): refused as IOException, which
+     *   restoreTarDirectory folds into a plain false, so the extractor never runs on an
+     *   archive the gate could not read (same outcome as before 8ab9bec6);
      * - the archive lists but contains entries that write through a link or outside
      *   the target folder: refuse loudly with SecurityException so the binder caller
      *   can distinguish "rejected by the security check" from a generic failure.

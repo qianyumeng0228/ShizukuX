@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.util.zip.GZIPOutputStream
 
 /**
@@ -44,9 +45,34 @@ class ArchiveVettingTest {
         assertTrue(ArchiveVetting.isSafe(names, verbose))
     }
 
+    // ── toybox prints the link target in the name-only listing as well ──
+    // Real-device finding (2026-11-06 run): `tar -tf` on toybox 0.8.12-android emits
+    // "evil -> /data/local/tmp/x" for a symlink, so the bare name list already carries the
+    // arrow. Unstripped, the link is recorded under that whole string, no entry starts with
+    // it, and the archive vetted as SAFE: the symlink landed on the device.
+
     @Test
-    fun `mismatched listings with a duplicated line are tolerated`() {
-        // toybox-style duplicate for the same entry: same classification, so it is benign.
+    fun `toybox name list carrying a link target still refuses a write through the link`() {
+        val names = listOf("evil -> /data/local/tmp/pwned_by_shizukux", "evil/x.txt")
+        val verbose = listOf(
+            "lrwxrwxrwx 0/0 0 1970-01-01 08:00 evil -> /data/local/tmp/pwned_by_shizukux",
+            "-rw-r--r-- 0/0 6 1970-01-01 08:00 evil/x.txt",
+        )
+        assertFalse(ArchiveVetting.isSafe(names, verbose))
+    }
+
+    @Test
+    fun `toybox name list carrying a link target still accepts a bare symlink`() {
+        val names = listOf("lib -> /data/app/x/lib", "a.txt")
+        val verbose = listOf(
+            "lrwxrwxrwx 0/0 0 1970-01-01 08:00 lib -> /data/app/x/lib",
+            "-rw-r--r-- 0/0 6 1970-01-01 08:00 a.txt",
+        )
+        assertTrue(ArchiveVetting.isSafe(names, verbose))
+    }
+
+    @Test
+    fun `mismatched listings with a duplicated line are tolerated`() {        // toybox-style duplicate for the same entry: same classification, so it is benign.
         val names = listOf("./a.txt")
         val verbose = listOf(
             "-rw-rw-rw- 1 1 12 2026-01-01 00:00 ./a.txt",
@@ -115,6 +141,15 @@ class ArchiveVettingTest {
         } finally {
             archive.delete()
         }
+    }
+
+    @Test
+    fun `archive that cannot be listed is refused instead of extracted`() {
+        // fail-closed: a gate that cannot read the archive must not let the extractor try,
+        // or a check that fails while extraction succeeds is a silent bypass.
+        val missing = File.createTempFile("ssu-vet-missing-", ".tar.gz")
+        missing.delete()
+        assertThrows(IOException::class.java) { ArchiveVetting.vetArchiveOrThrow(missing) }
     }
 
     private fun gzipOf(bytes: ByteArray): ByteArray {
