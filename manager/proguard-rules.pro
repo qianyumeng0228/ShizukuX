@@ -146,6 +146,14 @@
 -dontwarn io.sentry.compose.**
 -dontwarn androidx.compose.**
 
+# androidx.core's FingerprintManagerCompat and androidx.window's OEM extension/sidecar
+# bridges reference platform classes that only exist on the device (vendor-provided) and
+# are absent from android.jar, so R8 reports them as missing classes and aborts the
+# shizukuxRelease minify step.
+-dontwarn android.hardware.fingerprint.**
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
+
 -allowaccessmodification
 #-repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
