@@ -496,4 +496,9 @@ class AppListItemDecoration(context: Context) : af.shizuku.manager.utils.M3ECard
 
     override fun getDividerInset(view: View): Float = dividerInset
     override fun getDividerEndInset(view: View): Float = cardMargin
+
+    // One hairline between rows: the whole list sits in a single card, so without dividers a
+    // long run of icon/label/toggle triples reads as one undifferentiated block.
+    override fun shouldDrawDivider(parent: RecyclerView, index: Int, count: Int): Boolean =
+        index < count - 1
 }
