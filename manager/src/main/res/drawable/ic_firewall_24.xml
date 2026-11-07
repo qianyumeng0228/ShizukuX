@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24.0"
+    android:viewportHeight="24.0">
+    <!-- Three courses of staggered bricks: the firewall as the wall it is named after.
+         White fill so CardIcon.Droplet can tint it like the other home icons. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M3,4h5v4.5h-5z M9,4h6v4.5h-6z M16,4h5v4.5h-5z M3,9.5h2v4.5h-2z M6,9.5h6v4.5h-6z M13,9.5h5v4.5h-5z M19,9.5h2v4.5h-2z M3,15h5v4.5h-5z M9,15h6v4.5h-6z M16,15h5v4.5h-5z" />
+</vector>

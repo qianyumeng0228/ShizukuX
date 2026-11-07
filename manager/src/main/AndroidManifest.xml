@@ -243,6 +243,11 @@
             android:label="@string/modules_open_webui" />
 
         <activity
+            android:name=".firewall.FirewallActivity"
+            android:exported="false"
+            android:label="@string/firewall_title" />
+
+        <activity
             android:name=".backup.AppBackupActivity"
             android:exported="false"
             android:label="@string/home_backup_title" />

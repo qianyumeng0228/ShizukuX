@@ -1473,6 +1473,26 @@
     <string name="modules_webui_readonly">只读 WebUI · 当前未提供 Shell 桥</string>
     <string name="modules_webui_missing">该模块没有 index.html</string>
     <string name="modules_title">ADB 模块</string>
+    <!-- 平台防火墙（FIREWALL_CHAIN_OEM_DENY_3）上的按应用联网拦截 -->
+    <string name="firewall_title">网络防火墙</string>
+    <string name="home_firewall_description">无需 VPN 即可拦截应用联网</string>
+    <string name="firewall_blocked_count">已拦截 %d 个应用</string>
+    <string name="firewall_switch_title">防火墙总开关</string>
+    <string name="firewall_switch_summary">关闭后所有拦截规则暂不生效</string>
+    <string name="firewall_state_on">已开启</string>
+    <string name="firewall_state_off">已关闭</string>
+    <string name="firewall_state_unknown">当前系统无法读取状态</string>
+    <string name="firewall_search_hint">搜索应用</string>
+    <string name="firewall_filter_all">应用</string>
+    <string name="firewall_filter_blocked">已拦截</string>
+    <string name="firewall_filter_system">系统</string>
+    <string name="firewall_app_count">%d 个应用</string>
+    <string name="firewall_empty">没有匹配的应用</string>
+    <string name="firewall_need_service">请先启动 Shizuku 服务</string>
+    <string name="firewall_action_failed">防火墙操作失败</string>
+    <string name="firewall_failed">系统未接受这次修改</string>
+    <string name="firewall_refresh">刷新</string>
+    <string name="firewall_system_app">系统 · %1$s</string>
     <string name="modules_settings_title">模块</string>
     <string name="modules_install_zip">安装 ZIP</string>
     <string name="modules_empty_title">还没有安装模块</string>

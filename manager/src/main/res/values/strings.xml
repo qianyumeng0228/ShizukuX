@@ -1609,6 +1609,26 @@ This action cannot be undone. Continue?</string>
     <string name="app_management_deselect_all">Deselect all</string>
     <string name="terminal_tutorial_3_description">Some tips: grant execute permission to %1$s and add it to %2$s, you will able to use %1$s directly.</string>
     <string name="settings_startup">Startup</string>
+    <!-- Per-app network blocking on the platform firewall (FIREWALL_CHAIN_OEM_DENY_3). -->
+    <string name="firewall_title">Network firewall</string>
+    <string name="home_firewall_description">Block an app\'s network without a VPN</string>
+    <string name="firewall_blocked_count">%d apps blocked</string>
+    <string name="firewall_switch_title">Firewall switch</string>
+    <string name="firewall_switch_summary">When off, no blocking rule takes effect</string>
+    <string name="firewall_state_on">On</string>
+    <string name="firewall_state_off">Off</string>
+    <string name="firewall_state_unknown">Unknown on this system</string>
+    <string name="firewall_search_hint">Search apps</string>
+    <string name="firewall_filter_all">Apps</string>
+    <string name="firewall_filter_blocked">Blocked</string>
+    <string name="firewall_filter_system">System</string>
+    <string name="firewall_app_count">%d apps</string>
+    <string name="firewall_empty">No matching app</string>
+    <string name="firewall_need_service">Start the Shizuku service first</string>
+    <string name="firewall_action_failed">Firewall operation failed</string>
+    <string name="firewall_failed">The system did not take the change</string>
+    <string name="firewall_refresh">Refresh</string>
+    <string name="firewall_system_app">System · %1$s</string>
     <string name="modules_title">ADB Modules</string>
     <!-- Phone-side module entry (P0): the manager was complete but only the TV screen was wired to it. -->
     <string name="action_back">Back</string>
