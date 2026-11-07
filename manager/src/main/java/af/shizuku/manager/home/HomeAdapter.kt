@@ -39,9 +39,11 @@ class HomeAdapter(
         const val ID_PERMISSION_MANAGER = 13L
         const val ID_DEVICE_CONTROL = 14L
         const val ID_BACKUP_APPS = 15L
+        // Free slot 11 (12 stays reserved upstream): the phone-side ADB module entry point.
+        const val ID_MODULES = 11L
 
         private val DEFAULT_ORDER = listOf(
-            ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_MODULES, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
@@ -223,6 +225,7 @@ class HomeAdapter(
             val isHidden = id.toString() in hidden
             if (isHidden && !isEditMode) return@forEach
             when (id) {
+                ID_MODULES -> addItem(ModulesViewHolder.CREATOR, status, id)
                 ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                     addItem(TerminalViewHolder.CREATOR, status, id)
                 // Merged "start service" card (4.1 Item B): replaces the former root / wireless /

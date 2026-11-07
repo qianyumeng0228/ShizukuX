@@ -1610,6 +1610,24 @@ This action cannot be undone. Continue?</string>
     <string name="terminal_tutorial_3_description">Some tips: grant execute permission to %1$s and add it to %2$s, you will able to use %1$s directly.</string>
     <string name="settings_startup">Startup</string>
     <string name="modules_title">ADB Modules</string>
+    <!-- Phone-side module entry (P0): the manager was complete but only the TV screen was wired to it. -->
+    <string name="action_back">Back</string>
+    <string name="action_ok">OK</string>
+    <string name="modules_count">%d installed</string>
+    <string name="modules_installed_ok">Installed %1$s</string>
+    <string name="modules_install_failed">Install failed: %1$s</string>
+    <string name="modules_action_failed">Module operation failed</string>
+    <string name="modules_delete_confirm">Delete module \"%1$s\"? Its files and logs will be removed.</string>
+    <string name="modules_trust_required">Grant trust below to run scripts in Safe mode</string>
+    <string name="modules_healthy">Healthy</string>
+    <string name="modules_state_enabled">Enabled</string>
+    <string name="modules_state_disabled">Disabled</string>
+    <string name="modules_exit_code">Exit code: %1$d</string>
+    <string name="modules_need_service">Start the Shizuku service first — module scripts run through it.</string>
+    <string name="modules_installing">Installing module…</string>
+    <string name="modules_empty_description">Install a module ZIP to add script-driven features. Modules run through the Shizuku service, no root required.</string>
+    <string name="modules_webui_readonly">Read-only WebUI · shell bridge not available</string>
+    <string name="modules_webui_missing">This module has no index.html</string>
     <string name="modules_settings_title">Modules</string>
     <string name="modules_access_mode">Module access mode</string>
     <string name="modules_custom_permissions">Custom permissions</string>
