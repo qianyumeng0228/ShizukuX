@@ -88,6 +88,20 @@ class ServiceDoctorActivity : AppBarActivity() {
     }
 
     private fun runDiagnostics() {
+        // Honour the global diagnostics switch. Before this, "启用诊断" only hid the warning
+        // panel on the Root & compatibility page while this screen still ran the full check,
+        // so turning diagnostics off appeared to do nothing here.
+        // Read through ShizukuSettings: settings live in the device-protected storage
+        // (/data/user_de/0/<pkg>/shared_prefs/settings.xml), so PreferenceManager's default
+        // file would always miss and fall back to true.
+        val diagnosticsEnabled = af.shizuku.manager.ShizukuSettings.getPreferences()
+            ?.getBoolean("diagnostics_enabled", true) ?: true
+        if (!diagnosticsEnabled) {
+            checkListAdapter.submitList(emptyList())
+            tipsTextView.text = getString(R.string.doctor_diagnostics_disabled)
+            return
+        }
+
         val checks = mutableListOf<DoctorCheck>()
         val tips = mutableListOf<String>()
 

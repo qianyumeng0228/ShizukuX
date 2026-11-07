@@ -11,6 +11,7 @@ import af.shizuku.manager.receiver.ShizukuReceiverStarter
 import af.shizuku.manager.settings.SettingsActivity
 import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
+import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.ProjectLinks
@@ -217,10 +218,17 @@ open class HomeActivity : AppActivity(), MavericksView {
                         startActivity(Intent(this, SettingsActivity::class.java))
                     },
                     onHelpClick = {
+                        // Local summary stays (it explains how ShizukuX coexists with third-party
+                        // apps and stock Shizuku, which the docs index does not cover inline);
+                        // "Open full documentation" is the single path to the external help page
+                        // used by Diagnostics > Help.
                         MaterialAlertDialogBuilder(this)
                             .setTitle(R.string.settings_shizuku_extra_features)
                             .setMessage(getString(R.string.help_general_plus_summary).toHtml())
                             .setPositiveButton(android.R.string.ok, null)
+                            .setNeutralButton(R.string.home_help_open_docs) { _, _ ->
+                                CustomTabsHelper.launchUrlOrCopy(this, getString(R.string.help_url))
+                            }
                             .show()
                     },
                     onRestoreHomeCards = { adapter.restoreAllCards() },

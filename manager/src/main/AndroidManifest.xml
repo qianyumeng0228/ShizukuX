@@ -210,7 +210,7 @@
             android:name=".settings.StealthModeActivity"
             android:exported="false"
             android:label="@string/settings_stealth_tutorial_entry"
-            android:theme="@style/Theme" />
+            android:theme="@style/AppTheme" />
 
         <activity
             android:name=".onboarding.OnboardingActivity"
@@ -220,12 +220,6 @@
             android:name=".home.SystemHubActivity"
             android:theme="@style/Theme"
             android:exported="false" />
-            
-        <activity
-            android:name=".activitylog.ActivityLogActivity"
-            android:theme="@style/Theme"
-            android:exported="false"
-            android:label="@string/settings_activity_log" />
 
         <activity
             android:name=".scripting.ScriptingActivity"

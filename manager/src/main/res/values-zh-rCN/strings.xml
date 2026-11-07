@@ -178,6 +178,8 @@
         MIUI）会禁止应用在不可见时访问网络，即使该应用使用了前台服务。请在这些系统上为 Shizuku 关闭电池优化功能。</string>
     <!-- Home - Root -->
     <string name="home_root_title"><![CDATA[启动（针对已 Root 设备）]]></string>
+    <string name="home_root_running_title"><![CDATA[已以 Root 运行]]></string>
+    <string name="home_root_running_description"><![CDATA[Shizuku 服务已以 Root 权限运行，需要应用新设置时点「重新启动」。]]></string>
     <string name="home_root_description"><![CDATA[如果您正在使用 Magisk，可以尝试使用 %1$s。对于 Root 用户，它最终会取代 Shizuku。请注意，现有应用可能需要稍作修改才能使用 %2$s。]]></string>
     <string name="home_root_button_start">启动</string>
     <string name="home_root_button_restart">重新启动</string>
@@ -587,6 +589,13 @@
     <string name="settings_diagnostics_category"><![CDATA[诊断]]></string>
     <string name="settings_stealth_mode"><![CDATA[隐身模式]]></string>
     <string name="settings_stealth_mode_summary"><![CDATA[隐藏应用图标并简化界面，以保护隐私]]></string>
+    <string name="settings_stealth_tutorial_entry"><![CDATA[隐身模式指南]]></string>
+    <string name="settings_stealth_tutorial_entry_summary"><![CDATA[隐身模式的作用，以及图标被隐藏后如何恢复]]></string>
+    <string name="settings_stealth_tutorial_intro_title"><![CDATA[关于隐身模式]]></string>
+    <string name="settings_stealth_tutorial_intro_summary"><![CDATA[隐身模式会隐藏 Shizuku 桌面图标以保护隐私。应用仍可正常使用，也能从 Shizuku 服务通知打开；关闭隐身模式后图标会自动恢复。]]></string>
+    <string name="settings_stealth_tutorial_exit_title"><![CDATA[通过 ADB 退出]]></string>
+    <string name="settings_stealth_tutorial_exit_summary"><![CDATA[如果图标已被隐藏且无法打开应用，可用 ADB 恢复：]]></string>
+    <string name="settings_stealth_tutorial_exit_command"><![CDATA[adb shell pm enable %1$s/af.shizuku.manager.LauncherAlias]]></string>
     <string name="settings_hide_from_recents"><![CDATA[后台隐藏]]></string>
     <string name="settings_hide_from_recents_summary"><![CDATA[从最近任务列表中隐藏本应用]]></string>
     <string name="settings_activity_log"><![CDATA[活动日志]]></string>
@@ -647,6 +656,7 @@
     <string name="settings_extra_learn_more"><![CDATA[了解更多]]></string>
     <string name="settings_extra_feature_help_enable">启用功能</string>
     <string name="settings_extra_feature_help_close">关闭</string>
+    <string name="home_help_open_docs"><![CDATA[打开完整文档]]></string>
     <string name="help_general_plus_summary"><![CDATA[<b>ShizukuX 如何与其他应用配合使用</b><br><br>ShizukuX 提供<i>Extra 专属功能</i>（如存储桥接、AI 桥接和主题桥接）。本应用以及明确面向 ShizukuX API（xyz.shizuku.extra.api）的第三方应用都可以使用这些功能。<br><br><b>重要提示：</b>ShizukuX 完全兼容原版 Shizuku API。现有的 Shizuku 应用（如 SD Maid SE 和 SwiftBackup）无需开发者更新，即可自动发现并使用 ShizukuX。<br><br><b>与原版 Shizuku 共存：</b>同一时间只能运行一个 Shizuku 服务。如果仍安装了原版 Shizuku，可以通过主页上的伴侣卡片快速切换；但建议卸载原版 Shizuku，仅使用 ShizukuX。]]></string>
     <string name="help_dhizuku_title"><![CDATA[关于 Dhizuku 模式]]></string>
     <string name="help_dhizuku_detail"><![CDATA[Dhizuku 允许 Shizuku 与第三方应用共享设备所有者（DevicePolicyManager）权限。这对 Dhizuku Manager 或信息亭模式工具等应用很重要，因为这些应用需要管理系统策略，但又不能成为唯一的设备所有者。]]></string>
@@ -778,8 +788,8 @@
     <string name="crash_detected_dialog_ignore"><![CDATA[忽略]]></string>
     <string name="shortcut_open_terminal"><![CDATA[打开终端]]></string>
     <string name="watchdog_shizuku_crashed_action_report_manually"><![CDATA[手动报告]]></string>
-    <string name="home_service_doctor_title"><![CDATA[服务诊断]]></string>
-    <string name="home_service_doctor_summary"><![CDATA[启动 Shizuku 时遇到问题？点按以运行诊断检查。]]></string>
+    <string name="home_service_doctor_title"><![CDATA[运行检查]]></string>
+    <string name="home_service_doctor_summary"><![CDATA[逐项检查服务运行所需的条件，并给出修复入口。]]></string>
     <string name="doctor_dialog_title"><![CDATA[系统诊断]]></string>
     <string name="doctor_check_battery"><![CDATA[电池优化：%1$s]]></string>
     <string name="doctor_check_adb"><![CDATA[无线调试：%1$s]]></string>
@@ -1185,7 +1195,8 @@
     <string name="dhizuku_app_management_title"><![CDATA[Dhizuku 应用管理]]></string>
     <string name="dhizuku_block_app"><![CDATA[屏蔽应用]]></string>
     <string name="dhizuku_unblock_app"><![CDATA[取消屏蔽]]></string>
-    <string name="diagnostics_battery_settings_open_failed"><![CDATA[无法打开电池设置]]></string>
+    <string name="diagnostics_open_check_failed"><![CDATA[无法打开检查页]]></string>
+    <string name="doctor_diagnostics_disabled"><![CDATA[诊断已关闭。可在「设置 → 诊断」中重新开启后再运行检查。]]></string>
     <string name="diagnostics_command_copied"><![CDATA[命令已复制]]></string>
     <string name="diagnostics_copy_command"><![CDATA[复制命令]]></string>
     <string name="diagnostics_device_owner_setup_message"><![CDATA[Dhizuku 模式需要将本应用设为设备所有者。\n\n请在电脑上运行此命令（必须启用 USB 调试）：\n\n%1$s]]></string>
@@ -1195,7 +1206,7 @@
     <string name="diagnostics_disable_title"><![CDATA[禁用诊断？]]></string>
     <string name="diagnostics_dismiss"><![CDATA[忽略]]></string>
     <string name="diagnostics_shadow_binder_navigate_hint"><![CDATA[前往 功能中心 → 安全与访问 → 影子 Binder 选择应用]]></string>
-    <string name="diagnostics_warning_battery_optimization"><![CDATA[电池优化已启用。Shizuku 可能在后台被杀。点击豁免。]]></string>
+    <string name="diagnostics_warning_battery_optimization"><![CDATA[电池优化已启用。Shizuku 可能在后台被杀。点按查看修复项。]]></string>
     <string name="diagnostics_warning_dhizuku_not_owner"><![CDATA[Dhizuku 模式已启用，但设备所有者组件未激活。点击解决。]]></string>
     <string name="diagnostics_warning_shadow_binder_no_apps"><![CDATA[影子 Binder 已启用，但未选择要隐藏的应用。点击选择。]]></string>
     <string name="fake_adb_pairing_allow"><![CDATA[允许]]></string>

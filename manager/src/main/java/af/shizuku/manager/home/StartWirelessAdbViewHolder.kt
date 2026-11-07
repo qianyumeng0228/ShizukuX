@@ -31,6 +31,7 @@ import af.shizuku.manager.starter.Starter
 import af.shizuku.manager.starter.StarterActivity
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
+import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.utils.IconStyleHelper
 import rikka.core.content.asActivity
 import rikka.core.util.ClipboardUtils
@@ -104,7 +105,14 @@ class StartWirelessAdbViewHolder(
             // 4.1 merged "start service" card: on rooted devices (or Samsung system-uid
             // escalation), the primary button routes through the root starter instead of the
             // wireless-debugging flow. This replaces the former standalone StartRoot card.
-            val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
+            // `data == true` means the service is ALREADY running as root (HomeAdapter passes
+            // rootRestart). Trust that runtime state first: EnvironmentUtils.isRooted() is a
+            // best-effort probe whose fast half can fail on SukiSU/KernelSU (su stat blocked by
+            // SELinux, libsu not yet initialized), and when it returned false the "Restart"
+            // button dropped users into the wireless-ADB pairing flow instead of the root starter.
+            val isRootPath = data == true ||
+                EnvironmentUtils.isRooted() ||
+                ShizukuSettings.isSamsungSystemUidEscalationEnabled()
             if (isRootPath) {
                 val rootIntent = Intent(context, StarterActivity::class.java).apply {
                     if (ShizukuSettings.isSamsungSystemUidEscalationEnabled() && !EnvironmentUtils.isRooted()) {
@@ -279,26 +287,56 @@ class StartWirelessAdbViewHolder(
         // reports true in-app on rooted devices like Xiaomi 13 Pro + SukiSU, which is what the
         // old comment below this code could not rely on.)
         val isRootPath = EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled()
+        // Running (by any path): the card's job is restarting, not starting. Distinct from
+        // isRootPath, which also covers "rooted device, service not started yet".
+        val serviceRunning = rootRestart || ShizukuStateMachine.isRunning()
         binding.title.setText(
-            if (rootRestart || isRootPath) R.string.home_root_title else R.string.home_wireless_adb_title
+            when {
+                rootRestart -> R.string.home_root_running_title
+                isRootPath -> R.string.home_root_title
+                else -> R.string.home_wireless_adb_title
+            }
         )
-        binding.text1.text = if (rootRestart || isRootPath) {
-            binding.text1.movementMethod = LinkMovementMethod.getInstance()
-            context.getString(
-                R.string.home_root_description,
-                "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
-                "Sui"
-            )
-        } else if (EnvironmentUtils.isTlsSupported()) {
-            binding.text1.movementMethod = LinkMovementMethod.getInstance()
-            context.getString(R.string.home_wireless_adb_description)
-        } else {
-            context.getString(R.string.home_wireless_adb_description_pre_11)
-        }.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
+        // NOTE: resolve the copy into a variable first, then convert it. Written inline as
+        // `if (a) {...} else if (b) {...} else {...}.toHtml()` the conversion binds only to the
+        // last else-branch, so the root copy (and the wireless copy) stayed raw and the card
+        // rendered literal <b><a href=...>Sui</a></b> markup.
+        val descriptionText = when {
+            rootRestart -> {
+                // No link in the running copy — clear the movement method a recycled view may
+                // still carry from the pre-start ("Sui") copy.
+                binding.text1.movementMethod = null
+                context.getString(R.string.home_root_running_description)
+            }
+            isRootPath -> {
+                binding.text1.movementMethod = LinkMovementMethod.getInstance()
+                context.getString(
+                    R.string.home_root_description,
+                    "<b><a href=\"${Helps.SUI.get()}\">Sui</a></b>",
+                    "Sui"
+                )
+            }
+            EnvironmentUtils.isTlsSupported() -> {
+                binding.text1.movementMethod = LinkMovementMethod.getInstance()
+                context.getString(R.string.home_wireless_adb_description)
+            }
+            else -> context.getString(R.string.home_wireless_adb_description_pre_11)
+        }
+        binding.text1.text =
+            descriptionText.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
 
         // Secondary "PC ADB command" viewer: pre-Android-11 devices need it (the old StartAdb
         // card's sole purpose); also surfaced when the user explicitly enabled show_start_adb_home.
         binding.button5.isVisible = !EnvironmentUtils.isTlsSupported() || ShizukuSettings.showStartAdbHome()
+
+        // First-start paths (step-by-step guide / pairing / one-tap) only make sense while the
+        // service is down. Keeping them up after it is running made the card look like it was
+        // still asking to be started; the running card keeps just "restart" (+ the command
+        // viewer above). Pre-Android-11 devices never get these buttons anyway.
+        val showStartPaths = EnvironmentUtils.isTlsSupported() && !serviceRunning
+        binding.button2.isVisible = showStartPaths
+        binding.button3.isVisible = showStartPaths
+        binding.button4.isVisible = showStartPaths
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
@@ -311,7 +349,15 @@ class StartWirelessAdbViewHolder(
             activity.showAccessibilityDialog()
             return
         }
-        // Ask once whether to enable the auto-pairing assistant along with this flow.
+        // Assistant already enabled: go straight into the pairing flow. The auto-pairing switch
+        // in Diagnostics > ADB tools owns that state — asking here again would make this card a
+        // second place to flip the same setting (same shape as the removed stealth-mode copy).
+        // Mirrors onOneTapClicked, which has always guarded on the live state.
+        if (context.applicationContext.isPairingAssistantEnabled()) {
+            launchPairingFlow(context)
+            return
+        }
+        // Not enabled yet: offer the one-time enable inside this flow.
         MaterialAlertDialogBuilder(activity)
             .setTitle(R.string.dialog_enable_auto_pairing_title)
             .setMessage(R.string.dialog_enable_auto_pairing_message)

@@ -20,4 +20,11 @@
     <string name="compat_hub_install_signature_conflict">无法安装：已有另一个应用（例如原版 Shizuku）以 moe.shizuku.privileged.api 安装，且签名不兼容。请先卸载它。</string>
     <string name="compat_hub_install_fail_storage">无法安装：设备可用存储空间不足。</string>
     <string name="compat_hub_install_fail_abi">无法安装：兼容中心不支持此设备的 CPU 架构。</string>
+
+    <string name="compat_hub_uninstalling">正在卸载…</string>
+    <string name="compat_hub_uninstall_confirm_title">卸载兼容中心？</string>
+    <string name="compat_hub_uninstall_confirm_message">兼容中心是一个独立安装的包，Android 不会在卸载 ShizukuX 时一并删除它。现在卸载会移除这层兼容——只检查原版 Shizuku 包名的应用将提示「未安装 Shizuku」。\n\n提示：请先卸载兼容中心，再卸载 ShizukuX。管理器卸载后，兼容中心仍会保留自己的桌面图标，可从那里或系统「设置 → 应用」中移除。</string>
+    <string name="compat_hub_uninstall_confirm_action">卸载</string>
+    <string name="compat_hub_uninstall_success">兼容中心已卸载。</string>
+    <string name="compat_hub_uninstall_failure">卸载失败。请确认 ShizukuX 服务或 Root 已激活，或到系统「设置 → 应用」中手动卸载。</string>
 </resources>

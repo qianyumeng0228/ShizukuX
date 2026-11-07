@@ -5,9 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.PowerManager
-import android.provider.Settings
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -37,7 +34,6 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
 
         val container = holder.itemView as? LinearLayout ?: return
         val listContainer = holder.findViewById(R.id.diagnostics_list) as? LinearLayout ?: return
-        val btnDisable = holder.findViewById(R.id.btn_disable_diagnostics)
 
         val sp = preferenceManager.sharedPreferences
         val isDisabledGlobal = sp?.getBoolean("diagnostics_enabled", true) == false
@@ -100,21 +96,23 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
             itemView.setOnClickListener {
                 when (warning.id) {
                     "battery_optimization" -> {
+                        // Single repair entry: this warning no longer raises the exemption
+                        // dialog itself. It used to duplicate the "Battery optimization"
+                        // check in Service Doctor (which runs it with a result callback so
+                        // the list refreshes on return); tapping now lands on that check
+                        // instead, so the fix exists in exactly one place.
                         try {
-                            // ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS shows a direct
-                            // system Allow/Deny dialog for THIS app specifically - no
-                            // searching a 300+ app alphabetical list to find it (that's
-                            // what ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS did here
-                            // before, despite the warning saying "Tap to exempt").
-                            af.shizuku.manager.utils.SettingsHelper.requestIgnoreBatteryOptimizations(context)
-                        } catch (e: Exception) {
-                            try {
-                                val intent = Intent(Settings.ACTION_SETTINGS)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                context.startActivity(intent)
-                            } catch (anfe: Exception) {
-                                Toast.makeText(context, R.string.diagnostics_battery_settings_open_failed, Toast.LENGTH_SHORT).show()
+                            val intent = Intent(context, ServiceDoctorActivity::class.java)
+                            if (context !is android.app.Activity) {
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                R.string.diagnostics_open_check_failed,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                     "shadow_binder_no_apps" -> {
@@ -162,18 +160,6 @@ class DiagnosticsDashboardPreference @JvmOverloads constructor(
                 notifyChanged()
             }
             listContainer.addView(itemView)
-        }
-
-        btnDisable?.setOnClickListener {
-            MaterialAlertDialogBuilder(context)
-                .setTitle(R.string.diagnostics_disable_title)
-                .setMessage(R.string.diagnostics_disable_message)
-                .setPositiveButton(R.string.diagnostics_disable_confirm) { _, _ ->
-                    sp?.edit()?.putBoolean("diagnostics_enabled", false)?.apply()
-                    notifyChanged()
-                }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
         }
     }
 

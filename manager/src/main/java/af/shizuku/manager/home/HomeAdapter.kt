@@ -240,13 +240,14 @@ class HomeAdapter(
                 ID_DEVICE_CONTROL -> if (isEditMode || ShizukuSettings.showDeviceControlHome())
                     addItem(DeviceControlViewHolder.CREATOR, status, id)
                 ID_COMPANION -> {
-                    // The compat hub is what lets third-party apps detect ShizukuX, so surface
-                    // this card whenever it still needs action — the hub isn't installed yet, or
-                    // stock Shizuku is present and conflicts — not only when companion mode is on.
-                    // Otherwise (hub installed, no conflict) it stays opt-in via companion mode.
-                    val needsAction = !compatHubInstalled || companionInstalled
-                    if (isEditMode || ShizukuSettings.isCompanionModeEnabled() || needsAction)
-                        addItem(companionCreator, Pair(companionInstalled, compatHubInstalled), id)
+                    // The compat hub is what lets third-party apps detect ShizukuX, so this card is
+                    // always present: it installs the hub when missing, resolves a stock-Shizuku
+                    // conflict, and - crucially - removes the hub when one is installed. It used to
+                    // be hidden once the hub was installed with no conflict, which left the
+                    // uninstall action unreachable exactly when the hub existed (and the hub had no
+                    // launcher icon then either, so leftovers were impossible to remove). Users who
+                    // do not want the card can hide it from home edit mode.
+                    addItem(companionCreator, Pair(companionInstalled, compatHubInstalled), id)
                 }
             }
         }

@@ -33,16 +33,6 @@
             android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
             android:textColor="?colorError"
             android:textStyle="bold" />
-            
-        <ImageView
-            android:id="@+id/btn_disable_diagnostics"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:padding="6dp"
-            android:src="@drawable/ic_close_24"
-            android:background="?selectableItemBackgroundBorderless"
-            android:contentDescription="@string/accessibility_disable_diagnostics"
-            app:tint="?colorOnSurfaceVariant" />
     </LinearLayout>
 
     <LinearLayout

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hub_info_title">ShizukuX 兼容中心</string>
+    <string name="hub_info_body">这不是一个可以独立使用的应用。\n\nShizukuX 安装了这个小组件，让只认原版 Shizuku 包名（moe.shizuku.privileged.api）的应用继续正常工作。所有实际功能都由 ShizukuX 本体提供。\n\n它不运行任何服务，也没有自己的功能界面。卸载它会移除这层兼容，届时只检查原版 Shizuku 包名的应用会提示「未安装 Shizuku」。\n\n提示：请先卸载本组件，再卸载 ShizukuX——一旦管理器被卸载，这个页面就是唯一的入口了。</string>
+    <string name="hub_info_open_manager">打开 ShizukuX</string>
+    <string name="hub_info_uninstall">卸载本组件</string>
+    <string name="hub_info_manager_missing">未安装 ShizukuX</string>
+</resources>

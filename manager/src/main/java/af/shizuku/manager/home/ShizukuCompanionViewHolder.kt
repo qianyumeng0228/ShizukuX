@@ -14,7 +14,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.topjohnwu.superuser.Shell
+import rikka.core.content.asActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,6 +75,14 @@ class ShizukuCompanionViewHolder(
     }
 
     private val originalIcon = binding.icon.drawable
+
+    /**
+     * True when the package currently occupying [StockShizukuCompat.PACKAGE] is our own compat hub
+     * (not genuine stock Shizuku). Only then may the uninstall button remove it directly: forcing
+     * `pm uninstall` on a real stock Shizuku install would destroy another app's data and the
+     * user's running service, so that path keeps opening the system uninstall page.
+     */
+    private var uninstallHubDirectly = false
 
     init {
         containerBinding.root.setOnLongClickListener {
@@ -209,10 +219,56 @@ class ShizukuCompanionViewHolder(
         }
         binding.button2.setOnClickListener { v ->
             af.shizuku.manager.utils.HapticUtils.tap(v)
+            if (uninstallHubDirectly) {
+                val activity = v.context.asActivity<android.app.Activity>()
+                if (activity == null) {
+                    // Never fail silently: if the host context chain has no Activity the dialog
+                    // cannot be shown, so surface the failure instead of swallowing the tap.
+                    Toast.makeText(v.context, R.string.compat_hub_uninstall_failure, Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                MaterialAlertDialogBuilder(activity)
+                    .setTitle(R.string.compat_hub_uninstall_confirm_title)
+                    .setMessage(R.string.compat_hub_uninstall_confirm_message)
+                    .setPositiveButton(R.string.compat_hub_uninstall_confirm_action) { _, _ ->
+                        val context = v.context
+                        setHubUninstallBusy(context)
+                        scope.launch {
+                            // The hub is a SEPARATE package installed by us via pm; Android never
+                            // uninstalls it together with ShizukuX. Removing it here (through
+                            // Shizuku/root) is the only in-app path that actually deletes it -
+                            // ACTION_DELETE only opens the system page and, once ShizukuX itself
+                            // is gone, this card no longer exists to offer either.
+                            val success = runPrivilegedCommand(
+                                "pm uninstall --user 0 ${StockShizukuCompat.PACKAGE}"
+                            )
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    if (success) R.string.compat_hub_uninstall_success
+                                    else R.string.compat_hub_uninstall_failure,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                binding.button2.isEnabled = true
+                                binding.button2.setText(R.string.compat_hub_uninstall_btn)
+                                homeModel.reload()
+                            }
+                        }
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                return@setOnClickListener
+            }
             val intent = Intent(Intent.ACTION_DELETE)
             intent.data = Uri.parse("package:${StockShizukuCompat.PACKAGE}")
             v.context.startActivity(intent)
         }
+    }
+
+    /** Prevents a double tap from firing two pm uninstall calls while the first one runs. */
+    private fun setHubUninstallBusy(context: Context) {
+        binding.button2.isEnabled = false
+        binding.button2.setText(R.string.compat_hub_uninstalling)
     }
 
     /** Disables the action button and shows a busy label so a slow pm call can't be double-tapped. */
@@ -230,13 +286,17 @@ class ShizukuCompanionViewHolder(
             binding.text1.setText(R.string.compat_hub_installed_desc)
             binding.button1.visibility = View.GONE
             // Compat Hub installed with no stock Shizuku conflict: the only useful action is
-            // removing the leftover hub, so surface button2 (system uninstall page) here.
+            // removing the leftover hub, so surface button2 (direct pm uninstall) here.
             // Drop-in builds ARE moe.shizuku.privileged.api (no separate hub) — hide the
             // button there so it never offers to uninstall the running app itself.
             val selfIsHub = binding.root.context.packageName == StockShizukuCompat.PACKAGE
+            // A real hub (not the dropin build, whose own id IS the stock package) can be removed
+            // in place; a genuine stock Shizuku must not be force-uninstalled from here.
+            uninstallHubDirectly = !selfIsHub
             binding.button2.setText(R.string.compat_hub_uninstall_btn)
             binding.button2.visibility = if (selfIsHub) View.GONE else View.VISIBLE
         } else if (companionInstalled) {
+            uninstallHubDirectly = false
             binding.title.setText(R.string.companion_conflict_title)
             binding.text1.setText(R.string.companion_conflict_description)
             binding.button1.setText(R.string.companion_action_disable)
@@ -244,6 +304,7 @@ class ShizukuCompanionViewHolder(
             binding.button1.visibility = View.VISIBLE
             binding.button2.visibility = View.VISIBLE
         } else {
+            uninstallHubDirectly = false
             binding.title.setText(R.string.compat_hub_missing_title)
             binding.text1.setText(R.string.compat_hub_missing_desc)
             binding.button1.setText(R.string.compat_hub_install_btn)

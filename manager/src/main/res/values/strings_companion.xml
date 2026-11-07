@@ -20,4 +20,11 @@
     <string name="compat_hub_install_signature_conflict">Can\'t install: a different app (e.g. stock Shizuku) is already installed as moe.shizuku.privileged.api with an incompatible signature. Uninstall it first.</string>
     <string name="compat_hub_install_fail_storage">Can\'t install: not enough free storage on device.</string>
     <string name="compat_hub_install_fail_abi">Can\'t install: Compat Hub doesn\'t support this device\'s CPU architecture.</string>
+
+    <string name="compat_hub_uninstalling">Uninstalling…</string>
+    <string name="compat_hub_uninstall_confirm_title">Uninstall Compat Hub?</string>
+    <string name="compat_hub_uninstall_confirm_message">Compat Hub is a separate package, so Android never removes it together with ShizukuX. Uninstalling it now removes the compatibility layer — apps that only check the stock Shizuku package name will report Shizuku as missing.\n\nTip: do this BEFORE uninstalling ShizukuX. Once the manager is gone, the hub keeps its own launcher icon and can still be removed from there or from system Settings → Apps.</string>
+    <string name="compat_hub_uninstall_confirm_action">Uninstall</string>
+    <string name="compat_hub_uninstall_success">Compat Hub uninstalled.</string>
+    <string name="compat_hub_uninstall_failure">Failed to uninstall Compat Hub. Ensure ShizukuX service or Root is active, or remove it from system Settings → Apps.</string>
 </resources>

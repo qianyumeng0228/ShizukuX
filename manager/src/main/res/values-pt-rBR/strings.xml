@@ -582,8 +582,8 @@
     <string name="bug_report_dialog_button_email">E-mail</string>
 
     <!-- Service Doctor -->
-    <string name="home_service_doctor_title">Diagnóstico do Serviço</string>
-    <string name="home_service_doctor_summary">Está com problemas para iniciar o Shizuku? Toque para executar uma verificação de diagnóstico.</string>
+    <string name="home_service_doctor_title">Verificação de Execução</string>
+    <string name="home_service_doctor_summary">Verifique o que o Shizuku precisa para funcionar e receba uma correção para o que falhar.</string>
     <string name="doctor_dialog_title">Diagnósticos do Sistema</string>
     <string name="doctor_check_battery">Otimização de bateria: %1$s</string>
     <string name="doctor_check_adb">Depuração sem fio: %1$s</string>
@@ -1220,8 +1220,9 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="diagnostics_dismiss">Dismiss</string>
     <string name="diagnostics_warning_dhizuku_not_owner">Dhizuku Mode is enabled but the Device Owner component is not active. Tap to resolve.</string>
     <string name="diagnostics_warning_shadow_binder_no_apps">Shadow Binder is enabled but no apps are selected to hide. Tap to select.</string>
-    <string name="diagnostics_warning_battery_optimization">Battery optimization is active. Shizuku may be killed in the background. Tap to exempt.</string>
-    <string name="diagnostics_battery_settings_open_failed">Could not open battery settings</string>
+    <string name="diagnostics_warning_battery_optimization">A otimização de bateria está ativa. O Shizuku pode ser encerrado em segundo plano. Toque para ver a correção.</string>
+    <string name="diagnostics_open_check_failed">Não foi possível abrir a tela de verificação</string>
+    <string name="doctor_diagnostics_disabled">O diagnóstico está desativado. Ative-o em Configurações → Diagnóstico para executar as verificações.</string>
     <string name="diagnostics_shadow_binder_navigate_hint">Go to Feature Hub → Security &amp; Access → Shadow Binder to select apps</string>
     <string name="diagnostics_device_owner_setup_title">Set Up Device Owner</string>
     <string name="diagnostics_device_owner_setup_message">Dhizuku Mode requires this app to be the Device Owner.\n\nRun this command from your PC (USB debugging must be enabled):\n\n%1$s</string>

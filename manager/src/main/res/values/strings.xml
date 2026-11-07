@@ -281,6 +281,8 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
 
     <!-- Home - Root -->
     <string name="home_root_title"><![CDATA[Start (for rooted devices)]]></string>
+    <string name="home_root_running_title"><![CDATA[Running as root]]></string>
+    <string name="home_root_running_description"><![CDATA[Shizuku is already running with root privileges. Use Restart to apply new settings.]]></string>
     <string name="home_root_description"><![CDATA[If you are using Magisk, you can try %1$s. For root users, it will eventually replace Shizuku. Note, existing applications need to change a little to use %2$s.]]></string>
     <string name="home_root_button_start">Start</string>
     <string name="home_root_button_restart">Restart</string>
@@ -562,8 +564,9 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="diagnostics_dismiss">Dismiss</string>
     <string name="diagnostics_warning_dhizuku_not_owner">Dhizuku Mode is enabled but the Device Owner component is not active. Tap to resolve.</string>
     <string name="diagnostics_warning_shadow_binder_no_apps">Shadow Binder is enabled but no apps are selected to hide. Tap to select.</string>
-    <string name="diagnostics_warning_battery_optimization">Battery optimization is active. Shizuku may be killed in the background. Tap to exempt.</string>
-    <string name="diagnostics_battery_settings_open_failed">Could not open battery settings</string>
+    <string name="diagnostics_warning_battery_optimization">Battery optimization is active. Shizuku may be killed in the background. Tap to review the fix.</string>
+    <string name="diagnostics_open_check_failed">Could not open the check screen</string>
+    <string name="doctor_diagnostics_disabled">Diagnostics are turned off. Enable them in Settings → Diagnostics to run the checks.</string>
     <string name="diagnostics_shadow_binder_navigate_hint">Go to Feature Hub → Security &amp; Access → Shadow Binder to select apps</string>
     <string name="diagnostics_device_owner_setup_title">Set Up Device Owner</string>
     <string name="diagnostics_device_owner_setup_message">Dhizuku Mode requires this app to be the Device Owner.\n\nRun this command from your PC (USB debugging must be enabled):\n\n%1$s</string>
@@ -572,6 +575,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="diagnostics_disable_title">Disable Diagnostics?</string>
     <string name="diagnostics_disable_message">This will hide the diagnostic warning panel. You can re-enable it anytime from advanced settings.</string>
     <string name="diagnostics_disable_confirm">Disable</string>
+    <string name="home_help_open_docs">Open full documentation</string>
     <string name="help_general_plus_summary"><![CDATA[<b>How ShizukuX works with other apps</b><br><br>ShizukuX provides <i>exclusive Extra features</i> (Storage Bridge, AI Bridge, Theming Bridge) accessible via this app and any third-party app explicitly targeting the ShizukuX API (xyz.shizuku.extra.api).<br><br><b>Important:</b> ShizukuX is fully backwards compatible with the original Shizuku API. Existing apps that use stock Shizuku (like SD Maid SE and SwiftBackup) will automatically discover and work with ShizukuX without any developer updates required.<br><br><b>Using alongside stock Shizuku:</b> Only one service can run at a time. The Companion card on the home screen makes switching easy if you still have stock Shizuku installed, but it is recommended to uninstall stock Shizuku and use ShizukuX exclusively.]]></string>
 
     <!-- Detailed Help Strings -->
@@ -757,8 +761,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="bug_report_email_body">Please describe the bug. If possible, include reproduction steps and any relevant screenshots or logs.\n\nDevice: %1$s\n\nAndroid version: %2$s\n\nShizuku version: %3$s</string>
 
     <!-- Service Doctor -->
-    <string name="home_service_doctor_title">Service Doctor</string>
-    <string name="home_service_doctor_summary">Having trouble starting Shizuku? Tap to run a diagnostic check.</string>
+    <string name="home_service_doctor_title">Run Checks</string>
+    <string name="home_service_doctor_summary">Check what Shizuku needs to run and get a fix for anything that fails.</string>
     <string name="doctor_dialog_title">System Diagnostics</string>
     <string name="doctor_check_battery">Battery optimization: %1$s</string>
     <string name="doctor_check_adb">Wireless debugging: %1$s</string>
@@ -1664,6 +1668,6 @@ This action cannot be undone. Continue?</string>
     <string name="settings_stealth_tutorial_intro_summary">Stealth mode hides the Shizuku launcher icon for privacy. The app stays fully functional and can still be opened from the Shizuku service notification. The icon is restored automatically when you disable stealth mode.</string>
     <string name="settings_stealth_tutorial_exit_title">Exit via ADB</string>
     <string name="settings_stealth_tutorial_exit_summary">If the launcher icon is hidden and you cannot open the app, restore it over ADB with:</string>
-    <string name="settings_stealth_tutorial_exit_command">adb shell pm enable %1\/af.shizuku.manager.LauncherAlias</string>
+    <string name="settings_stealth_tutorial_exit_command">adb shell pm enable %1$s/af.shizuku.manager.LauncherAlias</string>
 
 </resources>

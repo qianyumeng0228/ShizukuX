@@ -49,7 +49,7 @@
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_adb_tools"
         android:title="@string/settings_adb_tools_category_title"
-        android:defaultValue="false">
+        android:defaultValue="true">
 
         <SwitchPreferenceCompat
             android:key="stealth_mode"

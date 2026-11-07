@@ -344,7 +344,35 @@ class AdbPairingAccessibilityService : AccessibilityService() {
             clickWirelessDebuggingSwitch(root)
         }
         if (port == null) {
-            findPortInNode(root)
+            // A HyperOS/MIUI pairing dialog shares the settings window with the page that
+            // opened it, so the tree holds two IP:port pairs: the page's own debugging
+            // address (on screen before the dialog) and the dialog's pairing endpoint.
+            // Taking the first match picks the page address and the attempt then connects
+            // to the wrong port, so collect every candidate and prefer the one that
+            // follows the six-digit code (that is what the dialog prints above its
+            // address); ties fall back to the last candidate, i.e. the dialog rendered
+            // after the page.
+            val candidates = ArrayList<PortCandidate>()
+            findPortInNode(root, 0, arrayOfNulls(1), candidates)
+            if (candidates.isNotEmpty()) {
+                var best = candidates[0]
+                for (candidate in candidates) {
+                    if (candidate.priority >= best.priority) best = candidate
+                }
+                port = best.port
+                Log.i(
+                    "AdbAccessibility",
+                    "PORT found=" + best.port + " candidates=[" +
+                        candidates.joinToString(",") { it.port.toString() + "/p" + it.priority } +
+                        "] win=" + candidateWindowId
+                )
+                Timber.tag("AdbAccessibility").i("Pairing port found: %d (window %d)", best.port, candidateWindowId)
+                Sentry.addBreadcrumb(
+                    Breadcrumb("Pairing port found via standard regex").apply {
+                        category = "adb.pairing"
+                    }
+                )
+            }
         }
         if (port != null && password == null) {
             findPasswordInNode(root)
@@ -968,54 +996,57 @@ class AdbPairingAccessibilityService : AccessibilityService() {
     /** Deep-enough cap for the recursive scan; guards against pathological UI trees. */
     private val MAX_DEPTH = 20
 
-    private fun findPortInNode(node: android.view.accessibility.AccessibilityNodeInfo?, depth: Int = 0) {
+    /**
+     * One IP:port candidate found in the window tree.
+     *
+     * [priority] 2 = the pairing dialog's own endpoint (either labelled "Port" by Samsung,
+     * or printed right below the six-digit code); 0 = a plain address, typically the
+     * wireless-debugging page's own `IP address and port` row.
+     */
+    private data class PortCandidate(val port: Int, val priority: Int)
+
+    /**
+     * Collects every IP:port in the tree instead of stopping at the first one: the pairing
+     * dialog may share its window with the page that opened it, and the page's own address
+     * comes first in tree order.
+     *
+     * [lastText] carries the most recent non-empty text seen in document order, used to tell
+     * "address printed under the pairing code" apart from "address on the settings page".
+     */
+    private fun findPortInNode(
+        node: android.view.accessibility.AccessibilityNodeInfo?,
+        depth: Int = 0,
+        lastText: Array<String?> = arrayOfNulls(1),
+        out: MutableList<PortCandidate> = ArrayList()
+    ) {
         if (node == null || depth > MAX_DEPTH) return
-        if (port != null) return
         val text = try {
             node.text?.toString() ?: ""
         } catch (e: Throwable) {
             "" // node may be recycled by the framework mid-scan; skip it
         }
         if (text.isNotEmpty()) {
+            val preceding = lastText[0]
+            val followsCode = preceding != null && passwordRegex.matches(preceding)
             ipPortRegex.find(text)?.groupValues?.get(1)?.toIntOrNull()?.let {
-                port = it
-                Log.i("AdbAccessibility", "PORT found=" + it + " text=[" + text + "] win=" + candidateWindowId)
-                Timber.tag("AdbAccessibility").i("Pairing port found: %d (window %d)", it, candidateWindowId)
-                Sentry.addBreadcrumb(
-                    Breadcrumb("Pairing port found via standard regex").apply {
-                        category = "adb.pairing"
-                    }
-                )
-                return
+                out.add(PortCandidate(it, if (followsCode) 2 else 0))
             }
             // Samsung specific: sometimes the port is in a different view or has specific labels
             if (text.contains("Port", ignoreCase = true)) {
                 fiveDigitRegex.find(text)?.value?.toIntOrNull()?.let {
-                    port = it
-                    Log.i(
-                        "AdbAccessibility",
-                        "PORT found(samsung)=" + it + " text=[" + text + "] win=" + candidateWindowId
-                    )
-                    Timber.tag(
-                        "AdbAccessibility"
-                    ).i("Pairing port found via Samsung fallback: %d (window %d)", it, candidateWindowId)
-                    Sentry.addBreadcrumb(
-                        Breadcrumb("Pairing port found via Samsung fallback").apply {
-                            category = "adb.pairing"
-                        }
-                    )
-                    return
+                    out.add(PortCandidate(it, 2))
                 }
             }
+            lastText[0] = text
         }
         try {
             for (i in 0 until node.childCount) {
                 val child = try { node.getChild(i) } catch (e: Throwable) { null } ?: continue
                 try {
-                    findPortInNode(child, depth + 1)
+                    findPortInNode(child, depth + 1, lastText, out)
                 } finally {
-                    // Recycle no matter how the recursion exits (including the early
-                    // "port found" return); this function never hands nodes to callers.
+                    // Recycle no matter how the recursion exits; this function never hands
+                    // nodes to callers.
                     try { child.recycle() } catch (ignored: Throwable) {}
                 }
             }

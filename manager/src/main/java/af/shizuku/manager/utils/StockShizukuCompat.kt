@@ -9,6 +9,9 @@ object StockShizukuCompat {
 
     const val PACKAGE = "moe.shizuku.privileged.api"
 
+    /** Component only the compat hub defines; used to tell the hub apart from genuine stock Shizuku. */
+    private const val HUB_FORWARD_ACTIVITY = "moe.shizuku.privileged.api.ForwardActivity"
+
     /**
      * True if [PACKAGE] is currently occupied by something signed with a DIFFERENT certificate
      * than this app's compat shim asset (which is signed with the same key as this app itself).
@@ -70,8 +73,17 @@ object StockShizukuCompat {
         // package + same signing key means a silent overwrite of the working Drop-In install (#334).
         if (context.packageName == PACKAGE) return true
         return try {
-            val info = context.packageManager.getPackageInfo(PACKAGE, 0)
-            info.versionName?.contains("compat") == true
+            val info = context.packageManager.getPackageInfo(PACKAGE, PackageManager.GET_ACTIVITIES)
+            if (info.versionName?.contains("compat") == true) {
+                true
+            } else {
+                // Hubs installed from older builds carry no "-compat" suffix (observed in the
+                // field: versionName read back as "ShizukuX 13.7.0.k2016"), which made the card
+                // treat our own shim as genuine stock Shizuku and offer the system uninstall page
+                // instead of removing it. ForwardActivity exists only in the shim - it is the
+                // whole reason the package exists - so its presence identifies the hub reliably.
+                info.activities?.any { it.name == HUB_FORWARD_ACTIVITY } == true
+            }
         } catch (e: PackageManager.NameNotFoundException) {
             false
         }

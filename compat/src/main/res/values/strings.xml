@@ -5,4 +5,12 @@
     <string name="permission_group_description">Shizuku compat permissions</string>
     <string name="permission_label">Allow app to access Shizuku</string>
     <string name="permission_description">Required for apps that strictly verify the original Shizuku package name.</string>
+
+    <!-- Launcher entry: without it this package has no icon in the app drawer and users can
+         neither find nor uninstall the leftover hub after removing the ShizukuX manager. -->
+    <string name="hub_info_title">ShizukuX Compat Hub</string>
+    <string name="hub_info_body">This is not a standalone app.\n\nShizukuX installed this small component so that apps which only recognise the original Shizuku package name (moe.shizuku.privileged.api) keep working. All actual work is handled by ShizukuX itself.\n\nIt runs no service and shows no UI of its own. Uninstalling it removes the compatibility layer; apps that check for the original Shizuku package will then report Shizuku as missing.\n\nTip: uninstall this component BEFORE uninstalling ShizukuX — once the manager is gone, this screen is the only remaining entry point.</string>
+    <string name="hub_info_open_manager">Open ShizukuX</string>
+    <string name="hub_info_uninstall">Uninstall this component</string>
+    <string name="hub_info_manager_missing">ShizukuX is not installed</string>
 </resources>
