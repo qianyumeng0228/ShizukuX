@@ -7,10 +7,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,13 +22,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -137,7 +140,23 @@ private fun WifiScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.wifi_title)) },
+                title = {
+                    // Two-line header like the other feature pages: a lone title line sat high in
+                    // the bar and left this page's header visibly taller than its content.
+                    Column {
+                        Text(
+                            text = stringResource(R.string.wifi_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(R.string.wifi_count, visible.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { (context as? ComponentActivity)?.finish() }) {
                         ShizukuIcon(
@@ -161,7 +180,8 @@ private fun WifiScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
         }
@@ -196,15 +216,12 @@ private fun WifiScreen(
                 onValueChange = { query = it },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.wifi_search_hint)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(24.dp)
             )
 
-            Text(
-                text = stringResource(R.string.wifi_count, visible.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-            )
+            // The network count moved up into the header subtitle; a second copy here only added
+            // a floating label between the search field and the list.
 
             if (loaded && visible.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -230,7 +247,6 @@ private fun WifiScreen(
                             }
                         }
                     )
-                    HorizontalDivider()
                 }
             }
         }
@@ -239,40 +255,57 @@ private fun WifiScreen(
 
 @Composable
 private fun WifiRow(network: WifiNetwork, copied: Boolean, onCopy: () -> Unit) {
-    Row(
+    // Card per network, matching the firewall / autostart / AppOps lists.
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = network.key != null, onClick = onCopy)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        )
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                network.ssid,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.size(2.dp))
-            Text(
-                network.key ?: stringResource(
-                    if (network.enterprise) R.string.wifi_enterprise else R.string.wifi_open
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = if (network.key != null) FontFamily.Monospace else FontFamily.Default,
-                color = if (network.key != null) MaterialTheme.colorScheme.onSurface
-                else MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        if (network.key != null) {
-            Text(
-                stringResource(if (copied) R.string.files_copied else R.string.files_copy),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = network.key != null, onClick = onCopy)
+                .padding(start = 14.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    network.ssid,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.size(2.dp))
+                Text(
+                    network.key ?: stringResource(
+                        if (network.enterprise) R.string.wifi_enterprise else R.string.wifi_open
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = if (network.key != null) FontFamily.Monospace else FontFamily.Default,
+                    color = if (network.key != null) MaterialTheme.colorScheme.onSurface
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (network.key != null) {
+                TextButton(
+                    onClick = onCopy,
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        stringResource(if (copied) R.string.files_copied else R.string.files_copy),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
         }
     }
 }

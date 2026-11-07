@@ -129,14 +129,20 @@ class AdbPairingTutorialActivity : AppBarActivity() {
                 (channel == null || channel.importance != NotificationManager.IMPORTANCE_NONE)
     }
 
+    // The tutorial closes itself once the server comes up, which is what the pairing flow wants -
+    // but addListener() replays the current state immediately, so opening this page while Shizuku
+    // was already running dismissed it within one frame. Only auto-close on an actual transition.
+    private var openedWithServerRunning = false
+
     private val runningListener: (ShizukuStateMachine.State) -> Unit = { state ->
-        if (state == ShizukuStateMachine.State.RUNNING && !isFinishing) {
+        if (state == ShizukuStateMachine.State.RUNNING && !openedWithServerRunning && !isFinishing) {
             window?.decorView?.post { if (!isFinishing) finish() }
         }
     }
 
     override fun onStart() {
         super.onStart()
+        openedWithServerRunning = ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING
         ShizukuStateMachine.addListener(runningListener)
     }
 

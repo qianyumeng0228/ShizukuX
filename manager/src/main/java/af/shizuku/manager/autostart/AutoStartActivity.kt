@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -317,7 +318,7 @@ private fun AutoStartScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(10.dp))
                         Text(
                             text = if (gateOn) {
                                 stringResource(R.string.autostart_gate_on)
@@ -347,7 +348,8 @@ private fun AutoStartScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 placeholder = { Text(stringResource(R.string.autostart_search_hint)) },
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(24.dp)
             )
 
             Row(
@@ -380,8 +382,6 @@ private fun AutoStartScreen(
                 )
             }
 
-            HorizontalDivider()
-
             if (!loaded || refreshing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -412,7 +412,6 @@ private fun AutoStartScreen(
                             enabled = available && busyPackage == null,
                             onToggle = { onToggleApp(app, it) }
                         )
-                        HorizontalDivider()
                     }
                 }
             }
@@ -428,12 +427,24 @@ private fun AutoStartRow(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    Row(
+    // Card per app, same as the firewall and AppOps lists.
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        )
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         AppIcon(app)
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -459,6 +470,7 @@ private fun AutoStartRow(
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
         } else {
             Switch(checked = blocked, onCheckedChange = onToggle, enabled = enabled)
+        }
         }
     }
 }

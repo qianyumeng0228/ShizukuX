@@ -4,12 +4,14 @@ import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -165,7 +170,14 @@ class IntentsActivity : ComponentActivity() {
                 val result = withContext(Dispatchers.IO) {
                     runCatching { IntentManager.send(action, data, pkg, component, extras) }.getOrNull()
                 }
-                message = result ?: getString(R.string.intents_launch_failed)
+                // am echoes "Starting: Intent {...}" on success and "Error: ..." on failure; put
+                // the verdict first so the dialog is readable without parsing the dump below it.
+                message = when {
+                    result == null -> getString(R.string.intents_launch_failed)
+                    result.contains("Error") || result.contains("Exception") ->
+                        getString(R.string.intents_send_failed) + "\n\n" + result
+                    else -> getString(R.string.intents_sent) + "\n\n" + result
+                }
             } finally {
                 busy = null
             }
@@ -222,7 +234,22 @@ private fun IntentsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.intents_title)) },
+                title = {
+                    // Two-line header, matching the other feature pages.
+                    Column {
+                        Text(
+                            text = stringResource(R.string.intents_title),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(R.string.intents_count, visible.size),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = { (context as? ComponentActivity)?.finish() }) {
                         ShizukuIcon(
@@ -263,14 +290,8 @@ private fun IntentsScreen(
                 onValueChange = { query = it },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.appops_search_hint)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-
-            Text(
-                text = stringResource(R.string.intents_count, visible.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                shape = RoundedCornerShape(24.dp)
             )
 
             if (apps.isEmpty()) {
@@ -286,11 +307,23 @@ private fun IntentsScreen(
 
             LazyColumn(Modifier.fillMaxSize()) {
                 items(visible, key = { it.packageName }) { app ->
+                    // Card per app, matching the firewall / autostart / AppOps lists.
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 2.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+                        )
+                    ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(enabled = busy == null) { onLaunch(app.packageName) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .padding(start = 14.dp, end = 6.dp, top = 10.dp, bottom = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AppIcon(app)
@@ -311,13 +344,18 @@ private fun IntentsScreen(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                        Text(
-                            stringResource(R.string.intents_start),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        TextButton(
+                            onClick = { onLaunch(app.packageName) },
+                            enabled = busy == null,
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                stringResource(R.string.intents_start),
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                        }
                     }
-                    HorizontalDivider()
+                    }
                 }
             }
         }
@@ -339,7 +377,12 @@ private fun ManualIntentDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.intents_manual)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Five stacked fields are taller than the dialog on a short screen once the keyboard
+            // is up, so the body scrolls instead of pushing the buttons off-screen.
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 OutlinedTextField(
                     value = action,
                     onValueChange = { action = it },
@@ -373,7 +416,12 @@ private fun ManualIntentDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSend(action, data, pkg, component, extras) }) {
+            TextButton(
+                onClick = { onSend(action, data, pkg, component, extras) },
+                // am refuses to start without an action; catch that here instead of showing a
+                // failure dialog after the fact.
+                enabled = action.isNotBlank()
+            ) {
                 Text(stringResource(R.string.intents_send))
             }
         },

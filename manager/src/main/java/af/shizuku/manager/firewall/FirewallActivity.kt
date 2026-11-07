@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +27,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -370,7 +370,9 @@ private fun FirewallScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 placeholder = { Text(stringResource(R.string.firewall_search_hint)) },
-                singleLine = true
+                singleLine = true,
+                // Capsule corner to match the other list pages (stock shape is a 4dp rectangle).
+                shape = RoundedCornerShape(24.dp)
             )
 
             Row(
@@ -403,8 +405,8 @@ private fun FirewallScreen(
                 )
             }
 
-            HorizontalDivider()
-
+            // No full-bleed divider here: the rows below are individual cards, so a hard rule
+            // between the filter bar and the list reads as a leftover from the flat design.
             if (!loaded || refreshing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -435,7 +437,6 @@ private fun FirewallScreen(
                             enabled = available && busyUid == null,
                             onToggle = { onToggleApp(app, it) }
                         )
-                        HorizontalDivider()
                     }
                 }
             }
@@ -451,12 +452,25 @@ private fun FirewallRow(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    Row(
+    // One card per app, matching the AppOps rows: on the glass background a flat row separated
+    // only by a divider leaves the list without any edge to read against.
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        )
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         AppIcon(app)
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -482,6 +496,7 @@ private fun FirewallRow(
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
         } else {
             Switch(checked = blocked, onCheckedChange = onToggle, enabled = enabled)
+        }
         }
     }
 }

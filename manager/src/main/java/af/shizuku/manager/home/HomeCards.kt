@@ -856,14 +856,18 @@ internal fun HomeWirelessRow(
         htmlStringResource(R.string.home_wireless_adb_description_pre_11)
     }
     val permissionLine = if (localNetworkPermissionState.required) {
-        stringResource(
-            if (localNetworkPermissionState.granted) {
-                R.string.home_local_network_granted
-            } else {
-                R.string.home_local_network_missing
-            },
-            localNetworkPermissionState.label
-        )
+        // On builds where the platform exposes no named permission the state carries none, and
+        // interpolating it used to print the literal placeholder "none" in both sentences.
+        when {
+            localNetworkPermissionState.permission == null && localNetworkPermissionState.granted ->
+                stringResource(R.string.home_local_network_granted_generic)
+            localNetworkPermissionState.permission == null ->
+                stringResource(R.string.home_local_network_missing_generic)
+            localNetworkPermissionState.granted ->
+                stringResource(R.string.home_local_network_granted, localNetworkPermissionState.label)
+            else ->
+                stringResource(R.string.home_local_network_missing, localNetworkPermissionState.label)
+        }
     } else {
         null
     }

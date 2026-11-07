@@ -80,7 +80,11 @@ fun ServerMetricsScreen() {
                             if (gb > 0) "$gb GB" else if (mb > 0) "$mb MB" else "$kb KB"
                         }
                         val maxStr = if (maxRaw == Long.MAX_VALUE) context.getString(R.string.server_memory_uncapped) else formatSize(max)
-                        memoryDetails = "${formatSize(used)} / $maxStr (Max Allowed)"
+                        memoryDetails = context.getString(
+                            R.string.server_memory_details,
+                            formatSize(used),
+                            maxStr
+                        )
                     }
                 }
             } catch (e: Exception) {

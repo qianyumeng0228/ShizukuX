@@ -1605,6 +1605,8 @@ This action cannot be undone. Continue?</string>
     <string name="home_local_network_description">Wireless debugging needs %1$s on this Android version.</string>
     <string name="home_local_network_granted">%1$s is granted.</string>
     <string name="home_local_network_missing">%1$s is not granted.</string>
+    <string name="home_local_network_granted_generic">Local network access is granted.</string>
+    <string name="home_local_network_missing_generic">Local network access is not granted.</string>
     <string name="home_local_network_grant">Grant access</string>
     <string name="adb_pairing_tutorial_content_left_is_clickable">Please note, left part of the \"Wireless debugging\" option is clickable, tapping it will open a new page. Only turing on the switch on the right is incorrect.</string>
     <string name="home_learn_more_title">Learn Nightzuku</string>
@@ -1693,6 +1695,7 @@ This action cannot be undone. Continue?</string>
     <string name="hiding_signal_vpn">VPN</string>
     <string name="hiding_signal_summary_off">Not enabled</string>
     <string name="hiding_signal_summary_on">Hidden for %d apps</string>
+    <string name="hiding_signal_summary_empty">On, but no apps chosen yet</string>
     <string name="hiding_choose_apps">Choose apps</string>
     <string name="hiding_list_title">Hide for %1$s</string>
     <string name="hiding_list_subtitle">%d apps selected</string>
@@ -1806,6 +1809,7 @@ This action cannot be undone. Continue?</string>
     <string name="appops_empty">This app has no app-op records</string>
     <string name="appops_failed">The platform did not apply that change</string>
     <string name="appops_failed_uid">This ROM ignores writes to UID-level operations. Only package-level operations can be changed here.</string>
+    <string name="appops_uid_hint">UID-level operations apply to every process of this app, and some ROMs ignore writes to them even though the command reports success.</string>
     <string name="appops_action_failed">Operation failed</string>
     <string name="appops_mode_title">Set mode</string>
     <string name="appops_current">current</string>
@@ -1829,6 +1833,8 @@ This action cannot be undone. Continue?</string>
     <string name="files_shortcut_misc">Misc</string>
     <string name="files_preview_title">File preview</string>
     <string name="files_binary_hint">Binary file, not shown as text</string>
+    <string name="files_preview_truncated">Showing the first 12 KB of %1$s</string>
+    <string name="files_copy_all_hint">Copying copies only the part shown here</string>
     <string name="files_link">link</string>
     <string name="files_copy">Copy</string>
     <string name="home_files_title">Files</string>
@@ -1844,10 +1850,11 @@ This action cannot be undone. Continue?</string>
     <string name="home_wifi_title">Wi-Fi passwords</string>
     <string name="home_wifi_description">Read the passwords of saved networks</string>
     <string name="device_title">Device info</string>
+    <string name="device_subtitle">Model, system, memory, battery and storage</string>
     <string name="device_failed">Cannot read the device facts</string>
     <string name="home_device_title">Device info</string>
     <string name="home_device_description">Model, system, memory, battery and storage</string>
-    <string name="intents_title">Activities</string>
+    <string name="intents_title">Activities &amp; intents</string>
     <string name="intents_need_service">Start the Shizuku service first</string>
     <string name="intents_empty">No apps</string>
     <string name="intents_count">%1$d apps</string>
@@ -1861,7 +1868,9 @@ This action cannot be undone. Continue?</string>
     <string name="intents_send">Send</string>
     <string name="intents_result">Result</string>
     <string name="intents_launch_failed">Could not start it</string>
-    <string name="home_intents_title">Activities</string>
+    <string name="intents_sent">Sent. am said:</string>
+    <string name="intents_send_failed">Send failed. am said:</string>
+    <string name="home_intents_title">Activities &amp; intents</string>
     <string name="home_intents_description">Start components and send intents by hand</string>
     <string name="wifi_enterprise">Enterprise network (password not readable)</string>
 </resources>

@@ -63,16 +63,12 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
                 if (currentCardTop != Float.MIN_VALUE) {
                     drawCard(c, parent, currentCardTop, lastItemBottom)
                 }
-                currentCardTop = child.top.toFloat()
-                lastItemBottom = child.bottom.toFloat()
-
-                // Draw a divider under the header if it's expanded (i.e. has visible children)
-                if (shouldDrawDivider(parent, i, count)) {
-                    val left = child.left.toFloat() + getDividerInset(child)
-                    val right = child.right.toFloat() - getDividerEndInset(child)
-                    val y = child.bottom.toFloat()
-                    c.drawLine(left, y, right, y, dividerPaint)
-                }
+                // The header is a card of its own (MaterialCardView with its own fill and margin).
+                // Starting the row card at the header's top made the two fills overlap, which in
+                // the light glass skin showed as a second rounded edge under "toggle all".
+                // Reset, so the row card starts at the first real row instead.
+                currentCardTop = Float.MIN_VALUE
+                lastItemBottom = Float.MIN_VALUE
             } else {
                 if (currentCardTop == Float.MIN_VALUE) {
                     currentCardTop = child.top.toFloat()
@@ -127,7 +123,7 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
         // (rgba(255,255,255,.10) -> .045 on dark, .55 -> .42 on light).
         val GLASS_TOP_DARK = 0x1AFFFFFF
         val GLASS_BOTTOM_DARK = 0x0CFFFFFF
-        val GLASS_TOP_LIGHT = 0x8CFFFFFF.toInt()
-        val GLASS_BOTTOM_LIGHT = 0x6BFFFFFF.toInt()
+        val GLASS_TOP_LIGHT = 0xF7FFFFFF.toInt()
+        val GLASS_BOTTOM_LIGHT = 0xE9FFFFFF.toInt()
     }
 }

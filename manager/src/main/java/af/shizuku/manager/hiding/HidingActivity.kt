@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -440,12 +440,14 @@ private fun SignalList(
         modifier = Modifier
             .padding(padding)
             .fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
@@ -477,12 +479,14 @@ private fun SignalList(
         // the page can do what the shade can do without the user having to find the shade.
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -519,12 +523,14 @@ private fun SignalList(
 
         item {
             Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 2.dp),
+                shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -562,15 +568,20 @@ private fun SignalCard(
     // One row per signal: name and count, then the way into the list, then the switch. Surface
     // lays its content out as a Box, so the contents need a Column of their own to stack.
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        // The dark glass fill (0x66161D2F) sits within a few levels of the page backdrop, so a
+        // hairline is what actually draws the row edge (same border every Compose list row uses).
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
+                    .padding(start = 14.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
@@ -585,13 +596,15 @@ private fun SignalCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = if (row.enabled) {
-                            stringResource(R.string.hiding_signal_summary_on, row.listed)
-                        } else {
-                            stringResource(R.string.hiding_signal_summary_off)
+                        // An armed mode with an empty list used to read "对 0 个应用隐藏", which
+                        // looks like a broken switch next to an on switch. Say the list is empty.
+                        text = when {
+                            !row.enabled -> stringResource(R.string.hiding_signal_summary_off)
+                            row.listed == 0 -> stringResource(R.string.hiding_signal_summary_empty)
+                            else -> stringResource(R.string.hiding_signal_summary_on, row.listed)
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (row.enabled) {
+                        color = if (row.enabled && row.listed > 0) {
                             MaterialTheme.colorScheme.primary
                         } else {
                             MaterialTheme.colorScheme.onSurfaceVariant
@@ -677,7 +690,10 @@ private fun AppList(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             placeholder = { Text(stringResource(R.string.hiding_search_hint)) },
-            singleLine = true
+            singleLine = true,
+            // Same capsule as the AppOps / app-management search fields; the stock 4dp corner
+            // read as a hard-edged rectangle against the rounded cards around it.
+            shape = RoundedCornerShape(24.dp)
         )
 
         Row(
@@ -692,8 +708,6 @@ private fun AppList(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
-        HorizontalDivider()
 
         if (!appsLoaded) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -725,7 +739,6 @@ private fun AppList(
                         enabled = available && !busy,
                         onToggle = { onToggleApp(app, it) }
                     )
-                    HorizontalDivider()
                 }
             }
         }
@@ -740,12 +753,24 @@ private fun AppRow(
     enabled: Boolean,
     onToggle: (Boolean) -> Unit
 ) {
-    Row(
+    // Card per app, matching the firewall / autostart / AppOps lists.
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        )
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         AppIcon(app)
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -771,6 +796,7 @@ private fun AppRow(
             CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
         } else {
             Switch(checked = listed, onCheckedChange = onToggle, enabled = enabled)
+        }
         }
     }
 }

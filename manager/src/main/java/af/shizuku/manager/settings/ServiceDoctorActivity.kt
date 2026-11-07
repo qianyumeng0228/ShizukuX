@@ -68,6 +68,13 @@ class ServiceDoctorActivity : AppBarActivity() {
         }
 
         binding.checkList.layoutManager = LinearLayoutManager(this)
+        // The checks read as one grouped pane, the same card language every other list in the
+        // second UI uses; without it this page is the only one with rows straight on the backdrop.
+        binding.checkList.addItemDecoration(object :
+            af.shizuku.manager.utils.M3ECardItemDecoration(this@ServiceDoctorActivity) {
+            override fun shouldDrawDivider(parent: RecyclerView, index: Int, count: Int) =
+                index < count - 1
+        })
         checkListAdapter = CheckListAdapter()
         binding.checkList.adapter = checkListAdapter
 

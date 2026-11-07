@@ -114,16 +114,33 @@ object DeviceInfoManager {
 
     private fun batteryRows(props: Parsed): List<InfoItem> {
         val rows = mutableListOf<InfoItem>()
-        props.battery.forEach { (label, value) -> rows.add(InfoItem(label, formatBattery(label, value))) }
+        // `dumpsys battery` reports level and scale separately; a device whose scale is not 100
+        // (some ROMs report 0-255) would otherwise show a percentage that never reaches 100.
+        val level = props.battery["电量"]?.trim()?.toIntOrNull()
+        val scale = props.battery["满值"]?.trim()?.toIntOrNull()
+        props.battery.forEach { (label, value) ->
+            when (label) {
+                // The scale is only interesting as the denominator of 电量, so fold it in.
+                "满值" -> Unit
+                "电量" -> rows.add(InfoItem(label, chargePercent(level, scale)))
+                else -> rows.add(InfoItem(label, formatBattery(label, value)))
+            }
+        }
         if (rows.isEmpty()) rows.add(InfoItem("电池", "读取失败"))
         return rows
+    }
+
+    private fun chargePercent(level: Int?, scale: Int?): String {
+        if (level == null) return "-"
+        val max = scale?.takeIf { it > 0 } ?: 100
+        return "${(level * 100 / max)}%"
     }
 
     /** `dumpsys battery` prints raw codes; every row is translated to what the number means. */
     private fun formatBattery(label: String, raw: String): String {
         val value = raw.trim()
         return when (label) {
-            "AC 供电", "USB 供电", "无线供电", "在位" -> if (value == "true") "是" else "否"
+            "AC 供电", "USB 供电", "无线供电", "已安装" -> if (value == "true") "是" else "否"
             "状态" -> when (value) {
                 "1" -> "未知"
                 "2" -> "充电中"
@@ -142,7 +159,7 @@ object DeviceInfoManager {
                 "7" -> "过冷"
                 else -> value
             }
-            "电量" -> value.toIntOrNull()?.let { "$it%" } ?: value
+            "电量" -> chargePercent(value.toIntOrNull(), null)
             "温度" -> value.toIntOrNull()
                 ?.let { String.format(Locale.ROOT, "%.1f °C", it / 10.0) } ?: value
             "电压" -> value.toIntOrNull()
@@ -161,7 +178,13 @@ object DeviceInfoManager {
         val days = TimeUnit.MILLISECONDS.toDays(uptime)
         val hours = TimeUnit.MILLISECONDS.toHours(uptime) % 24
         val minutes = TimeUnit.MILLISECONDS.toMinutes(uptime) % 60
-        return "${days}天 ${hours}小时 ${minutes}分"
+        return if (days > 0) {
+            "${days}天 ${hours}小时 ${minutes}分"
+        } else if (hours > 0) {
+            "${hours}小时 ${minutes}分"
+        } else {
+            "${minutes}分"
+        }
     }
 
     private fun formatBytes(bytes: Long): String {
@@ -228,7 +251,7 @@ object DeviceInfoManager {
         "scale" -> "满值"
         "status" -> "状态"
         "health" -> "健康度"
-        "present" -> "在位"
+        "present" -> "已安装"
         "voltage" -> "电压"
         "temperature" -> "温度"
         "technology" -> "技术"

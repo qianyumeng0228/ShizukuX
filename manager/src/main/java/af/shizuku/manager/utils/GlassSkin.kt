@@ -17,7 +17,7 @@ import af.shizuku.manager.ShizukuSettings
  */
 object GlassSkin {
 
-    fun applyIfEnabled(activity: Activity) {
+    fun applyIfEnabled(activity: Activity, transparentWindow: Boolean = false) {
         if (!ShizukuSettings.isGlassUi()) return
         val night = (activity.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -33,6 +33,17 @@ object GlassSkin {
 
         // The window background is resolved when the DecorView is created, i.e. before this call,
         // so the overlay's android:windowBackground never reaches it - set the stage by hand.
+        if (transparentWindow) {
+            // Dialog hosts (the QS tile sheet) must stay a see-through window: painting the
+            // gradient here turned the sheet into a full-screen page with its options floating
+            // in the middle and the activity label showing above them.
+            runCatching {
+                activity.window.setBackgroundDrawable(
+                    android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
+                )
+            }
+            return
+        }
         val bgRes = if (night) R.drawable.glass_window_background else R.drawable.glass_window_background_light
         runCatching {
             activity.window.setBackgroundDrawable(

@@ -4,6 +4,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -360,7 +361,7 @@ private fun ForceDarkScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(10.dp))
                         Text(
                             text = when {
                                 !enabled -> stringResource(R.string.force_dark_gate_off)
@@ -419,7 +420,8 @@ private fun ForceDarkScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text(stringResource(R.string.force_dark_search_hint)) },
-                singleLine = true
+                singleLine = true,
+                shape = RoundedCornerShape(24.dp)
             )
 
             Row(
@@ -452,7 +454,8 @@ private fun ForceDarkScreen(
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+
+
 
             if (!loaded || refreshing) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -477,16 +480,28 @@ private fun ForceDarkScreen(
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(visible, key = { it.packageName }) { app ->
-                        ForceDarkRow(
-                            app = app,
-                            forced = app.packageName in forced,
-                            busy = busyPackage == app.packageName,
-                            // Dimmed and inert while the mode is off: the list is being kept, not
-                            // applied, and a switch that changes nothing is one to stop offering.
-                            enabled = available && enabled && busyPackage == null,
-                            onToggle = { onToggleApp(app, it) }
-                        )
-                        HorizontalDivider()
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 2.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            border = BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+                            )
+                        ) {
+                            ForceDarkRow(
+                                app = app,
+                                forced = app.packageName in forced,
+                                busy = busyPackage == app.packageName,
+                                // Dimmed and inert while the mode is off: the list is being kept,
+                                // not applied, and a switch that changes nothing is one to stop
+                                // offering.
+                                enabled = available && enabled && busyPackage == null,
+                                onToggle = { onToggleApp(app, it) }
+                            )
+                        }
                     }
                 }
             }

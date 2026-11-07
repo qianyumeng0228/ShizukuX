@@ -1,9 +1,9 @@
 package af.shizuku.manager.service
 
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.starter.Starter
@@ -23,7 +23,7 @@ class TileOptionsActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         // The option sheet is a stock AlertDialog; without the overlay it renders in the default
         // grey M3 palette against the gradient pages behind it.
-        af.shizuku.manager.utils.GlassSkin.applyIfEnabled(this)
+        af.shizuku.manager.utils.GlassSkin.applyIfEnabled(this, transparentWindow = true)
         showOptions()
     }
 
@@ -71,7 +71,7 @@ class TileOptionsActivity : AppCompatActivity() {
             }
         }
 
-        AlertDialog.Builder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.app_name)
             .setItems(items) { _, which ->
                 actions.getOrNull(which)?.invoke()

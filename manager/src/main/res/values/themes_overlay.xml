@@ -428,10 +428,10 @@
         <item name="colorSurfaceBright">#FFFFFF</item>
         <item name="colorSurfaceDim">#E4E1EE</item>
         <item name="colorSurfaceContainerLowest">#FFFFFF</item>
-        <item name="colorSurfaceContainerLow">#F4F3FB</item>
-        <item name="colorSurfaceContainer">#EFEDF8</item>
-        <item name="colorSurfaceContainerHigh">#E9E7F5</item>
-        <item name="colorSurfaceContainerHighest">#E3E0F0</item>
+        <item name="colorSurfaceContainerLow">#F8F7FE</item>
+        <item name="colorSurfaceContainer">#FBFAFF</item>
+        <item name="colorSurfaceContainerHigh">#F3F1FB</item>
+        <item name="colorSurfaceContainerHighest">#EDEAF9</item>
         <item name="android:colorBackground">@android:color/transparent</item>
         <item name="android:windowBackground">@drawable/glass_window_background_light</item>
         <item name="colorOnBackground">#1B1B22</item>

@@ -146,6 +146,28 @@ fun HomeScreen(
             }
 
             if (ShizukuSettings.isGlassUi()) {
+                // Fade the list out under the floating bar: without a real backdrop blur the
+                // translucent bar alone cannot hide text that scrolls underneath it.
+                val scrimBottom = if (isSystemInDarkTheme()) Color(0xFF080B12) else Color(0xFFDDE4F6)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(260.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                // Opaque by the bar's top edge (66dp bar + 20dp offset + gesture
+                                // inset ≈ 244dp): anything lighter left the last card's text
+                                // readable through the floating pill. The bottom colour matches
+                                // the gradient's end, so the solid part blends into the page.
+                                0.00f to scrimBottom.copy(alpha = 0f),
+                                0.20f to scrimBottom.copy(alpha = 0.35f),
+                                0.40f to scrimBottom.copy(alpha = 0.80f),
+                                0.60f to scrimBottom,
+                                1.00f to scrimBottom
+                            )
+                        )
+                )
                 GlassBottomBar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)

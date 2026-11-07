@@ -37,7 +37,10 @@ fun GlassBottomBar(
 ) {
     val dark = isSystemInDarkTheme()
     val shape = RoundedCornerShape(28.dp)
-    val fill = if (dark) Color(0x1FFFFFFF) else Color(0x8CFFFFFF)
+    // The bar sits over scrolling cards and there is no live backdrop blur on this skin, so the
+    // fill has to carry the legibility on its own - at 55% white the home cards read straight
+    // through it on light.
+    val fill = if (dark) Color(0x26FFFFFF) else Color(0xE8FFFFFF)
     val stroke = if (dark) Color(0x24FFFFFF) else Color(0x14000000)
     val activeTint = MaterialTheme.colorScheme.primary
     val idleTint = MaterialTheme.colorScheme.onSurfaceVariant

@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -335,7 +337,6 @@ private fun AppListPane(
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(apps, key = { it.packageName }) { app ->
                     AppRow(app = app, onClick = { onAppClick(app) })
-                    HorizontalDivider(modifier = Modifier.padding(start = 72.dp))
                 }
             }
         }
@@ -379,8 +380,15 @@ private fun AppRow(app: AppItem, onClick: () -> Unit) {
     // when a legacy Indication was in scope (SHIZUKUPLUS-72 / #309).
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        // One card per app, matching every other list in the second UI. The old flat
+        // surfaceVariant fill plus dividers read as a single slab whose first row was clipped
+        // by the card's rounded top edge.
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
     ) {
     Row(
         modifier = Modifier

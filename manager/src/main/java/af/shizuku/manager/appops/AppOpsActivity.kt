@@ -26,7 +26,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -211,6 +210,8 @@ class AppOpsActivity : ComponentActivity() {
                     runCatching { AppOpsManager.setOp(pkg, op.name, mode) }.getOrDefault(false)
                 }
                 if (ok) {
+                    // AppOpsManager.setOp answers only after reading the mode back, so this update
+                    // mirrors the platform's own record rather than the requested value.
                     ops = ops.map { if (it.name == op.name) it.copy(mode = mode) else it }
                 } else {
                     // UID-level ops answer `cmd appops set` with success on this ROM but never
@@ -238,21 +239,13 @@ class AppOpsActivity : ComponentActivity() {
         busyOp = "*"
         lifecycleScope.launch {
             try {
-                withContext(Dispatchers.IO) {
-                    runCatching { AppOpsManager.resetAll(pkg) }
+                val ok = withContext(Dispatchers.IO) {
+                    runCatching { AppOpsManager.resetAll(pkg) }.getOrNull()
                 }
                 ops = withContext(Dispatchers.IO) {
                     runCatching { AppOpsManager.ops(pkg) }.getOrNull()
-                }.orEmpty()
-                ops = ops.map { op ->
-                    // `appops reset` clears every override, so anything the platform still reports as
-                    // an explicit allow/ignore/deny is stale and is shown as the default mode again.
-                    val shown = when (op.mode) {
-                        "allow", "ignore", "deny" -> "default"
-                        else -> op.mode
-                    }
-                    op.copy(mode = shown)
-                }
+                }.orEmpty().ifEmpty { ops }
+                if (ok != true) message = getString(R.string.appops_failed)
             } finally {
                 busyOp = null
             }
@@ -351,6 +344,17 @@ private fun AppOpsScreen(
                     if (AppOpsManager.isKnown(op.name) || AppOpsManager.isUidLevel(op.name)) {
                         Text(
                             descriptor(op),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    // UID-level rows always opened a dialog that then failed on this ROM. Say so
+                    // before the user spends a tap on it, instead of only after the write is
+                    // rejected by readMode().
+                    if (AppOpsManager.isUidLevel(op.name)) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.appops_uid_hint),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -578,7 +582,14 @@ private fun OpRow(op: AppOp, busy: Boolean, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 2.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        // On the light glass scheme surfaceContainer and the page gradient are both nearly white,
+        // so the rows only read as cards once they carry the same hairline as the other glass
+        // cards (device control, dialog).
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        )
     ) {
         Row(
             modifier = Modifier
@@ -637,19 +648,28 @@ private fun ModeChip(mode: String, onClick: () -> Unit) {
 
 @Composable
 private fun AppRow(app: OpsApp, restricted: Boolean, onClick: () -> Unit) {
+    // Same card language as the other feature lists; the old full-bleed row plus a divider read
+    // as a leftover from the first pass.
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
+        ),
         onClick = onClick
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp),
+                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             AppIcon(app)
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
                 Text(
                     app.label,
@@ -673,7 +693,6 @@ private fun AppRow(app: OpsApp, restricted: Boolean, onClick: () -> Unit) {
                 )
             }
         }
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainer)
     }
 }
 
