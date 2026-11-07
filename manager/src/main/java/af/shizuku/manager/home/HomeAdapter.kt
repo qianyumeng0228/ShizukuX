@@ -43,9 +43,12 @@ class HomeAdapter(
         const val ID_MODULES = 11L
         // Next free slot after 15: per-app network blocking on the platform firewall.
         const val ID_FIREWALL = 16L
+        // Per-app hiding on the platform settings: what a restrictive app reads, held off while
+        // it is in front.
+        const val ID_HIDING = 17L
 
         private val DEFAULT_ORDER = listOf(
-            ID_MODULES, ID_FIREWALL, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
@@ -229,6 +232,7 @@ class HomeAdapter(
             when (id) {
                 ID_MODULES -> addItem(ModulesViewHolder.CREATOR, status, id)
                 ID_FIREWALL -> addItem(FirewallViewHolder.CREATOR, status, id)
+                ID_HIDING -> addItem(HidingViewHolder.CREATOR, status, id)
                 ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                     addItem(TerminalViewHolder.CREATOR, status, id)
                 // Merged "start service" card (4.1 Item B): replaces the former root / wireless /

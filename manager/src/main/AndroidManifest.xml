@@ -56,6 +56,12 @@
         android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Per-app hiding reads why another app was closed, so a recents swipe does not leave the
+         watch hiding for an app that is no longer there. Granted once by Shizuku over the shell. -->
+    <uses-permission
+        android:name="android.permission.DUMP"
+        tools:ignore="ProtectedPermissions" />
+
     <uses-feature
         android:name="android.software.leanback"
         android:required="false" />
@@ -104,6 +110,15 @@
              cannot host the Compat Hub — identical package name).
          The manager itself uses the permission in both flavors: -->
     <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
+    <!-- Per-app hiding asks the package manager which apps could be holding a VPN tunnel. A
+         VpnService is answered by an intent action, and package visibility hides those without
+         this declaration on Android 11+. -->
+    <queries>
+        <intent>
+            <action android:name="android.net.VpnService" />
+        </intent>
+    </queries>
 
     <application
         android:name=".ShizukuApplication"
@@ -246,6 +261,11 @@
             android:name=".firewall.FirewallActivity"
             android:exported="false"
             android:label="@string/firewall_title" />
+
+        <activity
+            android:name=".hiding.HidingActivity"
+            android:exported="false"
+            android:label="@string/hiding_title" />
 
         <activity
             android:name=".backup.AppBackupActivity"
@@ -403,6 +423,27 @@
                     The watchdog service uses minimal resources and battery. There is no constant polling; it only reacts when the API service stops unexpectedly.
                     The watchdog service is opt-in and toggleable via settings, so users can choose to disable it at any time if not desired." />
         </service>
+
+        <!-- Per-app hiding: while an app on one of the hiding lists is in front, the settings it
+             objects to are held off, and they go back the moment it leaves. It runs in the
+             foreground because a process killed between two polls would leave the device lying
+             about itself. It polls; it does not listen, because nothing a manager can read reports
+             the foreground app. -->
+        <service
+            android:name=".hiding.HidingWatchService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Per-app hiding holds device-wide settings off for exactly as long as a listed app is in front, and puts them back when it leaves.
+                    The settings are the device's, so the only safe way to hide one from an app is to hide it for the moment that app is open.
+                    A watching service is the only thing that can notice the app leaving; without it the device would be left with settings changed and nothing to change them back." />
+        </service>
+
+        <receiver
+            android:name=".hiding.HidingRestoreReceiver"
+            android:exported="false" />
+
 
         <!-- The start that is made before the first unlock after a restart. WorkManager cannot run
              then (its database is in credential-encrypted storage), so the same start is made here:

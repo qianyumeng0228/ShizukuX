@@ -1629,6 +1629,49 @@ This action cannot be undone. Continue?</string>
     <string name="firewall_failed">The system did not take the change</string>
     <string name="firewall_refresh">Refresh</string>
     <string name="firewall_system_app">System · %1$s</string>
+
+    <!-- Per-app hiding (P1-2): device-wide settings held off while a listed app is in front. -->
+    <string name="hiding_title">Hide per app</string>
+    <string name="home_hiding_description">Hold developer options, debugging, accessibility, private DNS or a VPN off while a listed app is open</string>
+    <string name="hiding_subtitle_count">%d apps listed</string>
+    <string name="hiding_subtitle_paused">Paused</string>
+    <string name="hiding_intro_title">What this does</string>
+    <string name="hiding_intro_text">A restrictive app reads its settings from the device, so hiding one means really changing it — for as long as the listed app is in front, and no longer. Pick a signal, then pick the apps it is hidden for.</string>
+    <string name="hiding_warning_no_usage">Usage access is not granted yet: the foreground app is read through the shell, and hiding a debugging transport can then cut the connection that shell runs on.</string>
+    <string name="hiding_signal_developer_options">Developer options</string>
+    <string name="hiding_signal_usb_debugging">USB debugging</string>
+    <string name="hiding_signal_wireless_debugging">Wireless debugging</string>
+    <string name="hiding_signal_accessibility">Accessibility</string>
+    <string name="hiding_signal_private_dns">Private DNS</string>
+    <string name="hiding_signal_vpn">VPN</string>
+    <string name="hiding_signal_summary_off">Not enabled</string>
+    <string name="hiding_signal_summary_on">Hidden for %d apps</string>
+    <string name="hiding_choose_apps">Choose apps</string>
+    <string name="hiding_list_title">Hide for %1$s</string>
+    <string name="hiding_list_subtitle">%d apps selected</string>
+    <string name="hiding_list_hint">While one of these apps is open, this setting is hidden. It comes back when the app leaves.</string>
+    <string name="hiding_search_hint">Search apps</string>
+    <string name="hiding_empty">No matching app</string>
+    <string name="hiding_action_failed">Hiding operation failed</string>
+    <string name="hiding_failed">The system did not take the change</string>
+    <string name="hiding_vpn_hint">The tunnel is taken down by stopping the client while a listed app is open, and asked to start again afterwards. Only clients whose start command is known are brought back automatically.</string>
+    <string name="hiding_restart_on_open">Restart the app on open</string>
+    <string name="hiding_restart_on_open_summary">The app is force-stopped and started again so it reads the hidden values. What it had open is lost.</string>
+    <string name="hiding_pause">Pause hiding</string>
+    <string name="hiding_pause_summary">While on, every setting is put back at once and nothing is hidden until you turn it off.</string>
+    <string name="hiding_notification_channel">Per-app hiding</string>
+    <string name="hiding_notification_title">Hiding settings for an app</string>
+    <string name="hiding_notification_text">They come back when you leave that app</string>
+    <string name="hiding_notification_idle_title">Hiding is armed</string>
+    <string name="hiding_notification_idle_text">Waiting for a listed app to open</string>
+    <string name="hiding_notification_paused_title">Hiding is paused</string>
+    <string name="hiding_notification_paused_text">Settings are back until you resume</string>
+    <string name="hiding_notification_stopped_title">Hiding stopped</string>
+    <string name="hiding_notification_stopped_text">Settings were put back: Shizuku is not running</string>
+    <string name="hiding_restore">Restore now</string>
+    <string name="hiding_resume">Resume hiding</string>
+    <string name="hiding_start_again">Start again</string>
+
     <string name="modules_title">ADB Modules</string>
     <!-- Phone-side module entry (P0): the manager was complete but only the TV screen was wired to it. -->
     <string name="action_back">Back</string>
