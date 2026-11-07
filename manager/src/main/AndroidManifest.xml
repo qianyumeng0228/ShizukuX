@@ -681,6 +681,7 @@
         <!-- ADB Pairing Tutorial (full-screen pairing flow for API 30+) -->
         <activity
             android:name=".adb.AdbPairingTutorialActivity"
+            android:label="@string/adb_pairing_tutorial_title"
             android:exported="false" />
 
         <!-- Legacy pairing: dialog-based code entry instead of notification RemoteInput -->
