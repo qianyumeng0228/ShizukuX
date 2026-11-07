@@ -102,7 +102,8 @@ class AutoStartActivity : ComponentActivity() {
             af.shizuku.core.ui.compose.AppTheme(
                 darkTheme = isSystemInDarkTheme(),
                 isBlackNightTheme = ThemeHelper.isBlackNightTheme(this),
-                isOneUi = ShizukuSettings.isOneUiThemeEnabled()
+                isOneUi = ShizukuSettings.isOneUiThemeEnabled(),
+                forceGlass = ShizukuSettings.isGlassUi()
             ) {
                 AutoStartScreen(
                     available = available,
