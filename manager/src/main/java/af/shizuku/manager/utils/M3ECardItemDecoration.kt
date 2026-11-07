@@ -8,6 +8,7 @@ import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import af.shizuku.manager.R
 import af.shizuku.manager.ktx.cardSurfaceColor
+import af.shizuku.manager.ktx.glassStrokeColor
 import af.shizuku.manager.ktx.themeColor
 import af.shizuku.manager.ktx.themeCornerSizePx
 
@@ -18,6 +19,12 @@ import af.shizuku.manager.ktx.themeCornerSizePx
 abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecoration() {
     protected val cardPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     protected val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    // Liquid-glass skin: the card is a translucent pane - a vertical white gradient fill plus a
+    // 1dp hairline stroke - instead of the stock opaque cardSurfaceColor().
+    private val glassFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val glassStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    protected val isGlassSkin = af.shizuku.manager.ShizukuSettings.isGlassUi()
+    private var darkGlass = false
     // Matches every other 28dp/ExtraLarge card in the app (see #333) and follows the Shape
     // Style setting (Modern/Classic/Squircle) instead of a fixed radius.
     protected val cornerRadius = context.themeCornerSizePx(com.google.android.material.R.attr.shapeAppearanceCornerExtraLarge)
@@ -28,6 +35,17 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
         cardPaint.color = context.cardSurfaceColor()
         dividerPaint.color = context.themeColor(R.attr.colorOutlineVariant)
         dividerPaint.strokeWidth = 1f * density
+
+        if (isGlassSkin) {
+            val dark = (context.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                    android.content.res.Configuration.UI_MODE_NIGHT_YES
+            glassFillPaint.color = context.cardSurfaceColor()
+            glassStrokePaint.style = Paint.Style.STROKE
+            glassStrokePaint.strokeWidth = 1f * density
+            glassStrokePaint.color = context.glassStrokeColor()
+            this.darkGlass = dark
+        }
     }
 
     override fun onDraw(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
@@ -86,6 +104,30 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     }
 
     protected fun drawCard(c: Canvas, parent: RecyclerView, top: Float, bottom: Float) {
+        if (isGlassSkin) {
+            if (bottom > top) {
+                glassFillPaint.shader = android.graphics.LinearGradient(
+                    0f, top, 0f, bottom,
+                    if (darkGlass) GLASS_TOP_DARK else GLASS_TOP_LIGHT,
+                    if (darkGlass) GLASS_BOTTOM_DARK else GLASS_BOTTOM_LIGHT,
+                    android.graphics.Shader.TileMode.CLAMP
+                )
+            }
+            val r = cornerRadius
+            c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, r, r, glassFillPaint)
+            glassFillPaint.shader = null
+            c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, r, r, glassStrokePaint)
+            return
+        }
         c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, cornerRadius, cornerRadius, cardPaint)
+    }
+
+    private companion object {
+        // Top of the glass pane: a touch brighter than its bottom edge, per the design spec
+        // (rgba(255,255,255,.10) -> .045 on dark, .55 -> .42 on light).
+        val GLASS_TOP_DARK = 0x1AFFFFFF
+        val GLASS_BOTTOM_DARK = 0x0CFFFFFF
+        val GLASS_TOP_LIGHT = 0x8CFFFFFF.toInt()
+        val GLASS_BOTTOM_LIGHT = 0x6BFFFFFF.toInt()
     }
 }

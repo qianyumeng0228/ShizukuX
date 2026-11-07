@@ -37,6 +37,8 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onHelpClick: () -> Unit,
     onRestoreHomeCards: () -> Unit,
+    onAppsClick: () -> Unit,
+    onTerminalClick: () -> Unit,
     recyclerViewProvider: (Context, PaddingValues) -> RecyclerView
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -75,10 +77,17 @@ fun HomeScreen(
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = if (ShizukuSettings.isBlurUiEnabled())
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
-                    else
-                        MaterialTheme.colorScheme.surfaceContainer
+                    scrolledContainerColor = when {
+                        // Glass skin: a translucent scrim so the gradient/blooms read through the
+                        // collapsed header instead of snapping to an opaque surface band.
+                        ShizukuSettings.isGlassUi() ->
+                            MaterialTheme.colorScheme.surface.copy(
+                                alpha = if (isSystemInDarkTheme()) 0.62f else 0.80f
+                            )
+                        ShizukuSettings.isBlurUiEnabled() ->
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
+                        else -> MaterialTheme.colorScheme.surfaceContainer
+                    }
                 ),
                 scrollBehavior = scrollBehavior
             )
@@ -100,11 +109,15 @@ fun HomeScreen(
             },
             label = "oneHandedScale"
         )
+        // Liquid-glass skin reserves room for the floating pill navigation (66dp + 20dp offset
+        // + breathing space); the classic skin keeps the original 72dp.
+        val bottomExtra = if (ShizukuSettings.isGlassUi()) 132.dp else 72.dp
         val adjustedPadding = PaddingValues(
             top = innerPadding.calculateTopPadding(),
-            bottom = innerPadding.calculateBottomPadding() + 72.dp
+            bottom = innerPadding.calculateBottomPadding() + bottomExtra
         )
         af.shizuku.manager.app.WallpaperBackground {
+        Box(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -128,6 +141,18 @@ fun HomeScreen(
                     },
                     update = { view -> recyclerViewProvider(view.context, adjustedPadding) },
                     modifier = Modifier.fillMaxSize()
+                )
+            }
+            }
+
+            if (ShizukuSettings.isGlassUi()) {
+                GlassBottomBar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 20.dp),
+                    onAppsClick = onAppsClick,
+                    onTerminalClick = onTerminalClick,
+                    onSettingsClick = onSettingsClick
                 )
             }
         }

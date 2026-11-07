@@ -15,6 +15,15 @@
             android:title="@string/dark_theme"
             android:icon="@drawable/ic_outline_dark_mode_24" />
 
+        <rikka.preference.SimpleMenuPreference
+            android:key="ui_style"
+            android:title="@string/settings_ui_style"
+            android:summary="@string/settings_ui_style_summary"
+            android:defaultValue="classic"
+            android:entries="@array/ui_styles"
+            android:entryValues="@array/ui_styles_value"
+            android:icon="@drawable/ic_palette_24" />
+
         <SwitchPreferenceCompat
             android:key="black_night_theme"
             android:summary="@string/settings_black_night_theme_summary"

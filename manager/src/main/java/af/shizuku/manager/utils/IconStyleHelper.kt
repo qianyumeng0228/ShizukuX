@@ -2,6 +2,8 @@ package af.shizuku.manager.utils
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.InsetDrawable
@@ -14,7 +16,9 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.themeColor
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 
 object IconStyleHelper {
 
@@ -74,12 +78,16 @@ object IconStyleHelper {
         // (24dp, 960dp, 108dp …). A small uniform inset makes them all read as the same weight.
         val inset = (1 * context.resources.displayMetrics.density).toInt()
         return when (style) {
-            Style.STANDARD -> InsetDrawable(tinted(mutable, resolveColor(context, R.attr.colorPrimary)), inset)
-            Style.OUTLINED -> InsetDrawable(tinted(mutable, resolveColor(context, R.attr.colorOnSurfaceVariant)), inset)
+            Style.STANDARD -> InsetDrawable(
+                tinted(mutable, cardSafe(resolveColor(context, R.attr.colorPrimary), context, key = seedKey)), inset
+            )
+            Style.OUTLINED -> InsetDrawable(
+                tinted(mutable, cardSafe(resolveColor(context, R.attr.colorOnSurfaceVariant), context, key = seedKey)), inset
+            )
             Style.TWO_TONE -> {
                 val (bgColor, fgColor) = twoToneColors(context, colorMode, seedKey)
                 val bg = pillBackground(context, bgColor)
-                val fg = tinted(mutable, fgColor)
+                val fg = tinted(mutable, cardSafe(fgColor, context, bgColor, seedKey))
                 val padding = (4 * context.resources.displayMetrics.density).toInt()
                 LayerDrawable(arrayOf(bg, InsetDrawable(fg, padding)))
             }
@@ -111,11 +119,29 @@ object IconStyleHelper {
         colorMode: ColorMode = currentColorMode()
     ) {
         val context = imageView.context
+        val inset = (1 * context.resources.displayMetrics.density).toInt()
         imageView.background = null
         imageView.imageTintList = null
-        val padding = if (style == Style.TWO_TONE) 0 else (CARD_ICON_PADDING_DP * context.resources.displayMetrics.density).toInt()
-        imageView.setPadding(padding, padding, padding, padding)
-        imageView.setImageDrawable(stylize(context, original, style, colorMode, seedKey))
+        if (style == Style.TWO_TONE) {
+            // Two-Tone paints its own pill behind the glyph, so the ImageView itself must stay
+            // untinted - both layers carry their colour inside stylize().
+            imageView.setPadding(0, 0, 0, 0)
+            imageView.setImageDrawable(stylize(context, original, style, colorMode, seedKey))
+            return
+        }
+        // Single-colour styles are tinted at the ImageView level instead of inside the drawable:
+        // several of the bundled card vectors ignore Drawable#setTintList (their own fillColor wins
+        // in some ROM vector pipelines), which rendered them pure white on the light glass cards.
+        // ImageView tint always applies to whatever it draws.
+        val padding = CARD_ICON_PADDING_DP * context.resources.displayMetrics.density
+        imageView.setPadding(padding.toInt(), padding.toInt(), padding.toInt(), padding.toInt())
+        imageView.setImageDrawable(InsetDrawable(original.mutate(), inset))
+        val tint = if (style == Style.STANDARD) {
+            resolveColor(context, R.attr.colorPrimary)
+        } else {
+            resolveColor(context, R.attr.colorOnSurfaceVariant)
+        }
+        imageView.imageTintList = ColorStateList.valueOf(cardSafe(tint, context, key = seedKey))
     }
 
     /**
@@ -282,6 +308,47 @@ object IconStyleHelper {
     private fun tinted(drawable: Drawable, color: Int): Drawable {
         drawable.setTintList(ColorStateList.valueOf(color))
         return drawable
+    }
+
+    private fun isNight(context: Context): Boolean =
+        (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+            Configuration.UI_MODE_NIGHT_YES
+
+    /** Tone a card icon is drawn on - only used for the contrast guarantee in [cardSafe]. */
+    private fun cardBackdrop(context: Context): Int = if (ShizukuSettings.isGlassUi()) {
+        if (isNight(context)) 0xFF141A2B.toInt() else 0xFFF7F6FC.toInt()
+    } else {
+        resolveColor(context, R.attr.colorSurface)
+    }
+
+    /** WCAG relative luminance, 0..1. */
+    private fun luminance(color: Int): Double {
+        fun channel(c: Int): Double {
+            val s = c / 255.0
+            return if (s <= 0.0396) s / 12.92 else ((s + 0.055) / 1.055).pow(2.4)
+        }
+        return 0.2126 * channel(Color.red(color)) +
+            0.7152 * channel(Color.green(color)) +
+            0.0722 * channel(Color.blue(color))
+    }
+
+    private fun contrast(a: Int, b: Int): Double {
+        val la = luminance(a)
+        val lb = luminance(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    }
+
+    /**
+     * Guarantees the glyph is actually visible on its card. Under the glass skin the card fill
+     * became translucent white in light mode, and any colour resolution that landed on a near
+     * white tone (an onSurfaceVariant / container inherited from the dark base theme) rendered
+     * white-on-white icons. Returns [tint] untouched whenever it already clears 3:1 against the
+     * backdrop; otherwise falls back to the skin's own secondary text tone.
+     */
+    private fun cardSafe(tint: Int, context: Context, bg: Int = 0, key: String? = null): Int {
+        val backdrop = if (bg != 0) bg else cardBackdrop(context)
+        if (contrast(tint, backdrop) >= 3.0) return tint
+        return if (isNight(context)) 0xFFA9B4C6.toInt() else 0xFF54505F.toInt()
     }
 
     private fun resolveColor(context: Context, attr: Int): Int = context.themeColor(attr)

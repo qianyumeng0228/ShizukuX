@@ -36,5 +36,10 @@
     <!-- CollapsiblePreferenceCategory: set false for a top-level nav category that should still
          get the M3E card-grouping treatment but must always stay expanded (e.g. settings_main). -->
     <attr name="collapsible" format="boolean" />
+
+    <!-- True when ThemeOverlay.Glass is the active theme overlay. Read at runtime by
+         AppTheme (core/ui) via resources.getIdentifier so the Compose shapes can match the
+         liquid-glass corner scale without every Activity having to thread a flag through. -->
+    <attr name="isGlassUi" format="boolean" />
 </resources>
 

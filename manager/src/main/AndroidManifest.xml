@@ -278,6 +278,31 @@
             android:label="@string/force_dark_title" />
 
         <activity
+            android:name=".appops.AppOpsActivity"
+            android:exported="false"
+            android:label="@string/appops_title" />
+
+        <activity
+            android:name=".files.FilesActivity"
+            android:exported="false"
+            android:label="@string/files_title" />
+
+        <activity
+            android:name=".wifi.WifiPasswordActivity"
+            android:exported="false"
+            android:label="@string/wifi_title" />
+
+        <activity
+            android:name=".device.DeviceInfoActivity"
+            android:exported="false"
+            android:label="@string/device_title" />
+
+        <activity
+            android:name=".intents.IntentsActivity"
+            android:exported="false"
+            android:label="@string/intents_title" />
+
+        <activity
             android:name=".backup.AppBackupActivity"
             android:exported="false"
             android:label="@string/home_backup_title" />

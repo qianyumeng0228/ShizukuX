@@ -17,7 +17,7 @@ class ThemeDelegateImpl : ThemeDelegate {
             ShizukuSettings.isOneUiThemeEnabled() + ShizukuSettings.isOneHandedModeEnabled() +
             ShizukuSettings.getWallpaperTheme() +
             ShizukuSettings.isBoldTypographyEnabled() + ShizukuSettings.isExpandedHeadersEnabled() +
-            ShizukuSettings.getCornerRoundingOverride()
+            ShizukuSettings.getCornerRoundingOverride() + ShizukuSettings.getUiStyle()
     }
 
     override fun isUsingSystemColor(): Boolean {
@@ -74,6 +74,15 @@ class ThemeDelegateImpl : ThemeDelegate {
         // default) was applied above instead of competing with it, and needs no day/night variant.
         if (ShizukuSettings.isOneUiThemeEnabled()) {
             theme.applyStyle(R.style.ThemeOverlay_OneUI, true)
+        }
+
+        // Liquid-glass skin: applied after One UI/bold so its accent + corner scale wins, but
+        // before the explicit corner-rounding override (that one is a user-tuned fine control).
+        if (ShizukuSettings.isGlassUi()) {
+            if (context.resources.configuration.isNight())
+                theme.applyStyle(R.style.ThemeOverlay_Glass, true)
+            else
+                theme.applyStyle(R.style.ThemeOverlay_Glass_Light, true)
         }
 
         // Corner rounding overlay applied last so it wins over both shape_style and One UI corners.

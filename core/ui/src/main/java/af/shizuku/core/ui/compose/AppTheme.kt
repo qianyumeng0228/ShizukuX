@@ -5,7 +5,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -126,16 +134,92 @@ private val OneUiShapes = Shapes(
     extraLarge = RoundedCornerShape(36.dp),
 )
 
+// Mirrors ShapeAppearance.Glass.Corner.* (themes_overlay.xml): 28dp cards / 20dp rows.
+private val GlassShapes = Shapes(
+    extraSmall = RoundedCornerShape(10.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+)
+
+/**
+ * True when the hosting Activity's theme already has ThemeOverlay.Glass applied (see
+ * ThemeDelegateImpl). Resolved by attribute name because this module cannot see the manager
+ * module's R class; `isGlassUi` is declared in manager/res/values/attrs.xml and set by both
+ * glass overlays, so no flag has to be threaded through every Activity call site.
+ */
+private fun isGlassTheme(context: Context): Boolean {
+    val id = context.resources.getIdentifier("isGlassUi", "attr", context.packageName)
+    if (id == 0) return false
+    val tv = android.util.TypedValue()
+    return context.theme.resolveAttribute(id, tv, true) && tv.data != 0
+}
+
+/** Icon tone used by the glass skin for single-colour glyphs (matches the manager overlays). */
+private fun glassScheme(dark: Boolean): ColorScheme = if (dark) {
+    darkColorScheme(
+        primary = Color(0xFFB9A7FF), onPrimary = Color(0xFF201639),
+        primaryContainer = Color(0xFF3A2C70), onPrimaryContainer = Color(0xFFE7DEFF),
+        secondary = Color(0xFFB9A7FF), onSecondary = Color(0xFF201639),
+        secondaryContainer = Color(0xFF33265F), onSecondaryContainer = Color(0xFFE7DEFF),
+        tertiary = Color(0xFFD9CFFF), onTertiary = Color(0xFF201639),
+        background = Color.Transparent, onBackground = Color(0xFFF2F5FA),
+        surface = Color(0x66141A2B), onSurface = Color(0xFFF2F5FA),
+        surfaceVariant = Color(0x661A2136), onSurfaceVariant = Color(0xFFA9B4C6),
+        surfaceBright = Color(0x801E2740), surfaceDim = Color(0x800C111C),
+        surfaceContainerLowest = Color(0x660A0E17), surfaceContainerLow = Color(0x66121828),
+        surfaceContainer = Color(0x66161D2F), surfaceContainerHigh = Color(0x661B2336),
+        surfaceContainerHighest = Color(0x66202A40),
+        outline = Color(0xFF8E86A8), outlineVariant = Color(0xFF4A4560),
+        error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
+        errorContainer = Color(0xFF93000A), onErrorContainer = Color(0xFFFFDAD6),
+    )
+} else {
+    lightColorScheme(
+        primary = Color(0xFF6C55C9), onPrimary = Color.White,
+        primaryContainer = Color(0xFFE8E1FF), onPrimaryContainer = Color(0xFF241A45),
+        secondary = Color(0xFF6C55C9), onSecondary = Color.White,
+        secondaryContainer = Color(0xFFE8E1FF), onSecondaryContainer = Color(0xFF241A45),
+        tertiary = Color(0xFF8A76D8), onTertiary = Color.White,
+        background = Color.Transparent, onBackground = Color(0xFF1B1B22),
+        surface = Color(0xCCF7F6FC), onSurface = Color(0xFF1B1B22),
+        surfaceVariant = Color(0xCCE7E4F2), onSurfaceVariant = Color(0xFF54505F),
+        surfaceBright = Color(0xE6FFFFFF), surfaceDim = Color(0xCEE4E1EE),
+        surfaceContainerLowest = Color(0xE6FFFFFF), surfaceContainerLow = Color(0xD9F4F3FB),
+        surfaceContainer = Color(0xD9EFEDF8), surfaceContainerHigh = Color(0xD9E9E7F5),
+        surfaceContainerHighest = Color(0xD9E3E0F0),
+        outline = Color(0xFF7C7690), outlineVariant = Color(0xFFCCC6DC),
+        error = Color(0xFFBA1A1A), onError = Color.White,
+        errorContainer = Color(0xFFFFDAD6), onErrorContainer = Color(0xFF410002),
+    )
+}
+
+/**
+ * True while the glass skin is active for the current screen. Screens read this to drop their
+ * opaque container colours (Scaffold backgrounds, list rows) so the backdrop drawn by [AppTheme]
+ * shows through - without it every sub-page looked like a solid sheet with only the app bar
+ * tinted.
+ */
+val LocalGlassUi = staticCompositionLocalOf { false }
+
 @Composable
 fun AppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     isBlackNightTheme: Boolean = false,
     isOneUi: Boolean = false,
     themeVersion: Int = 0,
+    // Screens hosted by an Activity that has not had ThemeOverlay.Glass applied (plain
+    // ComponentActivity screens) pass this in so they still get the glass palette + backdrop
+    // instead of falling back to the classic scheme.
+    forceGlass: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
-    var colorScheme = remember(context, darkTheme, themeVersion) { androidColorScheme(context, darkTheme) }
+    val themeGlass = isGlassTheme(context)
+    var colorScheme = remember(context, darkTheme, themeVersion, forceGlass) {
+        if (forceGlass && !themeGlass) glassScheme(darkTheme) else androidColorScheme(context, darkTheme)
+    }
 
     // Belt-and-suspenders: ThemeOverlay.Black (applied via onApplyUserThemeResource) already
     // forces colorSurface/android:colorBackground to black, so this should be redundant with the
@@ -155,11 +239,76 @@ fun AppTheme(
         )
     }
 
-    val shapes = if (isOneUi) OneUiShapes else Shapes()
+    val shapes = when {
+        isGlassTheme(context) -> GlassShapes
+        isOneUi -> OneUiShapes
+        else -> Shapes()
+    }
+
+    // Glass skin: every Compose screen sits on the same deep gradient backdrop instead of a flat
+    // surface colour, and `background` is made transparent so a screen's Scaffold (whose default
+    // container colour is exactly background) lets that backdrop through. `surface` stays opaque
+    // so dialogs, cards and sheets keep their own solid tone.
+    val glass = forceGlass || themeGlass
+    if (glass) {
+        colorScheme = colorScheme.copy(background = Color.Transparent)
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
-        shapes = shapes,
-        content = content
+        shapes = shapes
+    ) {
+        CompositionLocalProvider(LocalGlassUi provides glass) {
+            if (glass) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .drawBehind { drawGlassBackdrop(darkTheme) }
+                ) {
+                    content()
+                }
+            } else {
+                content()
+            }
+        }
+    }
+}
+
+/**
+ * Static backdrop for the glass skin, matching manager/.../WallpaperBackground.kt's GlassBackground
+ * so sub-pages and the home screen share one look. Drawn once (no per-frame work): a vertical
+ * three-stop gradient plus two soft radial highlights.
+ */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlassBackdrop(dark: Boolean) {
+    val h = size.height
+    val w = size.width
+    val base = listOf(
+        Color(0xFF25335A), Color(0xFF121829), Color(0xFF080B12)
+    )
+    val light = listOf(
+        Color(0xFFEEF2FE), Color(0xFFE6EBFA), Color(0xFFDDE4F6)
+    )
+    drawRect(
+        brush = Brush.verticalGradient(if (dark) base else light, startY = 0f, endY = h)
+    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0x398B6CFF),
+                Color(0x008B6CFF)
+            ),
+            center = Offset(w * 0.12f, h * 0.10f),
+            radius = w * 0.9f
+        )
+    )
+    drawRect(
+        brush = Brush.radialGradient(
+            colors = listOf(
+                Color(0x2E4C8DFF),
+                Color(0x004C8DFF)
+            ),
+            center = Offset(w * 0.92f, h * 0.88f),
+            radius = w * 0.85f
+        )
     )
 }

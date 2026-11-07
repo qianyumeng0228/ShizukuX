@@ -143,6 +143,15 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        // 1c. UI style (ShizukuX second skin): "classic" or "glass". Both the XML theme overlay
+        // and the Canvas card skin key off this value, so the current page must be rebuilt.
+        findPreference<Preference>("ui_style")?.setOnPreferenceChangeListener { _, newValue ->
+            if (newValue is String && ShizukuSettings.getUiStyle() != newValue) {
+                applyTheme(requiresRecreate = true)
+            }
+            true
+        }
+
         // 2. M3 Expressive Controls
         expressiveShapesPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_SHAPES))
         expressiveAnimationsPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_ANIMATIONS))

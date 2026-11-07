@@ -232,6 +232,22 @@ open class HomeActivity : AppActivity(), MavericksView {
                             .show()
                     },
                     onRestoreHomeCards = { adapter.restoreAllCards() },
+                    onAppsClick = {
+                        startActivity(
+                            Intent(
+                                this,
+                                af.shizuku.manager.management.ApplicationManagementActivity::class.java
+                            )
+                        )
+                    },
+                    onTerminalClick = {
+                        startActivity(
+                            Intent(
+                                this,
+                                af.shizuku.manager.shell.ShellTutorialActivity::class.java
+                            )
+                        )
+                    },
                     recyclerViewProvider = { ctx, paddingValues ->
                         val density = ctx.resources.displayMetrics.density
                         val top = (paddingValues.calculateTopPadding().value * density).toInt()

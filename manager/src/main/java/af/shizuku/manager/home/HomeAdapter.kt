@@ -8,6 +8,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.cardSurfaceColor
+import af.shizuku.manager.ktx.glassStrokeColor
 import af.shizuku.manager.management.AppsViewModel
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
@@ -50,9 +51,19 @@ class HomeAdapter(
         const val ID_AUTOSTART = 18L
         // Per-app force dark: the device-wide night mode held while a chosen app is in front.
         const val ID_FORCE_DARK = 19L
+        // Per-operation control, the layer below runtime permissions: ops no permission maps to
+        // (clipboard, background starts, wake locks) only exist here.
+        const val ID_APP_OPS = 20L
+        // Read-only root file browser: the paths below /data that a normal picker cannot open.
+        const val ID_FILES = 21L
+        // Saved Wi-Fi passwords, read from the platform's config store through the root shell.
+        const val ID_WIFI = 22L
+        // Device facts and the intent/activity launcher, the last two of the P1 set.
+        const val ID_DEVICE_INFO = 23L
+        const val ID_INTENTS = 24L
 
         private val DEFAULT_ORDER = listOf(
-            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
@@ -239,6 +250,11 @@ class HomeAdapter(
                 ID_HIDING -> addItem(HidingViewHolder.CREATOR, status, id)
                 ID_AUTOSTART -> addItem(AutoStartViewHolder.CREATOR, status, id)
                 ID_FORCE_DARK -> addItem(ForceDarkViewHolder.CREATOR, status, id)
+                ID_APP_OPS -> addItem(AppOpsViewHolder.CREATOR, status, id)
+                ID_FILES -> addItem(FilesViewHolder.CREATOR, status, id)
+                ID_WIFI -> addItem(WifiPasswordViewHolder.CREATOR, status, id)
+                ID_DEVICE_INFO -> addItem(DeviceInfoViewHolder.CREATOR, status, id)
+                ID_INTENTS -> addItem(IntentsViewHolder.CREATOR, status, id)
                 ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                     addItem(TerminalViewHolder.CREATOR, status, id)
                 // Merged "start service" card (4.1 Item B): replaces the former root / wireless /
@@ -320,7 +336,17 @@ class HomeAdapter(
     private fun applyCardSurface(holder: BaseViewHolder<*>) {
         if (holder is HomeBannerStatusViewHolder) return
         val card = holder.itemView as? com.google.android.material.card.MaterialCardView ?: return
-        card.setCardBackgroundColor(holder.itemView.context.cardSurfaceColor())
+        val ctx = holder.itemView.context
+        card.setCardBackgroundColor(ctx.cardSurfaceColor())
+        // Liquid-glass skin: 1dp hairline stroke + no drop shadow, so the card reads as a
+        // translucent pane of glass over the page gradient instead of an elevated Material card.
+        if (af.shizuku.manager.ShizukuSettings.isGlassUi()) {
+            card.strokeWidth = kotlin.math.max(1, ctx.resources.displayMetrics.density.toInt())
+            card.strokeColor = ctx.glassStrokeColor()
+            card.cardElevation = 0f
+        } else {
+            card.strokeWidth = 0
+        }
     }
 
     fun moveItem(fromPos: Int, toPos: Int) {

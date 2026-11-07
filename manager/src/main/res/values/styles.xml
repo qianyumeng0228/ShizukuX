@@ -158,4 +158,11 @@
         <item name="android:letterSpacing">0.04</item>
     </style>
 
+    <!--
+        Glass skin preference theme: inherits the app's rikka Material3 preference styling;
+        the glass look comes from the card surfaces drawn by M3ECardItemDecoration, so this
+        overlay only exists to keep `preferenceTheme` resolvable for ThemeOverlay.Glass.
+    -->
+    <style name="AppTheme.PreferenceThemeOverlay.Glass" parent="@style/AppTheme.PreferenceThemeOverlay"/>
+
 </resources>

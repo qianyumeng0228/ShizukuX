@@ -336,4 +336,112 @@
         <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.CornerRounding.Maximum.ExtraLarge</item>
     </style>
 
+    <!--
+        Second UI skin ("ui_style" = "glass", see ShizukuSettings.getUiStyle()).
+        Structure + accent only: cards/rows get the liquid-glass treatment from
+        glassCardSurfaceColor()/M3ECardItemDecoration, and the page背景 comes from
+        WallpaperBackground, so this overlay stays a pure token layer that composes with
+        whichever dynamic-color / custom-accent choice the user already made by overriding
+        just the accent (violet #B9A7FF on dark, #6C55C9 on light) and the large corner scale
+        (28dp cards / 20dp rows per the design spec).
+        Dark variant is the base name so `R.style.ThemeOverlay_Glass` resolves to night.
+    -->
+    <style name="ShapeAppearance.Glass.Corner.ExtraSmall" parent="ShapeAppearance.Material3.Corner.ExtraSmall">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
+    <style name="ShapeAppearance.Glass.Corner.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">14dp</item>
+    </style>
+    <style name="ShapeAppearance.Glass.Corner.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+    <style name="ShapeAppearance.Glass.Corner.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+    <style name="ShapeAppearance.Glass.Corner.ExtraLarge" parent="ShapeAppearance.Material3.Corner.ExtraLarge">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <style name="ThemeOverlay.Glass" parent="">
+        <item name="isGlassUi">true</item>
+        <!-- Accent: #B9A7FF on the dark glass background, deep violet text on top of it. -->
+        <item name="colorPrimary">#B9A7FF</item>
+        <item name="colorOnPrimary">#201639</item>
+        <item name="colorPrimaryContainer">#3A2C70</item>
+        <item name="colorOnPrimaryContainer">#E7DEFF</item>
+        <item name="colorSecondary">#B9A7FF</item>
+        <item name="colorOnSecondary">#201639</item>
+        <item name="colorSecondaryContainer">#33265F</item>
+        <item name="colorOnSecondaryContainer">#E7DEFF</item>
+        <item name="colorTertiary">#D9CFFF</item>
+        <item name="colorOutline">#8E86A8</item>
+        <item name="colorOutlineVariant">#4A4560</item>
+        <!-- Card tone behind the translucent glass fill; slightly cooler than the M3 default. -->
+        <item name="colorSurface">#141A2B</item>
+        <item name="colorSurfaceBright">#1E2740</item>
+        <item name="colorSurfaceDim">#0C111C</item>
+        <item name="colorSurfaceContainerLowest">#0A0E17</item>
+        <item name="colorSurfaceContainerLow">#121828</item>
+        <item name="colorSurfaceContainer">#161D2F</item>
+        <item name="colorSurfaceContainerHigh">#1B2336</item>
+        <item name="colorSurfaceContainerHighest">#202A40</item>
+        <!-- Content tokens must be spelled out: without them the light glass overlay inherits the
+             base dark theme's white onSurface/onSurfaceVariant and card icons vanish on the now
+             white cards. -->
+        <item name="android:colorBackground">#0B0F19</item>
+        <item name="colorOnBackground">#F2F5FA</item>
+        <item name="colorOnSurface">#F2F5FA</item>
+        <item name="colorOnSurfaceVariant">#A9B4C6</item>
+        <item name="colorSurfaceVariant">#1A2136</item>
+        <item name="colorSurfaceInverse">#EDF0FA</item>
+        <item name="colorOnSurfaceInverse">#141A2B</item>
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Glass.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Glass.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Glass.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Glass.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Glass.Corner.ExtraLarge</item>
+        <item name="preferenceTheme">@style/AppTheme.PreferenceThemeOverlay.Glass</item>
+    </style>
+
+    <style name="ThemeOverlay.Glass.Light" parent="">
+        <item name="isGlassUi">true</item>
+        <item name="colorPrimary">#6C55C9</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimaryContainer">#E8E1FF</item>
+        <item name="colorOnPrimaryContainer">#241A45</item>
+        <item name="colorSecondary">#6C55C9</item>
+        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondaryContainer">#E8E1FF</item>
+        <item name="colorOnSecondaryContainer">#241A45</item>
+        <item name="colorTertiary">#8A76D8</item>
+        <item name="colorOutline">#7C7690</item>
+        <item name="colorOutlineVariant">#CCC6DC</item>
+        <item name="colorSurface">#F7F6FC</item>
+        <item name="colorSurfaceBright">#FFFFFF</item>
+        <item name="colorSurfaceDim">#E4E1EE</item>
+        <item name="colorSurfaceContainerLowest">#FFFFFF</item>
+        <item name="colorSurfaceContainerLow">#F4F3FB</item>
+        <item name="colorSurfaceContainer">#EFEDF8</item>
+        <item name="colorSurfaceContainerHigh">#E9E7F5</item>
+        <item name="colorSurfaceContainerHighest">#E3E0F0</item>
+        <item name="android:colorBackground">#F2F3FA</item>
+        <item name="colorOnBackground">#1B1B22</item>
+        <item name="colorOnSurface">#1B1B22</item>
+        <item name="colorOnSurfaceVariant">#54505F</item>
+        <item name="colorSurfaceVariant">#E7E4F2</item>
+        <item name="colorSurfaceInverse">#1B2336</item>
+        <item name="colorOnSurfaceInverse">#F2F5FA</item>
+        <item name="shapeAppearanceCornerExtraSmall">@style/ShapeAppearance.Glass.Corner.ExtraSmall</item>
+        <item name="shapeAppearanceCornerSmall">@style/ShapeAppearance.Glass.Corner.Small</item>
+        <item name="shapeAppearanceCornerMedium">@style/ShapeAppearance.Glass.Corner.Medium</item>
+        <item name="shapeAppearanceCornerLarge">@style/ShapeAppearance.Glass.Corner.Large</item>
+        <item name="shapeAppearanceCornerExtraLarge">@style/ShapeAppearance.Glass.Corner.ExtraLarge</item>
+        <item name="preferenceTheme">@style/AppTheme.PreferenceThemeOverlay.Glass</item>
+    </style>
+
 </resources>

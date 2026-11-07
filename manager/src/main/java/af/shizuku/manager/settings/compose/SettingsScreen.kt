@@ -81,6 +81,10 @@ fun SettingsScreen(
         // gradient in Compose every frame under a scrolling Preference list was the source of
         // the "stutter/tugging" feel. The settings list now uses the plain Scaffold surface,
         // exactly like stock ShizukuExtra.
+        //
+        // Liquid-glass skin: the gradient backdrop is now painted once by AppTheme
+        // (core/ui AppTheme.drawGlassBackdrop) for every Compose screen, so this Scaffold only has
+        // to stay transparent to let it through - no per-screen wallpaper layer any more.
 
         Scaffold(
             containerColor = Color.Transparent,

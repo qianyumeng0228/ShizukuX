@@ -35,14 +35,34 @@ private const val CARD_BG_ALPHA = 0.72f
  * The background color for card surfaces. Under the Miku wallpaper themes (white/black) the cards
  * are made translucent so the wallpaper shows through; the "original" theme keeps the stock opaque
  * colorSurfaceContainerHigh exactly as it was before the beautification.
+ *
+ * Under the liquid-glass UI skin (ShizukuSettings.isGlassUi()) the cards become the glass layer
+ * itself: a low-opacity white/hairline fill over the page gradient, with a 1dp hairline stroke
+ * added by the card hosts (HomeAdapter / M3ECardItemDecoration).
  */
 @ColorInt
 fun Context.cardSurfaceColor(): Int {
+    if (af.shizuku.manager.ShizukuSettings.isGlassUi()) {
+        return if (isNightMode()) GLASS_FILL_DARK else GLASS_FILL_LIGHT
+    }
     val base = themeColor(com.google.android.material.R.attr.colorSurfaceContainerHigh)
     val theme = af.shizuku.manager.ShizukuSettings.getWallpaperTheme()
     if (theme == af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_ORIGINAL) return base
     return androidx.core.graphics.ColorUtils.setAlphaComponent(base, (CARD_BG_ALPHA * 255f).toInt())
 }
+
+/** 1dp hairline used as the glass card stroke: light on dark, near-black on light. */
+@ColorInt
+fun Context.glassStrokeColor(): Int =
+    if (isNightMode()) 0x24FFFFFF else 0x14000000
+
+private fun Context.isNightMode(): Boolean =
+    (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+// Deep-glass fill: translucent white on dark (#FFFFFF .10), milky white on light (#FFFFFF .55).
+private val GLASS_FILL_DARK = 0x1AFFFFFF
+private val GLASS_FILL_LIGHT = 0x8CFFFFFF.toInt()
 
 /**
  * Resolves a `?attr/shapeAppearanceCorner*` theme attribute to its absolute corner size in

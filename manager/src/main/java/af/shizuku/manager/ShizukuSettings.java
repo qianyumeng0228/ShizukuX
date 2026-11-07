@@ -150,6 +150,8 @@ public class ShizukuSettings {
         public static final String KEY_EDGE_TO_EDGE = "edge_to_edge_enabled";
         public static final String KEY_BLUR_UI = "blur_ui_enabled";
         public static final String KEY_ONEUI_THEME = "oneui_theme_enabled";
+        /** Second UI skin: "classic" (default) or "glass" (liquid-glass). */
+        public static final String KEY_UI_STYLE = "ui_style";
         public static final String KEY_ONE_HANDED_MODE = "one_handed_mode";
         public static final String KEY_WALLPAPER_THEME = "wallpaper_theme";
         public static final String KEY_BOLD_TYPOGRAPHY = "bold_typography";
@@ -296,6 +298,18 @@ public class ShizukuSettings {
     public static boolean isOneUiThemeEnabled() {
         return getPreferences().getBoolean(Keys.KEY_ONEUI_THEME, false);
     }
+
+    /** The active UI skin: {@link #UI_STYLE_CLASSIC} (default) or {@link #UI_STYLE_GLASS}. */
+    public static String getUiStyle() {
+        return getPreferences().getString(Keys.KEY_UI_STYLE, UI_STYLE_CLASSIC);
+    }
+
+    public static boolean isGlassUi() {
+        return UI_STYLE_GLASS.equals(getUiStyle());
+    }
+
+    public static final String UI_STYLE_CLASSIC = "classic";
+    public static final String UI_STYLE_GLASS = "glass";
 
     public static boolean isOneHandedModeEnabled() {
         return getPreferences().getBoolean(Keys.KEY_ONE_HANDED_MODE, false);
