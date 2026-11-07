@@ -1499,6 +1499,24 @@
     <string name="home_hiding_description">在指定应用打开时隐藏开发者选项、调试、无障碍、私人 DNS 或 VPN</string>
     <string name="hiding_subtitle_count">已对 %d 个应用生效</string>
     <string name="hiding_subtitle_paused">已暂停</string>
+
+    <string name="autostart_title">自启动管理</string>
+    <string name="home_autostart_description">禁止你选定的应用在后台自行启动</string>
+    <string name="autostart_blocked_count">已禁止 %d 个应用</string>
+    <string name="autostart_gate_title">整份名单一起生效</string>
+    <string name="autostart_gate_summary">关掉会立刻把当前被禁止的应用全部恢复为允许，名单保留；重新打开时按名单原样恢复禁止。</string>
+    <string name="autostart_gate_on">正在按名单生效</string>
+    <string name="autostart_gate_off">已暂停，名单保留</string>
+    <string name="autostart_gate_failed">有应用没能恢复，名单仍在生效</string>
+    <string name="autostart_failed">系统没有接受这次修改</string>
+    <string name="autostart_action_failed">操作未完成</string>
+    <string name="autostart_search_hint">搜索应用</string>
+    <string name="autostart_filter_all">全部</string>
+    <string name="autostart_filter_blocked">已禁止</string>
+    <string name="autostart_filter_system">系统</string>
+    <string name="autostart_app_count">%d 个应用</string>
+    <string name="autostart_empty">没有符合筛选条件的应用</string>
+    <string name="autostart_refresh">刷新</string>
     <string name="hiding_intro_title">这个功能做什么</string>
     <string name="hiding_intro_text">这类应用读取的是设备上的真实设置，所以“隐藏”就是真的改掉它——只在被列应用位于前台期间生效，离开立即恢复。先选一个信号，再选对它隐藏的应用。</string>
     <string name="hiding_warning_no_usage">尚未授予“使用情况访问”：前台应用只能由 shell 读取，此时隐藏调试通道可能会切断 shell 所依赖的连接。</string>

@@ -1635,6 +1635,24 @@ This action cannot be undone. Continue?</string>
     <string name="home_hiding_description">Hold developer options, debugging, accessibility, private DNS or a VPN off while a listed app is open</string>
     <string name="hiding_subtitle_count">%d apps listed</string>
     <string name="hiding_subtitle_paused">Paused</string>
+
+    <string name="autostart_title">Autostart</string>
+    <string name="home_autostart_description">Stop the apps you pick from starting on their own in the background</string>
+    <string name="autostart_blocked_count">%d apps blocked</string>
+    <string name="autostart_gate_title">Block the whole list</string>
+    <string name="autostart_gate_summary">Turning this off allows every app that is currently denied and keeps the list, so turning it back on puts exactly those apps back.</string>
+    <string name="autostart_gate_on">Applied to the list</string>
+    <string name="autostart_gate_off">Off, list kept</string>
+    <string name="autostart_gate_failed">Some apps could not be allowed again, so the list is still in force</string>
+    <string name="autostart_failed">The platform did not take this change</string>
+    <string name="autostart_action_failed">Not done</string>
+    <string name="autostart_search_hint">Search apps</string>
+    <string name="autostart_filter_all">All</string>
+    <string name="autostart_filter_blocked">Blocked</string>
+    <string name="autostart_filter_system">System</string>
+    <string name="autostart_app_count">%d apps</string>
+    <string name="autostart_empty">No app matches this filter</string>
+    <string name="autostart_refresh">Refresh</string>
     <string name="hiding_intro_title">What this does</string>
     <string name="hiding_intro_text">A restrictive app reads its settings from the device, so hiding one means really changing it — for as long as the listed app is in front, and no longer. Pick a signal, then pick the apps it is hidden for.</string>
     <string name="hiding_warning_no_usage">Usage access is not granted yet: the foreground app is read through the shell, and hiding a debugging transport can then cut the connection that shell runs on.</string>
