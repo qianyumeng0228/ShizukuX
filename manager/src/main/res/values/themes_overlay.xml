@@ -393,7 +393,10 @@
         <!-- Content tokens must be spelled out: without them the light glass overlay inherits the
              base dark theme's white onSurface/onSurfaceVariant and card icons vanish on the now
              white cards. -->
-        <item name="android:colorBackground">#0B0F19</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
+        <!-- XML/AppCompat pages (application management, backups, doctor ...) get the same
+             gradient stage as the Compose screens instead of a flat near-black sheet. -->
+        <item name="android:windowBackground">@drawable/glass_window_background</item>
         <item name="colorOnBackground">#F2F5FA</item>
         <item name="colorOnSurface">#F2F5FA</item>
         <item name="colorOnSurfaceVariant">#A9B4C6</item>
@@ -429,7 +432,8 @@
         <item name="colorSurfaceContainer">#EFEDF8</item>
         <item name="colorSurfaceContainerHigh">#E9E7F5</item>
         <item name="colorSurfaceContainerHighest">#E3E0F0</item>
-        <item name="android:colorBackground">#F2F3FA</item>
+        <item name="android:colorBackground">@android:color/transparent</item>
+        <item name="android:windowBackground">@drawable/glass_window_background_light</item>
         <item name="colorOnBackground">#1B1B22</item>
         <item name="colorOnSurface">#1B1B22</item>
         <item name="colorOnSurfaceVariant">#54505F</item>

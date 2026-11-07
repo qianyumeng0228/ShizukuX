@@ -132,14 +132,13 @@ object AppOpsManager {
     private const val SCAN =
         "dumpsys appops 2>/dev/null | sed -n -e '/^    Package /p' -e '/^      [A-Z][A-Z_0-9]* (/p'"
 
-    private const val UNSET = ""
     private const val UID_PREFIX = "Uid mode: "
 
     /** False when the Shizuku service is not running: every call below needs it. */
     fun isAvailable(): Boolean = ShizukuWait.ping()
 
-    /** A label for [op], or the raw name when this build has none. */
-    fun label(op: String): String = LABELS[bareName(op)] ?: op
+    /** A label for [op], or the bare platform name when this build has none. */
+    fun label(op: String): String = LABELS[bareName(op)] ?: bareName(op)
 
     /**
      * Whether [op] is one this screen knows a label for.
@@ -160,29 +159,82 @@ object AppOpsManager {
     /**
      * Every op the platform holds a record for on [packageName], labelled ones first.
      *
+     * The list is read from `dumpsys appops` rather than `cmd appops get`, because `get` prints the
+     * UID-wide block and the per-package block as one flat list with the `Uid mode: ` marker only on
+     * the first row (see `UID_PREFIX`): the 47 rows after it are indistinguishable from package rows
+     * and used to be shown - and written - as package-level records. Here the two blocks are read
+     * from their own headers (`  Uid u0aXX:` and `    Package <pkg>:`), so each op carries the level
+     * it actually lives at.
+     *
      * An empty list means the platform answered with nothing, which is also what it answers for a
      * package that has no records at all; null means it could not be asked.
      */
     fun ops(packageName: String): List<AppOp>? {
-        val out = shell("cmd appops get $packageName") ?: return null
-        val parsed = out.lineSequence()
-            .map { it.trim() }
-            .mapNotNull { line ->
-                // `COARSE_LOCATION: allow; time=+1d2h ago` here, `<op>: mode=deny` elsewhere, and
-                // `Uid mode: CAMERA: ignore` for a record that covers the whole UID.
-                if (!line.contains(':')) return@mapNotNull null
-                val uidLevel = line.startsWith(UID_PREFIX)
-                val body = if (uidLevel) line.removePrefix(UID_PREFIX) else line
-                val name = body.substringBefore(':').trim()
-                if (name.isEmpty() || name.contains(' ')) return@mapNotNull null
-                val rest = body.substringAfter(':').trim()
-                val mode = rest.substringBefore(';').trim().removePrefix("mode=").trim()
-                if (mode.isEmpty() || mode.contains(':')) return@mapNotNull null
-                val time = rest.substringAfter("time=", UNSET).ifEmpty { null }
-                AppOp(name = if (uidLevel) UID_PREFIX + name else name, mode = mode, time = time)
+        val out = shell("dumpsys appops") ?: return null
+
+        // Ops of the Uid block currently being read; package blocks are nested under their uid, so
+        // this snapshot is what the package inherits as "uid-wide" records.
+        val uidOps = LinkedHashMap<String, String>()
+        var targetUidOps: Map<String, String>? = null
+        var targetPkgOps: MutableMap<String, String>? = null
+        var inUid = false
+        var owner: String? = null
+
+        out.lineSequence().forEach { raw ->
+            val line = raw.trimEnd()
+            if (line.isEmpty()) return@forEach
+            val trimmed = line.trim()
+            val indent = line.length - line.trimStart().length
+
+            if (indent <= 2 && trimmed.startsWith("Uid ") && trimmed.endsWith(":")) {
+                inUid = true
+                owner = null
+                uidOps.clear()
+                return@forEach
             }
-            .distinctBy { it.name }
-            .toList()
+            if (indent <= 4 && trimmed.startsWith("Package ") && trimmed.endsWith(":")) {
+                owner = trimmed.removePrefix("Package ").removeSuffix(":").trim()
+                inUid = false
+                if (owner == packageName) {
+                    targetUidOps = LinkedHashMap(uidOps)
+                    targetPkgOps = LinkedHashMap()
+                }
+                return@forEach
+            }
+            val isTarget = owner == packageName && targetPkgOps != null
+            if (inUid && indent >= 6) {
+                // `CAMERA: mode=ignore`
+                val colon = trimmed.indexOf(':')
+                if (colon <= 0) return@forEach
+                val name = trimmed.substring(0, colon).trim()
+                val rest = trimmed.substring(colon + 1).trim()
+                if (!rest.startsWith("mode=")) return@forEach
+                val mode = rest.removePrefix("mode=").trim().substringBefore(' ').trim()
+                if (name.isEmpty() || mode.isEmpty() || name.contains(' ')) return@forEach
+                uidOps[name] = mode
+                return@forEach
+            }
+            if (isTarget && indent >= 6 && trimmed.endsWith(":")) {
+                // `CAMERA (allow):` - the mode sits in parentheses, and MIUIOP names carry their
+                // own parentheses (`MIUIOP(10001) (ask):`), so match the last pair.
+                val close = trimmed.lastIndexOf(')')
+                if (close <= 0) return@forEach
+                val open = trimmed.lastIndexOf('(', close - 1)
+                if (open <= 0) return@forEach
+                val name = trimmed.substring(0, open).trim()
+                val mode = trimmed.substring(open + 1, close).trim().substringBefore(' ').trim()
+                if (name.isEmpty() || mode.isEmpty()) return@forEach
+                targetPkgOps!![name] = mode
+            }
+        }
+
+        val uidLevel = (targetUidOps ?: emptyMap()).map { (name, mode) ->
+            AppOp(name = UID_PREFIX + name, mode = mode, time = null)
+        }
+        val pkgLevel = (targetPkgOps ?: emptyMap()).map { (name, mode) ->
+            AppOp(name = name, mode = mode, time = null)
+        }
+        val parsed = (pkgLevel + uidLevel).distinctBy { it.name }
         // Labelled ops first, in table order; the rest alphabetically, so a ROM's extra ops are
         // grouped instead of scattered through the list the user reads.
         val known = parsed.filter { isKnown(it.name) }
@@ -209,7 +261,11 @@ object AppOpsManager {
             shell(if (uidLevel) "cmd appops set --uid $packageName $name $mode"
                   else "cmd appops set $packageName $name $mode")
         }
-        return readMode(packageName, op) == mode
+        val after = readMode(packageName, op)
+        // A reset drops the record entirely instead of storing `default`, so "no record" is a
+        // success for that mode rather than an unreadable one.
+        if (mode == "default") return after == null || after == "default"
+        return after == mode
     }
 
     /** Resets every op of [packageName] to the platform default, answering how many were reset. */
@@ -254,33 +310,14 @@ object AppOpsManager {
     }
 
     /**
-     * The mode [op] holds for [packageName], or null when it was not read.
+     * The mode [op] holds for [packageName], or null when it has no record.
      *
-     * `appops get <pkg> <op>` prints the same `name: mode` shape as the full dump, with or without
-     * a trailing timestamp, so the value is taken from between the colon and the first semicolon.
+     * Read back through [ops] instead of `cmd appops get <pkg> <op>`: a targeted `get` answers with
+     * whichever record the platform prefers (usually the UID one), so it cannot confirm that a
+     * package-level write landed.
      */
-    private fun readMode(packageName: String, op: String): String? {
-        val name = bareName(op)
-        val uidLevel = isUidLevel(op)
-        val out = shell("cmd appops get $packageName $name") ?: return null
-        val line = out.lineSequence()
-            .map { it.trim() }
-            .firstOrNull {
-                // The UID-level record is printed before the package one and must not be mistaken
-                // for it, or the read-back answers for a record the write did not touch.
-                if (uidLevel) it.startsWith(UID_PREFIX + name) else it.startsWith("$name:")
-            }
-            ?.removePrefix(if (uidLevel) UID_PREFIX else "")
-            ?: return null
-        val value = line.substringAfter(':', "")
-            .substringBefore(';')
-            .trim()
-            .removePrefix("mode=")
-            .trim()
-        // `default` and no value are the same thing; the platform prints nothing for an op with
-        // no record, which this screen treats as default rather than as unknown.
-        return value.ifEmpty { "default" }
-    }
+    private fun readMode(packageName: String, op: String): String? =
+        ops(packageName)?.firstOrNull { it.name == op }?.mode
 
     /**
      * Runs one shell command as the Shizuku user and answers its stdout, or null when it did not

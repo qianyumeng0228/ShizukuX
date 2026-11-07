@@ -4,6 +4,7 @@ import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -44,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +55,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.lifecycleScope
 import af.shizuku.common.util.UserHandleCompat
 import af.shizuku.manager.R
@@ -208,7 +213,13 @@ class AppOpsActivity : ComponentActivity() {
                 if (ok) {
                     ops = ops.map { if (it.name == op.name) it.copy(mode = mode) else it }
                 } else {
-                    message = getString(R.string.appops_failed)
+                    // UID-level ops answer `cmd appops set` with success on this ROM but never
+                    // change (verified against Camera/RECORD_AUDIO), so the honest message names
+                    // the real limitation instead of the generic "platform refused".
+                    message = getString(
+                        if (AppOpsManager.isUidLevel(op.name)) R.string.appops_failed_uid
+                        else R.string.appops_failed
+                    )
                     // A failed write is the one case where the platform's value is worth re-reading:
                     // it either did not take, or it took and answered with a different mode name.
                     ops = withContext(Dispatchers.IO) {
@@ -311,16 +322,33 @@ private fun AppOpsScreen(
     }
 
     pending?.let { op ->
-        AlertDialog(
+        Dialog(
             onDismissRequest = { pending = null },
-            title = { Text(stringResource(R.string.appops_mode_title)) },
-            text = {
-                Column {
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                )
+            ) {
+                Column(Modifier.padding(horizontal = 18.dp, vertical = 18.dp)) {
                     Text(
-                        AppOpsManager.label(op.name),
+                        stringResource(R.string.appops_mode_title),
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
-                    if (AppOpsManager.isKnown(op.name)) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        AppOpsManager.label(op.name),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (AppOpsManager.isKnown(op.name) || AppOpsManager.isUidLevel(op.name)) {
                         Text(
                             descriptor(op),
                             style = MaterialTheme.typography.labelSmall,
@@ -329,16 +357,36 @@ private fun AppOpsScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     AppOpsManager.MODES.forEach { mode ->
-                        TextButton(
+                        val selected = op.mode == mode
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.16f)
+                            } else {
+                                Color.Transparent
+                            },
                             onClick = {
                                 pending = null
                                 onSetOp(op, mode)
-                            },
-                            modifier = Modifier.fillMaxWidth()
+                            }
                         ) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(modeLabel(mode))
-                                if (op.mode == mode) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(selected = selected, onClick = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    modeLabel(mode),
+                                    modifier = Modifier.weight(1f),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (selected) {
                                     Text(
                                         stringResource(R.string.appops_current),
                                         style = MaterialTheme.typography.labelMedium,
@@ -348,12 +396,15 @@ private fun AppOpsScreen(
                             }
                         }
                     }
+                    Spacer(Modifier.height(6.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(onClick = { pending = null }) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                    }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { pending = null }) { Text(stringResource(R.string.action_cancel)) }
             }
-        )
+        }
     }
 
     if (confirmReset) {
@@ -542,7 +593,7 @@ private fun OpRow(op: AppOp, busy: Boolean, onClick: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (AppOpsManager.isKnown(op.name)) {
+                if (AppOpsManager.isKnown(op.name) || AppOpsManager.isUidLevel(op.name)) {
                     Text(
                         descriptor(op),
                         style = MaterialTheme.typography.labelSmall,

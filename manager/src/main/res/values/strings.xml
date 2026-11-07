@@ -1805,6 +1805,7 @@ This action cannot be undone. Continue?</string>
     <string name="appops_filter_restricted">Restricted</string>
     <string name="appops_empty">This app has no app-op records</string>
     <string name="appops_failed">The platform did not apply that change</string>
+    <string name="appops_failed_uid">This ROM ignores writes to UID-level operations. Only package-level operations can be changed here.</string>
     <string name="appops_action_failed">Operation failed</string>
     <string name="appops_mode_title">Set mode</string>
     <string name="appops_current">current</string>

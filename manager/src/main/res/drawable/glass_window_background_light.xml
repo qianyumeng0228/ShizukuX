@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light counterpart of glass_window_background.xml: pale violet-blue sheet with the same
+     two blooms, for the XML/AppCompat pages while the light glass theme is active. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:centerColor="#E6EBFA"
+                android:centerY="0.45"
+                android:endColor="#DDE4F6"
+                android:startColor="#EEF2FE"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.10"
+                android:centerY="0.02"
+                android:endColor="#009C8AF0"
+                android:gradientRadius="820dp"
+                android:startColor="#339C8AF0"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="1.05"
+                android:centerY="0.95"
+                android:endColor="#0083B4FF"
+                android:gradientRadius="900dp"
+                android:startColor="#2483B4FF"
+                android:type="radial" />
+        </shape>
+    </item>
+</layer-list>

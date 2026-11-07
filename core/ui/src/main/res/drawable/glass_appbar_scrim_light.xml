@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Light counterpart of glass_appbar_scrim.xml: a white veil that fades downward, so the
+     pale violet page gradient still shows through the top bar. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:centerColor="#B3FFFFFF"
+        android:centerY="0.55"
+        android:endColor="#00FFFFFF"
+        android:startColor="#E6FFFFFF"
+        android:type="linear" />
+</shape>

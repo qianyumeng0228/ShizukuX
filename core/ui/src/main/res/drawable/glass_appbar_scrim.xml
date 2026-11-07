@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Frosted top-bar scrim for the liquid-glass skin (dark).
+     The AppBarLayout on the XML pages is a real scrolling container, so it cannot be fully
+     transparent: list content would run straight through the title and the search field.
+     The tint is the same slate the glass cards use (#141A2B), not near-black: a near-black
+     scrim ended at the bar's bottom edge, which made a hard色阶 seam against the gradient
+     page underneath. A slate tint fading to (almost) nothing blends into that gradient. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:centerColor="#99141A2B"
+        android:centerY="0.55"
+        android:endColor="#00141A2B"
+        android:startColor="#CC141A2B"
+        android:type="linear" />
+</shape>

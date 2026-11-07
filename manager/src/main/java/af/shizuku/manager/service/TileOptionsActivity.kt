@@ -21,6 +21,9 @@ class TileOptionsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The option sheet is a stock AlertDialog; without the overlay it renders in the default
+        // grey M3 palette against the gradient pages behind it.
+        af.shizuku.manager.utils.GlassSkin.applyIfEnabled(this)
         showOptions()
     }
 

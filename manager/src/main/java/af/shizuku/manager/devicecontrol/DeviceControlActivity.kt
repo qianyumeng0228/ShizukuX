@@ -28,9 +28,25 @@ class DeviceControlActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        af.shizuku.manager.utils.GlassSkin.applyIfEnabled(this)
         setContentView(R.layout.activity_device_control)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         title = getString(R.string.device_control_title)
+
+        // No ActionBar in this theme: the toolbar in the layout owns the back affordance, and the
+        // root applies the status/navigation bar insets (edge-to-edge, otherwise the toolbar sat
+        // under the clock).
+        findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.device_control_toolbar)
+            .setNavigationOnClickListener { finish() }
+        val root = findViewById<android.view.View>(R.id.device_control_root)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars() or
+                    androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+            )
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
         statusText = findViewById(R.id.tv_status)
         powerWarning = findViewById(R.id.tv_power_warning)

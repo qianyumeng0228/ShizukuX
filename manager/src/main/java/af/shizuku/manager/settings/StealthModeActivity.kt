@@ -22,6 +22,7 @@ class StealthModeActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        af.shizuku.manager.utils.GlassSkin.applyIfEnabled(this)
 
         val toolbar = MaterialToolbar(this).apply {
             setTitle(R.string.settings_stealth_tutorial_entry)

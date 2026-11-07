@@ -149,7 +149,7 @@ private val GlassShapes = Shapes(
  * module's R class; `isGlassUi` is declared in manager/res/values/attrs.xml and set by both
  * glass overlays, so no flag has to be threaded through every Activity call site.
  */
-private fun isGlassTheme(context: Context): Boolean {
+fun isGlassTheme(context: Context): Boolean {
     val id = context.resources.getIdentifier("isGlassUi", "attr", context.packageName)
     if (id == 0) return false
     val tv = android.util.TypedValue()
@@ -169,8 +169,8 @@ private fun glassScheme(dark: Boolean): ColorScheme = if (dark) {
         surfaceVariant = Color(0x661A2136), onSurfaceVariant = Color(0xFFA9B4C6),
         surfaceBright = Color(0x801E2740), surfaceDim = Color(0x800C111C),
         surfaceContainerLowest = Color(0x660A0E17), surfaceContainerLow = Color(0x66121828),
-        surfaceContainer = Color(0x66161D2F), surfaceContainerHigh = Color(0x661B2336),
-        surfaceContainerHighest = Color(0x66202A40),
+        surfaceContainer = Color(0x66161D2F), surfaceContainerHigh = Color(0xFF1B2336),
+        surfaceContainerHighest = Color(0xFF202A40),
         outline = Color(0xFF8E86A8), outlineVariant = Color(0xFF4A4560),
         error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
         errorContainer = Color(0xFF93000A), onErrorContainer = Color(0xFFFFDAD6),
@@ -187,8 +187,8 @@ private fun glassScheme(dark: Boolean): ColorScheme = if (dark) {
         surfaceVariant = Color(0xCCE7E4F2), onSurfaceVariant = Color(0xFF54505F),
         surfaceBright = Color(0xE6FFFFFF), surfaceDim = Color(0xCEE4E1EE),
         surfaceContainerLowest = Color(0xE6FFFFFF), surfaceContainerLow = Color(0xD9F4F3FB),
-        surfaceContainer = Color(0xD9EFEDF8), surfaceContainerHigh = Color(0xD9E9E7F5),
-        surfaceContainerHighest = Color(0xD9E3E0F0),
+        surfaceContainer = Color(0xD9EFEDF8), surfaceContainerHigh = Color(0xFFE9E7F5),
+        surfaceContainerHighest = Color(0xFFE3E0F0),
         outline = Color(0xFF7C7690), outlineVariant = Color(0xFFCCC6DC),
         error = Color(0xFFBA1A1A), onError = Color.White,
         errorContainer = Color(0xFFFFDAD6), onErrorContainer = Color(0xFF410002),

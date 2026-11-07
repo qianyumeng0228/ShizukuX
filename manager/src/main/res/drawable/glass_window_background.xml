@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Window backdrop for the liquid-glass skin (dark variant).
+
+    Compose screens paint their own gradient via AppTheme's drawGlassBackdrop, but the pages
+    that are still XML/AppCompat (application management, backups, external relay, root
+    compatibility, service doctor, ...) only had `android:colorBackground` from the glass
+    overlay - a flat near-black sheet with no light behind the translucent cards, which made
+    those screens look like a different app. Painting the same three-stop gradient plus the
+    violet/blue blooms as the window background gives every Activity the same glass stage.
+
+    Keep the parameters in sync with drawGlassBackdrop() in core/ui AppTheme.kt and
+    GlassBackground in manager/app/WallpaperBackground.kt.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="270"
+                android:centerColor="#121829"
+                android:centerY="0.45"
+                android:endColor="#080B12"
+                android:startColor="#25335A"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.10"
+                android:centerY="0.02"
+                android:endColor="#00B9A7FF"
+                android:gradientRadius="820dp"
+                android:startColor="#42B9A7FF"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="1.05"
+                android:centerY="0.95"
+                android:endColor="#005AA0FF"
+                android:gradientRadius="900dp"
+                android:startColor="#295AA0FF"
+                android:type="radial" />
+        </shape>
+    </item>
+</layer-list>

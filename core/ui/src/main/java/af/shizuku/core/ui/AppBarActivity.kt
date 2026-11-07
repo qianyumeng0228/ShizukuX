@@ -55,6 +55,32 @@ abstract class AppBarActivity : AppActivity() {
                 toolbar = bar
                 setSupportActionBar(toolbar)
 
+                // These screens are always reached from a parent page, and their onCreate calls
+                // setDisplayHomeAsUpEnabled(true) *before* this method installs the toolbar - at
+                // that point supportActionBar is still null, so the call silently did nothing and
+                // the toolbar came up without a back arrow. Enable it here instead, now that the
+                // ActionBar actually exists.
+                if (showsUpNavigation) {
+                    supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                }
+
+                // Glass skin: the bar used to paint ?android:colorBackground, i.e. an opaque
+                // near-black strip on top of an otherwise gradient page, so these XML pages read
+                // as "glass cards on a foreign chrome". A downward-fading scrim keeps the title
+                // and the search field readable (the list does scroll behind this bar) while the
+                // page gradient still shows through.
+                if (af.shizuku.core.ui.compose.isGlassTheme(this)) {
+                    val night = (resources.configuration.uiMode and
+                            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                            android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    container.background = androidx.core.content.res.ResourcesCompat.getDrawable(
+                        resources,
+                        if (night) R.drawable.glass_appbar_scrim else R.drawable.glass_appbar_scrim_light,
+                        theme
+                    )
+                    container.isLiftOnScroll = false
+                }
+
                 androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(container) { v, insets ->
                     val bars = insets.getInsets(
                         androidx.core.view.WindowInsetsCompat.Type.systemBars() or
@@ -75,6 +101,9 @@ abstract class AppBarActivity : AppActivity() {
     open fun getLayoutId(): Int {
         return R.layout.appbar_activity
     }
+
+    /** Whether the toolbar should carry the standard back arrow. Off for root-level screens. */
+    protected open val showsUpNavigation: Boolean = true
 
     override fun setContentView(layoutResID: Int) {
         val view = layoutInflater.inflate(layoutResID, rootView, false)
