@@ -2,6 +2,7 @@ package af.shizuku.manager.module
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -157,7 +158,14 @@ class ModulesActivity : ComponentActivity() {
             installing = true
             runCatching { AdbModuleManager.install(this@ModulesActivity, uri) }
                 .onSuccess { module ->
-                    message = getString(R.string.modules_installed_ok, module.name)
+                    // Success must not go through `message`: that composable is the failure
+                    // dialog ("模块操作失败"), so a successful install used to pop a failure
+                    // dialog whose body said the module was installed.
+                    Toast.makeText(
+                        this@ModulesActivity,
+                        getString(R.string.modules_installed_ok, module.name),
+                        Toast.LENGTH_SHORT
+                    ).show()
                     healthChecked = false
                 }
                 .onFailure { message = getString(R.string.modules_install_failed, it.message ?: it.toString()) }
