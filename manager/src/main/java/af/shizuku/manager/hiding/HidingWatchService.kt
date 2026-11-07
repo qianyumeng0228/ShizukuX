@@ -13,6 +13,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import af.shizuku.manager.R
+import af.shizuku.manager.force_dark.ForceDarkManager
 import af.shizuku.manager.utils.Logger.LOGGER
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,10 +63,13 @@ class HidingWatchService : Service() {
          */
         fun refresh(context: Context) {
             val intent = Intent(context, HidingWatchService::class.java)
-            if (!Hiding.hasWorkToDo()) {
+            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch()) {
                 // No app left to act for, so nothing has a reason to stay hidden - and nothing for
-                // a watch to watch.
+                // a watch to watch. Force dark belongs on this side of the line too: the switch it
+                // holds is device-wide, so it goes back with everything else rather than being
+                // left on by a service that is about to stop.
                 Hiding.restoreAll()
+                ForceDarkManager.restore()
                 runCatching { context.stopService(intent) }
                 return
             }
@@ -164,9 +168,10 @@ class HidingWatchService : Service() {
         var paused = false
 
         while (scope.isActive) {
-            if (!Hiding.hasWorkToDo()) {
+            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch()) {
                 holding.set(null)
                 Hiding.restoreAll()
+                ForceDarkManager.restore()
                 notifyOnce("idle", notification(hidingFor = null, paused = false))
                 stopSelf()
                 return
@@ -177,6 +182,7 @@ class HidingWatchService : Service() {
             // is worse than not hiding at all. Everything goes back and it stands down.
             if (!Hiding.canWatch()) {
                 Hiding.restoreAll()
+                ForceDarkManager.restore()
                 notifyOnce("unavailable", notification(hidingFor = null, paused = false, unavailable = true))
                 stopSelf()
                 return
@@ -184,10 +190,13 @@ class HidingWatchService : Service() {
 
             if (Hiding.isPaused()) {
                 // Restored once on the way in, not once a second: hiding is suspended, so there
-                // is nothing to look at until somebody resumes it.
+                // is nothing to look at until somebody resumes it. Force dark is put back once
+                // here as well, because "give my settings back" is answered by the screen too -
+                // and a phone left dark would be the one part of it a user cannot miss.
                 if (!paused) {
                     holding.set(null)
                     Hiding.restoreAll()
+                    ForceDarkManager.restore()
                     notifyOnce("paused", notification(hidingFor = null, paused = true))
                     paused = true
                 }
@@ -200,6 +209,12 @@ class HidingWatchService : Service() {
                 .onFailure { LOGGER.w("the hiding pass failed", it) }
                 .getOrNull()
             holding.set(hidingFor)
+
+            // The other per-app rule runs off the same pass and the same foreground: the app this
+            // pass decided was in front is the app the switch is held for, so the two rules cannot
+            // disagree about what is on screen.
+            runCatching { ForceDarkManager.applyFor(Hiding.lastInFront) }
+                .onFailure { LOGGER.w("the force-dark pass failed", it) }
 
             // An app that has just been hidden for started before any of this, so it has read the
             // settings it objects to. Only a new process can read the hidden ones, which is what

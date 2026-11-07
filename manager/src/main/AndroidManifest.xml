@@ -273,6 +273,11 @@
             android:label="@string/autostart_title" />
 
         <activity
+            android:name=".force_dark.ForceDarkActivity"
+            android:exported="false"
+            android:label="@string/force_dark_title" />
+
+        <activity
             android:name=".backup.AppBackupActivity"
             android:exported="false"
             android:label="@string/home_backup_title" />

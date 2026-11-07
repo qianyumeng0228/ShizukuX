@@ -48,9 +48,11 @@ class HomeAdapter(
         const val ID_HIDING = 17L
         // Per-app autostart blocking on the platform's RUN_ANY_IN_BACKGROUND op.
         const val ID_AUTOSTART = 18L
+        // Per-app force dark: the device-wide night mode held while a chosen app is in front.
+        const val ID_FORCE_DARK = 19L
 
         private val DEFAULT_ORDER = listOf(
-            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
@@ -236,6 +238,7 @@ class HomeAdapter(
                 ID_FIREWALL -> addItem(FirewallViewHolder.CREATOR, status, id)
                 ID_HIDING -> addItem(HidingViewHolder.CREATOR, status, id)
                 ID_AUTOSTART -> addItem(AutoStartViewHolder.CREATOR, status, id)
+                ID_FORCE_DARK -> addItem(ForceDarkViewHolder.CREATOR, status, id)
                 ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
                     addItem(TerminalViewHolder.CREATOR, status, id)
                 // Merged "start service" card (4.1 Item B): replaces the former root / wireless /

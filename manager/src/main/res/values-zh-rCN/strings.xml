@@ -1517,6 +1517,27 @@
     <string name="autostart_app_count">%d 个应用</string>
     <string name="autostart_empty">没有符合筛选条件的应用</string>
     <string name="autostart_refresh">刷新</string>
+
+    <string name="force_dark_title">强制深色</string>
+    <string name="home_force_dark_description">让没有自带深色主题的应用在打开时也变深色</string>
+    <string name="force_dark_count">已选 %d 个应用</string>
+    <string name="force_dark_gate_title">按名单强制深色</string>
+    <string name="force_dark_gate_summary">选定的应用在前台时把设备切换为深色，应用离开后立刻还原。</string>
+    <string name="force_dark_gate_on">正在按名单生效</string>
+    <string name="force_dark_gate_off">已关闭，名单保留</string>
+    <string name="force_dark_gate_empty">已开启，还没有选择应用</string>
+    <string name="force_dark_theme_title">切换系统深色模式</string>
+    <string name="force_dark_theme_summary">在当前设备上唯一真正会改变画面的方式。生效期间整机一起变深色，不只是这一个应用。</string>
+    <string name="force_dark_switches_title">同时写入强制深色开关</string>
+    <string name="force_dark_switches_summary">只对旧版应用有效：Android 10 及之后的应用会忽略这些开关，在新手机上打开它没有任何变化。</string>
+    <string name="force_dark_search_hint">搜索应用</string>
+    <string name="force_dark_filter_all">全部</string>
+    <string name="force_dark_filter_forced">已选</string>
+    <string name="force_dark_filter_system">系统</string>
+    <string name="force_dark_app_count">%d 个应用</string>
+    <string name="force_dark_empty">没有匹配的应用</string>
+    <string name="force_dark_refresh">刷新</string>
+    <string name="force_dark_action_failed">操作未完成</string>
     <string name="hiding_intro_title">这个功能做什么</string>
     <string name="hiding_intro_text">这类应用读取的是设备上的真实设置，所以“隐藏”就是真的改掉它——只在被列应用位于前台期间生效，离开立即恢复。先选一个信号，再选对它隐藏的应用。</string>
     <string name="hiding_warning_no_usage">尚未授予“使用情况访问”：前台应用只能由 shell 读取，此时隐藏调试通道可能会切断 shell 所依赖的连接。</string>

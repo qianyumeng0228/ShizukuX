@@ -227,6 +227,17 @@ object Hiding {
     private var lastEventQuery = 0L
     private var cachedForeground: String? = null
 
+    /**
+     * The app the last [reconcile] held responsible, after the "user closed it" check.
+     *
+     * Kept so the other per-app rule on the same pass - force dark - asks about the same app this
+     * pass already decided on instead of reading the foreground a second time and possibly reading
+     * a different answer.
+     */
+    @Volatile
+    var lastInFront: String? = null
+        private set
+
     private fun foregroundFromUsage(): String? {
         val manager = ShizukuApplication.appContext.getSystemService(UsageStatsManager::class.java)
             ?: return cachedForeground
@@ -283,6 +294,7 @@ object Hiding {
         // app to come to the front: a swipe out of recents does not always leave a pause behind
         // it, and the watch would go on hiding for an app that is not there.
         val inFront = foreground?.takeIf { !closedByUserSince(it, hiddenSince()) }
+        lastInFront = inFront
 
         var hidingFor: String? = null
 

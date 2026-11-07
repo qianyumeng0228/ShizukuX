@@ -1653,6 +1653,27 @@ This action cannot be undone. Continue?</string>
     <string name="autostart_app_count">%d apps</string>
     <string name="autostart_empty">No app matches this filter</string>
     <string name="autostart_refresh">Refresh</string>
+
+    <string name="force_dark_title">Force dark</string>
+    <string name="home_force_dark_description">Darken the apps that never shipped a dark theme, while they are open</string>
+    <string name="force_dark_count">%d apps picked</string>
+    <string name="force_dark_gate_title">Force dark for the list</string>
+    <string name="force_dark_gate_summary">While a picked app is in front the device is switched dark; it goes back the moment the app leaves.</string>
+    <string name="force_dark_gate_on">Applied to the list</string>
+    <string name="force_dark_gate_off">Off, list kept</string>
+    <string name="force_dark_gate_empty">On, but nothing is picked yet</string>
+    <string name="force_dark_theme_title">Switch the system night mode</string>
+    <string name="force_dark_theme_summary">The only mechanism that changes pixels on a current device. The whole phone goes dark while it is held, not just the app.</string>
+    <string name="force_dark_switches_title">Also write the force-dark switches</string>
+    <string name="force_dark_switches_summary">Converted apps only: apps targeting Android 10 and later ignore these, and turning this on changes nothing on a modern phone.</string>
+    <string name="force_dark_search_hint">Search apps</string>
+    <string name="force_dark_filter_all">All</string>
+    <string name="force_dark_filter_forced">Picked</string>
+    <string name="force_dark_filter_system">System</string>
+    <string name="force_dark_app_count">%d apps</string>
+    <string name="force_dark_empty">No app matches this filter</string>
+    <string name="force_dark_refresh">Refresh</string>
+    <string name="force_dark_action_failed">Not done</string>
     <string name="hiding_intro_title">What this does</string>
     <string name="hiding_intro_text">A restrictive app reads its settings from the device, so hiding one means really changing it — for as long as the listed app is in front, and no longer. Pick a signal, then pick the apps it is hidden for.</string>
     <string name="hiding_warning_no_usage">Usage access is not granted yet: the foreground app is read through the shell, and hiding a debugging transport can then cut the connection that shell runs on.</string>

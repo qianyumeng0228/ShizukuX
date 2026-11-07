@@ -434,6 +434,26 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 }
         }
 
+        // Force dark holds a device-wide switch, and on ROMs that freeze the app process once it
+        // is in the background (measured on this project's Xiaomi test device: every thread parked
+        // in do_freezer_trap, foreground service included) the switch is held by a detached script
+        // instead of an in-process loop. Re-arm it every time the server comes up, which is also
+        // the recovery path after a reboot.
+        CoroutineScope(Dispatchers.IO + SupervisorJob()).launch {
+            ShizukuStateMachine.asFlow()
+                .distinctUntilChanged()
+                .filter { it == ShizukuStateMachine.State.RUNNING }
+                .collect {
+                    try {
+                        if (af.shizuku.manager.force_dark.ForceDarkManager.hasWorkToDo()) {
+                            af.shizuku.manager.force_dark.ForceDarkManager.syncNow()
+                        }
+                    } catch (e: Exception) {
+                        Timber.tag("ShizukuApplication").w(e, "force dark watch start skipped")
+                    }
+                }
+        }
+
         // v24 (power): ShizukuLiveService stopSelf()s while the server is down (no more
         // process-resident idle foreground service). Re-arm it on every RUNNING transition
         // so the Live Activity notification comes back without keeping the process alive
