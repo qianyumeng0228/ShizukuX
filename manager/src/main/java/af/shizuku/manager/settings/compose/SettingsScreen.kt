@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 @Composable
 fun SettingsScreen(
     title: String,
+    showBack: Boolean = true,
     onNavigateUp: () -> Unit,
     onNavigateToSetting: (SettingsSearchEngine.SettingItem) -> Unit,
     searchResults: List<SettingsSearchEngine.SettingItem>,
@@ -105,11 +106,13 @@ fun SettingsScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = { onNavigateUp() }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_back_24),
-                                contentDescription = stringResource(R.string.accessibility_back)
-                            )
+                        if (showBack) {
+                            IconButton(onClick = { onNavigateUp() }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_back_24),
+                                    contentDescription = stringResource(R.string.accessibility_back)
+                                )
+                            }
                         }
                     },
                     actions = {
@@ -165,19 +168,21 @@ fun SettingsScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = {
-                            if (isSearchActive) {
-                                isSearchActive = false
-                                searchQuery = ""
-                                onSearchQueryChanged("")
-                            } else {
-                                onNavigateUp()
+                        if (isSearchActive || showBack) {
+                            IconButton(onClick = {
+                                if (isSearchActive) {
+                                    isSearchActive = false
+                                    searchQuery = ""
+                                    onSearchQueryChanged("")
+                                } else {
+                                    onNavigateUp()
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_back_24),
+                                    contentDescription = stringResource(R.string.accessibility_back)
+                                )
                             }
-                        }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_back_24),
-                                contentDescription = stringResource(R.string.accessibility_back)
-                            )
                         }
                     },
                     actions = {

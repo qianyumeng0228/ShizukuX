@@ -19,6 +19,9 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
     private var searchResults by mutableStateOf<List<SettingsSearchEngine.SettingItem>>(emptyList())
     var themeVersion by mutableStateOf(0)
 
+    /** True while a preference sub-page is open (then the back arrow is genuine). */
+    private var hasInnerPage by mutableStateOf(false)
+
     fun onThemeChanged() {
         themeVersion++
     }
@@ -36,6 +39,10 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
 
         currentTitle = getString(R.string.settings_title)
 
+        supportFragmentManager.addOnBackStackChangedListener {
+            hasInnerPage = supportFragmentManager.backStackEntryCount > 0
+        }
+
         setContent {
             val tv = themeVersion
             af.shizuku.core.ui.compose.AppTheme(
@@ -45,6 +52,9 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
             ) {
                 SettingsScreen(
                     title = currentTitle,
+                    // Settings opened from the tab bar is a sibling screen: no up arrow until a
+                    // preference sub-page actually pushes onto the back stack.
+                    showBack = hasInnerPage || !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
                     onNavigateUp = {
                         if (!onSupportNavigateUp()) {
                             finish()

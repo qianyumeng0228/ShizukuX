@@ -215,7 +215,7 @@ open class HomeActivity : AppActivity(), MavericksView {
                         }
                     },
                     onSettingsClick = {
-                        startActivity(Intent(this, SettingsActivity::class.java))
+                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS)
                     },
                     onHelpClick = {
                         // Local summary stays (it explains how ShizukuX coexists with third-party
@@ -233,28 +233,13 @@ open class HomeActivity : AppActivity(), MavericksView {
                     },
                     onRestoreHomeCards = { adapter.restoreAllCards() },
                     onAppsClick = {
-                        startActivity(
-                            Intent(
-                                this,
-                                af.shizuku.manager.management.ApplicationManagementActivity::class.java
-                            )
-                        )
+                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_APPS)
                     },
                     onTerminalClick = {
-                        startActivity(
-                            Intent(
-                                this,
-                                af.shizuku.manager.shell.ShellTutorialActivity::class.java
-                            )
-                        )
+                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL)
                     },
                     onModulesClick = {
-                        startActivity(
-                            Intent(
-                                this,
-                                af.shizuku.manager.module.ModulesActivity::class.java
-                            )
-                        )
+                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_MODULES)
                     },
                     recyclerViewProvider = { ctx, paddingValues ->
                         val density = ctx.resources.displayMetrics.density

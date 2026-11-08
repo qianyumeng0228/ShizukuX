@@ -60,8 +60,15 @@ abstract class AppBarActivity : AppActivity() {
                 // that point supportActionBar is still null, so the call silently did nothing and
                 // the toolbar came up without a back arrow. Enable it here instead, now that the
                 // ActionBar actually exists.
-                if (showsUpNavigation) {
+                //
+                // Exception: screens opened from the floating tab bar are siblings of the home
+                // page, not children of it. An up arrow there is what made the tab switch read as
+                // "you entered a sub-page" - the system back gesture is still the way out.
+                val fromTab = intent?.getBooleanExtra(EXTRA_FROM_TAB, false) == true
+                if (showsUpNavigation && !fromTab) {
                     supportActionBar?.setDisplayHomeAsUpEnabled(true)
+                } else {
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
                 }
 
                 // Glass skin: the bar used to paint ?android:colorBackground, i.e. an opaque
@@ -126,6 +133,11 @@ abstract class AppBarActivity : AppActivity() {
         }
 
         rootView.addView(view, p)
+    }
+
+    companion object {
+        /** Set by the floating tab bar so a sibling screen hides its toolbar up arrow. */
+        const val EXTRA_FROM_TAB = "af.shizuku.core.extra.FROM_TAB"
     }
 
 }

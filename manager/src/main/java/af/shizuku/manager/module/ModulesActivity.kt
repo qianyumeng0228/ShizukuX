@@ -113,6 +113,7 @@ class ModulesActivity : ComponentActivity() {
                     output = output,
                     pendingDelete = pendingDelete,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
+                    showBack = !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
                     onInstall = { installLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                     onCheck = { checkHealth() },
                     onToggle = { toggle(it) },
@@ -257,6 +258,7 @@ private fun ModulesScreen(
     output: ModuleOutput?,
     pendingDelete: AdbModule?,
     onBack: () -> Unit,
+    showBack: Boolean = true,
     onInstall: () -> Unit,
     onCheck: () -> Unit,
     onToggle: (AdbModule) -> Unit,
@@ -296,11 +298,15 @@ private fun ModulesScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        ShizukuIcon(
-                            icon = R.drawable.ic_arrow_back_24,
-                            contentDescription = stringResourceCompat(R.string.action_back)
-                        )
+                    // The tab bar opens this page as a sibling of home, so the up arrow would be
+                    // lying about the nav graph; the system back gesture still returns there.
+                    if (showBack) {
+                        IconButton(onClick = onBack) {
+                            ShizukuIcon(
+                                icon = R.drawable.ic_arrow_back_24,
+                                contentDescription = stringResourceCompat(R.string.action_back)
+                            )
+                        }
                     }
                 },
                 actions = {
