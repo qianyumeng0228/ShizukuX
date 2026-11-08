@@ -310,14 +310,25 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
 | 真实崩溃（`kill -9` 双进程）后 28 秒 | 无服务，但 `last_settled_shizuku_state=CRASHED`（**不是 `STOPPED`**）、`user_stopped_intent=false` |
 | 再等 55 秒 | 仍 `CRASHED` + `intent=false`：失败既没把自己写成墓碑，也没被 `STARTING` 粘住 |
 | 崩溃后冷启一次（40 秒） | 服务被拉起（4360/4361），`last_settled=RUNNING`；活动日志完整链条 71→75：`Service started` → `restarting after crash #1` →（冷启）`restarting after crash #1` → `Service started` → `the server came back after restart #1`，**无 `restart suppressed`**；`k139_g_recovered.png` 恢复 4 个授权 |
+| 旧版本停服态（键缺失 + `STOPPED`）冷启 | 30 秒内无 server，prefs 保持 `STOPPED` 且不回写键——升级兼容回落生效 |
+| `intent=true` + 旧 `RUNNING` 冷启（无 server） | 旧 `RUNNING` 升 `CRASHED` 后被抑制：无 server，`last_settled` 回写 `STOPPED`，`intent` 保持 `true`，日志落 `Watchdog: restart suppressed (the user stopped the service)` |
 
 对照 k2138：同一操作只产生一条 `restarting after crash #1` 就再无下文；k2139 上失败会落 `CRASHED`，
 下一次机会（进程冷启 / `WatchdogAlarmReceiver` / 开机）继续尝试并最终成功。
 
-**仍未直接构造的验证**：① 升级兼容分支（升级前已停服、`user_stopped_intent` 键缺失时回落到
-`last_settled==STOPPED`）只走了代码路径，没有拿一台"旧版本停服态"机器实测；② 墓碑抑制
-（`intent=true` 且状态为 `CRASHED` 时 watchdog 记 `restart suppressed`）未单独特造，只在停服态冷启
-里间接覆盖。
+**两条补充场景的实测**（k2139 装机态，先把 server 与 supervisor 精确杀干净再改 prefs，冷启后回读进程表与持久化值）：
+
+| 场景 | 构造 | 结果 |
+| --- | --- | --- |
+| ① 升级兼容回落 | `last_settled=STOPPED` 且 `user_stopped_intent` 键被删除（模拟旧版本停服态） | 冷启 6 秒与 30 秒均 `NO_SERVER_PROCESS`；`settings.xml` 保持 `STOPPED` 且仍未写回键——缺键回落判据把全部自动入口拦住 |
+| ② 墓碑抑制 | `last_settled=RUNNING`（记录里是运行态）+ `user_stopped_intent=true`，实际无 server | 冷启时 `ShizukuStateMachine.update()` 把旧 `RUNNING` 升为 `CRASHED`，watchdog 读到 `CRASHED` 后抑制；6 秒与 35 秒均无 server，`last_settled` 被回写为 `STOPPED`，`intent` 保持 `true`；活动日志 id 82 落 `Watchdog: restart suppressed (the user stopped the service)` |
+| ③ 反向：显式启动清墓碑 | 承接 ② 的 `intent=true` | `su 0 am start …/starter.StarterActivity` 后 26424/26425 起来，`intent=false`、`last_settled=RUNNING` |
+
+两个场景第一次跑都出现过「服务被拉起」的假象，根因是清理命令自杀：`pkill -f shizuku_plus_server` 会匹配到
+执行它的 `sh` 自身（其命令行含目标字符串），返回码 143 即 `pkill` 打死自己、目标进程存活；加上 `force-stop`
+后 MIUI 仍会拉活 app 进程，于是旧 prefs 下启动了一次，被误读成「闸门失效」。改用按 `/proc/*/cmdline`
+枚举、从脚本文件执行（自身命令行不含目标串）的清理脚本后，两个场景都复现为预期结果。验证工具：
+`_sp\killshizuku.sh`、`_sp\set_prefs_and_coldstart.ps1`（含 push 后二次 `force-stop`）。
 
 ## 入口与返回键
 
