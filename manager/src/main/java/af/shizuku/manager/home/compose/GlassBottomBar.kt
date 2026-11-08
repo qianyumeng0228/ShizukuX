@@ -70,8 +70,9 @@ fun GlassBottomBar(
             modifier = Modifier.weight(1f),
             // ic_default_app_icon is an adaptive-icon wrapper, which painterResource rejects at
             // measure time ("Only VectorDrawables and rasterized asset types are supported"),
-            // so the Apps tab uses a plain vector.
-            iconRes = R.drawable.ic_extension_24,
+            // so the Apps tab uses a plain vector - the Android robot, which is what the label
+            // means, while the puzzle piece below stays the modules glyph.
+            iconRes = R.drawable.ic_android_24,
             label = stringResource(R.string.nav_apps),
             tint = idleTint,
             onClick = onAppsClick
@@ -80,7 +81,7 @@ fun GlassBottomBar(
             modifier = Modifier.weight(1f),
             // ADB modules sit between the app list and the terminal: both neighbours are the
             // usual way in, and modules are what you install to extend the shell.
-            iconRes = R.drawable.ic_adb_24,
+            iconRes = R.drawable.ic_extension_24,
             label = stringResource(R.string.nav_modules),
             tint = idleTint,
             onClick = onModulesClick
