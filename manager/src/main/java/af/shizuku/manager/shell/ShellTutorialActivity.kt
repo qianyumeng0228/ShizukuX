@@ -1,27 +1,15 @@
 package af.shizuku.manager.shell
 
 import af.shizuku.core.ui.AppBarActivity
-import af.shizuku.manager.Helps
 import af.shizuku.manager.R
-import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
-import af.shizuku.manager.ktx.toHtml
-import af.shizuku.manager.utils.CustomTabsHelper
 import android.net.Uri
 import android.os.Bundle
-import android.provider.DocumentsContract
-import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import rikka.compatibility.DeviceCompatibility
-import rikka.html.text.HtmlCompat
 import rikka.insets.*
-import rikka.shizuku.Shizuku
 import timber.log.Timber
 import kotlin.math.roundToInt
 
@@ -34,94 +22,12 @@ class ShellTutorialActivity : AppBarActivity() {
 
     private lateinit var binding: TerminalTutorialActivityBinding
 
-    companion object {
-
-        private val TAG = ShellTutorialActivity::class.java.simpleName
-
-        private val SH_NAME = "rish"
-        private val DEX_NAME = "rish_shizuku.dex"
-        private val PLUS_NAME = "extra"
-        private val SU_NAME = "su"
-    }
-
     private val openDocumentsTree =
         registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { tree: Uri? ->
             if (tree == null) return@registerForActivityResult
 
-            // SAF query + createDocument + asset streaming copy (the dex is several MB) can
-            // take hundreds of ms on slow storage. The ActivityResult callback runs on the
-            // main thread; move the whole export onto IO and only post the Toast back.
             lifecycleScope.launch {
-                val (successCount, totalCount) = withContext(Dispatchers.IO) {
-                    val cr = contentResolver
-                    val doc = DocumentsContract.buildDocumentUriUsingTree(
-                        tree,
-                        DocumentsContract.getTreeDocumentId(tree)
-                    )
-                    val child =
-                        DocumentsContract.buildChildDocumentsUriUsingTree(
-                            tree,
-                            DocumentsContract.getTreeDocumentId(tree)
-                        )
-
-                    cr.query(
-                        child,
-                        arrayOf(
-                            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                            DocumentsContract.Document.COLUMN_DISPLAY_NAME
-                        ),
-                        null,
-                        null,
-                        null
-                    )?.use {
-                        while (it.moveToNext()) {
-                            val id = it.getString(0)
-                            val name = it.getString(1)
-                            if (name == SH_NAME || name == DEX_NAME || name == PLUS_NAME || name == SU_NAME) {
-                                DocumentsContract.deleteDocument(
-                                    cr,
-                                    DocumentsContract.buildDocumentUriUsingTree(tree, id)
-                                )
-                            }
-                        }
-                    }
-
-                    fun writeToDocument(name: String): Boolean {
-                        val documentUri = try {
-                            DocumentsContract.createDocument(contentResolver, doc, "application/octet-stream", name)
-                        } catch (e: Exception) {
-                            // The parent tree URI can be stale/revoked (removed SD card, cleared permission);
-                            // createDocument then throws FileNotFoundException (SHIZUKUPLUS-84). Don't crash.
-                            Timber.tag(TAG).e(e, "Failed to create document for $name (tree unavailable?)")
-                            return false
-                        }
-                        if (documentUri == null) {
-                            Timber.tag(TAG).e("Failed to create document for $name")
-                            return false
-                        }
-
-                        return try {
-                            cr.openOutputStream(documentUri)?.use { outputStream ->
-                                assets.open(name).use { inputStream ->
-                                    inputStream.copyTo(outputStream)
-                                }
-                            }
-                            true
-                        } catch (e: Exception) {
-                            Timber.tag(TAG).e(e, "Failed to write $name to document")
-                            try {
-                                DocumentsContract.deleteDocument(contentResolver, documentUri)
-                            } catch (deleteEx: Exception) {
-                                Timber.tag(TAG).e(deleteEx, "Failed to delete incomplete document for $name")
-                            }
-                            false
-                        }
-                    }
-
-                    val results = listOf(SH_NAME, DEX_NAME, PLUS_NAME, SU_NAME).map { writeToDocument(it) }
-                    ShizukuSettings.setExportDirUri(tree.toString())
-                    results.count { it } to results.size
-                }
+                val (successCount, totalCount) = exportTerminalAssets(this@ShellTutorialActivity, tree)
 
                 if (isFinishing || isDestroyed) return@launch
                 val toastMsg = if (successCount == totalCount) {
@@ -158,131 +64,19 @@ class ShellTutorialActivity : AppBarActivity() {
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-        binding.apply {
-            if (DeviceCompatibility.isMiui()) {
-                miui.isVisible = true
-            }
-
-            val shName = "<font face=\"monospace\">$SH_NAME</font>"
-            val dexName = "<font face=\"monospace\">$DEX_NAME</font>"
-            val plusName = "<font face=\"monospace\">$PLUS_NAME</font>"
-            val suName = "<font face=\"monospace\">$SU_NAME</font>"
-
-            summary.text = getString(R.string.rish_description, shName)
-                .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-
-            text1.text = getString(R.string.terminal_tutorial_1)
-            summary1.text = getString(R.string.terminal_tutorial_export_summary, shName, dexName, plusName, suName)
-                .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-
-            text2.text = getString(R.string.terminal_tutorial_2, shName).toHtml()
-            command2.text = getString(R.string.terminal_tutorial_copy_command)
-            summary2.text = getString(R.string.terminal_tutorial_copy_summary, shName, plusName, suName)
-                .toHtml()
-
-            text3.text = getString(R.string.terminal_tutorial_3)
-
-            val rishPath = af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath(SH_NAME) ?: "/sdcard/$SH_NAME"
-            val plusPath = af.shizuku.manager.utils.EnvironmentUtils.resolveExportedPath(PLUS_NAME) ?: "/sdcard/$PLUS_NAME"
-
-            val rishCmd = getString(R.string.terminal_tutorial_run_command, rishPath)
-            val plusCmd = getString(R.string.terminal_tutorial_run_plus_command, plusPath)
-            command3.text = "$rishCmd\n\n$plusCmd"
-
-            button1.setOnClickListener {
+        buildTerminalPage(
+            context = this,
+            binding = binding,
+            onPickExportDir = {
                 try {
                     openDocumentsTree.launch(null)
                 } catch (e: android.content.ActivityNotFoundException) {
-                    Timber.tag(TAG).w("No file picker available on this device: ${e.message}")
-                    android.widget.Toast.makeText(
-                        this@ShellTutorialActivity,
-                        R.string.no_file_picker,
-                        android.widget.Toast.LENGTH_LONG
-                    ).show()
+                    Timber.tag("ShellTutorial").w("No file picker available on this device: ${e.message}")
+                    Toast.makeText(this, R.string.no_file_picker, Toast.LENGTH_LONG).show()
                 }
             }
-            button2.setOnClickListener { v: View -> CustomTabsHelper.launchUrlOrCopy(v.context, Helps.RISH.get()) }
-
-            // --- in-app shell console (one-shot command runner through Shizuku, uid 2000) ---
-            if (!Shizuku.pingBinder()) {
-                consoleInput.isEnabled = false
-                consoleRun.isEnabled = false
-                consoleOutput.text = getString(R.string.terminal_console_not_running)
-            }
-            consoleRun.setOnClickListener { runConsoleCommand() }
-            consoleInput.setOnEditorActionListener { _, actionId, _ ->
-                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) {
-                    runConsoleCommand();
-                    true
-                } else {
-                    false
-                }
-            }
-        }
+        )
 
         af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL)
-    }
-
-    private fun runConsoleCommand() {
-        if (!Shizuku.pingBinder()) {
-            android.widget.Toast.makeText(
-                this,
-                R.string.terminal_console_not_running,
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-        val cmd = binding.consoleInput.text.toString().trim()
-        if (cmd.isEmpty()) {
-            android.widget.Toast.makeText(
-                this,
-                R.string.terminal_console_empty_command,
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-        binding.consoleRun.isEnabled = false
-        binding.consoleOutput.append("$ $cmd\n")
-        java.util.concurrent.CompletableFuture.supplyAsync { runShellOnce(cmd) }
-            .whenComplete { out, _ ->
-                runOnUiThread {
-                    binding.consoleOutput.append(out + "\n\n")
-                    binding.consoleInput.text?.clear()
-                    binding.consoleRun.isEnabled = true
-                }
-            }
-    }
-
-    /**
-     * Runs one [cmd] as `sh -c` through a Shizuku shell process and returns its merged output.
-     *
-     * Mirrors the defensive pattern already used by DiagnosticsExporter.runShell /
-     * SceneRelayManager.runShell: stderr is merged into stdout (`2>&1`) so a chatty stderr can
-     * never fill the pipe buffer and deadlock a sequential read; the read happens on a worker
-     * thread; a command that never finishes is force-destroyed after 10s; and we deliberately
-     * never call waitFor()/exitValue() — on some OEM builds (OPPO ColorOS, Android 16)
-     * ShizukuProcess.exitValue() throws IllegalArgumentException instead of
-     * IllegalThreadStateException, and reading the merged stream to EOF is equivalent.
-     */
-    private fun runShellOnce(cmd: String): String {
-        return try {
-            val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, null)
-                ?: return getString(R.string.terminal_console_process_null)
-            val read = java.util.concurrent.CompletableFuture.supplyAsync {
-                try {
-                    p.inputStream.bufferedReader().use { it.readText() }
-                } catch (e: Throwable) {
-                    ""
-                }
-            }
-            try {
-                read.get(10, java.util.concurrent.TimeUnit.SECONDS).trim()
-            } catch (e: java.util.concurrent.TimeoutException) {
-                try { p.destroy() } catch (ignored: Throwable) { /* already dead */ }
-                "(timeout after 10s — killed)"
-            }
-        } catch (e: Throwable) {
-            "err:${e.javaClass.simpleName}:${e.message}"
-        }
     }
 }
