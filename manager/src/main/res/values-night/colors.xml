@@ -14,4 +14,5 @@
     <color name="status_ok">#81C784</color>
     <color name="status_error">#E57373</color>
     <color name="status_starting">#FFB74D</color>
+    <color name="glass_card_stroke">#24FFFFFF</color>
 </resources>

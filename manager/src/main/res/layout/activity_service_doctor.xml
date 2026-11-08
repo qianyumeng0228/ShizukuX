@@ -26,7 +26,8 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="32dp"
             app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerExtraLarge"
-            app:strokeWidth="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/glass_card_stroke"
             app:cardElevation="0dp"
             app:cardBackgroundColor="?colorSurfaceContainerHigh">
 

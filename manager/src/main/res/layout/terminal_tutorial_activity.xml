@@ -187,7 +187,8 @@
             android:layout_marginTop="12dp"
             app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerExtraLarge"
             app:cardElevation="0dp"
-            app:strokeWidth="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/glass_card_stroke"
             app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
             app:contentPadding="@dimen/card_content_padding">
 
