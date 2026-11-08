@@ -71,23 +71,17 @@ import rikka.shizuku.Shizuku
  */
 class ModulesActivity : ComponentActivity() {
 
-    private var modules by mutableStateOf<List<AdbModule>>(emptyList())
-    private var health by mutableStateOf<Map<String, ModuleHealthStatus>>(emptyMap())
-    private var healthChecked by mutableStateOf(false)
-    private var loaded by mutableStateOf(false)
-    private var installing by mutableStateOf(false)
-    private var checking by mutableStateOf(false)
-    private var busyModule by mutableStateOf<String?>(null)
-    private var message by mutableStateOf<String?>(null)
-    private var output by mutableStateOf<ModuleOutput?>(null)
-    private var pendingDelete by mutableStateOf<AdbModule?>(null)
-    // Trust lives in ModuleSettings (not in AdbModule), so it needs its own observable state -
-    // otherwise granting trust would write the preference without ever recomposing the card.
-    private var trustedIds by mutableStateOf<Set<String>>(emptySet())
+    // All page state lives in the controller so the single-container shell can host the same
+    // screen later; this activity is now only the standalone host.
+    private val ctl by lazy {
+        ModulesController(this, lifecycleScope) { msg ->
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val installLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            if (uri != null) install(uri)
+            if (uri != null) ctl.install(uri)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,45 +94,41 @@ class ModulesActivity : ComponentActivity() {
                 forceGlass = ShizukuSettings.isGlassUi()
             ) {
                 ModulesScreen(
-                    modules = modules,
-                    health = health,
-                    healthChecked = healthChecked,
-                    trustedIds = trustedIds,
-                    loaded = loaded,
-                    installing = installing,
-                    checking = checking,
-                    busyModule = busyModule,
-                    serviceRunning = Shizuku.pingBinder(),
-                    message = message,
-                    output = output,
-                    pendingDelete = pendingDelete,
+                    modules = ctl.modules,
+                    health = ctl.health,
+                    healthChecked = ctl.healthChecked,
+                    trustedIds = ctl.trustedIds,
+                    loaded = ctl.loaded,
+                    installing = ctl.installing,
+                    checking = ctl.checking,
+                    busyModule = ctl.busyModule,
+                    serviceRunning = ctl.serviceRunning(),
+                    message = ctl.message,
+                    output = ctl.output,
+                    pendingDelete = ctl.pendingDelete,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     // Modules is a peer destination, not a sub page: no up arrow regardless of how
                     // the page was entered.
                     showBack = false,
                     onSelectTab = { af.shizuku.manager.utils.GlassTabs.open(this, it) },
                     onInstall = { installLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
-                    onCheck = { checkHealth() },
-                    onToggle = { toggle(it) },
-                    onTrust = { module, trusted ->
-                        ModuleSettings.setModuleTrusted(module.id, trusted)
-                        trustedIds = if (trusted) trustedIds + module.id else trustedIds - module.id
-                        healthChecked = false
-                    },
-                    onRunAction = { runScript(it, isService = false) },
-                    onRunService = { runScript(it, isService = true) },
+                    onCheck = { ctl.checkHealth() },
+                    onToggle = { ctl.toggle(it) },
+                    onTrust = { module, trusted -> ctl.setTrusted(module, trusted) },
+                    onRunAction = { ctl.runScript(it, isService = false) },
+                    onRunService = { ctl.runScript(it, isService = true) },
                     onOpenWebUi = { module ->
                         module.webRoot?.let { startActivity(ModuleWebUiActivity.intent(this, module)) }
                     },
-                    onDelete = { pendingDelete = it },
-                    onDismissMessage = { message = null },
-                    onDismissOutput = { output = null },
-                    onConfirmDelete = { delete(it) },
-                    onCancelDelete = { pendingDelete = null }
+                    onDelete = { ctl.askDelete(it) },
+                    onDismissMessage = { ctl.dismissMessage() },
+                    onDismissOutput = { ctl.dismissOutput() },
+                    onConfirmDelete = { ctl.delete(it) },
+                    onCancelDelete = { ctl.cancelDelete() }
                 )
             }
         }
-        refresh()
+        ctl.refresh()
 
         // Tab switches should read as pages sliding sideways, not as a bare activity swap. The
         // app-bar activities already get this from MaterialSharedAxis; these Compose pages had no
@@ -149,111 +139,17 @@ class ModulesActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (loaded) refresh()
-    }
-
-    private fun refresh() {
-        lifecycleScope.launch {
-            runCatching { AdbModuleManager.listModules(this@ModulesActivity) }
-                .onSuccess { list ->
-                    modules = list
-                    trustedIds = list.filter { ModuleSettings.isModuleTrusted(it.id) }.map { it.id }.toSet()
-                }
-                .onFailure { message = it.message ?: it.toString() }
-            loaded = true
-        }
-    }
-
-    private fun install(uri: Uri) {
-        if (installing) return
-        lifecycleScope.launch {
-            installing = true
-            runCatching { AdbModuleManager.install(this@ModulesActivity, uri) }
-                .onSuccess { module ->
-                    // Success must not go through `message`: that composable is the failure
-                    // dialog ("模块操作失败"), so a successful install used to pop a failure
-                    // dialog whose body said the module was installed.
-                    Toast.makeText(
-                        this@ModulesActivity,
-                        getString(R.string.modules_installed_ok, module.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    healthChecked = false
-                }
-                .onFailure { message = getString(R.string.modules_install_failed, it.message ?: it.toString()) }
-            installing = false
-            refresh()
-        }
-    }
-
-    private fun checkHealth() {
-        if (checking) return
-        lifecycleScope.launch {
-            checking = true
-            runCatching {
-                val list = AdbModuleManager.listModules(this@ModulesActivity)
-                list to list.associate { it.id to AdbModuleManager.inspectModuleHealth(it) }
-            }.onSuccess { (list, map) ->
-                modules = list
-                health = map
-                healthChecked = true
-            }.onFailure { message = it.message ?: it.toString() }
-            checking = false
-        }
-    }
-
-    private fun toggle(module: AdbModule) {
-        if (busyModule != null) return
-        lifecycleScope.launch {
-            busyModule = module.id
-            runCatching { AdbModuleManager.setEnabled(module, !module.enabled) }
-                .onFailure { message = it.message ?: it.toString() }
-            busyModule = null
-            healthChecked = false
-            refresh()
-        }
-    }
-
-    private fun runScript(module: AdbModule, isService: Boolean) {
-        if (busyModule != null) return
-        if (!Shizuku.pingBinder()) {
-            message = getString(R.string.modules_need_service)
-            return
-        }
-        lifecycleScope.launch {
-            busyModule = module.id
-            runCatching {
-                if (isService) AdbModuleManager.runService(module) else AdbModuleManager.runAction(module)
-            }.onSuccess { result ->
-                output = ModuleOutput(
-                    title = module.name + " · " + if (isService) "service.sh" else "action.sh",
-                    result = result
-                )
-                healthChecked = false
-            }.onFailure { message = it.message ?: it.toString() }
-            busyModule = null
-            refresh()
-        }
-    }
-
-    private fun delete(module: AdbModule) {
-        lifecycleScope.launch {
-            runCatching { AdbModuleManager.delete(module) }
-                .onFailure { message = it.message ?: it.toString() }
-            pendingDelete = null
-            healthChecked = false
-            refresh()
-        }
+        ctl.onHostResumed()
     }
 }
 
-internal data class ModuleOutput(
+data class ModuleOutput(
     val title: String,
     val result: ModuleActionResult
 )
 
 @Composable
-private fun ModulesScreen(
+internal fun ModulesScreen(
     modules: List<AdbModule>,
     health: Map<String, ModuleHealthStatus>,
     healthChecked: Boolean,
