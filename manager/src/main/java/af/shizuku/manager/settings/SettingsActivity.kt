@@ -15,12 +15,10 @@ import kotlinx.coroutines.launch
 
 class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceStartFragmentCallback {
 
-    private var currentTitle by mutableStateOf("")
-    private var searchResults by mutableStateOf<List<SettingsSearchEngine.SettingItem>>(emptyList())
+    // Title, search results and the inner-page flag live in the controller so the single-container
+    // shell can host the same screen; this activity is now only the standalone host.
+    private val ctl by lazy { SettingsController(this) }
     var themeVersion by mutableStateOf(0)
-
-    /** True while a preference sub-page is open (then the back arrow is genuine). */
-    private var hasInnerPage by mutableStateOf(false)
 
     fun onThemeChanged() {
         themeVersion++
@@ -37,11 +35,7 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
             SettingsSearchEngine.init(applicationContext)
         }
 
-        currentTitle = getString(R.string.settings_title)
-
-        supportFragmentManager.addOnBackStackChangedListener {
-            hasInnerPage = supportFragmentManager.backStackEntryCount > 0
-        }
+        ctl.observeBackStack()
 
         setContent {
             val tv = themeVersion
@@ -51,56 +45,20 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
                 themeVersion = tv
             ) {
                 SettingsScreen(
-                    title = currentTitle,
+                    title = ctl.currentTitle,
                     // Settings opened from the tab bar is a sibling screen: no up arrow until a
                     // preference sub-page actually pushes onto the back stack.
-                    showBack = hasInnerPage || !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
+                    showBack = ctl.hasInnerPage || !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
                     onSelectTab = { af.shizuku.manager.utils.GlassTabs.open(this, it) },
                     onNavigateUp = {
                         if (!onSupportNavigateUp()) {
                             finish()
                         }
                     },
-                    onNavigateToSetting = { item -> navigateToSetting(item) },
-                    searchResults = searchResults,
-                    onSearchQueryChanged = { query ->
-                        if (query.isBlank()) {
-                            searchResults = emptyList()
-                        } else {
-                            searchResults = SettingsSearchEngine.search(this, query)
-                        }
-                    },
-                    onContainerCreated = {
-                        val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                        val container = findViewById<android.view.ViewGroup>(R.id.fragment_container)
-                        // On recreation after a theme/wallpaper switch (setDefaultNightMode triggers
-                        // activity recreate), the FragmentManager restores the fragment but its view
-                        // is left orphaned (container has 0 children) because Compose creates the
-                        // container after the fragment-restoration phase. Re-parent the orphaned view
-                        // so the settings modules don't vanish (blank page with only the wallpaper).
-                        if (container == null || container.childCount == 0) {
-                            val orphaned = frag?.view
-                            if (container != null && orphaned != null) {
-                                (orphaned.parent as? android.view.ViewGroup)?.removeView(orphaned)
-                                container.addView(
-                                    orphaned,
-                                    android.view.ViewGroup.LayoutParams(
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                )
-                            } else if (frag != null) {
-                                supportFragmentManager.beginTransaction()
-                                    .detach(frag)
-                                    .attach(frag)
-                                    .commit()
-                            } else {
-                                supportFragmentManager.beginTransaction()
-                                    .replace(R.id.fragment_container, SettingsFragment())
-                                    .commit()
-                            }
-                        }
-                    }
+                    onNavigateToSetting = { item -> ctl.navigateToSetting(item) },
+                    searchResults = ctl.searchResults,
+                    onSearchQueryChanged = { query -> ctl.search(query) },
+                    onContainerCreated = { ctl.attachContainerIfNeeded() }
                 )
             }
         }
@@ -111,45 +69,18 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
         overridePendingTransition(R.anim.glass_tab_in_right, R.anim.glass_tab_out_left)
     }
 
-    private fun navigateToSetting(item: SettingsSearchEngine.SettingItem) {
-        val fragment = supportFragmentManager.fragmentFactory.instantiate(classLoader, item.fragmentClass)
-        fragment.arguments = Bundle().apply {
-            putString("highlight_key", item.key)
-        }
-
-        supportFragmentManager.beginTransaction()
-            .setReorderingAllowed(true)
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
-
-        currentTitle = item.title
-    }
-
     override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {
         val fragmentName = pref.fragment ?: return false
-        val fragment = supportFragmentManager.fragmentFactory.instantiate(classLoader, fragmentName)
-        fragment.arguments = pref.extras
-
-        supportFragmentManager.beginTransaction()
-            .setReorderingAllowed(true)
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
-
-        currentTitle = pref.title?.toString() ?: currentTitle
+        ctl.openFragment(fragmentName, pref.extras, pref.title?.toString())
         return true
     }
 
     fun updateTitle(title: String) {
-        currentTitle = title
+        ctl.updateTitle(title)
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStack()
-            return true
-        }
+        if (ctl.popInnerPage()) return true
         return super.onSupportNavigateUp()
     }
 }
