@@ -506,9 +506,12 @@ class AppsController(
         // horizontal drag on a row is indistinguishable from a page swipe. With the ItemTouchHelper
         // attached the row always won - one left flick on the list jumped straight to the system
         // app-info screen instead of turning the page, which breaks the one thing this rework is
-        // about. The gestures stay available through the TalkBack actions (AppRowHost.onRowSwipe),
-        // and `rowSwipeEnabled` switches the touch behaviour back on for any host that is not a
-        // pager page.
+        // about. The gestures stay available through the TalkBack actions (AppRowHost.onRowSwipe)
+        // and through the long-press menu on a selected row (which carries 应用信息), and
+        // `rowSwipeEnabled` exists for a host that owns no pager. No such host passes `true`
+        // today - the standalone ApplicationManagementActivity keeps its own ItemTouchHelper -
+        // so this default stays false, and turning it on for a pager page would re-create the
+        // conflict above.
         if (!rowSwipeEnabled) return
 
         val cb = object : ItemTouchHelper.SimpleCallback(

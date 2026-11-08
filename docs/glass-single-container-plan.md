@@ -540,25 +540,53 @@ collector 死了就再也没人处理 CRASHED，两种都表现为「watchdog �
    该行仍打勾、标题仍是「已选择 1 项」（`k125_c_allkeep.png`）；切回「已授权」勾选仍在
    （`k125_d_back_granted.png`）；切到「被拒绝」时该行不可见，多选整体退出、标题回到「应用管理」
    （`k125_e_denied_prune.png`）。即"切筛选后仍然可见的勾选按包名保留，不可见即裁剪"。
+   **裁决：保留现状语义。** 反过来（跨筛选保留整份选中集）会造出最糟的一种误操作——在「已授权」
+   勾了二十个、切到「被拒绝」按「切换全部」，结果把上一屏看不见的那些也一起撤了授权；而"标题的
+   计数永远等于屏幕上看得见的勾选数"是用户唯一能验证的真相。裁剪的唯一代价是切走再切回要重勾，
+   可接受。
 2. **应用页行内左右滑（原 `app_info` 等动作）在容器内不再由触摸触发**：横向拖动优先归 pager，
    `rowSwipeEnabled = false` 因此在 `AppsController` 里关掉了 `ItemTouchHelper`。动作本身没有丢，
    目前有三条通道：① TalkBack 的无障碍自定义动作（`AppViewHolder` 的
    `accessibility_action_swipe_right/left` → `AppRowHost.onRowSwipe`）；
    ② 多选态下长按已选中行弹出的菜单（`buildEnabledActions`：打开应用 / **应用信息** /
    授权·撤销 / 隐藏 / 冻结）；③ 独立 `ApplicationManagementActivity` 仍按老实现挂着 `ItemTouchHelper`，
-   行滑照旧可用。是否需要给容器页补一个显式入口尚未拍板。
-   另注：`rowSwipeEnabled` 是常量 `false`，注释里"按宿主切换"的说法尚未实现——目前只有容器构造
-   `AppsController`，所以不影响行为，但接手时要按宿主显式传入而不是照抄注释。
+   行滑照旧可用。**裁决：不给容器页补显式入口。** 容器页的手势预算已经被 pager 吃掉，再加一个
+   行尾"⋯"按钮会挤掉包名与副标题的宽度，而"应用信息"这个最高频动作已经坐在长按菜单里；真正缺的
+   只是"随手一滑"的肌肉记忆，代价与收益不对等。
+   另注：`rowSwipeEnabled` 是常量 `false`，且当前**没有任何宿主传 `true`**——独立页走的是自己那份
+   `ItemTouchHelper`，不是这个开关。原注释"按宿主切换"是设想而非现状，已就地改成事实描述，免得
+   接手的人以为打开它就能恢复行滑。
 3. **`TerminalPage` 的中间层 binding**：已复核（k2139 期间），不构成泄漏。`buildTerminalPage()` 是
    一次性的视图装配函数，把 `binding` 只交给 `setOnClickListener` / `setOnEditorActionListener`
    这类随 View 一起回收的监听器，没有任何单例、长生命周期协程或静态字段持有它；`consoleOutput.post{}`
    在页面销毁后才落地时只对已 detach 的 View 做无害操作。故不再列入待修项。
-4. **浅色玻璃不透明度 95%** 与设计稿 §3.1（`.55 / .42`）不一致，未调。
-5. 仍是 `strokeWidth="0dp"` 的卡片：`activity_root_compatibility.xml`(3)、
-   `page_onboarding_setup.xml`(3)、`app_list_toggle_all.xml`(1)、`home_banner_status.xml`(1)、
-   `home_item_container.xml`(1)、`swipe_hint_overlay.xml`(1)。
-6. **设置页搜索态是否隐藏底栏**未确认；当前搜索覆盖层会盖到底栏高度以上。
-7. 深色下「设置页最后一张卡下缘压到底栏上方」判为滚动内容透出，未逐像素核对。
+4. **浅色玻璃不透明度 95%**：已按字面值全仓检索（`0.95f`、`alpha = 0.9*`、`surfaceVariant.copy`、
+   `chroma`）均无命中所说的 0.95；`glass_window_background_light.xml` 是**纯实色渐变**
+   （`#EEF2FE / #E6EBFA / #DDE4F6`）叠两个径向 bloom（`#339C8AF0`、`#2483B4FF`），全程没有 alpha
+   通道。也就是说"95%"这个值在代码里没有对应常量，唯一能兑现它的做法是把浅色底图整张重做成
+   `.55/.42` 的透明叠层——那等于换一套浅色皮肤，且会牺牲白卡上灰字（`onSurfaceVariant`）的对比度。
+   **判为不可定位即不动**；若确实要贴设计稿，应按"重做浅色底图"单独立项，而不是改一个数值。
+5. 仍是 `strokeWidth="0dp"` 的 6 个布局 10 处：**已判非缺陷，不改**。两类原因分得开——
+   ① `activity_root_compatibility.xml`(3)、`page_onboarding_setup.xml`(3) 用的是
+   `colorSecondaryContainer` 一类**强调色卡**，本来就不走玻璃描边（同为强调卡的
+   `terminal_tutorial_activity.xml`、`activity_service_doctor.xml` 里 1dp 的是玻璃卡，不是这类）；
+   ② `home_item_container.xml`、`home_banner_status.xml`、`app_list_toggle_all.xml` 的 0dp 只是
+   XML 基线，实际描边在运行时写：`HomeAdapter.kt:348/352` 按状态 `max(1, density)` 或 `0`，
+   `HomeBannerStatusViewHolder.kt:92` 红态 `2.5 * density`，`app_list_toggle_all.xml` 那行同处
+   `M3ECardItemDecoration.kt:48` 的 `glassStrokePaint.strokeWidth = 1f * density` 辖区。
+   `swipe_hint_overlay.xml` 是浮层帽，不参与卡片材质。把 10 处统一成 1dp 会让首页五卡与引导页整体
+   加重，与液态玻璃的"轻"相反。
+6. ~~设置页搜索态是否隐藏底栏未确认~~ **已修（k2168）**：这条要改的是**两处**，只改一处等于没生效。
+   ① `SettingsScreen` 自身的 `bottomBar` 原先只判 `showTabBar`，没判 `isSearchActive`；
+   ② 但容器内 `showTabBar = false`，屏幕上那根是 `GlassShellActivity` 画的 `GlassBottomBar` 加它
+   底下 138dp 的 scrim 渐变——k2167 只改①时实测底栏照旧（`k167_search.png`），因为改的是根本不
+   渲染的那一份。最终做法：`SettingsScreen` 新增 `onSearchActiveChanged`，用
+   `LaunchedEffect(isSearchActive)` 上报，容器把状态收进 `settingsSearching`，与底栏、scrim 一起
+   撤掉。k2168 验证：进搜索 `k168_search.png` 底栏与 scrim 同时消失、结果列表直落屏幕边缘；返回
+   `k168_back.png` 底栏立即回来；再切「应用」`k168_apps.png` 正常。
+7. 深色下「设置页最后一张卡下缘压到底栏上方」：已核 `AndroidView`（承载 PreferenceFragment）本身
+   已 `padding(bottom = innerPadding.calculateBottomPadding())`，底栏高度已被让出；剩下的那一点是
+   透明底栏之上 PreferenceFragment 内部 RecyclerView 的滚动内容透出，属预期表现，没做逐像素核对。
 8. ~~ADB 模式下崩溃重启失败会落 STOPPED~~ **已在 k2139 修掉**：`recoverFromFailedStart()` 与
    `AdbStartWorker` 的 `catch` 改走 `markStartFailed()`（落 `CRASHED` 并重新探测 binder），停服意图
    同时从"状态推导"改为独立键 `user_stopped_intent`（缺键时回落旧判据）。细节与实测见〈k2139〉一节。
@@ -579,6 +607,12 @@ collector 死了就再也没人处理 CRASHED，两种都表现为「watchdog �
     单次 `tap` 全部一次切页（`k144_firsttap.png`），`force-stop` 后冷启等 3 秒再点也 2/2 命中
     （`k144cold3_sheet.png`）。差别在安装后首次冷启的 ART/首帧更慢，3 秒不够——属于启动期输入窗口，
     未处理。
+    **裁决：不改代码，判为安装后首次冷启的外部窗口，不是应用内缺陷。** k2167/k2168 两次装机复现的
+    是同一件事：`am start` 之后立刻点底栏，第一下没进去，第二下正常。既然已运行态 3/3 一次命中、
+    `force-stop` 冷启等 3 秒也 2/2 命中，说明丢的那一下发生在窗口尚未 attach 之前（点击落在桌面上，
+    根本没进应用进程），应用侧没有任何可拦截的落点。改法只能是"启动即铺一层全屏不可触摸遮罩"，
+    那会把首帧前的返回键与多任务手势一起吃掉，代价明显大于收益。留给使用侧的事实是：新装后第一次
+    打开，等首屏出来再点。
 
 ## 与初版计划的差异
 
