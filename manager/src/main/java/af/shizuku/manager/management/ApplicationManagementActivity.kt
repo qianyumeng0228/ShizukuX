@@ -119,6 +119,13 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
             }
         }
 
+        // Same explicit reload entry as the container page; the standalone activity keeps its
+        // toolbar, but this row is where the user already looks for list controls.
+        rootView.findViewById<android.widget.ImageButton>(R.id.action_refresh_apps)?.setOnClickListener { v ->
+            viewModel.refresh()
+            v.animate().rotationBy(360f).setDuration(900L).start()
+        }
+
         viewModel.packages.observe(this) {
             when (it.status) {
                 Status.SUCCESS -> {

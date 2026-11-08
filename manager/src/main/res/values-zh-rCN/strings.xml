@@ -547,6 +547,7 @@
     <string name="app_management_filter_denied"><![CDATA[被拒绝]]></string>
     <string name="app_management_filter_hidden"><![CDATA[已隐藏]]></string>
     <string name="app_management_action_sort"><![CDATA[排序]]></string>
+    <string name="app_management_action_refresh"><![CDATA[重新读取应用列表]]></string>
     <string name="app_management_sort_a_to_z"><![CDATA[名称（A-Z）]]></string>
     <string name="app_management_sort_last_installed"><![CDATA[上次安装]]></string>
     <string name="app_management_sort_last_updated"><![CDATA[最后更新]]></string>

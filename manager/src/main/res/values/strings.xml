@@ -351,6 +351,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_filter_denied">Denied</string>
     <string name="app_management_filter_hidden">Hidden</string>
     <string name="app_management_action_sort">Sort</string>
+    <string name="app_management_action_refresh">Reload the app list</string>
     <string name="app_management_sort_a_to_z">Name (A–Z)</string>
     <string name="app_management_sort_last_installed">Last installed</string>
     <string name="app_management_sort_last_updated">Last updated</string>

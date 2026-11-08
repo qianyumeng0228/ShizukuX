@@ -219,6 +219,21 @@ class AppsController(
                 }
             }
 
+        // The container hides this page's title toolbar, and the options menu goes with it, so the
+        // explicit reload entry lives in the page body. It runs the same pass as onResume and the
+        // state listener ([refresh] -> AppsViewModel.load) and spins the icon once as feedback.
+        // There is deliberately no in-flight flag: load() is generation-guarded, so a second tap
+        // only costs one extra pass and can never leave the button stuck disabled.
+        val refreshButton = hostRoot.findViewById<android.widget.ImageButton>(
+            R.id.action_refresh_apps
+        )
+        refreshButton?.setOnClickListener { v ->
+            refresh()
+            // One slow turn rather than a 240ms flick: a full list read takes a beat, and the icon
+            // has to stay visibly busy for that beat instead of snapping back before the data lands.
+            v.animate().rotationBy(360f).setDuration(900L).start()
+        }
+
         viewModel.packages.observe(host) {
             when (it.status) {
                 Status.SUCCESS -> {

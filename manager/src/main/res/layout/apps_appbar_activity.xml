@@ -27,30 +27,53 @@
             app:layout_collapseMode="pin"
             tools:title="Application management" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/search_layout"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        <!-- The pager hides the title toolbar, and with it the options menu, so the explicit
+             reload entry has to live in the page body. It sits on the search row: same glass
+             margin as the field, center-aligned, no background (the icon-only language the
+             container's app bar already uses). -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/glass_card_margin"
             android:layout_marginTop="6dp"
             android:layout_marginBottom="6dp"
-            app:startIconDrawable="@drawable/ic_search_24"
-            app:boxCornerRadiusTopStart="28dp"
-            app:boxCornerRadiusTopEnd="28dp"
-            app:boxCornerRadiusBottomStart="28dp"
-            app:boxCornerRadiusBottomEnd="28dp"
-            android:hint="@string/app_management_hint_search">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/search_edit_text"
-                android:layout_width="match_parent"
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/search_layout"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:inputType="text"
-                android:maxLines="1"
-                android:imeOptions="actionSearch" />
+                android:layout_weight="1"
+                app:startIconDrawable="@drawable/ic_search_24"
+                app:boxCornerRadiusTopStart="28dp"
+                app:boxCornerRadiusTopEnd="28dp"
+                app:boxCornerRadiusBottomStart="28dp"
+                app:boxCornerRadiusBottomEnd="28dp"
+                android:hint="@string/app_management_hint_search">
 
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/search_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:imeOptions="actionSearch" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageButton
+                android:id="@+id/action_refresh_apps"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="4dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/app_management_action_refresh"
+                android:src="@drawable/ic_refresh_24"
+                android:tint="?attr/colorOnSurfaceVariant" />
+
+        </LinearLayout>
 
         <HorizontalScrollView
             android:layout_width="match_parent"
