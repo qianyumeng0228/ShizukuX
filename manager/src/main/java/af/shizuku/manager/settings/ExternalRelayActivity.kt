@@ -92,9 +92,19 @@ class ExternalRelayActivity : AppBarActivity() {
                 }
             },
             onRequestIgnoreBatteryOptimization = {
-                val pm = getSystemService(POWER_SERVICE) as PowerManager
-                // MIUI/HyperOS：进入电池页即标记已响应（标准 API 与省电策略不同步）
-                if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                // Same predicate as ExternalRelayAdapter.refreshBatteryStatus. Using the raw
+                // PowerManager check here made MIUI/HyperOS re-open the request dialog even though
+                // the row already said "disabled" — the AOSP whitelist never reflects the OEM
+                // "no limits" choice, so the two halves disagreed.
+                if (SettingsHelper.isBatteryOptimizationEffectivelyDisabled(this)) {
+                    // Already exempt: the row button reads "Battery settings" and lands on the list.
+                    try {
+                        startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                    } catch (e: Exception) {
+                        Toast.makeText(this, R.string.external_relay_auto_open_accessibility_failed, Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    // MIUI/HyperOS：进入电池页即标记已响应（标准 API 与省电策略不同步）
                     if (EnvironmentUtils.isXiaomi()) {
                         SettingsHelper.markBatteryOptimizationAcknowledged(this)
                     }

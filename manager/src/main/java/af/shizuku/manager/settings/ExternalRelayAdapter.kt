@@ -119,7 +119,13 @@ class ExternalRelayAdapter(
                 if (isIgnoring) R.string.external_relay_auto_battery_ok
                 else R.string.external_relay_auto_battery_off
             )
-            batteryButton.isEnabled = !isIgnoring
+            batteryButton.text = context.getString(
+                if (isIgnoring) R.string.external_relay_battery_settings
+                else R.string.external_relay_auto_battery_optimize
+            )
+            // Always clickable: once exempt the button opens the system battery-settings list
+            // instead of pretending to "disable" something that is already disabled.
+            batteryButton.isEnabled = true
         }
 
         private fun isAutoAccessibilityEnabled(): Boolean {

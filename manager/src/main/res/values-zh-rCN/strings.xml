@@ -1416,6 +1416,7 @@
     <string name="external_relay_auto_battery_ok">电池优化已关闭（服务将保持运行）</string>
     <string name="external_relay_auto_battery_off">电池优化已开启——系统可能会终止此服务</string>
     <string name="external_relay_auto_battery_optimize">关闭电池优化</string>
+    <string name="external_relay_battery_settings">查看电池设置</string>
     <string name="external_relay_auto_battery_hint">提示：同时在最近任务中锁定 ShizukuX，防止系统终止服务。</string>
     <string name="settings_tcp_auto_close_port">停止时自动关闭 TCP 端口</string>
     <string name="settings_tcp_auto_close_port_summary">"Shizuku 停止或崩溃时自动写入 adb_wifi_enabled=0，关闭无线调试监听与 TCP 端口，避免会话结束后端口仍处于开放状态。需 WRITE_SECURE_SETTINGS 权限。"</string>

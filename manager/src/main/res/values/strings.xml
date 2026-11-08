@@ -469,6 +469,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="external_relay_auto_battery_ok">Battery optimization is disabled (service will stay alive)</string>
     <string name="external_relay_auto_battery_off">Battery optimization is ON — the system may kill this service</string>
     <string name="external_relay_auto_battery_optimize">Disable battery optimization</string>
+    <string name="external_relay_battery_settings">Battery settings</string>
     <string name="external_relay_auto_battery_hint">Tip: also lock ShizukuX in recent apps to prevent the system from killing the service.</string>    <string name="settings_tcp_mode">TCP mode</string>
     <string name="settings_tcp_mode_summary">"Allows Shizuku to restart without Wi-Fi. (Shizuku must have started once since reboot)"</string>
     <string name="settings_tcp_mode_dialog_close_port">"The TCP port will be closed immediately. You will need Wi-Fi to turn on TCP mode again. Continue?"</string>
