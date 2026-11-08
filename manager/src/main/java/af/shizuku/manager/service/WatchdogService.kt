@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.provider.Settings
+import rikka.shizuku.Shizuku
 import timber.log.Timber
 import androidx.core.app.NotificationCompat
 import af.shizuku.manager.R
@@ -37,6 +38,7 @@ class WatchdogService : Service() {
     private var pendingRecoveryJob: Job? = null
     private var stabilityJob: Job? = null
     private var degradedRetryJob: Job? = null
+    private var probeJob: Job? = null
     private var intentionalStop = false
 
     // Returns false on failure so callers can bail out via stopSelf() instead of crashing
@@ -90,8 +92,72 @@ class WatchdogService : Service() {
             return
         }
 
+        // v29: the state machine only learns about a dead server from two places — a binder
+        // death callback (armed only once *this* process has actually taken a binder reference,
+        // so a cold start that merely pinged it never arms one) and an explicit update() call.
+        // Without this poll a killed server left the state parked on RUNNING forever: the
+        // crash listener never fired, the collector below never saw CRASHED, and
+        // ShizukuReceiverStarter.start() was never reached — which is why the watchdog looked
+        // dead on this device even though the ADB fallback inside start() works.
+        probeJob = scope.launch {
+            var startingSince = 0L
+            while (isActive) {
+                delay(PROBE_INTERVAL_MS)
+                try {
+                    withContext(Dispatchers.IO) {
+                        val alive = runCatching { Shizuku.pingBinder() }.getOrDefault(false)
+                        val state = ShizukuStateMachine.get()
+                        if (alive) {
+                            startingSince = 0L
+                            // A server that answers again is RUNNING, whatever the state was.
+                            // Without this a persisted STARTING survived both a healthy server
+                            // and its death: update() keeps STARTING sticky, the collector only
+                            // listens for CRASHED, and nothing ever restarted.
+                            if (state != ShizukuStateMachine.State.RUNNING) {
+                                runCatching { ShizukuStateMachine.set(ShizukuStateMachine.State.RUNNING) }
+                            }
+                        } else {
+                            when (state) {
+                                ShizukuStateMachine.State.RUNNING ->
+                                    runCatching { ShizukuStateMachine.set(ShizukuStateMachine.State.CRASHED) }
+                                // STARTING is sticky by design (a start is in flight), but not
+                                // forever: once the grace window passes with no answer the start
+                                // failed, and that is a crash the watchdog must recover from.
+                                ShizukuStateMachine.State.STARTING -> {
+                                    val now = System.currentTimeMillis()
+                                    if (startingSince == 0L) {
+                                        startingSince = now
+                                    } else if (now - startingSince > STARTING_GRACE_MS) {
+                                        runCatching { ShizukuStateMachine.set(ShizukuStateMachine.State.CRASHED) }
+                                        startingSince = 0L
+                                    }
+                                }
+                                else -> Unit
+                            }
+                        }
+                    }
+                } catch (t: Throwable) {
+                    if (t is CancellationException) throw t
+                    // One bad round must never kill the probe: this loop is the only thing that
+                    // notices a dead server on a cold-started process, and a silent exit is
+                    // exactly how the watchdog came to look dead in the first place.
+                    runCatching {
+                        ActivityLogManager.log(
+                            "Shizuku", applicationContext.packageName,
+                            "Watchdog: probe round failed: ${t.javaClass.simpleName}: ${t.message}"
+                        )
+                    }
+                }
+            }
+        }
+
         job = scope.launch {
             ShizukuStateMachine.asFlow().collectLatest { state ->
+                // Same rule as the probe loop: one failed recovery round must not end the
+                // collector. The collector is what turns CRASHED into an actual restart, so a
+                // silent exit here leaves the probe updating the state machine forever with
+                // nobody acting on it — the crash then looks like "the watchdog never fires".
+                try {
                 if (state == ShizukuStateMachine.State.CRASHED) {
                     // The last thing the user asked for was a stop, and this CRASHED reading is
                     // the state machine replaying a stale RUNNING record (update() promotes
@@ -210,6 +276,19 @@ class WatchdogService : Service() {
                         consecutiveCrashes = 0
                     }
                 }
+                } catch (t: Throwable) {
+                    // A child cancelled by collectLatest is normal flow control, not a fault.
+                    if (t is CancellationException) throw t
+                    // One bad round must never kill the collector: it is what turns CRASHED into
+                    // a restart, so a silent exit leaves the probe updating a state machine that
+                    // nobody acts on — the crash then reads as "the watchdog never fired".
+                    runCatching {
+                        ActivityLogManager.log(
+                            "Shizuku", applicationContext.packageName,
+                            "Watchdog: collector round failed: ${t.javaClass.simpleName}: ${t.message}"
+                        )
+                    }
+                }
             }
         }
     }
@@ -229,6 +308,7 @@ class WatchdogService : Service() {
     }
 
     override fun onDestroy() {
+        probeJob?.cancel()
         stabilityJob?.cancel()
         pendingRecoveryJob?.cancel()
         degradedRetryJob?.cancel()
@@ -363,6 +443,14 @@ class WatchdogService : Service() {
 
         /** Degraded-mode probe cadence: one ShizukuReceiverStarter.start() attempt every 15 min. */
         private const val DEGRADED_COOLDOWN_MS = 15 * 60 * 1000L
+
+        /** How often the watchdog re-pings the binder to learn that the server died. A binder
+         * death callback is not guaranteed (it is armed only once this process took a binder
+         * reference), so this poll is what actually feeds CRASHED into the collector below. */
+        private const val PROBE_INTERVAL_MS = 5_000L
+
+        /** How long a STARTING state may stay unanswered before it counts as a failed start. */
+        private const val STARTING_GRACE_MS = 30_000L
 
         @Volatile
         private var lastCrashNotificationMs = 0L

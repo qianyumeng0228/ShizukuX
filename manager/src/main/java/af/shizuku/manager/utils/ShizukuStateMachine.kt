@@ -243,6 +243,11 @@ object ShizukuStateMachine {
 
     fun update(): State {
         val span = Sentry.getSpan()?.startChild("ipc.shizuku", "pingBinder")
+        // Shizuku.pingBinder() is the one liveness answer this app trusts everywhere else (the
+        // home status card included), and it does flip to false once the server process is gone.
+        // Gating it on getBinder() breaks that: getBinder() stays null until this process has
+        // taken a binder reference, so ANDing it in reported "dead" for a perfectly healthy
+        // server and parked the state on STARTING.
         val isAlive = try {
             Shizuku.pingBinder()
         } catch (e: Exception) {

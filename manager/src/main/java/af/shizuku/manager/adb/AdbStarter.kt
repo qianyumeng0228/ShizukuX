@@ -36,6 +36,18 @@ object AdbStarter {
     // to KEEP so the waiting worker is not cancelled and a second dialog is not queued.
     @Volatile var keyOfferInFlight: Boolean = false
 
+    // Keep the shell alive for a beat after the detached starter is launched. AdbClient
+    // closes the socket the instant adbd reports A_CLSE, and that close hangs up the shell's
+    // process group: without this pause the setsid child is still between fork and setsid()
+    // when the hangup lands, dies silently (no server process left), and the caller still
+    // logs "Service started via ADB". Manually replaying the exact same command through
+    // `adb shell` works because the host client lingers a few dozen ms longer.
+    //
+    // Foregrounding the starter instead (the original `shell:<internalCommand>`) ties the
+    // server to the shell session and it dies with SIGHUP on close — that was the
+    // "started successfully, crashed twenty seconds later" symptom.
+    private fun backgroundCommand() =
+        "( setsid ${Starter.internalCommand} </dev/null >/dev/null 2>&1 & ) ; sleep 1; exit 0"
     private fun Context.getActivity(): Activity? {
         var context = this
         while (context is ContextWrapper) {
@@ -103,7 +115,7 @@ object AdbStarter {
                     AdbClient("127.0.0.1", activePort, key).use { client ->
                         connectWithRetry(client)
                         log?.invoke("Successfully connected on port $activePort...\n")
-                        client.runCommand("shell:${Starter.internalCommand}")
+                        client.runCommand("shell:${backgroundCommand()}")
                         ShizukuSettings.setLastPort(activePort)
                         ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
                         ShizukuStateMachine.update()
@@ -124,7 +136,7 @@ object AdbStarter {
                             AdbClient("127.0.0.1", activePort, key).use { client ->
                                 connectWithRetry(client)
                                 log?.invoke("Successfully connected on port $activePort...\n")
-                                client.runCommand("shell:${Starter.internalCommand}")
+                                client.runCommand("shell:${backgroundCommand()}")
                                 ShizukuSettings.setLastPort(activePort)
                                 ActivityLogManager.log("Shizuku", context.packageName, "Service started via ADB on port $activePort")
                                 ShizukuStateMachine.update()
@@ -169,6 +181,15 @@ object AdbStarter {
             }
             if (e !is CancellationException && !e.isExpectedAdbError()) {
                 Sentry.captureException(e)
+            }
+            // Release builds strip Log, so an ADB start that fails before the "Service started
+            // via ADB" line leaves no trace at all — on device that reads as "the watchdog
+            // found the crash but nothing happened". Record the cause in the activity log.
+            runCatching {
+                ActivityLogManager.log(
+                    "Shizuku", context.packageName,
+                    "ADB start failed: ${e.javaClass.simpleName}: ${e.message}"
+                )
             }
             throw e
         } finally {
