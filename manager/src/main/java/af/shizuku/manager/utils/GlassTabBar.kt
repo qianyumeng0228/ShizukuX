@@ -38,7 +38,11 @@ object GlassTabBar {
                 // These XML pages scroll underneath the floating bar, so the last lines of text
                 // showed through the 20dp gap above the pill. A short fade to the page backdrop
                 // colour retires the content before it can reach the bar.
-                val scrim = if (dark) Color(0xFF080B12) else Color(0xFFDDE4F6)
+                val scrim = if (dark) {
+                    if (af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(activity)) Color.Black else Color(0xFF080B12)
+                } else {
+                    Color(0xFFDDE4F6)
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

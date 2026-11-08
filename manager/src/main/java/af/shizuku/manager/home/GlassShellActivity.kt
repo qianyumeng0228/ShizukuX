@@ -268,8 +268,15 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             // Same fade the XML pages get from GlassTabBar.attach, but for every page at once:
             // without it a hosted page's last cards run under the pill and stay readable through
             // the glass instead of retiring before they reach it.
-            val dark = isSystemInDarkTheme() && !ShizukuSettings.isGlassUi()
-            val scrim = if (dark) Color(0xFF080B12) else Color(0xFFDDE4F6)
+            // The glass skin is a look, not a light/dark switch: forcing it on must not pin the
+            // scrim to the light palette, or a dark system theme ends with a pale band under the
+            // pill (and the light pages under it read as washed out).
+            val dark = isSystemInDarkTheme()
+            val scrim = if (dark) {
+                if (ThemeHelper.isBlackNightTheme(this@GlassShellActivity)) Color.Black else Color(0xFF080B12)
+            } else {
+                Color(0xFFDDE4F6)
+            }
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

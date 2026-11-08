@@ -15,7 +15,6 @@ import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
-import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -44,7 +43,6 @@ import rikka.lifecycle.Status
 import rikka.recyclerview.addEdgeSpacing
 import rikka.recyclerview.fixEdgeEffect
 import timber.log.Timber
-import java.io.File
 import java.util.Objects
 
 /**
@@ -405,24 +403,6 @@ class AppsController(
             marginEnd = dp(12)
         })
         undoBar = bar
-        // Reported so the bar's real on-screen box can be verified from the device instead of being
-        // eyeballed off a screenshot, where the preview scale silently shifts every tap.
-        bar.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                bar.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                val loc = IntArray(2)
-                bar.getLocationOnScreen(loc)
-                val actionLoc = IntArray(2)
-                action.getLocationOnScreen(actionLoc)
-                val record = "bar=${loc[0]},${loc[1]},${bar.width},${bar.height} " +
-                    "action=${actionLoc[0]},${actionLoc[1]},${action.width},${action.height}"
-                Timber.d("undoBar $record")
-                try {
-                    File(host.filesDir, "undo_bar.txt").writeText(record)
-                } catch (_: Exception) {
-                }
-            }
-        })
         bar.postDelayed({ dismissUndoBar() }, 10_000L)
     }
 
