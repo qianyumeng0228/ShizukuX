@@ -3,10 +3,13 @@ package af.shizuku.manager.utils
 import android.app.Activity
 import android.view.Gravity
 import android.view.ViewGroup
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
@@ -31,10 +34,23 @@ object GlassTabBar {
         val bar = ComposeView(activity).apply {
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
             setContent {
+                val dark = androidx.compose.foundation.isSystemInDarkTheme()
+                // These XML pages scroll underneath the floating bar, so the last lines of text
+                // showed through the 20dp gap above the pill. A short fade to the page backdrop
+                // colour retires the content before it can reach the bar.
+                val scrim = if (dark) Color(0xFF080B12) else Color(0xFFDDE4F6)
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 20.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                0.22f to scrim.copy(alpha = 0.34f),
+                                0.55f to scrim.copy(alpha = 0.88f),
+                                1f to scrim
+                            )
+                        )
+                        .padding(top = 52.dp, bottom = 20.dp)
                 ) {
                     GlassBottomBar(
                         selectedIndex = selectedIndex,

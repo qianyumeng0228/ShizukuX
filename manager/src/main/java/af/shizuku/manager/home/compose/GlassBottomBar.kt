@@ -41,6 +41,12 @@ import af.shizuku.manager.R
 fun GlassBottomBar(
     modifier: Modifier = Modifier,
     selectedIndex: Int = 0,
+    /**
+     * Continuous position supplied by a pager (0..4, fractional while a swipe is in flight). When
+     * present the highlight tracks the finger instead of springing to the nearest tab, so a single
+     * container can slide its pages and its pill together.
+     */
+    positionFraction: Float? = null,
     onHomeClick: () -> Unit = {},
     onAppsClick: () -> Unit = {},
     onModulesClick: () -> Unit = {},
@@ -62,7 +68,7 @@ fun GlassBottomBar(
     val idleTint = if (dark) Color(0xB8FFFFFF) else Color(0x99000000)
 
     // Springy but critically damped: overshoot reads as "liquid", a bounce reads as a toy.
-    val animated by animateFloatAsState(
+    val springPos by animateFloatAsState(
         targetValue = selectedIndex.toFloat(),
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioNoBouncy,
@@ -70,6 +76,7 @@ fun GlassBottomBar(
         ),
         label = "tab-highlight"
     )
+    val animated = positionFraction ?: springPos
 
     Box(
         modifier = modifier
@@ -197,6 +204,7 @@ fun GlassBottomBar(
 fun GlassTabStrip(
     selectedIndex: Int,
     onSelectTab: (Int) -> Unit,
+    positionFraction: Float? = null,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -206,6 +214,7 @@ fun GlassTabStrip(
     ) {
         GlassBottomBar(
             selectedIndex = selectedIndex,
+            positionFraction = positionFraction,
             onHomeClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_HOME) },
             onAppsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_APPS) },
             onModulesClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_MODULES) },
