@@ -98,7 +98,7 @@ fun AppsPage(
                             )
                             if (controller.filterState == FilterState.HIDDEN) {
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.app_management_undo)) },
+                                    text = { Text(stringResource(R.string.app_management_bulk_unhide)) },
                                     onClick = { menuOpen = false; controller.unhideSelected() }
                                 )
                             } else {

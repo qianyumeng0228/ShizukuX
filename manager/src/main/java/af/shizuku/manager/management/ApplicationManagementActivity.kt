@@ -25,7 +25,6 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.android.material.chip.Chip
-import com.google.android.material.snackbar.Snackbar
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.core.ui.AppBarActivity
@@ -193,8 +192,21 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
         af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_APPS)
     }
 
-    // ----- Options menu: sort -----
+    /**
+     * Leaves multi-select: drops the tick set, restores the plain title and rebuilds the overflow
+     * menu. Bulk actions used to flip only [adapter.isSelectionMode], which left the app bar on
+     * "已选择 N 项" with the bulk menu items still in place after the list had already changed.
+     */
+    private fun exitSelectionUi() {
+        adapter.selectedPackages.clear()
+        adapter.isSelectionMode = false
+        backCallback?.isEnabled = false
+        supportActionBar?.title = getString(R.string.home_app_management_title)
+        invalidateOptionsMenu()
+        adapter.notifyDataSetChanged()
+    }
 
+    // ----- Options menu: sort -----
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         if (adapter.isSelectionMode) {
             menu.add(0, 10, 0, R.string.app_management_bulk_select_all).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
@@ -202,7 +214,7 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
             menu.add(0, 12, 0, R.string.app_management_bulk_revoke).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
 
             if (viewModel.filterState == FilterState.HIDDEN) {
-                menu.add(0, 14, 0, R.string.app_management_undo).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+                menu.add(0, 14, 0, R.string.app_management_bulk_unhide).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             } else {
                 menu.add(0, 13, 0, R.string.app_management_bulk_hide).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             }
@@ -230,7 +242,7 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
                         val pi = viewModel.packages.value?.data?.find { it.packageName == pkg }
                         pi?.applicationInfo?.uid?.let { uid -> AuthorizationManager.grant(pkg, uid) }
                     }
-                    adapter.isSelectionMode = false
+                    exitSelectionUi()
                     viewModel.load()
                 }
                 12 -> { // Revoke all
@@ -238,24 +250,45 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
                         val pi = viewModel.packages.value?.data?.find { it.packageName == pkg }
                         pi?.applicationInfo?.uid?.let { uid -> AuthorizationManager.revoke(pkg, uid) }
                     }
-                    adapter.isSelectionMode = false
+                    exitSelectionUi()
                     viewModel.load()
                 }
                 13 -> { // Hide all
-                    adapter.selectedPackages.toList().forEach { viewModel.hidePackage(it) }
-                    adapter.isSelectionMode = false
+                    val hidden = adapter.selectedPackages.toList()
+                    hidden.forEach { viewModel.hidePackage(it) }
+                    exitSelectionUi()
                     viewModel.load()
+                    // Bulk hide is the same destructive action as hiding one row, so it has to offer
+                    // the same way back instead of dropping the user into a shorter list.
+                    af.shizuku.manager.utils.GlassUndoBar.show(
+                        this,
+                        this,
+                        findViewById(android.R.id.content),
+                        getString(R.string.app_management_hidden),
+                        getString(R.string.app_management_undo)
+                    ) {
+                        hidden.forEach { viewModel.unhidePackage(it) }
+                        viewModel.load()
+                    }
                 }
                 14 -> { // Unhide all
-                    adapter.selectedPackages.toList().forEach { viewModel.unhidePackage(it) }
-                    adapter.isSelectionMode = false
+                    val restored = adapter.selectedPackages.toList()
+                    restored.forEach { viewModel.unhidePackage(it) }
+                    exitSelectionUi()
                     viewModel.load()
+                    af.shizuku.manager.utils.GlassUndoBar.show(
+                        this,
+                        this,
+                        findViewById(android.R.id.content),
+                        getString(R.string.app_management_unhidden),
+                        getString(R.string.app_management_undo)
+                    ) {
+                        restored.forEach { viewModel.hidePackage(it) }
+                        viewModel.load()
+                    }
                 }
                 android.R.id.home -> {
-                    adapter.isSelectionMode = false
-                    backCallback?.isEnabled = false
-                    invalidateOptionsMenu()
-                    supportActionBar?.title = getString(R.string.home_app_management_title)
+                    exitSelectionUi()
                 }
             }
             return true
@@ -275,19 +308,27 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
 
     // ----- Hide callback -----
 
+    /**
+     * The platform Snackbar used to be shown on this page's coordinator root, but its action button
+     * cannot be inflated on this theme and it landed behind the floating tab bar, so a hide from a
+     * deep link or shortcut had no way back. Both hosts now raise the same self-drawn strip.
+     */
     override fun onHideApp(packageName: String) {
-        if (viewModel.filterState == FilterState.HIDDEN) {
-            viewModel.unhidePackage(packageName)
-            Snackbar.make(rootView, R.string.app_management_undo, Snackbar.LENGTH_LONG).show()
+        val fromHidden = viewModel.filterState == FilterState.HIDDEN
+        if (fromHidden) viewModel.unhidePackage(packageName) else viewModel.hidePackage(packageName)
+        viewModel.load()
+        af.shizuku.manager.utils.GlassUndoBar.show(
+            this,
+            this,
+            findViewById(android.R.id.content),
+            getString(
+                if (fromHidden) R.string.app_management_unhidden else R.string.app_management_hidden
+            ),
+            getString(R.string.app_management_undo)
+        ) {
+            if (fromHidden) viewModel.hidePackage(packageName)
+            else viewModel.unhidePackage(packageName)
             viewModel.load()
-        } else {
-            viewModel.hidePackage(packageName)
-            Snackbar.make(rootView, R.string.app_management_hidden, Snackbar.LENGTH_LONG)
-                .setAction(R.string.app_management_undo) {
-                    viewModel.unhidePackage(packageName)
-                    viewModel.load()
-                }
-                .show()
         }
     }
 

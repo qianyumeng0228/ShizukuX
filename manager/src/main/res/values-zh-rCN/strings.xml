@@ -536,6 +536,7 @@
     <string name="app_management_log_hide"><![CDATA[从列表中隐藏]]></string>
     <string name="app_management_log_unhide"><![CDATA[从列表中取消隐藏]]></string>
     <string name="app_management_hidden"><![CDATA[应用已隐藏]]></string>
+    <string name="app_management_unhidden"><![CDATA[应用已恢复]]></string>
     <string name="app_management_selected"><![CDATA[已选择 %d 项]]></string>
     <string name="app_management_undo"><![CDATA[撤销]]></string>
     <string name="app_management_hint_search"><![CDATA[搜索应用…]]></string>
@@ -557,6 +558,7 @@
     <string name="app_management_bulk_grant"><![CDATA[授予所选应用权限]]></string>
     <string name="app_management_bulk_revoke"><![CDATA[撤销所选应用权限]]></string>
     <string name="app_management_bulk_hide"><![CDATA[隐藏所选应用]]></string>
+    <string name="app_management_bulk_unhide"><![CDATA[取消隐藏所选应用]]></string>
     <string name="app_management_bulk_select_all"><![CDATA[选择全部]]></string>
     <string name="settings_swipe_right"><![CDATA[向右滑动操作]]></string>
     <string name="settings_swipe_left"><![CDATA[向左滑动操作]]></string>

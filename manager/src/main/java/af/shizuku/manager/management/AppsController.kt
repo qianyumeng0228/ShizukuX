@@ -307,9 +307,14 @@ class AppsController(
     }
 
     fun unhideSelected() {
-        adapter.selectedPackages.toList().forEach { viewModel.unhidePackage(it) }
+        val restored = adapter.selectedPackages.toList()
+        restored.forEach { viewModel.unhidePackage(it) }
         exitSelection()
         viewModel.load()
+        showUndo(host.getString(R.string.app_management_unhidden)) {
+            restored.forEach { viewModel.hidePackage(it) }
+            viewModel.load()
+        }
     }
 
     fun setSort(order: SortOrder) {
@@ -324,7 +329,7 @@ class AppsController(
     override fun onHideApp(packageName: String) {
         if (viewModel.filterState == FilterState.HIDDEN) {
             viewModel.unhidePackage(packageName)
-            showUndo(host.getString(R.string.app_management_undo)) {
+            showUndo(host.getString(R.string.app_management_unhidden)) {
                 viewModel.hidePackage(packageName)
                 viewModel.load()
             }
@@ -339,20 +344,13 @@ class AppsController(
         }
     }
 
-    private var undoBar: android.view.View? = null
-
     /**
      * The standalone page offered "undo" through a Snackbar on its coordinator root. That root no
      * longer exists, and a Toast cannot carry an action, so hiding an app from the container would
      * have quietly lost the way back.
      *
-     * A Compose SnackbarHost was tried first and had to be dropped: it renders above the AndroidView
-     * holding the app list but the native RecyclerView still consumes the touch, so the "undo"
-     * button looked present and did nothing. Material's Snackbar cannot be used either - the
-     * container is not a MaterialComponents theme, so inflating its action button throws
-     * `Failed to resolve attribute ... textAllCaps` (seen on device, k2109). Hence a plain view
-     * added to the window content view: a sibling layer above the whole pager that receives the
-     * tap normally, and nothing that depends on theme attributes.
+     * The strip itself lives in [af.shizuku.manager.utils.GlassUndoBar] and is shared with the
+     * standalone activity, so both hosts offer the same way back.
      */
     private fun showUndo(message: String, undo: () -> Unit) {
         val anchor = snackbarAnchor
@@ -360,56 +358,18 @@ class AppsController(
             Toast.makeText(host, message, Toast.LENGTH_LONG).show()
             return
         }
-        dismissUndoBar()
-        val density = host.resources.displayMetrics.density
-        fun dp(value: Int) = (value * density).toInt()
-
-        val bar = LinearLayout(host).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(16), 0, dp(4), 0)
-            minimumHeight = dp(52)
-            background = GradientDrawable().apply {
-                cornerRadius = dp(6).toFloat()
-                setColor(0xFF2E2F38.toInt())
-            }
-            elevation = dp(6).toFloat()
-        }
-        bar.addView(TextView(host).apply {
-            text = message
-            setTextColor(0xFFECECF1.toInt())
-            textSize = 15f
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        })
-        val action = TextView(host).apply {
-            text = host.getString(R.string.app_management_undo)
-            setTextColor(0xFFB9A7FF.toInt())
-            textSize = 15f
-            isClickable = true
-            setPadding(dp(16), dp(16), dp(16), dp(16))
-            setOnClickListener {
-                undo()
-                dismissUndoBar()
-            }
-        }
-        bar.addView(action)
-        anchor.addView(bar, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            gravity = Gravity.BOTTOM
-            bottomMargin = dp(CONTAINER_TAB_BAR_HEIGHT_DP + 12)
-            marginStart = dp(12)
-            marginEnd = dp(12)
-        })
-        undoBar = bar
-        bar.postDelayed({ dismissUndoBar() }, 10_000L)
+        af.shizuku.manager.utils.GlassUndoBar.show(
+            host,
+            host,
+            anchor,
+            message,
+            host.getString(R.string.app_management_undo),
+            undo
+        )
     }
 
     private fun dismissUndoBar() {
-        val bar = undoBar ?: return
-        undoBar = null
-        (bar.parent as? ViewGroup)?.removeView(bar)
+        af.shizuku.manager.utils.GlassUndoBar.dismiss(host)
     }
 
     fun hideApp(packageName: String) = onHideApp(packageName)

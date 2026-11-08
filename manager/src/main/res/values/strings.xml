@@ -337,6 +337,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_log_hide">Hide from list</string>
     <string name="app_management_log_unhide">Unhide from list</string>
     <string name="app_management_hidden">App hidden</string>
+    <string name="app_management_unhidden">App restored</string>
     <string name="app_management_selected">%d selected</string>
     <string name="app_management_undo">Undo</string>
 
@@ -367,6 +368,7 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_bulk_grant">Grant selected</string>
     <string name="app_management_bulk_revoke">Revoke selected</string>
     <string name="app_management_bulk_hide">Hide selected</string>
+    <string name="app_management_bulk_unhide">Restore selected</string>
     <string name="app_management_bulk_select_all">Select all</string>
 
     <!-- Terminal -->
