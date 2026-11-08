@@ -25,6 +25,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +48,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -245,18 +250,29 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (page) {
-                    1 -> AppsPage(
-                        controller = appsCtl,
-                        onRootCompat = {
-                            startActivity(
-                                android.content.Intent(
-                                    this@GlassShellActivity,
-                                    af.shizuku.manager.settings.RootCompatibilityActivity::class.java
+                    // The apps page hosts an AndroidView whose rows (and the "toggle all" header
+                    // most of all) consume ACTION_MOVE, so a horizontal drag that starts on that
+                    // band never reaches the pager and the page refuses to move. Claim the gesture
+                    // in the Initial pass - before the interop view sees it - and only once the
+                    // direction is clearly horizontal, so vertical list scrolling keeps working.
+                    1 -> Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .horizontalSwipeToPager(pagerState, scope)
+                    ) {
+                        AppsPage(
+                            controller = appsCtl,
+                            onRootCompat = {
+                                startActivity(
+                                    android.content.Intent(
+                                        this@GlassShellActivity,
+                                        af.shizuku.manager.settings.RootCompatibilityActivity::class.java
+                                    )
                                 )
-                            )
-                        },
-                        showTabBar = false
-                    )
+                            },
+                            showTabBar = false
+                        )
+                    }
                     2 -> ModulesPage()
                     3 -> TerminalPage()
                     4 -> SettingsPage()
@@ -514,3 +530,53 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
         super.onDestroy()
     }
 }
+
+/**
+ * Lets a horizontal drag that starts inside a hosted [AndroidView] drive the surrounding pager.
+ *
+ * Compose dispatches pointer events to the root first in [PointerEventPass.Initial], so consuming
+ * the change there stops the interop view from ever seeing it. Nothing is consumed until the
+ * movement is unmistakably horizontal, which leaves vertical list scrolling and taps untouched.
+ */
+private fun Modifier.horizontalSwipeToPager(
+    state: androidx.compose.foundation.pager.PagerState,
+    scope: kotlinx.coroutines.CoroutineScope
+): Modifier =
+    this.pointerInput(state, scope) {
+        val slop = viewConfiguration.touchSlop
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            var dx = 0f
+            var dy = 0f
+            var claimed = false
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                if (!change.pressed) break
+                val stepX = change.position.x - change.previousPosition.x
+                val stepY = change.position.y - change.previousPosition.y
+                if (!claimed) {
+                    dx += stepX
+                    dy += stepY
+                    if (kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.2f) {
+                        claimed = true
+                    }
+                }
+                if (claimed) {
+                    change.consume()
+                    // Raw delta is synchronous, so the page tracks the finger without needing a
+                    // suspending scroll call that this restricted gesture scope cannot make.
+                    state.dispatchRawDelta(-stepX)
+                }
+            }
+            if (!claimed) return@awaitEachGesture
+            val settled = when {
+                dx < 0 -> state.currentPage + 1
+                dx > 0 -> state.currentPage - 1
+                else -> state.currentPage
+            }.coerceIn(0, state.pageCount - 1)
+            val far = kotlin.math.abs(dx) > size.width * 0.18f
+            val target = if (far) settled else state.currentPage
+            scope.launch { state.animateScrollToPage(target) }
+        }
+    }
