@@ -34,6 +34,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -270,7 +271,9 @@ private fun ModulesScreen(
     onCancelDelete: () -> Unit
 ) {
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
+        // Scaffold surface cut it off right below the app bar, leaving this page flat white.
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = {

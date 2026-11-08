@@ -320,7 +320,9 @@ private fun FirewallScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    // 12dp side margin: same as the 12dp card rows below, so the switch card,
+                    // the search field and the chips all share one left edge.
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
@@ -368,7 +370,7 @@ private fun FirewallScreen(
                 onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 12.dp),
                 placeholder = { Text(stringResource(R.string.firewall_search_hint)) },
                 singleLine = true,
                 // Capsule corner to match the other list pages (stock shape is a 4dp rectangle).
@@ -378,7 +380,7 @@ private fun FirewallScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(

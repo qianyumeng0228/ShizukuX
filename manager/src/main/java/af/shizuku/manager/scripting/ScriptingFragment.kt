@@ -69,6 +69,13 @@ class ScriptingFragment : Fragment() {
         requireActivity().addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_scripting, menu)
+                // ic_add_24 is a flat white glyph: on the light glass app bar it was invisible.
+                // Tint it with the app bar's icon colour instead of shipping a second drawable.
+                val tint = com.google.android.material.color.MaterialColors.getColor(
+                    requireView(),
+                    com.google.android.material.R.attr.colorOnSurfaceVariant
+                )
+                menu.findItem(R.id.action_add_snippet)?.icon?.setTint(tint)
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {

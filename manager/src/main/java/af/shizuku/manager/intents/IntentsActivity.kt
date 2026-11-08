@@ -290,7 +290,7 @@ private fun IntentsScreen(
                 onValueChange = { query = it },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.appops_search_hint)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(24.dp)
             )
 

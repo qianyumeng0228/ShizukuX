@@ -38,6 +38,22 @@ class DeviceControlActivity : AppCompatActivity() {
         // under the clock).
         findViewById<com.google.android.material.appbar.MaterialToolbar>(R.id.device_control_toolbar)
             .setNavigationOnClickListener { finish() }
+
+        // This page is the only AppCompatActivity one without an AppBarLayout, so it never picked
+        // up the glass bar scrim the other pages get from core-ui's AppBarActivity: the title sat
+        // straight on the raw gradient. Paint the same scrim here when the glass theme is on.
+        if (af.shizuku.core.ui.compose.isGlassTheme(this)) {
+            val night = (resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            findViewById<com.google.android.material.appbar.MaterialToolbar>(
+                R.id.device_control_toolbar
+            ).background = androidx.core.content.res.ResourcesCompat.getDrawable(
+                resources,
+                if (night) R.drawable.glass_appbar_scrim else R.drawable.glass_appbar_scrim_light,
+                theme
+            )
+        }
         val root = findViewById<android.view.View>(R.id.device_control_root)
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val bars = insets.getInsets(

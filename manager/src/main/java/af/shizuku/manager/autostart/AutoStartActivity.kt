@@ -298,7 +298,7 @@ private fun AutoStartScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
@@ -346,7 +346,7 @@ private fun AutoStartScreen(
                 onValueChange = { query = it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 12.dp),
                 placeholder = { Text(stringResource(R.string.autostart_search_hint)) },
                 singleLine = true,
                 shape = RoundedCornerShape(24.dp)
@@ -355,7 +355,7 @@ private fun AutoStartScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(

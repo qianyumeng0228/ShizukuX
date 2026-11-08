@@ -24,7 +24,6 @@
             android:elevation="0dp"
             android:focusable="true"
             android:descendantFocusability="afterDescendants"
-            app:layout_fitsSystemWindowsInsets="top|start|end"
             app:layout_collapseMode="pin"
             tools:title="Dhizuku 应用管理" />
     </com.google.android.material.appbar.AppBarLayout>

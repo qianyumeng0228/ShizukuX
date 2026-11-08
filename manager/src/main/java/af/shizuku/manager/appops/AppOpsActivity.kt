@@ -501,13 +501,13 @@ private fun AppOpsScreen(
                     onValueChange = { query = it },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
                     placeholder = { Text(stringResource(R.string.appops_search_hint)) },
                     singleLine = true,
                     shape = RoundedCornerShape(24.dp)
                 )
                 Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FilterChip(

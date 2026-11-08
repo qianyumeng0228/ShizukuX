@@ -379,7 +379,7 @@ private fun FilesScreen(
                 text = stringResource(R.string.files_items, entries.size),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
             )
 
             if (loaded && entries.isEmpty()) {

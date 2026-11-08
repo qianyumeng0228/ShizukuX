@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.Color
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Modifier
 import android.net.Uri
 import android.os.Bundle
 import android.provider.DocumentsContract
@@ -86,6 +88,9 @@ class RootCompatibilityActivity : AppBarActivity() {
             binding.globalSuPath.text = path
             binding.btnCopyGlobal.setContent {
                 af.shizuku.core.ui.compose.Button(
+                    // Both buttons sit in weighted ComposeViews; without fillMaxWidth each one
+                    // wraps its label, so the pair ends up narrower than the card.
+                    modifier = Modifier.fillMaxWidth(),
                     // Read the field at click time so a later /data/local/tmp deploy is reflected.
                     onClick = { copyToClipboard(resolvedSuPath ?: path) }
                 ) {
@@ -108,6 +113,7 @@ class RootCompatibilityActivity : AppBarActivity() {
             if (isRoot) {
                 binding.btnSetupAll.setContent {
                     af.shizuku.core.ui.compose.Button(
+                        modifier = Modifier.fillMaxWidth(),
                         onClick = {
                             lifecycleScope.launch {
                                 val count = RootCompatHelper.autoSetupAll(this@RootCompatibilityActivity, path)

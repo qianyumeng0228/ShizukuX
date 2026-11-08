@@ -28,7 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="@dimen/margin_horizontal"
+            android:paddingHorizontal="@dimen/glass_card_margin"
             android:paddingVertical="@dimen/margin_vertical">
 
         <com.google.android.material.card.MaterialCardView
@@ -178,10 +178,27 @@
 
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- The three steps used to sit straight on the page gradient while the two cards above
+             them were solid glass, so the page read as two halves of different designs. One card
+             around the whole step block puts them back on the same material. -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:shapeAppearanceOverlay="?attr/shapeAppearanceCornerExtraLarge"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+            app:contentPadding="@dimen/card_content_padding">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:orientation="horizontal">
@@ -191,7 +208,7 @@
                 android:layout_height="32dp"
                 android:importantForAccessibility="no"
                 android:padding="4dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="0dp"
                 android:src="@drawable/ic_numeric_1_circle_outline_24"
                 android:tint="?android:textColorSecondary"
                 android:tintMode="src_in" />
@@ -245,7 +262,7 @@
                 android:layout_height="32dp"
                 android:importantForAccessibility="no"
                 android:padding="4dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="0dp"
                 android:src="@drawable/ic_numeric_2_circle_outline_24"
                 android:tint="?android:textColorSecondary"
                 android:tintMode="src_in" />
@@ -298,7 +315,7 @@
                 android:layout_height="32dp"
                 android:importantForAccessibility="no"
                 android:padding="4dp"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="0dp"
                 android:src="@drawable/ic_numeric_3_circle_outline_24"
                 android:tint="?android:textColorSecondary"
                 android:tintMode="src_in" />
@@ -330,6 +347,10 @@
             </LinearLayout>
 
         </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 

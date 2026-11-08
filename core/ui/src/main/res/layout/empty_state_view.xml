@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/m3e_spacing_large"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceHeadlineMedium"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
         android:textColor="?attr/colorOnSurface"
         tools:text="No items" />
 
@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/m3e_spacing_small"
         android:gravity="center"
-        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:lineSpacingMultiplier="1.2"
         tools:text="There are no items to display" />

@@ -447,7 +447,9 @@ private fun SignalList(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    // 12dp side margin to line up with the 12dp switch cards below; the intro card
+                    // used to sit 4dp further in than everything under it.
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surfaceContainer
             ) {
@@ -688,7 +690,7 @@ private fun AppList(
             onValueChange = { query = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 12.dp),
             placeholder = { Text(stringResource(R.string.hiding_search_hint)) },
             singleLine = true,
             // Same capsule as the AppOps / app-management search fields; the stock 4dp corner
@@ -699,7 +701,7 @@ private fun AppList(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             Spacer(Modifier.weight(1f))
             Text(

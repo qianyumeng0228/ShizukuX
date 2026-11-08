@@ -198,7 +198,7 @@ private fun WifiScreen(
 
             if (error != null) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -216,7 +216,7 @@ private fun WifiScreen(
                 onValueChange = { query = it },
                 singleLine = true,
                 placeholder = { Text(stringResource(R.string.wifi_search_hint)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(24.dp)
             )
 

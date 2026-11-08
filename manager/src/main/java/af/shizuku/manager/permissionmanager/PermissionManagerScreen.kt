@@ -314,9 +314,12 @@ private fun AppListPane(
             onValueChange = onQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             placeholder = { Text(stringResource(R.string.permission_manager_search_hint)) },
             singleLine = true,
+            // Capsule corner + 12dp side margin so this page matches the other list pages; the
+            // stock 4dp rectangle was the only square-cornered search field left in the app.
+            shape = RoundedCornerShape(24.dp),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = {})
         )

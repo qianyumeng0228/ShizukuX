@@ -16,7 +16,7 @@ import af.shizuku.manager.database.DhizukuAppManager
 import af.shizuku.manager.database.DhizukuAppRoom
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.switchmaterial.SwitchMaterial
+import com.google.android.material.materialswitch.MaterialSwitch
 import kotlinx.coroutines.flow.first
 
 /**
@@ -67,7 +67,7 @@ class DhizukuAppsAdapter(
         private val label: TextView = itemView.findViewById(R.id.app_label)
         private val packageName: TextView = itemView.findViewById(R.id.app_package)
         private val allowRow: LinearLayout = itemView.findViewById(R.id.allow_row)
-        private val allowSwitch: SwitchMaterial = itemView.findViewById(R.id.allow_switch)
+        private val allowSwitch: MaterialSwitch = itemView.findViewById(R.id.allow_switch)
         private val blockedNotice: LinearLayout = itemView.findViewById(R.id.blocked_notice)
         private val blockButton: MaterialButton = itemView.findViewById(R.id.block_button)
 

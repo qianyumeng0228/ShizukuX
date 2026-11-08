@@ -25,9 +25,9 @@
         android:layout_weight="1"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:paddingStart="16dp"
+        android:paddingStart="@dimen/glass_card_margin"
         android:paddingTop="4dp"
-        android:paddingEnd="16dp"
+        android:paddingEnd="@dimen/glass_card_margin"
         android:paddingBottom="24dp">
 
         <LinearLayout
