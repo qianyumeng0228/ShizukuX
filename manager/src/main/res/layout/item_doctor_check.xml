@@ -6,7 +6,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="16dp"
+    android:paddingHorizontal="@dimen/glass_card_content_padding"
+    android:paddingVertical="@dimen/m3e_spacing_medium"
     android:background="?selectableItemBackground">
 
     <ImageView

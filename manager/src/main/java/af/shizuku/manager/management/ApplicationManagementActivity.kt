@@ -492,7 +492,9 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
 }
 
 class AppListItemDecoration(context: Context) : af.shizuku.manager.utils.M3ECardItemDecoration(context) {
-    private val dividerInset = 72f * density // icon width + margins
+    // 26dp content padding + 48dp app icon + 24dp label margin: the hairline starts where the
+    // title does instead of crossing the icon column.
+    private val dividerInset = 98f * density
 
     override fun getDividerInset(view: View): Float = dividerInset
     override fun getDividerEndInset(view: View): Float = cardMargin

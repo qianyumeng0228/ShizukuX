@@ -28,7 +28,10 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     // Matches every other 28dp/ExtraLarge card in the app (see #333) and follows the Shape
     // Style setting (Modern/Classic/Squircle) instead of a fixed radius.
     protected val cornerRadius = context.themeCornerSizePx(com.google.android.material.R.attr.shapeAppearanceCornerExtraLarge)
-    protected val cardMargin = context.resources.getDimension(R.dimen.m3e_spacing_medium)
+    // Same 12dp inset the Compose pages use (Modifier.padding(horizontal = 12.dp)), so a list
+    // card and a Compose row card line up at the same x when the two page families are seen one
+    // after the other. Items compensate with glass_card_content_padding.
+    protected val cardMargin = context.resources.getDimension(R.dimen.glass_card_margin)
     protected val density = context.resources.displayMetrics.density
 
     init {

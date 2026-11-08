@@ -74,6 +74,11 @@ class ServiceDoctorActivity : AppBarActivity() {
             af.shizuku.manager.utils.M3ECardItemDecoration(this@ServiceDoctorActivity) {
             override fun shouldDrawDivider(parent: RecyclerView, index: Int, count: Int) =
                 index < count - 1
+
+            // Align the hairline with the title, not with the icon: 26dp content padding + the
+            // 24dp status icon + its 16dp gap. The base class default (72dp) predates the content
+            // padding change and would otherwise cut across the icon column.
+            override fun getDividerInset(view: View): Float = 66f * view.resources.displayMetrics.density
         })
         checkListAdapter = CheckListAdapter()
         binding.checkList.adapter = checkListAdapter
