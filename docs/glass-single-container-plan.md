@@ -102,13 +102,22 @@ LauncherAlias ──▶ MainActivity ──▶ HomeActivity : GlassShellActivity
 | k2121 | 纵向滚动不误翻页、芯片点击、长按多选、行内开关点击 | 通过（列表上滚 / 已选择 1 项 / 开关开→关→开复原） |
 | k2121 | 连续链路 应用→模块→终端→设置，胶囊逐页跟随 | 通过 |
 | k2121 | 深色五页（首页/应用/模块/终端/设置） | 通过，遮罩与卡片均走深色 |
+| k2121 | 独立页（root 启动 `ApplicationManagementActivity`）点底栏「首页」 | 通过：回到容器首页，独立页已出栈（`t-1`），容器实例仍只有一条 |
+| k2121 | 独立页点底栏「应用」 | 通过：CLEAR_TOP 复用容器并 `animateScrollToPage(1)`，落到容器应用页（顶部「应用管理」+搜索+芯片+「切换全部」卡完整） |
 
 ## 未决与遗留
 
 1. **多选期间 `load()` 重排**：`onResume` / `ShizukuStateMachine` 触发的刷新会让选中随行位置漂移
    （`k108_undo_ok.png` 曾有实证）。k2119/k2120 未复现，但目前没有抑制逻辑。
-2. **应用页行内左右滑（原 `app_info`）在容器内等同失效**：横向拖动现在优先归 pager。
-   是否需要替代入口（行菜单项 / 长按菜单）尚未拍板。
+2. **应用页行内左右滑（原 `app_info` 等动作）在容器内不再由触摸触发**：横向拖动优先归 pager，
+   `rowSwipeEnabled = false` 因此在 `AppsController` 里关掉了 `ItemTouchHelper`。动作本身没有丢，
+   目前有三条通道：① TalkBack 的无障碍自定义动作（`AppViewHolder` 的
+   `accessibility_action_swipe_right/left` → `AppRowHost.onRowSwipe`）；
+   ② 多选态下长按已选中行弹出的菜单（`buildEnabledActions`：打开应用 / **应用信息** /
+   授权·撤销 / 隐藏 / 冻结）；③ 独立 `ApplicationManagementActivity` 仍按老实现挂着 `ItemTouchHelper`，
+   行滑照旧可用。是否需要给容器页补一个显式入口尚未拍板。
+   另注：`rowSwipeEnabled` 是常量 `false`，注释里"按宿主切换"的说法尚未实现——目前只有容器构造
+   `AppsController`，所以不影响行为，但接手时要按宿主显式传入而不是照抄注释。
 3. **`TerminalPage` 的中间层 binding** 在 pager 回收时没有清理逻辑。
 4. **浅色玻璃不透明度 95%** 与设计稿 §3.1（`.55 / .42`）不一致，未调。
 5. 仍是 `strokeWidth="0dp"` 的卡片：`activity_root_compatibility.xml`(3)、
