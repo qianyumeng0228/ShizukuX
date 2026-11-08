@@ -379,7 +379,125 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
 3. **`gfxinfo` 帧计数不能当点击证据**：空闲 3 秒 `Total frames rendered` 照样涨 748，
    点击后 1 秒只涨 262（`_sp\frames.py`），噪声远大于信号。
 
-## 入口与返回键
+## watchdog 自愈：为什么一直起不来，最后怎么起得来（k2145–k2166）
+
+「杀进程后首页停在未运行、等多久都不恢复」是本轮唯一的 bug 类需求。逐版取证（k2145 → k2166，
+每版装机实测 + 活动日志回读）把它拆成三个独立缺陷：**起不来**（ADB starter 随会话死亡）、
+**不知道死了**（状态机拿不到 CRASHED）、**知道也不动**（collector 一轮异常就整条循环退出）。
+三者都在 k2166 上修掉并实测闭环。
+
+### 结论一：这台设备上 root 自愈不是可修代码，是环境
+
+先排掉 root 这条路，以免反复在 `rootStart()` 里浪费时间：
+
+- `killshizuku.sh` 清双进程后，活动日志只有 `Watchdog: restarting after crash #N`，从不出现
+  `the server came back`——即重启动作执行了，进程没起来。
+- k2147 拿到决定性一行：
+  `Watchdog: root start threw IOException: Cannot run program "su": error=13, Permission denied`。
+- 设备侧三条互证：`/proc/<app pid>/root/system/bin/su` **不存在**（app 的 mount namespace 里没有 su 入口）、
+  `getenforce` 空输出、`dmesg` 满屏 `avc: denied`。
+
+即 **SukiSU 不把 su 注入 app 域**，`Runtime.exec("su")` 在 execve 阶段就 EACCES，弹不出授权、
+也谈不上拒绝。这与 KernelSU 系「root 只在 shell/zygote 特定域可用」的设计一致，不是适配 bug。
+所以本机自愈只能走 ADB；`ShizukuReceiverStarter.start()` 的 `adbUsable` 判据也从
+「`service.adb.tcp.port` 存在」放宽为「该 prop > 0 **或** `last_adb_port` > 0」，
+否则 ADB 路线在属性为空时被整段跳过，watchdog 直接停在 root 死路上。
+
+### 结论二：ADB 能启动，但 starter 活不过 socket 关闭
+
+k2148 起能打出 `Service started via ADB on port 38911`，进程却几秒归零。k2149（nohup）、
+k2150（setsid）、k2151（`</dev/null`）三版均无效；而手工执行
+
+```
+( setsid <codePath>/lib/arm64/libshizuku.so --apk=<codePath>/base.apk </dev/null >/dev/null 2>&1 & ) ; exit 0
+```
+
+能拿到 `info: shizuku_server pid is …` 且 ppid=1 长期存活——**同一条命令，手工成功、代码失败**。
+
+k2164 把实际发出去的整条命令写进活动日志，逐字比对确认两边完全一致：
+
+```
+ADB sent: ( setsid /data/app/~~CtVG…/lib/arm64/libshizuku.so --apk=…/base.apk </dev/null >>/data/local/tmp/svc_start.log 2>&1 & ) ; exit 0
+```
+
+同一条命令在宿主 `adb shell` 里重放成功，在 `AdbClient` 通道里必失败。差异只剩**关闭时机**：
+
+- `AdbClient.command()` 收到 `A_CLSE` 就 `write(A_CLSE)` 返回，`use{}` 随即 `close()` socket；
+  adbd 在 shell 进程退出后立刻发 `A_CLSE`，于是 socket 在**几十毫秒内**关掉，adbd 对 shell 的
+  进程组发 SIGHUP。
+- 此时 `( setsid … & )` 里的子进程正处于 `fork` 与 `setsid()` 之间——还没脱离会话，SIGHUP 直接杀掉，
+  `exec` 都没走到。证据：`/data/local/tmp/adb_probe_ok` 被创建（说明命令确实到了 adbd）、
+  `svc_start.log` 0 字节（说明 starter 一行都没打印）、`ps` 无进程，而调用方仍然写
+  「启动成功」。
+- 宿主客户端在 shell 退出后还要处理传输与 UI，关门晚几十毫秒，窗口刚好够 `setsid()` 完成。
+
+**修复**：命令末尾加 `sleep 1`——`( setsid … & ) ; sleep 1; exit 0`。shell 保持 1 秒才退出，
+`A_CLSE` 相应延后，`setsid()` 已完成、进程组已脱离，SIGHUP 打不到。k2165 首次验证：
+冷启 4–60s `procs=3` 稳定，运行中 kill 三个进程后 **4 秒**回到 2 并稳定到 88s。
+
+### 结论三：状态机根本没拿到「已崩溃」
+
+修好启动之后还有第二层：kill 掉服务，`procs` 归零、日志零新增，而 app 进程与
+`WatchdogService`（`isForeground=true foregroundId=1001`）都活着。读 prefs 得到
+`last_settled_shizuku_state=CRASHED`——**探针确实判到了**，卡在「CRASHED 之后没人动手」。
+
+两条原因：
+
+1. **binder death 回调没被 arm**：`Shizuku.addBinderReceivedListener` 只在本进程真正取过 binder
+   引用之后才会挂上 death 回调。冷启路径（boot sync / 广播）只 `pingBinder()`，没取引用，
+   服务死时自然收不到通知；`update()` 又只在少数用户路径被调用，于是状态永久停在 RUNNING。
+2. **`update()` 把健康读成死亡**：原先判据是 `Shizuku.getBinder()?.pingBinder() == true`，
+   而 `getBinder()` 在本进程取引用之前恒为 `null`，AND 进去就把活着的 server 判成 dead，
+   状态反向粘在 STARTING。
+
+**修复**：`WatchdogService` 新增 `probeJob`，每 `PROBE_INTERVAL_MS=5s` 在 IO 线程
+`Shizuku.pingBinder()` 一次：活 → 强制 `set(RUNNING)`（顺带解开持久化的 STARTING）；
+死 → RUNNING 转 CRASHED；STARTING 在 `STARTING_GRACE_MS=30s` 内无应答也转 CRASHED。
+`update()` 改为直接信 `pingBinder()`（与首页状态卡同一判据）。
+
+### 结论四：一轮异常就把整条自愈链断掉
+
+k2160 出现最费解的现象：`al25` 里 watchdog 反复
+`restarting after crash #1 / #2`、每次都打 `Service started via ADB`，`procs` 全程 0。
+k2164 又出现 `collector round failed: td0: Child of the scoped flow was cancelled`——
+`collectLatest` 取消上一个 child 属正常控制流，却被当作故障记下来，说明异常确实在
+collector 体内逃逸过。
+
+探针与 collector 都是 `while/collectLatest` 里裸跑业务，任何一次
+`ActivityLogManager`/状态切换抛出异常都会静默结束协程：探针死了就再也判不出 CRASHED，
+collector 死了就再也没人处理 CRASHED，两种都表现为「watchdog 完全不工作」。
+
+**修复**：两处都改为**逐轮 try/catch**——`if (t is CancellationException) throw t` 先行
+（避免把 `collectLatest` 的正常取消记成故障），其余 `Throwable` 记
+`Watchdog: probe round failed:` / `Watchdog: collector round failed:` 后继续下一轮。
+`probeJob` 在 `onDestroy()` 一并取消。
+
+### 结论五：并发自动启动会留下孤儿
+
+冷启后常见 `procs=3`（1 孤儿 `shizuku_plus_server` + 1 正常配对）。原因是
+`ShizukuReceiverStarter.start()` 被冷启 receiver、watchdog、ADB worker、boot sync
+同时调用，各自 spawn 一个 starter：后一个 starter 杀掉前一个 server 再起，
+失败就留下一个没人管的 `shizuku_plus_server`。
+
+**修复**：非 `forceStart` 的自动调用加 10s 去重闸（`startGate` + `lastAutoStartAt` +
+`START_DEDUP_WINDOW_MS=10_000L`）。窗口取 10s 而非更长：一次 ADB bring-up 约 2–3s，
+10s 足够吞掉并发，又不会拖慢 watchdog 自身的退避重试；用户显式启动（`forceStart`）永不被节流。
+效果：k2166 冷启 4–24s 仍会短暂 3 进程，28s 起收敛到 2，不再出现长期 3 进程。
+
+### 验收（k2165 / k2166，装机实测）
+
+| 版本 | 场景 | 结果 |
+| --- | --- | --- |
+| k2165（Code 2149） | 冷启（无服务） | 4–60s `procs=3` 稳定，28s 后收敛 2 |
+| k2165 | 运行中 kill 三进程 | **4s 回到 2**，稳定到 88s；`k165_healed.png` 首页「正在运行 / 版本 13.7, ADB」 |
+| k2166（Code 2150） | 冷启 | 4–24s `procs=3`，28s 起 `procs=2` |
+| k2166 | 运行中 kill | **4s 回到 2**，稳定 72s；`k166_healed.png` 首页「正在运行 / 已授权 4 个应用」 |
+| k2166 | 活动日志闭环 | `05:35:59 Watchdog: restarting after crash #1` → `05:36:01 the server came back after restart #1` → `05:36:02 Service started via ADB on port 38911` |
+
+活动日志回读必须**同时拉 `.db` 与 `-wal`**：库上限 101 行，kill→重启那一两行常常还落在 wal 里，
+只拉 `.db` 会读到「没有任何新增」的假象（k2165 首轮即栽在这里）。
+
+
 
 - 底栏在旧独立页里点击时走 `GlassTabs.open()`：`Intent(MainActivity).putExtra(start_page)`
   + `CLEAR_TOP | SINGLE_TOP` 复用已在运行的容器，然后 `finish()` 自己——切 tab 不是下钻，
@@ -445,18 +563,18 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
    `AdbStartWorker` 的 `catch` 改走 `markStartFailed()`（落 `CRASHED` 并重新探测 binder），停服意图
    同时从"状态推导"改为独立键 `user_stopped_intent`（缺键时回落旧判据）。细节与实测见〈k2139〉一节。
 9. 30+ 次提交均未 push / tag / Release（对外动作需明确指令）。
-10. **ADB 模式（PC 侧 `adb forward`、`persist.adb.tcp.port` 为空）下 watchdog 自愈没起来**（未修）。
-    k2143 运行态用 `_sp\killshizuku.sh` 清掉双进程后，活动日志落 id 85（02:41:26）与 id 86（02:46:01）
-    两条 `Watchdog: restarting after crash #1`，**都没有配套的 `the server came back after restart #1`**；
-    直到 02:47:15 手动 `su 0 am start …/starter.StarterActivity` 才落 id 87
-    `Service started via ADB on port 40597`。代码级推断（未逐条取证）：`getAdbTcpPort()` 只读
-    `service.adb.tcp.port` / `persist.adb.tcp.port`（本机两者皆空 → 返回 -1），于是
-    `ShizukuReceiverStarter.start()` 里 `adbUsable=false`，改走异步 `rootStart()`；而服务本身是
-    经 PC 侧 `adb forward` 的 40597 在跑，ADB 路径其实可用。这与 k2139 修掉的"失败后落 `STOPPED`
-    断链"不是一回事（本次状态停在 `CRASHED`、`user_stopped_intent=false`，watchdog 确实动作了，
-    只是重启没成功）。下一步要先确认 `rootStart()` 里 `Shell.getShell().isRoot` 在 app 内的取值，
-    再决定是"把 `last_adb_port` 纳入 `adbUsable` 判据"还是"修 root 兜底"。
-11. **冷启首帧出现前的点击会丢**（不是稳定缺陷）：k2140/k2141 装机后首次启动，`am start` 后 3 秒
+10. ~~ADB 模式（PC 侧 `adb forward`、`persist.adb.tcp.port` 为空）下 watchdog 自愈没起来~~
+    **已在 k2166 修掉**：根因不是 `adbUsable` 一处，而是「`A_CLSE` 立刻关 socket 杀掉尚未
+    `setsid` 的 starter」+「状态机拿不到 CRASHED」+「collector 一轮异常即退出」三层叠加。
+    全部取证、修复与验收见〈watchdog 自愈〉一节。
+11. **自愈后授权列表可能清空**：ADB 重启会拉起一个全新 server 实例，grant 列表随之归零——
+    k2165 自愈后首页显示「已授权 0 个应用」，k2166 同一操作保住 4 个（未复现差异，怀疑与
+    旧 server 的 `last_dead_binder` 是否已被清理有关）。是否需要在重启成功后按持久化记录重放
+    授权，尚无定论：重放等于在新实例上恢复旧的信任关系，安全面与"用户看得见的连续性"需要取舍。
+12. **冷启初期的短时 3 进程未根除**：10s 去重闸只能让并发调用"从第二个起重合"，已经 spawn 出的
+    那个仍会跑完。k2166 上约 28s 内自行收敛，没有长期孤儿。若要彻底消除，需改成「启动前先
+    `pingBinder()` 判活再决定」，但那会与 `STARTING` 的语义打架，故留待后续。
+13. **冷启首帧出现前的点击会丢**（不是稳定缺陷）：k2140/k2141 装机后首次启动，`am start` 后 3 秒
     点底栏「应用」需要点两次才切页（`k140_a_apps.png` → `k140_b_apps.png`）。复核：已运行态连跑 3 轮
     单次 `tap` 全部一次切页（`k144_firsttap.png`），`force-stop` 后冷启等 3 秒再点也 2/2 命中
     （`k144cold3_sheet.png`）。差别在安装后首次冷启的 ART/首帧更慢，3 秒不够——属于启动期输入窗口，
