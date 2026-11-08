@@ -20,7 +20,10 @@ class LocaleActionFireReceiver : BroadcastReceiver() {
         val bundle = intent.getBundleExtra(EXTRA_BUNDLE) ?: return
 
         when (bundle.getString(BUNDLE_KEY_ACTION)) {
-            ACTION_START -> ShizukuReceiverStarter.start(context)
+            // Explicit user/automation action: clear the stop tombstone (see
+            // ShizukuStateMachine.markUserStopped), otherwise a Locale "start" after a manual
+            // stop would be silently skipped by the automatic-start guard.
+            ACTION_START -> ShizukuReceiverStarter.start(context, true)
             ACTION_STOP -> ShizukuReceiverStarter.stop()
             else -> Timber.tag("LocaleActionFireReceiver").w("Fired with unknown/missing action")
         }

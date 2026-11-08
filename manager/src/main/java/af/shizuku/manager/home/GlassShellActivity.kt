@@ -17,6 +17,7 @@ import af.shizuku.manager.settings.compose.SettingsScreen
 import af.shizuku.manager.shell.buildTerminalPage
 import af.shizuku.manager.shell.exportTerminalAssets
 import af.shizuku.manager.utils.GlassTabs
+import af.shizuku.manager.utils.ShizukuStateMachine
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -81,7 +82,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
     af.shizuku.manager.management.AppRowHost, com.airbnb.mvrx.MavericksView {
 
     private val settingsCtl by lazy { SettingsController(this) }
-    private val appsCtl by lazy { AppsController(this) }
+    private val appsCtl by lazy { AppsController(this, false, appsModel, exitOnDead = false) }
 
     // Home is the same page the standalone HomeActivity renders; it lives in HomeController so both
     // hosts can own it instead of the container keeping a placeholder.
@@ -352,9 +353,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
         android.app.AlertDialog.Builder(this)
             .setMessage(R.string.dialog_stop_message)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                af.shizuku.manager.utils.ShizukuStateMachine.set(
-                    af.shizuku.manager.utils.ShizukuStateMachine.State.STOPPING
-                )
+                af.shizuku.manager.utils.ShizukuStateMachine.markUserStopped()
                 af.shizuku.manager.receiver.ShizukuReceiverStarter.killServerProcess()
                 runCatching { rikka.shizuku.Shizuku.exit() }
             }
@@ -511,6 +510,11 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
 
     override fun onResume() {
         super.onResume()
+        // The state machine persists the last settled state, so a process that cold-starts after
+        // the server was killed can come up believing it is still RUNNING and render rows it can
+        // no longer act on. MainActivity pings the binder in onStart; the container is also a
+        // launcher entry and has to do the same before any page reads the state.
+        ShizukuStateMachine.update()
         // Both hosted pages have to re-read what the settings pages can change while the
         // container is in the background: the apps list (permissions, hidden apps, swipe
         // actions) and the module list (a module may have been installed elsewhere).

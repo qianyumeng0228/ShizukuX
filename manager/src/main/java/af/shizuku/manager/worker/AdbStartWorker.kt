@@ -55,6 +55,19 @@ import timber.log.Timber
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         try {
+            // Last line of defence: this worker is enqueued by the tile, the starter and the boot
+            // path, and a request queued before the user stopped the server must not survive that
+            // stop. WorkManager may replay it on the next cold start, which is exactly how a
+            // deliberately stopped server used to come back as an ADB instance with an empty
+            // grant list. A deliberate start writes STARTING first and clears the tombstone.
+            if (ShizukuSettings.isUserStoppedIntent()) {
+                Timber.tag("AdbStartWorker")
+                    .i("Auto start skipped: the user stopped the service deliberately")
+                val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                nm.cancel(ShizukuReceiverStarter.NOTIFICATION_ID)
+                return Result.success()
+            }
+
             updateNotification(
                 applicationContext,
                 WorkerState.RUNNING

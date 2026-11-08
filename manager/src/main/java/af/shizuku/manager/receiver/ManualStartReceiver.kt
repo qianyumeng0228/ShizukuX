@@ -9,6 +9,9 @@ class ManualStartReceiver : AuthenticatedReceiver() {
         val applicationId = BuildConfig.APPLICATION_ID
         if (intent.action != "${applicationId}.START") return
 
-        ShizukuReceiverStarter.start(context)
+        // A caller firing START is a user-visible action (Tasker/automation), i.e. an explicit
+        // start: it must clear the "the user stopped it" tombstone, otherwise every automation-
+        // driven start would be skipped after a manual stop.
+        ShizukuReceiverStarter.start(context, true)
     }
 }

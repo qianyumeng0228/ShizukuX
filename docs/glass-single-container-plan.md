@@ -80,6 +80,194 @@ LauncherAlias ──▶ MainActivity ──▶ HomeActivity : GlassShellActivity
   （`取消隐藏所选应用`），仅 `values` 与 `values-zh-rCN`，其余语言回退英文；
   容器 Compose 菜单与独立页菜单同用后者。
 
+## 应用管理的选中集语义（可见即作用域）
+
+`AppsAdapter` 的选中集是按包名存的 `HashSet<String>`（`selectedPackages`），DiffUtil 重建列表
+时不会自动清理它。于是"长按选中一行 → 切到另一个筛选"会出现列表里没有任何勾选、顶栏仍写
+「已选择 N 项」，而批量动作会作用到用户看不见的应用（`k121_z2_granted.png` 为实证）。
+
+修法：筛选/搜索后的数据集一确定就裁剪选中集，语义定为**勾选只作用于当前可见集合**，
+与 `selectAll()` 读 `viewModel.packages.value.data` 的口径一致。
+
+- 容器：`AppsController` 的 `packages.observe` SUCCESS 分支在 `adapter.updateData(data)` 之后
+  调 `pruneSelectionToVisible(data)`；同一筛选数据集上 `retainAll(visible)`，裁空则
+  `exitSelection()`，否则更新 `selectionCount` + `notifyDataSetChanged()`。
+- 独立页：`ApplicationManagementActivity` 有同语义的一份（`exitSelectionUi()` 之后），
+  因为该页不共用 `AppsController`，它自己维护多选与标题。
+- 两侧都只在多选态下生效；非多选态直接返回，不做多余通知。
+
+## 批量授权 / 撤销的守卫（「切换全部」卡）
+
+`app_list_toggle_all.xml` 把 `MaterialCardView` 整体 `clickable=true`，内层
+`LinearLayout` / `TextView` / `MaterialSwitch` 全部 `clickable=false`，所以**整张卡就是热区**；
+旧实现 `onClick()` 直接 `areAllEnabled()` → `setAllEnabled()`，没有确认、没有重入保护，
+一次误触就会把当前筛选列表里的所有应用批量授权或批量撤销。
+
+- 事故实证：20:20 前后在「已授权」筛选（5 个应用）上误触，20:21 首页即显示
+  「已授权 0 个应用」（`k122_g_home.png`），20:24「已授权」筛选为空态
+  （`k122_i_granted_now.png`）。同一次误触无法从界面看出发生过什么。
+- 守卫一：`busy` 门。`onClick` 先取快照再置 `busy`，IO 算完目标状态后回主线程置回，
+  确认框与真正执行各自再置一次，避免连点叠加。
+- 守卫二：二次确认。`confirmToggleAll(items, enabled)` 按目标状态选文案并带条目数
+  （`app_management_toggle_all_grant_message` / `..._revoke_message`，en + zh-rCN），
+  点「确定」才 `applyToggleAll()` 在 IO 执行，完成后更新开关与
+  `notifyItemRangeChanged(0, itemCount)`；点「取消」什么都不做。
+  实测：已授权筛选下点卡片弹「撤销当前列表中全部 5 个应用的 Shizuku 权限？」，
+  取消后 5 行仍全部保持开启。
+- 守卫三：header 的统计要跟着列表走。DiffUtil 把任意两个 `HeaderMarker` 判为
+  `areContentsTheSame`，切筛选时 header 不会重绑，开关会停在上一份列表的聚合值
+  （日志实证 `refresh items=14 enabled=false`，而当时可见列表是 5 项全已授权）。
+  修法：`AppsAdapter.updateData()` 在 `dispatchUpdatesTo` 之后，若首项是 `HeaderMarker`
+  就补一次 `notifyItemChanged(0)`，强制按新列表重算。
+
+## 首页「应用管理」卡的授权计数
+
+卡片的标题由 `ManageAppsViewHolder` 决定：`count == null` 退回通用「应用管理」
+（`HomeState.grantedAppCount` 注释写明 null = 尚未加载，避免冷启先闪一个 0），
+拿到数字才拼 `home_app_management_authorized_apps_count`。
+
+容器首页走 XML 路径（`HomePage` → `homeCtl.provider` → `HomeAdapter` → `ManageAppsViewHolder`），
+Compose 版 `HomeCards` 的 `grantedResource` 与容器无关。计数来源是
+`AppsViewModel.grantedCount`：`HomeController.attach()` 登记观察，SUCCESS 时
+`homeModel.updateGrantedAppCount(...)` 再 `adapter.updateData()`。
+
+排查与结论（三轮试探，全部以真机 logcat 取证）：
+
+- k2126 / k2127 先按"没人 load"和"两个模型实例"两个方向试探，均无效：
+  应用页明明有数据，首页仍 `render granted=null`。
+- k2128 在 `load()` 成功路径与观察回调各加一行日志，得到
+  `HomeGrant: status=SUCCESS data=5` 紧接 `HomeAdapter: render granted=null`——
+  说明数据已经到达首页，断在 state 传递这一环。
+- k2129 在 `updateGrantedAppCount()` 之后立刻 `withState` 回读，打印
+  `after set=null model=…`，且与 `HomeAdapter` 打印的 model hash 相同：
+  `setState { copy(grantedAppCount = 5) }` 没有反映到同一个模型的 `withState`。
+
+修法（k2130）：
+
+- `HomeAdapter.updateData()` 改为 `val grantedCount = homeGrantedCount ?: appsModel.grantedCount.value?.data`，
+  以 LiveData 当前值为准、Mavericks state 作兜底，绕开上面那次失效的 state 写回。
+- `HomeController.attach()` 在登记观察后补一次 `appsModel.load(onlyCount = true)`：
+  应用页是 pager 惰性挂载，用户不打开它就没人算过计数（只算聚合值，一遍包列表）。
+- `AppsController` 增加 `sharedModel` 构造参数，容器传 `appsModel`，列表刷新与首页观察
+  落在同一个 LiveData 上（此前两边各自解析一次）。
+
+验证：k2130 冷启，`render granted=5`，卡片标题「已授权 5 个应用」（`k130_a_home.png`）。
+未测：授权 / 撤销之后**不离开首页**时计数是否即时刷新（两侧现在共用一个 LiveData，
+按链路应该会，但没有实测帧）。
+
+## 服务停止时容器不能自我关闭
+
+用户报的症状是"取消激活（停掉 Shizuku 服务）之后，再点图标一闪就退回桌面，打不开"。
+不是崩溃：`logcat -b crash` 干净，`ActivityTaskManager` 记录进程还在后台
+（`The Process xyz.shizuku.extra.api Already Exists in BG`），只是没有 Activity——Activity 自己
+`finish()` 了。
+
+根因是一条为独立管理页写的退出规则被搬进了容器：
+
+- `AppsController` 的 `stateListener` 原本是 `if (ShizukuStateMachine.isDead()) host.finish()`
+  （服务死了，应用管理页整页内容已无意义，该退出）。
+- `ShizukuStateMachine.addListener()` 在**注册时就用当前状态回调一次**（`listener(state.get())`），
+  不是只等后续变化。
+- 容器 `onResume()` 会 `appsCtl.refresh()`，`appsCtl` 是 `by lazy`，首次访问就构造
+  `AppsController` 并在 `attach()` 里注册该监听。
+
+于是服务已停止时冷启：pager 一摸到应用页 → 注册监听 → 立刻回放 `STOPPED` → `isDead()` 为真
+→ `host.finish()`，首页第一帧还没画出来，整个容器就没了。运行中停服同理，容器也一起退出。
+
+修法：`AppsController` 增加第四个构造参数 `exitOnDead: Boolean = true`（KDoc 写明两种宿主语义），
+监听改为 `if (exitOnDead && isDead && !host.isFinishing) host.finish()`；容器构造时传
+`exitOnDead = false`（`GlassShellActivity`），独立页 `ApplicationManagementActivity` 保持原语义。
+
+容器不退出之后还有两处必须跟着改，否则"能打开"只是能打开：
+
+- 停服态的应用页原本显示「没有找到结果 / 没有应用符合当前的筛选条件」，把服务不可用说成筛选
+  没命中。新增 `apps_empty_not_running_title` / `apps_empty_not_running_description`，
+  `applyEmptyState()` 按 `ShizukuStateMachine.isDead()` 二选一。
+- `Status.ERROR` 分支原本也是 `host.finish()`；容器里改为清空列表 + 显示未运行空态 + Toast。
+- 运行中停服，`stateListener` 在容器侧清空列表、隐藏 RecyclerView、切到未运行空态——否则旧的
+  行和开关还画在那里，用户以为还能操作。
+
+验证（k2132/k2133/k2134，服务用 `su 0 kill -9 <shizuku_plus_server pid>` 制造死亡）：
+
+| 场景 | 结果 |
+| --- | --- |
+| 服务已停止时冷启（`am start` LauncherAlias） | 停在容器首页，红卡「ShizukuX 未运行 / 已停止」（`k133_a_home_dead.png`） |
+| 停服态切到「应用」页 | 留在容器，显示「ShizukuX 未运行 / 启动服务后才能读取应用列表」（`k133_b_apps_dead.png`） |
+| 容器在「应用」页开着时 kill 掉 server | 不退出，「应用」页当场切成未运行空态（`k134_c_after_kill.png`） |
+| 同上后回首页 | 首页正常，`logcat -b crash` 只有被 kill 的 `shizuku_plus_server` 的 SIGABRT，无 app 记录 |
+| 服务在跑（Watchdog 自动重启） | 首页恢复「正在运行」，计数重算（`k134_d_home_after_kill.png`） |
+
+服务重新起来时页面也要自己回到列表：`stateListener` 记录 `serverWasDead`，由死转活且页面已 attach
+就 `viewModel.load()`（`load()` 本身在 `Dispatchers.IO` 上跑，任何线程调用都安全），数据回流后由
+SUCCESS 分支把空态收起、列表恢复。验证（k2135）：停在应用页不动 → `kill -9` 服务 → 1 秒内切空态
+（`k135_g_dead.png`）→ root 重新拉起 server → 6 秒内自动回到完整列表，全程没有切页，也没有点任何东西
+（`k135_h_recovered.png`）；首页状态卡同步回到「正在运行 / 已授权 4 个应用」（`k135_i_home_recovered.png`）。
+k2136 在同一链路上复核通过（`k136_c_dead.png` → `k136_d_recovered.png`）。
+
+补在 k2136 的还有一处：`GlassShellActivity.onResume()` 现在先 `ShizukuStateMachine.update()` 再刷新
+各页。状态机会把上一次的判定持久化（`loadPersistedSettledState()` 读回 `RUNNING`），所以服务被强杀、
+没走过 `setDead()` 的进程冷启时，可能以为服务还在运行并画出已经不能操作的列表。容器和 `MainActivity`
+一样是 launcher 入口，都得在拿状态之前先 ping 一次 binder。`update()` 在 `STARTING/STOPPING` 期间
+保持原状态，只在 ping 失败时把 `RUNNING` 判成 `CRASHED`，不会打断正在进行的启动流程。
+
+### k2137–k2138：用户主动停服后冷启不再被自动拉起（「停服墓碑」四道闸）
+
+**现象**。首页 X → 确定这条主动停服路径本身不复活：确认后 `k136_i_stopped.png` 红卡「ShizukuX 未运行 /
+ShizukuX已停止」，`ps` 只剩 app 进程，等 34 秒仍为空，`settings.xml` 写成 `STOPPED`。但紧接着
+`am force-stop` + 冷启，3–5 秒内服务必定以 shell 身份回来：`k136_k_cold_dead_home.png` 显示
+「正在运行 / 版本 13.7, **ADB** / 已授权 0 个应用」，活动日志库新增 `Service started via ADB on port 40597`，
+`settings.xml` 由 `STOPPED` 翻回 `RUNNING`。停服 → `force-stop` → **静置 10 秒不启动 App** 时 `ps` 为空，
+再 `am start` 4 秒后服务出现，说明拉起动作发生在**冷启过程中**。
+
+**根因（三条链叠在一起）**：
+
+1. 停止路径不落终态。`confirmStopServer()` 只 `set(STOPPING)` → `killServerProcess()` → `Shizuku.exit()`。
+   `STOPPING` 在 `transition()` 里不持久化，`killServerProcess()`/`exit()` 又是我方主动断 binder，
+   `OnBinderDeadListener` 不保证回调，于是状态机停在 `STOPPING`、盘上留着的仍是 `RUNNING`。
+2. 进程被 force-stop / 冻结 / 回收后冷启，`loadPersistedSettledState()` 读回 `RUNNING`，`update()` 走
+   「此前 RUNNING 但 ping 失败」分支判成 `CRASHED`。`WatchdogService` 只对 `CRASHED` 动作，按崩溃处理调
+   `ShizukuReceiverStarter.start()` → `LaunchMethod.ADB` 分支 `AdbStartWorker.enqueue()` → 新 ADB server，
+   授权集合按新实例重算为 0。
+3. 冷启还有独立的自动入口。`BootCompleteReceiver` 在 `LOCKED_BOOT_COMPLETED` 直接
+   `LockedBootStartService.start()`（该 Service 内部直接 `AdbArm.arm` → 探端口 → `AdbStarter.startAdb`，
+   不查任何「用户已停」条件），`else` 分支与 `ShizukuApplication.onCreate` 的 watchdog 三件套各有一条。
+   `events` 缓冲里 `LockedBootStartService` 在冷启 0.2 s 内出现，坐实了这条入口。
+
+**修法**：把「用户要它停」变成一条可读、可清、所有自动入口都必须让路的记录（下称墓碑）。
+
+- `ShizukuSettings.isUserStoppedIntent()` = `last_settled_shizuku_state == "STOPPED"`。该值存在
+  device-protected storage（`getSettingsStorageContext`），解锁前也能读，正好覆盖
+  `LOCKED_BOOT_COMPLETED` 场景。
+- `ShizukuStateMachine.markUserStopped()`：先落 `STOPPED`（墓碑）→ 再 `set(STOPPING)` → 800 ms 后若仍
+  是 `STOPPING` 就 `setDead()`（等价 binder-dead 的 STOPPING→STOPPED，包含 USB 调试清理），解决
+  「我方断连收不到回调」。
+- `transition()` 在 `STARTING` 时把 `STARTING` 落盘，即任何显式启动都会覆盖墓碑；`loadPersistedSettledState()`
+  对 `STARTING` 走 else → `STOPPED`，所以「启动没完成就死」既不会被当成活，也不会被当成崩溃。
+- 停服入口统一改用它：`GlassShellActivity.confirmStopServer()`、`ShizukuTileService.onClick()`、
+  `TileOptionsActivity.stopShizuku()`、`ShizukuReceiverStarter.stop()`。
+- 四道自动入口全部加闸：① `ShizukuReceiverStarter.start()` 顶部（`!forceStart && isUserStoppedIntent()`
+  直接 return；`forceStart` 时先 `set(STARTING)` 清墓碑）；② `LockedBootStartService.runStart()` 顶部；
+  ③ `AdbStartWorker.doWork()` 顶部（取消 1447 通知并 `Result.success()`，挡 WorkManager 冷启重放）；
+  ④ `WatchdogService` 的 `CRASHED` 分支（记 `Watchdog: restart suppressed (the user stopped the service)`、
+  `set(STOPPED)`、不重启）。
+- `ManualStartReceiver` 与 `LocaleActionFireReceiver` 的 START 改为 `forceStart = true`：它们是用户或
+  自动化发起的一次显式启动，不该被墓碑拦死。
+
+**验证（k2137 / k2138，均为真机实测）**：
+
+| 场景 | 结果 |
+| --- | --- |
+| k2137 主动停服 | `k137_d_stopped.png` 红卡「未运行 / 已停止」，`last_settled_shizuku_state=STOPPED`，`shizuku_plus_server` 计数 0 |
+| k2137 停服后 `am force-stop` + 冷启 | 10 秒 `NO_SERVER_PROCESS`，22 秒复查仍为 0；`k137_e_cold.png` 红卡。停服前同一台机器冷启必然 3–5 秒复活，本项即为原缺陷的直接反证 |
+| k2138 重装（`MY_PACKAGE_REPLACED`） | 安装后 6 秒 `ps` 无服务：替换广播这条自动入口也没复活 |
+| k2138 显式启动（`StarterActivity`：检测到 40597 / 已配对 → ADB 启动） | 8874 `libshizuku.so` + 8875 `shizuku_plus_server` 起来，`last_settled_shizuku_state=RUNNING`、`server_started_build=2122`；`k138_e_home_running.png` 显示「正在运行 / ADB / 已授权 4 个应用」——墓碑被清、授权集合保留 |
+| k2138 第二轮停服 + 冷启 | 12 秒 `NO_SERVER_PROCESS_ROUND2`，`k138_f_cold2.png` 红卡 |
+| 反证：墓碑不误伤真实崩溃 | 显式启动后 `kill -9` 8875/8874，活动日志库第 69 条 `1794155825079 Watchdog: restarting after crash #1` —— watchdog 走的是重启流程，没有出现 `restart suppressed` |
+
+**这轮没解决的**：上面那条崩溃重启最终没把服务拉起来。该实例是 ADB 模式、`persist.adb.tcp.port` 为空 →
+`EnvironmentUtils.getAdbTcpPort()==0` → `start()` 转 root 探针 → `rootStart()` 失败 →
+`recoverFromFailedStart()` 落 `STOPPED`（既有逻辑，与墓碑无关）。同一现象在 k2136 就存在，记入〈未决与遗留〉。
+
 ## 入口与返回键
 
 - 底栏在旧独立页里点击时走 `GlassTabs.open()`：`Intent(MainActivity).putExtra(start_page)`
@@ -104,11 +292,23 @@ LauncherAlias ──▶ MainActivity ──▶ HomeActivity : GlassShellActivity
 | k2121 | 深色五页（首页/应用/模块/终端/设置） | 通过，遮罩与卡片均走深色 |
 | k2121 | 独立页（root 启动 `ApplicationManagementActivity`）点底栏「首页」 | 通过：回到容器首页，独立页已出栈（`t-1`），容器实例仍只有一条 |
 | k2121 | 独立页点底栏「应用」 | 通过：CLEAR_TOP 复用容器并 `animateScrollToPage(1)`，落到容器应用页（顶部「应用管理」+搜索+芯片+「切换全部」卡完整） |
+| k2124 → k2125 | 「切换全部」卡开关在「已授权」筛选下错位 | 通过：`notifyItemChanged(0)` 重绑 header，卡片开关随列表变开（`k125_a_granted.png`） |
+| k2125 | 切换筛选后的选中集 | 通过：可见保留、不可见裁剪（`k125_c_allkeep.png` / `k125_e_denied_prune.png`） |
+| k2130 | 首页「应用管理」卡授权计数 | 通过：`render granted=5`，标题「已授权 5 个应用」（`k130_a_home.png`） |
+| k2132 → k2134 | 停服后打不开（容器自我 finish） | 通过：停服冷启停在容器首页，应用页显示未运行空态（`k133_a_home_dead.png` / `k133_b_apps_dead.png`） |
+| k2134 | 运行中停服 | 通过：容器不退出，应用页当场切未运行空态（`k134_c_after_kill.png`） |
+| k2135 | 停在应用页时服务死而复生 | 通过：空态 6 秒内自动回列表，未切页、无操作（`k135_h_recovered.png`） |
+| k2136 | 同上链路复核 + 容器 onResume 先 ping binder | 通过：`k136_c_dead.png` → `k136_d_recovered.png`；冷启首页与应用页均正常（`k136_a_home.png` / `k136_b_apps.png`） |
+| k2137 / k2138 | 主动停服后 `force-stop` + 冷启不得复活（墓碑四道闸） | 通过：两轮均 `NO_SERVER_PROCESS`，红卡保持（`k137_e_cold.png` / `k138_f_cold2.png`）；显式启动可清墓碑并恢复 4 个授权（`k138_e_home_running.png`）；真实崩溃仍走 watchdog 重启流程（日志第 69 条） |
 
 ## 未决与遗留
 
-1. **多选期间 `load()` 重排**：`onResume` / `ShizukuStateMachine` 触发的刷新会让选中随行位置漂移
-   （`k108_undo_ok.png` 曾有实证）。k2119/k2120 未复现，但目前没有抑制逻辑。
+1. **多选期间 `load()` / 筛选重排**：`onResume`、`ShizukuStateMachine` 与筛选切换都会重发数据集
+   （`k108_undo_ok.png`、`k121_z2_granted.png` 均有实证）。现在两侧都在数据集落地时按"可见集合"
+   裁剪选中集（见〈应用管理的选中集语义〉）。实测（k2125）：在「已授权」筛选长按首行后切「全部」，
+   该行仍打勾、标题仍是「已选择 1 项」（`k125_c_allkeep.png`）；切回「已授权」勾选仍在
+   （`k125_d_back_granted.png`）；切到「被拒绝」时该行不可见，多选整体退出、标题回到「应用管理」
+   （`k125_e_denied_prune.png`）。即"切筛选后仍然可见的勾选按包名保留，不可见即裁剪"。
 2. **应用页行内左右滑（原 `app_info` 等动作）在容器内不再由触摸触发**：横向拖动优先归 pager，
    `rowSwipeEnabled = false` 因此在 `AppsController` 里关掉了 `ItemTouchHelper`。动作本身没有丢，
    目前有三条通道：① TalkBack 的无障碍自定义动作（`AppViewHolder` 的
@@ -125,7 +325,12 @@ LauncherAlias ──▶ MainActivity ──▶ HomeActivity : GlassShellActivity
    `home_item_container.xml`(1)、`swipe_hint_overlay.xml`(1)。
 6. **设置页搜索态是否隐藏底栏**未确认；当前搜索覆盖层会盖到底栏高度以上。
 7. 深色下「设置页最后一张卡下缘压到底栏上方」判为滚动内容透出，未逐像素核对。
-8. 30+ 次提交均未 push / tag / Release（对外动作需明确指令）。
+8. **ADB 模式下崩溃重启失败会落 STOPPED**：`persist.adb.tcp.port` 为空时 `getAdbTcpPort()` 为 0，
+   `ShizukuReceiverStarter.start()` 转 root 探针，`rootStart()` 失败后 `recoverFromFailedStart()` 写
+   `set(STOPPED)`，此后 watchdog 不再动作（`STOPPED` 不是它监听的 `CRASHED`）。k2138 实测复现
+   （`Watchdog: restarting after crash #1` 后无 `Service started via ADB`）。与墓碑无关，属既有逻辑；
+   修法是让 `recoverFromFailedStart()` 在失败时回到 `CRASHED`（保留自愈）而不是 `STOPPED`，待拍板。
+9. 30+ 次提交均未 push / tag / Release（对外动作需明确指令）。
 
 ## 与初版计划的差异
 

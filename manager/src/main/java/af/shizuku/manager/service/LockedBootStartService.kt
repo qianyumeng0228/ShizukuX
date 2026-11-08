@@ -14,6 +14,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbArm
 import af.shizuku.manager.adb.AdbPortProber
 import af.shizuku.manager.adb.AdbStarter
@@ -72,6 +73,17 @@ class LockedBootStartService : Service() {
     private suspend fun runStart() {
         try {
             val context = applicationContext
+
+            // This runs on its own (it is not gated by ShizukuReceiverStarter.start()'s checks),
+            // and it calls AdbStarter.startAdb() directly, so it must honour the stop tombstone
+            // itself. ShizukuSettings lives in device-protected storage, which is readable in
+            // direct boot, so this check works exactly where this service is used. Skipping here
+            // is not a regression for the boot case: the ordinary BOOT_COMPLETED path applies the
+            // same rule, and the user's next start clears the tombstone.
+            if (ShizukuSettings.isUserStoppedIntent()) {
+                Timber.tag(TAG).i("Start before the unlock skipped: the user stopped the service deliberately")
+                return
+            }
 
             // Arm wireless debugging through the AdbArm choke point (WRITE_SECURE_SETTINGS
             // or Device Owner) — everything this start needs is in device-protected storage

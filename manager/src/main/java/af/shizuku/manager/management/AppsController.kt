@@ -31,6 +31,7 @@ import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
+import af.shizuku.core.ui.EmptyStateView
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.authorization.AuthorizationManager
@@ -60,7 +61,24 @@ import java.util.Objects
 class AppsController(
     private val host: FragmentActivity,
     /** Whether a horizontal drag on a row runs the row's swipe action. See [setupSwipe]. */
-    private val rowSwipeEnabled: Boolean = false
+    private val rowSwipeEnabled: Boolean = false,
+    /**
+     * Share the host's model when the host already resolved one (the single container does).
+     * Resolving it twice used to hand the home card a different instance than the list, so the
+     * card's authorized count stayed unset - the pager mounts the apps page lazily, and the
+     * refresh the list performed landed on an object home was not observing.
+     */
+    sharedModel: AppsViewModel? = null,
+    /**
+     * Close the host when the server dies. Right for the standalone management page (its whole
+     * content is meaningless without the server); wrong for the single container, which also hosts
+     * home and has to stay open so the user can start the server again.
+     *
+     * [ShizukuStateMachine.addListener] replays the current state on registration, so this fires
+     * during attach: with the server already stopped, the container used to finish before it drew
+     * its first frame - the app looked like it crashed on launch.
+     */
+    private val exitOnDead: Boolean = true
 ) : AppViewHolder.Callbacks, AppRowHost {
 
     private companion object {
@@ -69,7 +87,7 @@ class AppsController(
     }
 
     val viewModel: AppsViewModel =
-        ViewModelProvider(host)[AppsViewModel::class.java]
+        sharedModel ?: ViewModelProvider(host)[AppsViewModel::class.java]
 
     val adapter = AppsAdapter()
 
@@ -89,9 +107,35 @@ class AppsController(
     private var firstLoad = true
     private var swipeRightAction = "none"
     private var swipeLeftAction = "none"
+    private var emptyState: EmptyStateView? = null
+    private var serverWasDead = ShizukuStateMachine.isDead()
 
     private val stateListener: (ShizukuStateMachine.State) -> Unit = {
-        if (ShizukuStateMachine.isDead() && !host.isFinishing) host.finish()
+        val dead = ShizukuStateMachine.isDead()
+        if (dead) {
+            if (exitOnDead) {
+                if (!host.isFinishing) host.finish()
+            } else {
+                // The container keeps running with the server down, so the list has to stop
+                // showing rows it can no longer act on - otherwise the toggles stay drawn as if
+                // everything were still authorized.
+                host.runOnUiThread {
+                    if (host.isFinishing || host.isDestroyed || !attached) return@runOnUiThread
+                    adapter.updateData(emptyList())
+                    recyclerView.visibility = View.GONE
+                    emptyState?.let {
+                        it.visibility = View.VISIBLE
+                        applyEmptyState(it)
+                    }
+                }
+            }
+        } else if (serverWasDead && attached) {
+            // The server came back while this page was sitting on the "not running" state. The
+            // page is already attached and nothing else would re-read the list - the user may
+            // never leave it - so reload here and let the SUCCESS branch restore the rows.
+            viewModel.load()
+        }
+        serverWasDead = dead
     }
 
     val sortOrder: SortOrder get() = viewModel.sortOrder
@@ -155,10 +199,8 @@ class AppsController(
         recyclerView = binding.list
 
         val emptyStateView = binding.emptyStateView
-        emptyStateView.setIcon(R.drawable.ic_empty_search_24)
-        emptyStateView.setTitle(R.string.empty_state_title_no_results)
-        emptyStateView.setDescription(R.string.empty_state_description_no_results)
-        emptyStateView.hideActionButton()
+        emptyState = emptyStateView
+        applyEmptyState(emptyStateView)
 
         // These two live in the app bar of the page root, not in the list binding, so they are
         // looked up by id exactly like the standalone activity did.
@@ -182,9 +224,11 @@ class AppsController(
                 Status.SUCCESS -> {
                     val data = it.data ?: emptyList()
                     adapter.updateData(data)
+                    pruneSelectionToVisible(data)
                     val hasData = data.isNotEmpty()
                     emptyStateView.visibility = if (hasData) View.GONE else View.VISIBLE
                     recyclerView.visibility = if (hasData) View.VISIBLE else View.GONE
+                    if (!hasData) applyEmptyState(emptyStateView)
                     if (firstLoad && data.isNotEmpty()) {
                         firstLoad = false
                         recyclerView.scheduleLayoutAnimation()
@@ -192,6 +236,25 @@ class AppsController(
                     }
                 }
                 Status.ERROR -> {
+                    // The standalone page has nothing useful to show without the server, so it
+                    // closes. The container keeps its other four pages alive and reports the
+                    // failure in place instead - closing here would take home down with it.
+                    if (!exitOnDead) {
+                        host.runOnUiThread {
+                            if (host.isFinishing || host.isDestroyed) return@runOnUiThread
+                            adapter.updateData(emptyList())
+                            emptyStateView.visibility = View.VISIBLE
+                            recyclerView.visibility = View.GONE
+                            applyEmptyState(emptyStateView)
+                            Toast.makeText(
+                                host,
+                                Objects.toString(it.error, host.getString(R.string.error_unknown)),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        Timber.w("load apps failed", it.error)
+                        return@observe
+                    }
                     host.runOnUiThread {
                         if (host.isFinishing || host.isDestroyed) return@runOnUiThread
                         host.finish()
@@ -257,6 +320,27 @@ class AppsController(
 
     // ----- Selection / bulk actions (were the options menu) -----
 
+    /**
+     * Choose the empty-state copy for the current cause.
+     *
+     * With the server stopped the list is empty because nothing can be read at all, yet the
+     * default "no apps match your filter" copy told the user their filter was wrong. The container
+     * stays open with the server down (that is the whole point of [exitOnDead]), so this state is
+     * reachable and has to say the truth.
+     */
+    private fun applyEmptyState(view: EmptyStateView) {
+        val dead = ShizukuStateMachine.isDead()
+        view.setIcon(R.drawable.ic_empty_search_24)
+        view.setTitle(
+            if (dead) R.string.apps_empty_not_running_title else R.string.empty_state_title_no_results
+        )
+        view.setDescription(
+            if (dead) R.string.apps_empty_not_running_description
+            else R.string.empty_state_description_no_results
+        )
+        view.hideActionButton()
+    }
+
     fun exitSelection() {
         if (!adapter.isSelectionMode) return
         adapter.isSelectionMode = false
@@ -269,6 +353,29 @@ class AppsController(
         if (!adapter.isSelectionMode) return false
         exitSelection()
         return true
+    }
+
+    /**
+     * Drop ticks for rows the current filter/search no longer shows.
+     *
+     * The selection is kept by package name and the list is rebuilt by DiffUtil, so a row ticked
+     * under "全部" used to stay in [AppsAdapter.selectedPackages] after switching to, say, "已授权"
+     * — where it is not listed any more. The app bar then read "已选择 1 项" with no ticked row on
+     * screen, and the bulk actions would have acted on an app the user could not see. Ticking is
+     * scoped to what is currently on screen, which is also what makes "全选" mean "the visible
+     * ones" rather than "everything in the database".
+     */
+    private fun pruneSelectionToVisible(data: List<PackageInfo>) {
+        if (!adapter.isSelectionMode) return
+        val visible = HashSet<String>(data.size)
+        data.forEach { visible.add(it.packageName) }
+        if (!adapter.selectedPackages.retainAll(visible)) return
+        if (adapter.selectedPackages.isEmpty()) {
+            exitSelection()
+        } else {
+            selectionCount = adapter.selectedPackages.size
+            adapter.notifyDataSetChanged()
+        }
     }
 
     fun selectAll() {

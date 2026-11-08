@@ -105,5 +105,13 @@ public class AppsAdapter extends BaseRecyclerViewAdapter<ClassCreatorPool> {
         getItems().clear();
         getItems().addAll(newList);
         diffResult.dispatchUpdatesTo(this);
+
+        // The "toggle all" header reports an aggregate over the list it was bound to. DiffUtil sees
+        // any two HeaderMarkers as identical contents, so switching a filter (or a search) reused
+        // the old row untouched and the switch kept showing the previous list's state - a fully
+        // granted "granted" filter could still display "off". Rebind the header on every update.
+        if (!newList.isEmpty() && newList.get(0) instanceof HeaderMarker) {
+            notifyItemChanged(0);
+        }
     }
 }

@@ -237,6 +237,23 @@ public class ShizukuSettings {
         getPreferences().edit().putString(Keys.KEY_LAST_SETTLED_STATE, stateName).apply();
     }
 
+    /**
+     * True when the last persisted intent is "the user deliberately stopped the server".
+     *
+     * Every automatic start path (boot receiver, LockedBootStartService, WatchdogService's
+     * CRASHED handler, AdbStartWorker) has to honour this: a service the user just stopped must
+     * not be brought back with a different identity (root -> ADB), because that silently resets
+     * the grant list to the new server instance. Only an explicit user-initiated start clears the
+     * flag - {@link af.shizuku.manager.utils.ShizukuStateMachine} writes STARTING over it on every
+     * deliberate start (set(STARTING) happens in AdbStarter/StarterActivity/tile/root start).
+     *
+     * Stored in device-protected storage (see getSettingsStorageContext), so it is readable before
+     * the first unlock, which is exactly when LOCKED_BOOT_COMPLETED starts the server.
+     */
+    public static boolean isUserStoppedIntent() {
+        return "STOPPED".equals(getLastSettledState());
+    }
+
     public static boolean isSentryLimitReached() {
         return getPreferences().getBoolean(Keys.KEY_SENTRY_LIMIT_REACHED, false);
     }

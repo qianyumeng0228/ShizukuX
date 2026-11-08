@@ -106,6 +106,7 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: CancellationException) {
                 // ignore
             } catch (e: Throwable) {
+                android.util.Log.e("AppsVM", "load failed", e)
                 _packages.postValue(Resource.error(e, null))
                 _grantedCount.postValue(Resource.error(e, 0))
             }

@@ -217,6 +217,11 @@ class HomeController(
                 adapter.updateData()
             }
         }
+        // The apps page is a lazily mounted pager page, so until the user opens it nobody has
+        // called load() and grantedCount stays uninitialised: the card would read the generic
+        // "Application management" title even with apps already authorized. Ask for the count
+        // up front - it is one pass over the package list and posts only the aggregate.
+        appsModel.load(onlyCount = true)
 
         requestNotificationPermissionIfNeeded()
 

@@ -93,6 +93,20 @@ class WatchdogService : Service() {
         job = scope.launch {
             ShizukuStateMachine.asFlow().collectLatest { state ->
                 if (state == ShizukuStateMachine.State.CRASHED) {
+                    // The last thing the user asked for was a stop, and this CRASHED reading is
+                    // the state machine replaying a stale RUNNING record (update() promotes
+                    // "was RUNNING, binder gone" to CRASHED). Restarting here would undo the
+                    // user's stop and, since the restart resolves LaunchMethod.ADB, replace the
+                    // server with a new instance and an empty grant list. Correct the state
+                    // instead of "healing" something that was never broken.
+                    if (ShizukuSettings.isUserStoppedIntent()) {
+                        ActivityLogManager.log(
+                            "Shizuku", applicationContext.packageName,
+                            "Watchdog: restart suppressed (the user stopped the service)"
+                        )
+                        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)
+                        return@collectLatest
+                    }
                     // The server is no longer RUNNING, so the stability window ends here:
                     // left armed, it would fire while the server is dead and reset
                     // consecutiveCrashes, making the next crash look like a first restart.

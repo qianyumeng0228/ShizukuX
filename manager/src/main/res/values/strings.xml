@@ -338,6 +338,9 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_log_unhide">Unhide from list</string>
     <string name="app_management_hidden">App hidden</string>
     <string name="app_management_unhidden">App restored</string>
+    <!-- Toggle-all is one tap on the whole card, so it asks before changing every listed app. -->
+    <string name="app_management_toggle_all_grant_message">Grant the Shizuku permission to all %d apps in the current list?</string>
+    <string name="app_management_toggle_all_revoke_message">Revoke the Shizuku permission from all %d apps in the current list?</string>
     <string name="app_management_selected">%d selected</string>
     <string name="app_management_undo">Undo</string>
 
@@ -1104,6 +1107,8 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <!-- Empty State Views -->
     <string name="empty_state_title_no_results">No results found</string>
     <string name="empty_state_description_no_results">No apps match your current filter or search criteria.</string>
+    <string name="apps_empty_not_running_title">ShizukuX isn\'t running</string>
+    <string name="apps_empty_not_running_description">Start the service to load the app list. The list needs the server — it can\'t be read offline.</string>
     <string name="empty_state_title_no_apps">No apps yet</string>
     <string name="empty_state_description_no_apps">Apps that have requested or declared the Shizuku permission will show here.</string>
     <string name="empty_state_title_no_home_cards">All cards hidden</string>

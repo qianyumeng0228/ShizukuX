@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import af.shizuku.manager.R
 import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.AppListToggleAllBinding
 import af.shizuku.manager.management.AppsAdapter.HeaderMarker
@@ -28,6 +29,12 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
     private val switchWidget get() = binding.switchWidget
     private var job: Job? = null
 
+    /** Separate from [job]: binding-time state refresh must not cancel an in-flight apply. */
+    private var checkedJob: Job? = null
+
+    /** Guards against a second tap landing while the confirmation/apply chain is still running. */
+    private var busy = false
+
     init {
         itemView.filterTouchesWhenObscured = true
         itemView.setOnClickListener(this)
@@ -40,16 +47,52 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
     // "toggle all" tap. Snapshot the list on the calling (main) thread to avoid a concurrent
     // modification if the adapter's backing list changes while the IO work runs.
     override fun onClick(v: View) {
+        if (busy) return
         val items = snapshotPackages()
+        if (items.isEmpty()) return
+        busy = true
         switchWidget.isEnabled = false
         job?.cancel()
         job = CoroutineScope(Dispatchers.IO).launch {
             val makeEnabled = !areAllEnabled(items)
-            setAllEnabled(items, makeEnabled)
             withContext(Dispatchers.Main) {
                 switchWidget.isEnabled = true
-                switchWidget.isChecked = makeEnabled
+                busy = false
+                confirmToggleAll(items, makeEnabled)
+            }
+        }
+    }
+
+    /**
+     * The whole card is one tap target and it changes every app in the current list, so it asks
+     * first: a stray tap used to grant — or revoke — the permission of the entire list in a single
+     * frame, with nothing on screen to say it had happened.
+     */
+    private fun confirmToggleAll(items: List<PackageInfo>, enabled: Boolean) {
+        val context = itemView.context
+        val message = context.getString(
+            if (enabled) R.string.app_management_toggle_all_grant_message
+            else R.string.app_management_toggle_all_revoke_message,
+            items.size
+        )
+        AlertDialog.Builder(context)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok) { _, _ -> applyToggleAll(items, enabled) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun applyToggleAll(items: List<PackageInfo>, enabled: Boolean) {
+        if (busy) return
+        busy = true
+        switchWidget.isEnabled = false
+        job = CoroutineScope(Dispatchers.IO).launch {
+            setAllEnabled(items, enabled)
+            withContext(Dispatchers.Main) {
+                switchWidget.isEnabled = true
+                switchWidget.isChecked = enabled
                 adapter.notifyItemRangeChanged(0, adapter.itemCount)
+                busy = false
             }
         }
     }
@@ -64,15 +107,19 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
 
     override fun onRecycle() {
         job?.cancel()
+        checkedJob?.cancel()
     }
 
     private fun refreshChecked() {
-        job?.cancel()
+        checkedJob?.cancel()
         val items = snapshotPackages()
-        job = CoroutineScope(Dispatchers.IO).launch {
+        checkedJob = CoroutineScope(Dispatchers.IO).launch {
             val enabled = areAllEnabled(items)
             withContext(Dispatchers.Main) {
-                switchWidget.isChecked = enabled
+                if (adapterPosition != androidx.recyclerview.widget.RecyclerView.NO_POSITION) {
+                    switchWidget.isEnabled = true
+                    switchWidget.isChecked = enabled
+                }
             }
         }
     }
@@ -103,7 +150,9 @@ class ToggleAllViewHolder(private val binding: AppListToggleAllBinding) : BaseVi
         for (pi in items) {
             val appInfo = pi.applicationInfo ?: return false
             try {
-                if (!AuthorizationManager.granted(pi.packageName, appInfo.uid)) return false
+                if (!AuthorizationManager.granted(pi.packageName, appInfo.uid)) {
+                    return false
+                }
             } catch (e: Exception) {
                 Timber.tag(TAG).d(e, "Failed to check grant status for ${pi.packageName}")
                 return false

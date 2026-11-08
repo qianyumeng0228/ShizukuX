@@ -537,6 +537,8 @@
     <string name="app_management_log_unhide"><![CDATA[从列表中取消隐藏]]></string>
     <string name="app_management_hidden"><![CDATA[应用已隐藏]]></string>
     <string name="app_management_unhidden"><![CDATA[应用已恢复]]></string>
+    <string name="app_management_toggle_all_grant_message"><![CDATA[为当前列表中的全部 %d 个应用授予 Shizuku 权限？]]></string>
+    <string name="app_management_toggle_all_revoke_message"><![CDATA[撤销当前列表中全部 %d 个应用的 Shizuku 权限？]]></string>
     <string name="app_management_selected"><![CDATA[已选择 %d 项]]></string>
     <string name="app_management_undo"><![CDATA[撤销]]></string>
     <string name="app_management_hint_search"><![CDATA[搜索应用…]]></string>
@@ -959,6 +961,8 @@
     <string name="accessibility_permission_denied"><![CDATA[未授予权限]]></string>
     <string name="empty_state_title_no_results"><![CDATA[没有找到结果]]></string>
     <string name="empty_state_description_no_results"><![CDATA[没有应用符合当前的筛选条件或搜索条件。]]></string>
+    <string name="apps_empty_not_running_title"><![CDATA[ShizukuX 未运行]]></string>
+    <string name="apps_empty_not_running_description"><![CDATA[启动服务后才能读取应用列表——列表依赖服务端，无法离线获取。]]></string>
     <string name="empty_state_title_no_apps"><![CDATA[暂无应用]]></string>
     <string name="empty_state_description_no_apps"><![CDATA[已请求或声明 Shizuku 权限的应用会显示在此处。]]></string>
     <string name="empty_state_title_no_home_cards"><![CDATA[所有卡片均已隐藏]]></string>

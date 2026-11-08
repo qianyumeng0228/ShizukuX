@@ -51,6 +51,28 @@ object ShizukuReceiverStarter {
     }
 
     fun start(context: Context, forceStart: Boolean = false) {
+        // The user's last deliberate action was "stop the server". Boot sync, the watchdog, alarm
+        // re-arm and the ADB worker all funnel here; letting any of them through would restart a
+        // service the user stopped, and because the restart resolves LaunchMethod.ADB the server
+        // comes back as a new instance with an empty grant list. Only an explicit start (forceStart,
+        // or a path that already wrote STARTING - see ShizukuStateMachine.markUserStopped()) clears
+        // the tombstone, so an automatic caller can never resurrect it on its own.
+        if (!forceStart && ShizukuSettings.isUserStoppedIntent()) {
+            Timber.tag(AppConstants.TAG)
+                .i("Auto start skipped: the user stopped the service deliberately")
+            return
+        }
+
+        // forceStart means the user pressed "start" themselves (settings page / explicit intent).
+        // Declare that intent before anything else: transition(STARTING) persists STARTING, which
+        // is what clears the tombstone above, and it stops the 800ms stop-settling fallback in
+        // markUserStopped() from turning this deliberate start back into STOPPED.
+        if (forceStart && !ShizukuStateMachine.isRunning()
+            && ShizukuStateMachine.get() != ShizukuStateMachine.State.STARTING
+        ) {
+            ShizukuStateMachine.set(ShizukuStateMachine.State.STARTING)
+        }
+
         if (!forceStart && (UserHandleCompat.myUserId() > 0
                 || ShizukuStateMachine.isRunning()
                 || ShizukuStateMachine.get() == ShizukuStateMachine.State.STARTING)) return
@@ -110,7 +132,7 @@ object ShizukuReceiverStarter {
      *  receiver and the Tasker/Locale plugin's fire receiver. */
     fun stop() {
         if (!ShizukuStateMachine.isRunning()) return
-        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+        ShizukuStateMachine.markUserStopped()
         killServerProcess()
         runCatching { Shizuku.exit() }
             .onFailure { Timber.tag(AppConstants.TAG).w(it, "Shizuku.exit failed") }

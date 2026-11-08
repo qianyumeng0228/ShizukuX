@@ -6,6 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -85,6 +86,19 @@ object ShizukuStateMachine {
                 } catch (e: Exception) {
                     Timber.tag("ShizukuStateMachine").w(e, "Failed to record server start build")
                 }
+
+                // A deliberate start overwrites the "user stopped it" tombstone written by
+                // markUserStopped() below. Without this, every automatic starter (boot receiver,
+                // LockedBootStartService, AdbStartWorker, watchdog) would keep skipping after the
+                // user's next manual start - the tombstone has to be cleared by intent, and only a
+                // start carries that intent. STARTING is not RUNNING, so a cold-started process
+                // still resolves it to STOPPED via loadPersistedSettledState(): a start that never
+                // completed must not be mistaken for a live server or for a crash.
+                try {
+                    ShizukuSettings.setLastSettledState(State.STARTING.name)
+                } catch (e: Exception) {
+                    Timber.tag("ShizukuStateMachine").w(e, "Failed to persist start intent")
+                }
             }
 
             if (newState == State.RUNNING || newState == State.STOPPED || newState == State.CRASHED) {
@@ -144,6 +158,40 @@ object ShizukuStateMachine {
     }
 
     fun set(newState: State) = transition { newState }
+
+    /**
+     * The user asked for the server to stop (home X, ⋮ stop, tile, manual-stop broadcast).
+     *
+     * Persist STOPPED *before* the kill lands, then enter STOPPING. This closes a real race:
+     * killServerProcess() / Shizuku.exit() tear the binder down from our side, and
+     * OnBinderDeadListener does not reliably fire for a connection we closed ourselves. The state
+     * machine then stays in STOPPING - which is deliberately not persisted - so the last written
+     * value remains RUNNING. A process that is force-stopped / frozen / reaped afterwards cold-starts
+     * with RUNNING, update()'s "was RUNNING but binder is gone" branch promotes it to CRASHED,
+     * and WatchdogService does exactly what it is designed to do with a crash: restarts the server.
+     * The user's stop is thereby undone, and because the restart resolves LaunchMethod.ADB the
+     * server comes back as a different instance with an empty grant list.
+     *
+     * STOPPED is also the tombstone every automatic starter checks (ShizukuSettings.isUserStoppedIntent),
+     * so the intent survives even if some other component gets the chance to start first.
+     */
+    fun markUserStopped() {
+        try {
+            ShizukuSettings.setLastSettledState(State.STOPPED.name)
+        } catch (e: Exception) {
+            Timber.tag("ShizukuStateMachine").w(e, "Failed to persist stop intent")
+        }
+        set(State.STOPPING)
+        // The binder-death callback is not guaranteed for a connection we closed ourselves, and
+        // STOPPING is never persisted. Settle it ourselves so listeners (the apps page's empty
+        // state, the watchdog flow) see a terminal STOPPED even when the callback never arrives.
+        // setDead() is the same STOPPING -> STOPPED path the callback uses, including the USB
+        // debugging clean-up, so nothing is bypassed.
+        CoroutineScope(Dispatchers.Main.immediate).launch {
+            delay(800)
+            if (get() == State.STOPPING) setDead()
+        }
+    }
 
     fun setDead() = transition {
         when (it) {

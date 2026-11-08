@@ -62,7 +62,7 @@ class ShizukuTileService : TileService() {
         try {
             if (isRunning || isStarting) {
                 // Stop Shizuku / cancel WADB worker
-                ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
+                ShizukuStateMachine.markUserStopped()
                 updateTile()
 
                 // Cancel worker

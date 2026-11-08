@@ -124,6 +124,7 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
                 Status.SUCCESS -> {
                     val data = it.data ?: emptyList()
                     adapter.updateData(data)
+                    pruneSelectionToVisible(data)
 
                     // Show empty state when filtered results are empty
                     val hasData = data.isNotEmpty()
@@ -204,6 +205,23 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
         supportActionBar?.title = getString(R.string.home_app_management_title)
         invalidateOptionsMenu()
         adapter.notifyDataSetChanged()
+    }
+
+    /**
+     * Drops ticks for rows the current filter/search no longer shows, so "已选择 N 项" never counts
+     * an app that is off screen and the bulk actions can only reach what the user can see. Mirrors
+     * the container's implementation in [AppsController].
+     */
+    private fun pruneSelectionToVisible(data: List<android.content.pm.PackageInfo>) {
+        if (!adapter.isSelectionMode) return
+        val visible = HashSet<String>(data.size)
+        data.forEach { visible.add(it.packageName) }
+        if (!adapter.selectedPackages.retainAll(visible)) return
+        if (adapter.selectedPackages.isEmpty()) {
+            exitSelectionUi()
+        } else {
+            adapter.notifyDataSetChanged()
+        }
     }
 
     // ----- Options menu: sort -----

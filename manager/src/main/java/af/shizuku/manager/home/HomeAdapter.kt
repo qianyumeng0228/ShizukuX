@@ -156,9 +156,13 @@ class HomeAdapter(
         lastUpdateDataTime = now
         isUpdating = true
         scope.launch {
-            val (status, grantedCount, isEditMode) = withState(homeModel) {
+            val (status, homeGrantedCount, isEditMode) = withState(homeModel) {
                 Triple(it.serviceStatus.invoke(), it.grantedAppCount, it.isEditMode)
             }
+            // The home state copy of the count can lag behind the LiveData the apps page posts
+            // (the Mavericks state update lands on its own schedule), so read the source of truth
+            // directly when it already has a value.
+            val grantedCount = homeGrantedCount ?: appsModel.grantedCount.value?.data
             val companionInstalled = withState(homeModel) { it.companionInstalled }
             val compatHubInstalled = withState(homeModel) { it.compatHubInstalled }
             val isOriginalShizukuRunning = withState(homeModel) { it.isOriginalShizukuRunning }
