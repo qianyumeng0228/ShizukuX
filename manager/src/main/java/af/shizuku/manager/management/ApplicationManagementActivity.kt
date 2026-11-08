@@ -43,11 +43,14 @@ import rikka.recyclerview.addEdgeSpacing
 import rikka.recyclerview.fixEdgeEffect
 import java.util.Objects
 
-open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks {
+open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks, AppRowHost {
 
     // Apps is a peer destination behind the glass tab bar, so it never shows the app-bar up arrow -
     // not even when a deep link or shortcut opens it directly.
     override val showsUpNavigation = false
+
+    override fun onRowSwipe(item: PackageInfo, action: String, itemView: View) =
+        handleSwipeAction(item, action, itemView)
 
     private val viewModel: AppsViewModel by viewModels()
     private val adapter = AppsAdapter()

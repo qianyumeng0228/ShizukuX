@@ -6,6 +6,9 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
 import af.shizuku.manager.home.compose.GlassBottomBar
+import af.shizuku.manager.management.AppsController
+import af.shizuku.manager.management.AppsPage
+import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.module.AdbModule
 import af.shizuku.manager.module.ModulesController
 import af.shizuku.manager.module.ModulesScreen
@@ -20,6 +23,7 @@ import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
@@ -47,25 +51,45 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import com.airbnb.mvrx.viewModel
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
- * The single container the five destinations are being folded into.
+ * The single container the five destinations are folded into, and the app's home screen.
  *
  * Every destination used to be its own activity, so switching tabs started a new activity: the
  * content was replaced instead of sliding, and the floating pill re-seated itself instead of
- * following the finger. Here the five pages live in one [HorizontalPager], the pill is drawn once
+ * following the finger. Now the five pages live in one [HorizontalPager], the pill is drawn once
  * by [GlassBottomBar] and fed the pager's live position, so both move continuously.
  *
- * Not wired to the launcher yet: home and apps still have to leave their activity-bound state
- * behind, and until they do, opening this from the tab bar would show two placeholder pages.
+ * It extends AppActivity (not a bare FragmentActivity) because the launcher reaches home through
+ * MainActivity : HomeActivity : this class: only AppActivity applies the user's skin and window
+ * setup, and only a MaterialActivity keeps Material components usable.
  */
-class GlassShellActivity : FragmentActivity() {
+open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
+    PreferenceFragmentCompat.OnPreferenceStartFragmentCallback,
+    af.shizuku.manager.management.AppRowHost, com.airbnb.mvrx.MavericksView {
 
     private val settingsCtl by lazy { SettingsController(this) }
+    private val appsCtl by lazy { AppsController(this) }
+
+    // Home is the same page the standalone HomeActivity renders; it lives in HomeController so both
+    // hosts can own it instead of the container keeping a placeholder.
+    private val homeModel: HomeViewModel by viewModel()
+    private val appsModel: af.shizuku.manager.management.AppsViewModel by viewModels()
+    // Visible to HomeActivity: it still owns the startup intents that hand work to home.
+    internal val homeCtl by lazy { HomeController(this, homeModel, appsModel) }
+
+    // Which page the bar asked for. Kept on the activity (not in the composition) because a tab
+    // tap can arrive through onNewIntent while the pager is already alive.
+    private val requestedPage =
+        androidx.compose.runtime.mutableIntStateOf(GlassTabs.INDEX_HOME)
     private val modulesCtl by lazy {
         ModulesController(this, lifecycleScope) { msg ->
             Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
@@ -98,19 +122,93 @@ class GlassShellActivity : FragmentActivity() {
             }
         }
 
+    /**
+     * The settings page draws its preference tree inside this container, so a preference carrying
+     * `app:fragment` has to be resolved here: PreferenceFragmentCompat only ever asks its host
+     * activity, and in the standalone page that host was SettingsActivity. Without this callback
+     * the child page could still end up on the fragment manager, but the controller never received
+     * the child's title, so the header stayed on "设置" instead of switching to the child's name.
+     */
+    override fun onPreferenceStartFragment(caller: PreferenceFragmentCompat, pref: Preference): Boolean {
+        val fragmentName = pref.fragment ?: return false
+        settingsCtl.openFragment(fragmentName, pref.extras, pref.title?.toString())
+        return true
+    }
+
+    // The apps page moved into the pager, so the rows can no longer reach their host by casting the
+    // context to ApplicationManagementActivity. These two are what the rows actually needed from
+    // it: the "hidden" long-press action and the TalkBack versions of the swipe gestures.
+    override fun onHideApp(packageName: String) {
+        appsCtl.hideApp(packageName)
+    }
+
+    override fun onRowSwipe(item: android.content.pm.PackageInfo, action: String, itemView: android.view.View) {
+        appsCtl.handleSwipeAction(item, action, itemView)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The launcher entry is MainActivity -> HomeActivity -> this class, and the manifest gives
+        // MainActivity the splash theme; installing here keeps the splash for every entry point.
+        installSplashScreen()
+            .setOnExitAnimationListener { provider ->
+                // Some OEM/Android 15 builds return a non-null typed View that is actually null at
+                // runtime (platform nullability contract violation). The safe cast prevents R8 from
+                // eliding the null check.
+                try {
+                    val iconViewAny: Any? = provider.iconView
+                    if (iconViewAny is android.view.View) {
+                        val animator = iconViewAny.animate()
+                        if (animator != null) {
+                            animator.alpha(0f)
+                                .scaleX(0.8f)
+                                .scaleY(0.8f)
+                                .setDuration(ShizukuSettings.scaledAnimationDuration(220))
+                                .setInterpolator(
+                                    android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f)
+                                )
+                                .withEndAction { provider.remove() }
+                                .start()
+                        } else {
+                            provider.remove()
+                        }
+                    } else {
+                        provider.remove()
+                    }
+                } catch (e: Exception) {
+                    runCatching { provider.remove() }
+                }
+            }
         super.onCreate(savedInstanceState)
-        // Every legacy page is an AppActivity, and AppActivity is what applies the user's chosen
-        // skin (dynamic colour / custom accent / glass overlay). This container is a plain
-        // FragmentActivity, so without this an XML page hosted inside the pager resolves the stock
-        // Material palette - grey cards next to the Compose pages' white glass, a green action
-        // button next to their violet one.
-        af.shizuku.core.ui.ThemeDelegateManager.getDelegate()
-            .onApplyUserThemeResource(this, theme, true)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        requestedPage.intValue = intent?.getIntExtra(GlassTabs.EXTRA_START_PAGE, GlassTabs.INDEX_HOME)
+            ?: GlassTabs.INDEX_HOME
+
+        // AppActivity already applied the user's skin and enabled edge-to-edge for this activity;
+        // nothing theme-related is re-applied here.
+
+        // Compose's SnackbarHost draws over the AndroidView that hosts the app list, but the
+        // native RecyclerView still wins the touch, so its "undo" button could never be pressed.
+        // A bar added to the window's content view sits above the whole pager and receives the tap.
+        appsCtl.snackbarAnchor = findViewById(android.R.id.content)
 
         settingsCtl.observeBackStack()
         modulesCtl.refresh()
+        // Builds the home list (adapter, observers, edit-mode drag, back handling) before the
+        // Compose tree asks page 0 for its RecyclerView.
+        homeCtl.attach()
+
+        // A settings child page lives on the fragment back stack, so back has to pop it before it
+        // can close the whole container; otherwise the ← button and the hardware key disagree.
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Selection mode is the innermost layer: it swallows back before the settings
+                // child page does, exactly like the standalone apps page did.
+                if (appsCtl.handleBack()) return
+                if (settingsCtl.popInnerPage()) return
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+                isEnabled = true
+            }
+        })
 
         setContent {
             AppTheme(
@@ -126,8 +224,16 @@ class GlassShellActivity : FragmentActivity() {
 
     @Composable
     private fun Shell() {
-        val pagerState = rememberPagerState(pageCount = { 5 })
+        val pagerState = rememberPagerState(
+            initialPage = requestedPage.intValue,
+            pageCount = { 5 }
+        )
         val scope = rememberCoroutineScope()
+        // A tab tap that arrives while this container is already running only changes requestedPage;
+        // this turns that into the same animation the in-container bar uses.
+        androidx.compose.runtime.LaunchedEffect(requestedPage.intValue) {
+            pagerState.animateScrollToPage(requestedPage.intValue)
+        }
         // currentPage + offset is exactly the continuous 0..4 position the pill expects, which is
         // why the bar gained a positionFraction parameter instead of animating on its own.
         val positionFraction = pagerState.currentPage + pagerState.currentPageOffsetFraction
@@ -139,9 +245,22 @@ class GlassShellActivity : FragmentActivity() {
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 when (page) {
+                    1 -> AppsPage(
+                        controller = appsCtl,
+                        onRootCompat = {
+                            startActivity(
+                                android.content.Intent(
+                                    this@GlassShellActivity,
+                                    af.shizuku.manager.settings.RootCompatibilityActivity::class.java
+                                )
+                            )
+                        },
+                        showTabBar = false
+                    )
                     2 -> ModulesPage()
                     3 -> TerminalPage()
                     4 -> SettingsPage()
+                    0 -> HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
                     else -> PendingPage(page)
                 }
             }
@@ -179,6 +298,60 @@ class GlassShellActivity : FragmentActivity() {
                 onSettingsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_SETTINGS) } }
             )
         }
+    }
+
+    @Composable
+    private fun HomePage(pagerScrollTo: (Int) -> Unit) {
+        af.shizuku.manager.home.compose.HomeScreen(
+            isEditMode = homeCtl.isEditMode,
+            showEmptyState = homeCtl.showEmptyState,
+            wallpaperTheme = homeCtl.wallpaperTheme,
+            onStopClick = { confirmStopServer() },
+            // Inside the container a tab action has to slide the pager, not open an activity.
+            onSettingsClick = { pagerScrollTo(GlassTabs.INDEX_SETTINGS) },
+            onHelpClick = { showHomeHelpDialog() },
+            onRestoreHomeCards = { homeCtl.adapter.restoreAllCards() },
+            onAppsClick = { pagerScrollTo(GlassTabs.INDEX_APPS) },
+            onModulesClick = { pagerScrollTo(GlassTabs.INDEX_MODULES) },
+            onTerminalClick = { pagerScrollTo(GlassTabs.INDEX_TERMINAL) },
+            recyclerViewProvider = { ctx, paddingValues -> homeCtl.provider(ctx, paddingValues) },
+            // One bar for five pages: the container draws it, page 0 only supplies the list.
+            showTabBar = false
+        )
+    }
+
+    /**
+     * The container runs on the platform theme (`AppTheme parent="Theme.Light"`), not on a
+     * MaterialComponents theme, so MaterialAlertDialogBuilder cannot inflate here - that is the
+     * same reason the Material snackbar crashed the apps page. Platform dialogs are used instead.
+     */
+    private fun confirmStopServer() {
+        if (!af.shizuku.manager.utils.ShizukuStateMachine.isRunning()) return
+        android.app.AlertDialog.Builder(this)
+            .setMessage(R.string.dialog_stop_message)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                af.shizuku.manager.utils.ShizukuStateMachine.set(
+                    af.shizuku.manager.utils.ShizukuStateMachine.State.STOPPING
+                )
+                af.shizuku.manager.receiver.ShizukuReceiverStarter.killServerProcess()
+                runCatching { rikka.shizuku.Shizuku.exit() }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showHomeHelpDialog() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.settings_shizuku_extra_features)
+            .setMessage(getString(R.string.help_general_plus_summary).toHtml())
+            .setPositiveButton(android.R.string.ok, null)
+            .setNeutralButton(R.string.home_help_open_docs) { _, _ ->
+                af.shizuku.manager.utils.CustomTabsHelper.launchUrlOrCopy(
+                    this,
+                    getString(R.string.help_url)
+                )
+            }
+            .show()
     }
 
     @Composable
@@ -303,5 +476,34 @@ class GlassShellActivity : FragmentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // A tab bar somewhere else in the app re-used this container instead of stacking another
+        // one: land on the page it asked for.
+        val page = intent.getIntExtra(GlassTabs.EXTRA_START_PAGE, -1)
+        if (page in 0..4) requestedPage.intValue = page
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Both hosted pages have to re-read what the settings pages can change while the
+        // container is in the background: the apps list (permissions, hidden apps, swipe
+        // actions) and the module list (a module may have been installed elsewhere).
+        appsCtl.refresh()
+        modulesCtl.refresh()
+        homeCtl.onResume()
+    }
+
+    override fun invalidate() {
+        // Home's own property observers handle the updates.
+    }
+
+    override fun onDestroy() {
+        appsCtl.dispose()
+        homeCtl.dispose()
+        super.onDestroy()
     }
 }

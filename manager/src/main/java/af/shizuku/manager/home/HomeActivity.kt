@@ -1,692 +1,75 @@
 package af.shizuku.manager.home
-import af.shizuku.core.ui.AppActivity
+
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
-import af.shizuku.manager.adb.AdbPairingService
-import af.shizuku.manager.app.SnackbarHelper
-import af.shizuku.manager.home.compose.HomeScreen
-import af.shizuku.manager.ktx.toHtml
-import af.shizuku.manager.management.AppsViewModel
-import af.shizuku.manager.receiver.ShizukuReceiverStarter
-import af.shizuku.manager.settings.SettingsActivity
 import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
-import af.shizuku.manager.utils.CustomTabsHelper
-import af.shizuku.manager.utils.EnvironmentUtils
-import af.shizuku.manager.utils.HapticUtils
-import af.shizuku.manager.utils.ProjectLinks
-import af.shizuku.manager.utils.SettingsHelper
-import af.shizuku.manager.utils.SettingsPage
-import af.shizuku.manager.utils.ShizukuStateMachine
-import android.Manifest
-import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
-import android.view.View
 import android.widget.TextView
-import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.RecyclerView
-import com.airbnb.mvrx.MavericksView
-import com.airbnb.mvrx.Success
-import com.airbnb.mvrx.viewModel
-import com.airbnb.mvrx.withState
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.snackbar.Snackbar
 import io.noties.markwon.Markwon
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import rikka.core.ktx.unsafeLazy
-import rikka.lifecycle.Status
-import rikka.recyclerview.addEdgeSpacing
-import rikka.recyclerview.addItemSpacing
-import rikka.recyclerview.fixEdgeEffect
-import rikka.shizuku.Shizuku
 import timber.log.Timber
 
-open class HomeActivity : AppActivity(), MavericksView {
-
-    private val homeModel: HomeViewModel by viewModel()
-    private val appsModel: AppsViewModel by viewModels()
-    private val adapter by unsafeLazy { HomeAdapter(homeModel, appsModel, lifecycleScope) }
-    private var wallpaperTheme by mutableStateOf("white_miku")
-
-    // Bumped on every onResume to force the Compose content to recompose, so settings changed
-    // while in SettingsActivity (e.g. the wallpaper theme) are picked up when returning home.
-    private var resumeTick by mutableStateOf(0)
-
-    // Registered unconditionally (required before onStart); only invoked on API 33+. The
-    // shell-consent notification (#377) silently no-ops without this permission, reproducing
-    // the original BAL timeout with no visible cause - request it once here so every user gets
-    // asked regardless of which flow (root/ADB/PC) they use to start the service.
-    private val notifPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* Nothing to do either way: system handles permanently-denied dialog suppression. */ }
-
-    // Removed getLayoutId
-
-    // Show the "restart after update" prompt at most once per Activity instance so it doesn't
-    // reappear on every state refresh while the user hasn't restarted yet.
-    private var versionSkewSnackbarShown = false
-
-    // Tracks the service's running state across successive serviceStatus updates so the
-    // "just started" celebratory animation below can detect a real transition. Must be a plain
-    // field, not read back from homeModel's state inside the same onEach callback that just
-    // committed the new status — by then withState() would already see the *new* value, not
-    // the one before this particular update. Null until the first Success is observed, so the
-    // animation doesn't fire on cold start just because the service happened to already be running.
-    private var wasServiceRunning: Boolean? = null
-
-    private val stateListener: (ShizukuStateMachine.State) -> Unit = { state ->
-        when (state) {
-            ShizukuStateMachine.State.RUNNING -> {
-                // Shizuku started - refresh everything
-                checkServerStatus()
-                appsModel.load()
-                ShizukuSettings.syncAllExtraFeaturesToServer()
-                maybeShowVersionSkewSnackbar()
-            }
-            ShizukuStateMachine.State.STOPPED,
-            ShizukuStateMachine.State.CRASHED -> {
-                // Shizuku stopped or crashed - refresh status display
-                checkServerStatus()
-            }
-            else -> {
-                // Starting or stopping - optional refresh
-                checkServerStatus()
-            }
-        }
-    }
-
-    /**
-     * When the running privileged server predates the currently-installed app build (the app was
-     * updated but the separate server process still runs old code), surface a prompt to restart the
-     * service — stale servers can silently break connections for third-party apps until restarted.
-     */
-    private fun maybeShowVersionSkewSnackbar() {
-        if (versionSkewSnackbarShown) return
-        if (!ShizukuStateMachine.isServerVersionSkewed()) return
-        versionSkewSnackbarShown = true
-        SnackbarHelper.show(
-            this,
-            findViewById(android.R.id.content) ?: window.decorView,
-            msg = getString(R.string.snackbar_server_version_skew),
-            duration = Snackbar.LENGTH_INDEFINITE,
-            actionText = getString(R.string.snackbar_action_restart),
-            action = {
-                // Stop the stale server; the home UI then shows the normal Start flow, which
-                // launches a fresh server on the current build. Mirrors the existing Stop action.
-                ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-            }
-        )
-    }
+/**
+ * The launcher-facing home screen. It draws nothing itself any more: the five destinations live in
+ * the pager inherited from [GlassShellActivity], so home is page 0 of that container rather than a
+ * second, standalone page that would have to launch activities to change tabs.
+ *
+ * What stays here is what only the entry point does: shortcut intents, the wireless-ADB cold-start
+ * hand-off and the update check.
+ */
+open class HomeActivity : GlassShellActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val splash = installSplashScreen()
-        splash.setOnExitAnimationListener { provider ->
-            // Some OEM/Android 15 builds return a non-null typed View that is actually null
-            // at runtime (platform nullability contract violation).
-            // We use safe casting to Any? to prevent R8 from eliding the null check.
-            try {
-                val iconViewAny: Any? = provider.iconView
-                if (iconViewAny is android.view.View) {
-                    val animator = iconViewAny.animate()
-                    if (animator != null) {
-                        animator.alpha(0f)
-                            .scaleX(0.8f)
-                            .scaleY(0.8f)
-                            .setDuration(ShizukuSettings.scaledAnimationDuration(220))
-                            .setInterpolator(android.view.animation.PathInterpolator(0.4f, 0f, 1f, 1f))
-                            .withEndAction { provider.remove() }
-                            .start()
-                    } else {
-                        provider.remove()
-                    }
-                } else {
-                    provider.remove()
-                }
-            } catch (e: Exception) {
-                runCatching { provider.remove() }
-            }
-        }
         super.onCreate(savedInstanceState)
-        // AppActivity.onCreate already called enableEdgeToEdge() when E2E is on; this mirrors
-        // that guard so the two calls stay consistent.
-        val edgeToEdgeOn = ShizukuSettings.isEdgeToEdgeEnabled()
-        if (edgeToEdgeOn) {
-            androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-        }
-        // Background blur only makes sense (and only renders safely) while edge-to-edge keeps
-        // the window background translucent — with immersive off the opaque theme background
-        // makes setBackgroundBlurRadius crash the renderer (see AppActivity.onCreate).
-        if (ShizukuSettings.isBlurUiEnabled() && edgeToEdgeOn &&
-            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
-        ) {
-            try {
-                window.setBackgroundBlurRadius(30)
-            } catch (_: Throwable) {
-            }
-        }
-
-        var showEmptyState by mutableStateOf(false)
-        var isEditMode by mutableStateOf(HomeEditMode.isActive)
-        wallpaperTheme = ShizukuSettings.getWallpaperTheme()
-        val recyclerView = RecyclerView(this).apply {
-            id = android.R.id.list
-            clipToPadding = false
-        }
-
-        setContent {
-            val context = LocalContext.current
-            // Re-read settings when returning to the home screen (see resumeTick above).
-            androidx.compose.runtime.remember(resumeTick) { }
-            af.shizuku.core.ui.compose.AppTheme(
-                darkTheme = androidx.compose.foundation.isSystemInDarkTheme(),
-                isBlackNightTheme = af.shizuku.manager.app.ThemeHelper.isBlackNightTheme(context),
-                isOneUi = ShizukuSettings.isOneUiThemeEnabled()
-            ) {
-                HomeScreen(
-                    isEditMode = isEditMode,
-                    showEmptyState = showEmptyState,
-                    wallpaperTheme = wallpaperTheme,
-                    onStopClick = {
-                        if (ShizukuStateMachine.isRunning()) {
-                            MaterialAlertDialogBuilder(this)
-                                .setMessage(R.string.dialog_stop_message)
-                                .setPositiveButton(android.R.string.ok) { _, _ ->
-                                    ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPING)
-                                    ShizukuReceiverStarter.killServerProcess()
-                                    runCatching { Shizuku.exit() }
-                                }
-                                .setNegativeButton(android.R.string.cancel, null)
-                                .show()
-                        }
-                    },
-                    onSettingsClick = {
-                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS)
-                    },
-                    onHelpClick = {
-                        // Local summary stays (it explains how ShizukuX coexists with third-party
-                        // apps and stock Shizuku, which the docs index does not cover inline);
-                        // "Open full documentation" is the single path to the external help page
-                        // used by Diagnostics > Help.
-                        MaterialAlertDialogBuilder(this)
-                            .setTitle(R.string.settings_shizuku_extra_features)
-                            .setMessage(getString(R.string.help_general_plus_summary).toHtml())
-                            .setPositiveButton(android.R.string.ok, null)
-                            .setNeutralButton(R.string.home_help_open_docs) { _, _ ->
-                                CustomTabsHelper.launchUrlOrCopy(this, getString(R.string.help_url))
-                            }
-                            .show()
-                    },
-                    onRestoreHomeCards = { adapter.restoreAllCards() },
-                    onAppsClick = {
-                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_APPS)
-                    },
-                    onTerminalClick = {
-                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL)
-                    },
-                    onModulesClick = {
-                        af.shizuku.manager.utils.GlassTabs.open(this, af.shizuku.manager.utils.GlassTabs.INDEX_MODULES)
-                    },
-                    recyclerViewProvider = { ctx, paddingValues ->
-                        val density = ctx.resources.displayMetrics.density
-                        val top = (paddingValues.calculateTopPadding().value * density).toInt()
-                        val bottom = (paddingValues.calculateBottomPadding().value * density).toInt()
-                        // PERF: setPadding schedules requestLayout. Only touch padding when it
-                        // actually changed by at least 1px — this avoids per-frame relayout during
-                        // the collapsing topBar's scroll animation (which was causing the "stuck /
-                        // can't scroll" feel on continuous flings). The one-frame overlap on
-                        // fling-to-top is acceptable because the topBar's expand animation finishes
-                        // within a few frames and the next recomposition corrects the padding.
-                        if (kotlin.math.abs(recyclerView.paddingTop - top) > 1 ||
-                            kotlin.math.abs(recyclerView.paddingBottom - bottom) > 1
-                        ) {
-                            recyclerView.setPadding(recyclerView.paddingLeft, top, recyclerView.paddingRight, bottom)
-                        }
-                        recyclerView
-                    }
-                )
-            }
-        }
 
         when (intent?.getStringExtra("shortcut_action")) {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                startActivity(android.content.Intent(this, af.shizuku.manager.starter.StarterActivity::class.java))
+                startActivity(Intent(this, af.shizuku.manager.starter.StarterActivity::class.java))
             }
             "open_terminal" -> startActivity(
-                android.content.Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java)
+                Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java)
             )
         }
 
-        // Initial status load
-        homeModel.reload()
-
-        homeModel.onEach(HomeState::serviceStatus) {
-            if (it is Success) {
-                val status = it.invoke()
-                val previouslyRunning = wasServiceRunning
-                wasServiceRunning = status.isRunning
-
-                adapter.updateData()
-                ShizukuSettings.setLastLaunchMode(
-                    if (status.uid == 0) ShizukuSettings.LaunchMethod.ROOT else ShizukuSettings.LaunchMethod.ADB
-                )
-
-                if (status.isRunning && previouslyRunning == false) {
-                    recyclerView.post {
-                        val view = recyclerView
-                        if (!view.isAttachedToWindow) return@post
-
-                        if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                            // Position 1 is the ServerStatus card — position 0 is the fixed
-                            // wallpaper hero banner added by the beautification.
-                            val statusCard = view.findViewHolderForAdapterPosition(1)?.itemView
-                            val cx = view.width / 2
-                            val cy = statusCard?.let { it.top + it.height / 2 } ?: 100
-                            val finalRadius = Math.hypot(view.width.toDouble(), view.height.toDouble()).toFloat()
-
-                            // OneUI 8+ uses more "elastic" easing (0.22, 1, 0.36, 1)
-                            val interpolator = if (EnvironmentUtils.isOneUi8()) {
-                                androidx.core.view.animation.PathInterpolatorCompat.create(0.22f, 1f, 0.36f, 1f)
-                            } else {
-                                androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
-                            }
-
-                            android.view.ViewAnimationUtils.createCircularReveal(view, cx, cy, 0f, finalRadius).apply {
-                                duration = ShizukuSettings.scaledAnimationDuration(if (EnvironmentUtils.isOneUi8()) 800L else 600L)
-                                this.interpolator = interpolator
-                                start()
-                            }
-                        }
-
-                        if (EnvironmentUtils.isOneUi8()) {
-                            HapticUtils.success(view)
-                        }
-                    }
-                }
-            }
+        // Cold-start launch from the ADB pairing success notification. onNewIntent() is only called
+        // when the activity already exists; when the app is not running the system calls onCreate()
+        // with the launch intent instead.
+        if (intent?.getBooleanExtra(EXTRA_START_SERVICE_VIA_WADB, false) == true) {
+            homeCtl.handleStartViaMdnsNotification()
         }
 
-        homeModel.onEach(HomeState::shouldShowBatteryOptimizationSnackbar) {
-            if (it) {
-                SnackbarHelper.show(
-                    this,
-                    findViewById(android.R.id.content) ?: window.decorView,
-                    msg = getString(R.string.snackbar_battery_optimization_home),
-                    duration = Snackbar.LENGTH_INDEFINITE,
-                    actionText = getString(R.string.snackbar_action_fix),
-                    action = {
-                        // MIUI/HyperOS 的"省电策略-无限制"不一定写入 AOSP whitelist，
-                        // 标准 API 会一直返回 false；只要用户从本 app 进过电池页就视为已响应，
-                        // 返回后弹窗立即收起、不再反复出现。
-                        if (EnvironmentUtils.isXiaomi()) {
-                            SettingsHelper.markBatteryOptimizationAcknowledged(this)
-                        }
-                        if (EnvironmentUtils.isSamsung()) {
-                            SettingsPage.Samsung.DeviceCareBattery.launch(this)
-                        } else {
-                            SettingsHelper.requestIgnoreBatteryOptimizations(this, null)
-                        }
-                    }
-                )
-            } else {
-                // 状态变为"已豁免/已处理"时收起弹窗（例如从系统电池设置页返回后实时刷新）
-                SnackbarHelper.dismiss()
-            }
-        }
-        homeModel.checkBatteryOptimization()
-
-        // Samsung Auto Blocker check for One UI 7/8+
-        if (EnvironmentUtils.isSamsung() && EnvironmentUtils.getOneUiVersion() >= 6) {
-            homeModel.onEach(HomeState::serviceStatus) {
-                if (it is Success && it.invoke().isRunning == false) {
-                    SnackbarHelper.show(
-                        this,
-                        findViewById(android.R.id.content) ?: window.decorView,
-                        msg = getString(R.string.home_samsung_auto_blocker_message),
-                        duration = Snackbar.LENGTH_LONG,
-                        actionText = getString(R.string.home_check_security_action),
-                        action = {
-                            SettingsPage.Samsung.AutoBlocker.launch(this)
-                        }
-                    )
-                }
-            }
-        }
-
-        appsModel.grantedCount.observe(this) {
-            if (it.status == Status.SUCCESS) {
-                homeModel.updateGrantedAppCount(it.data ?: 0)
-                adapter.updateData()
-            }
-        }
-
-        requestNotificationPermissionIfNeeded()
-
-        // Check for updates on app startup (if enabled)
         checkForUpdates()
-
-        // Responsive grid for large screens and DeX (#76) - single column on phones preserves
-        // the original Shizuku look, 2 columns kicks in on tablets/landscape/DeX where a single
-        // column of cards leaves most of the width empty.
-        val spanCount = if (resources.configuration.screenWidthDp >= 600 ||
-            resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        ) {
-            2
-        } else {
-            1
-        }
-        val layoutManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
-        layoutManager.spanSizeLookup = object : androidx.recyclerview.widget.GridLayoutManager.SpanSizeLookup() {
-            // The status card (position 0) always takes the full width for visibility.
-            override fun getSpanSize(position: Int): Int = if (position == 0) spanCount else 1
-        }
-        recyclerView.layoutManager = layoutManager
-
-        // Samsung DeX Specific: add 'sidebar' feel with larger horizontal margins
-        val isDeX = EnvironmentUtils.isSamsung() && EnvironmentUtils.isDeX(this)
-        val dexPadding = if (isDeX) (48 * resources.displayMetrics.density).toInt() else 0
-
-        recyclerView.adapter = adapter
-        (recyclerView.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
-        recyclerView.fixEdgeEffect()
-
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(recyclerView) { v, insets ->
-            val systemBars = insets.getInsets(
-                androidx.core.view.WindowInsetsCompat.Type.systemBars() or androidx.core.view.WindowInsetsCompat.Type.displayCutout()
-            )
-            v.setPadding(
-                systemBars.left + dexPadding,
-                v.paddingTop,
-                systemBars.right + dexPadding,
-                v.paddingBottom
-            )
-            insets
-        }
-
-        // Listen for empty state changes
-        adapter.onEmptyStateChanged = { isEmpty ->
-            showEmptyState = isEmpty
-        }
-
-        val cardSpacing = resources.getDimension(R.dimen.card_spacing)
-        val marginHorizontal = resources.getDimension(R.dimen.margin_horizontal)
-        val marginVertical = resources.getDimension(R.dimen.margin_vertical)
-
-        val itemSpacing = cardSpacing / 2f
-        val edgeSpacingH = marginHorizontal
-        val edgeSpacingV = marginVertical - itemSpacing
-
-        recyclerView.addItemSpacing(top = itemSpacing, bottom = itemSpacing)
-        recyclerView.addEdgeSpacing(
-            top = edgeSpacingV,
-            bottom = edgeSpacingV,
-            left = edgeSpacingH,
-            right = edgeSpacingH
-        )
-
-        // Drag-to-reorder support
-        val dragCallback = object : ItemTouchHelper.SimpleCallback(
-            ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-            0
-        ) {
-            override fun isLongPressDragEnabled() = false
-
-            override fun getMovementFlags(rv: RecyclerView, vh: RecyclerView.ViewHolder): Int {
-                return if (adapter.isDraggable(vh.adapterPosition)) {
-                    makeMovementFlags(ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0)
-                } else {
-                    makeMovementFlags(0, 0)
-                }
-            }
-
-            override fun onMove(rv: RecyclerView, src: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
-                if (!adapter.isDraggable(target.adapterPosition)) return false
-                adapter.moveItem(src.adapterPosition, target.adapterPosition)
-                HapticUtils.tap(target.itemView)
-                return true
-            }
-
-            override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
-                super.onSelectedChanged(viewHolder, actionState)
-                if (actionState == ItemTouchHelper.ACTION_STATE_DRAG) {
-                    adapter.isDragging = true
-                    viewHolder?.itemView?.let { HapticUtils.gestureStart(it) }
-                    if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                        viewHolder?.itemView?.animate()
-                            ?.scaleX(1.04f)
-                            ?.scaleY(1.04f)
-                            ?.translationZ(16f)
-                            ?.setDuration(ShizukuSettings.scaledAnimationDuration(200))
-                            ?.setInterpolator(android.view.animation.DecelerateInterpolator())
-                            ?.start()
-                    }
-                } else if (actionState == ItemTouchHelper.ACTION_STATE_IDLE) {
-                    adapter.isDragging = false
-                }
-            }
-
-            override fun onSwiped(vh: RecyclerView.ViewHolder, direction: Int) {}
-
-            override fun clearView(rv: RecyclerView, vh: RecyclerView.ViewHolder) {
-                super.clearView(rv, vh)
-                adapter.isDragging = false
-                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    val animator = vh.itemView.animate()
-                    if (animator != null) {
-                        animator.scaleX(1f)
-                            .scaleY(1f)
-                            .translationZ(0f)
-                            .setDuration(ShizukuSettings.scaledAnimationDuration(250))
-                            .setInterpolator(android.view.animation.OvershootInterpolator(0.8f))
-                            .start()
-                    } else {
-                        vh.itemView.scaleX = 1f
-                        vh.itemView.scaleY = 1f
-                        vh.itemView.translationZ = 0f
-                    }
-                }
-                adapter.persistCardOrder()
-                adapter.updateData()
-            }
-        }
-        val itemTouchHelper = ItemTouchHelper(dragCallback)
-        itemTouchHelper.attachToRecyclerView(recyclerView)
-
-        HomeEditMode.startDragCallback = { vh -> itemTouchHelper.startDrag(vh) }
-        HomeEditMode.exit()
-
-        // Predictive back support for edit mode with expressive M3 scaling
-        val backCallback = object : androidx.activity.OnBackPressedCallback(HomeEditMode.isActive) {
-            private var backThresholdReached = false
-
-            override fun handleOnBackProgressed(backEvent: androidx.activity.BackEventCompat) {
-                val progress = backEvent.progress
-
-                if (progress > 0.1f && !backThresholdReached) {
-                    backThresholdReached = true
-                    HapticUtils.gestureThreshold(recyclerView)
-                } else if (progress < 0.1f) {
-                    backThresholdReached = false
-                }
-
-                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    // Subtle parabolic scale and alpha for more "physical" feel
-                    val scale = 1f - (0.08f * progress * progress)
-                    recyclerView.scaleX = scale
-                    recyclerView.scaleY = scale
-                    recyclerView.alpha = 1f - (0.15f * progress)
-                }
-            }
-
-            override fun handleOnBackPressed() {
-                backThresholdReached = false
-                if (HomeEditMode.isActive) {
-                    HomeEditMode.exit()
-                    if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                        val animator = recyclerView.animate()
-                        if (animator != null) {
-                            animator.scaleX(1f)
-                                .scaleY(1f)
-                                .alpha(1f)
-                                .setDuration(ShizukuSettings.scaledAnimationDuration(400))
-                                .setInterpolator(
-                                    androidx.core.view.animation.PathInterpolatorCompat.create(0.2f, 0f, 0f, 1f)
-                                )
-                                .start()
-                        } else {
-                            recyclerView.scaleX = 1f
-                            recyclerView.scaleY = 1f
-                            recyclerView.alpha = 1f
-                        }
-                    }
-                }
-            }
-
-            override fun handleOnBackCancelled() {
-                if (ShizukuSettings.isExpressiveAnimationsEnabled()) {
-                    val animator = recyclerView.animate()
-                    if (animator != null) {
-                        animator.scaleX(1f)
-                            .scaleY(1f)
-                            .alpha(1f)
-                            .setDuration(ShizukuSettings.scaledAnimationDuration(300))
-                            .setInterpolator(android.view.animation.DecelerateInterpolator())
-                            .start()
-                    } else {
-                        recyclerView.scaleX = 1f
-                        recyclerView.scaleY = 1f
-                        recyclerView.alpha = 1f
-                    }
-                }
-            }
-        }
-        onBackPressedDispatcher.addCallback(this, backCallback)
-
-        HomeEditMode.onChanged = {
-            lifecycleScope.launch {
-                delay(150)
-                isEditMode = HomeEditMode.isActive
-                homeModel.setEditMode(HomeEditMode.isActive)
-                adapter.updateData()
-                backCallback.isEnabled = HomeEditMode.isActive
-            }
-        }
-
-        ShizukuStateMachine.addListener(stateListener)
-
-        // Handle cold-start launch from the ADB pairing success notification.
-        // onNewIntent() is only called when the activity already exists; when the app
-        // is not running the system calls onCreate() with the launch intent instead.
-        if (intent?.getBooleanExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, false) == true) {
-            handleStartViaMdnsNotification()
-        }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val showDialog = intent.getBooleanExtra(HomeActivity.EXTRA_SHOW_PAIRING_DIALOG, false)
-        if (showDialog) showAccessibilityDialog()
-
-        if (intent.getBooleanExtra(HomeActivity.EXTRA_START_SERVICE_VIA_WADB, false)) {
-            handleStartViaMdnsNotification()
+        if (intent.getBooleanExtra(EXTRA_SHOW_PAIRING_DIALOG, false)) {
+            showAccessibilityDialog()
         }
-    }
-
-    private fun handleStartViaMdnsNotification() {
-        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        nm.cancel(AdbPairingService.NOTIFICATION_ID)
-        val discoveredPort = withState(homeModel) { s -> s.discoveredAdbPort }
-        StartWirelessAdbViewHolder.start(this, lifecycleScope, discoveredPort)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Recompute Compose content so theme/wallpaper setting changes made in SettingsActivity
-        // take effect on the home screen without a full activity recreate.
-        resumeTick++
-        wallpaperTheme = ShizukuSettings.getWallpaperTheme()
-        // Force refresh status on resume
-        checkServerStatus()
-        // Re-check battery optimization so a "no limit" set in system settings is picked up
-        // immediately on return (previously the snackbar stayed until next cold start).
-        homeModel.checkBatteryOptimization()
-        // Also reload apps list
-        appsModel.load()
-
-        // One-tap flow-fix: the user tapped 一键启动, was asked to enable the pairing assistant
-        // in system accessibility settings, and has now returned. Resume the one-tap flow
-        // automatically instead of requiring a second tap.
-        if (StartWirelessAdbViewHolder.pendingOneTapAfterAssistant &&
-            this.isPairingAssistantEnabled()
-        ) {
-            StartWirelessAdbViewHolder.pendingOneTapAfterAssistant = false
-            StartWirelessAdbViewHolder.launchOneTapDirect(this)
+        if (intent.getBooleanExtra(EXTRA_START_SERVICE_VIA_WADB, false)) {
+            homeCtl.handleStartViaMdnsNotification()
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        SnackbarHelper.dismiss()
-    }
-
-    override fun invalidate() {
-        // Mavericks state changed - individual property observers (onEach) handle specific updates
-    }
-
-    private fun checkServerStatus() {
-        homeModel.reload()
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        if (ShizukuSettings.hasRequestedHomeNotificationPermission()) return
-        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
-        ShizukuSettings.setRequestedHomeNotificationPermission(true)
-        notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
-
-    override fun onDestroy() {
-        HomeEditMode.onChanged = null
-        HomeEditMode.startDragCallback = null
-        HomeEditMode.removeCardCallback = null
-        ShizukuStateMachine.removeListener(stateListener)
-        super.onDestroy()
     }
 
     /**
      * Check for updates on app startup and show popup dialog
      */
     private fun checkForUpdates() {
-        if (!ShizukuSettings.isAutoUpdateEnabled()) {
-            return
-        }
+        if (!ShizukuSettings.isAutoUpdateEnabled()) return
 
-        // Check if we've already checked today
         val lastCheckTime = ShizukuSettings.getLastUpdateCheckTime()
         val now = System.currentTimeMillis()
         val oneDayInMillis = 24 * 60 * 60 * 1000L
-
-        if (now - lastCheckTime < oneDayInMillis) {
-            return
-        }
-
+        if (now - lastCheckTime < oneDayInMillis) return
         if (isFinishing || isDestroyed) return
 
-        // Check for updates silently in background
         lifecycleScope.launch {
             try {
                 val result = UpdateChecker.checkForUpdate(ShizukuSettings.getUpdateChannel())
@@ -725,10 +108,9 @@ open class HomeActivity : AppActivity(), MavericksView {
             } else {
                 ""
             }
-        // updateInfo.releaseNotes is the raw GitHub release body (Markdown) - render it instead
-        // of dumping it as plain text, which showed literal "**", "###", "|...|" table syntax
-        // and bracketed links to users. Drop the "Recent Releases" rollup (table/links meant for
-        // the GitHub page, not a compact popup) the same way ChangelogDialogFragment does.
+        // updateInfo.releaseNotes is the raw GitHub release body (Markdown) — render it instead of
+        // dumping it as plain text, which showed literal "**", "###", table syntax and bracketed
+        // links. Drop the "Recent Releases" rollup the same way ChangelogDialogFragment does.
         val notesBody = updateInfo.releaseNotes
             .substringBefore("## 📦 Recent Releases")
             .trim()
@@ -739,11 +121,8 @@ open class HomeActivity : AppActivity(), MavericksView {
 
         val openReleases = {
             startActivity(
-                android.content.Intent(
-                    android.content.Intent.ACTION_VIEW,
-                    android.net.Uri.parse(ProjectLinks.RELEASES)
-                )
-                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                Intent(Intent.ACTION_VIEW, Uri.parse(af.shizuku.manager.utils.ProjectLinks.RELEASES))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
 

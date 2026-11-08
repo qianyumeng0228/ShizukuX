@@ -90,14 +90,14 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             }
 
             override fun performAccessibilityAction(host: View, action: Int, args: Bundle?): Boolean {
-                val activity = host.context as? ApplicationManagementActivity
+                val rowHost = host.context.findAppRowHost()
                 when (action) {
                     R.id.accessibility_action_swipe_right -> {
-                        activity?.handleSwipeAction(data, ShizukuSettings.getSwipeRightAction(), host)
+                        rowHost?.onRowSwipe(data, ShizukuSettings.getSwipeRightAction(), host)
                         return true
                     }
                     R.id.accessibility_action_swipe_left -> {
-                        activity?.handleSwipeAction(data, ShizukuSettings.getSwipeLeftAction(), host)
+                        rowHost?.onRowSwipe(data, ShizukuSettings.getSwipeLeftAction(), host)
                         return true
                     }
                 }
@@ -253,7 +253,7 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                             context.getString(R.string.app_management_context_hide)
                         )
                     )
-                    (context as? Callbacks)?.onHideApp(capturedPackage)
+                    context.findAppRowHost()?.onHideApp(capturedPackage)
                 })
             }
 

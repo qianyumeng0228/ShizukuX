@@ -31,7 +31,11 @@ class SettingsController(private val host: FragmentActivity) {
 
     fun observeBackStack() {
         fragmentManager.addOnBackStackChangedListener {
-            hasInnerPage = fragmentManager.backStackEntryCount > 0
+            val inner = fragmentManager.backStackEntryCount > 0
+            hasInnerPage = inner
+            // Coming back to the root page has to restore its header too; otherwise the ←
+            // disappears but the title keeps showing the child page's name.
+            if (!inner) currentTitle = host.getString(R.string.settings_title)
         }
     }
 

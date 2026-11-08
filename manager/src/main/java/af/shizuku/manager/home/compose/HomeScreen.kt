@@ -40,7 +40,10 @@ fun HomeScreen(
     onAppsClick: () -> Unit,
     onModulesClick: () -> Unit,
     onTerminalClick: () -> Unit,
-    recyclerViewProvider: (Context, PaddingValues) -> RecyclerView
+    recyclerViewProvider: (Context, PaddingValues) -> RecyclerView,
+    // Inside the single container the page must not paint its own pill or its own bottom scrim:
+    // the container draws one bar for all five pages and one scrim above it.
+    showTabBar: Boolean = true
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
     
@@ -146,7 +149,7 @@ fun HomeScreen(
             }
             }
 
-            if (ShizukuSettings.isGlassUi()) {
+            if (ShizukuSettings.isGlassUi() && showTabBar) {
                 // Fade the list out under the floating bar: without a real backdrop blur the
                 // translucent bar alone cannot hide text that scrolls underneath it.
                 val scrimBottom = if (isSystemInDarkTheme()) Color(0xFF080B12) else Color(0xFFDDE4F6)
