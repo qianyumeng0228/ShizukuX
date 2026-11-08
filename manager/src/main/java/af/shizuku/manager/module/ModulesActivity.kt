@@ -176,19 +176,24 @@ internal fun ModulesScreen(
     onDismissMessage: () -> Unit,
     onDismissOutput: () -> Unit,
     onConfirmDelete: (AdbModule) -> Unit,
-    onCancelDelete: () -> Unit
+    onCancelDelete: () -> Unit,
+    // The single-container shell draws one floating bar for all five pages, so a hosted page must
+    // not render a second one.
+    showTabBar: Boolean = true
 ) {
     Scaffold(
         // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
         // Scaffold surface cut it off right below the app bar, leaving this page flat white.
         containerColor = Color.Transparent,
         bottomBar = {
-            // Same floating bar as every other destination - leaving it off this page made a tab
-            // switch look like navigating away from the app's tab strip.
-            af.shizuku.manager.home.compose.GlassTabStrip(
-                selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_MODULES,
-                onSelectTab = onSelectTab
-            )
+            if (showTabBar) {
+                // Same floating bar as every other destination - leaving it off this page made a
+                // tab switch look like navigating away from the app's tab strip.
+                af.shizuku.manager.home.compose.GlassTabStrip(
+                    selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_MODULES,
+                    onSelectTab = onSelectTab
+                )
+            }
         },
         topBar = {
             TopAppBar(

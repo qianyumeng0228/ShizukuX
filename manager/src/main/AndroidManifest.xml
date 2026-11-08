@@ -252,6 +252,14 @@
             android:exported="false"
             android:label="@string/modules_title" />
 
+        <!-- Single-container shell: five destinations in one HorizontalPager with one floating bar.
+             Not exported and not wired to the launcher yet; opened manually while the remaining
+             pages migrate. No theme override: it has to inherit AppTheme, otherwise the XML page
+             hosted inside it resolves dark attributes while the Compose pages stay glass-light. -->
+        <activity
+            android:name=".home.GlassShellActivity"
+            android:exported="false" />
+
         <activity
             android:name=".module.ModuleWebUiActivity"
             android:exported="false"

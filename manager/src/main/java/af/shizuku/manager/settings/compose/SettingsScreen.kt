@@ -47,7 +47,10 @@ fun SettingsScreen(
     onNavigateToSetting: (SettingsSearchEngine.SettingItem) -> Unit,
     searchResults: List<SettingsSearchEngine.SettingItem>,
     onSearchQueryChanged: (String) -> Unit,
-    onContainerCreated: () -> Unit
+    onContainerCreated: () -> Unit,
+    // The single-container shell draws one floating bar for all five pages, so a hosted page must
+    // not render a second one.
+    showTabBar: Boolean = true
 ) {
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -91,12 +94,14 @@ fun SettingsScreen(
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                // The tab strip has to stay here too: without it, tapping "设置" from the home
-                // page looked like leaving the app's navigation rather than switching a tab.
-                af.shizuku.manager.home.compose.GlassTabStrip(
-                    selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS,
-                    onSelectTab = onSelectTab
-                )
+                if (showTabBar) {
+                    // The tab strip has to stay here too: without it, tapping "设置" from the home
+                    // page looked like leaving the app's navigation rather than switching a tab.
+                    af.shizuku.manager.home.compose.GlassTabStrip(
+                        selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS,
+                        onSelectTab = onSelectTab
+                    )
+                }
             },
         topBar = {
             if (isOneUi && !isSearchActive) {
