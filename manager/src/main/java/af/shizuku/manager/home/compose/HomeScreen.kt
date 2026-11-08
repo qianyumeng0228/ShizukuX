@@ -38,6 +38,7 @@ fun HomeScreen(
     onHelpClick: () -> Unit,
     onRestoreHomeCards: () -> Unit,
     onAppsClick: () -> Unit,
+    onModulesClick: () -> Unit,
     onTerminalClick: () -> Unit,
     recyclerViewProvider: (Context, PaddingValues) -> RecyclerView
 ) {
@@ -173,6 +174,7 @@ fun HomeScreen(
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 20.dp),
                     onAppsClick = onAppsClick,
+                    onModulesClick = onModulesClick,
                     onTerminalClick = onTerminalClick,
                     onSettingsClick = onSettingsClick
                 )

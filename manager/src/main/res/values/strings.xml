@@ -44,6 +44,7 @@
     <string name="nav_apps">Apps</string>
     <string name="nav_terminal">Terminal</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_modules">Modules</string>
     <string name="settings_one_handed_mode">One-Handed Mode</string>
     <string name="settings_one_handed_mode_summary">Shift interactive content toward the bottom of the screen for comfortable thumb reach</string>
     <string name="settings_wallpaper">Wallpaper</string>

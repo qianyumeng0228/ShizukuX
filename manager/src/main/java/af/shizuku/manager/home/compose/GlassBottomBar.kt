@@ -32,6 +32,7 @@ import af.shizuku.manager.R
 fun GlassBottomBar(
     modifier: Modifier = Modifier,
     onAppsClick: () -> Unit,
+    onModulesClick: () -> Unit,
     onTerminalClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
@@ -74,6 +75,15 @@ fun GlassBottomBar(
             label = stringResource(R.string.nav_apps),
             tint = idleTint,
             onClick = onAppsClick
+        )
+        GlassNavItem(
+            modifier = Modifier.weight(1f),
+            // ADB modules sit between the app list and the terminal: both neighbours are the
+            // usual way in, and modules are what you install to extend the shell.
+            iconRes = R.drawable.ic_adb_24,
+            label = stringResource(R.string.nav_modules),
+            tint = idleTint,
+            onClick = onModulesClick
         )
         GlassNavItem(
             modifier = Modifier.weight(1f),

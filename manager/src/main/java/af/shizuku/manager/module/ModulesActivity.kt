@@ -318,8 +318,11 @@ private fun ModulesScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    // AppTheme already paints the shared glass gradient behind every page; an
+                    // opaque app-bar fill cut a flat white band across it, so this page read as a
+                    // different material from the rest of the skin.
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
                 )
             )
         }

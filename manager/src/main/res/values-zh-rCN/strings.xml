@@ -474,6 +474,7 @@
     <string name="nav_apps"><![CDATA[应用]]></string>
     <string name="nav_terminal"><![CDATA[终端]]></string>
     <string name="nav_settings"><![CDATA[设置]]></string>
+    <string name="nav_modules"><![CDATA[模块]]></string>
     <string name="settings_one_handed_mode"><![CDATA[单手模式]]></string>
     <string name="settings_one_handed_mode_summary"><![CDATA[将可交互内容下移，方便单手拇指触达。]]></string>
     <string name="settings_shape_style"><![CDATA[容器形状样式]]></string>

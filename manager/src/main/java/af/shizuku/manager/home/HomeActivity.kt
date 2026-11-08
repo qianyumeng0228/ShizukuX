@@ -248,6 +248,14 @@ open class HomeActivity : AppActivity(), MavericksView {
                             )
                         )
                     },
+                    onModulesClick = {
+                        startActivity(
+                            Intent(
+                                this,
+                                af.shizuku.manager.module.ModulesActivity::class.java
+                            )
+                        )
+                    },
                     recyclerViewProvider = { ctx, paddingValues ->
                         val density = ctx.resources.displayMetrics.density
                         val top = (paddingValues.calculateTopPadding().value * density).toInt()
