@@ -55,8 +55,11 @@ fun GlassBottomBar(
     // through it on light.
     val fill = if (dark) Color(0x26FFFFFF) else Color(0xE8FFFFFF)
     val stroke = if (dark) Color(0x24FFFFFF) else Color(0x14000000)
-    val activeTint = MaterialTheme.colorScheme.primary
-    val idleTint = MaterialTheme.colorScheme.onSurfaceVariant
+    // Colours are hardcoded rather than read from MaterialTheme: this bar is also mounted on the
+    // XML pages, which host it inside a bare ComposeView without an AppTheme wrapper (so their
+    // gradient background shows straight through instead of a second painted backdrop).
+    val activeTint = if (dark) Color(0xFFB9A7FF) else Color(0xFF6C55C9)
+    val idleTint = if (dark) Color(0xB8FFFFFF) else Color(0x99000000)
 
     // Springy but critically damped: overshoot reads as "liquid", a bounce reads as a toy.
     val animated by animateFloatAsState(
@@ -183,6 +186,32 @@ fun GlassBottomBar(
                 )
             }
         }
+    }
+}
+
+/**
+ * The tab bar as a page-level bottom slot: used by the Compose pages (modules / settings), while
+ * the XML pages mount the same [GlassBottomBar] through GlassTabBar.attach().
+ */
+@Composable
+fun GlassTabStrip(
+    selectedIndex: Int,
+    onSelectTab: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 20.dp)
+    ) {
+        GlassBottomBar(
+            selectedIndex = selectedIndex,
+            onHomeClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_HOME) },
+            onAppsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_APPS) },
+            onModulesClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_MODULES) },
+            onTerminalClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL) },
+            onSettingsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS) }
+        )
     }
 }
 

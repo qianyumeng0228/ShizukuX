@@ -55,6 +55,7 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
                     // Settings opened from the tab bar is a sibling screen: no up arrow until a
                     // preference sub-page actually pushes onto the back stack.
                     showBack = hasInnerPage || !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
+                    onSelectTab = { af.shizuku.manager.utils.GlassTabs.open(this, it) },
                     onNavigateUp = {
                         if (!onSupportNavigateUp()) {
                             finish()

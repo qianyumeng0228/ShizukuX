@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 fun SettingsScreen(
     title: String,
     showBack: Boolean = true,
+    onSelectTab: (Int) -> Unit = {},
     onNavigateUp: () -> Unit,
     onNavigateToSetting: (SettingsSearchEngine.SettingItem) -> Unit,
     searchResults: List<SettingsSearchEngine.SettingItem>,
@@ -89,6 +90,14 @@ fun SettingsScreen(
 
         Scaffold(
             containerColor = Color.Transparent,
+            bottomBar = {
+                // The tab strip has to stay here too: without it, tapping "设置" from the home
+                // page looked like leaving the app's navigation rather than switching a tab.
+                af.shizuku.manager.home.compose.GlassTabStrip(
+                    selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS,
+                    onSelectTab = onSelectTab
+                )
+            },
         topBar = {
             if (isOneUi && !isSearchActive) {
                 LargeTopAppBar(

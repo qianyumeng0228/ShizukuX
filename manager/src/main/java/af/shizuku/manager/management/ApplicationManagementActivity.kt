@@ -151,7 +151,9 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
                 androidx.core.view.WindowInsetsCompat.Type.systemBars() or
                 androidx.core.view.WindowInsetsCompat.Type.displayCutout()
             )
-            val extraBottomPadding = (72 * resources.displayMetrics.density).toInt()
+            // 116dp = the floating tab bar (66dp) + its 20dp lift + breathing room, so the last
+            // card can still be scrolled clear of the bar.
+            val extraBottomPadding = (116 * resources.displayMetrics.density).toInt()
             v.setPadding(bars.left, v.paddingTop, bars.right, bars.bottom + extraBottomPadding)
             insets
         }
@@ -178,6 +180,10 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
 
         setupSwipe(recyclerView)
         ShizukuStateMachine.addListener(stateListener)
+
+        // The tab bar has to stay visible here too, otherwise tapping "应用" reads as leaving the
+        // app's navigation instead of switching a tab.
+        af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_APPS)
     }
 
     // ----- Options menu: sort -----

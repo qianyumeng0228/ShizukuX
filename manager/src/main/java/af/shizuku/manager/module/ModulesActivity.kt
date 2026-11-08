@@ -114,6 +114,7 @@ class ModulesActivity : ComponentActivity() {
                     pendingDelete = pendingDelete,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     showBack = !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
+                    onSelectTab = { af.shizuku.manager.utils.GlassTabs.open(this, it) },
                     onInstall = { installLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                     onCheck = { checkHealth() },
                     onToggle = { toggle(it) },
@@ -259,6 +260,7 @@ private fun ModulesScreen(
     pendingDelete: AdbModule?,
     onBack: () -> Unit,
     showBack: Boolean = true,
+    onSelectTab: (Int) -> Unit = {},
     onInstall: () -> Unit,
     onCheck: () -> Unit,
     onToggle: (AdbModule) -> Unit,
@@ -276,6 +278,14 @@ private fun ModulesScreen(
         // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
         // Scaffold surface cut it off right below the app bar, leaving this page flat white.
         containerColor = Color.Transparent,
+        bottomBar = {
+            // Same floating bar as every other destination - leaving it off this page made a tab
+            // switch look like navigating away from the app's tab strip.
+            af.shizuku.manager.home.compose.GlassTabStrip(
+                selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_MODULES,
+                onSelectTab = onSelectTab
+            )
+        },
         topBar = {
             TopAppBar(
                 title = {

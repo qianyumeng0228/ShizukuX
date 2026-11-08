@@ -146,7 +146,8 @@ class ShellTutorialActivity : AppBarActivity() {
                 initialPaddingLeft,
                 initialPaddingTop + (resources.displayMetrics.density * 8).roundToInt(),
                 initialPaddingRight,
-                initialPaddingBottom
+                // 116dp keeps the last step card scrollable clear of the floating tab bar.
+                initialPaddingBottom + (resources.displayMetrics.density * 116).roundToInt()
             )
         }
 
@@ -213,6 +214,8 @@ class ShellTutorialActivity : AppBarActivity() {
                 }
             }
         }
+
+        af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL)
     }
 
     private fun runConsoleCommand() {
