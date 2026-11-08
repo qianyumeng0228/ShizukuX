@@ -330,6 +330,55 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
 枚举、从脚本文件执行（自身命令行不含目标串）的清理脚本后，两个场景都复现为预期结果。验证工具：
 `_sp\killshizuku.sh`、`_sp\set_prefs_and_coldstart.ps1`（含 push 后二次 `force-stop`）。
 
+### k2140–k2144：应用页补显式「重新读取」入口
+
+容器把应用页自带的标题栏隐藏了（`AppsController.pageView()` 对 `R.id.toolbar` 设 `GONE`），
+跟着工具栏走的 options menu 也就一起消失；独立页虽然保留工具栏，但两处都缺一个"重新读一遍包列表"
+的显式动作。数据集自身的刷新点只有 `onResume`、`ShizukuStateMachine` 的状态回调与筛选切换，
+用户手动改完系统侧权限后没有可以主动触发的地方，故新增该入口。
+
+- **文案**：`values/strings.xml` 与 `values-zh-rCN/strings.xml` 各加一条
+  `app_management_action_refresh`（`Reload the app list` / 「重新读取应用列表」），位置在
+  `app_management_action_sort` 之后。
+- **布局** `layout/apps_appbar_activity.xml`：原本独立的 `TextInputLayout(search_layout)` 外面包一层
+  水平 `LinearLayout`（`match_parent / wrap_content`、`layout_marginHorizontal=@dimen/glass_card_margin`、
+  上下 `6dp`、`gravity=center_vertical`）；`search_layout` 改 `0dp + layout_weight=1`，
+  右侧加 `ImageButton id=@+id/action_refresh_apps`（48dp×48dp、`marginStart=4dp`、
+  `?attr/selectableItemBackgroundBorderless`、`@drawable/ic_refresh_24`、
+  `contentDescription=@string/app_management_action_refresh`、`tint=?attr/colorOnSurfaceVariant`）。
+  该布局由容器页与独立 `ApplicationManagementActivity` 共用，一处改动两页同时生效。
+- **绑定**：`AppsController.attach()`（chip 监听之后）取 `R.id.action_refresh_apps` → `refresh()`
+  （即 `AppsViewModel.load()`）+ `rotationBy(360f).setDuration(900L)`；
+  `ApplicationManagementActivity.onCreate()` 同一 id → `viewModel.refresh()` + 同款旋转。
+  **有意不设 in-flight 标志**：`load()` 的 `loadGeneration` 代际守卫会让后发的一轮胜出，
+  连点只多跑一次 pass，不会把按钮卡成永久禁用。
+- **旋转时长 900ms 而不是 240ms**：一次完整列表读取本就是几百毫秒量级，240ms 的"闪一下"
+  连抓帧都难落在动画区间内；900ms 既贴合实际耗时，也让"读完了"这件事看得见。
+
+**验收（k2143 / Code 2127，装机实测）**：
+
+| 入口 | 操作 | 结果 |
+| --- | --- | --- |
+| 容器应用页 | `input tap 985 375` | 连拍 7 帧：第 3 帧出现 borderless ripple 圆环，第 4–7 帧图标旋转相位持续变化（`_sp\k143b_strip.png`）——点击命中按钮，且 900ms 旋转确在运行；旋转与 `refresh()` 在同一条 click listener 内，动画启动即证明该 lambda 已执行 |
+| 独立页（`am start -n …/af.shizuku.manager.ApplicationManagementActivity`） | 同上 | 同款 ripple + 旋转（`_sp\k143c_strip.png`） |
+| 停服空态 | 同上 | 界面不变、无错误提示——停服时 `getPackages()` 返回空列表而非抛异常，空态本来就无内容可换（`_sp\k140_e_dead.png` → `k140_f_dead_tapped.png`） |
+
+**取证过程踩到的三个坑（留给接手）**：
+
+1. **release 包里根本没有 `Log`**：`manager/proguard-rules.pro:111` 的
+   `-assumenosideeffects class android.util.Log` 让 R8 在压缩阶段直接删掉整类日志调用
+   （115 / 120 行对 `af.shizuku.manager.utils.Logger`、`rikka.shizuku.server.util.Logger` 同处理）。
+   因此「点完 `logcat` 里看不到 `AppsVM`」证否不了任何东西——本轮为取证加的 `Log.d` 全被剥离，
+   最后全部删掉（k2144）。要在 release 里留可判读痕迹，只能走 `ActivityLogManager.log()`
+   （落 `activity_logs` 表）或可见 UI。
+2. **按缩略图目测的坐标是错的**：`Read` 返回的图按约 0.83 缩放，图上读到的 (990,292) 换算回
+   原图 1080×2400 后其实是搜索框的输入区，刷新图标的真实中心是 **(985,375)**。最初的
+   `tap 990 292` / `tap 990 295` / `swipe 990 292 990 292 200` 全部点在搜索框上，自然毫无反应。
+   改用像素扫描定位（`_sp\scan_band.py`：在 x∈[900,1080]、y∈[200,460] 统计暗像素行分布，
+   命中 y=360–390、x=965–1005）才拿到真坐标。
+3. **`gfxinfo` 帧计数不能当点击证据**：空闲 3 秒 `Total frames rendered` 照样涨 748，
+   点击后 1 秒只涨 262（`_sp\frames.py`），噪声远大于信号。
+
 ## 入口与返回键
 
 - 底栏在旧独立页里点击时走 `GlassTabs.open()`：`Intent(MainActivity).putExtra(start_page)`
@@ -363,6 +412,7 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
 | k2136 | 同上链路复核 + 容器 onResume 先 ping binder | 通过：`k136_c_dead.png` → `k136_d_recovered.png`；冷启首页与应用页均正常（`k136_a_home.png` / `k136_b_apps.png`） |
 | k2137 / k2138 | 主动停服后 `force-stop` + 冷启不得复活（墓碑四道闸） | 通过：两轮均 `NO_SERVER_PROCESS`，红卡保持（`k137_e_cold.png` / `k138_f_cold2.png`）；显式启动可清墓碑并恢复 4 个授权（`k138_e_home_running.png`）；真实崩溃仍走 watchdog 重启流程（日志第 69 条） |
 | k2139 | 崩溃自愈链 + 墓碑与状态解耦（独立 `user_stopped_intent` 键、`markStartFailed`、`AdbStartWorker` 收尾） | 通过：停服写 `intent=true`、冷启不复活；显式启动清墓碑并恢复 4 授权；`kill -9` 后失败落 `CRASHED`（非 `STOPPED`）且 `intent=false`，冷启后 watchdog 再次重启成功（日志 71→75，`k139_g_recovered.png`） |
+| k2143 / k2144 | 应用页「重新读取」按钮（容器页 + 独立页） | 通过：两处点击均出现 ripple 圆环 + 900ms 旋转（`k143b_strip.png` / `k143c_strip.png`） |
 
 ## 未决与遗留
 
@@ -395,6 +445,22 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
    `AdbStartWorker` 的 `catch` 改走 `markStartFailed()`（落 `CRASHED` 并重新探测 binder），停服意图
    同时从"状态推导"改为独立键 `user_stopped_intent`（缺键时回落旧判据）。细节与实测见〈k2139〉一节。
 9. 30+ 次提交均未 push / tag / Release（对外动作需明确指令）。
+10. **ADB 模式（PC 侧 `adb forward`、`persist.adb.tcp.port` 为空）下 watchdog 自愈没起来**（未修）。
+    k2143 运行态用 `_sp\killshizuku.sh` 清掉双进程后，活动日志落 id 85（02:41:26）与 id 86（02:46:01）
+    两条 `Watchdog: restarting after crash #1`，**都没有配套的 `the server came back after restart #1`**；
+    直到 02:47:15 手动 `su 0 am start …/starter.StarterActivity` 才落 id 87
+    `Service started via ADB on port 40597`。代码级推断（未逐条取证）：`getAdbTcpPort()` 只读
+    `service.adb.tcp.port` / `persist.adb.tcp.port`（本机两者皆空 → 返回 -1），于是
+    `ShizukuReceiverStarter.start()` 里 `adbUsable=false`，改走异步 `rootStart()`；而服务本身是
+    经 PC 侧 `adb forward` 的 40597 在跑，ADB 路径其实可用。这与 k2139 修掉的"失败后落 `STOPPED`
+    断链"不是一回事（本次状态停在 `CRASHED`、`user_stopped_intent=false`，watchdog 确实动作了，
+    只是重启没成功）。下一步要先确认 `rootStart()` 里 `Shell.getShell().isRoot` 在 app 内的取值，
+    再决定是"把 `last_adb_port` 纳入 `adbUsable` 判据"还是"修 root 兜底"。
+11. **冷启首帧出现前的点击会丢**（不是稳定缺陷）：k2140/k2141 装机后首次启动，`am start` 后 3 秒
+    点底栏「应用」需要点两次才切页（`k140_a_apps.png` → `k140_b_apps.png`）。复核：已运行态连跑 3 轮
+    单次 `tap` 全部一次切页（`k144_firsttap.png`），`force-stop` 后冷启等 3 秒再点也 2/2 命中
+    （`k144cold3_sheet.png`）。差别在安装后首次冷启的 ART/首帧更慢，3 秒不够——属于启动期输入窗口，
+    未处理。
 
 ## 与初版计划的差异
 
