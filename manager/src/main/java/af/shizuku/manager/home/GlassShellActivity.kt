@@ -20,11 +20,14 @@ import android.view.LayoutInflater
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -37,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -96,6 +100,13 @@ class GlassShellActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Every legacy page is an AppActivity, and AppActivity is what applies the user's chosen
+        // skin (dynamic colour / custom accent / glass overlay). This container is a plain
+        // FragmentActivity, so without this an XML page hosted inside the pager resolves the stock
+        // Material palette - grey cards next to the Compose pages' white glass, a green action
+        // button next to their violet one.
+        af.shizuku.core.ui.ThemeDelegateManager.getDelegate()
+            .onApplyUserThemeResource(this, theme, true)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         settingsCtl.observeBackStack()
@@ -134,6 +145,26 @@ class GlassShellActivity : FragmentActivity() {
                     else -> PendingPage(page)
                 }
             }
+
+            // Same fade the XML pages get from GlassTabBar.attach, but for every page at once:
+            // without it a hosted page's last cards run under the pill and stay readable through
+            // the glass instead of retiring before they reach it.
+            val dark = isSystemInDarkTheme() && !ShizukuSettings.isGlassUi()
+            val scrim = if (dark) Color(0xFF080B12) else Color(0xFFDDE4F6)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(138.dp)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to Color.Transparent,
+                            0.22f to scrim.copy(alpha = 0.34f),
+                            0.55f to scrim.copy(alpha = 0.88f),
+                            1f to scrim
+                        )
+                    )
+            )
 
             GlassBottomBar(
                 modifier = Modifier
@@ -193,21 +224,43 @@ class GlassShellActivity : FragmentActivity() {
     @Composable
     private fun TerminalPage() {
         val context = LocalContext.current
-        AndroidView(
-            factory = { ctx ->
-                TerminalTutorialActivityBinding.inflate(LayoutInflater.from(ctx), null, false).also { b ->
-                    buildTerminalPage(ctx, b, onPickExportDir = { exportLauncher.launch(null) })
-                    // The activity host used to paint this page's own background; inside the pager
-                    // that would punch an opaque block through the shared glass gradient, so the
-                    // inflated root has to stay transparent.
-                    b.root.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-                }.root
-            },
+        // The guide page has no app bar of its own: on the activity the title came from the
+        // window's toolbar, so inside the container it has to be drawn here or the page starts
+        // with a bare card.
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(bottom = 116.dp)
-        )
+        ) {
+            Text(
+                text = androidx.compose.ui.res.stringResource(R.string.home_terminal_title),
+                modifier = Modifier.padding(start = 26.dp, top = 12.dp, bottom = 4.dp),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            AndroidView(
+                factory = { ctx ->
+                    TerminalTutorialActivityBinding.inflate(LayoutInflater.from(ctx), null, false).also { b ->
+                        buildTerminalPage(ctx, b, onPickExportDir = { exportLauncher.launch(null) })
+                        // This layout is meant to sit under the window's AppBarLayout; inside the
+                        // pager that app bar is dead weight (an empty strip above the first card)
+                        // because the title is drawn here instead.
+                        b.root.findViewById<android.view.View>(R.id.toolbar_container)?.visibility =
+                            android.view.View.GONE
+                        // The activity host used to paint this page's own background; inside the
+                        // pager that would punch an opaque block through the shared glass
+                        // gradient, so the inflated root has to stay transparent.
+                        b.root.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                    }.root
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 116.dp)
+            )
+        }
     }
 
     @Composable
