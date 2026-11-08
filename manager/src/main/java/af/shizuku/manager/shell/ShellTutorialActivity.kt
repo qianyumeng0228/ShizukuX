@@ -27,6 +27,11 @@ import kotlin.math.roundToInt
 
 class ShellTutorialActivity : AppBarActivity() {
 
+    // The terminal guide is one of the five peer destinations behind the glass tab bar. It used to
+    // show the app-bar up arrow whenever it was opened from outside the tab bar, which reads as
+    // "you drilled into a sub page" even though the page has its own tab.
+    override val showsUpNavigation = false
+
     private lateinit var binding: TerminalTutorialActivityBinding
 
     companion object {

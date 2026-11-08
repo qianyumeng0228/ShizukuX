@@ -113,7 +113,9 @@ class ModulesActivity : ComponentActivity() {
                     output = output,
                     pendingDelete = pendingDelete,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
-                    showBack = !af.shizuku.manager.utils.GlassTabs.launchedFromTab(this),
+                    // Modules is a peer destination, not a sub page: no up arrow regardless of how
+                    // the page was entered.
+                    showBack = false,
                     onSelectTab = { af.shizuku.manager.utils.GlassTabs.open(this, it) },
                     onInstall = { installLauncher.launch(arrayOf("application/zip", "application/octet-stream")) },
                     onCheck = { checkHealth() },

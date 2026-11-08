@@ -45,6 +45,10 @@ import java.util.Objects
 
 open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callbacks {
 
+    // Apps is a peer destination behind the glass tab bar, so it never shows the app-bar up arrow -
+    // not even when a deep link or shortcut opens it directly.
+    override val showsUpNavigation = false
+
     private val viewModel: AppsViewModel by viewModels()
     private val adapter = AppsAdapter()
     private lateinit var recyclerView: RecyclerView
