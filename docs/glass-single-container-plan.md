@@ -297,6 +297,8 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
 - `ShizukuReceiverStarter.recoverFromFailedStart()` 与 `AdbStartWorker` 的 `catch` 都改调它（后者放在
   `Result.retry()` 之前，避免 `STARTING` 粘住；WorkManager 的重试与 watchdog 的退避并存，谁先把
   binder 起来都会翻成 `RUNNING`）。
+- 有意保留的一处：`StarterActivity.clearStaleStartingState()` 仍在重试前写 `STOPPED`。它永远跑在
+  前台、由用户驱动重试，不需要 watchdog 抢跑；键已经独立，写 `STOPPED` 不再冒充停服意图，所以不动。
 
 **验证（k2139 / Code 2123，真机实测）**：
 
