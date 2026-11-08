@@ -137,6 +137,12 @@ class ModulesActivity : ComponentActivity() {
             }
         }
         refresh()
+
+        // Tab switches should read as pages sliding sideways, not as a bare activity swap. The
+        // app-bar activities already get this from MaterialSharedAxis; these Compose pages had no
+        // transition at all.
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.glass_tab_in_right, R.anim.glass_tab_out_left)
     }
 
     override fun onResume() {

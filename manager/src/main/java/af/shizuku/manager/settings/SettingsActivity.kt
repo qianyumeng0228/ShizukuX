@@ -104,6 +104,11 @@ class SettingsActivity : AppActivity(), PreferenceFragmentCompat.OnPreferenceSta
                 )
             }
         }
+
+        // Settings has no app bar of its own, so without this a tab switch snapped instead of
+        // sliding sideways like the rest of the destinations.
+        @Suppress("DEPRECATION")
+        overridePendingTransition(R.anim.glass_tab_in_right, R.anim.glass_tab_out_left)
     }
 
     private fun navigateToSetting(item: SettingsSearchEngine.SettingItem) {

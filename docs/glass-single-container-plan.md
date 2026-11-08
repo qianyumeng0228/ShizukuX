@@ -8,25 +8,29 @@ Compose 页经 `Scaffold.bottomBar`），已做到"切页底栏不消失"；但�
 
 ## 容器结构
 
+分页容器用 **Compose `HorizontalPager`**（`androidx.compose.foundation` 自带），不引入
+`androidx.viewpager2`（当前依赖树里没有，`libs.versions.toml` 只有 fragment-ktx，加依赖等于给
+整个 module 多一个传递依赖面）。`HorizontalPager` 天然给 `currentPage` +
+`currentPageOffsetFraction` 连续进度，正好喂给底栏的 `positionFraction`。
+
 ```
-GlassShellFragmentActivity (AppCompatActivity, 单 ActionBar 关闭, edge-to-edge)
-└─ FrameLayout
-   ├─ ViewPager2 (5 pages, offscreenPageLimit = 2)
-   │  └─ FragmentStateAdapter
-   │     ├─ HomePagerFragment
-   │     ├─ AppsPagerFragment
-   │     ├─ ModulesPagerFragment
-   │     ├─ TerminalPagerFragment
-   │     └─ SettingsPagerFragment
+GlassShellActivity (ComponentActivity, edge-to-edge, setContent)
+└─ Box
+   ├─ HorizontalPager(state = rememberPagerState(pageCount = 5), beyondViewportPageCount = 2)
+   │  ├─ page 0  HomePage      (Compose: HomeScreen)
+   │  ├─ page 1  AppsPage      (AndroidView 包 AppListRecycler，或迁移成 Compose)
+   │  ├─ page 2  ModulesPage   (Compose: ModulesScreen)
+   │  ├─ page 3  TerminalPage  (AndroidView 包 terminal_tutorial_activity.xml)
+   │  └─ page 4  SettingsPage  (Compose: SettingsScreen)
    └─ GlassTabStrip(selectedIndex, positionFraction, onSelectTab)  ← 悬浮，底部 20dp
 ```
 
-- `positionFraction` = `pager.currentItem + pager.offsets`（`registerOnPageChangeCallback` 的
-  `onPageScrolled(position, offsetPercent, offsetPx)` 里换算），底栏据此连续平移；
-  点击按钮时走 `pager.setCurrentItem(index, true)`，胶囊自然滑过去。
-- 每页内容底部留 116dp（66 条 + 20 抬升 + 呼吸），与现在的 `GlassTabBar.CONTENT_BOTTOM_INSET` 一致。
-- 滑动与内部横向手势的冲突：应用页有左滑返回手势、设置页有搜索态，需在这些区域
-  `requestDisallowInterceptTouchEvent`，或对应用页禁用 pager 滑动（改为只允许点按钮切页）。
+- `positionFraction` = `pagerState.currentPage + pagerState.currentPageOffsetFraction`，
+  随手指实时更新；点击按钮 `animateScrollToPage(index)`。
+- 每页内容底部留 116dp（66 条 + 20 抬升 + 呼吸），与 `GlassTabBar.CONTENT_BOTTOM_INSET` 一致。
+- 滑动与内部横向手势冲突：应用页左滑返回、设置页搜索态需 `requestDisallowInterceptTouchEvent`，
+  或对这两页禁用 pager 滑动（只能点按钮切页）。
+- 已落地的前置条件：`GlassBottomBar` / `GlassTabStrip` 已支持 `positionFraction`（本版已提交）。
 
 ## 逐页迁移清单
 
