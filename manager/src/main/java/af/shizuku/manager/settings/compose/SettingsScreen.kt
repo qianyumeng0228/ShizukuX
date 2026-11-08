@@ -48,6 +48,10 @@ fun SettingsScreen(
     searchResults: List<SettingsSearchEngine.SettingItem>,
     onSearchQueryChanged: (String) -> Unit,
     onContainerCreated: () -> Unit,
+    // Reports the modal search state so the hosting container can drop its floating bar while the
+    // result list owns the screen. A standalone settings Activity needs nothing here: its own
+    // bottomBar below already keys off isSearchActive.
+    onSearchActiveChanged: (Boolean) -> Unit = {},
     // The single-container shell draws one floating bar for all five pages, so a hosted page must
     // not render a second one.
     showTabBar: Boolean = true
@@ -55,6 +59,8 @@ fun SettingsScreen(
     var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(isSearchActive) { onSearchActiveChanged(isSearchActive) }
 
     BackHandler(enabled = isSearchActive) {
         isSearchActive = false
@@ -94,7 +100,11 @@ fun SettingsScreen(
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                if (showTabBar) {
+                // Search is a modal input state: the results list is the only thing that matters
+                // there, and keeping the tab strip under it left the last result row squeezed
+                // against the bar with the IME over it. Backing out of search (back / clear)
+                // brings the strip straight back, so this costs no navigation.
+                if (showTabBar && !isSearchActive) {
                     // The tab strip has to stay here too: without it, tapping "设置" from the home
                     // page looked like leaving the app's navigation rather than switching a tab.
                     af.shizuku.manager.home.compose.GlassTabStrip(

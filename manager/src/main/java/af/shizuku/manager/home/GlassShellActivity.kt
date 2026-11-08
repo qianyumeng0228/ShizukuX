@@ -43,7 +43,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -234,6 +237,10 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             pageCount = { 5 }
         )
         val scope = rememberCoroutineScope()
+        // Settings search is a modal input state: the bar would otherwise sit under the results
+        // list and the IME, squeezing the last row out of reach. The page reports it here, and the
+        // bar plus its scrim are dropped for the duration; backing out of search restores both.
+        val settingsSearching = remember { mutableStateOf(false) }
         // A tab tap that arrives while this container is already running only changes requestedPage;
         // this turns that into the same animation the in-container bar uses.
         androidx.compose.runtime.LaunchedEffect(requestedPage.intValue) {
@@ -275,7 +282,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                     }
                     2 -> ModulesPage()
                     3 -> TerminalPage()
-                    4 -> SettingsPage()
+                    4 -> SettingsPage(settingsSearching)
                     0 -> HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
                     else -> PendingPage(page)
                 }
@@ -293,33 +300,35 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             } else {
                 Color(0xFFDDE4F6)
             }
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(138.dp)
-                    .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            0f to Color.Transparent,
-                            0.22f to scrim.copy(alpha = 0.34f),
-                            0.55f to scrim.copy(alpha = 0.88f),
-                            1f to scrim
+            if (!settingsSearching.value) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(138.dp)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                0.22f to scrim.copy(alpha = 0.34f),
+                                0.55f to scrim.copy(alpha = 0.88f),
+                                1f to scrim
+                            )
                         )
-                    )
-            )
+                )
 
-            GlassBottomBar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp),
-                selectedIndex = pagerState.currentPage,
-                positionFraction = positionFraction,
-                onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
-                onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
-                onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },
-                onTerminalClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_TERMINAL) } },
-                onSettingsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_SETTINGS) } }
-            )
+                GlassBottomBar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 20.dp),
+                    selectedIndex = pagerState.currentPage,
+                    positionFraction = positionFraction,
+                    onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
+                    onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
+                    onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },
+                    onTerminalClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_TERMINAL) } },
+                    onSettingsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_SETTINGS) } }
+                )
+            }
         }
     }
 
@@ -458,7 +467,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
     }
 
     @Composable
-    private fun SettingsPage() {
+    private fun SettingsPage(searching: MutableState<Boolean>) {
         SettingsScreen(
             title = settingsCtl.currentTitle,
             // Inside the container settings is a peer page; the arrow only belongs to a preference
@@ -470,6 +479,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             searchResults = settingsCtl.searchResults,
             onSearchQueryChanged = { settingsCtl.search(it) },
             onContainerCreated = { settingsCtl.attachContainerIfNeeded() },
+            onSearchActiveChanged = { searching.value = it },
             showTabBar = false
         )
     }
