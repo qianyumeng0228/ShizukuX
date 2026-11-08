@@ -381,7 +381,10 @@ k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑�
    行滑照旧可用。是否需要给容器页补一个显式入口尚未拍板。
    另注：`rowSwipeEnabled` 是常量 `false`，注释里"按宿主切换"的说法尚未实现——目前只有容器构造
    `AppsController`，所以不影响行为，但接手时要按宿主显式传入而不是照抄注释。
-3. **`TerminalPage` 的中间层 binding** 在 pager 回收时没有清理逻辑。
+3. **`TerminalPage` 的中间层 binding**：已复核（k2139 期间），不构成泄漏。`buildTerminalPage()` 是
+   一次性的视图装配函数，把 `binding` 只交给 `setOnClickListener` / `setOnEditorActionListener`
+   这类随 View 一起回收的监听器，没有任何单例、长生命周期协程或静态字段持有它；`consoleOutput.post{}`
+   在页面销毁后才落地时只对已 detach 的 View 做无害操作。故不再列入待修项。
 4. **浅色玻璃不透明度 95%** 与设计稿 §3.1（`.55 / .42`）不一致，未调。
 5. 仍是 `strokeWidth="0dp"` 的卡片：`activity_root_compatibility.xml`(3)、
    `page_onboarding_setup.xml`(3)、`app_list_toggle_all.xml`(1)、`home_banner_status.xml`(1)、
