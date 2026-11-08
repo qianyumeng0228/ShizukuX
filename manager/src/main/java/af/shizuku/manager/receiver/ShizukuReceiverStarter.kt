@@ -302,11 +302,12 @@ object ShizukuReceiverStarter {
         }
     }
 
-    /** Clears a stuck STARTING state after a failed start attempt, then re-detects: if a previous
-     *  server instance is actually still alive, update() flips the state back to RUNNING. */
+    /** Settles a failed start attempt into CRASHED (see ShizukuStateMachine.markStartFailed:
+     *  STOPPED would both claim the user asked for this and leave the watchdog with a state it
+     *  never acts on), then re-detects: if a previous server instance is actually still alive,
+     *  update() flips the state to RUNNING. */
     private fun recoverFromFailedStart() {
-        ShizukuStateMachine.set(ShizukuStateMachine.State.STOPPED)
-        ShizukuStateMachine.update()
+        ShizukuStateMachine.markStartFailed()
     }
 
     private fun showPermissionErrorNotification(context: Context) {

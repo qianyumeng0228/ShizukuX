@@ -264,9 +264,58 @@ ShizukuX已停止」，`ps` 只剩 app 进程，等 34 秒仍为空，`settings.
 | k2138 第二轮停服 + 冷启 | 12 秒 `NO_SERVER_PROCESS_ROUND2`，`k138_f_cold2.png` 红卡 |
 | 反证：墓碑不误伤真实崩溃 | 显式启动后 `kill -9` 8875/8874，活动日志库第 69 条 `1794155825079 Watchdog: restarting after crash #1` —— watchdog 走的是重启流程，没有出现 `restart suppressed` |
 
-**这轮没解决的**：上面那条崩溃重启最终没把服务拉起来。该实例是 ADB 模式、`persist.adb.tcp.port` 为空 →
+**这轮暴露的遗留（k2139 已修）**：上面那条崩溃重启最终没把服务拉起来。该实例是 ADB 模式、`persist.adb.tcp.port` 为空 →
 `EnvironmentUtils.getAdbTcpPort()==0` → `start()` 转 root 探针 → `rootStart()` 失败 →
-`recoverFromFailedStart()` 落 `STOPPED`（既有逻辑，与墓碑无关）。同一现象在 k2136 就存在，记入〈未决与遗留〉。
+`recoverFromFailedStart()` 落 `STOPPED`（既有逻辑，与墓碑无关）。同一现象在 k2136 就存在；它在 k2138
+上表现为 watchdog 只动作一次就彻底静默，修法见下一节。
+
+### k2139：启动失败不再断自愈，停服墓碑独立成键
+
+k2138 的反证测试暴露出三条互锁的缺陷，其中第二条是墓碑方案自己带出来的：
+
+1. **失败启动落 `STOPPED`**：ADB 模式 + `persist.adb.tcp.port` 为空时 `getAdbTcpPort()==0`，
+   `ShizukuReceiverStarter.start()` 转 root 探针；探不动就 `recoverFromFailedStart()` 写 `STOPPED`。
+   `WatchdogService` 只监听 `CRASHED`，于是"自动重启失败 → 状态静默 → 再也不会尝试"。
+2. **墓碑原本由状态推导**：`isUserStoppedIntent()` 等于 `"STOPPED".equals(last_settled_state)`。
+   而失败启动恰好写 `STOPPED` —— **一次失败的自动重启会自己写下墓碑**，把 watchdog、开机路径、
+   `AdbStartWorker` 永久锁死，UI 还会把系统故障显示成「ShizukuX 已停止」。这条比第 1 条更隐蔽，
+   不修的话只改 `recoverFromFailedStart()` 的目标状态照样会踩。
+3. 另有一处同类缺口：`AdbStartWorker` 的 `catch` 里 `update()` 非 `RUNNING` 就 `Result.retry()`，
+   而 `update()` 对 `STARTING` 是 sticky 的 → 状态停在 `STARTING`，watchdog 同样不动作。
+
+修法：
+
+- `ShizukuSettings` 新增 `KEY_USER_STOPPED_INTENT = "user_stopped_intent"`，`isUserStoppedIntent()`
+  改读这个布尔键，**键不存在时回落到旧的 `"STOPPED".equals(getLastSettledState())`**——升级前就已
+  停服的机器，用户的停服意图不会丢。新增 `setUserStoppedIntent()`。KDoc 写清了为什么不能再从状态
+  推导：`STOPPED` 同时是"用户要它停"和"这次没起来"，而后者是每个自动入口都要读的值。
+- `transition()` 的 `STARTING` 分支除落 `STARTING` 外追加 `setUserStoppedIntent(false)`——任何一次
+  启动（含 `forceStart`）都清墓碑，且只在启动时清。
+- `markUserStopped()` 落 `STOPPED` 后显式写 `true`。
+- 新增 `ShizukuStateMachine.markStartFailed()`：`set(CRASHED)` → `update()`（`update()` 会重新 ping，
+  真有个活 server 就翻成 `RUNNING`，不留假崩溃）。**明确不写 `STOPPED`**。
+- `ShizukuReceiverStarter.recoverFromFailedStart()` 与 `AdbStartWorker` 的 `catch` 都改调它（后者放在
+  `Result.retry()` 之前，避免 `STARTING` 粘住；WorkManager 的重试与 watchdog 的退避并存，谁先把
+  binder 起来都会翻成 `RUNNING`）。
+
+**验证（k2139 / Code 2123，真机实测）**：
+
+| 场景 | 结果 |
+| --- | --- |
+| 主动停服 | `user_stopped_intent=true` + `last_settled_shizuku_state=STOPPED`（新键真正落盘，`k139_d_stopped.png` 红卡）；服务进程计数 0 |
+| 停服 → `force-stop` → 冷启 14 秒 | `NO_SERVER_PROCESS`，红卡保持（`k139_e_cold.png`），`user_stopped_intent` 仍 `true` |
+| 显式启动（`StarterActivity`） | `user_stopped_intent=false`、`last_settled=RUNNING`，21565/21568 起来，回首页「正在运行 / ADB / 已授权 4 个应用」（`k139_f_starter.png`）——墓碑由 `STARTING` 清掉 |
+| 真实崩溃（`kill -9` 双进程）后 28 秒 | 无服务，但 `last_settled_shizuku_state=CRASHED`（**不是 `STOPPED`**）、`user_stopped_intent=false` |
+| 再等 55 秒 | 仍 `CRASHED` + `intent=false`：失败既没把自己写成墓碑，也没被 `STARTING` 粘住 |
+| 崩溃后冷启一次（40 秒） | 服务被拉起（4360/4361），`last_settled=RUNNING`；活动日志完整链条 71→75：`Service started` → `restarting after crash #1` →（冷启）`restarting after crash #1` → `Service started` → `the server came back after restart #1`，**无 `restart suppressed`**；`k139_g_recovered.png` 恢复 4 个授权 |
+
+对照 k2138：同一操作只产生一条 `restarting after crash #1` 就再无下文；k2139 上失败会落 `CRASHED`，
+下一次机会（进程冷启 / `WatchdogAlarmReceiver` / 开机）继续尝试并最终成功。
+
+**仍未直接构造的验证**：① 升级兼容分支（升级前已停服、`user_stopped_intent` 键缺失时回落到
+`last_settled==STOPPED`）只走了代码路径，没有拿一台"旧版本停服态"机器实测；② 墓碑抑制
+（`intent=true` 且状态为 `CRASHED` 时 watchdog 记 `restart suppressed`）未单独特造，只在停服态冷启
+里间接覆盖。
 
 ## 入口与返回键
 
@@ -300,6 +349,7 @@ ShizukuX已停止」，`ps` 只剩 app 进程，等 34 秒仍为空，`settings.
 | k2135 | 停在应用页时服务死而复生 | 通过：空态 6 秒内自动回列表，未切页、无操作（`k135_h_recovered.png`） |
 | k2136 | 同上链路复核 + 容器 onResume 先 ping binder | 通过：`k136_c_dead.png` → `k136_d_recovered.png`；冷启首页与应用页均正常（`k136_a_home.png` / `k136_b_apps.png`） |
 | k2137 / k2138 | 主动停服后 `force-stop` + 冷启不得复活（墓碑四道闸） | 通过：两轮均 `NO_SERVER_PROCESS`，红卡保持（`k137_e_cold.png` / `k138_f_cold2.png`）；显式启动可清墓碑并恢复 4 个授权（`k138_e_home_running.png`）；真实崩溃仍走 watchdog 重启流程（日志第 69 条） |
+| k2139 | 崩溃自愈链 + 墓碑与状态解耦（独立 `user_stopped_intent` 键、`markStartFailed`、`AdbStartWorker` 收尾） | 通过：停服写 `intent=true`、冷启不复活；显式启动清墓碑并恢复 4 授权；`kill -9` 后失败落 `CRASHED`（非 `STOPPED`）且 `intent=false`，冷启后 watchdog 再次重启成功（日志 71→75，`k139_g_recovered.png`） |
 
 ## 未决与遗留
 
@@ -325,11 +375,9 @@ ShizukuX已停止」，`ps` 只剩 app 进程，等 34 秒仍为空，`settings.
    `home_item_container.xml`(1)、`swipe_hint_overlay.xml`(1)。
 6. **设置页搜索态是否隐藏底栏**未确认；当前搜索覆盖层会盖到底栏高度以上。
 7. 深色下「设置页最后一张卡下缘压到底栏上方」判为滚动内容透出，未逐像素核对。
-8. **ADB 模式下崩溃重启失败会落 STOPPED**：`persist.adb.tcp.port` 为空时 `getAdbTcpPort()` 为 0，
-   `ShizukuReceiverStarter.start()` 转 root 探针，`rootStart()` 失败后 `recoverFromFailedStart()` 写
-   `set(STOPPED)`，此后 watchdog 不再动作（`STOPPED` 不是它监听的 `CRASHED`）。k2138 实测复现
-   （`Watchdog: restarting after crash #1` 后无 `Service started via ADB`）。与墓碑无关，属既有逻辑；
-   修法是让 `recoverFromFailedStart()` 在失败时回到 `CRASHED`（保留自愈）而不是 `STOPPED`，待拍板。
+8. ~~ADB 模式下崩溃重启失败会落 STOPPED~~ **已在 k2139 修掉**：`recoverFromFailedStart()` 与
+   `AdbStartWorker` 的 `catch` 改走 `markStartFailed()`（落 `CRASHED` 并重新探测 binder），停服意图
+   同时从"状态推导"改为独立键 `user_stopped_intent`（缺键时回落旧判据）。细节与实测见〈k2139〉一节。
 9. 30+ 次提交均未 push / tag / Release（对外动作需明确指令）。
 
 ## 与初版计划的差异

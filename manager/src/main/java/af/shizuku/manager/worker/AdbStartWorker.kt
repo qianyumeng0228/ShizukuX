@@ -256,6 +256,14 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             if (ShizukuStateMachine.update() == ShizukuStateMachine.State.RUNNING) {
                 return Result.success()
             } else {
+                // The attempt produced no live binder. STARTING is sticky in update(), and this
+                // catch used to leave the state there - but WatchdogService only acts on CRASHED,
+                // so a failed automatic start meant no self-healing until something else moved the
+                // state. Settle it as a crash (markStartFailed, never STOPPED: that is the user-stop
+                // tombstone and a state the watchdog ignores) so the watchdog's own backoff keeps
+                // retrying alongside WorkManager's retry; whichever brings the server up conflicts
+                // with nothing, since a live binder flips the state to RUNNING.
+                ShizukuStateMachine.markStartFailed()
                 // After repeated mDNS timeouts, suggest TCP Mode — the device may be
                 // blocking multicast (common on Vivo/FunTouchOS and some corporate Wi-Fi).
                 if (e is TimeoutException && runAttemptCount >= 2) {

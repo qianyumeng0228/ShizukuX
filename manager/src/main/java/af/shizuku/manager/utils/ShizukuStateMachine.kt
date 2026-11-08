@@ -96,6 +96,7 @@ object ShizukuStateMachine {
                 // completed must not be mistaken for a live server or for a crash.
                 try {
                     ShizukuSettings.setLastSettledState(State.STARTING.name)
+                    ShizukuSettings.setUserStoppedIntent(false)
                 } catch (e: Exception) {
                     Timber.tag("ShizukuStateMachine").w(e, "Failed to persist start intent")
                 }
@@ -178,6 +179,7 @@ object ShizukuStateMachine {
     fun markUserStopped() {
         try {
             ShizukuSettings.setLastSettledState(State.STOPPED.name)
+            ShizukuSettings.setUserStoppedIntent(true)
         } catch (e: Exception) {
             Timber.tag("ShizukuStateMachine").w(e, "Failed to persist stop intent")
         }
@@ -212,6 +214,31 @@ object ShizukuStateMachine {
             }
             else -> it
         }
+    }
+
+    /**
+     * A start attempt finished without producing a live binder.
+     *
+     * Deliberately NOT STOPPED. WatchdogService only reacts to CRASHED, and STOPPED is what
+     * isUserStoppedIntent() reads as "the user wants it down" (unless the explicit flag is present,
+     * see ShizukuSettings). Settling a failed *start* there switched self-healing off for good: the
+     * watchdog's automatic restart resolves LaunchMethod.ADB, hits a device with no
+     * wireless-debugging port, falls back to the root probe, which cannot answer headless, and the
+     * app parked itself in STOPPED - no further watchdog attempt, no boot retry, and the UI read
+     * "ShizukuX 已停止" as if the user had pressed stop. CRASHED is the honest reading (there is no
+     * server and nobody asked for that) and it is the one state the watchdog listens for, so its
+     * backoff / MAX_AUTO_RESTARTS / degraded probing keep owning the retry cadence.
+     *
+     * The stop tombstone is not touched here: only markUserStopped() sets it, and any transition
+     * into STARTING already cleared it.
+     *
+     * update() re-checks the binder afterwards: a server that is actually alive (a manual
+     * `su -c` instance the guard in start() chose not to disturb, or one that came up while the
+     * previous shell was still exiting) flips this to RUNNING rather than parking a false crash.
+     */
+    fun markStartFailed() {
+        set(State.CRASHED)
+        update()
     }
 
     fun update(): State {

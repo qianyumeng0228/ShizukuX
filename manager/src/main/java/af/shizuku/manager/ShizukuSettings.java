@@ -177,6 +177,9 @@ public class ShizukuSettings {
         public static final String KEY_LAST_SEEN_CHANGELOG_VERSION = "last_seen_changelog_version";
         public static final String KEY_SERVER_STARTED_BUILD = "server_started_build";
         public static final String KEY_LAST_SETTLED_STATE = "last_settled_shizuku_state";
+        /** Deliberate "the user wants the server down" flag, kept apart from the settled state.
+         *  See {@link #isUserStoppedIntent()}. */
+        public static final String KEY_USER_STOPPED_INTENT = "user_stopped_intent";
 
         // Companion Mode (ShizukuX additions)
         public static final String KEY_COMPANION_MODE = "companion_mode";
@@ -238,20 +241,39 @@ public class ShizukuSettings {
     }
 
     /**
-     * True when the last persisted intent is "the user deliberately stopped the server".
+     * True when the user deliberately stopped the server and nothing has asked for it to come
+     * back since.
      *
      * Every automatic start path (boot receiver, LockedBootStartService, WatchdogService's
      * CRASHED handler, AdbStartWorker) has to honour this: a service the user just stopped must
      * not be brought back with a different identity (root -> ADB), because that silently resets
-     * the grant list to the new server instance. Only an explicit user-initiated start clears the
-     * flag - {@link af.shizuku.manager.utils.ShizukuStateMachine} writes STARTING over it on every
-     * deliberate start (set(STARTING) happens in AdbStarter/StarterActivity/tile/root start).
+     * the grant list to the new server instance. Only a start attempt clears it -
+     * {@link af.shizuku.manager.utils.ShizukuStateMachine} flips the flag off on every
+     * transition into STARTING (AdbStarter/StarterActivity/tile/root start all go through it).
      *
      * Stored in device-protected storage (see getSettingsStorageContext), so it is readable before
      * the first unlock, which is exactly when LOCKED_BOOT_COMPLETED starts the server.
+     *
+     * The flag is a separate key on purpose. Deriving it from the settled state ("state == STOPPED")
+     * conflated "the user wants it down" with "no server is running right now": a start attempt that
+     * failed also settles to STOPPED, and that also happens to be the state every automatic starter
+     * checks - so one failed automatic restart would write the tombstone itself and permanently
+     * silence the watchdog, the boot path and the ADB worker. Key absent (an install that predates
+     * this key) falls back to the old settled-state reading so an existing stop stays respected.
      */
     public static boolean isUserStoppedIntent() {
+        SharedPreferences preferences = getPreferences();
+        if (preferences.contains(Keys.KEY_USER_STOPPED_INTENT)) {
+            return preferences.getBoolean(Keys.KEY_USER_STOPPED_INTENT, false);
+        }
         return "STOPPED".equals(getLastSettledState());
+    }
+
+    /** Records/clears the deliberate stop intent. Written true by
+     *  {@link af.shizuku.manager.utils.ShizukuStateMachine#markUserStopped()} before the kill lands,
+     *  and written false by every transition into STARTING. */
+    public static void setUserStoppedIntent(boolean stopped) {
+        getPreferences().edit().putBoolean(Keys.KEY_USER_STOPPED_INTENT, stopped).apply();
     }
 
     public static boolean isSentryLimitReached() {
