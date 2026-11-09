@@ -300,7 +300,12 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             } else {
                 Color(0xFFDDE4F6)
             }
-            if (!settingsSearching.value) {
+            // The search state belongs to the settings page, but the pager can be swiped away from
+            // it while the field still holds focus - so gate on both, otherwise entering search and
+            // swiping to another tab leaves the whole shell with no bar and no way back.
+            val barHidden = settingsSearching.value &&
+                pagerState.currentPage == GlassTabs.INDEX_SETTINGS
+            if (!barHidden) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
