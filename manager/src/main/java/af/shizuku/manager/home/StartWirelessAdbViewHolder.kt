@@ -327,9 +327,13 @@ class StartWirelessAdbViewHolder(
         binding.text1.text =
             descriptionText.toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
 
-        // Secondary "PC ADB command" viewer: pre-Android-11 devices need it (the old StartAdb
-        // card's sole purpose); also surfaced when the user explicitly enabled show_start_adb_home.
-        binding.button5.isVisible = !EnvironmentUtils.isTlsSupported() || ShizukuSettings.showStartAdbHome()
+        // "View command" is the PC-side activation command (adb shell <libshizuku.so>): the manual
+        // path for people who would rather run it from a computer than tap through pairing, and the
+        // only path on pre-Android-11 devices. It belongs to the card's content, not to the automatic
+        // flow, so it is shown whenever the card itself is shown. It used to mirror
+        // show_start_adb_home(), but that switch now hides the whole card, which made the condition
+        // permanently true anyway.
+        binding.button5.isVisible = true
 
         // First-start paths (step-by-step guide / pairing / one-tap) only make sense while the
         // service is down. Keeping them up after it is running made the card look like it was
