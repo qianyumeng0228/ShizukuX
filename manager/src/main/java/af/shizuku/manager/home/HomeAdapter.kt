@@ -64,19 +64,43 @@ class HomeAdapter(
 
         private val RETIRED_IDS = setOf(ID_APPS, ID_TERMINAL, ID_MODULES)
 
+        // Fixed-area cards are rendered unconditionally in rebuildItems(), so their ids must not
+        // survive in an order saved by an older build either.
+        private val FIXED_IDS = setOf(ID_START)
+
         private val DEFAULT_ORDER = listOf(
-            ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_AUTOMATION, ID_COMPANION
         )
+
+        /**
+         * Layout change: app-backup and device-control used to sit after the automation card and
+         * now go directly above it. An order saved by an older build still carries the old
+         * positions, so lift both - but only while they are still in the shipped order, so a user
+         * who deliberately dragged them elsewhere keeps their arrangement.
+         */
+        private fun liftBackupAboveAutomation(order: List<Long>): List<Long> {
+            val ai = order.indexOf(ID_AUTOMATION)
+            if (ai < 0) return order
+            val bi = order.indexOf(ID_BACKUP_APPS)
+            val di = order.indexOf(ID_DEVICE_CONTROL)
+            if (bi < 0 || di < 0) return order
+            if (bi != ai + 1 || di != ai + 2) return order
+            val moved = order.filter { it != ID_BACKUP_APPS && it != ID_DEVICE_CONTROL }.toMutableList()
+            val target = moved.indexOf(ID_AUTOMATION)
+            moved.add(target, ID_DEVICE_CONTROL)
+            moved.add(target, ID_BACKUP_APPS)
+            return moved
+        }
     }
 
     private val cardOrder: MutableList<Long> = run {
         val saved = ShizukuSettings.getCardOrder()
         val parsed = saved?.split(",")?.mapNotNull { it.trim().toLongOrNull() }.orEmpty()
-            .filter { it !in RETIRED_IDS }
+            .filter { it !in RETIRED_IDS && it !in FIXED_IDS }
         if (parsed.isEmpty()) {
             DEFAULT_ORDER.toMutableList()
         } else {
-            val merged = parsed.toMutableList()
+            val merged = liftBackupAboveAutomation(parsed).toMutableList()
             DEFAULT_ORDER.forEach { if (it !in merged) merged.add(it) }
             merged
         }
@@ -229,6 +253,12 @@ class HomeAdapter(
         if (isOriginalShizukuRunning) {
             addItem(startStockCreator, null, ID_START_VIA_STOCK); fixedCardCount++
         }
+        // The merged start-service card is fixed now: starting the service is what you do before
+        // granting anything, so it sits directly above the permission manager instead of in the
+        // draggable stack (same visibility gate as before, minus the edit-mode override).
+        if (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled() || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0 || ShizukuSettings.showStartAdbHome())) {
+            addItem(startWadbCreator, rootRestart, ID_START); fixedCardCount++
+        }
         // No "authorized apps" card: the apps page on the tab bar is that entry point now.
         // Permission manager has no visibility gate (always-on once authorized); promoted to the
         // fixed area so it sits next to "Shizuku authorization management" and cannot be
@@ -252,11 +282,7 @@ class HomeAdapter(
                 ID_WIFI -> addItem(WifiPasswordViewHolder.CREATOR, status, id)
                 ID_DEVICE_INFO -> addItem(DeviceInfoViewHolder.CREATOR, status, id)
                 ID_INTENTS -> addItem(IntentsViewHolder.CREATOR, status, id)
-                // Merged "start service" card (4.1 Item B): replaces the former root / wireless /
-                // PC-ADB three cards. Visibility is the OR of the three original gates; the
-                // ViewHolder itself picks root vs. wireless at click time based on device state.
-                ID_START -> if (isEditMode || (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled() || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0 || ShizukuSettings.showStartAdbHome())))
-                    addItem(startWadbCreator, rootRestart, id)
+                // ID_START is a fixed card now (see the fixed area above), so it never shows up here.
                 ID_AUTOMATION -> if (isEditMode || ShizukuSettings.showAutomationHome())
                     addItem(AutomationViewHolder.CREATOR, null, id)
                 // These cards gained dedicated visibility keys (show_backup_apps_home /
