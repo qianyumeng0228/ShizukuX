@@ -71,7 +71,7 @@ class HomeController(
         private set
 
     val adapter: HomeAdapter by unsafeLazy {
-        HomeAdapter(homeModel, appsModel, host.lifecycleScope)
+        HomeAdapter(homeModel, host.lifecycleScope)
     }
 
     val recyclerView: RecyclerView = RecyclerView(host).apply {
@@ -210,18 +210,6 @@ class HomeController(
                 }
             }
         }
-
-        appsModel.grantedCount.observe(host) {
-            if (it.status == Status.SUCCESS) {
-                homeModel.updateGrantedAppCount(it.data ?: 0)
-                adapter.updateData()
-            }
-        }
-        // The apps page is a lazily mounted pager page, so until the user opens it nobody has
-        // called load() and grantedCount stays uninitialised: the card would read the generic
-        // "Application management" title even with apps already authorized. Ask for the count
-        // up front - it is one pass over the package list and posts only the aggregate.
-        appsModel.load(onlyCount = true)
 
         requestNotificationPermissionIfNeeded()
 

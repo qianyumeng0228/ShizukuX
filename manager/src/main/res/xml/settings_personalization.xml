@@ -210,12 +210,6 @@
             android:key="home_layout_simulator" />
 
         <SwitchPreferenceCompat
-            android:key="show_terminal_home"
-            android:title="@string/settings_show_terminal_home"
-            android:icon="@drawable/ic_terminal_24"
-            android:defaultValue="true" />
-
-        <SwitchPreferenceCompat
             android:key="show_automation_home"
             android:title="@string/settings_show_automation_home"
             android:icon="@drawable/ic_integration_instructions_24"

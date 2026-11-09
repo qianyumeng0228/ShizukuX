@@ -9,7 +9,6 @@ import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.cardSurfaceColor
 import af.shizuku.manager.ktx.glassStrokeColor
-import af.shizuku.manager.management.AppsViewModel
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.common.util.UserHandleCompat
@@ -20,14 +19,17 @@ import rikka.recyclerview.IndexCreatorPool
 
 class HomeAdapter(
     private val homeModel: HomeViewModel,
-    private val appsModel: AppsViewModel,
     private val scope: CoroutineScope
 ) : IdBasedRecyclerViewAdapter(ArrayList()) {
 
     companion object {
         const val ID_STATUS = 0L
+        // 1 (authorized apps), 2 (terminal) and 11 (modules) are retired: the tab bar already has
+        // a page for each of them, so a home card was a second door to the same room. The ids stay
+        // declared because orders saved by older builds still contain them and have to be dropped.
         const val ID_APPS = 1L
         const val ID_TERMINAL = 2L
+        const val ID_MODULES = 11L
         // 3/4/5 retired (former ID_START_ROOT / ID_START_WADB / ID_START_ADB) — merged into ID_START below.
         // Free slot 6 reused for the merged "start service" card (7=ADB_PERMISSION_LIMITED; 12 reserved upstream).
         const val ID_START = 6L
@@ -40,8 +42,6 @@ class HomeAdapter(
         const val ID_PERMISSION_MANAGER = 13L
         const val ID_DEVICE_CONTROL = 14L
         const val ID_BACKUP_APPS = 15L
-        // Free slot 11 (12 stays reserved upstream): the phone-side ADB module entry point.
-        const val ID_MODULES = 11L
         // Next free slot after 15: per-app network blocking on the platform firewall.
         const val ID_FIREWALL = 16L
         // Per-app hiding on the platform settings: what a restrictive app reads, held off while
@@ -62,17 +62,20 @@ class HomeAdapter(
         const val ID_DEVICE_INFO = 23L
         const val ID_INTENTS = 24L
 
+        private val RETIRED_IDS = setOf(ID_APPS, ID_TERMINAL, ID_MODULES)
+
         private val DEFAULT_ORDER = listOf(
-            ID_MODULES, ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_TERMINAL, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
+            ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_START, ID_AUTOMATION, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_COMPANION
         )
     }
 
     private val cardOrder: MutableList<Long> = run {
         val saved = ShizukuSettings.getCardOrder()
-        if (saved.isNullOrEmpty()) {
+        val parsed = saved?.split(",")?.mapNotNull { it.trim().toLongOrNull() }.orEmpty()
+            .filter { it !in RETIRED_IDS }
+        if (parsed.isEmpty()) {
             DEFAULT_ORDER.toMutableList()
         } else {
-            val parsed = saved.split(",").mapNotNull { it.trim().toLongOrNull() }
             val merged = parsed.toMutableList()
             DEFAULT_ORDER.forEach { if (it !in merged) merged.add(it) }
             merged
@@ -92,7 +95,6 @@ class HomeAdapter(
     // Cached inputs from the last successful updateData() render, so moveItem() can rebuild the
     // adapter's real backing list synchronously mid-drag instead of only reordering cardOrder.
     private var lastRenderStatus: ServiceStatus? = null
-    private var lastRenderGrantedCount: Int? = null
     private var lastRenderIsEditMode: Boolean = false
     private var lastRenderCompanionInstalled: Boolean = false
     private var lastRenderCompatHubInstalled: Boolean = false
@@ -156,13 +158,9 @@ class HomeAdapter(
         lastUpdateDataTime = now
         isUpdating = true
         scope.launch {
-            val (status, homeGrantedCount, isEditMode) = withState(homeModel) {
-                Triple(it.serviceStatus.invoke(), it.grantedAppCount, it.isEditMode)
+            val (status, isEditMode) = withState(homeModel) {
+                it.serviceStatus.invoke() to it.isEditMode
             }
-            // The home state copy of the count can lag behind the LiveData the apps page posts
-            // (the Mavericks state update lands on its own schedule), so read the source of truth
-            // directly when it already has a value.
-            val grantedCount = homeGrantedCount ?: appsModel.grantedCount.value?.data
             val companionInstalled = withState(homeModel) { it.companionInstalled }
             val compatHubInstalled = withState(homeModel) { it.compatHubInstalled }
             val isOriginalShizukuRunning = withState(homeModel) { it.isOriginalShizukuRunning }
@@ -181,7 +179,6 @@ class HomeAdapter(
                 }
 
                 lastRenderStatus = status
-                lastRenderGrantedCount = grantedCount
                 lastRenderIsEditMode = isEditMode
                 lastRenderCompanionInstalled = companionInstalled
                 lastRenderCompatHubInstalled = compatHubInstalled
@@ -189,7 +186,7 @@ class HomeAdapter(
                 lastRenderHidden = hidden
 
                 val fixedCardCount = rebuildItems(
-                    status, grantedCount, isEditMode, companionInstalled, compatHubInstalled,
+                    status, isEditMode, companionInstalled, compatHubInstalled,
                     isOriginalShizukuRunning, hidden
                 )
 
@@ -210,7 +207,6 @@ class HomeAdapter(
      */
     private fun rebuildItems(
         status: ServiceStatus,
-        grantedCount: Int?,
         isEditMode: Boolean,
         companionInstalled: Boolean,
         compatHubInstalled: Boolean,
@@ -233,9 +229,7 @@ class HomeAdapter(
         if (isOriginalShizukuRunning) {
             addItem(startStockCreator, null, ID_START_VIA_STOCK); fixedCardCount++
         }
-        if (adbPermission) {
-            addItem(ManageAppsViewHolder.CREATOR, status to grantedCount, ID_APPS); fixedCardCount++
-        }
+        // No "authorized apps" card: the apps page on the tab bar is that entry point now.
         // Permission manager has no visibility gate (always-on once authorized); promoted to the
         // fixed area so it sits next to "Shizuku authorization management" and cannot be
         // reordered/hidden via edit mode. (4.1 Item A)
@@ -249,7 +243,6 @@ class HomeAdapter(
             val isHidden = id.toString() in hidden
             if (isHidden && !isEditMode) return@forEach
             when (id) {
-                ID_MODULES -> addItem(ModulesViewHolder.CREATOR, status, id)
                 ID_FIREWALL -> addItem(FirewallViewHolder.CREATOR, status, id)
                 ID_HIDING -> addItem(HidingViewHolder.CREATOR, status, id)
                 ID_AUTOSTART -> addItem(AutoStartViewHolder.CREATOR, status, id)
@@ -259,8 +252,6 @@ class HomeAdapter(
                 ID_WIFI -> addItem(WifiPasswordViewHolder.CREATOR, status, id)
                 ID_DEVICE_INFO -> addItem(DeviceInfoViewHolder.CREATOR, status, id)
                 ID_INTENTS -> addItem(IntentsViewHolder.CREATOR, status, id)
-                ID_TERMINAL -> if (isEditMode || (adbPermission && ShizukuSettings.showTerminalHome()))
-                    addItem(TerminalViewHolder.CREATOR, status, id)
                 // Merged "start service" card (4.1 Item B): replaces the former root / wireless /
                 // PC-ADB three cards. Visibility is the OR of the three original gates; the
                 // ViewHolder itself picks root vs. wireless at click time based on device state.
@@ -368,7 +359,7 @@ class HomeAdapter(
         val status = lastRenderStatus
         if (status != null) {
             rebuildItems(
-                status, lastRenderGrantedCount, lastRenderIsEditMode, lastRenderCompanionInstalled,
+                status, lastRenderIsEditMode, lastRenderCompanionInstalled,
                 lastRenderCompatHubInstalled, lastRenderIsOriginalShizukuRunning, lastRenderHidden
             )
         }

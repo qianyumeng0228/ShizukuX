@@ -167,10 +167,6 @@ class HomeViewModel(
         setState { copy(isEditMode = active) }
     }
 
-    fun updateGrantedAppCount(count: Int) {
-        setState { copy(grantedAppCount = count) }
-    }
-
     @Keep
     companion object : com.airbnb.mvrx.MavericksViewModelFactory<HomeViewModel, HomeState> {
         override fun create(viewModelContext: com.airbnb.mvrx.ViewModelContext, state: HomeState): HomeViewModel {

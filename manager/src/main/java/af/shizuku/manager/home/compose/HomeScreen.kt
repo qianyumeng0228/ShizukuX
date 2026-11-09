@@ -65,12 +65,8 @@ fun HomeScreen(
                                 contentDescription = stringResource(id = R.string.action_stop)
                             )
                         }
-                        IconButton(onClick = onSettingsClick) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_settings_outline_24),
-                                contentDescription = stringResource(id = R.string.settings_title)
-                            )
-                        }
+                        // No settings entry here: settings is one of the five tab-bar destinations,
+                        // so a second door in the header only duplicated it.
                         IconButton(onClick = onHelpClick) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_help_outline_24),

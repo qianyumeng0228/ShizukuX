@@ -85,43 +85,7 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
 
-            <!-- Block 2: Terminal -->
-            <LinearLayout
-                android:id="@+id/sim_terminal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:layout_marginBottom="4dp"
-                android:background="@drawable/shape_node_inactive"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="@string/accessibility_sim_toggle_terminal">
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:src="@drawable/ic_terminal_24"
-                    android:tint="?colorOnSurfaceVariant"
-                    android:importantForAccessibility="no" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:text="@string/home_layout_simulator_terminal_apps"
-                    android:textSize="10sp"
-                    android:textColor="?colorOnSurfaceVariant" />
-                <ImageView
-                    android:id="@+id/eye_terminal"
-                    android:layout_width="14dp"
-                    android:layout_height="14dp"
-                    android:src="@drawable/ic_visibility_24"
-                    android:tint="?colorOnSurfaceVariant"
-                    android:importantForAccessibility="no" />
-            </LinearLayout>
-
-            <!-- Block 3: Automation -->
+            <!-- Block 2: Automation -->
             <LinearLayout
                 android:id="@+id/sim_automation"
                 android:layout_width="match_parent"
@@ -157,7 +121,7 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
 
-            <!-- Block 4: App Backup -->
+            <!-- Block 3: App Backup -->
             <LinearLayout
                 android:id="@+id/sim_backup_apps"
                 android:layout_width="match_parent"
@@ -193,7 +157,7 @@
                     android:importantForAccessibility="no" />
             </LinearLayout>
 
-            <!-- Block 5: Device Control -->
+            <!-- Block 4: Device Control -->
             <LinearLayout
                 android:id="@+id/sim_device_control"
                 android:layout_width="match_parent"
