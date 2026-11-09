@@ -22,6 +22,7 @@ import af.shizuku.manager.settings.SettingsController
 import af.shizuku.manager.settings.compose.SettingsScreen
 import af.shizuku.manager.shell.buildTerminalPage
 import af.shizuku.manager.shell.exportTerminalAssets
+import kotlin.math.roundToInt
 import af.shizuku.manager.utils.GlassTabs
 import af.shizuku.manager.utils.ShizukuStateMachine
 import android.net.Uri
@@ -35,6 +36,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -57,6 +59,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -366,11 +369,57 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 val lensH = lensW
                 val lensCx = 18.dp + lensUnit * (positionFraction + 0.5f)
                 val lensCy = maxHeight - 53.dp
+                // Live position while a finger drags the pill. PagerState has no scrollBy, so the
+                // drag is translated into the nearest page plus a fraction and applied with
+                // scrollToPage - that keeps one authority (positionFraction) for page, pill and
+                // lens instead of letting the bar invent its own offset.
+                var dragFrom by remember { mutableStateOf(0f) }
 
                 GlassBottomBar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 20.dp),
+                        .padding(bottom = 20.dp)
+                        // Every cell owns a clickable, so a horizontal drag on the pill was
+                        // consumed there and never reached the pager: the glass could only jump
+                        // between five fixed slots. Claiming the drag here and feeding it back to
+                        // the pager makes the glass track the finger continuously.
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onDragStart = {
+                                    dragFrom = pagerState.currentPage +
+                                        pagerState.currentPageOffsetFraction
+                                },
+                                onDragEnd = {
+                                    val target = (
+                                        pagerState.currentPage +
+                                            pagerState.currentPageOffsetFraction
+                                        ).roundToInt().coerceIn(0, 4)
+                                    scope.launch { pagerState.animateScrollToPage(target) }
+                                },
+                                onDragCancel = {
+                                    val target = (
+                                        pagerState.currentPage +
+                                            pagerState.currentPageOffsetFraction
+                                        ).roundToInt().coerceIn(0, 4)
+                                    scope.launch { pagerState.animateScrollToPage(target) }
+                                }
+                            ) { change, dragAmount ->
+                                change.consume()
+                                val unitPx = lensUnit.toPx()
+                                if (unitPx > 0f) {
+                                    // A rightward drag selects the tab to the right: this is a
+                                    // control, not content, so it does not invert the way a
+                                    // finger on the page itself would. Subtracting here pinned
+                                    // the value at 0 and the glass never left the home slot.
+                                    dragFrom = (dragFrom + dragAmount / unitPx)
+                                        .coerceIn(0f, 4f)
+                                    val settled = dragFrom.roundToInt().coerceIn(0, 4)
+                                    val offset = (dragFrom - settled)
+                                        .coerceIn(-0.5f, 0.5f)
+                                    scope.launch { pagerState.scrollToPage(settled, offset) }
+                                }
+                            }
+                        },
                     selectedIndex = pagerState.currentPage,
                     positionFraction = positionFraction,
                     drawHighlight = !lensActive,
