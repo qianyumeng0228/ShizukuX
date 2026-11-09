@@ -415,6 +415,11 @@ class HomeController(
         homeModel.checkBatteryOptimization()
         appsModel.load()
 
+        // The home-card switches live in another screen, so returning from Settings must re-read
+        // them. checkServerStatus() only renders when the service state changed, which left a
+        // hidden card visible until the process was restarted.
+        adapter.updateData()
+
         // One-tap flow-fix: the user tapped 一键启动, was sent to enable the pairing assistant and
         // has now returned, so continue the flow instead of asking for a second tap.
         if (StartWirelessAdbViewHolder.pendingOneTapAfterAssistant && host.isPairingAssistantEnabled()) {

@@ -218,6 +218,7 @@
         <SwitchPreferenceCompat
             android:key="show_start_adb_home"
             android:title="@string/settings_show_start_adb_home"
+            android:summary="@string/settings_show_start_adb_home_summary"
             android:icon="@drawable/ic_adb_24"
             android:defaultValue="true" />
 

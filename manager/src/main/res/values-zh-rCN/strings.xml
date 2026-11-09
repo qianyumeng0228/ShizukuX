@@ -640,7 +640,8 @@
     <string name="settings_update_app_database_error"><![CDATA[更新数据库失败]]></string>
     <string name="settings_show_terminal_home"><![CDATA[显示终端（rish）]]></string>
     <string name="settings_show_automation_home"><![CDATA[显示自动化]]></string>
-    <string name="settings_show_start_adb_home"><![CDATA[显示 ADB 设置]]></string>
+    <string name="settings_show_start_adb_home"><![CDATA[显示“通过无线调试启动”卡]]></string>
+    <string name="settings_show_start_adb_home_summary"><![CDATA[固定在首页顶部附近，此开关只控制显示与隐藏，不改变位置。]]></string>
     <string name="settings_show_backup_apps_home"><![CDATA[显示应用备份]]></string>
     <string name="settings_show_device_control_home"><![CDATA[显示设备控制]]></string>
     <string name="home_edit_mode_hint"><![CDATA[按住拖动手柄进行排序。点按 × 可移除卡片。]]></string>

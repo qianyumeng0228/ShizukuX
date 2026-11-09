@@ -255,8 +255,17 @@ class HomeAdapter(
         }
         // The merged start-service card is fixed now: starting the service is what you do before
         // granting anything, so it sits directly above the permission manager instead of in the
-        // draggable stack (same visibility gate as before, minus the edit-mode override).
-        if (isPrimaryUser && (EnvironmentUtils.isRooted() || ShizukuSettings.isSamsungSystemUidEscalationEnabled() || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R || EnvironmentUtils.getAdbTcpPort() > 0 || ShizukuSettings.showStartAdbHome())) {
+        // draggable stack.
+        //
+        // The personalization switch ("Show ADB Setup") is a real master switch here. It used to be
+        // OR'd into the capability check below, which meant turning it off still left the card on
+        // rooted / Android 11+ devices — a switch that visibly did nothing. Capability now decides
+        // whether the card is usable at all, the switch decides whether it is shown.
+        val startCardSupported = EnvironmentUtils.isRooted() ||
+                ShizukuSettings.isSamsungSystemUidEscalationEnabled() ||
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ||
+                EnvironmentUtils.getAdbTcpPort() > 0
+        if (isPrimaryUser && startCardSupported && ShizukuSettings.showStartAdbHome()) {
             addItem(startWadbCreator, rootRestart, ID_START); fixedCardCount++
         }
         // No "authorized apps" card: the apps page on the tab bar is that entry point now.

@@ -268,6 +268,15 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
         androidx.compose.runtime.LaunchedEffect(requestedPage.intValue) {
             pagerState.animateScrollToPage(requestedPage.intValue)
         }
+        // The home-card switches live on the settings page of this same container, so returning to
+        // the home page is a pager move, not an Activity resume — nothing re-read the preferences
+        // and a card just hidden in Settings stayed on screen until the process restarted. Refresh
+        // the list each time page 0 becomes the settled page.
+        androidx.compose.runtime.LaunchedEffect(pagerState) {
+            androidx.compose.runtime.snapshotFlow { pagerState.settledPage }.collect { page ->
+                if (page == 0) homeCtl.adapter.updateData()
+            }
+        }
         // currentPage + offset is exactly the continuous 0..4 position the pill expects, which is
         // why the bar gained a positionFraction parameter instead of animating on its own.
         val positionFraction = pagerState.currentPage + pagerState.currentPageOffsetFraction
