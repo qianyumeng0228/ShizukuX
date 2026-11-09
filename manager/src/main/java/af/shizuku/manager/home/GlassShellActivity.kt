@@ -284,7 +284,10 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                     3 -> TerminalPage()
                     4 -> SettingsPage(settingsSearching)
                     0 -> HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
-                    else -> PendingPage(page)
+                    // pageCount is 5 and 0..4 are all real pages, so this is only a guard for a
+                    // future tab that has no content yet: render nothing rather than a placeholder
+                    // that claims the page is still reachable from the bottom bar.
+                    else -> {}
                 }
             }
 
@@ -487,31 +490,6 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             onSearchActiveChanged = { searching.value = it },
             showTabBar = false
         )
-    }
-
-    @Composable
-    private fun PendingPage(index: Int) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 132.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = if (index == GlassTabs.INDEX_HOME) "首页" else "应用",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = "这一页尚未迁入单容器\n仍从底栏进入独立页面",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-        }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
