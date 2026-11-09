@@ -124,7 +124,10 @@ class ModulesActivity : ComponentActivity() {
                     onDismissMessage = { ctl.dismissMessage() },
                     onDismissOutput = { ctl.dismissOutput() },
                     onConfirmDelete = { ctl.delete(it) },
-                    onCancelDelete = { ctl.cancelDelete() }
+                    onCancelDelete = { ctl.cancelDelete() },
+                    onOpenStore = {
+                        startActivity(android.content.Intent(this, ModuleStoreActivity::class.java))
+                    }
                 )
             }
         }
@@ -179,7 +182,10 @@ internal fun ModulesScreen(
     onCancelDelete: () -> Unit,
     // The single-container shell draws one floating bar for all five pages, so a hosted page must
     // not render a second one.
-    showTabBar: Boolean = true
+    showTabBar: Boolean = true,
+    // Opens the online catalog. Kept as a callback (instead of starting the activity here) so
+    // both hosts - the standalone activity and the shell - own their own navigation.
+    onOpenStore: () -> Unit = {}
 ) {
     Scaffold(
         // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
@@ -229,6 +235,12 @@ internal fun ModulesScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenStore) {
+                        ShizukuIcon(
+                            icon = R.drawable.ic_outline_store_24,
+                            contentDescription = stringResourceCompat(R.string.modules_store_title)
+                        )
+                    }
                     IconButton(onClick = onInstall, enabled = !installing) {
                         ShizukuIcon(
                             icon = R.drawable.ic_install_24,
@@ -258,7 +270,11 @@ internal fun ModulesScreen(
                     CircularProgressIndicator(Modifier.size(32.dp))
                 }
 
-                modules.isEmpty() -> EmptyModules(onInstall = onInstall, installing = installing)
+                modules.isEmpty() -> EmptyModules(
+                    onInstall = onInstall,
+                    installing = installing,
+                    onOpenStore = onOpenStore
+                )
 
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -348,7 +364,7 @@ internal fun ModulesScreen(
 }
 
 @Composable
-private fun EmptyModules(onInstall: () -> Unit, installing: Boolean) {
+private fun EmptyModules(onInstall: () -> Unit, installing: Boolean, onOpenStore: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -374,10 +390,21 @@ private fun EmptyModules(onInstall: () -> Unit, installing: Boolean) {
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(Modifier.height(18.dp))
-        Button(onClick = onInstall, enabled = !installing) {
-            ShizukuIcon(icon = R.drawable.ic_install_24, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(stringResourceCompat(R.string.modules_install_zip))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = onInstall, enabled = !installing) {
+                ShizukuIcon(icon = R.drawable.ic_install_24, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResourceCompat(R.string.modules_install_zip))
+            }
+            OutlinedButton(onClick = onOpenStore) {
+                ShizukuIcon(
+                    icon = R.drawable.ic_outline_store_24,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(stringResourceCompat(R.string.modules_store_open))
+            }
         }
     }
 }

@@ -641,6 +641,14 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             onDismissOutput = { modulesCtl.dismissOutput() },
             onConfirmDelete = { modulesCtl.delete(it) },
             onCancelDelete = { modulesCtl.cancelDelete() },
+            onOpenStore = {
+                startActivity(
+                    android.content.Intent(
+                        this,
+                        af.shizuku.manager.module.ModuleStoreActivity::class.java
+                    )
+                )
+            },
             showTabBar = false
         )
     }

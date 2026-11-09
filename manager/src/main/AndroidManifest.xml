@@ -266,6 +266,11 @@
             android:label="@string/modules_open_webui" />
 
         <activity
+            android:name=".module.ModuleStoreActivity"
+            android:exported="false"
+            android:label="@string/modules_store_title" />
+
+        <activity
             android:name=".firewall.FirewallActivity"
             android:exported="false"
             android:label="@string/firewall_title" />
