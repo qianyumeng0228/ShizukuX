@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -72,6 +73,12 @@ fun GlassBottomBar(
      * the glass). The lens answers the touch itself instead, hence this callback.
      */
     onPressedChange: ((Int?) -> Unit)? = null,
+    /**
+     * Draw scale for the whole bar. A press lifts the glass and, with it, the capsule it sits in:
+     * the reference interaction grows the bar under the finger instead of tinting the tapped cell,
+     * so the two layers have to move together or the glass looks detached from its tray.
+     */
+    scale: Float = 1f,
     onHomeClick: () -> Unit = {},
     onAppsClick: () -> Unit = {},
     onModulesClick: () -> Unit = {},
@@ -109,6 +116,9 @@ fun GlassBottomBar(
             .fillMaxWidth()
             .padding(horizontal = 18.dp)
             .height(66.dp)
+            // Scales the tray and everything on it (fill, icons, lens) about the bar's centre, so
+            // a press grows the whole pill rather than only the glass riding on it.
+            .scale(scale)
     ) {
         // The capsule fill lives on its own layer so the bar container no longer clips its
         // children - the lens has to overhang the capsule.

@@ -383,36 +383,48 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 val lensCx = 18.dp + lensUnit * (shownFraction + 0.5f)
                 val lensCy = maxHeight - 53.dp
 
-                // Jelly press: the tab cells no longer draw a ripple (a ripple sits one layer
-                // *below* the lens, so a press showed a grey lozenge peeking out from under the
-                // glass). The lens answers the touch instead - squash and stretch rather than a
-                // uniform scale, which is what actually reads as jelly: it widens slightly while
-                // it flattens, then the two axes spring back at different rates.
+                // Press feedback mirrors the reference interaction: the whole bar grows under the
+                // finger and the glass grows a bit more on top of it, instead of a ripple or a
+                // squashed lozenge. Only draw scale is touched, so nothing re-measures while the
+                // animation runs. Both release specs overshoot slightly to keep the elastic feel.
                 var lensPressed by remember { mutableStateOf(false) }
                 val pressSx = remember { Animatable(1f) }
                 val pressSy = remember { Animatable(1f) }
+                val barScale = remember { Animatable(1f) }
                 LaunchedEffect(lensPressed) {
                     if (lensPressed) {
                         launch {
                             pressSx.animateTo(
-                                1.04f,
+                                1.08f,
                                 tween(durationMillis = 90, easing = FastOutSlowInEasing)
                             )
                         }
-                        pressSy.animateTo(
-                            0.92f,
+                        launch {
+                            pressSy.animateTo(
+                                1.08f,
+                                tween(durationMillis = 90, easing = FastOutSlowInEasing)
+                            )
+                        }
+                        barScale.animateTo(
+                            1.03f,
                             tween(durationMillis = 90, easing = FastOutSlowInEasing)
                         )
                     } else {
                         launch {
                             pressSx.animateTo(
                                 1f,
-                                spring(dampingRatio = 0.20f, stiffness = Spring.StiffnessLow)
+                                spring(dampingRatio = 0.30f, stiffness = Spring.StiffnessLow)
                             )
                         }
-                        pressSy.animateTo(
+                        launch {
+                            pressSy.animateTo(
+                                1f,
+                                spring(dampingRatio = 0.30f, stiffness = Spring.StiffnessLow)
+                            )
+                        }
+                        barScale.animateTo(
                             1f,
-                            spring(dampingRatio = 0.32f, stiffness = Spring.StiffnessLow)
+                            spring(dampingRatio = 0.34f, stiffness = Spring.StiffnessLow)
                         )
                     }
                 }
@@ -521,6 +533,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                         }
                     },
                     onPressedChange = { lensPressed = it != null },
+                    scale = barScale.value,
                     onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
                     onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
                     onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },
