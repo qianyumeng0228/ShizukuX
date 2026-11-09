@@ -1,0 +1,103 @@
+// Liquid glass lens for the floating bottom bar.
+// Adapted from the liquid-glass-lab reference (spherical-cap refraction, edge dispersion,
+// rim frost, SDF edge light, lagging specular, bottom caustic) for a capsule instead of a
+// circle: uHalfSpine carries the straight section.
+//
+// "content" must match createRuntimeShaderEffect(shader, "content").
+
+uniform shader content;
+
+uniform float2 uCenter;      // lens centre, layer-local px
+uniform float  uRadius;      // half height of the capsule
+uniform float  uHalfSpine;   // half length of the straight section; 0 == circle
+uniform float  uRefraction;  // 0..1
+uniform float  uDispersion;  // 0..1
+uniform float  uFrost;       // 0..1
+uniform float  uEdge;        // px
+uniform float  uBezel;       // 0..1
+uniform float  uSat;         // saturation multiplier
+uniform float2 uSpec;        // px, specular offset relative to the centre
+uniform float  uSpecAmt;     // 0..1
+uniform float  uTint;        // 0..1
+uniform float  uOpacity;     // 0..1
+uniform float  uDark;        // 1.0 on dark surfaces: the outer hairline has to brighten
+
+float sdRoundBox(float2 p, float2 halfSize, float r) {
+    float2 q = abs(p) - halfSize + r;
+    return min(max(q.x, q.y), 0.0) + length(max(q, float2(0.0))) - r;
+}
+
+half4 main(float2 coord) {
+    float2 p = coord - uCenter;
+    float r = uRadius;
+    if (r <= 0.0) { return half4(0.0); }
+
+    float2 halfSize = float2(uHalfSpine + r, r);
+    float sd = sdRoundBox(p, halfSize, r);
+
+    if (sd > 1.0) { return half4(0.0); }
+
+    // Spherical-cap height field: thickness falls off from the spine outwards. The same formula
+    // covers the circle (uHalfSpine == 0) and the capsule, so no branch is needed.
+    float2 spine = float2(clamp(p.x, -uHalfSpine, uHalfSpine), 0.0);
+    float2 d = p - spine;
+    float dist = length(d);
+    float t = clamp(dist / r, 0.0, 1.0);
+    float z = sqrt(max(0.0, 1.0 - t * t));
+    float2 n = dist > 0.0001 ? d / dist : float2(0.0);
+
+    float bezel = clamp(uBezel, 0.05, 1.0);
+    float inBand = smoothstep(1.0 - bezel, 1.0, t);
+    // 0.38 caps the displacement: at 1.0 the sampled content is thrown outside the lens.
+    float bend = (1.0 - z) * uRefraction * r * 0.38 * mix(0.3, 1.0, inBand);
+    float2 uv = coord - n * bend - p * (uRefraction * 0.28);
+
+    float2 ab = n * bend * uDispersion * 0.30;
+    float3 col;
+    col.r = float(content.eval(uv - ab).r);
+    col.g = float(content.eval(uv).g);
+    col.b = float(content.eval(uv + ab).b);
+
+    float rim = 1.0 - smoothstep(0.0, r * 0.6, -sd);
+    if (uFrost > 0.001 && rim > 0.01) {
+        float k = uFrost * r * 0.14;
+        float3 blur = float3(0.0);
+        blur += float3(content.eval(uv + float2( k, 0.0)).rgb);
+        blur += float3(content.eval(uv + float2(-k, 0.0)).rgb);
+        blur += float3(content.eval(uv + float2(0.0,  k)).rgb);
+        blur += float3(content.eval(uv + float2(0.0, -k)).rgb);
+        col = mix(col, blur * 0.25, rim * 0.7);
+    }
+
+    float luma = dot(col, float3(0.2126, 0.7152, 0.0722));
+    col = mix(float3(luma), col, uSat);
+
+    float dd = max(-sd, 0.0);
+
+    // Outer hairline: the only thing that defines the edge on a light background, and on a dark
+    // one it has to become a bright rim instead or the lens disappears.
+    float edgeLine = exp(-(dd * dd) / 2.25);
+    col *= (1.0 - edgeLine * mix(0.45, -0.25, uDark));
+
+    float inner = exp(-pow(dd - uEdge, 2.0) / max(uEdge * uEdge * 0.8, 0.6));
+    col += inner * 0.14;
+
+    float3 N = normalize(float3(n * t, max(z, 0.15)));
+    float3 L = normalize(float3(-0.45, -0.89, 0.35));
+    float spec = pow(max(dot(N, L), 0.0), 16.0);
+    col += spec * 0.30;
+
+    float2 sp = (p - uSpec) / (r * 0.9);
+    col += exp(-dot(sp, sp) * 2.4) * uSpecAmt;
+
+    float cy = abs(p.y - r * 0.74);
+    float cx = abs(p.x) / (uHalfSpine + r);
+    col += (1.0 - smoothstep(0.0, 2.0, cy)) * (1.0 - smoothstep(0.15, 0.85, cx)) * 0.28;
+
+    col = mix(col, float3(1.0), uTint);
+
+    float outer = 1.0 - smoothstep(-1.0, 0.5, sd);
+    float a = uOpacity * outer;
+
+    return half4(half(col.r * a), half(col.g * a), half(col.b * a), half(a));
+}

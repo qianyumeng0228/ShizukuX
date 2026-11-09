@@ -4,8 +4,14 @@ import af.shizuku.core.ui.compose.AppTheme
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
+import af.shizuku.manager.app.GlassBackground
 import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
 import af.shizuku.manager.home.compose.GlassBottomBar
+import af.shizuku.manager.home.compose.GlassLens
+import af.shizuku.manager.home.compose.LensGeometry
+import af.shizuku.manager.home.compose.LensLook
+import af.shizuku.manager.home.compose.glassBackdrop
+import af.shizuku.manager.home.compose.rememberGlassBackdropLayer
 import af.shizuku.manager.management.AppsController
 import af.shizuku.manager.management.AppsPage
 import af.shizuku.manager.ktx.toHtml
@@ -19,6 +25,7 @@ import af.shizuku.manager.shell.exportTerminalAssets
 import af.shizuku.manager.utils.GlassTabs
 import af.shizuku.manager.utils.ShizukuStateMachine
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.Toast
@@ -30,11 +37,13 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -50,12 +59,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
@@ -249,13 +261,30 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
         // currentPage + offset is exactly the continuous 0..4 position the pill expects, which is
         // why the bar gained a positionFraction parameter instead of animating on its own.
         val positionFraction = pagerState.currentPage + pagerState.currentPageOffsetFraction
+        // The bar's glass samples this layer, so the pager records itself once per frame and is
+        // then blitted instead of drawn twice. Only the AGSL lens (API 33) needs it, so on older
+        // devices no layer is created and the bar keeps its flat lozenge.
+        val backdrop = rememberGlassBackdropLayer()
+        val lensActive = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            HorizontalPager(
-                state = pagerState,
-                beyondViewportPageCount = 1,
-                modifier = Modifier.fillMaxSize()
-            ) { page ->
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // The page stage has to be inside the recorded layer, not behind it. The window
+            // background (glass_window_background[_light]) is painted by the Activity, so a page
+            // whose content is transparent (modules, terminal) recorded an empty frame there and
+            // the lens read pure black. Painting the same gradient in Compose puts a real
+            // backdrop under every pixel the lens can sample; it matches the window drawable
+            // stop-for-stop, so pages keep their exact colour.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .let { if (lensActive) it.glassBackdrop(backdrop) else it }
+            ) {
+                GlassBackground {
+                    HorizontalPager(
+                        state = pagerState,
+                        beyondViewportPageCount = 1,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
                 when (page) {
                     // The apps page hosts an AndroidView whose rows (and the "toggle all" header
                     // most of all) consume ACTION_MOVE, so a horizontal drag that starts on that
@@ -288,6 +317,8 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                     // future tab that has no content yet: render nothing rather than a placeholder
                     // that claims the page is still reachable from the bottom bar.
                     else -> {}
+                }
+                }
                 }
             }
 
@@ -324,12 +355,57 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                         )
                 )
 
+                val lensDensity = LocalDensity.current
+                val lensUnit = (maxWidth - 36.dp) / 5
+                val lensPad = 24.dp
+                val lensRadius = 30.dp
+                val lensPillW = lensUnit - 10.dp
+                // Reference geometry: the glass body is 2*radius across and the box is that plus
+                // 2*pad, so the refraction rim has room to bleed outside the bar.
+                val lensW = lensRadius * 2 + lensPad * 2
+                val lensH = lensW
+                val lensCx = 18.dp + lensUnit * (positionFraction + 0.5f)
+                val lensCy = maxHeight - 53.dp
+
                 GlassBottomBar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 20.dp),
                     selectedIndex = pagerState.currentPage,
                     positionFraction = positionFraction,
+                    drawHighlight = !lensActive,
+                    // Hung inside the bar rather than beside it: the icons have to stay above the
+                    // glass, and the shader only returns colour inside the capsule, so the box
+                    // being wider than the slot is invisible.
+                    lensSlot = if (!lensActive) null else {
+                        {
+                            GlassLens(
+                                backdrop = backdrop,
+                                centreInBackdropPx = with(lensDensity) {
+                                    Offset(lensCx.toPx(), lensCy.toPx())
+                                },
+                                sizeDp = DpSize(lensW, lensH),
+                                geometry = with(lensDensity) {
+                                    LensGeometry(
+                                        radiusPx = lensRadius.toPx(),
+                                        halfSpinePx = (lensPillW / 2 - lensRadius).toPx()
+                                            .coerceAtLeast(0f),
+                                        edgePx = 3.7f.dp.toPx()
+                                    )
+                                },
+                                look = LensLook(),
+                                dark = dark,
+                                modifier = Modifier
+                                    // Centred vertically rather than offset from the top: the box is
+                                    // 108dp and the bar only 66dp, and align alone puts the surplus
+                                    // evenly above and below - which is exactly the overhang the
+                                    // reference has. A y offset on top of a top-start align landed
+                                    // the glass 22dp too high.
+                                    .align(Alignment.CenterStart)
+                                    .offset(x = lensCx - 18.dp - lensW / 2)
+                            )
+                        }
+                    },
                     onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
                     onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
                     onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },

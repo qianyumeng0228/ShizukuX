@@ -47,6 +47,19 @@ fun GlassBottomBar(
      * container can slide its pages and its pill together.
      */
     positionFraction: Float? = null,
+    /**
+     * When the container draws a real glass lens over this bar, the flat gradient lozenge is
+     * dropped - two highlights on the same slot read as one dirty piece of glass. Bars mounted on
+     * the XML pages keep it, because they have no backdrop to sample.
+     */
+    drawHighlight: Boolean = true,
+    /**
+     * Drawn between the bar's fill and its icons, so a real glass lens refracts the page while the
+     * icons stay legible on top of it - the order the reference implementation uses. The bar itself
+     * must not clip: a lens is taller than the 66dp capsule and its rim is the part that sells the
+     * refraction, so clipping here would slice off exactly the interesting edge.
+     */
+    lensSlot: (@Composable BoxScope.() -> Unit)? = null,
     onHomeClick: () -> Unit = {},
     onAppsClick: () -> Unit = {},
     onModulesClick: () -> Unit = {},
@@ -57,9 +70,10 @@ fun GlassBottomBar(
     val barShape = RoundedCornerShape(28.dp)
     val pillShape = RoundedCornerShape(22.dp)
     // The bar sits over scrolling cards and there is no live backdrop blur on this skin, so the
-    // fill has to carry the legibility on its own - at 55% white the home cards read straight
-    // through it on light.
-    val fill = if (dark) Color(0x26FFFFFF) else Color(0xE8FFFFFF)
+    // fill has to carry the legibility on its own. 0xCC white (rather than near-opaque 0xE8) is
+    // what the reference implementation settled on: enough page colour leaks through that the
+    // glass lens reads as part of the same material instead of a white disc stuck on top.
+    val fill = if (dark) Color(0x1FFFFFFF) else Color(0xCCFFFFFF)
     val stroke = if (dark) Color(0x24FFFFFF) else Color(0x14000000)
     // Colours are hardcoded rather than read from MaterialTheme: this bar is also mounted on the
     // XML pages, which host it inside a bare ComposeView without an AppTheme wrapper (so their
@@ -83,15 +97,22 @@ fun GlassBottomBar(
             .fillMaxWidth()
             .padding(horizontal = 18.dp)
             .height(66.dp)
-            .clip(barShape)
-            .background(fill)
-            .border(1.dp, stroke, barShape)
     ) {
+        // The capsule fill lives on its own layer so the bar container no longer clips its
+        // children - the lens has to overhang the capsule.
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(barShape)
+                .background(fill)
+                .border(1.dp, stroke, barShape)
+        )
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val unit = maxWidth / 5
             // Glass lozenge: soft top highlight + faint diagonal sheen + 1dp rim, so the moving
             // highlight looks like a lit piece of glass rather than a flat selection colour.
-            Box(
+            if (drawHighlight) {
+                Box(
                 modifier = Modifier
                     .offset(x = unit * animated + 5.dp, y = 7.dp)
                     .width(unit - 10.dp)
@@ -138,7 +159,10 @@ fun GlassBottomBar(
                             )
                         )
                 )
+                }
             }
+
+            lensSlot?.invoke(this)
 
             Row(
                 modifier = Modifier.fillMaxSize(),
