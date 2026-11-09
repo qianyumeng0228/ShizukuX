@@ -34,6 +34,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -367,13 +370,14 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 // 2*pad, so the refraction rim has room to bleed outside the bar.
                 val lensW = lensRadius * 2 + lensPad * 2
                 val lensH = lensW
-                val lensCx = 18.dp + lensUnit * (positionFraction + 0.5f)
+                // While a finger holds the pill the page must stay put - the glass alone travels,
+                // and only the slot it is dropped on decides which page loads. So the drag keeps
+                // its own fraction instead of feeding the pager, and the pill reads either the
+                // finger position or the pager's settled one.
+                var dragFraction by remember { mutableStateOf<Float?>(null) }
+                val shownFraction = dragFraction ?: positionFraction
+                val lensCx = 18.dp + lensUnit * (shownFraction + 0.5f)
                 val lensCy = maxHeight - 53.dp
-                // Live position while a finger drags the pill. PagerState has no scrollBy, so the
-                // drag is translated into the nearest page plus a fraction and applied with
-                // scrollToPage - that keeps one authority (positionFraction) for page, pill and
-                // lens instead of letting the bar invent its own offset.
-                var dragFrom by remember { mutableStateOf(0f) }
 
                 GlassBottomBar(
                     modifier = Modifier
@@ -381,47 +385,66 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                         .padding(bottom = 20.dp)
                         // Every cell owns a clickable, so a horizontal drag on the pill was
                         // consumed there and never reached the pager: the glass could only jump
-                        // between five fixed slots. Claiming the drag here and feeding it back to
-                        // the pager makes the glass track the finger continuously.
+                        // between five fixed slots. Claiming the drag here lets the glass track
+                        // the finger continuously.
                         .pointerInput(Unit) {
                             detectHorizontalDragGestures(
-                                onDragStart = {
-                                    dragFrom = pagerState.currentPage +
-                                        pagerState.currentPageOffsetFraction
+                                onDragStart = { down ->
+                                    // Start from the slot the finger actually landed on, not from
+                                    // the page that happens to be showing: pressing "apps" while
+                                    // "home" is open has to put the glass under the finger first,
+                                    // otherwise a 75px drag only nudges it a third of a slot.
+                                    val unitPx = lensUnit.toPx()
+                                    dragFraction = if (unitPx > 0f) {
+                                        ((down.x - 18.dp.toPx()) / unitPx - 0.5f)
+                                            .coerceIn(0f, 4f)
+                                    } else {
+                                        pagerState.currentPage +
+                                            pagerState.currentPageOffsetFraction
+                                    }
                                 },
                                 onDragEnd = {
-                                    val target = (
-                                        pagerState.currentPage +
-                                            pagerState.currentPageOffsetFraction
-                                        ).roundToInt().coerceIn(0, 4)
-                                    scope.launch { pagerState.animateScrollToPage(target) }
+                                    val from = dragFraction
+                                        ?: (pagerState.currentPage +
+                                            pagerState.currentPageOffsetFraction)
+                                    val target = from.roundToInt().coerceIn(0, 4)
+                                    scope.launch {
+                                        // Only now does the page move, and it moves to the slot the
+                                        // glass was dropped on. The pill springs the last <0.5 slot
+                                        // to centre while the pager slides underneath it.
+                                        launch { pagerState.animateScrollToPage(target) }
+                                        val settle = Animatable(from)
+                                        settle.animateTo(
+                                            targetValue = target.toFloat(),
+                                            animationSpec = spring(
+                                                dampingRatio = 0.55f,
+                                                stiffness = Spring.StiffnessMedium
+                                            )
+                                        ) {
+                                            dragFraction = value
+                                        }
+                                        // Same number again on both sides, so clearing it cannot
+                                        // make the glass jump.
+                                        dragFraction = null
+                                    }
                                 },
-                                onDragCancel = {
-                                    val target = (
-                                        pagerState.currentPage +
-                                            pagerState.currentPageOffsetFraction
-                                        ).roundToInt().coerceIn(0, 4)
-                                    scope.launch { pagerState.animateScrollToPage(target) }
-                                }
+                                onDragCancel = { dragFraction = null }
                             ) { change, dragAmount ->
                                 change.consume()
                                 val unitPx = lensUnit.toPx()
                                 if (unitPx > 0f) {
+                                    val cur = dragFraction ?: positionFraction
                                     // A rightward drag selects the tab to the right: this is a
                                     // control, not content, so it does not invert the way a
                                     // finger on the page itself would. Subtracting here pinned
                                     // the value at 0 and the glass never left the home slot.
-                                    dragFrom = (dragFrom + dragAmount / unitPx)
+                                    dragFraction = (cur + dragAmount / unitPx)
                                         .coerceIn(0f, 4f)
-                                    val settled = dragFrom.roundToInt().coerceIn(0, 4)
-                                    val offset = (dragFrom - settled)
-                                        .coerceIn(-0.5f, 0.5f)
-                                    scope.launch { pagerState.scrollToPage(settled, offset) }
                                 }
                             }
                         },
                     selectedIndex = pagerState.currentPage,
-                    positionFraction = positionFraction,
+                    positionFraction = shownFraction,
                     drawHighlight = !lensActive,
                     // Hung inside the bar rather than beside it: the icons have to stay above the
                     // glass, and the shader only returns colour inside the capsule, so the box
