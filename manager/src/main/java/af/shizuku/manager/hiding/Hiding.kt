@@ -509,20 +509,47 @@ object Hiding {
     }.getOrDefault(emptyList())
 
     /**
-     * The client to act on: the one chosen, or the only one there is.
+     * The client to act on: the one chosen, or the one actually holding the tunnel.
      *
-     * More than one candidate and no choice made means this refuses rather than guesses, because
-     * stopping the wrong client is a tunnel taken down that can never be put back - the client
-     * that was running is the only thing that knows how to bring it back.
+     * "The only candidate" is not an identification: a Xiaomi device answers eleven packages that
+     * merely *can* start a VpnService (game boosters included), so a count-based rule never names
+     * the owner and the tunnel is never taken down. What the platform does tell us is which of
+     * those packages has a VpnService running right now, and that is what this asks for.
+     *
+     * Stopping the wrong client is a tunnel taken down that can never be put back - only the
+     * client that was running knows how to bring it back - so when the owner still cannot be
+     * named this refuses rather than guesses.
      */
     private fun vpnClientPackage(): String? {
         chosenVpnClient()?.let { return it }
 
         val candidates = vpnCandidates()
+        if (candidates.isEmpty()) return null
+        runningVpnClient(candidates)?.let { return it }
         if (candidates.size == 1) return candidates.first()
 
-        LOGGER.w("a VPN is up and ${candidates.size} clients could hold it: $candidates")
+        LOGGER.w("a VPN is up and ${candidates.size} clients could hold it, none of them live: $candidates")
         return null
+    }
+
+    /**
+     * Which of [candidates] is running a service right now.
+     *
+     * `dumpsys activity services` names every live service as `u0 <package>/<component>`, so a
+     * package that is both a VpnService provider and registered there is the one holding the
+     * tunnel - regardless of what the client is called (Clash, mihomo, sing-box, …).
+     */
+    private fun runningVpnClient(candidates: List<String>): String? {
+        val services = shell("dumpsys activity services") ?: return null
+        val live = candidates.filter { pkg ->
+            Regex("(?<![\\w.])" + Regex.escape(pkg) + "/").containsMatchIn(services)
+        }
+        if (live.isEmpty()) return null
+        if (live.size == 1) return live.first()
+        // Several providers are alive; the one whose service is a VPN service is the tunnel owner.
+        return live.firstOrNull { pkg ->
+            Regex(Regex.escape(pkg) + "/\\S*[Vv][Pp][Nn]").containsMatchIn(services)
+        } ?: live.first()
     }
 
     fun chosenVpnClient(): String? = prefs.getString(PREF_VPN_CHOSEN, null)

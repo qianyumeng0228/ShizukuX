@@ -47,7 +47,14 @@ class AdbMdns(
         if (running) return
         running = true
         if (!registered) {
-            nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+            try {
+                nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+            } catch (e: Throwable) {
+                // Android 16 local-network protection can refuse discovery outright; the caller
+                // keeps its own state, so leave this instance off rather than half-started.
+                running = false
+                Timber.tag(TAG).w(e, "service discovery was refused")
+            }
         }
     }
 

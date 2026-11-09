@@ -1794,6 +1794,9 @@ This action cannot be undone. Continue?</string>
     <string name="modules_store_no_result_description">Try a different keyword.</string>
     <string name="modules_empty_description">Install a module ZIP to add script-driven features. Modules run through the Shizuku service, no root required.</string>
     <string name="modules_webui_readonly">Read-only WebUI · shell bridge not available</string>
+    <string name="modules_webui_access_short">Access</string>
+    <string name="modules_webui_needs_full">This module needs Full access to run commands</string>
+    <string name="modules_webui_enable_full">Enable</string>
     <string name="modules_webui_bridge">Shell bridge connected</string>
     <string name="modules_webui_bridge_network">Shell bridge connected · network allowed</string>
     <string name="modules_webui_missing">This module has no index.html</string>

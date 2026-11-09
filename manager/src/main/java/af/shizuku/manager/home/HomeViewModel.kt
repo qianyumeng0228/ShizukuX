@@ -20,6 +20,7 @@ import af.shizuku.manager.Manifest
 import af.shizuku.manager.ShizukuApplication
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.adb.AdbMdns
+import af.shizuku.manager.adb.LocalNetworkPermission
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.Logger.LOGGER
@@ -42,7 +43,15 @@ class HomeViewModel(
 
     init {
         reload()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && EnvironmentUtils.isTlsSupported()) {
+        // Discovery is only started once local-network access has been granted. On Android 16 a
+        // discovery without that permission raises the system's "choose a device to connect to"
+        // dialog every time the home page opens — a prompt the user never asked for, for a search
+        // they never asked for either. The wireless-debug start flow requests the permission and
+        // runs its own discovery at the moment the user actually asks to connect.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R &&
+            EnvironmentUtils.isTlsSupported() &&
+            LocalNetworkPermission.granted(appContext)
+        ) {
             startAdbPortDiscovery()
         }
     }

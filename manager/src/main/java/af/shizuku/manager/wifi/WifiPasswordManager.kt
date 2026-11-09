@@ -45,8 +45,50 @@ object WifiPasswordManager {
 
     /** Every saved network with a readable name, or null when the store cannot be read. */
     fun load(): List<WifiNetwork>? {
-        val xml = shell("cat $STORE") ?: shell("cat $LEGACY_STORE") ?: return null
+        // The store is 0600 system:system, so SELinux denies the Shizuku shell (uid 2000) even
+        // though the file is not encrypted: the plain shell path can never work on this platform
+        // generation. A root shell is therefore the primary reader, and the plain shell is only a
+        // fallback for builds whose store is group-readable.
+        val xml = readStores(asRoot = true) ?: readStores(asRoot = false) ?: return null
         return parse(xml)
+    }
+
+    private fun readStores(asRoot: Boolean): String? {
+        for (path in listOf(STORE, LEGACY_STORE)) {
+            val out = if (asRoot) rootShell("cat $path") else shell("cat $path")
+            // A refusal ("Permission denied", "su: not found") is not the store: only a document
+            // that actually starts with '<' is handed to the parser.
+            if (out != null && out.trimStart().startsWith("<")) return out
+        }
+        return null
+    }
+
+    /** Runs [cmd] as root through the device's su; null when su is missing or refuses. */
+    private fun rootShell(cmd: String): String? = exec("su -c " + quote(cmd)) { it.trimStart().startsWith("<") }
+
+    private fun shell(cmd: String): String? = exec(cmd) { it.isNotBlank() }
+
+    /** Single quotes, with any embedded quote escaped the POSIX way. */
+    private fun quote(raw: String): String = "'" + raw.replace("'", "'\\''") + "'"
+
+    private fun exec(cmd: String, accept: (String) -> Boolean): String? {
+        if (!isAvailable()) return null
+        var process: Process? = null
+        return try {
+            // `</dev/null` keeps a su that reads its confirmation from stdin from waiting forever.
+            process = Shizuku.newProcess(arrayOf("sh", "-c", "{ $cmd ; } 2>/dev/null </dev/null"), null, null)
+            val out = process.inputStream.bufferedReader().readText()
+            if (process.waitFor() == 0 && accept(out)) out else null
+        } catch (t: Throwable) {
+            LOGGER.w("wifi shell failed: ${t.message}")
+            null
+        } finally {
+            try {
+                process?.destroy()
+            } catch (_: Throwable) {
+                // A dead binder makes destroy() throw as well; nothing left to clean up then.
+            }
+        }
     }
 
     /**
@@ -109,23 +151,4 @@ object WifiPasswordManager {
     /** The store quotes names and escapes them; both are storage detail, not the name. */
     private fun clean(raw: String): String =
         raw.trim().removeSurrounding("\"").replace("\\\"", "\"").replace("\\\\", "\\")
-
-    private fun shell(cmd: String): String? {
-        if (!isAvailable()) return null
-        var process: Process? = null
-        return try {
-            process = Shizuku.newProcess(arrayOf("sh", "-c", "{ $cmd ; echo ; } 2>/dev/null"), null, null)
-            val out = process.inputStream.bufferedReader().readText()
-            if (process.waitFor() == 0 && out.isNotBlank()) out else null
-        } catch (t: Throwable) {
-            LOGGER.w("wifi shell failed: ${t.message}")
-            null
-        } finally {
-            try {
-                process?.destroy()
-            } catch (_: Throwable) {
-                // A dead binder makes destroy() throw as well; nothing left to clean up then.
-            }
-        }
-    }
 }

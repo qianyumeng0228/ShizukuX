@@ -59,7 +59,7 @@ object DeviceInfoManager {
         InfoItem("安全补丁", Build.VERSION.SECURITY_PATCH.ifEmpty { props.props["ro.build.version.security_patch"] ?: "-" }),
         InfoItem("版本号", props.props["ro.build.display.id"] ?: Build.DISPLAY),
         InfoItem("内核", props.kernel.ifEmpty { System.getProperty("os.version") ?: "-" }),
-        InfoItem("基带", props.props["gsm.version.baseband"] ?: Build.getRadioVersion() ?: "-"),
+        InfoItem("基带", props.props["gsm.version.baseband"]?.takeIf { it.isNotBlank() } ?: radioVersion()),
         InfoItem("系统启动", bootTime(context))
     )
 
@@ -79,8 +79,51 @@ object DeviceInfoManager {
     private fun cpuRows(context: Context, props: Parsed): List<InfoItem> = listOf(
         InfoItem("ABI", Build.SUPPORTED_ABIS.joinToString(", ")),
         InfoItem("核心数", Runtime.getRuntime().availableProcessors().toString()),
-        InfoItem("SoC 厂商", props.props["ro.soc.manufacturer"] ?: Build.MANUFACTURER)
+        InfoItem("SoC 厂商", socVendor(props))
     )
+
+    /**
+     * The SoC vendor — the company that made the chip, never the one that assembled the phone.
+     *
+     * `ro.soc.manufacturer` answers the platform's own vendor code ("QTI" for Qualcomm), and
+     * Build.SOC_MANUFACTURER (API 31+) answers the same code without needing a shell. The old
+     * fallback here was Build.MANUFACTURER, which is why a Xiaomi phone with a Qualcomm SoC
+     * claimed "Xiaomi": the brand is not the SoC vendor, so an unreadable property now yields a
+     * dash instead. Codes are translated to the vendor's name because "QTI" alone means nothing.
+     */
+    private fun socVendor(props: Parsed): String {
+        var raw = props.props["ro.soc.manufacturer"]?.trim().orEmpty()
+        if (raw.isEmpty() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            raw = Build.SOC_MANUFACTURER.trim()
+        }
+        if (raw.isEmpty()) return "-"
+        return SOC_VENDORS[raw.lowercase(Locale.ROOT)] ?: raw
+    }
+
+    private val SOC_VENDORS = mapOf(
+        "qti" to "Qualcomm（高通）",
+        "qualcomm" to "Qualcomm（高通）",
+        "mediatek" to "MediaTek（联发科）",
+        "mtk" to "MediaTek（联发科）",
+        "samsung" to "Samsung（三星）",
+        "exynos" to "Samsung（三星）",
+        "hisilicon" to "HiSilicon（海思）",
+        "kirin" to "HiSilicon（海思）",
+        "google" to "Google（Tensor）",
+        "unisoc" to "Unisoc（紫光展锐）",
+        "spreadtrum" to "Unisoc（紫光展锐）"
+    )
+
+    /**
+     * `Build.getRadioVersion()` answers the baseband twice ("MPSS…,MPSS…") on most devices: the
+     * two halves are the same firmware built for two slots. One copy is the fact, two is noise.
+     */
+    private fun radioVersion(): String {
+        val raw = Build.getRadioVersion()?.trim().orEmpty()
+        if (raw.isEmpty() || raw == "unknown") return "-"
+        val parts = raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        return parts.joinToString(",").ifEmpty { "-" }
+    }
 
     private fun memoryRows(context: Context): List<InfoItem> {
         val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager

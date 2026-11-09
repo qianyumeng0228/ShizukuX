@@ -36,7 +36,13 @@ import javax.net.ssl.HttpsURLConnection
  */
 class ModuleJsBridge(
     private val module: AdbModule,
-    private val webView: WebView
+    private val webView: WebView,
+    /**
+     * Opens this manager's own module settings, offered to pages that ask via [openSettings].
+     * Null when the host has no settings surface, in which case the call reports `ok:false`
+     * and the page keeps its manual instructions.
+     */
+    private val onOpenSettings: (() -> Boolean)? = null
 ) {
 
     @JavascriptInterface
@@ -63,6 +69,28 @@ class ModuleJsBridge(
                 put("webDownload", ModuleSettings.canDownloadWebFiles(module))
                 put("declaresShellBridge", module.declaresShellBridge)
             })
+        }.toString()
+    }
+
+    /**
+     * Opens the manager's module settings from the page.
+     *
+     * A page that finds itself without the permission it needs has nowhere to send the user: it
+     * can only print "go back to the module list, then top-right ⚙". This gives it a real door,
+     * so the settings that grant the permission are one tap away from the page that lacks it.
+     */
+    @JavascriptInterface
+    fun openSettings(): String {
+        if (!isOriginValid()) {
+            return JSONObject().apply {
+                put("ok", false)
+                put("error", "Permission denied: Origin mismatch.")
+            }.toString()
+        }
+        val opened = onOpenSettings?.invoke() ?: false
+        return JSONObject().apply {
+            put("ok", opened)
+            put("accessMode", ModuleSettings.getAccessMode().value)
         }.toString()
     }
 

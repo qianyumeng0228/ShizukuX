@@ -1532,6 +1532,9 @@
     <string name="modules_store_no_result_description">换个关键词试试。</string>
     <string name="modules_empty_description">安装模块 ZIP 即可扩展由脚本驱动的能力。模块通过 Shizuku 服务运行，无需 Root。</string>
     <string name="modules_webui_readonly">只读 WebUI · 当前未提供 Shell 桥</string>
+    <string name="modules_webui_access_short">访问模式</string>
+    <string name="modules_webui_needs_full">该模块的页面需要完全访问才能执行命令</string>
+    <string name="modules_webui_enable_full">开启</string>
     <string name="modules_webui_bridge">Shell 桥已连接</string>
     <string name="modules_webui_bridge_network">Shell 桥已连接 · WebUI 可联网</string>
     <string name="modules_webui_missing">该模块没有 index.html</string>

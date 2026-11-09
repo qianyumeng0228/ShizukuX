@@ -12,20 +12,31 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,9 +104,16 @@ class ModuleWebUiActivity : ComponentActivity() {
 private fun WebUiScreen(module: AdbModule, onBack: () -> Unit) {
     val trusted = ModuleSettings.isModuleTrusted(module.id)
     val webNetworkAllowed = ModuleSettings.canUseWebNetwork(module)
-    val bridgePermitted = module.enabled &&
-        ModuleSettings.canExposeWebBridge(module) &&
-        (module.declaresShellBridge || trusted)
+    // The bridge is injected whenever the module may own one, and each call is then allowed or
+    // refused by the access mode. Injecting it under Safe is deliberate: a page without the
+    // bridge cannot tell "this manager has no shell" from "this manager refused", and a module
+    // that legitimately needs Full access has no way to ask for it.
+    val bridgeAvailable = module.enabled && (module.declaresShellBridge || trusted)
+
+    var mode by remember { mutableStateOf(ModuleSettings.getAccessMode()) }
+    val fullAccess = mode == ModuleSettings.AccessMode.FULL
+    var showModeDialog by remember { mutableStateOf(false) }
+    var webView by remember { mutableStateOf<WebView?>(null) }
 
     val entry = module.webRoot?.let { dir ->
         dir.resolve("index.html").takeIf { it.isFile }
@@ -103,9 +121,16 @@ private fun WebUiScreen(module: AdbModule, onBack: () -> Unit) {
     }
 
     val subtitle = when {
-        !bridgePermitted -> stringResourceCompat(R.string.modules_webui_readonly)
+        !bridgeAvailable -> stringResourceCompat(R.string.modules_webui_readonly)
         webNetworkAllowed -> stringResourceCompat(R.string.modules_webui_bridge_network)
         else -> stringResourceCompat(R.string.modules_webui_bridge)
+    }
+
+    fun applyMode(candidate: ModuleSettings.AccessMode) {
+        ModuleSettings.setAccessMode(candidate)
+        mode = candidate
+        // The bridge checks the mode per call, so a reload is enough to take effect.
+        webView?.reload()
     }
 
     Scaffold(
@@ -137,6 +162,11 @@ private fun WebUiScreen(module: AdbModule, onBack: () -> Unit) {
                         )
                     }
                 },
+                actions = {
+                    TextButton(onClick = { showModeDialog = true }) {
+                        Text(stringResourceCompat(R.string.modules_webui_access_short))
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -144,41 +174,108 @@ private fun WebUiScreen(module: AdbModule, onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (entry == null) {
-                Box(Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    Text(
-                        text = stringResourceCompat(R.string.modules_webui_missing),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            } else {
-                AndroidView(
-                    modifier = Modifier.fillMaxSize(),
-                    factory = { context ->
-                        WebView(context).apply {
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.allowFileAccess = true
-                            settings.allowContentAccess = false
-                            settings.blockNetworkLoads = !webNetworkAllowed
-                            settings.allowFileAccessFromFileURLs = trusted
-                            settings.allowUniversalAccessFromFileURLs = trusted
-                            settings.cacheMode = WebSettings.LOAD_DEFAULT
-                            settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                            settings.setSupportZoom(true)
-                            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
-                            webViewClient = LocalModuleWebViewClient(module)
-                            if (bridgePermitted) {
-                                addJavascriptInterface(ModuleJsBridge(module, this), "Shizuku")
-                            }
-                            loadUrl(Uri.fromFile(entry).toString())
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            if (bridgeAvailable && !fullAccess) {
+                Surface(
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResourceCompat(R.string.modules_webui_needs_full),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(onClick = { applyMode(ModuleSettings.AccessMode.FULL) }) {
+                            Text(stringResourceCompat(R.string.modules_webui_enable_full))
                         }
                     }
-                )
+                }
+            }
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (entry == null) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = stringResourceCompat(R.string.modules_webui_missing),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    AndroidView(
+                        modifier = Modifier.fillMaxSize(),
+                        factory = { context ->
+                            WebView(context).apply {
+                                webView = this
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.allowFileAccess = true
+                                settings.allowContentAccess = false
+                                settings.blockNetworkLoads = !webNetworkAllowed
+                                settings.allowFileAccessFromFileURLs = trusted
+                                settings.allowUniversalAccessFromFileURLs = trusted
+                                settings.cacheMode = WebSettings.LOAD_DEFAULT
+                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                                settings.setSupportZoom(true)
+                                CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
+                                webViewClient = LocalModuleWebViewClient(module)
+                                if (bridgeAvailable) {
+                                    addJavascriptInterface(
+                                        ModuleJsBridge(module, this) {
+                                            // Called from the page's JS thread: hop to the UI thread
+                                            // before touching Compose state.
+                                            post { showModeDialog = true }
+                                            true
+                                        },
+                                        "Shizuku"
+                                    )
+                                }
+                                loadUrl(Uri.fromFile(entry).toString())
+                            }
+                        }
+                    )
+                }
             }
         }
+    }
+
+    if (showModeDialog) {
+        AlertDialog(
+            onDismissRequest = { showModeDialog = false },
+            title = { Text(stringResourceCompat(R.string.modules_access_mode)) },
+            text = {
+                Column {
+                    ModuleSettings.AccessMode.entries.forEach { candidate ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showModeDialog = false
+                                    applyMode(candidate)
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = candidate == mode, onClick = null)
+                            Text(
+                                text = stringResourceCompat(candidate.labelRes),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = 12.dp)
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showModeDialog = false }) {
+                    Text(stringResourceCompat(android.R.string.cancel))
+                }
+            }
+        )
     }
 }
 
