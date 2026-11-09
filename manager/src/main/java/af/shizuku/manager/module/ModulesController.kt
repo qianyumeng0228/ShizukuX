@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import af.shizuku.manager.R
+import af.shizuku.manager.module.store.ModuleStoreClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
@@ -49,11 +50,17 @@ class ModulesController(
     // otherwise granting trust would write the preference without ever recomposing the card.
     var trustedIds by mutableStateOf<Set<String>>(emptySet())
         private set
+    // Chinese name/description published by the store catalog, cached on the last successful
+    // store refresh. Installed cards prefer it on a Chinese device; a module without a Chinese
+    // rendition keeps the English text from its own module.prop.
+    var catalogLocalization by mutableStateOf<Map<String, Pair<String?, String?>>>(emptyMap())
+        private set
 
     fun serviceRunning(): Boolean = Shizuku.pingBinder()
 
     fun refresh() {
         scope.launch {
+            catalogLocalization = ModuleStoreClient.cachedLocalization(context)
             runCatching { AdbModuleManager.listModules(context) }
                 .onSuccess { list ->
                     modules = list

@@ -40,6 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -127,7 +128,8 @@ class ModulesActivity : ComponentActivity() {
                     onCancelDelete = { ctl.cancelDelete() },
                     onOpenStore = {
                         startActivity(android.content.Intent(this, ModuleStoreActivity::class.java))
-                    }
+                    },
+                    catalogLocalization = ctl.catalogLocalization
                 )
             }
         }
@@ -185,7 +187,10 @@ internal fun ModulesScreen(
     showTabBar: Boolean = true,
     // Opens the online catalog. Kept as a callback (instead of starting the activity here) so
     // both hosts - the standalone activity and the shell - own their own navigation.
-    onOpenStore: () -> Unit = {}
+    onOpenStore: () -> Unit = {},
+    // Chinese name/description from the last store refresh, keyed by module id. Only entries the
+    // catalog actually translated are present; everything else keeps its module.prop text.
+    catalogLocalization: Map<String, Pair<String?, String?>> = emptyMap()
 ) {
     Scaffold(
         // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
@@ -314,6 +319,7 @@ internal fun ModulesScreen(
                             trusted = module.id in trustedIds,
                             busy = busyModule == module.id,
                             serviceRunning = serviceRunning,
+                            catalog = catalogLocalization[module.id],
                             onToggle = { onToggle(module) },
                             onTrust = { onTrust(module, it) },
                             onRunAction = { onRunAction(module) },
@@ -417,6 +423,7 @@ private fun ModuleCard(
     trusted: Boolean,
     busy: Boolean,
     serviceRunning: Boolean,
+    catalog: Pair<String?, String?>?,
     onToggle: () -> Unit,
     onTrust: (Boolean) -> Unit,
     onRunAction: () -> Unit,
@@ -427,6 +434,11 @@ private fun ModuleCard(
     val canRun = ModuleSettings.canRunAction(module)
     val canService = ModuleSettings.canRunService(module) && ModuleSettings.canRunBackground(module)
     val blockedByPolicy = !canRun && !trusted
+    // A Chinese device prefers the catalog's Chinese text; a module the catalog never translated
+    // keeps whatever its own module.prop says instead of showing an empty line.
+    val preferChinese = LocalConfiguration.current.locales[0]?.language?.startsWith("zh") == true
+    val displayName = catalog?.first?.takeIf { preferChinese } ?: module.name
+    val displayDescription = catalog?.second?.takeIf { preferChinese } ?: module.description
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -438,7 +450,7 @@ private fun ModuleCard(
             Row(verticalAlignment = Alignment.Top) {
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        text = module.name,
+                        text = displayName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -477,7 +489,7 @@ private fun ModuleCard(
                 }
             }
 
-            module.description?.takeIf { it.isNotBlank() }?.let {
+            displayDescription?.takeIf { it.isNotBlank() }?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,

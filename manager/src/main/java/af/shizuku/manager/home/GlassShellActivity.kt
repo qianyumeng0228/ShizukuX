@@ -649,7 +649,8 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                     )
                 )
             },
-            showTabBar = false
+            showTabBar = false,
+            catalogLocalization = modulesCtl.catalogLocalization
         )
     }
 

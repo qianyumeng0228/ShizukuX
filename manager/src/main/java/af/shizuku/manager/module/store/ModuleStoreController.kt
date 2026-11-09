@@ -36,6 +36,7 @@ class ModuleStoreController(
 
             runCatching { ModuleStoreClient.fetchIndex() }
                 .onSuccess { fetched ->
+                    ModuleStoreClient.cacheIndex(context, fetched.index.modules)
                     state = state.copy(
                         loading = false,
                         loaded = true,

@@ -298,6 +298,49 @@ object ModuleStoreClient {
     }
 
     /** Keeps the cache from growing forever after repeated installs. */
+    /**
+     * Snapshot of the last successful catalog. The installed-module page reads it so a card can
+     * show the Chinese name/description for a module whose own `module.prop` only carries
+     * English — that page never talks to the network itself, so without this cache it would
+     * fall back to the English prop text.
+     */
+    private fun cacheFile(context: Context): File =
+        File(context.filesDir, "module_store/index_cache.json")
+
+    fun cacheIndex(context: Context, modules: List<ModuleStoreEntry>) {
+        runCatching {
+            val file = cacheFile(context)
+            file.parentFile?.mkdirs()
+            file.writeText(
+                json.encodeToString(
+                    ModuleStoreIndex.serializer(),
+                    ModuleStoreIndex(name = "cache", modules = modules)
+                )
+            )
+        }
+    }
+
+    /** id -> (nameZh, descriptionZh), only for entries that actually carry a Chinese rendition. */
+    fun cachedLocalization(context: Context): Map<String, Pair<String?, String?>> {
+        return runCatching {
+            val file = cacheFile(context)
+            if (!file.isFile) {
+                emptyMap()
+            } else {
+                val index = json.decodeFromString(ModuleStoreIndex.serializer(), file.readText())
+                index.modules.mapNotNull { entry ->
+                    val name = entry.nameZh?.takeIf { it.isNotBlank() }
+                    val description = entry.descriptionZh?.takeIf { it.isNotBlank() }
+                    if (name == null && description == null) {
+                        null
+                    } else {
+                        entry.id to (name to description)
+                    }
+                }.toMap()
+            }
+        }.getOrDefault(emptyMap())
+    }
+
     fun cleanupOldDownloads(context: Context) {
         val dir = File(context.cacheDir, "module_store")
         if (!dir.isDirectory) return
