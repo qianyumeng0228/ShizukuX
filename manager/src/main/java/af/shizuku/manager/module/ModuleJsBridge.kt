@@ -140,7 +140,7 @@ class ModuleJsBridge(
         return try {
             val service = IShizukuService.Stub.asInterface(binder)
             val cwd = resolveModuleDirectory(options.cwd)
-            val env = buildEnvironment(cwd, options.extraEnv)
+            val env = buildEnvironment(service, cwd, options.extraEnv)
             val remote = service.newProcess(
                 arrayOf("sh", "-c", command),
                 env,
@@ -205,28 +205,19 @@ class ModuleJsBridge(
      * (`PATH`, `MODPATH`, `ARCH`, `AXERON`), so the bridge reproduces those next to the
      * variables ShizukuX already injects for action/service runs.
      */
-    private fun buildEnvironment(cwd: File, extraEnv: Map<String, String>): Array<String> {
-        val mode = ModuleSettings.getAccessMode().value
-        val trusted = if (ModuleSettings.isModuleTrusted(module.id)) "1" else "0"
-        val background = if (ModuleSettings.canRunBackground(module)) "1" else "0"
-
-        val env = linkedMapOf<String, String>()
-        extraEnv.forEach { (key, value) -> env[key] = value }
-
-        env["MODDIR"] = module.directory.absolutePath
-        env["MODPATH"] = module.directory.absolutePath
-        env["SHIZUKU_MODULE_CWD"] = cwd.absolutePath
-        env["ASH_STANDALONE"] = "1"
-        env["SHIZUKU_MODULE_ID"] = module.id
-        env["SHIZUKU_MODULE_MODE"] = mode
-        env["SHIZUKU_MODULE_TRUSTED"] = trusted
-        env["SHIZUKU_MODULE_BACKGROUND"] = background
-        env["ARCH"] = android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
-        env["AXERON"] = "true"
-        env["AXERONVER"] = "1.0.0"
-        env["PATH"] = MODULE_PATH
-
-        return env.map { (key, value) -> "$key=$value" }.toTypedArray()
+    private fun buildEnvironment(
+        service: IShizukuService,
+        cwd: File,
+        extraEnv: Map<String, String>
+    ): Array<String> {
+        // One environment builder for both the bridge and the module's own action/service
+        // scripts, so a WebUI and a script see the same PATH (including the su shim).
+        return ModuleRuntimeUtils.buildModuleEnvironment(
+            module = module,
+            cwd = cwd,
+            extraEnv = extraEnv,
+            binDir = ModuleRuntimeUtils.ensureSuShim(service)
+        )
     }
 
     private fun parseExecOptions(raw: String): ExecOptions {
@@ -441,9 +432,5 @@ class ModuleJsBridge(
             307,
             308
         )
-        private const val MODULE_PATH =
-            "/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:" +
-                "/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin:" +
-                "/sbin:/data/adb/apatch:/data/adb/ksu/bin"
     }
 }

@@ -325,7 +325,8 @@ object AdbModuleManager {
 
         val binder = Shizuku.getBinder() ?: error("Shizuku service is not running.")
         val service = IShizukuService.Stub.asInterface(binder)
-        val env = ModuleRuntimeUtils.buildModuleEnvironment(module, module.directory)
+        val binDir = ModuleRuntimeUtils.ensureSuShim(service)
+        val env = ModuleRuntimeUtils.buildModuleEnvironment(module, module.directory, binDir = binDir)
         val wrappedScript = "cd \"\$MODDIR\" 2>/dev/null || true\n$scriptContent"
         val remote = service.newProcess(
             arrayOf("sh", "-c", wrappedScript),

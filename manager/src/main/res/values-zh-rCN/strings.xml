@@ -1516,6 +1516,12 @@
     <string name="modules_store_chip_service">服务</string>
     <string name="modules_store_chip_webui">网页界面</string>
     <string name="modules_store_chip_community">社区</string>
+    <string name="modules_store_detail_button">详情</string>
+    <string name="modules_store_detail_official">官方</string>
+    <string name="modules_store_detail_shell_bridge">Shell 桥</string>
+    <string name="modules_store_detail_id">模块 ID</string>
+    <string name="modules_store_detail_repo">来源仓库</string>
+    <string name="modules_store_detail_updated">更新于</string>
     <string name="modules_store_search_hint">搜索模块</string>
     <string name="modules_store_policy_note">模块通过 Shizuku 运行。安装后需在模块页授予信任，脚本才能执行。</string>
     <string name="modules_store_empty_title">仓库里还没有模块</string>

@@ -16,15 +16,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -33,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -68,12 +74,16 @@ internal fun ModuleStoreScreen(
     onSelectTab: (Int) -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
-    val filtered = remember(state.entries, query) {
+    var detailEntry by remember { mutableStateOf<ModuleStoreEntry?>(null) }
+    val preferChinese = LocalConfiguration.current.locales[0]?.language?.startsWith("zh") == true
+    val filtered = remember(state.entries, query, preferChinese) {
         val needle = query.trim()
         if (needle.isEmpty()) state.entries
         else state.entries.filter { entry ->
             entry.id.contains(needle, ignoreCase = true) ||
-                entry.displayName.contains(needle, ignoreCase = true) ||
+                entry.localizedName(preferChinese).contains(needle, ignoreCase = true) ||
+                entry.localizedDescription(preferChinese)?.contains(needle, ignoreCase = true) == true ||
+                entry.name.contains(needle, ignoreCase = true) ||
                 entry.description?.contains(needle, ignoreCase = true) == true ||
                 entry.author?.contains(needle, ignoreCase = true) == true ||
                 entry.tags.any { it.contains(needle, ignoreCase = true) }
@@ -210,11 +220,13 @@ internal fun ModuleStoreScreen(
                             items(filtered, key = { it.id }) { entry ->
                                 StoreCard(
                                     entry = entry,
+                                    preferChinese = preferChinese,
                                     installedVersionCode = state.installedVersionCode(entry.id),
                                     hasUpdate = state.hasUpdate(entry),
                                     installing = state.installingId == entry.id,
                                     progress = if (state.installingId == entry.id) state.installProgress else null,
                                     anyInstalling = state.installingId != null,
+                                    onOpenDetail = { detailEntry = entry },
                                     onInstall = { onInstall(entry) }
                                 )
                             }
@@ -237,20 +249,40 @@ internal fun ModuleStoreScreen(
             }
         )
     }
+
+    detailEntry?.let { entry ->
+        StoreDetailSheet(
+            entry = entry,
+            preferChinese = preferChinese,
+            installedVersionCode = state.installedVersionCode(entry.id),
+            hasUpdate = state.hasUpdate(entry),
+            installing = state.installingId == entry.id,
+            progress = if (state.installingId == entry.id) state.installProgress else null,
+            anyInstalling = state.installingId != null,
+            onDismiss = { detailEntry = null },
+            onInstall = {
+                detailEntry = null
+                onInstall(entry)
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StoreCard(
     entry: ModuleStoreEntry,
+    preferChinese: Boolean,
     installedVersionCode: Long?,
     hasUpdate: Boolean,
     installing: Boolean,
     progress: Float?,
     anyInstalling: Boolean,
+    onOpenDetail: () -> Unit,
     onInstall: () -> Unit
 ) {
     Surface(
+        onClick = onOpenDetail,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
@@ -266,7 +298,7 @@ private fun StoreCard(
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = entry.displayName,
+                        text = entry.localizedName(preferChinese),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2,
@@ -298,7 +330,7 @@ private fun StoreCard(
                 }
             }
 
-            entry.description?.takeIf { it.isNotBlank() }?.let {
+            entry.localizedDescription(preferChinese)?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
@@ -371,8 +403,15 @@ private fun StoreCard(
             } else {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    TextButton(onClick = onOpenDetail) {
+                        Text(
+                            text = stringResource(R.string.modules_store_detail_button),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                     OutlinedButton(
                         onClick = onInstall,
                         enabled = !anyInstalling,
@@ -409,6 +448,215 @@ private fun StoreChip(text: String, container: Color, content: Color) {
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/**
+ * Full description of one catalog entry.
+ *
+ * The card truncates the description to four lines and three tags; modules in the shevery
+ * catalog carry long English blurbs, so a reader cannot judge what a module does from the
+ * card alone. This sheet is the place where the whole text, the full tag list, the origin
+ * repository and the version state are readable before installing.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun StoreDetailSheet(
+    entry: ModuleStoreEntry,
+    preferChinese: Boolean,
+    installedVersionCode: Long?,
+    hasUpdate: Boolean,
+    installing: Boolean,
+    progress: Float?,
+    anyInstalling: Boolean,
+    onDismiss: () -> Unit,
+    onInstall: () -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = entry.localizedName(preferChinese),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = listOfNotNull(
+                    entry.version?.let { "v$it" },
+                    entry.author,
+                    entry.formattedSize
+                ).joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                if (entry.isCommunity) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_chip_community),
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                } else {
+                    StoreChip(
+                        stringResource(R.string.modules_store_detail_official),
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                when {
+                    hasUpdate -> StoreChip(
+                        stringResource(R.string.modules_store_chip_update),
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                    installedVersionCode != null -> StoreChip(
+                        stringResource(R.string.modules_store_chip_installed),
+                        MaterialTheme.colorScheme.primaryContainer,
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                if (entry.hasAction) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_chip_action),
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (entry.hasService) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_chip_service),
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (entry.usesWebUI) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_chip_webui),
+                        MaterialTheme.colorScheme.surfaceContainerHighest,
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (entry.usesShellBridge) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_detail_shell_bridge),
+                        MaterialTheme.colorScheme.secondaryContainer,
+                        MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+            entry.localizedDescription(preferChinese)?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            StoreDetailFact(
+                stringResource(R.string.modules_store_detail_id),
+                entry.id
+            )
+            entry.sourceRepo?.takeIf { it.isNotBlank() }?.let {
+                StoreDetailFact(stringResource(R.string.modules_store_detail_repo), it)
+            }
+            entry.lastUpdated?.takeIf { it > 0 }?.let {
+                StoreDetailFact(
+                    stringResource(R.string.modules_store_detail_updated),
+                    java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT)
+                        .format(java.util.Date(it * 1000L))
+                )
+            }
+
+            if (entry.tags.isNotEmpty()) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    entry.tags.forEach { tag ->
+                        StoreChip(
+                            "#$tag",
+                            MaterialTheme.colorScheme.secondaryContainer,
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            if (installing) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(R.string.modules_store_installing),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    LinearProgressIndicator(
+                        progress = { progress ?: 0f },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onInstall,
+                    enabled = !anyInstalling,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    ShizukuIcon(
+                        icon = R.drawable.ic_install_24,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = when {
+                            hasUpdate -> stringResource(R.string.modules_store_update)
+                            installedVersionCode != null -> stringResource(R.string.modules_store_reinstall)
+                            else -> stringResource(R.string.modules_store_install)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StoreDetailFact(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.width(88.dp)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
         )
     }
 }

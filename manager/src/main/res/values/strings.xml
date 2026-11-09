@@ -1778,6 +1778,12 @@ This action cannot be undone. Continue?</string>
     <string name="modules_store_chip_service">Service</string>
     <string name="modules_store_chip_webui">WebUI</string>
     <string name="modules_store_chip_community">Community</string>
+    <string name="modules_store_detail_button">Details</string>
+    <string name="modules_store_detail_official">Official</string>
+    <string name="modules_store_detail_shell_bridge">Shell bridge</string>
+    <string name="modules_store_detail_id">Module ID</string>
+    <string name="modules_store_detail_repo">Repository</string>
+    <string name="modules_store_detail_updated">Updated</string>
     <string name="modules_store_search_hint">Search modules</string>
     <string name="modules_store_policy_note">Modules run through Shizuku. After installing, grant trust on the module page before its scripts can run.</string>
     <string name="modules_store_empty_title">The catalog is empty</string>

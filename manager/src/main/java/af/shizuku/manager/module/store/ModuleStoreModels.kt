@@ -1,5 +1,6 @@
 package af.shizuku.manager.module.store
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -25,6 +26,13 @@ data class ModuleStoreEntry(
     val versionCode: Long? = null,
     val author: String? = null,
     val description: String? = null,
+    /**
+     * Chinese rendition of [name] / [description]. Third-party catalogs publish English only,
+     * so the index carries a pre-translated copy and the client prefers it when the UI is
+     * Chinese; it is never translated at runtime.
+     */
+    val nameZh: String? = null,
+    val descriptionZh: String? = null,
     val downloadUrl: String = "",
     val fallbackUrl: String? = null,
     val sizeBytes: Long? = null,
@@ -33,8 +41,16 @@ data class ModuleStoreEntry(
     val hasAction: Boolean = false,
     val hasService: Boolean = false,
     val usesWebUI: Boolean = false,
+    /**
+     * `module.prop` calls this `usesShellBridge`; the shevery catalog spells the same fact
+     * `declaresShellBridge`, so the index field is mapped explicitly.
+     */
+    @SerialName("declaresShellBridge")
+    val usesShellBridge: Boolean = false,
     val tags: List<String> = emptyList(),
     val lastUpdated: Long? = null,
+    /** Upstream repository an entry was harvested from, when the index knows it. */
+    val sourceRepo: String? = null,
     /**
      * Which catalog this entry came from: `official` for the repository the project owns,
      * `community` for the GitHub `shevery-modules` topic index. Set by the client, never
@@ -46,6 +62,18 @@ data class ModuleStoreEntry(
         get() = origin == "community"
     val displayName: String
         get() = name.takeIf { it.isNotBlank() } ?: id
+
+    /** Name shown in the UI: the Chinese name when the UI language is Chinese and one exists. */
+    fun localizedName(preferChinese: Boolean): String {
+        if (preferChinese) nameZh?.takeIf { it.isNotBlank() }?.let { return it }
+        return displayName
+    }
+
+    /** Description shown in the UI, with the same Chinese-first rule as [localizedName]. */
+    fun localizedDescription(preferChinese: Boolean): String? {
+        if (preferChinese) descriptionZh?.takeIf { it.isNotBlank() }?.let { return it }
+        return description?.takeIf { it.isNotBlank() }
+    }
 
     val formattedSize: String?
         get() = sizeBytes?.takeIf { it > 0 }?.let {
