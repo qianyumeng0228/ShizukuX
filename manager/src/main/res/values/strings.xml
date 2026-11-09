@@ -394,6 +394,16 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="terminal_console_not_running">Shizuku is not running — start it to run commands here.</string>
     <string name="terminal_console_empty_command">Enter a command first.</string>
     <string name="terminal_console_process_null">err: Shizuku returned a null shell process.</string>
+    <string name="terminal_console_save">Save</string>
+    <string name="terminal_console_clear">Clear</string>
+    <string name="terminal_console_saved_empty">No saved commands yet — run one, then tap Save.</string>
+    <string name="terminal_console_saved_name_title">Save command</string>
+    <string name="terminal_console_saved_name_hint">Name</string>
+    <string name="terminal_console_saved_duplicate">That command is already saved.</string>
+    <string name="terminal_console_saved_full">Up to 20 commands can be saved.</string>
+    <string name="terminal_console_saved_rename_title">Rename</string>
+    <string name="terminal_console_saved_delete_title">Remove this command?</string>
+    <string name="terminal_console_saved_delete">Remove</string>
 
     <!-- Settings — swipe customisation -->
     <string name="settings_swipe_right">Swipe right action</string>

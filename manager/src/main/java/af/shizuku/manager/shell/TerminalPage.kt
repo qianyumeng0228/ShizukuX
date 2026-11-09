@@ -9,8 +9,12 @@ import af.shizuku.manager.utils.EnvironmentUtils
 import android.content.Context
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.view.isVisible
+import com.google.android.material.chip.Chip
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import rikka.compatibility.DeviceCompatibility
 import rikka.html.text.HtmlCompat
 import rikka.shizuku.Shizuku
@@ -83,6 +87,139 @@ fun buildTerminalPage(
             false
         }
     }
+
+    // --- saved commands (the console itself is one-shot; these are the reusable ones) ---
+    binding.consoleSave.setOnClickListener { promptSaveCommand(context, binding) }
+    binding.consoleClear.setOnClickListener {
+        binding.consoleOutput.text = context.getString(R.string.terminal_console_output_empty)
+    }
+    renderSavedCommands(context, binding)
+}
+
+/** The output box starts with the placeholder line, so the first real output must replace it. */
+private fun dropOutputPlaceholder(context: Context, binding: TerminalTutorialActivityBinding) {
+    if (binding.consoleOutput.text.toString() == context.getString(R.string.terminal_console_output_empty)) {
+        binding.consoleOutput.text = ""
+    }
+}
+
+private fun renderSavedCommands(context: Context, binding: TerminalTutorialActivityBinding) {
+    val group = binding.consoleSaved
+    group.removeAllViews()
+    val saved = SavedCommands.load(context)
+    binding.consoleSavedHint.isVisible = saved.isEmpty()
+    saved.forEach { entry -> group.addView(savedChip(context, binding, entry)) }
+}
+
+private fun savedChip(
+    context: Context,
+    binding: TerminalTutorialActivityBinding,
+    entry: SavedCommands.Entry
+): Chip = Chip(context, null, com.google.android.material.R.attr.chipStyle).apply {
+    text = entry.name
+    isCheckable = false
+    isCloseIconVisible = true
+    // Tap puts it back in the input instead of running it: a stored command that fires on a
+    // mis-tap is a bad trade, and the input is one button press away from running anyway.
+    setOnClickListener {
+        binding.consoleInput.setText(entry.command)
+        binding.consoleInput.setSelection(entry.command.length)
+        binding.consoleInput.requestFocus()
+    }
+    setOnCloseIconClickListener { confirmDeleteCommand(context, binding, entry) }
+    setOnLongClickListener {
+        promptRenameCommand(context, binding, entry)
+        true
+    }
+}
+
+private fun promptSaveCommand(context: Context, binding: TerminalTutorialActivityBinding) {
+    val command = binding.consoleInput.text.toString().trim()
+    if (command.isEmpty()) {
+        Toast.makeText(context, R.string.terminal_console_empty_command, Toast.LENGTH_SHORT).show()
+        return
+    }
+    val saved = SavedCommands.load(context)
+    if (saved.any { it.command == command }) {
+        Toast.makeText(context, R.string.terminal_console_saved_duplicate, Toast.LENGTH_SHORT).show()
+        return
+    }
+    if (saved.size >= SavedCommands.MAX) {
+        Toast.makeText(context, R.string.terminal_console_saved_full, Toast.LENGTH_SHORT).show()
+        return
+    }
+    val nameInput = EditText(context).apply {
+        setText(defaultName(command))
+        setSelection(text.length)
+        setSingleLine()
+        hint = context.getString(R.string.terminal_console_saved_name_hint)
+    }
+    MaterialAlertDialogBuilder(context)
+        .setTitle(R.string.terminal_console_saved_name_title)
+        .setView(paddedDialogView(context, nameInput))
+        .setNegativeButton(android.R.string.cancel, null)
+        .setPositiveButton(android.R.string.ok) { _, _ ->
+            SavedCommands.add(context, nameInput.text.toString().trim(), command)
+            renderSavedCommands(context, binding)
+        }
+        .show()
+}
+
+private fun promptRenameCommand(
+    context: Context,
+    binding: TerminalTutorialActivityBinding,
+    entry: SavedCommands.Entry
+) {
+    val nameInput = EditText(context).apply {
+        setText(entry.name)
+        setSelection(text.length)
+        setSingleLine()
+        hint = context.getString(R.string.terminal_console_saved_name_hint)
+    }
+    MaterialAlertDialogBuilder(context)
+        .setTitle(R.string.terminal_console_saved_rename_title)
+        .setMessage(entry.command)
+        .setView(paddedDialogView(context, nameInput))
+        .setNegativeButton(android.R.string.cancel, null)
+        .setPositiveButton(android.R.string.ok) { _, _ ->
+            SavedCommands.rename(context, entry.command, nameInput.text.toString().trim())
+            renderSavedCommands(context, binding)
+        }
+        .show()
+}
+
+private fun confirmDeleteCommand(
+    context: Context,
+    binding: TerminalTutorialActivityBinding,
+    entry: SavedCommands.Entry
+) {
+    MaterialAlertDialogBuilder(context)
+        .setTitle(R.string.terminal_console_saved_delete_title)
+        .setMessage(entry.command)
+        .setNegativeButton(android.R.string.cancel, null)
+        .setPositiveButton(R.string.terminal_console_saved_delete) { _, _ ->
+            SavedCommands.remove(context, entry.command)
+            renderSavedCommands(context, binding)
+        }
+        .show()
+}
+
+/** A name the user can accept as-is: the command itself, shortened when it is long. */
+private fun defaultName(command: String): String =
+    if (command.length <= 28) command else command.take(26).trimEnd() + "\u2026"
+
+private fun paddedDialogView(context: Context, view: View): View {
+    val pad = (20 * context.resources.displayMetrics.density).toInt()
+    return FrameLayout(context).apply {
+        setPadding(pad, pad / 2, pad, 0)
+        addView(
+            view,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+    }
 }
 
 private fun runConsoleCommand(context: Context, binding: TerminalTutorialActivityBinding) {
@@ -96,12 +233,14 @@ private fun runConsoleCommand(context: Context, binding: TerminalTutorialActivit
         return
     }
     binding.consoleRun.isEnabled = false
+    dropOutputPlaceholder(context, binding)
     binding.consoleOutput.append("$ $cmd\n")
     CompletableFuture.supplyAsync { runShellOnce(context, cmd) }
         .whenComplete { out, _ ->
             binding.consoleOutput.post {
                 binding.consoleOutput.append(out + "\n\n")
-                binding.consoleInput.text?.clear()
+                // The command stays in the input: "run, then save" is the normal order, and
+                // clearing it left nothing to save right after the one run worth keeping.
                 binding.consoleRun.isEnabled = true
             }
         }

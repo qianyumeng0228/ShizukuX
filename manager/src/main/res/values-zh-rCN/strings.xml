@@ -229,6 +229,16 @@
     <string name="terminal_console_not_running">Shizuku 未运行——请先启动服务，再在此运行命令。</string>
     <string name="terminal_console_empty_command">请先输入命令。</string>
     <string name="terminal_console_process_null">错误：Shizuku 返回了空的 Shell 进程。</string>
+    <string name="terminal_console_save">保存</string>
+    <string name="terminal_console_clear">清空</string>
+    <string name="terminal_console_saved_empty">还没有保存的指令——运行一条后点「保存」。</string>
+    <string name="terminal_console_saved_name_title">保存指令</string>
+    <string name="terminal_console_saved_name_hint">名称</string>
+    <string name="terminal_console_saved_duplicate">这条指令已经保存过了。</string>
+    <string name="terminal_console_saved_full">最多保存 20 条指令。</string>
+    <string name="terminal_console_saved_rename_title">重命名</string>
+    <string name="terminal_console_saved_delete_title">删除这条指令？</string>
+    <string name="terminal_console_saved_delete">删除</string>
     <!-- Settings -->
     <string name="settings_title">设置</string>
     <string name="settings_behavior">行为</string>

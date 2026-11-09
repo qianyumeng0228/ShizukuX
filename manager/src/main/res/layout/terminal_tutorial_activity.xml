@@ -111,9 +111,9 @@
                         android:fontFamily="monospace"
                         android:hint="@string/terminal_console_hint"
                         android:imeOptions="actionSend"
-                        android:inputType="textNoSuggestions|textMultiLine"
-                        android:maxLines="3"
-                        android:singleLine="false" />
+                        android:inputType="textNoSuggestions"
+                        android:maxLines="1"
+                        android:singleLine="true" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/consoleRun"
@@ -125,6 +125,53 @@
                         android:textAllCaps="false" />
 
                 </LinearLayout>
+
+                <!-- Saved commands: the console is one-shot, so the ones worth repeating are kept
+                     as chips - tap to drop the command back into the input, long-press to rename,
+                     the X removes it. -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/consoleSave"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="0dp"
+                        android:text="@string/terminal_console_save"
+                        android:textAllCaps="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/consoleClear"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:minHeight="0dp"
+                        android:text="@string/terminal_console_clear"
+                        android:textAllCaps="false" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/consoleSavedHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/terminal_console_saved_empty"
+                    android:textColor="?android:textColorSecondary"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/consoleSaved"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    app:chipSpacingHorizontal="6dp"
+                    app:chipSpacingVertical="4dp" />
 
             </LinearLayout>
 
