@@ -51,7 +51,8 @@ class PermissionManagerViewHolder(
 
     override fun onBind() {
         val context = itemView.context
-        HomeEditMode.applyOverlay(containerBinding)
+        // Fixed card: no drag handle, no remove button in edit mode.
+        HomeEditMode.applyOverlay(containerBinding, fixed = true)
         IconStyleHelper.applyToCardIcon(iconView, originalIcon, "home_permission_manager")
         if (!data.isRunning) {
             itemView.isEnabled = false

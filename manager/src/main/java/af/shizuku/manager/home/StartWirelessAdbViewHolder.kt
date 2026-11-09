@@ -266,7 +266,9 @@ class StartWirelessAdbViewHolder(
     }
 
     override fun onBind() {
-        HomeEditMode.applyOverlay(containerBinding)
+        // Fixed card since 13.7: starting the service sits above the permission manager and
+        // cannot be reordered or removed, so it carries no edit-mode overlay.
+        HomeEditMode.applyOverlay(containerBinding, fixed = true)
         IconStyleHelper.applyToCardIcon(binding.icon, originalIcon, "home_start_wireless_adb")
 
         // 4.1 merged card: primary button label toggles Start/Restart based on whether the

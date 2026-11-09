@@ -34,9 +34,24 @@ object HomeEditMode {
     }
 
     /** Toggle drag handle / remove button visibility AND reserve end-padding so
-     *  the overlay icons don't sit on top of card title/summary text. */
-    fun applyOverlay(binding: HomeItemContainerBinding) {
-        io.sentry.Sentry.addBreadcrumb("HomeEditMode: applyOverlay() isActive=$isActive")
+     *  the overlay icons don't sit on top of card title/summary text.
+     *
+     *  `fixed` marks a card that lives in the fixed area: it cannot be reordered or removed,
+     *  so it must not grow a handle and an X in edit mode either — the X used to appear on
+     *  fixed cards and did nothing when tapped. */
+    fun applyOverlay(binding: HomeItemContainerBinding, fixed: Boolean = false) {
+        io.sentry.Sentry.addBreadcrumb("HomeEditMode: applyOverlay() isActive=$isActive fixed=$fixed")
+        val res = binding.cardContent.resources
+        val base = res.getDimensionPixelSize(R.dimen.card_content_padding)
+
+        if (fixed) {
+            binding.removeBtn.isVisible = false
+            binding.dragHandle.isVisible = false
+            binding.cardContent.alpha = 1.0f
+            binding.cardContent.updatePaddingRelative(end = base)
+            return
+        }
+
         binding.removeBtn.isVisible = isActive
         binding.dragHandle.isVisible = isActive
 
@@ -58,13 +73,13 @@ object HomeEditMode {
             binding.removeBtn.imageTintList = android.content.res.ColorStateList.valueOf(errorTint.data)
         }
 
-        val res = binding.cardContent.resources
-        val base = res.getDimensionPixelSize(R.dimen.card_content_padding)
+        val res2 = binding.cardContent.resources
+        val base2 = res2.getDimensionPixelSize(R.dimen.card_content_padding)
         // drag_handle and remove_btn now sit side-by-side in a single top-end row (40dp each +
         // 4dp gap + 4dp row margin) instead of stacked/overlapping on the same corner; reserve
         // clearance for the whole row so content never sits under either control.
         val overlayClearance = if (isActive)
-            (92 * res.displayMetrics.density).toInt() else 0
-        binding.cardContent.updatePaddingRelative(end = base + overlayClearance)
+            (92 * res2.displayMetrics.density).toInt() else 0
+        binding.cardContent.updatePaddingRelative(end = base2 + overlayClearance)
     }
 }
