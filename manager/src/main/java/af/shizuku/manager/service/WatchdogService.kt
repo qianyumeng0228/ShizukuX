@@ -185,10 +185,28 @@ class WatchdogService : Service() {
                     pendingRecoveryJob?.cancel()
                     val now = System.currentTimeMillis()
                     val cooldown = backoffMs(consecutiveCrashes)
-                    if (now - lastRestartMs > cooldown) {
+                    val elapsed = now - lastRestartMs
+                    if (elapsed < cooldown) {
+                        // Backoff is a WAIT, not a SKIP. The state machine emits CRASHED exactly
+                        // once for an outage, so returning here dropped the only restart attempt
+                        // that outage would ever get: on device the third kill in a row produced
+                        // no log line at all and the service stayed down. Sleeping the remainder
+                        // of the cooldown inside this collector keeps the round alive; a newer
+                        // state (RUNNING) cancels it via collectLatest, which is the correct exit.
+                        val waitMs = cooldown - elapsed
+                        ActivityLogManager.log(
+                            "Shizuku", applicationContext.packageName,
+                            "Watchdog: backing off ${waitMs}ms before the next restart"
+                        )
+                        delay(waitMs)
+                    }
+                    run {
                         val wasFirstRestart = (consecutiveCrashes == 0)
                         consecutiveCrashes++
-                        lastRestartMs = now
+                        // After the backoff above, `now` is stale: stamp the restart with the
+                        // moment it actually happens, or the next cooldown is measured from a
+                        // time that already passed.
+                        lastRestartMs = System.currentTimeMillis()
                         if (consecutiveCrashes > MAX_AUTO_RESTARTS) {
                             // v25: degraded mode — long-cooldown probing instead of v24's
                             // permanent notify-only suspension. A stuck server can outlive the
@@ -229,9 +247,18 @@ class WatchdogService : Service() {
                             showCrashNotification()
                         }
                         ActivityLogManager.log("Shizuku", applicationContext.packageName, "Watchdog: restarting after crash #$consecutiveCrashes")
-                        if (wasFirstRestart) {
-                            pendingRecoveryJob?.cancel()
-                            pendingRecoveryJob = scope.launch {
+                        val restartNo = consecutiveCrashes
+                        // Every restart is verified, not only the first one, and a restart that never
+                        // reaches RUNNING is retried once. On device the ADB bring-up answered
+                        // "Service started" and left no live process behind: the state machine emits
+                        // CRASHED exactly once, so that unverified restart was the end of the story
+                        // and the service stayed down with nobody acting on it. A confirmation pass
+                        // turns "reported success" into "actually running", and one retry covers the
+                        // bring-up that dies on arrival.
+                        pendingRecoveryJob?.cancel()
+                        pendingRecoveryJob = scope.launch {
+                            var attempt = 0
+                            while (isActive && attempt <= 1) {
                                 val cameBack = withTimeoutOrNull(RECOVERY_WAIT_MS) {
                                     if (ShizukuStateMachine.get() == ShizukuStateMachine.State.RUNNING) {
                                         true
@@ -241,9 +268,31 @@ class WatchdogService : Service() {
                                     }
                                 } ?: false
                                 if (cameBack) {
-                                    ActivityLogManager.log("Shizuku", applicationContext.packageName, "Watchdog: the server came back after restart #1")
-                                } else {
+                                    ActivityLogManager.log(
+                                        "Shizuku", applicationContext.packageName,
+                                        if (attempt == 0) {
+                                            "Watchdog: the server came back after restart #$restartNo"
+                                        } else {
+                                            "Watchdog: the server came back after retry for restart #$restartNo"
+                                        }
+                                    )
+                                    return@launch
+                                }
+                                if (attempt == 1) {
+                                    ActivityLogManager.log(
+                                        "Shizuku", applicationContext.packageName,
+                                        "Watchdog: restart #$restartNo never came back, giving up on it"
+                                    )
                                     showCrashNotification()
+                                    return@launch
+                                }
+                                attempt++
+                                ActivityLogManager.log(
+                                    "Shizuku", applicationContext.packageName,
+                                    "Watchdog: restart #$restartNo never came back, starting it again"
+                                )
+                                withContext(Dispatchers.IO) {
+                                    ShizukuReceiverStarter.start(applicationContext)
                                 }
                             }
                         }
@@ -258,8 +307,6 @@ class WatchdogService : Service() {
                             ShizukuReceiverStarter.start(applicationContext)
                         }
                         Timber.tag(TAG).d("Watchdog: restart #$consecutiveCrashes (cooldown was ${cooldown}ms)")
-                    } else {
-                        Timber.tag(TAG).d("Watchdog: restart suppressed (cooldown active, ${now - lastRestartMs}ms / ${cooldown}ms)")
                     }
                 } else if (state == ShizukuStateMachine.State.RUNNING) {
                     // Not pendingRecoveryJob: RUNNING is exactly what the recovery check

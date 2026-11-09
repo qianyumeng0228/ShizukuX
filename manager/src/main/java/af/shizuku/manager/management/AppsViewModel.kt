@@ -9,6 +9,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicInteger
 import af.shizuku.manager.authorization.AuthorizationManager
@@ -103,6 +104,33 @@ class AppsViewModel(application: Application) : AndroidViewModel(application) {
                     applyFiltersAndSort()
                 }
                 _grantedCount.postValue(Resource.success(granted))
+
+                // A restart that has only just reported RUNNING asks this pass to count before
+                // the server has loaded its authorization table: getPackages() answers, granted()
+                // still says no, and this pass posts 0. Nothing loads again until the next status
+                // transition, so the home card kept reading "已授权 0 个应用" (measured: 0 for 35s+
+                // after a heal, back to 4 only on the following restart, while
+                // /data/local/tmp/shizuku.json still listed every granted uid). One deferred
+                // re-read once the table is surely loaded closes that window; a genuinely empty
+                // grant list simply re-posts 0.
+                if (granted == 0) {
+                    // The permission table can trail the RUNNING signal by several seconds, so a
+                    // single deferred read is not enough (measured: a 2.5s re-read still answered
+                    // 0 on a fast heal while a slow one already answered 4). Re-read a few times
+                    // and stop at the first non-zero answer.
+                    for (attempt in 1..3) {
+                        delay(3_000)
+                        if (myGeneration != loadGeneration.get()) return@launch
+                        var again = 0
+                        for (pi in allPackages) {
+                            val appInfo = pi.applicationInfo ?: continue
+                            if (AuthorizationManager.granted(pi.packageName, appInfo.uid)) again++
+                        }
+                        if (myGeneration != loadGeneration.get()) return@launch
+                        _grantedCount.postValue(Resource.success(again))
+                        if (again > 0) break
+                    }
+                }
             } catch (e: CancellationException) {
                 // ignore
             } catch (e: Throwable) {
