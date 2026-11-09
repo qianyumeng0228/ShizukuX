@@ -2,6 +2,9 @@ package af.shizuku.manager.module.store
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -69,24 +72,47 @@ object ModuleStoreClient {
     )
 
     /**
-     * Fetches the index, trying every source in order. Throws the last failure so the UI can
-     * show something actionable instead of an empty list that looks like "no modules".
+     * Fetches the index from every source concurrently and merges the results by module id,
+     * keeping the highest `versionCode` seen for each id.
+     *
+     * Sequential first-success fallback is not enough here: a mirror can answer HTTP 200 with
+     * an edge-cached copy of an older catalog, which would silently pin the store to a stale
+     * version. Asking all sources and taking the newest entry means one stale mirror cannot
+     * hide a freshly published module.
      */
     suspend fun fetchIndex(): FetchedIndex = withContext(Dispatchers.IO) {
-        var lastError: Exception? = null
-        for (source in sources) {
-            try {
-                val body = httpGet(cacheBusted(source.indexUrl))
-                val index = json.decodeFromString(ModuleStoreIndex.serializer(), body)
-                if (index.modules.isEmpty()) {
-                    throw IOException("Catalog at ${source.host} lists no modules.")
+        val results = coroutineScope {
+            sources.map { source ->
+                async(Dispatchers.IO) {
+                    runCatching {
+                        val body = httpGet(cacheBusted(source.indexUrl))
+                        val index = json.decodeFromString(ModuleStoreIndex.serializer(), body)
+                        if (index.modules.isEmpty()) {
+                            throw IOException("Catalog at ${source.host} lists no modules.")
+                        }
+                        FetchedIndex(index, source)
+                    }
                 }
-                return@withContext FetchedIndex(index, source)
-            } catch (e: Exception) {
-                lastError = e
-            }
+            }.awaitAll()
         }
-        throw lastError ?: IOException("No module catalog source configured.")
+
+        val reachable = results.mapNotNull { it.getOrNull() }
+        if (reachable.isEmpty()) {
+            val failure = results.firstNotNullOfOrNull { it.exceptionOrNull() }
+            throw (failure as? Exception) ?: IOException("No module catalog source reachable.")
+        }
+
+        val newest = reachable
+            .flatMap { it.index.modules }
+            .groupBy { it.id }
+            .mapValues { (_, candidates) -> candidates.maxByOrNull { it.versionCode ?: 0 }!! }
+
+        // Keep the ordering and metadata of the catalog that carries the most versions overall.
+        val anchor = reachable.maxByOrNull { it.index.modules.sumOf { m -> m.versionCode ?: 0 } }!!
+        val ordered = anchor.index.modules.map { newest.getValue(it.id) } +
+            newest.filterKeys { id -> anchor.index.modules.none { it.id == id } }.values
+
+        FetchedIndex(anchor.index.copy(modules = ordered), anchor.source)
     }
 
     /**
