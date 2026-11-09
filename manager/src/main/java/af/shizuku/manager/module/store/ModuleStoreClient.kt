@@ -35,6 +35,12 @@ object ModuleStoreClient {
     private const val CONNECT_TIMEOUT_MS = 15_000
     private const val READ_TIMEOUT_MS = 30_000
 
+    // The catalog is a few hundred bytes, so a slow or blocked endpoint must not hold the
+    // screen on "loading": every source is asked in parallel and a dead mirror is written off
+    // quickly instead of being waited on.
+    private const val INDEX_CONNECT_TIMEOUT_MS = 6_000
+    private const val INDEX_READ_TIMEOUT_MS = 8_000
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -203,7 +209,7 @@ object ModuleStoreClient {
     }
 
     private fun httpGet(url: String): String {
-        val connection = open(url)
+        val connection = open(url, INDEX_CONNECT_TIMEOUT_MS, INDEX_READ_TIMEOUT_MS)
         try {
             val code = connection.responseCode
             if (code !in 200..299) throw IOException("HTTP $code from ${connection.url.host}")
@@ -254,11 +260,15 @@ object ModuleStoreClient {
         return url + separator + "t=" + System.currentTimeMillis()
     }
 
-    private fun open(url: String): HttpURLConnection {
+    private fun open(
+        url: String,
+        connectTimeoutMs: Int = CONNECT_TIMEOUT_MS,
+        readTimeoutMs: Int = READ_TIMEOUT_MS
+    ): HttpURLConnection {
         val connection = URL(url).openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
-        connection.connectTimeout = CONNECT_TIMEOUT_MS
-        connection.readTimeout = READ_TIMEOUT_MS
+        connection.connectTimeout = connectTimeoutMs
+        connection.readTimeout = readTimeoutMs
         connection.instanceFollowRedirects = true
         connection.useCaches = false
         connection.setRequestProperty("User-Agent", "ShizukuX-ModuleStore/1.0")
