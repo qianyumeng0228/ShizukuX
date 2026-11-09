@@ -6,6 +6,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,7 +15,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import af.shizuku.manager.R
+import kotlinx.coroutines.flow.collect
 
 /**
  * Liquid-glass floating pill navigation (home / apps / modules / terminal / settings).
@@ -60,6 +65,13 @@ fun GlassBottomBar(
      * refraction, so clipping here would slice off exactly the interesting edge.
      */
     lensSlot: (@Composable BoxScope.() -> Unit)? = null,
+    /**
+     * Reports the slot under a finger while it is held, and null when it lifts. The bar's own
+     * clickable used to draw a ripple, but that ripple lands one layer *below* the glass lens, so
+     * a press showed two highlights stacked on each other (a grey lozenge peeking out from under
+     * the glass). The lens answers the touch itself instead, hence this callback.
+     */
+    onPressedChange: ((Int?) -> Unit)? = null,
     onHomeClick: () -> Unit = {},
     onAppsClick: () -> Unit = {},
     onModulesClick: () -> Unit = {},
@@ -171,6 +183,8 @@ fun GlassBottomBar(
             ) {
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
+                    index = 0,
+                    onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_home_24,
                     label = stringResource(R.string.nav_home),
                     tint = if (selectedIndex == 0) activeTint else idleTint,
@@ -183,6 +197,8 @@ fun GlassBottomBar(
                     // rejects at measure time ("Only VectorDrawables and rasterized asset types
                     // are supported"), so the Apps tab uses the Android robot instead - which is
                     // also what the label means, while the puzzle piece stays the modules glyph.
+                    index = 1,
+                    onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_android_24,
                     label = stringResource(R.string.nav_apps),
                     tint = if (selectedIndex == 1) activeTint else idleTint,
@@ -193,6 +209,8 @@ fun GlassBottomBar(
                     modifier = Modifier.weight(1f),
                     // ADB modules sit between the app list and the terminal: both neighbours are
                     // the usual way in, and modules are what you install to extend the shell.
+                    index = 2,
+                    onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_extension_24,
                     label = stringResource(R.string.nav_modules),
                     tint = if (selectedIndex == 2) activeTint else idleTint,
@@ -201,6 +219,8 @@ fun GlassBottomBar(
                 )
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
+                    index = 3,
+                    onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_terminal_24,
                     label = stringResource(R.string.nav_terminal),
                     tint = if (selectedIndex == 3) activeTint else idleTint,
@@ -209,6 +229,8 @@ fun GlassBottomBar(
                 )
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
+                    index = 4,
+                    onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_settings_outline_24,
                     label = stringResource(R.string.nav_settings),
                     tint = if (selectedIndex == 4) activeTint else idleTint,
@@ -250,18 +272,43 @@ fun GlassTabStrip(
 
 @Composable
 private fun GlassNavItem(
+    index: Int,
     iconRes: Int,
     label: String,
     tint: Color,
     selected: Boolean = false,
     modifier: Modifier = Modifier,
+    onPressedChange: ((Int?) -> Unit)? = null,
     onClick: () -> Unit
 ) {
+    val interaction = remember { MutableInteractionSource() }
+    val reportPress = onPressedChange
+    if (reportPress != null) {
+        // Press/Release instead of the ripple: a press reports the slot so the container can
+        // squash the glass, and a drag that gets claimed by the bar arrives here as Cancel, which
+        // is also the right moment to let the glass spring back.
+        LaunchedEffect(interaction, reportPress) {
+            interaction.interactions.collect { event ->
+                when (event) {
+                    is PressInteraction.Press -> reportPress(index)
+                    is PressInteraction.Release -> reportPress(null)
+                    is PressInteraction.Cancel -> reportPress(null)
+                    else -> Unit
+                }
+            }
+        }
+    }
     Column(
         modifier = modifier
             .fillMaxHeight()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
+            // indication = null: the default ripple is drawn below the glass lens, so holding a
+            // tab showed a grey lozenge under the glass. The lens itself is what reacts now.
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = onClick
+            )
             .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center

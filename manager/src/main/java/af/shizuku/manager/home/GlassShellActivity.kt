@@ -35,8 +35,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -57,6 +59,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +68,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -379,6 +383,40 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 val lensCx = 18.dp + lensUnit * (shownFraction + 0.5f)
                 val lensCy = maxHeight - 53.dp
 
+                // Jelly press: the tab cells no longer draw a ripple (a ripple sits one layer
+                // *below* the lens, so a press showed a grey lozenge peeking out from under the
+                // glass). The lens answers the touch instead - squash and stretch rather than a
+                // uniform scale, which is what actually reads as jelly: it widens slightly while
+                // it flattens, then the two axes spring back at different rates.
+                var lensPressed by remember { mutableStateOf(false) }
+                val pressSx = remember { Animatable(1f) }
+                val pressSy = remember { Animatable(1f) }
+                LaunchedEffect(lensPressed) {
+                    if (lensPressed) {
+                        launch {
+                            pressSx.animateTo(
+                                1.04f,
+                                tween(durationMillis = 90, easing = FastOutSlowInEasing)
+                            )
+                        }
+                        pressSy.animateTo(
+                            0.92f,
+                            tween(durationMillis = 90, easing = FastOutSlowInEasing)
+                        )
+                    } else {
+                        launch {
+                            pressSx.animateTo(
+                                1f,
+                                spring(dampingRatio = 0.20f, stiffness = Spring.StiffnessLow)
+                            )
+                        }
+                        pressSy.animateTo(
+                            1f,
+                            spring(dampingRatio = 0.32f, stiffness = Spring.StiffnessLow)
+                        )
+                    }
+                }
+
                 GlassBottomBar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -475,9 +513,14 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                                     // the glass 22dp too high.
                                     .align(Alignment.CenterStart)
                                     .offset(x = lensCx - 18.dp - lensW / 2)
+                                    // Scale last so it wraps the whole glass body - shadow, clip
+                                    // and the shader layer - around its centre. Two axes so a
+                                    // press can squash rather than merely shrink.
+                                    .scale(pressSx.value, pressSy.value)
                             )
                         }
                     },
+                    onPressedChange = { lensPressed = it != null },
                     onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
                     onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
                     onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },
