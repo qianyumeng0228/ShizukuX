@@ -155,6 +155,19 @@
 
 -keepattributes RuntimeVisibleAnnotations,RuntimeVisibleParameterAnnotations,AnnotationDefault
 
+# window.Shizuku JS bridge for module WebUIs. The page calls these members by name
+# (`Shizuku.exec(...)`, `Shizuku.getModuleInfo()`), so R8 must neither rename nor strip them;
+# without this keep the bridge object is injected but every call throws "not a function",
+# which is exactly the "半残 WebUI" state third-party modules report.
+-keepattributes JavascriptInterface
+-keep class af.shizuku.manager.module.ModuleJsBridge { *; }
+-keepclassmembers class af.shizuku.manager.module.ModuleJsBridge {
+    public *;
+}
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
 
 
 # Sentry compose instrumentation references compose-ui which isn't in the classpath

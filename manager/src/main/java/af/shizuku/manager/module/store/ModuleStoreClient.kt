@@ -78,8 +78,19 @@ object ModuleStoreClient {
     )
 
     /**
-     * Fetches the index from every source concurrently and merges the results by module id,
-     * keeping the highest `versionCode` seen for each id.
+     * Catalogs served from every mirror. `modules.json` is the project's own repository;
+     * `community.json` is a snapshot of the GitHub `shevery-modules` topic, which is the
+     * de-facto module ecosystem Shizuku forks share. Both are fetched and merged, so a
+     * third-party module is browsable exactly like a first-party one.
+     */
+    private val indexDocuments: List<Pair<String, String>> = listOf(
+        "modules.json" to "official",
+        "community.json" to "community"
+    )
+
+    /**
+     * Fetches every catalog document from every source concurrently and merges the results
+     * by module id, keeping the highest `versionCode` seen for each id.
      *
      * Sequential first-success fallback is not enough here: a mirror can answer HTTP 200 with
      * an edge-cached copy of an older catalog, which would silently pin the store to a stale
@@ -88,15 +99,10 @@ object ModuleStoreClient {
      */
     suspend fun fetchIndex(): FetchedIndex = withContext(Dispatchers.IO) {
         val results = coroutineScope {
-            sources.map { source ->
-                async(Dispatchers.IO) {
-                    runCatching {
-                        val body = httpGet(cacheBusted(source.indexUrl))
-                        val index = json.decodeFromString(ModuleStoreIndex.serializer(), body)
-                        if (index.modules.isEmpty()) {
-                            throw IOException("Catalog at ${source.host} lists no modules.")
-                        }
-                        FetchedIndex(index, source)
+            sources.flatMap { source ->
+                indexDocuments.map { (file, origin) ->
+                    async(Dispatchers.IO) {
+                        runCatching { fetchDocument(source, file, origin) }
                     }
                 }
             }.awaitAll()
@@ -113,12 +119,26 @@ object ModuleStoreClient {
             .groupBy { it.id }
             .mapValues { (_, candidates) -> candidates.maxByOrNull { it.versionCode ?: 0 }!! }
 
-        // Keep the ordering and metadata of the catalog that carries the most versions overall.
-        val anchor = reachable.maxByOrNull { it.index.modules.sumOf { m -> m.versionCode ?: 0 } }!!
+        // Keep the ordering and metadata of the catalog that carries the most modules, so a
+        // mirror that only serves one of the two documents cannot truncate the list.
+        val anchor = reachable.maxByOrNull {
+            it.index.modules.size * 1000L + it.index.modules.sumOf { m -> m.versionCode ?: 0 }
+        }!!
         val ordered = anchor.index.modules.map { newest.getValue(it.id) } +
             newest.filterKeys { id -> anchor.index.modules.none { it.id == id } }.values
 
         FetchedIndex(anchor.index.copy(modules = ordered), anchor.source)
+    }
+
+    private fun fetchDocument(source: Source, file: String, origin: String): FetchedIndex {
+        val url = source.indexUrl.replace("modules.json", file)
+        val body = httpGet(cacheBusted(url))
+        val index = json.decodeFromString(ModuleStoreIndex.serializer(), body)
+        if (index.modules.isEmpty()) throw IOException("Catalog $file at ${source.host} lists no modules.")
+        return FetchedIndex(
+            index.copy(modules = index.modules.map { it.copy(origin = origin) }),
+            source
+        )
     }
 
     /**

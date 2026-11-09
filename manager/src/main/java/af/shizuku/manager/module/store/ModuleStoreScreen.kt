@@ -102,11 +102,23 @@ internal fun ModuleStoreScreen(
                         Text(
                             text = when {
                                 state.loading -> stringResource(R.string.modules_store_loading)
-                                state.entries.isNotEmpty() -> stringResource(
-                                    R.string.modules_store_count,
-                                    state.entries.size,
-                                    state.sourceHost
-                                )
+                                state.entries.isNotEmpty() -> {
+                                    val community = state.entries.count { it.isCommunity }
+                                    if (community > 0) {
+                                        stringResource(
+                                            R.string.modules_store_count_mixed,
+                                            state.entries.size,
+                                            community,
+                                            state.sourceHost
+                                        )
+                                    } else {
+                                        stringResource(
+                                            R.string.modules_store_count,
+                                            state.entries.size,
+                                            state.sourceHost
+                                        )
+                                    }
+                                }
                                 state.loaded -> stringResource(R.string.modules_store_source_empty, state.sourceHost)
                                 else -> stringResource(R.string.modules_store_subtitle)
                             },
@@ -300,6 +312,13 @@ private fun StoreCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                if (entry.isCommunity) {
+                    StoreChip(
+                        stringResource(R.string.modules_store_chip_community),
+                        MaterialTheme.colorScheme.tertiaryContainer,
+                        MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
                 if (entry.hasAction) {
                     StoreChip(
                         stringResource(R.string.modules_store_chip_action),

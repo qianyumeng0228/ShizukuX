@@ -1502,6 +1502,7 @@
     <string name="modules_store_subtitle">浏览仓库里的模块</string>
     <string name="modules_store_loading">正在读取仓库…</string>
     <string name="modules_store_count">%1$d 个模块 · %2$s</string>
+    <string name="modules_store_count_mixed">%1$d 个模块 · 社区 %2$d · %3$s</string>
     <string name="modules_store_source_empty">%1$s 没有返回模块</string>
     <string name="modules_store_refresh">刷新</string>
     <string name="modules_store_open">模块商店</string>
@@ -1514,6 +1515,7 @@
     <string name="modules_store_chip_action">动作</string>
     <string name="modules_store_chip_service">服务</string>
     <string name="modules_store_chip_webui">网页界面</string>
+    <string name="modules_store_chip_community">社区</string>
     <string name="modules_store_search_hint">搜索模块</string>
     <string name="modules_store_policy_note">模块通过 Shizuku 运行。安装后需在模块页授予信任，脚本才能执行。</string>
     <string name="modules_store_empty_title">仓库里还没有模块</string>
@@ -1524,6 +1526,8 @@
     <string name="modules_store_no_result_description">换个关键词试试。</string>
     <string name="modules_empty_description">安装模块 ZIP 即可扩展由脚本驱动的能力。模块通过 Shizuku 服务运行，无需 Root。</string>
     <string name="modules_webui_readonly">只读 WebUI · 当前未提供 Shell 桥</string>
+    <string name="modules_webui_bridge">Shell 桥已连接</string>
+    <string name="modules_webui_bridge_network">Shell 桥已连接 · WebUI 可联网</string>
     <string name="modules_webui_missing">该模块没有 index.html</string>
     <string name="modules_title">ADB 模块</string>
     <!-- 平台防火墙（FIREWALL_CHAIN_OEM_DENY_3）上的按应用联网拦截 -->

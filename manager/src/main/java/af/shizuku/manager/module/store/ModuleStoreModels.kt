@@ -34,8 +34,16 @@ data class ModuleStoreEntry(
     val hasService: Boolean = false,
     val usesWebUI: Boolean = false,
     val tags: List<String> = emptyList(),
-    val lastUpdated: Long? = null
+    val lastUpdated: Long? = null,
+    /**
+     * Which catalog this entry came from: `official` for the repository the project owns,
+     * `community` for the GitHub `shevery-modules` topic index. Set by the client, never
+     * serialized into the index itself.
+     */
+    val origin: String = ""
 ) {
+    val isCommunity: Boolean
+        get() = origin == "community"
     val displayName: String
         get() = name.takeIf { it.isNotBlank() } ?: id
 
