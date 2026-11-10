@@ -19,6 +19,10 @@ Shizuku lets ordinary apps call system-level APIs directly through a privileged 
 
 </div>
 
+![ShizukuX interface overview](docs/images/tour.png)
+
+<p align="center"><sub>Left to right: Home · Apps · ADB Modules · built-in Terminal · Settings (real device captures, Simplified Chinese UI)</sub></p>
+
 ## 📑 Table of Contents
 
 - [🚀 Quick Start](#quickstart)
@@ -59,12 +63,21 @@ Grab the latest release from [GitHub Releases](https://github.com/qianyumeng0228
 <a name="features"></a>
 ## ✨ Core Features
 
+*   **Liquid-glass interface**: the tab bar is a liquid lens that tracks your finger while dragging, with a jelly deformation on press; Home, Apps, Modules, Terminal and Settings live in one container and slide into each other.
+*   **Per-app hiding**: six signals (process, foreground, accessibility, notification listener, VPN, restart) decide whether a target app is hidden, and each app can be told whether to restart after hiding.
+*   **Per-app network firewall**: block network access app by app without a persistent VPN.
+*   **Autostart management**: allows or blocks per app, built on `RUN_ANY_IN_BACKGROUND` with a list gate.
+*   **Per-app force-dark**: the daemon runs independently of the app process, so it keeps working after the target app is frozen.
+*   **ADB module system**: browse and install community modules on the phone — module store, module detail pages, WebUI panels, and a script runtime that mirrors the module tree into a shell-readable directory to satisfy SELinux.
+*   **Battery optimization whitelist**: a home card straight to the ignore-battery-optimizations list, refreshed from the system state.
+*   **Wi-Fi passwords**: reads the current connection and saved networks, groups them by state, and parses WPA/EAP key entries.
+*   **Built-in terminal**: run commands as shell and echo the output, with saving, renaming and deleting of frequent commands.
 *   **Universal permission provider**: a single interface unifying **Root**, **ADB Shell**, and **Dhizuku (Device Owner)** as permission sources.
 *   **OneUI 8+ theming fix**: keeps theme engines such as Hex Installer and Substratum working on Android 16/17 and OneUI 8+.
 *   **Dhizuku mode**: shares the system Device Owner Binder with any app holding Shizuku permission — configurable via ADB, no Root required; a dedicated **Permission Level** page unifies Shell / Root / DO management.
 *   **Fine-grained permission manager**: a dedicated screen to grant/revoke Shizuku permissions per app in bulk, linked to the home-screen card.
 *   **Device control**: 18 operations across Connectivity / Display / Audio / Power / Settings (airplane mode, auto-brightness, auto-rotate, animation scale, reboot / shutdown, etc.); dangerous items are auto-disabled with a hint in ADB mode.
-*   **Backup & restore**: SAF export to public directories, batch backup/restore (including OBB data), internal-data restore (`run-as` + tar), pre-restore snapshots and restore history.
+*   **Backup & restore**: with root available, the app private directory is read and packed directly so the original app no longer has to be uninstalled; SAF export to public directories, batch backup/restore (including OBB data), internal-data restore (`run-as` + tar), guarded by archive vetting (ArchiveVetting) and pre-restore snapshots.
 *   **Customizable gestures**: swipe left, swipe right, long press and more, configurable per app.
 *   **In-app changelog**: view release highlights right after an update without leaving the app.
 *   **Batch management**: select multiple apps to grant/revoke permissions or hide them in one tap.
@@ -179,6 +192,7 @@ End-user documentation (currently in Chinese: service connection, knowledge base
 
 | Version | Type | Date | Highlights |
 |---|---|---|---|
+| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Liquid-glass UI in a single five-destination container, per-app hiding / firewall / autostart / force-dark / battery whitelist / Wi-Fi passwords, ADB module store with a mirrored script runtime, root direct-read backup and P1 audit closure |
 | **v13.7.0.k2016** | Pre-release | 2026-10-26 | Manual stop stays stopped, root-aware start entry (isRooted fallback), faster activation (~2 min → 9 s), terminal-tutorial export & command fixes |
 | v13.7.0.k2015 | Pre-release | 2026-10-25 | 13 fixes from a 53k-line audit, hardened wireless-debugging auto-start / crash recovery, Settings reorganized into General / Permission / Service / Diagnostics |
 | v13.7.0.k2014 | Pre-release | 2026-10-07 | AIDL transaction-code offset compatibility, full device control / backup suite, Stealth Mode, AMOLED theme fix, one-tap Compat Hub uninstall |
