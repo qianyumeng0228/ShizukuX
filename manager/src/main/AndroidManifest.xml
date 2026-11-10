@@ -286,6 +286,11 @@
             android:label="@string/autostart_title" />
 
         <activity
+            android:name=".battery.BatteryWhitelistActivity"
+            android:exported="false"
+            android:label="@string/battery_whitelist_title" />
+
+        <activity
             android:name=".force_dark.ForceDarkActivity"
             android:exported="false"
             android:label="@string/force_dark_title" />

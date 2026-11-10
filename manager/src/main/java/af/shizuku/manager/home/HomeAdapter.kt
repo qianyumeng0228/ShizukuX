@@ -61,6 +61,9 @@ class HomeAdapter(
         // Device facts and the intent/activity launcher, the last two of the P1 set.
         const val ID_DEVICE_INFO = 23L
         const val ID_INTENTS = 24L
+        // The platform's Doze whitelist: which apps the system is not allowed to freeze in the
+        // background. Sits next to autostart, the other "keep it alive" lever.
+        const val ID_BATTERY_WHITELIST = 25L
 
         private val RETIRED_IDS = setOf(ID_APPS, ID_TERMINAL, ID_MODULES)
 
@@ -69,7 +72,7 @@ class HomeAdapter(
         private val FIXED_IDS = setOf(ID_START)
 
         private val DEFAULT_ORDER = listOf(
-            ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_AUTOMATION, ID_COMPANION
+            ID_FIREWALL, ID_HIDING, ID_AUTOSTART, ID_BATTERY_WHITELIST, ID_FORCE_DARK, ID_APP_OPS, ID_FILES, ID_WIFI, ID_DEVICE_INFO, ID_INTENTS, ID_BACKUP_APPS, ID_DEVICE_CONTROL, ID_AUTOMATION, ID_COMPANION
         )
 
         /**
@@ -319,6 +322,7 @@ class HomeAdapter(
                 ID_FIREWALL -> addItem(FirewallViewHolder.CREATOR, status, id)
                 ID_HIDING -> addItem(HidingViewHolder.CREATOR, status, id)
                 ID_AUTOSTART -> addItem(AutoStartViewHolder.CREATOR, status, id)
+                ID_BATTERY_WHITELIST -> addItem(BatteryWhitelistViewHolder.CREATOR, status, id)
                 ID_FORCE_DARK -> addItem(ForceDarkViewHolder.CREATOR, status, id)
                 ID_APP_OPS -> addItem(AppOpsViewHolder.CREATOR, status, id)
                 ID_FILES -> addItem(FilesViewHolder.CREATOR, status, id)
