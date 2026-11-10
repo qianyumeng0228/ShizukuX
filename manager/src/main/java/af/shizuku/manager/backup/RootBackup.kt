@@ -33,9 +33,31 @@ object RootBackup {
     /** Where backups go when root is available but the user has not picked a directory yet. */
     const val DEFAULT_DIR = "/sdcard/ShizukuX"
 
-    /** One probe per process, because the probe can block on a root-manager prompt. */
+    /**
+     * su binaries to try when the service itself is not already root, in the same order the
+     * ADB-module runtime uses. `su` alone is not enough: on KernelSU/SukiSU/APatch the binary
+     * lives under /data/adb and is absent from the shell's PATH, so a bare `su -c` answers
+     * "inaccessible or not found" even on a rooted device (measured 2026-11-11).
+     */
+    private val SU_CANDIDATES = listOf(
+        "/system/bin/su",
+        "/system/xbin/su",
+        "/sbin/su",
+        "/vendor/bin/su",
+        "/data/adb/ksu/bin/su",
+        "/data/adb/apatch/su"
+    )
+
+    /** Empty string when the service already runs as uid 0; null when no route was found. */
+    @Volatile private var suPath: String? = null
+
+    /** Whether the probe has run at least once in this process. */
     @Volatile private var rootChecked = false
     @Volatile private var rootAvailable = false
+    @Volatile private var lastProbeAt = 0L
+
+    /** A failed probe is retried after this window: a root grant can arrive later. */
+    private const val RECHECK_MS = 5 * 60 * 1000L
 
     private val warmLock = Any()
     @Volatile private var warming = false
@@ -50,10 +72,40 @@ object RootBackup {
 
     /** Whether root is usable for direct data access. */
     fun available(): Boolean {
-        if (rootChecked) return rootAvailable
-        rootChecked = true
-        rootAvailable = exec("id -u")?.trim() == "0"
-        return rootAvailable
+        if (rootAvailable) return true
+        if (rootChecked && System.currentTimeMillis() - lastProbeAt < RECHECK_MS) return false
+        synchronized(warmLock) {
+            if (rootAvailable) return true
+            if (rootChecked && System.currentTimeMillis() - lastProbeAt < RECHECK_MS) return false
+            rootAvailable = probeRoot()
+            rootChecked = true
+            lastProbeAt = System.currentTimeMillis()
+            return rootAvailable
+        }
+    }
+
+    /**
+     * Routes root work through the first channel that actually answers as uid 0.
+     *
+     * Two cases matter and the old probe collapsed them into one:
+     *  - the service runs as root already (root mode): `id -u` is 0 and no su binary is
+     *    needed at all;
+     *  - the service runs as shell (ADB mode): `su` may exist only as an absolute path
+     *    outside PATH, so each candidate is tried.
+     */
+    private fun probeRoot(): Boolean {
+        if (execShell("id -u")?.trim() == "0") {
+            suPath = ""
+            return true
+        }
+        for (candidate in SU_CANDIDATES) {
+            if (execShell("$candidate -c 'id -u' 2>/dev/null")?.trim() == "0") {
+                suPath = candidate
+                return true
+            }
+        }
+        suPath = null
+        return false
     }
 
     /**
@@ -63,13 +115,13 @@ object RootBackup {
      * go, but its bind runs on the main thread where `su` would stall the list.
      */
     fun warmUp(onDone: (Boolean) -> Unit) {
-        if (rootChecked) {
-            onDone(rootAvailable)
+        if (rootAvailable) {
+            onDone(true)
             return
         }
         synchronized(warmLock) {
-            if (rootChecked) {
-                onDone(rootAvailable)
+            if (rootAvailable) {
+                onDone(true)
                 return
             }
             if (warming) return
@@ -81,7 +133,7 @@ object RootBackup {
             } catch (_: Throwable) {
                 false
             }
-            warming = false
+            synchronized(warmLock) { warming = false }
             onDone(ok)
         }, "root-backup-probe").apply { isDaemon = true }.start()
     }
@@ -95,7 +147,7 @@ object RootBackup {
      */
     fun isDir(path: String): Boolean? {
         if (!available()) return null
-        val out = exec("if [ -d ${q(path)} ]; then echo DIR; else echo MISSING; fi") ?: return null
+        val out = execRoot("if [ -d ${q(path)} ]; then echo DIR; else echo MISSING; fi") ?: return null
         return out.contains("DIR")
     }
 
@@ -130,7 +182,7 @@ object RootBackup {
             fi
             echo BACKUP_OK
         """.trimIndent()
-        val out = exec(script)
+        val out = execRoot(script)
         val ok = out?.contains("BACKUP_OK") == true
         if (!ok) LOGGER.w("root backup failed for $pkg: $out")
         return ok
@@ -190,7 +242,7 @@ object RootBackup {
             fi
             echo RESTORE_OK
         """.trimIndent()
-        val out = exec(script)
+        val out = execRoot(script)
         val ok = out?.contains("RESTORE_OK") == true
         if (!ok) LOGGER.w("root restore failed for $pkg: $out")
         return ok
@@ -200,7 +252,7 @@ object RootBackup {
     fun snapshots(rootDir: String, pkg: String): List<String> {
         if (!available()) return emptyList()
         val dir = packageDir(rootDir, pkg)
-        val out = exec(
+        val out = execRoot(
             "ls -1 ${q(dir)} 2>/dev/null | grep '^$PRE_RESTORE_PREFIX' | sed " +
                 "\"s/^$PRE_RESTORE_PREFIX//;s/\\.tar\\.gz\\$//\" | sort -r"
         ) ?: return emptyList()
@@ -211,7 +263,7 @@ object RootBackup {
     fun hasBackup(rootDir: String, pkg: String): Boolean {
         if (!available()) return false
         val dir = packageDir(rootDir, pkg)
-        return exec("[ -f ${q("$dir/$DATA_ARCHIVE")} ] && echo YES")?.contains("YES") == true
+        return execRoot("[ -f ${q("$dir/$DATA_ARCHIVE")} ] && echo YES")?.contains("YES") == true
     }
 
     /**
@@ -226,17 +278,35 @@ object RootBackup {
      *    version's probe came back empty and the picker fell back to the SAF explanation).
      * Base64's alphabet has no shell metacharacters, so a single pair of quotes is enough.
      */
-    private fun exec(script: String): String? {
+    private fun execRoot(script: String): String? {
+        // Root mode: the service already runs as uid 0, so no su round-trip is needed.
+        if (suPath == "") return execShell(script)
+        val su = suPath ?: "su"
+        val payload = android.util.Base64.encodeToString(
+            script.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP
+        )
+        val cmd = "$su -c " + doubleQuote("echo '$payload' | base64 -d | sh") + " 2>&1"
+        return execShell(cmd)
+    }
+
+    /** Runs [script] as the Shizuku user and answers stdout, or null on a non-zero exit. */
+    private fun execShell(script: String): String? {
         if (!ShizukuWait.ping()) return null
         var process: Process? = null
         return try {
-            val payload = android.util.Base64.encodeToString(
-                script.toByteArray(Charsets.UTF_8), android.util.Base64.NO_WRAP
-            )
-            val cmd = "su -c " + doubleQuote("echo '$payload' | base64 -d | sh") + " 2>&1"
-            process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            val out = process.inputStream.bufferedReader().readText().trim()
-            if (out.isEmpty()) null else out
+            val proc = Shizuku.newProcess(arrayOf("sh", "-c", script), null, null)
+            process = proc
+            // stderr is drained while the command runs: a full pipe blocks the child before
+            // it closes stdout, which would leave this thread waiting on readText() forever.
+            val drain = Thread {
+                runCatching { proc.errorStream.bufferedReader().readText() }
+            }
+            drain.isDaemon = true
+            drain.start()
+            val out = proc.inputStream.bufferedReader().readText().trim()
+            val code = proc.waitFor()
+            drain.join(1000)
+            if (code == 0) out else null
         } catch (t: Throwable) {
             LOGGER.w(t, "root backup shell failed")
             null
