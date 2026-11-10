@@ -61,10 +61,14 @@ import kotlinx.coroutines.withContext
  *
  * This screen shows secrets by design - that is the whole feature - so it does not cache them:
  * every visit reads the store again and nothing is written to the app's own preferences.
+ *
+ * Without a root shell the store is unreadable, but the platform still lists the saved network
+ * names, so the page degrades to SSID-only instead of failing outright.
  */
 class WifiPasswordActivity : ComponentActivity() {
 
     private var networks by mutableStateOf<List<WifiNetwork>>(emptyList())
+    private var withKeys by mutableStateOf(false)
     private var loading by mutableStateOf(false)
     private var loaded by mutableStateOf(false)
     private var available by mutableStateOf(false)
@@ -82,6 +86,7 @@ class WifiPasswordActivity : ComponentActivity() {
             ) {
                 WifiScreen(
                     networks = networks,
+                    withKeys = withKeys,
                     loading = loading,
                     loaded = loaded,
                     available = available,
@@ -104,11 +109,12 @@ class WifiPasswordActivity : ComponentActivity() {
             }
             available = result.second
             checked = true
-            val list = result.first
-            if (list == null) {
+            val snapshot = result.first
+            if (snapshot == null) {
                 error = getString(R.string.wifi_failed)
             } else {
-                networks = list
+                networks = snapshot.networks
+                withKeys = snapshot.withKeys
                 loaded = true
             }
             loading = false
@@ -120,6 +126,7 @@ class WifiPasswordActivity : ComponentActivity() {
 @Composable
 private fun WifiScreen(
     networks: List<WifiNetwork>,
+    withKeys: Boolean,
     loading: Boolean,
     loaded: Boolean,
     available: Boolean,
@@ -150,7 +157,10 @@ private fun WifiScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = stringResource(R.string.wifi_count, visible.size),
+                            text = stringResource(
+                                if (withKeys) R.string.wifi_count else R.string.wifi_count_ssid_only,
+                                visible.size
+                            ),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
@@ -211,6 +221,24 @@ private fun WifiScreen(
                 }
             }
 
+            // The passwords live in a store only a root shell can open. Say that once, up here,
+            // instead of repeating it on every row.
+            if (loaded && !withKeys) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                ) {
+                    Text(
+                        stringResource(R.string.wifi_ssid_only_notice),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                }
+            }
+
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -238,6 +266,7 @@ private fun WifiScreen(
                 items(visible, key = { it.ssid }) { network ->
                     WifiRow(
                         network = network,
+                        withKeys = withKeys,
                         copied = copied == network.ssid,
                         onCopy = {
                             if (network.key != null) {
@@ -254,7 +283,7 @@ private fun WifiScreen(
 }
 
 @Composable
-private fun WifiRow(network: WifiNetwork, copied: Boolean, onCopy: () -> Unit) {
+private fun WifiRow(network: WifiNetwork, withKeys: Boolean, copied: Boolean, onCopy: () -> Unit) {
     // Card per network, matching the firewall / autostart / AppOps lists.
     Surface(
         modifier = Modifier
@@ -275,21 +304,26 @@ private fun WifiRow(network: WifiNetwork, copied: Boolean, onCopy: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    network.ssid,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        network.ssid,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
+                    if (network.connected) {
+                        Spacer(Modifier.width(6.dp))
+                        ConnectedChip()
+                    }
+                }
                 Spacer(Modifier.size(2.dp))
                 Text(
-                    network.key ?: stringResource(
-                        if (network.enterprise) R.string.wifi_enterprise else R.string.wifi_open
-                    ),
+                    subtitle(network, withKeys),
                     style = MaterialTheme.typography.bodyMedium,
-                    fontFamily = if (network.key != null) FontFamily.Monospace else FontFamily.Default,
-                    color = if (network.key != null) MaterialTheme.colorScheme.onSurface
+                    fontFamily = if (withKeys && network.key != null) FontFamily.Monospace else FontFamily.Default,
+                    color = if (withKeys && network.key != null) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -308,4 +342,31 @@ private fun WifiRow(network: WifiNetwork, copied: Boolean, onCopy: () -> Unit) {
             }
         }
     }
+}
+
+/** The badge for the network currently joined, modelled on the other Wi-Fi managers' lists. */
+@Composable
+private fun ConnectedChip() {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.primaryContainer
+    ) {
+        Text(
+            stringResource(R.string.wifi_connected),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    }
+}
+
+/** The line under the SSID: the password when readable, else what the stored entry is. */
+@Composable
+private fun subtitle(network: WifiNetwork, withKeys: Boolean): String = when {
+    // Without keys every entry has a null key, so a null key here would otherwise read as "open
+    // network" and claim something the app cannot actually see.
+    !withKeys -> stringResource(R.string.wifi_key_need_root)
+    network.key != null -> network.key
+    network.enterprise -> stringResource(R.string.wifi_enterprise)
+    else -> stringResource(R.string.wifi_open)
 }

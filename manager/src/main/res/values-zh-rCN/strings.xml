@@ -1594,6 +1594,27 @@
     <string name="autostart_empty">没有符合筛选条件的应用</string>
     <string name="autostart_refresh">刷新</string>
 
+    <string name="battery_whitelist_title">电池优化管理</string>
+    <string name="home_battery_whitelist_description">管理哪些应用不会被系统因省电而冻结</string>
+    <string name="battery_whitelist_count">已加入白名单 %1$d / %2$d 个应用</string>
+    <string name="battery_whitelist_filter_all">全部</string>
+    <string name="battery_whitelist_filter_whitelist">白名单</string>
+    <string name="battery_whitelist_filter_blacklist">黑名单</string>
+    <string name="battery_whitelist_search_hint">搜索应用名或包名</string>
+    <string name="battery_whitelist_app_count">%1$d 个应用</string>
+    <string name="battery_whitelist_refresh">刷新</string>
+    <string name="battery_whitelist_need_service">Shizuku 未运行，启动服务后才能管理白名单</string>
+    <string name="battery_whitelist_no_dump_permission">服务身份无权限读取白名单：需以 Root 或无线调试（Shell）方式启动服务</string>
+    <string name="battery_whitelist_unrecognised">未识别该 ROM 的白名单输出格式</string>
+    <string name="battery_whitelist_action_failed">操作未完成</string>
+    <string name="battery_whitelist_failed">系统未接受这次修改</string>
+    <string name="battery_whitelist_system_locked">这个应用由系统自己保留在白名单，无法在这里移除</string>
+    <string name="battery_whitelist_system_entry">%1$s · 系统内置</string>
+    <string name="battery_whitelist_empty_search">没有匹配的应用</string>
+    <string name="battery_whitelist_empty_whitelist">还没有应用加入白名单</string>
+    <string name="battery_whitelist_empty_blacklist">所有已安装应用都已在白名单</string>
+    <string name="battery_whitelist_empty_all">没有找到已安装应用</string>
+
     <string name="force_dark_title">强制深色</string>
     <string name="home_force_dark_description">让没有自带深色主题的应用在打开时也变深色</string>
     <string name="force_dark_count">已选 %d 个应用</string>
@@ -1631,12 +1652,17 @@
     <string name="hiding_list_subtitle">已选择 %d 个应用</string>
     <string name="hiding_list_hint">这些应用打开期间该设置被隐藏，离开后自动恢复。</string>
     <string name="hiding_search_hint">搜索应用</string>
+    <string name="hiding_filter_all">全部</string>
+    <string name="hiding_filter_user">用户应用</string>
+    <string name="hiding_filter_system">系统应用</string>
     <string name="hiding_empty">没有匹配的应用</string>
     <string name="hiding_action_failed">隐藏操作失败</string>
     <string name="hiding_failed">系统没有接受这次修改</string>
     <string name="hiding_vpn_hint">被列应用打开时通过停止客户端断开隧道，离开后请求它重新连接。只有已知启动命令的客户端能被自动恢复。</string>
     <string name="hiding_restart_on_open">打开时重启应用</string>
-    <string name="hiding_restart_on_open_summary">强制停止并重新启动应用，让它读到隐藏后的值；它原本打开的内容会丢失。</string>
+    <string name="hiding_restart_summary_on">对 %d 个应用重启</string>
+    <string name="hiding_restart_list_title">打开时重启应用</string>
+    <string name="hiding_restart_list_hint">勾选的应用打开时会被强制停止并重新启动，好让它读到隐藏后的值；没勾选的应用照常打开，原本的内容不会丢。</string>
     <string name="hiding_pause">暂停隐藏</string>
     <string name="hiding_pause_summary">打开后会立刻把所有设置恢复原值，直到关掉它才重新开始隐藏。</string>
     <string name="hiding_notification_channel">按应用隐藏</string>
@@ -1740,6 +1766,10 @@
     <string name="home_intents_title">活动与意图</string>
     <string name="home_intents_description">手动启动组件、发送 Intent</string>
     <string name="wifi_enterprise">企业网络（密码不可读）</string>
+    <string name="wifi_count_ssid_only">%1$d 个网络 · 仅名称</string>
+    <string name="wifi_ssid_only_notice">读取密码需要 Shizuku 授权或 root。当前没能拿到系统的网络配置，这里只显示网络名称。</string>
+    <string name="wifi_key_need_root">密码未能读取</string>
+    <string name="wifi_connected">已连接</string>
     <!-- ShizukuX: strings that had no zh-rCN translation yet (58 keys, second-UI audit) -->
     <string name="adb_pairing_tutorial_content_left_is_clickable">注意：请点击「无线调试」选项的左侧区域，会打开新的页面；只把右侧开关打开是不正确的。</string>
     <string name="app_management_select_all">全选</string>

@@ -1695,6 +1695,27 @@ This action cannot be undone. Continue?</string>
     <string name="autostart_empty">No app matches this filter</string>
     <string name="autostart_refresh">Refresh</string>
 
+    <string name="battery_whitelist_title">Battery optimization</string>
+    <string name="home_battery_whitelist_description">Manage which apps the system is not allowed to freeze in the background</string>
+    <string name="battery_whitelist_count">%1$d of %2$d apps exempt</string>
+    <string name="battery_whitelist_filter_all">All</string>
+    <string name="battery_whitelist_filter_whitelist">Whitelist</string>
+    <string name="battery_whitelist_filter_blacklist">Not exempt</string>
+    <string name="battery_whitelist_search_hint">Search app name or package</string>
+    <string name="battery_whitelist_app_count">%1$d apps</string>
+    <string name="battery_whitelist_refresh">Refresh</string>
+    <string name="battery_whitelist_need_service">Shizuku is not running - start the service to manage this list</string>
+    <string name="battery_whitelist_no_dump_permission">The service cannot read the whitelist: it has to run as root or as ADB shell</string>
+    <string name="battery_whitelist_unrecognised">This ROM prints the whitelist in a format that was not recognised</string>
+    <string name="battery_whitelist_action_failed">Not done</string>
+    <string name="battery_whitelist_failed">The platform did not take this change</string>
+    <string name="battery_whitelist_system_locked">This app is kept exempt by the system itself, so it cannot be removed here</string>
+    <string name="battery_whitelist_system_entry">%1$s · system entry</string>
+    <string name="battery_whitelist_empty_search">No app matches this search</string>
+    <string name="battery_whitelist_empty_whitelist">No app is exempt yet</string>
+    <string name="battery_whitelist_empty_blacklist">Every installed app is exempt</string>
+    <string name="battery_whitelist_empty_all">No installed app found</string>
+
     <string name="force_dark_title">Force dark</string>
     <string name="home_force_dark_description">Darken the apps that never shipped a dark theme, while they are open</string>
     <string name="force_dark_count">%d apps picked</string>
@@ -1732,12 +1753,17 @@ This action cannot be undone. Continue?</string>
     <string name="hiding_list_subtitle">%d apps selected</string>
     <string name="hiding_list_hint">While one of these apps is open, this setting is hidden. It comes back when the app leaves.</string>
     <string name="hiding_search_hint">Search apps</string>
+    <string name="hiding_filter_all">All</string>
+    <string name="hiding_filter_user">User apps</string>
+    <string name="hiding_filter_system">System apps</string>
     <string name="hiding_empty">No matching app</string>
     <string name="hiding_action_failed">Hiding operation failed</string>
     <string name="hiding_failed">The system did not take the change</string>
     <string name="hiding_vpn_hint">The tunnel is taken down by stopping the client while a listed app is open, and asked to start again afterwards. Only clients whose start command is known are brought back automatically.</string>
     <string name="hiding_restart_on_open">Restart the app on open</string>
-    <string name="hiding_restart_on_open_summary">The app is force-stopped and started again so it reads the hidden values. What it had open is lost.</string>
+    <string name="hiding_restart_summary_on">Restart for %d apps</string>
+    <string name="hiding_restart_list_title">Restart on open</string>
+    <string name="hiding_restart_list_hint">An app you check here is force-stopped and started again when it opens, so it reads the hidden values. Apps left unchecked open normally and keep what they had.</string>
     <string name="hiding_pause">Pause hiding</string>
     <string name="hiding_pause_summary">While on, every setting is put back at once and nothing is hidden until you turn it off.</string>
     <string name="hiding_notification_channel">Per-app hiding</string>
@@ -1942,4 +1968,8 @@ This action cannot be undone. Continue?</string>
     <string name="home_intents_title">Activities &amp; intents</string>
     <string name="home_intents_description">Start components and send intents by hand</string>
     <string name="wifi_enterprise">Enterprise network (password not readable)</string>
+    <string name="wifi_count_ssid_only">%1$d networks · names only</string>
+    <string name="wifi_ssid_only_notice">Reading the passwords needs a granted Shizuku permission or root. The system config was unreachable, so this list shows the network names only.</string>
+    <string name="wifi_key_need_root">Password unavailable</string>
+    <string name="wifi_connected">Connected</string>
 </resources>
