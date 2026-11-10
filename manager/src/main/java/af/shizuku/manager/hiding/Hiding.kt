@@ -42,6 +42,13 @@ object Hiding {
     private const val PREF_DISABLED = "disabled_signals"
     private const val PREF_HIDDEN_SINCE = "hidden_since"
     private const val PREF_RESTART_ON_OPEN = "restart_on_open"
+    private const val PREF_RESTART_APPS = "restart_apps"
+
+    /** When this app last issued its own force-stop, so its exit record is not read as the user's. */
+    private const val PREF_OWN_RESTART_AT = "own_restart_at"
+
+    private const val OWN_RESTART_BEFORE_MILLIS = 2_000L
+    private const val OWN_RESTART_AFTER_MILLIS = 15_000L
     private const val PREF_VPN_CLIENT = "vpn_client"
     private const val PREF_VPN_CHOSEN = "vpn_chosen"
 
@@ -118,16 +125,34 @@ object Hiding {
         if (sinceMillis == 0L) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
 
+        // The restart this app does itself is an `am force-stop`, and the platform books every
+        // force-stop as REASON_USER_REQUESTED. Without this window the app we just relaunched
+        // would be read as one the user closed, which puts the watch back into hiding and back
+        // into another restart - the loop this guard exists to break.
+        val ownRestartAt = prefs.getLong(PREF_OWN_RESTART_AT, 0L)
+
         return runCatching {
             val manager = ShizukuApplication.appContext.getSystemService(ActivityManager::class.java)
                 ?: return false
             manager.getHistoricalProcessExitReasons(packageName, 0, EXIT_RECORDS)
                 .any { info ->
                     info.timestamp >= sinceMillis &&
-                        info.reason == ApplicationExitInfo.REASON_USER_REQUESTED
+                        info.reason == ApplicationExitInfo.REASON_USER_REQUESTED &&
+                        !isOwnRestart(info.timestamp, ownRestartAt)
                 }
         }.getOrDefault(false)
     }
+
+    /**
+     * Whether [exitAt] belongs to the force-stop this app issued, rather than one the user did.
+     *
+     * The window is generous on the leading side because the exit record is stamped while the
+     * package is still dying, which can land a moment before the timestamp taken here.
+     */
+    private fun isOwnRestart(exitAt: Long, ownRestartAt: Long): Boolean =
+        ownRestartAt > 0L &&
+            exitAt >= ownRestartAt - OWN_RESTART_BEFORE_MILLIS &&
+            exitAt <= ownRestartAt + OWN_RESTART_AFTER_MILLIS
 
     /**
      * Whether any list is both switched on and has an app on it - which is when there is
@@ -174,16 +199,32 @@ object Hiding {
     }
 
     /**
-     * Whether a listed app is restarted the moment it comes to the front.
+     * The whole switch for restarting on open, over the per-app list below.
      *
      * Off by default, because of what it costs: the app is force-stopped, so whatever it had open
      * is gone. It exists because a hiding list cannot help an app that reads its settings during
      * startup - the list is applied once the app is already in front, after its first read.
+     *
+     * Not every app is worth that: a messenger loses its conversation, a bank app its login, and
+     * neither reads anything worth hiding at startup. So the switch only arms the feature and
+     * [restartApps] says which apps it applies to.
      */
     fun isRestartOnOpenEnabled(): Boolean = prefs.getBoolean(PREF_RESTART_ON_OPEN, false)
 
     fun setRestartOnOpen(enabled: Boolean) {
         prefs.edit().putBoolean(PREF_RESTART_ON_OPEN, enabled).apply()
+    }
+
+    /** The apps that are restarted when they come to the front. Empty means none of them. */
+    fun restartApps(): Set<String> =
+        prefs.getStringSet(PREF_RESTART_APPS, emptySet()).orEmpty().toSet()
+
+    fun isRestartFor(packageName: String): Boolean = packageName in restartApps()
+
+    fun setRestartApp(packageName: String, restart: Boolean) {
+        val apps = restartApps().toMutableSet()
+        if (restart) apps.add(packageName) else apps.remove(packageName)
+        prefs.edit().putStringSet(PREF_RESTART_APPS, apps).apply()
     }
 
     // ---- the rule ----------------------------------------------------------------
@@ -222,7 +263,11 @@ object Hiding {
      * in the banking app for eleven.
      */
     fun foregroundPackage(): String? =
-        if (hasUsageAccess()) foregroundFromUsage() else foregroundFromShell()
+        // The event stream is the cheap answer and the one that keeps working while the shell is
+        // gone, but it can end a window on a pause and have nothing after it: an app that comes
+        // back to the front without any further event then reads as nothing in front, and hiding
+        // silently stops applying to it. The shell is asked only when the stream says nothing.
+        (if (hasUsageAccess()) foregroundFromUsage() else null) ?: foregroundFromShell()
 
     private var lastEventQuery = 0L
     private var cachedForeground: String? = null
@@ -472,8 +517,15 @@ object Hiding {
             return false
         }
 
-        val stopped = shell("am force-stop $packageName") != null
-        val output = shell("am start -n ${component.flattenToShortString()}")
+        // Stamped before the kill: the exit record is written while the package is still dying,
+        // and the window it is matched against has to include that moment.
+        prefs.edit().putLong(PREF_OWN_RESTART_AT, System.currentTimeMillis()).apply()
+
+        // Quoted, although both come from the package manager and neither can contain a space:
+        // the shell splits words before it runs am, and a name is the only thing standing between
+        // this line and a stop of something else.
+        val stopped = shell("am force-stop '$packageName'") != null
+        val output = shell("am start -n '${component.flattenToShortString()}'")
         val started = output != null && !output.contains("Error")
 
         if (!started) {

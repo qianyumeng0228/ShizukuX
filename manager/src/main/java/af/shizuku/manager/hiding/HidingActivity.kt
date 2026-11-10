@@ -4,10 +4,13 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,10 +25,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +42,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -102,17 +108,29 @@ class HidingActivity : ComponentActivity() {
     private var appsLoaded by mutableStateOf(false)
     private var listed by mutableStateOf<Set<String>>(emptySet())
     private var restartOnOpen by mutableStateOf(false)
+    // Which apps the restart applies to, and whether the list for them is the one on screen.
+    // The restart card is not a signal: it has its own set and its own screen, but that screen
+    // is the same list of apps every signal uses.
+    private var restartApps by mutableStateOf<Set<String>>(emptySet())
+    private var restartList by mutableStateOf(false)
     private var paused by mutableStateOf(false)
     private var usageAccess by mutableStateOf(false)
     private var busy by mutableStateOf(false)
     private var busyKey by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
 
+    // Kept here rather than inside the list, because the list is dropped and rebuilt on every
+    // refresh: a chip choice or a search term held there would jump back to the default the
+    // moment a switch is flipped.
+    private var appQuery by mutableStateOf("")
+    private var appFilter by mutableStateOf(FILTER_ALL)
+
     /** Everything the first screen shows, read off the device in one go on IO. */
     private data class Snapshot(
         val available: Boolean,
         val usageAccess: Boolean,
         val restartOnOpen: Boolean,
+        val restartApps: Set<String>,
         val paused: Boolean,
         val rows: List<SignalRow>,
         val listed: Set<String>
@@ -136,21 +154,46 @@ class HidingActivity : ComponentActivity() {
                     appsLoaded = appsLoaded,
                     listed = listed,
                     restartOnOpen = restartOnOpen,
+                    restartApps = restartApps,
+                    restartList = restartList,
                     paused = paused,
                     usageAccess = usageAccess,
                     busy = busy,
                     busyKey = busyKey,
                     message = message,
-                    onBackFromSignal = { selected = null },
+                    appQuery = appQuery,
+                    appFilter = appFilter,
+                    onAppQuery = { appQuery = it },
+                    onAppFilter = { appFilter = it },
+                    onBackFromSignal = {
+                        selected = null
+                        restartList = false
+                    },
                     onBack = { finish() },
                     onRefresh = { refresh() },
                     onOpenSignal = { signal ->
                         selected = signal
+                        restartList = false
                         listed = Hiding.appsFor(signal)
+                        // A fresh list starts unfiltered: the term and the chip belonged to the
+                        // list that was open, not to every list this screen can open.
+                        appQuery = ""
+                        appFilter = FILTER_ALL
+                        if (!appsLoaded) loadApps()
+                    },
+                    onOpenRestart = {
+                        // The restart list is its own target, but the list itself is the same
+                        // one: same chips, same order, same row.
+                        selected = null
+                        restartList = true
+                        restartApps = Hiding.restartApps()
+                        appQuery = ""
+                        appFilter = FILTER_ALL
                         if (!appsLoaded) loadApps()
                     },
                     onToggleSignal = { signal, enabled -> setSignalEnabled(signal, enabled) },
                     onToggleApp = { app, on -> setOnList(app, on) },
+                    onToggleRestartApp = { app, on -> setRestartApp(app, on) },
                     onRestartOnOpen = { on -> writeRestartOnOpen(on) },
                     onPaused = { on -> writePaused(on) },
                     onDismissMessage = { message = null }
@@ -185,6 +228,7 @@ class HidingActivity : ComponentActivity() {
                     available = Hiding.shellAvailable(),
                     usageAccess = Hiding.hasUsageAccess(),
                     restartOnOpen = Hiding.isRestartOnOpenEnabled(),
+                    restartApps = Hiding.restartApps(),
                     paused = Hiding.isPaused(),
                     rows = Signal.entries.map { signal ->
                         SignalRow(signal, Hiding.isSignalEnabled(signal), Hiding.appsFor(signal).size)
@@ -195,6 +239,7 @@ class HidingActivity : ComponentActivity() {
             available = snapshot.available
             usageAccess = snapshot.usageAccess
             restartOnOpen = snapshot.restartOnOpen
+            restartApps = snapshot.restartApps
             paused = snapshot.paused
             rows = snapshot.rows
             listed = snapshot.listed
@@ -260,13 +305,39 @@ class HidingActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Puts one app on the restart list, or takes it off.
+     *
+     * The watch reads this list every pass, so a write is enough: the app that is in front right
+     * now is not restarted for having been just added, only the next time it comes to the front.
+     */
+    private fun setRestartApp(app: HidingApp, on: Boolean) {
+        lifecycleScope.launch {
+            busyKey = app.packageName
+            val ok = withContext(Dispatchers.IO) {
+                Hiding.setRestartApp(app.packageName, on)
+                HidingWatchService.refresh(this@HidingActivity)
+                Hiding.isRestartFor(app.packageName) == on
+            }
+            if (ok) {
+                restartApps = if (on) restartApps + app.packageName else restartApps - app.packageName
+                refresh()
+            } else {
+                message = getString(R.string.hiding_failed)
+            }
+            busyKey = null
+        }
+    }
+
     private fun writeRestartOnOpen(on: Boolean) {
         lifecycleScope.launch {
+            busyKey = "restart_on_open"
             withContext(Dispatchers.IO) {
                 Hiding.setRestartOnOpen(on)
                 HidingWatchService.refresh(this@HidingActivity)
             }
             restartOnOpen = Hiding.isRestartOnOpenEnabled()
+            busyKey = null
         }
     }
 
@@ -300,21 +371,40 @@ private fun HidingScreen(
     appsLoaded: Boolean,
     listed: Set<String>,
     restartOnOpen: Boolean,
+    restartApps: Set<String>,
+    restartList: Boolean,
     paused: Boolean,
     usageAccess: Boolean,
     busy: Boolean,
     busyKey: String?,
     message: String?,
+    appQuery: String,
+    appFilter: Int,
+    onAppQuery: (String) -> Unit,
+    onAppFilter: (Int) -> Unit,
     onBackFromSignal: () -> Unit,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onOpenSignal: (Signal) -> Unit,
+    onOpenRestart: () -> Unit,
     onToggleSignal: (Signal, Boolean) -> Unit,
     onToggleApp: (HidingApp, Boolean) -> Unit,
+    onToggleRestartApp: (HidingApp, Boolean) -> Unit,
     onRestartOnOpen: (Boolean) -> Unit,
     onPaused: (Boolean) -> Unit,
     onDismissMessage: () -> Unit
 ) {
+    // One value read once, so the title and the back arrow cannot disagree about which page
+    // this is.
+    val listSignal = selected
+
+    // The system back gesture is the same step as the arrow: either list goes back to the
+    // overview, and only the overview leaves the screen. Without this the gesture closed the
+    // whole page from a list the arrow treats as one level deep.
+    BackHandler(enabled = restartList || listSignal != null) {
+        onBackFromSignal()
+    }
+
     if (message != null) {
         AlertDialog(
             onDismissRequest = onDismissMessage,
@@ -330,12 +420,17 @@ private fun HidingScreen(
         topBar = {
             TopAppBar(
                 title = {
+                    // The restart list is a third kind of page: not the overview, and not one
+                    // signal, but the same app list the signals use.
                     Column {
                         Text(
-                            text = if (selected == null) {
-                                stringResource(R.string.hiding_title)
-                            } else {
-                                stringResource(R.string.hiding_list_title, stringResource(selected.labelRes))
+                            text = when {
+                                restartList ->
+                                    stringResource(R.string.hiding_restart_list_title)
+                                listSignal != null ->
+                                    stringResource(R.string.hiding_list_title, stringResource(listSignal.labelRes))
+                                else ->
+                                    stringResource(R.string.hiding_title)
                             },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
@@ -344,7 +439,9 @@ private fun HidingScreen(
                             text = when {
                                 !available -> stringResource(R.string.firewall_need_service)
                                 paused -> stringResource(R.string.hiding_subtitle_paused)
-                                selected != null ->
+                                restartList ->
+                                    stringResource(R.string.hiding_list_subtitle, restartApps.size)
+                                listSignal != null ->
                                     stringResource(R.string.hiding_list_subtitle, listed.size)
                                 else ->
                                     stringResource(R.string.hiding_subtitle_count, rows.sumOf { it.listed })
@@ -356,7 +453,9 @@ private fun HidingScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = if (selected == null) onBack else onBackFromSignal) {
+                    IconButton(
+                        onClick = if (listSignal == null && !restartList) onBack else onBackFromSignal
+                    ) {
                         ShizukuIcon(
                             icon = R.drawable.ic_arrow_back_24,
                             contentDescription = stringResource(R.string.action_back)
@@ -390,31 +489,53 @@ private fun HidingScreen(
             return@Scaffold
         }
 
-        if (selected == null) {
-            SignalList(
+        when {
+            restartList -> AppList(
+                padding = padding,
+                signal = null,
+                restart = true,
+                apps = apps,
+                appsLoaded = appsLoaded,
+                listed = restartApps,
+                available = available,
+                busy = busy,
+                busyKey = busyKey,
+                query = appQuery,
+                filter = appFilter,
+                onQuery = onAppQuery,
+                onFilter = onAppFilter,
+                onToggleApp = onToggleRestartApp
+            )
+            selected == null -> SignalList(
                 padding = padding,
                 available = available,
                 rows = rows,
                 restartOnOpen = restartOnOpen,
+                restartApps = restartApps.size,
                 paused = paused,
                 usageAccess = usageAccess,
                 busy = busy,
                 busyKey = busyKey,
                 onOpenSignal = onOpenSignal,
                 onToggleSignal = onToggleSignal,
+                onOpenRestart = onOpenRestart,
                 onRestartOnOpen = onRestartOnOpen,
                 onPaused = onPaused
             )
-        } else {
-            AppList(
+            else -> AppList(
                 padding = padding,
                 signal = selected,
+                restart = false,
                 apps = apps,
                 appsLoaded = appsLoaded,
                 listed = listed,
                 available = available,
                 busy = busy,
                 busyKey = busyKey,
+                query = appQuery,
+                filter = appFilter,
+                onQuery = onAppQuery,
+                onFilter = onAppFilter,
                 onToggleApp = onToggleApp
             )
         }
@@ -427,12 +548,14 @@ private fun SignalList(
     available: Boolean,
     rows: List<SignalRow>,
     restartOnOpen: Boolean,
+    restartApps: Int,
     paused: Boolean,
     usageAccess: Boolean,
     busy: Boolean,
     busyKey: String?,
     onOpenSignal: (Signal) -> Unit,
     onToggleSignal: (Signal, Boolean) -> Unit,
+    onOpenRestart: () -> Unit,
     onRestartOnOpen: (Boolean) -> Unit,
     onPaused: (Boolean) -> Unit
 ) {
@@ -523,19 +646,30 @@ private fun SignalList(
             )
         }
 
+        // Not a signal, but it now reads like one: the switch arms the feature, and the list
+        // behind "选择应用" says which apps it applies to. Some apps cannot be restarted at all
+        // (a chat loses its draft), and some only read the settings a restart later, so one
+        // switch over every app could only ever be wrong for half of them.
         item {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 2.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceContainer
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
             ) {
                 Row(
-                    modifier = Modifier.padding(start = 14.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 14.dp, end = 12.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    ) {
                         Text(
                             text = stringResource(R.string.hiding_restart_on_open),
                             style = MaterialTheme.typography.titleMedium,
@@ -543,16 +677,38 @@ private fun SignalList(
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = stringResource(R.string.hiding_restart_on_open_summary),
+                            text = when {
+                                !restartOnOpen -> stringResource(R.string.hiding_signal_summary_off)
+                                restartApps == 0 -> stringResource(R.string.hiding_signal_summary_empty)
+                                else -> stringResource(R.string.hiding_restart_summary_on, restartApps)
+                            },
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (restartOnOpen && restartApps > 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
-                    Switch(
-                        checked = restartOnOpen,
-                        onCheckedChange = onRestartOnOpen,
-                        enabled = available && !busy
-                    )
+                    TextButton(
+                        onClick = onOpenRestart,
+                        enabled = available && !busy,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.hiding_choose_apps),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                    if (busyKey == "restart_on_open") {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Switch(
+                            checked = restartOnOpen,
+                            onCheckedChange = onRestartOnOpen,
+                            enabled = available && !busy
+                        )
+                    }
                 }
             }
         }
@@ -640,28 +796,38 @@ private fun SignalCard(
 @Composable
 private fun AppList(
     padding: PaddingValues,
-    signal: Signal,
+    signal: Signal?,
+    restart: Boolean,
     apps: List<HidingApp>,
     appsLoaded: Boolean,
     listed: Set<String>,
     available: Boolean,
     busy: Boolean,
     busyKey: String?,
+    query: String,
+    filter: Int,
+    onQuery: (String) -> Unit,
+    onFilter: (Int) -> Unit,
     onToggleApp: (HidingApp, Boolean) -> Unit
 ) {
-    var query by remember { mutableStateOf("") }
-
-    val visible = remember(apps, listed, query) {
+    val visible = remember(apps, listed, query, filter) {
         apps.filter { app ->
             val matches = query.isBlank() ||
                 app.label.contains(query, ignoreCase = true) ||
                 app.packageName.contains(query, ignoreCase = true)
-            // The default view is the user's own apps: hundreds of system packages would bury
-            // them. A listed system app still shows - hiding a rule the user set would be worse
-            // than the clutter - and a search reveals any of them.
-            val shown = !app.system || app.packageName in listed || (query.isNotBlank() && matches)
+            // What the chip says is what the list holds: no hidden rule about system apps any
+            // more, because the chips are the way to ask for them.
+            val shown = when (filter) {
+                FILTER_USER -> !app.system
+                FILTER_SYSTEM -> app.system
+                else -> true
+            }
             shown && matches
         }
+            // The apps already on the list come first and stay there: the list exists to show the
+            // rules that are set, and hunting for one of them among hundreds of packages is the
+            // part of this screen that was hardest to use.
+            .sortedWith(compareBy({ it.packageName !in listed }, { it.label.lowercase() }))
     }
 
     Column(
@@ -670,7 +836,9 @@ private fun AppList(
             .fillMaxSize()
     ) {
         Text(
-            text = stringResource(R.string.hiding_list_hint),
+            text = stringResource(
+                if (restart) R.string.hiding_restart_list_hint else R.string.hiding_list_hint
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
@@ -687,7 +855,7 @@ private fun AppList(
 
         OutlinedTextField(
             value = query,
-            onValueChange = { query = it },
+            onValueChange = onQuery,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp),
@@ -701,13 +869,39 @@ private fun AppList(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Spacer(Modifier.weight(1f))
+            // The chips scroll rather than squeeze: three labels are near the width of a phone
+            // already, and the count beside them must not be pushed out by an overflow.
+            Row(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = filter == FILTER_ALL,
+                    onClick = { onFilter(FILTER_ALL) },
+                    label = { Text(stringResource(R.string.hiding_filter_all)) }
+                )
+                FilterChip(
+                    selected = filter == FILTER_USER,
+                    onClick = { onFilter(FILTER_USER) },
+                    label = { Text(stringResource(R.string.hiding_filter_user)) }
+                )
+                FilterChip(
+                    selected = filter == FILTER_SYSTEM,
+                    onClick = { onFilter(FILTER_SYSTEM) },
+                    label = { Text(stringResource(R.string.hiding_filter_system)) }
+                )
+            }
+            Spacer(Modifier.width(8.dp))
             Text(
-                text = stringResource(R.string.firewall_app_count, listed.size),
+                text = stringResource(R.string.firewall_app_count, visible.size),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
         }
 
@@ -729,7 +923,12 @@ private fun AppList(
                 )
             }
         } else {
+            val listState = rememberLazyListState()
+            // A chip or a search term changes what the first row is. Keeping the old offset would
+            // open the new list part-way down, with its best match above the visible area.
+            LaunchedEffect(filter, query) { listState.scrollToItem(0) }
             LazyColumn(
+                state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
@@ -831,3 +1030,8 @@ private fun AppIcon(app: HidingApp) {
         }
     }
 }
+
+/** Which slice of the installed apps the list is showing. */
+private const val FILTER_ALL = 0
+private const val FILTER_USER = 1
+private const val FILTER_SYSTEM = 2

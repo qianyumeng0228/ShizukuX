@@ -52,6 +52,14 @@ class HidingWatchService : Service() {
 
         private const val POLL_MS = 1200L
 
+        /**
+         * How long an empty foreground still counts as the restart in progress.
+         *
+         * A force-stop takes the app off screen before `am start` puts it back, which is longer
+         * than one poll, so the gap cannot be treated as the user leaving on the first pass.
+         */
+        private const val RESTART_SETTLE_MS = 6000L
+
         /** How often the state is looked at while hiding is paused and there is nothing to do. */
         private const val IDLE_MS = 1500L
 
@@ -115,6 +123,9 @@ class HidingWatchService : Service() {
      * cleared the moment nothing is hidden any more, which is when the user has left the app.
      */
     private var restartedFor: String? = null
+
+    /** When the restarted app was last seen in front, so a gap is not read as the user leaving. */
+    private var restartedSeenAt = 0L
 
     /** The state the notification last said, so it is posted on a change and not on every pass. */
     private var notifiedKey: String? = null
@@ -220,18 +231,36 @@ class HidingWatchService : Service() {
             // settings it objects to. Only a new process can read the hidden ones, which is what
             // the restart is for. Once per app session: the relaunch is the same app in front
             // again, and restarting that too would end where it started.
-            if (hidingFor == null) {
-                restartedFor = null
-            } else if (hidingFor != restartedFor &&
+            // "Once per app session" has to survive the relaunch itself. A force-stop empties the
+            // foreground for a moment, and reading that gap as "the user left" is exactly what
+            // turned the restart into a loop: cleared here, restart again one pass later, forever.
+            // Only a different app in front, or the front staying empty past the settle, ends it.
+            val front = Hiding.lastInFront
+            val now = System.currentTimeMillis()
+            if (restartedFor != null) {
+                when {
+                    front == restartedFor -> restartedSeenAt = now
+                    front == null && now - restartedSeenAt <= RESTART_SETTLE_MS -> Unit
+                    else -> restartedFor = null
+                }
+            }
+            // Restarting is a rule of its own, over a list of its own: an app can be restarted
+            // without anything being hidden for it, which is why this reads the foreground
+            // instead of the app the hiding pass just handled. It is the same foreground, so the
+            // two rules still cannot disagree about what is on screen, and an app that is both
+            // hidden for and restarted is restarted exactly once, after the hide.
+            val restartFor = front?.takeIf { Hiding.isRestartFor(it) }
+            if (restartFor != null && restartFor != restartedFor &&
                 Hiding.isRestartOnOpenEnabled() &&
                 Hiding.shellAvailable()
             ) {
                 // Taken before the attempt, not only on success: a force-stop that failed would
                 // otherwise be asked for again on the next pass, once a second, over an app the
                 // user is looking at.
-                restartedFor = hidingFor
-                if (runCatching { Hiding.restartForLaunch(hidingFor) }.getOrDefault(false)) {
-                    LOGGER.i("restarted $hidingFor so it reads the hidden settings")
+                restartedFor = restartFor
+                restartedSeenAt = now
+                if (runCatching { Hiding.restartForLaunch(restartFor) }.getOrDefault(false)) {
+                    LOGGER.i("restarted $restartFor for its own rule")
                 }
             }
 
