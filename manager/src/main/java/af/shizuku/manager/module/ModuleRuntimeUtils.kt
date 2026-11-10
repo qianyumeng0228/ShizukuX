@@ -2,6 +2,8 @@ package af.shizuku.manager.module
 
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.util.Base64
+import af.shizuku.manager.utils.Logger.LOGGER
 import moe.shizuku.server.IShizukuService
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -37,8 +39,36 @@ object ModuleRuntimeUtils {
      */
     const val SU_SHIM_SHELL_DIR = "/data/local/tmp/.shizukux-bin"
 
-    @Volatile
-    private var suShimVerified = false
+    /**
+     * Shell-readable mirror root for module trees.
+     *
+     * Module scripts are not executed from the app's `filesDir`: the app reads the script text
+     * (untrusted_app may read its own files) and pipes it into `sh -c`, which runs as `shell`
+     * (uid 2000). From that point on every file the script opens itself — a `source` of
+     * a helper under `lib/`, a `cat` of `module.prop`, the initial `cd "$MODDIR"` — is opened
+     * by `shell`, and SELinux denies `u:r:shell:s0` -> `app_data_file` with `{ search }`. The
+     * files are 0644 and look perfectly readable, yet the shell reports
+     * "No such file or directory" / "Permission denied".
+     *
+     * So each run stages the module tree here first (written by the shell side, because the
+     * app cannot write `/data/local/tmp` at all) and points MODDIR/MODPATH at the mirror.
+     */
+    const val MODULE_MIRROR_DIR = "/data/local/tmp/.shizukux-mod"
+
+    /** Total source bytes we are willing to inline into the staging prelude. */
+    private const val MIRROR_MAX_TOTAL_BYTES = 512L * 1024
+
+    /** Per-file ceiling: scripts, props and small data only — no binaries. */
+    private const val MIRROR_MAX_FILE_BYTES = 128L * 1024
+
+    /** Beyond this the prelude gets too large for one `sh -c` argument. */
+    private const val MIRROR_MAX_FILES = 64
+
+    /** Never staged: logs are host-owned, webui is read by the app, not by shell. */
+    private val MIRROR_SKIP_DIRS = setOf("logs", "webui")
+
+    /** Shell metacharacters that would let a module filename break the generated prelude. */
+    private val MIRROR_UNSAFE_PATH_CHARS = charArrayOf('\'', '"', '$', '`', '\\', '\n', '\r')
 
     /**
      * `su` shim for ADB modules.
@@ -98,33 +128,124 @@ object ModuleRuntimeUtils {
      * The shim is written via the process's stdin rather than the app filesystem: the app
      * cannot write `/data/local/tmp` itself, and the script process cannot read the app's
      * private directory, so stdin is the only channel both sides share. Content is compared
-     * first and rewritten only when it differs; the result is cached for the app process.
+     * first and rewritten only when it differs; the directory and the script are re-verified
+     * on every call rather than cached for the life of the app process.
      */
     fun ensureSuShim(service: IShizukuService): String? {
-        if (suShimVerified) return SU_SHIM_SHELL_DIR
         return try {
             val suPath = "$SU_SHIM_SHELL_DIR/su"
+
+            // /data/local/tmp is world-writable: another shell user can create this
+            // directory first, or rewrite the script after the fact. Ownership and mode are
+            // re-checked on every call — the old one-shot "verified" flag kept using a
+            // hijacked shim for the rest of the process — and a directory that cannot be
+            // brought back to shell/0700 is refused instead of being prepended to PATH.
+            fun statDir(): String =
+                runShell(service, "stat -c '%U %a' $SU_SHIM_SHELL_DIR 2>/dev/null", null, 5)
+                    .second.trim()
+
+            if (statDir() != "shell 700") {
+                runShell(
+                    service,
+                    "mkdir -p $SU_SHIM_SHELL_DIR 2>/dev/null; " +
+                        "chmod 700 $SU_SHIM_SHELL_DIR 2>/dev/null",
+                    null, 5
+                )
+                if (statDir() != "shell 700") {
+                    LOGGER.w("su shim dir is not shell:0700, refusing to use it")
+                    return null
+                }
+            }
+
             val existing = runShell(service, "cat $suPath 2>/dev/null", null, 5).second
             if (existing.trim() == SU_SHIM_SCRIPT.trim()) {
                 runShell(service, "chmod 700 $suPath 2>/dev/null", null, 5)
-                suShimVerified = true
                 return SU_SHIM_SHELL_DIR
             }
 
             val installer = "mkdir -p $SU_SHIM_SHELL_DIR 2>/dev/null; " +
+                "chmod 700 $SU_SHIM_SHELL_DIR 2>/dev/null; " +
                 "cat > $SU_SHIM_SHELL_DIR/su.part 2>/dev/null; " +
                 "chmod 700 $SU_SHIM_SHELL_DIR/su.part 2>/dev/null; " +
                 "mv $SU_SHIM_SHELL_DIR/su.part $suPath 2>/dev/null"
             val (code, _) = runShell(service, installer, SU_SHIM_SCRIPT, 8)
-            if (code == 0) {
-                suShimVerified = true
-                SU_SHIM_SHELL_DIR
-            } else {
-                null
+            if (code != 0) return null
+
+            // Verify what landed rather than what was sent: `mv` replaced the file after
+            // the write, and a concurrent writer can win the race at any point.
+            if (runShell(service, "cat $suPath 2>/dev/null", null, 5).second.trim() !=
+                SU_SHIM_SCRIPT.trim()
+            ) {
+                LOGGER.w("su shim content mismatch after install")
+                return null
             }
+            SU_SHIM_SHELL_DIR
         } catch (_: Exception) {
             null
         }
+    }
+
+    /** Absolute mirror path for a module id. */
+    fun moduleMirrorPath(moduleId: String): String = "$MODULE_MIRROR_DIR/$moduleId"
+
+    /**
+     * Builds the shell prelude that stages [module] under [moduleMirrorPath] and retargets the
+     * module env vars at the mirror. Returns `mirrorPath to prelude`, or null when the module
+     * cannot be mirrored (bad id, too many/large files, unsafe filename) — callers then keep
+     * the legacy `cd "$MODDIR"`, which still works for single-file modules that never open a
+     * helper of their own.
+     *
+     * The staging runs on the shell side (stdin/`sh -c`), never from the app: the app has no
+     * write access to `/data/local/tmp`, and the shell has no read access to `filesDir`.
+     */
+    fun buildModuleMirrorPrelude(module: AdbModule): Pair<String, String>? {
+        val id = module.id
+        if (!MODULE_ID_REGEX.matches(id)) return null
+        val root = module.directory
+        if (!root.isDirectory) return null
+
+        val files = ArrayList<File>()
+        runCatching {
+            root.walkTopDown()
+                .onEnter { it == root || (it.name !in MIRROR_SKIP_DIRS && !it.name.startsWith(".")) }
+                .filter { it.isFile }
+                .filter { it.length() in 1L..MIRROR_MAX_FILE_BYTES }
+                .filter { !it.name.startsWith("banner.") }
+                .forEach { files += it }
+        }
+        if (files.isEmpty() || files.size > MIRROR_MAX_FILES) return null
+        if (files.sumOf { it.length() } > MIRROR_MAX_TOTAL_BYTES) return null
+
+        val dir = moduleMirrorPath(id)
+        val prelude = StringBuilder()
+        prelude.append("D=").append(dir).append('\n')
+        prelude.append("rm -rf \"\$D\" 2>/dev/null\n")
+        prelude.append(
+            "mkdir -p \"\$D\" 2>/dev/null || { echo 'module mirror unavailable' >&2; exit 126; }\n"
+        )
+        prelude.append("chmod 700 \"\$D\" 2>/dev/null\n")
+        // `mkdir -p` inherits this process's umask (0 here), which leaves the mirror root
+        // world-writable — a second shell-level writer could then swap the module tree under
+        // the next run. Tighten the parent too, not just the per-module directory.
+        prelude.append("chmod 700 $MODULE_MIRROR_DIR 2>/dev/null\n")
+
+        for (file in files) {
+            val rel = file.relativeTo(root).invariantSeparatorsPath
+            if (rel.isEmpty() || rel.any { it in MIRROR_UNSAFE_PATH_CHARS }) return null
+            val payload = runCatching {
+                Base64.encodeToString(file.readBytes(), Base64.NO_WRAP)
+            }.getOrNull() ?: return null
+            val parent = rel.substringBeforeLast('/', "")
+            if (parent.isNotEmpty()) {
+                prelude.append("mkdir -p \"\$D/").append(parent).append("\" 2>/dev/null\n")
+            }
+            prelude.append("printf '%s' '").append(payload)
+                .append("' | base64 -d > \"\$D/").append(rel).append("\" 2>/dev/null\n")
+        }
+
+        prelude.append("export MODDIR=\"\$D\" MODPATH=\"\$D\" SHIZUKU_MODULE_CWD=\"\$D\"\n")
+        prelude.append("cd \"\$D\" 2>/dev/null || true\n")
+        return dir to prelude.toString()
     }
 
     /** Runs a small shell command through [service] and returns (exitCode, stdout). */
@@ -213,7 +334,8 @@ object ModuleRuntimeUtils {
         module: AdbModule,
         cwd: File = module.directory,
         extraEnv: Map<String, String> = emptyMap(),
-        binDir: String? = null
+        binDir: String? = null,
+        modDirPath: String? = null
     ): Array<String> {
         val mode = ModuleSettings.getAccessMode().value
         val trusted = if (ModuleSettings.isModuleTrusted(module.id)) "1" else "0"
@@ -222,8 +344,11 @@ object ModuleRuntimeUtils {
         val env = linkedMapOf<String, String>()
         extraEnv.forEach { (k, v) -> env[k] = v }
 
-        env["MODDIR"] = module.directory.absolutePath
-        env["MODPATH"] = module.directory.absolutePath
+        // When the script runs from the shell-readable mirror, MODDIR must point there too —
+        // a script that trusts MODDIR would otherwise re-open the private path and fail.
+        val modDir = modDirPath ?: module.directory.absolutePath
+        env["MODDIR"] = modDir
+        env["MODPATH"] = modDir
         env["SHIZUKU_MODULE_CWD"] = cwd.absolutePath
         env["ASH_STANDALONE"] = "1"
         env["SHIZUKU_MODULE_ID"] = module.id

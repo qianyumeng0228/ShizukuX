@@ -326,8 +326,26 @@ object AdbModuleManager {
         val binder = Shizuku.getBinder() ?: error("Shizuku service is not running.")
         val service = IShizukuService.Stub.asInterface(binder)
         val binDir = ModuleRuntimeUtils.ensureSuShim(service)
-        val env = ModuleRuntimeUtils.buildModuleEnvironment(module, module.directory, binDir = binDir)
-        val wrappedScript = "cd \"\$MODDIR\" 2>/dev/null || true\n$scriptContent"
+
+        // Stage the module tree in /data/local/tmp first. The script body is read by the app
+        // and piped into a `shell` (uid 2000) process; SELinux denies shell any access to our
+        // private filesDir, so a script's own `. "$MODDIR/lib/x.sh"` / `cat $MODDIR/...` used
+        // to fail with "No such file or directory" even though the helper was 0644.
+        val mirror = ModuleRuntimeUtils.buildModuleMirrorPrelude(module)
+        val env = ModuleRuntimeUtils.buildModuleEnvironment(
+            module,
+            cwd = mirror?.let { File(it.first) } ?: module.directory,
+            binDir = binDir,
+            modDirPath = mirror?.first
+        )
+        val wrappedScript = buildString {
+            if (mirror != null) {
+                append(mirror.second)
+            } else {
+                append("cd \"\$MODDIR\" 2>/dev/null || true\n")
+            }
+            append(scriptContent)
+        }
         val remote = service.newProcess(
             arrayOf("sh", "-c", wrappedScript),
             env,
