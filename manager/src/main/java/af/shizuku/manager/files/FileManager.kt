@@ -52,6 +52,20 @@ object FileManager {
     /** Whether the shell side is reachable at all. */
     fun isAvailable(): Boolean = ShizukuWait.ping()
 
+    /** Whether this process can borrow root; probed once, because the probe may show a prompt. */
+    private var rootChecked = false
+    private var rootAvailable = false
+
+    private fun hasRoot(): Boolean {
+        if (rootChecked) return rootAvailable
+        rootChecked = true
+        // `su -c id -u` is the probe every manager accepts (Magisk, KernelSU, SukiSU). The probe
+        // goes through the plain shell on purpose: it must not recurse into [shell], which needs
+        // this answer.
+        rootAvailable = raw("su -c id -u")?.trim() == "0"
+        return rootAvailable
+    }
+
     /** The entries of [path], directories first, or null when the directory cannot be read. */
     fun list(path: String): List<FileEntry>? {
         val quoted = quote(path)
@@ -63,7 +77,11 @@ object FileManager {
         // purpose; the `|| true` keeps that from looking like a read failure.
         val cmd = "cd $quoted 2>/dev/null || exit 3; " +
             "stat -c '%n|%F|%s|%Y|%a|%U' -- * .[!.]* 2>/dev/null || true"
-        val out = shell(cmd) ?: return null
+        // `cd` failing is a permission problem, not an empty folder: /data and /data/adb are
+        // closed to the shell user, so the same listing is retried as root before answering null.
+        // Without this the browser reported "0 entries / empty folder" for paths that are simply
+        // out of the shell's reach.
+        val out = listing(cmd) ?: return null
         val entries = out.lineSequence()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
@@ -74,13 +92,31 @@ object FileManager {
         )
     }
 
+    /**
+     * The stdout of a listing command, retried as root when the shell user came back empty.
+     *
+     * An empty answer has two causes that a plain `cd` cannot tell apart: the directory really is
+     * empty, or the shell user was allowed to enter it but not to read it. `/data` is the second
+     * case on this device - mode 0771 lets uid 2000 `cd` there, so `cd` exits 0, the globs stay
+     * unexpanded, `stat` prints nothing and the browser showed "0 entries / empty folder" for a
+     * folder full of entries. Only when nothing came back is the root shell asked, so a truly
+     * empty folder costs one extra probe instead of being retried on every read.
+     */
+    private fun listing(cmd: String): String? {
+        val direct = shell(cmd)
+        if (!direct.isNullOrBlank()) return direct
+        if (!hasRoot()) return direct
+        val rooted = shellRoot(cmd)
+        return if (rooted.isNullOrBlank()) direct else rooted
+    }
+
     /** The first [limit] bytes of [path] as text, or null when it cannot be read at all. */
     fun readText(path: String, size: Long, limit: Int = 12_000): String? {
         // A zero-byte file answers itself: going out to the shell for it is the one read that
         // has nothing to bring back, and the caller can show an empty preview immediately.
         if (size == 0L) return ""
-        val out = shell("head -c $limit ${quote(path)} 2>/dev/null") ?: return null
-        return out
+        val cmd = "head -c $limit ${quote(path)} 2>/dev/null"
+        return shell(cmd) ?: (if (hasRoot()) shellRoot(cmd) else null)
     }
 
     /**
@@ -119,11 +155,19 @@ object FileManager {
     /** A path as a single shell word, quotes and spaces included. */
     private fun quote(path: String): String = "'" + path.replace("'", "'\\''") + "'"
 
-    /**
-     * Runs one shell command as the Shizuku user and answers its stdout, or null when it did not
-     * run or did not succeed.
-     */
-    private fun shell(cmd: String): String? {
+    /** [cmd] as one double-quoted argument for `su -c`, which the shell re-parses once more. */
+    private fun doubleQuote(cmd: String): String =
+        "\"" + cmd.replace("\\", "\\\\").replace("\"", "\\\"").replace("\$", "\\\$")
+            .replace("`", "\\`") + "\""
+
+    /** Runs [cmd] as the Shizuku user. */
+    private fun shell(cmd: String): String? = raw(cmd)
+
+    /** Runs [cmd] as root, through the manager's `su`. */
+    private fun shellRoot(cmd: String): String? = raw("su -c " + doubleQuote(cmd))
+
+    /** Runs one shell command and answers its stdout, or null when it did not succeed. */
+    private fun raw(cmd: String): String? {
         if (!isAvailable()) return null
         var process: Process? = null
         return try {

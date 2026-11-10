@@ -41,28 +41,40 @@ log() {
   fi
 }
 
-# Single instance, and both usual ways of doing it are unusable here, measured on
-# this device: the process that launches this script (`setsid sh .../force_dark.sh`)
-# carries the same script name at the end of its argv, so any pgrep pattern ending
-# in the script name reports our own parent and the new copy exits immediately; and
-# toybox's `flock -n <fd>` answers "Bad file descriptor" for an fd that `exec` did
-# open, so the lock silently never works. The pid file is what is left, and it is
-# enough - the app starts it at most once every 30s, so two copies racing for the
-# same pid file is not a case that happens.
-if [ -f $PIDF ]; then
-  old=$(cat $PIDF 2>/dev/null)
-  if [ -n "$old" ] && kill -0 "$old" 2>/dev/null; then
-    exit 0
-  fi
-fi
+# Single instance. Both usual ways of doing it are unusable here, measured on this device:
+# the process that launches this script (`setsid sh .../force_dark_watch.sh`) carries the same
+# script name at the end of its argv, so any pgrep pattern ending in the script name reports our
+# own parent and the new copy exits immediately; and toybox's `flock -n <fd>` answers "Bad file
+# descriptor" for an fd that `exec` did open, so the lock silently never works.
+#
+# The pid file alone was not enough either: two copies launched in the same second both read a
+# stale pid, both passed `kill -0`, and both ran (seen on device as two `--serve` processes, each
+# with its own `applied` flag, one setting the night mode while the other restored it). `mkdir` is
+# atomic on this filesystem, so the directory is the lock; the pid inside it is only there to tell
+# a leftover lock from a live one.
+LOCK=$D/watch.lock.d
 
-if [ -f $PIDF ]; then
-  old=$(cat $PIDF 2>/dev/null)
-  if [ -n "$old" ] && [ "$old" != "$$" ] && kill -0 "$old" 2>/dev/null; then
-    exit 0
+acquire_lock() {
+  if mkdir $LOCK 2>/dev/null; then
+    echo $$ > $LOCK/pid 2>/dev/null
+    return 0
   fi
-fi
+  old=$(cat $LOCK/pid 2>/dev/null)
+  if [ -n "$old" ] && ! kill -0 "$old" 2>/dev/null; then
+    rm -rf $LOCK 2>/dev/null
+    sleep 1
+    if mkdir $LOCK 2>/dev/null; then
+      echo $$ > $LOCK/pid 2>/dev/null
+      return 0
+    fi
+  fi
+  return 1
+}
+
+acquire_lock || exit 0
 echo $$ > $PIDF
+# Every way out releases the lock; otherwise the next copy waits for a stale one.
+trap 'rm -rf $LOCK 2>/dev/null; rm -f $PIDF 2>/dev/null' EXIT INT TERM HUP
 log "start pid=$$"
 
 write_state() {
@@ -143,11 +155,20 @@ while true; do
   if [ "$hit" = "1" ]; then
     if [ "$applied" != "1" ]; then
       cmd uimode night yes >/dev/null 2>&1
-      applied=1
-      write_state 1 "$fg" yes
-      last="1|$fg|yes"
-      tick=0
-      log "apply for $fg"
+      # Read the mode back. A command that exits 0 is not a screen that changed, and this ROM has
+      # answered 0 for switches it then ignored; only a visible dark mode counts as applied, so a
+      # refused switch keeps retrying instead of being reported as success.
+      if cmd uimode night 2>/dev/null | grep -q 'Night mode: yes'; then
+        applied=1
+        write_state 1 "$fg" yes
+        last="1|$fg|yes"
+        tick=0
+        log "apply for $fg"
+      else
+        write_state 0 "$fg" refused
+        log "apply for $fg refused by the platform"
+        sleep 5
+      fi
     else
       emit_state 1 "$fg" yes
     fi

@@ -234,7 +234,13 @@ object AppOpsManager {
         val pkgLevel = (targetPkgOps ?: emptyMap()).map { (name, mode) ->
             AppOp(name = name, mode = mode, time = null)
         }
-        val parsed = (pkgLevel + uidLevel).distinctBy { it.name }
+        // One row per op. The package record wins when both levels hold the same op: it is the
+        // record this screen can actually change, and showing the uid row next to it made a
+        // successful write look like it had been ignored (the uid row kept its old value).
+        val byName = LinkedHashMap<String, AppOp>()
+        pkgLevel.forEach { byName[it.name] = it }
+        uidLevel.forEach { op -> if (byName[bareName(op.name)] == null) byName[op.name] = op }
+        val parsed = byName.values.toList()
         // Labelled ops first, in table order; the rest alphabetically, so a ROM's extra ops are
         // grouped instead of scattered through the list the user reads.
         val known = parsed.filter { isKnown(it.name) }
@@ -251,17 +257,14 @@ object AppOpsManager {
     fun setOp(packageName: String, op: String, mode: String): Boolean {
         if (mode !in MODES) return false
         val name = bareName(op)
-        val uidLevel = isUidLevel(op)
-        if (mode == "default") {
-            // `reset` takes no op argument on this platform (`Unsupported argument`), so a single
-            // op is reset by writing the mode the platform itself uses for "unset".
-            shell(if (uidLevel) "cmd appops set --uid $packageName $name default"
-                  else "cmd appops set $packageName $name default")
-        } else {
-            shell(if (uidLevel) "cmd appops set --uid $packageName $name $mode"
-                  else "cmd appops set $packageName $name $mode")
-        }
-        val after = readMode(packageName, op)
+        // Every write lands on the package record, including the rows the device reports as
+        // uid-wide. A uid write needs the numeric uid and is dropped on this ROM even when it is
+        // addressed correctly (measured: `set --uid 10420 CAMERA deny` leaves
+        // `Uid mode: CAMERA: ignore`), while the package record is what changes one app's access -
+        // which is what this screen offers. The uid row therefore only explains where the current
+        // value comes from; editing it writes the app's own record.
+        shell("cmd appops set $packageName $name $mode")
+        val after = readMode(packageName, name)
         // A reset drops the record entirely instead of storing `default`, so "no record" is a
         // success for that mode rather than an unreadable one.
         if (mode == "default") return after == null || after == "default"

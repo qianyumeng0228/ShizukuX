@@ -1665,8 +1665,8 @@
     <string name="appops_filter_restricted">已限制</string>
     <string name="appops_empty">该应用没有 App Ops 记录</string>
     <string name="appops_failed">系统没有接受这次修改</string>
-    <string name="appops_failed_uid">这个 ROM 不写入 UID 级权限，只有包级权限可以在这里修改。</string>
-    <string name="appops_uid_hint">UID 级权限作用于此应用的全部进程；部分 ROM 即使命令返回成功也会忽略这里的修改。</string>
+    <string name="appops_failed_uid">系统没有接受这次修改：该权限由系统单独接管，普通 AppOps 写入会被忽略。</string>
+    <string name="appops_uid_hint">UID 级权限作用于该应用的全部进程；在此修改会写入本应用自己的记录，只影响这一个应用。</string>
     <string name="appops_action_failed">操作未完成</string>
     <string name="appops_mode_title">设置模式</string>
     <string name="appops_current">当前</string>

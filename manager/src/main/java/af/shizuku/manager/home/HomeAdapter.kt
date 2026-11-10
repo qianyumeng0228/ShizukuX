@@ -116,6 +116,12 @@ class HomeAdapter(
     private var pendingUpdate = false
     private val animatedIds = HashSet<Long>()
 
+    /**
+     * Bumped by every render request. An async render that finishes after a newer one was already
+     * painted (or after a synchronous one ran) is dropped instead of overwriting the newer state.
+     */
+    private var renderEpoch = 0
+
     // Cached inputs from the last successful updateData() render, so moveItem() can rebuild the
     // adapter's real backing list synchronously mid-drag instead of only reordering cardOrder.
     private var lastRenderStatus: ServiceStatus? = null
@@ -143,8 +149,35 @@ class HomeAdapter(
             }
             ShizukuSettings.setHiddenHomeCards(hiddenSet)
             HomeEditMode.exit()
-            updateData()
+            // The write is local, so the card has to leave at once. This used to go through
+            // updateData(), which reads the model's edit flag and goes through a debounce; on
+            // device the card stayed on screen until the process was restarted, so the removal
+            // looked like it had not worked at all.
+            renderHiddenSync()
         }
+    }
+
+    /**
+     * Rebuilds the list from the last rendered status with the edit mode off and the current
+     * hidden set. Runs on the main thread and invalidates any in-flight async render, so a removal
+     * the user just tapped is visible in the same frame instead of a second later (or never).
+     */
+    private fun renderHiddenSync() {
+        renderEpoch++
+        isUpdating = false
+        pendingUpdate = false
+        lastUpdateDataTime = System.currentTimeMillis()
+        homeModel.setEditMode(false)
+        val status = lastRenderStatus ?: return
+        if (isDragging) return
+        lastRenderIsEditMode = false
+        lastRenderHidden = ShizukuSettings.getHiddenHomeCards()
+        val fixedCardCount = rebuildItems(
+            status, false, lastRenderCompanionInstalled, lastRenderCompatHubInstalled,
+            lastRenderIsOriginalShizukuRunning, lastRenderHidden
+        )
+        notifyDataSetChanged()
+        onEmptyStateChanged?.invoke(itemCount <= fixedCardCount)
     }
 
     /**
@@ -181,6 +214,7 @@ class HomeAdapter(
         }
         lastUpdateDataTime = now
         isUpdating = true
+        val epoch = ++renderEpoch
         scope.launch {
             val (status, isEditMode) = withState(homeModel) {
                 it.serviceStatus.invoke() to it.isEditMode
@@ -197,7 +231,7 @@ class HomeAdapter(
             val hidden = ShizukuSettings.getHiddenHomeCards()
 
             withContext(Dispatchers.Main) {
-                if (isDragging) {
+                if (isDragging || epoch != renderEpoch) {
                     isUpdating = false
                     return@withContext
                 }

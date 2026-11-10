@@ -3,6 +3,7 @@ package af.shizuku.manager.appops
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -112,6 +113,11 @@ class AppOpsActivity : ComponentActivity() {
                 isOneUi = ShizukuSettings.isOneUiThemeEnabled(),
                 forceGlass = ShizukuSettings.isGlassUi()
             ) {
+                // The detail pane is a branch of this Activity, not a screen of its own, so the
+                // system back gesture/key used to finish the whole Activity and drop the user on
+                // the home screen from an app's op list. Back now unwinds one level at a time,
+                // matching the toolbar arrow.
+                BackHandler(enabled = detail != null) { closeDetail() }
                 AppOpsScreen(
                     available = available,
                     checked = checked,
@@ -210,9 +216,12 @@ class AppOpsActivity : ComponentActivity() {
                     runCatching { AppOpsManager.setOp(pkg, op.name, mode) }.getOrDefault(false)
                 }
                 if (ok) {
-                    // AppOpsManager.setOp answers only after reading the mode back, so this update
-                    // mirrors the platform's own record rather than the requested value.
-                    ops = ops.map { if (it.name == op.name) it.copy(mode = mode) else it }
+                    // Re-read the whole list instead of flipping the edited row in place: the write
+                    // creates a package record where the uid row used to be, so the row's label
+                    // changes too, and only the platform knows which value actually landed.
+                    ops = withContext(Dispatchers.IO) {
+                        runCatching { AppOpsManager.ops(pkg) }.getOrNull()
+                    }.orEmpty().ifEmpty { ops }
                 } else {
                     // UID-level ops answer `cmd appops set` with success on this ROM but never
                     // change (verified against Camera/RECORD_AUDIO), so the honest message names

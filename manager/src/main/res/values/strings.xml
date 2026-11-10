@@ -1867,8 +1867,8 @@ This action cannot be undone. Continue?</string>
     <string name="appops_filter_restricted">Restricted</string>
     <string name="appops_empty">This app has no app-op records</string>
     <string name="appops_failed">The platform did not apply that change</string>
-    <string name="appops_failed_uid">This ROM ignores writes to UID-level operations. Only package-level operations can be changed here.</string>
-    <string name="appops_uid_hint">UID-level operations apply to every process of this app, and some ROMs ignore writes to them even though the command reports success.</string>
+    <string name="appops_failed_uid">The platform did not apply that change: this operation is owned by a system service, so a plain AppOps write is ignored.</string>
+    <string name="appops_uid_hint">UID-level operations cover every process of this app; editing one here writes this app\'s own record and affects only this app.</string>
     <string name="appops_action_failed">Operation failed</string>
     <string name="appops_mode_title">Set mode</string>
     <string name="appops_current">current</string>
