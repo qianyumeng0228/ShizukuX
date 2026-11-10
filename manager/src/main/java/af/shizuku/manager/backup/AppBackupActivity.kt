@@ -18,6 +18,7 @@ import af.shizuku.core.ui.AppBarActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.ActivityAppBackupBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class AppBackupActivity : AppBarActivity() {
@@ -56,6 +57,19 @@ class AppBackupActivity : AppBarActivity() {
         }
     }
 
+    /**
+     * The root-backed backup directory, when one is configured and root is actually usable.
+     *
+     * Root backups read `/data/data/<pkg>` directly, so the app is neither patched nor
+     * uninstalled and the directory may live under `/data` at all — something a SAF tree can
+     * never express.
+     */
+    private fun getRootDir(): String? {
+        if (!RootBackup.available()) return null
+        return ShizukuSettings.getBackupRootDir()?.takeIf { it.startsWith("/") }
+            ?: RootBackup.DEFAULT_DIR
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -84,18 +98,22 @@ class AppBackupActivity : AppBarActivity() {
             viewModel.toggleFreeze(entry)
         }
         adapter.onRestoreClick = { entry ->
-            val safUri = getSafUri()
-            if (safUri == null) {
-                MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.backup_restore_title)
-                    .setMessage(R.string.backup_restore_no_dir)
-                    .setPositiveButton(R.string.backup_choose_export_dir) { _, _ ->
-                        directoryPicker.launch(null)
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
+            if (getRootDir() != null) {
+                showRestoreConfirmation(listOf(entry), safUri = null)
             } else {
-                showRestoreConfirmation(listOf(entry), safUri)
+                val safUri = getSafUri()
+                if (safUri == null) {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle(R.string.backup_restore_title)
+                        .setMessage(R.string.backup_restore_no_dir)
+                        .setPositiveButton(R.string.backup_choose_export_dir) { _, _ ->
+                            pickBackupDir()
+                        }
+                        .setNegativeButton(android.R.string.cancel, null)
+                        .show()
+                } else {
+                    showRestoreConfirmation(listOf(entry), safUri)
+                }
             }
         }
         adapter.onItemLongClick = { entry ->
@@ -222,7 +240,17 @@ class AppBackupActivity : AppBarActivity() {
             }
         }
 
+        // The root probe can block on a root-manager prompt; keep it off the main thread so the
+        // list paints immediately and the first tap on 恢复 finds the answer already cached.
+        lifecycleScope.launch(Dispatchers.IO) { RootBackup.available() }
+        updateBackupDirSubtitle()
         viewModel.loadApps(includeSystem)
+    }
+
+    /** Shows the directory the next backup/restore will use, under the screen title. */
+    private fun updateBackupDirSubtitle() {
+        val dir = getRootDir() ?: getSafUri()?.lastPathSegment
+        supportActionBar?.subtitle = dir?.let { getString(R.string.backup_dir_current, it) }
     }
 
     private fun showLoading() {
@@ -323,9 +351,40 @@ class AppBackupActivity : AppBarActivity() {
                 viewModel.loadApps(includeSystem)
                 true
             }
-            MENU_CHOOSE_DIR -> { directoryPicker.launch(null); true }
+            MENU_CHOOSE_DIR -> { pickBackupDir(); true }
             MENU_HISTORY -> { showRestoreHistory(); true }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    /**
+     * Chooses where backups live.
+     *
+     * With root the picker is the app's own directory browser, which can enter `/data` and
+     * `/data/adb`. Without root there is no way to write there, so the system picker is offered
+     * with an explicit explanation instead of dropping the user into a screen where
+     * `Android/data` is greyed out with no reason given.
+     */
+    private fun pickBackupDir() {
+        if (RootBackup.available()) {
+            BackupDirPicker.show(this, getRootDir()) { path ->
+                ShizukuSettings.setBackupRootDir(path)
+                updateBackupDirSubtitle()
+                Snackbar.make(
+                    rootView,
+                    getString(R.string.backup_export_dir_set, path),
+                    Snackbar.LENGTH_LONG
+                ).show()
+            }
+        } else {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.backup_pick_dir_title)
+                .setMessage(R.string.backup_dir_need_root)
+                .setPositiveButton(R.string.backup_use_system_picker) { _, _ ->
+                    directoryPicker.launch(null)
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
         }
     }
 
@@ -347,14 +406,14 @@ class AppBackupActivity : AppBarActivity() {
         val selectedPkgs = adapter.getSelectedPackages()
         if (selectedPkgs.isEmpty()) return
 
-        val safUri = getSafUri()
-        if (safUri == null) {
-            // No SAF directory configured — prompt user to choose one first
+        val safUri = if (getRootDir() != null) null else getSafUri()
+        if (safUri == null && getRootDir() == null) {
+            // No backup directory configured — prompt user to choose one first
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.backup_restore_title)
                 .setMessage(R.string.backup_restore_no_dir)
                 .setPositiveButton(R.string.backup_choose_export_dir) { _, _ ->
-                    directoryPicker.launch(null)
+                    pickBackupDir()
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
@@ -380,7 +439,7 @@ class AppBackupActivity : AppBarActivity() {
      * Includes restore scope selection (internal data checkbox) and auto-backup notice.
      * On confirm, starts the restore via viewModel.restoreAll().
      */
-    private fun showRestoreConfirmation(entries: List<BackupViewModel.AppEntry>, safUri: android.net.Uri) {
+    private fun showRestoreConfirmation(entries: List<BackupViewModel.AppEntry>, safUri: android.net.Uri?) {
         val pkgList = entries.joinToString("\n") { "• ${it.label} (${it.packageName})" }
         val includeInternalCheckbox = android.widget.CheckBox(this).apply {
             text = getString(R.string.backup_restore_include_internal)
@@ -399,9 +458,20 @@ class AppBackupActivity : AppBarActivity() {
             addView(includeInternalCheckbox)
             addView(scopeNotice)
         }
+        val dirLine = (getRootDir() ?: safUri?.lastPathSegment)
+            ?.let { getString(R.string.backup_restore_from_dir, it) }
+        val body = buildString {
+            append(getString(R.string.backup_restore_confirm_msg, entries.size, pkgList))
+            append("\n\n")
+            append(getString(R.string.backup_restore_auto_backup_notice))
+            if (dirLine != null) {
+                append("\n\n")
+                append(dirLine)
+            }
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.backup_restore_confirm_title)
-            .setMessage(getString(R.string.backup_restore_confirm_msg, entries.size, pkgList) + "\n\n" + getString(R.string.backup_restore_auto_backup_notice))
+            .setMessage(body)
             .setView(dialogView)
             .setPositiveButton(R.string.backup_restore_action) { _, _ ->
                 viewModel.restoreAll(entries, safUri, includeInternalCheckbox.isChecked)
@@ -416,21 +486,32 @@ class AppBackupActivity : AppBarActivity() {
      * Selecting a snapshot starts a rollback restore from that snapshot.
      */
     private fun showSnapshotSelectionDialog(pkg: String) {
-        val snapshots = PreRestoreManager.getSnapshots(this, pkg)
-        if (snapshots.isEmpty()) {
-            Snackbar.make(rootView, R.string.backup_rollback_no_snapshots, Snackbar.LENGTH_SHORT).show()
-            return
-        }
-        val displayNames = snapshots.map { PreRestoreManager.formatForDisplay(it) }.toTypedArray()
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.backup_rollback_select_snapshot)
-            .setSingleChoiceItems(displayNames, 0) { dialog, which ->
-                val selectedTimestamp = snapshots[which]
-                dialog.dismiss()
-                showRollbackConfirmation(pkg, selectedTimestamp)
+        // Snapshot listing is a binder call for the root path; keep it off the main thread.
+        val rootDir = getRootDir()
+        Thread {
+            val snapshots = if (rootDir != null) {
+                RootBackup.snapshots(rootDir, pkg)
+            } else {
+                PreRestoreManager.getSnapshots(this, pkg)
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                if (snapshots.isEmpty()) {
+                    Snackbar.make(rootView, R.string.backup_rollback_no_snapshots, Snackbar.LENGTH_SHORT).show()
+                    return@runOnUiThread
+                }
+                val displayNames = snapshots.map { PreRestoreManager.formatForDisplay(it) }.toTypedArray()
+                MaterialAlertDialogBuilder(this)
+                    .setTitle(R.string.backup_rollback_select_snapshot)
+                    .setSingleChoiceItems(displayNames, 0) { dialog, which ->
+                        val selectedTimestamp = snapshots[which]
+                        dialog.dismiss()
+                        showRollbackConfirmation(pkg, selectedTimestamp)
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }.start()
     }
 
     /**
@@ -438,7 +519,9 @@ class AppBackupActivity : AppBarActivity() {
      */
     private fun showRollbackConfirmation(pkg: String, snapshotTimestamp: String) {
         val entry = findEntryByPkg(pkg) ?: return
-        val safUri = getSafUri() ?: run {
+        val rootDir = getRootDir()
+        val safUri = if (rootDir != null) null else getSafUri()
+        if (rootDir == null && safUri == null) {
             Snackbar.make(rootView, R.string.backup_restore_no_dir, Snackbar.LENGTH_SHORT).show()
             return
         }

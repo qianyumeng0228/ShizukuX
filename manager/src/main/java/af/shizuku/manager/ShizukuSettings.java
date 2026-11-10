@@ -115,6 +115,7 @@ public class ShizukuSettings {
         public static final String KEY_ROOT_BUILD_PROP_REDIRECT_ENABLED = "root_build_prop_redirect_enabled";
         public static final String KEY_ROOT_IPTABLES_MOCKING_ENABLED = "root_iptables_mocking_enabled";
         public static final String KEY_EXPORT_DIR_URI = "export_dir_uri";
+        public static final String KEY_BACKUP_ROOT_DIR = "backup_root_dir";
 
         // Long-press action toggles (ShizukuX additions)
         public static final String KEY_SAMSUNG_SYSTEM_UID_ESCALATION_ENABLED = "samsung_system_uid_escalation_enabled";
@@ -1219,6 +1220,24 @@ public class ShizukuSettings {
     public static void setExportDirUri(@Nullable String uri) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putString(Keys.KEY_EXPORT_DIR_URI, uri).apply();
+    }
+
+    /**
+     * Absolute path used as the backup root when data is streamed as root.
+     *
+     * A SAF tree Uri cannot point at {@code /data/...}, so the root path is kept separately:
+     * the picker offers real directories (including root-only ones) and the archives are
+     * written/read by the root shell instead of through DocumentsContract.
+     */
+    @Nullable
+    public static String getBackupRootDir() {
+        SharedPreferences p = getPreferences();
+        return p != null ? p.getString(Keys.KEY_BACKUP_ROOT_DIR, null) : null;
+    }
+
+    public static void setBackupRootDir(@Nullable String path) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putString(Keys.KEY_BACKUP_ROOT_DIR, path).apply();
     }
 
     public static boolean isHideDisabledPlusFeaturesEnabled() {

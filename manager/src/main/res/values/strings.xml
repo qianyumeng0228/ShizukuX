@@ -1526,6 +1526,16 @@ Please try the command-line method instead.</string>
     <!-- Backup SAF export directory -->
     <string name="backup_choose_export_dir">Choose backup directory</string>
     <string name="backup_export_dir_set">Backups will be saved to: %1$s</string>
+    <string name="backup_pick_dir_title">Backup directory</string>
+    <string name="backup_dir_use_this">Use this directory</string>
+    <string name="backup_dir_current">Current: %1$s</string>
+    <string name="backup_dir_root_hint">Directories are read with root, so /data and /data/adb are reachable. Backups are written here without patching or uninstalling the app.</string>
+    <string name="backup_dir_unreadable">Cannot read this directory</string>
+    <string name="backup_dir_missing">No such directory yet — it is created on the first backup</string>
+    <string name="backup_dir_empty">No subdirectories</string>
+    <string name="backup_dir_need_root">The system file picker only shows shared storage: it cannot enter /data, and Android 11+ blocks Android/data with “为保护您的隐私”. Grant root to browse and back up app data directly.</string>
+    <string name="backup_use_system_picker">Use system picker</string>
+    <string name="backup_restore_from_dir">Restore from: %1$s</string>
 
     <!-- Device Control settings entry -->
     <string name="settings_device_control_title">Device Control</string>

@@ -1,6 +1,7 @@
 package af.shizuku.manager.backup
 
 import af.shizuku.manager.utils.ShizukuStateMachine
+import af.shizuku.manager.ShizukuSettings
 import android.app.Application
 import android.content.ContentResolver
 import android.net.Uri
@@ -156,6 +157,19 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             var prepared = false
             try {
                 val cr = getApplication<Application>().contentResolver
+
+                // Root path: read /data/data/<pkg> directly. No APK patching, so the app is never
+                // uninstalled/reinstalled during a backup (user report: 备份会卸载原有 APP).
+                val rootDir = rootBackupDir()
+                if (rootDir != null) {
+                    ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
+                    if (RootBackup.backup(pkg, rootDir)) {
+                        _events.emit(BackupEvent.BackupComplete(pkg, RootBackup.packageDir(rootDir, pkg)))
+                    } else {
+                        _events.emit(BackupEvent.Failure("无法读取 $pkg 的数据（ROOT 备份失败）"))
+                    }
+                    return@launch
+                }
 
                 ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
 
@@ -388,6 +402,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             var succeeded = 0
             var failed = 0
             val cr = getApplication<Application>().contentResolver
+            val rootDir = rootBackupDir()
             val total = apps.size
             var index = 0
             for (entry in apps) {
@@ -405,6 +420,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 var prepared = false
                 try {
                     ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
+
+                    // Root path: one tar per app, nothing is uninstalled.
+                    if (rootDir != null) {
+                        if (RootBackup.backup(pkg, rootDir)) succeeded++ else failed++
+                        continue
+                    }
+
                     prepared = try {
                         ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
                     } catch (_: Exception) { false }
@@ -526,7 +548,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      */
     suspend fun restoreAppData(
         entry: AppEntry,
-        safTreeUri: android.net.Uri,
+        safTreeUri: android.net.Uri?,
         includeInternal: Boolean = true,
         snapshotTimestamp: String? = null,
         isRollback: Boolean = false
@@ -553,6 +575,13 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             "obb.tar.gz"
         }
         return try {
+            // Root path: restore straight into /data/data/<pkg>, no APK patching, no uninstall.
+            val rootDir = rootBackupDir()
+            if (rootDir != null) {
+                return restoreAppDataAsRoot(entry, rootDir, includeInternal, snapshotTimestamp)
+            }
+            val saf = safTreeUri ?: return false
+
             // Make app debuggable so run-as can access /data/data/<pkg>/
             prepared = try {
                 ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
@@ -560,7 +589,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
             // Auto-backup current data before restore (skip for rollbacks — we're restoring FROM a snapshot)
             if (!isRollback) {
-                val preRestoreTs = backupPreRestore(pkg, safTreeUri, cr, requireInternal = includeInternal)
+                val preRestoreTs = backupPreRestore(pkg, saf, cr, requireInternal = includeInternal)
                 if (preRestoreTs == null) {
                     Timber.w("Pre-restore backup failed for $pkg — aborting restore to prevent data loss")
                     recordRestoreHistory(
@@ -606,7 +635,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
 
             // 1. Restore internal data (/data/data/<pkg>/)
             if (includeInternal) {
-                val dataUri = findBackupFile(safTreeUri, pkg, dataFileName, cr)
+                val dataUri = findBackupFile(saf, pkg, dataFileName, cr)
                 if (dataUri != null) {
                     val ok = cr.openFileDescriptor(dataUri, "r")?.use { pfd ->
                         ShizukuXAPI.ApkPatcher.restoreDataDir(pkg, pfd)
@@ -618,7 +647,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             // 2. Restore external data (/sdcard/Android/data/<pkg>/)
-            val extUri = findBackupFile(safTreeUri, pkg, extFileName, cr)
+            val extUri = findBackupFile(saf, pkg, extFileName, cr)
             if (extUri != null) {
                 val ok = cr.openFileDescriptor(extUri, "r")?.use { pfd ->
                     ShizukuXAPI.BackupRestoreExtra.restoreExternalData(pkg, pfd)
@@ -635,7 +664,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             // its data intact and its OBB directory empty — unlaunchable, with no error shown.
             // Verified on device bc757a76 (Android 16): after deleting main.obb, restoring
             // reproduced neither the file nor an obb.pre-restore snapshot.
-            val obbUri = findBackupFile(safTreeUri, pkg, obbFileName, cr)
+            val obbUri = findBackupFile(saf, pkg, obbFileName, cr)
             if (obbUri != null) {
                 val ok = cr.openFileDescriptor(obbUri, "r")?.use { pfd ->
                     ShizukuXAPI.BackupRestoreExtra.restoreObbData(pkg, pfd)
@@ -665,6 +694,52 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 } catch (e: Exception) { Timber.e(e, "restoreOriginal failed for $pkg (post-restore cleanup)") }
             }
+        }
+    }
+
+    /**
+     * The absolute backup directory when root is reachable, otherwise null (SAF path then applies).
+     *
+     * A SAF tree Uri can never point at `/data`, which is exactly the folder the user needs, so
+     * the two mechanisms are kept separate instead of pretending one covers the other.
+     */
+    /**
+     * The root-backed backup directory, or null when root is not usable.
+     *
+     * With root the directory defaults to [RootBackup.DEFAULT_DIR] instead of answering null:
+     * a null answer would send the next backup down the APK-patching path, which uninstalls the
+     * app twice — the exact behaviour the user asked us to remove. The default is only used while
+     * root is actually available; without root nothing can be written outside shared storage
+     * anyway, so the SAF path stays in charge there.
+     */
+    private fun rootBackupDir(): String? {
+        if (!RootBackup.available()) return null
+        return ShizukuSettings.getBackupRootDir()?.takeIf { it.startsWith("/") }
+            ?: RootBackup.DEFAULT_DIR
+    }
+
+    /**
+     * Restores one app from a root-owned archive directory.
+     *
+     * RootBackup keeps a `data.pre-restore.<ts>.tar.gz` next to the archive it is about to
+     * overwrite, so a restore is itself reversible without a second SAF round-trip.
+     */
+    private fun restoreAppDataAsRoot(
+        entry: AppEntry,
+        rootDir: String,
+        includeInternal: Boolean,
+        snapshotTimestamp: String?
+    ): Boolean {
+        val pkg = entry.packageName
+        return try {
+            ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
+            val ok = RootBackup.restore(pkg, rootDir, snapshotTimestamp, includeInternal)
+            recordRestoreHistory(entry, includeInternal, ok, snapshotTimestamp != null, snapshotTimestamp)
+            ok
+        } catch (e: Exception) {
+            Timber.e(e, "Root restore failed for $pkg")
+            recordRestoreHistory(entry, includeInternal, false, snapshotTimestamp != null, snapshotTimestamp)
+            false
         }
     }
 
@@ -700,7 +775,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun restoreAll(
         entries: List<AppEntry>,
-        safTreeUri: android.net.Uri,
+        safTreeUri: android.net.Uri?,
         includeInternal: Boolean = true,
         snapshotTimestamp: String? = null,
         isRollback: Boolean = false

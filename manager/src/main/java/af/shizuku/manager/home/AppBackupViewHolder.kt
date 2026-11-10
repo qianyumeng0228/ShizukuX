@@ -5,11 +5,13 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.RecyclerView
 import rikka.core.content.asActivity
 import android.net.Uri
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.backup.AppBackupActivity
+import af.shizuku.manager.backup.RootBackup
 import af.shizuku.manager.databinding.HomeAppBackupItemBinding
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.ktx.startWithSceneTransition
@@ -71,10 +73,28 @@ class AppBackupViewHolder(
             } else {
                 summary.setText(R.string.home_backup_summary)
             }
+            // The root probe decides which of the two lines above is correct, and it must not run
+            // on the main thread. Start it once and rebind the card when it answers, so the first
+            // launch shows the real destination instead of a stale SAF label.
+            if (!RootBackup.availableKnown()) {
+                RootBackup.warmUp {
+                    itemView.post {
+                        (itemView.parent as? RecyclerView)?.adapter?.notifyDataSetChanged()
+                    }
+                }
+            }
         }
     }
 
     private fun getConfiguredExportDir(context: android.content.Context): String? {
+        // Root-backed directory wins: it is a real path (possibly under /data) and the card should
+        // show where backups actually land rather than a leftover SAF label. Only a completed
+        // probe counts — onBind runs on the main thread for every card, and starting `su` there
+        // would stall the list.
+        if (RootBackup.availableKnown()) {
+            return ShizukuSettings.getBackupRootDir()?.takeIf { it.startsWith("/") }
+                ?: RootBackup.DEFAULT_DIR
+        }
         val uriStr = ShizukuSettings.getExportDirUri() ?: return null
         return try {
             val uri = Uri.parse(uriStr)
