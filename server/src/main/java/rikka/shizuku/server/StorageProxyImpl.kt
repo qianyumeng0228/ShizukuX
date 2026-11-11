@@ -19,12 +19,12 @@ import java.io.File
 import java.util.function.BooleanSupplier
 
 /**
- * P2-1: aligned with ShizukuPlus StorageProxyImpl (297 lines). Adds the
+ * Aligned with ShizukuPlus StorageProxyImpl (297 lines). Adds the
  * Android 13+ /Android/data & /Android/obb shell fallback, ADB-mode run-as
  * fallback for /data/data & /data/user, IPC-first openContentUri and the
  * paired restoreTarDirectory (new AIDL method). Keeps BinderCallLogger.
  *
- * P3 (ShizukuPlus f850e52b + 9e4198e9):
+ * ShizukuPlus f850e52b + 9e4198e9:
  * @param unrestricted the "Unrestricted app data access" developer option. While it is off,
  *     [StorageAccessPolicy] keeps third-party callers out of other apps' private data.
  * @param personalData the "Personal data & device control" option, or the caller is the manager.
@@ -291,7 +291,7 @@ class StorageProxyImpl(
         // Stage the archive so it can be vetted before anything is extracted: a symlink entry
         // followed by a file written through it would land outside the allowed directory.
         // Owner-only staging: /data/local/tmp is world-readable, and app data passes through
-        // this file while it waits for the vetting (audit P3-4).
+        // this file while it waits for the vetting (audit).
         val staged = try {
             PrivateStaging.create("shizukux-restore")
         } catch (e: Exception) {

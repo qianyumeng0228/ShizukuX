@@ -11,7 +11,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import af.shizuku.manager.R
 
 /**
- * Host for [StealthModeFragment] (P2-4). A bare PreferenceScreen container in
+ * Host for [StealthModeFragment]. A bare PreferenceScreen container in
  * this repo's preference style — no Compose scaffolding needed.
  *
  * The page owns its own header (back + title) because it is a plain View/AppCompat host:

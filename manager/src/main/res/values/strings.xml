@@ -1596,7 +1596,7 @@ This action cannot be undone. Continue?</string>
     <string name="backup_history_clear_all">Clear all</string>
     <string name="backup_history_clear_all_confirm">Clear all restore history? This cannot be undone.</string>
     <string name="backup_history_cleared">All history cleared</string>
-    <!-- Permission Manager card &amp; screen (P2-2, upstream 2f38b4da) -->
+    <!-- Permission Manager card &amp; screen (upstream 2f38b4da) -->
     <string name="home_permission_manager_title">Permission Manager</string>
     <string name="home_permission_manager_summary">Grant shell-level permissions to any app without root</string>
     <string name="permission_manager_search_hint">Search apps…</string>
@@ -1606,14 +1606,14 @@ This action cannot be undone. Continue?</string>
     <string name="permission_manager_section_runtime">Runtime Permissions</string>
     <string name="permission_manager_privileged_note">These permissions are normally restricted to system or root apps, but can be granted by the ADB shell process. Useful for backup apps (Neo Backup, Swift Backup) that need DUMP, READ_LOGS, or similar access.</string>
     <string name="nav_back">Back</string>
-    <!-- Device Control home card (P2-1) -->
+    <!-- Device Control home card -->
     <string name="home_device_control_title">Device Control</string>
     <string name="home_device_control_summary">Quick system settings and power control via Shizuku</string>
-    <!-- mDNS blocked suggestion (P2-5, upstream 97a33728) -->
+    <!-- mDNS blocked suggestion (upstream 97a33728) -->
     <string name="wadb_mdns_blocked_title">mDNS discovery repeatedly failing</string>
     <string name="wadb_mdns_blocked_text">Port discovery keeps timing out. Your device may be blocking multicast traffic (common on Vivo/FunTouchOS). Try enabling TCP Mode in settings for a reliable connection without Wi-Fi.</string>
     <string name="wadb_mdns_switch_tcp_action">Open TCP Settings</string>
-    <!-- Personalization controls (P2-3, upstream a2f7d959) -->
+    <!-- Personalization controls (upstream a2f7d959) -->
     <string name="settings_bold_typography">Bold Typography</string>
     <string name="settings_bold_typography_summary">Use heavier font weights for headings, independent of One UI theme</string>
     <string name="settings_expanded_headers">Expanded Headers</string>
@@ -1626,7 +1626,7 @@ This action cannot be undone. Continue?</string>
     <string name="settings_su_bridge_mock_warning_title">Root Mocking (Ghosting) Notice</string>
     <string name="settings_su_bridge_mock_warning_summary">Root mocking makes apps believe you have root. Some commands (e.g. reboot, dd to a partition, insmod) are not actually executed and only return success. If unsure, keep them off.</string>
 
-    <!-- P2-4 TV/Wear 移植补充（来自 Nightzuku） -->
+    <!-- TV/Wear 移植补充（来自 Nightzuku） -->
     <string name="home_hero_adb_full">ADB: full access</string>
     <string name="home_hero_adb_limited">ADB: limited access</string>
     <string name="home_section_manage">Manage</string>
@@ -1671,7 +1671,7 @@ This action cannot be undone. Continue?</string>
     <string name="firewall_refresh">Refresh</string>
     <string name="firewall_system_app">System · %1$s</string>
 
-    <!-- Per-app hiding (P1-2): device-wide settings held off while a listed app is in front. -->
+    <!-- Per-app hiding: device-wide settings held off while a listed app is in front. -->
     <string name="hiding_title">Hide per app</string>
     <string name="home_hiding_description">Hold developer options, debugging, accessibility, private DNS or a VPN off while a listed app is open</string>
     <string name="hiding_subtitle_count">%d apps listed</string>
@@ -1780,7 +1780,7 @@ This action cannot be undone. Continue?</string>
     <string name="hiding_start_again">Start again</string>
 
     <string name="modules_title">ADB Modules</string>
-    <!-- Phone-side module entry (P0): the manager was complete but only the TV screen was wired to it. -->
+    <!-- Phone-side module entry: the manager was complete but only the TV screen was wired to it. -->
     <string name="action_back">Back</string>
     <string name="action_ok">OK</string>
     <string name="modules_count">%d installed</string>
@@ -1887,7 +1887,7 @@ This action cannot be undone. Continue?</string>
     <string name="modules_access_mode_custom_summary">Choose action, service, WebUI bridge, network, and download permissions manually.</string>
     <string name="modules_access_mode_full_summary">Allows shell bridge, actions, services, and WebUI downloads. WebView internet stays blocked.</string>
     <string name="home_diagnostics_copied">Diagnostics copied.</string>
-    <!-- P2-4 隐身模式教程页（自建） -->
+    <!-- 隐身模式教程页（自建） -->
     <string name="settings_stealth_tutorial_entry">Stealth Mode Guide</string>
     <string name="settings_stealth_tutorial_entry_summary">What stealth mode does and how to exit it</string>
     <string name="settings_stealth_tutorial_intro_title">About Stealth Mode</string>

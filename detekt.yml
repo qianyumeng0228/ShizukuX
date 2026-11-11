@@ -1,4 +1,4 @@
-# P0-6 门禁配置：聚焦「空 catch」与基础安全规则（文档 P0-6 意图：拒绝新增空 catch）。
+# 门禁配置：聚焦「空 catch」与基础安全规则（文档意图：拒绝新增空 catch）。
 # 其余规则集显式关闭，避免存量风格违规让 CI 门禁永久红灯（本仓库此前从未在 CI 跑过 detekt）。
 potential-bugs:
   active: false

@@ -17,7 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * P0-遗留基建修复：此前构造 HomeViewModel 时 ShizukuApplication.appContext
+ * 遗留基建修复：此前构造 HomeViewModel 时 ShizukuApplication.appContext
  * 未初始化（lateinit）导致 UninitializedPropertyAccessException。
  * 现 mockk 掉 appContext 与 StockShizukuCompat 检测链（依赖均已在 testImplementation）。
  */

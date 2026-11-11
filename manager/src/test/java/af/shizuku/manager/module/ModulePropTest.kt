@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * P1-4: module.prop parsing tolerance — malformed input must never throw and
+ * Module.prop parsing tolerance — malformed input must never throw and
  * must degrade to sensible defaults.
  */
 class ModulePropTest {

@@ -10,7 +10,7 @@ import rikka.shizuku.server.util.ShellExecutor
 import af.shizuku.common.util.UserHandleCompat
 
 /**
- * P2-1: aligned with ShizukuPlus ActivityManagerPlusImpl (288 lines) — every
+ * Aligned with ShizukuPlus ActivityManagerPlusImpl (288 lines) — every
  * method is dual-path: direct Binder IPC via reflection first (works at shell
  * UID, no exec needed), ShellExecutor as fallback. Keeps the local
  * IActivityManagerExtra AIDL surface (10 methods, same set as Plus).
@@ -265,7 +265,7 @@ class ActivityManagerPlusImpl : IActivityManagerExtra.Stub() {
         // The reflection path used to sit here: IPackageManager.clearApplicationUserData takes a
         // hidden `IPackageDataObserver`, and this module cannot construct one — nothing in the
         // hidden-API stub exposes that type, so every call passed a plain Binder, failed invoke()'s
-        // argument type check and fell through to exec while logging an exception (audit P2).
+        // argument type check and fell through to exec while logging an exception (audit).
         // Removing the always-failing attempt leaves the path that actually ran, and that path is
         // now audited: the package name is validated above, the target user is the calling user
         // instead of a hard-coded 0, and pm's own completion decides the result.

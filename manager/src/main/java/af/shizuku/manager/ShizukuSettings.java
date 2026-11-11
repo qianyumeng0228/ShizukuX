@@ -85,7 +85,7 @@ public class ShizukuSettings {
         public static final String KEY_VECTOR_ENABLED = "vector_enabled";
         public static final String KEY_HIDE_DISABLED_PLUS_FEATURES = "hide_disabled_plus_features";
 
-        // P3 security hardening (ShizukuPlus 954b6293): opt-in escape hatches that bypass
+        // Security hardening (ShizukuPlus 954b6293): opt-in escape hatches that bypass
         // per-app storage guards. Default off; enabling requires the confirmation dialog in
         // DeveloperOptionsFragment.
         public static final String KEY_UNRESTRICTED_APP_DATA = "unrestricted_app_data";

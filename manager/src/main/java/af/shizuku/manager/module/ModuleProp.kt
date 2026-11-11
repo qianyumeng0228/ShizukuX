@@ -6,7 +6,7 @@ package af.shizuku.manager.module
  * Format: `key=value` lines, ignoring blank lines and `#` comments. Values may contain `=`
  * (only the first `=` is the separator). Keys/values are trimmed.
  *
- * Kept free of Android dependencies so it is directly unit-testable (P1-4 ModulePropTest).
+ * Kept free of Android dependencies so it is directly unit-testable (ModulePropTest).
  */
 object ModuleProp {
 

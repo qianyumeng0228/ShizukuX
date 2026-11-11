@@ -130,7 +130,7 @@ class AdbProxyService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var serverSocket: ServerSocket? = null
     private var serverJob: Job? = null
-    /** Bounds simultaneously served loopback sessions (audit P3-12). */
+    /** Bounds simultaneously served loopback sessions (audit). */
     private val connectionSlots = Semaphore(16)
     private var isProxyRunning = false
 

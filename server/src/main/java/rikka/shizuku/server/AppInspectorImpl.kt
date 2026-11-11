@@ -70,7 +70,7 @@ class AppInspectorImpl(private val allowed: java.util.function.BooleanSupplier) 
                     // Match the NAME column as an exact process token — the app process
                     // ("com.foo") or a suffix process ("com.foo:push"). A bare contains()
                     // would also catch unrelated processes whose name merely embeds the
-                    // package string (audit slice4 P2-3).
+                    // package string (audit).
                     .filter { line ->
                         val name = line.trim().split("\\s+".toRegex()).getOrNull(1) ?: return@filter false
                         name == packageName || name.startsWith("$packageName:")

@@ -8,7 +8,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * P1-4: command review policy — SAFE whitelist, dangerous binaries, FULL bypass,
+ * Command review policy — SAFE whitelist, dangerous binaries, FULL bypass,
  * CUSTOM constraints (constraint #8).
  */
 class ModuleCommandTest {

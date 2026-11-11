@@ -4,7 +4,7 @@ import android.os.Bundle
 import af.shizuku.manager.R
 
 /**
- * Stealth mode tutorial page (P2-4, self-built in this repo's preference style).
+ * Stealth mode tutorial page (self-built in this repo's preference style).
  * Static guide only: the stealth toggle lives in AdvancedSettingsFragment and must not be
  * duplicated here, otherwise the same setting can be flipped from two places.
  */

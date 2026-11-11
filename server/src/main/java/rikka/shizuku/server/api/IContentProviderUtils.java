@@ -20,7 +20,7 @@ public class IContentProviderUtils {
             // OsUtils.getUid()); on Android 12+ the system cross-checks the package against
             // the uid. Default the package to "com.android.shell" when the caller passed
             // none, instead of asserting the shell uid is some arbitrary client package
-            // (audit slice4 P3-13).
+            // (audit).
             String attributionPackage = callingPkg != null ? callingPkg : "com.android.shell";
             result = provider.call((new AttributionSource.Builder(OsUtils.getUid())).setPackageName(attributionPackage).build(), authority, method, arg, extras);
         } else if (Build.VERSION.SDK_INT >= 30) {

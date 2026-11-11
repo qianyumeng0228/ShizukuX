@@ -274,7 +274,7 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
      * Stream a server-provided [ParcelFileDescriptor] (read end of a pipe) to a backup output,
      * guaranteeing the pfd is closed on EVERY path.
      *
-     * Regression (P2 #5): previously each call site inlined `writeBackupStream(...) { out -> pfd.use { ...copyTo... } }`.
+     * Regression: previously each call site inlined `writeBackupStream(...) { out -> pfd.use {...copyTo... } }`.
      * When SAF createDocument / openOutputStream failed, [writeBackupStream] returned `false` WITHOUT
      * invoking the write block — so `pfd.use{}` never ran and the server pipe's read-side fd leaked.
      * A backup that failed 1–3 times (data/ext/obb) leaked 1–3 fds per package; repeated backups

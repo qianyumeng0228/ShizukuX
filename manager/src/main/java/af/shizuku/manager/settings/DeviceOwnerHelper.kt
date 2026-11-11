@@ -19,7 +19,7 @@ import timber.log.Timber
 /**
  * Device-Owner capabilities for ShizukuX (dhizuku mode).
  *
- * P2-2: aligned with shevery DeviceOwnerManager (26 methods) — the local helper
+ * Aligned with shevery DeviceOwnerManager (26 methods) — the local helper
  * now covers ownership checks, ADB commands, delegated scopes, app hiding /
  * permission-grant state, admin activation (reflection setActiveAdmin), ownership
  * transfer and clear, Shizuku-assisted activation, and eligible-admin discovery.

@@ -4,8 +4,8 @@ package af.shizuku.manager.module
  * Command review gate — constraint #8 (every execution must surface the full command
  * for explicit user confirmation).
  *
- * Pure-JVM model + policy so it is unit-testable (P1-4 ModuleCommandTest). The Compose
- * dialog that renders [ModuleCommandRequest] for user approval is wired in P2; the
+ * Pure-JVM model + policy so it is unit-testable (ModuleCommandTest). The Compose
+ * dialog that renders [ModuleCommandRequest] for user approval is wired in a later stage; the
  * reviewer hook is invoked by the module runner before any script executes.
  */
 enum class ModuleCommandSource {

@@ -417,7 +417,7 @@ internal object ApkSigner {
             // toLong() sign-extends values >= 0x80000000 (a >2GB central directory would
             // read as a negative length and blow up in readAt). Read unsigned, and
             // reject archives whose CD exceeds what a single Int buffer can hold rather
-            // than silently truncating (audit slice4 P2-7).
+            // than silently truncating (audit).
             cdOffset = Integer.toUnsignedLong(ByteBuffer.wrap(readAt(raf, eocdOffset + 16, 4)).order(ByteOrder.LITTLE_ENDIAN).int)
             val cdSize = Integer.toUnsignedLong(ByteBuffer.wrap(readAt(raf, eocdOffset + 12, 4)).order(ByteOrder.LITTLE_ENDIAN).int)
             if (cdSize > Int.MAX_VALUE) error("central directory too large to sign: $cdSize bytes")

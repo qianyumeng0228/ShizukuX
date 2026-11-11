@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * P1-4: output handling — tail truncation (constraint #7) and combined-output
+ * Output handling — tail truncation (constraint #7) and combined-output
  * assembly for the action/service result view.
  */
 class ModuleOutputTest {

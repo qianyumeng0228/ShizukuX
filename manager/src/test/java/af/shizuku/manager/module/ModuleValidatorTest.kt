@@ -9,7 +9,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 
 /**
- * P1-4: the 8 safety constraints — path traversal, ZIP bombs, entry/prop/script caps.
+ * The 8 safety constraints — path traversal, ZIP bombs, entry/prop/script caps.
  * Pure JVM tests against [ModuleValidator].
  */
 class ModuleValidatorTest {

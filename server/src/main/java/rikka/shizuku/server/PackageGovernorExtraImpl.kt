@@ -12,10 +12,10 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 /**
- * P2-1: aligned with ShizukuPlus PackageGovernorPlusImpl (275 lines) — Binder IPC
+ * Aligned with ShizukuPlus PackageGovernorPlusImpl (275 lines) — Binder IPC
  * via reflection first (works at shell UID), ShellExecutor fallback. Keeps the
  * local IActivityManagerExtra-style AIDL surface and the stricter installApk
- * path check (P0 audit: isSafePath + .apk suffix, stronger than Plus).
+ * path check (audit: isSafePath +.apk suffix, stronger than Plus).
  */
 class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
 
@@ -261,7 +261,7 @@ class PackageGovernorExtraImpl : IPackageGovernorExtra.Stub() {
         // Only accept files under the sanctioned path prefixes and with a real .apk
         // extension, so an authorized caller cannot point `pm install -g` (which
         // auto-grants every runtime permission) at an arbitrary dropped file
-        // (audit slice4 P0-3). The install -g behavior itself is unchanged.
+        // (audit). The install -g behavior itself is unchanged.
         if (!InputValidationUtils.isSafePath(apkPath)) return false
         if (!apkPath.endsWith(".apk", ignoreCase = true)) return false
         return ShellExecutor.execBool("pm", "install", "-g", apkPath)

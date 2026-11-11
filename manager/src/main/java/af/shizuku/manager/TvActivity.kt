@@ -73,7 +73,7 @@ import timber.log.Timber
 
 /**
  * TV launcher host (declared in the manifest with LEANBACK_LAUNCHER). Single-Activity
- * navigation over the TV screens ported from Nightzuku (P2-4). The phone Home keeps
+ * navigation over the TV screens ported from Nightzuku. The phone Home keeps
  * its existing hybrid architecture untouched; TV gets its own Compose host.
  */
 @OptIn(ExperimentalTvMaterial3Api::class, ExperimentalMaterial3Api::class)

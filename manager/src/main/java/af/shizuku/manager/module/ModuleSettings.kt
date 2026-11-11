@@ -8,7 +8,7 @@ import androidx.annotation.StringRes
  * Access-policy settings for ADB modules (local variant, ported from Nightzuku's
  * ModuleSettings). Persists through the existing [ShizukuSettings] preferences.
  *
- * Strategy tiers (roadmap P1-3):
+ * Strategy tiers (roadmap):
  *   SAFE  (default) — action/service scripts blocked unless the module is trusted
  *   FULL            — everything allowed (each run still goes through command review)
  *   CUSTOM          — per-capability toggles

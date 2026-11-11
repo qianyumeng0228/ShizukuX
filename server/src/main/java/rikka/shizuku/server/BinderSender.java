@@ -273,7 +273,7 @@ public class BinderSender {
         } catch (Throwable t) {
             // On the normal startup path setMainHandler() runs before register(); a null
             // guard covers any unusual path that gets here first. Don't crash register() —
-            // run the catch-up pass inline on a one-shot thread instead (audit P3-5).
+            // run the catch-up pass inline on a one-shot thread instead (audit).
             LOGGER.w("main handler not ready at register time; running catch-up inline", t);
             new Thread(BinderSender::catchUpAlreadyRunningClients, "ShizukuCatchUp").start();
         }

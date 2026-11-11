@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 /**
- * P1-4: `cmd overlay list` fallback parser — the pure-JVM half of the
+ * `cmd overlay list` fallback parser — the pure-JVM half of the
  * getAllOverlays() dual-path (reflection first, command line as fallback).
  */
 class OverlayManagerTest {

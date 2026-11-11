@@ -38,7 +38,7 @@ object ArchiveVetting {
         // When they do not (an extra/merged line, a listing that omits one entry), matching by
         // index silently checks the wrong line against the wrong name, which is how a benign
         // archive gets killed. Fall back to matching each verbose line to a name by suffix and
-        // fail closed on any line that cannot be attributed (audit P3-8).
+        // fail closed on any line that cannot be attributed (audit).
         val modeByName = HashMap<String, Char>()
         val links = mutableSetOf<String>()
         if (names.size == verbose.size) {

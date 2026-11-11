@@ -121,7 +121,7 @@ android {
     }
 }
 
-// P2-3: Rust-native adb-pairing (SPAKE2 + AES-GCM), replaces the legacy C++
+// Rust-native adb-pairing (SPAKE2 + AES-GCM), replaces the legacy C++
 // adb_pairing.cpp implementation. Built by cargo ndk into jniLibs; must be
 // applied after the android block so the variant merge tasks exist.
 ext.rustPackages = ['adb-pairing']

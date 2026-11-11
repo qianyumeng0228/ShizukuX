@@ -20,7 +20,7 @@ object ApkChangedObservers {
 
         val path = File(apkPath).parent ?: return
         // getOrPut on a synchronizedMap is not atomic; hold the monitor for the whole
-        // check-then-insert (audit slice4 P2-1).
+        // check-then-insert (audit).
         val observer = synchronized(observers) {
             observers.getOrPut(path) {
                 ApkChangedObserver(path).apply {
@@ -36,7 +36,7 @@ object ApkChangedObservers {
         val pathToRemove = mutableListOf<String>()
 
         // Iteration must happen under the map monitor; iterating a synchronizedMap
-        // outside it can throw ConcurrentModificationException (audit slice4 P2-1).
+        // outside it can throw ConcurrentModificationException (audit).
         synchronized(observers) {
             for ((path, observer) in observers) {
                 observer.removeListener(listener)
@@ -57,7 +57,7 @@ object ApkChangedObservers {
 class ApkChangedObserver(private val path: String) : FileObserver(path, DELETE) {
 
     // Mutated from binder threads, iterated on the inotify callback thread (line ~onEvent)
-    // — guard every access (audit slice4 P2-1).
+    // — guard every access (audit).
     private val listeners = Collections.synchronizedSet(mutableSetOf<ApkChangedListener>())
 
     fun addListener(listener: ApkChangedListener): Boolean {

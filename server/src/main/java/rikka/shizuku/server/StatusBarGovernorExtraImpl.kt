@@ -10,7 +10,7 @@ import rikka.shizuku.server.util.ShellExecutor
 import af.shizuku.common.util.UserHandleCompat
 
 /**
- * P2-1: aligned with ShizukuPlus StatusBarGovernorPlusImpl (188 lines) — direct
+ * Aligned with ShizukuPlus StatusBarGovernorPlusImpl (188 lines) — direct
  * IStatusBarService IPC via reflection first, `cmd statusbar` exec fallback.
  * Tile list read/write keeps the plain `settings get/put secure` path (no
  * ContentProvider bridge in this repo; exec is equivalent and dependency-free).

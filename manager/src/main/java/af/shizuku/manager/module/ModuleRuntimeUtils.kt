@@ -291,7 +291,7 @@ object ModuleRuntimeUtils {
     /**
      * Pure-JVM tail truncation used by [readStreamTail] — keeps at most the last
      * [maxChars] characters. Extracted so the output-cap behavior (constraint #7)
-     * is directly unit-testable (P1-4 ModuleOutputTest).
+     * is directly unit-testable (ModuleOutputTest).
      */
     internal fun truncateTail(text: String, maxChars: Int): String {
         if (text.length <= maxChars) return text

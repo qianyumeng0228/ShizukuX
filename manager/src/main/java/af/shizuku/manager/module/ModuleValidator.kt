@@ -4,10 +4,10 @@ import java.io.InputStream
 import java.io.OutputStream
 
 /**
- * Centralized enforcement of the 8 ADB-module safety constraints (roadmap P1-3).
+ * Centralized enforcement of the 8 ADB-module safety constraints (roadmap).
  *
  * Pure JVM (no Android dependencies) so every constraint is directly unit-testable
- * (P1-4 ModuleValidatorTest). All throw [IllegalArgumentException] on violation so
+ * (ModuleValidatorTest). All throw [IllegalArgumentException] on violation so
  * callers fail loudly at the point of attack instead of silently continuing.
  */
 object ModuleValidator {

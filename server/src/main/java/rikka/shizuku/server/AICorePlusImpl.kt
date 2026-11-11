@@ -23,7 +23,7 @@ class AICorePlusImpl(
     }
 
     // Written on the registerAIAutomationBridge binder thread, read on injectInput /
-    // screenshot binder threads — must be visible cross-thread (audit P2-6).
+    // screenshot binder threads — must be visible cross-thread (audit).
     @Volatile
     private var automationBridge: af.shizuku.server.IAIAutomationBridge? = null
 
@@ -120,7 +120,7 @@ class AICorePlusImpl(
     // Serializes all persistent-sh writes on one daemon thread; the caller bounds the wait
     // with future.get() so a wedged sh (e.g. `input tap` against a frozen display, which
     // stops draining its stdin) is detected, destroyed and restarted instead of poisoning
-    // the singleton and parking every binder thread on the monitor forever (audit P1-5).
+    // the singleton and parking every binder thread on the monitor forever (audit).
     private val inputDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
         Thread(r, "AICoreInput").apply { isDaemon = true }
     }

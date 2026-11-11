@@ -148,7 +148,7 @@ class MainActivity : HomeActivity() {
      *    and removing this code would orphan them without a matching res cleanup.
      *  - [MigrationHelper.migrateSettings] itself is correct: it reads the old prefs via
      *    `Shell.cmd("cat ...")` (root), not via direct file IO, so the SELinux concern raised
-     *    in slice3 P2-5 does not apply.
+     *    in slice3 does not apply.
      *  - Wiring it back (gated on `MigrationHelper.isOldPackageInstalled(this) &&
      *    !ShizukuSettings.hasMigrationBeenOffered()`) is a first-run behavior change for
      *    legacy users; that decision should be made by product, not by a bug-fix patch.

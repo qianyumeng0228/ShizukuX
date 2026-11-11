@@ -1022,7 +1022,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
     /**
      * Quote a caller-supplied argument so it can be safely interpolated into a
-     * `sh -c` script (audit slice4 P0-1). Any value containing a shell metacharacter
+     * `sh -c` script (audit). Any value containing a shell metacharacter
      * is rejected (returns null) rather than sanitized: under the interceptors in
      * newProcessInternal the legitimate values (numeric pids, process/package names,
      * /system/app paths, archive paths) never contain these characters, so rejecting
@@ -1732,7 +1732,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         if (pid.matches("\\d+")) {
                             // Quote every argument; previously only the trailing numeric pid
                             // was checked and flags like "-9; touch /data/local/tmp/pwn" were
-                            // interpolated unquoted into the script (audit slice4 P0-1).
+                            // interpolated unquoted into the script (audit).
                             StringBuilder killArgs = new StringBuilder();
                             boolean argsSafe = true;
                             for (int i = 1; i < cmd.length; i++) {
@@ -1888,7 +1888,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                             // The regex above only strips '/' and whitespace from targetPkg,
                             // so "com.foo$(id)" would otherwise interpolate; archivePath comes
                             // straight from argv and was previously concatenated unquoted
-                            // (audit slice4 P0-1).
+                            // (audit).
                             String qPkg = shellQuoteForIntercept(targetPkg);
                             if (qPkg == null) {
                                 LOGGER.w("SUBridge: refusing tar/cp intercept, unsafe package: " + targetPkg);
@@ -2901,7 +2901,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     // Written on the registerAIAutomationBridge binder thread, read on injectInput /
-    // screenshot binder threads — must be visible cross-thread (audit P2-6).
+    // screenshot binder threads — must be visible cross-thread (audit).
     private volatile af.shizuku.server.IAIAutomationBridge aiAutomationBridge;
 
     @Override

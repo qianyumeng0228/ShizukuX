@@ -82,7 +82,7 @@ class ContinuityBridgeImpl : IContinuityBridge.Stub() {
                 Log.d(TAG, "Continuity listener died, cleaning up")
                 // Best-effort unregistration from the handoff service so the remote side
                 // does not keep a dead binder reference. Not all Handoff builds expose an
-                // unregister method; missing ones are simply skipped (audit P2-2).
+                // unregister method; missing ones are simply skipped (audit).
                 try {
                     val handoffService = getHandoffService()
                     val unregister = handoffService?.javaClass?.methods

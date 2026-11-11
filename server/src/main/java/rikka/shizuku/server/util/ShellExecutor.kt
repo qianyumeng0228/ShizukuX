@@ -8,14 +8,14 @@ object ShellExecutor {
     private const val TAG = "ShellExecutor"
 
     // Hard ceiling on any single shell call. Binder threads must not be parked
-    // indefinitely by a wedged child (audit slice4 P1-2).
+    // indefinitely by a wedged child (audit).
     private const val TIMEOUT_SECONDS = 45L
 
     /**
      * Start a daemon thread that drains [stream] by discarding everything read.
      * Stdout AND stderr are drained this way so a child that writes more than the
      * pipe buffer (~64 KB) can never block on write(2) and deadlock the caller
-     * (audit slice4 P1-1). [out] optionally receives the bytes (used by exec()).
+     * (audit). [out] optionally receives the bytes (used by exec()).
      */
     private fun startDrainThread(stream: InputStream, out: java.io.ByteArrayOutputStream? = null): Thread {
         val t = Thread {

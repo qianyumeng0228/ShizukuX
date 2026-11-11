@@ -11,7 +11,7 @@ import java.io.IOException
 import java.util.zip.GZIPOutputStream
 
 /**
- * Guards the P3-8 rework of [ArchiveVetting.isSafe]: the old exact 1:1 line-count precondition
+ * Guards the rework of [ArchiveVetting.isSafe]: the old exact 1:1 line-count precondition
  * could refuse a benign archive when toybox and GNU tar disagree on how many lines they print.
  * The replacement matches verbose lines to names by suffix instead, but must stay fail-closed:
  * an entry that escapes the target, writes through a symlink, or cannot be classified at all

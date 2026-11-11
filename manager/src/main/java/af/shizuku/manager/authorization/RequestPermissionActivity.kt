@@ -42,8 +42,8 @@ class RequestPermissionActivity : AppActivity() {
         val data = Bundle()
         data.putBoolean(REQUEST_PERMISSION_REPLY_ALLOWED, allowed)
         data.putBoolean(REQUEST_PERMISSION_REPLY_IS_ONETIME, onetime)
-        // P1-5: authorization outcome as a Sentry breadcrumb so every grant/deny is
-        // traceable in the crash trail (roadmap P1-5 #3).
+        // Authorization outcome as a Sentry breadcrumb so every grant/deny is
+        // traceable in the crash trail (roadmap).
         try {
             io.sentry.Sentry.addBreadcrumb(
                 io.sentry.Breadcrumb().apply {

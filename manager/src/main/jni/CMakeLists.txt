@@ -30,5 +30,5 @@ if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
             COMMAND ${CMAKE_STRIP} --remove-section=.comment "${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/libshizuku.so")
 endif ()
 
-# libadb.so (adb pairing) is built from Rust (rust/adb-pairing, cargo ndk) since P2-3;
+# libadb.so (adb pairing) is built from Rust (rust/adb-pairing, cargo ndk);
 # the legacy C++ implementation in adb_pairing.cpp has been removed.

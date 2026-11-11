@@ -295,7 +295,7 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
             // Only trust the IPC path if the observer actually reported success in time;
             // otherwise fall through to the `pm clear` fallback rather than lying.
             // Bounded wait: the observer callback normally lands within ~1-3s; a wedged
-            // system_server must not park this binder thread for 30s (audit slice4 P1-4).
+            // system_server must not park this binder thread for 30s (audit).
             // On timeout we fall through to the `pm clear` fallback anyway, so shortening
             // the bound only changes how quickly that fallback engages.
             if (latch.await(10, TimeUnit.SECONDS) && succeeded.get()) return true
@@ -362,7 +362,7 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
             Log.w(TAG, "restoreExternalData: cannot create staging target $dir")
             return false
         }
-        // Stage the archive so it can be vetted before anything is extracted (audit P2-1):
+        // Stage the archive so it can be vetted before anything is extracted (audit):
         // a tar.gz carrying a symlink entry followed by a write through it would otherwise
         // land outside the target directory, exactly as it would in restoreTarDirectory.
         val staged = try {
@@ -383,7 +383,7 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
             ArchiveVetting.vetArchiveOrThrow(staged)
             // Merge stderr into stdout and drain it: tar prints one line per extracted entry and
             // the error text on stderr, and a full pipe buffer blocks the child before waitFor()
-            // returns on a large archive (audit P2).
+            // returns on a large archive (audit).
             val proc = ProcessBuilder("tar", "-xzf", staged.path, "-C", dir)
                 .redirectErrorStream(true)
                 .start()

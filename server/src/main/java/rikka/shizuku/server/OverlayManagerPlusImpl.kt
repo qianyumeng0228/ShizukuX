@@ -39,7 +39,7 @@ class OverlayManagerPlusImpl : IOverlayManagerExtra.Stub() {
 
         /**
          * Pure parser for `cmd overlay list --user <id>` output, extracted so the
-         * command-line fallback is directly unit-testable (P1-4 OverlayManagerTest).
+         * command-line fallback is directly unit-testable (OverlayManagerTest).
          *
          * Output format (AOSP):
          *   com.android.target
@@ -479,7 +479,7 @@ class OverlayManagerPlusImpl : IOverlayManagerExtra.Stub() {
         if (callingPackage == null || partition == null) return false
         // Deliberately a mock-success: a real overlay mount needs a root/Magisk module and
         // is out of scope. Log at WARN so callers (and debug logs) can see the mount was
-        // *not* actually prepared, instead of silently believing it was (audit P3-9).
+        // *not* actually prepared, instead of silently believing it was (audit).
         Log.w(TAG, "Ghost Bridge: shadow mount for partition $partition requested by $callingPackage is mocked (no real OverlayFS mount performed)")
         return true
     }

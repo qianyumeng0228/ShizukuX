@@ -17,7 +17,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * P0-遗留基建修复：原实现为 Kotest FunSpec（io.kotest），在
+ * 遗留基建修复：原实现为 Kotest FunSpec（io.kotest），在
  * JUnit5-platform + vintage 混合环境下 runner 挂起导致全量测试卡死。
  * 重写为 JUnit4（与 SafeExecutorTest 同风格），语义不变：
  * 缓存新鲜 → success；网络异常 → retry。

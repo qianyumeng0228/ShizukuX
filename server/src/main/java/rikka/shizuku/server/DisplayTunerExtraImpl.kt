@@ -9,7 +9,7 @@ import af.shizuku.server.IDisplayTunerExtra
 import rikka.shizuku.server.util.ShellExecutor
 
 /**
- * P2-1: aligned with ShizukuPlus DisplayTunerPlusImpl (185 lines) — direct
+ * Aligned with ShizukuPlus DisplayTunerPlusImpl (185 lines) — direct
  * IWindowManager IPC via reflection first, `wm size/density` exec fallback.
  * The exec parse paths are kept as-is (they were already correct).
  */

@@ -235,7 +235,7 @@ class ApkPatcherImpl(private val unrestricted: java.util.function.BooleanSupplie
 
     override fun prepareTempDebug(rawPackageName: String?): Boolean {
         // Reject names containing '/', '..' or shell metacharacters before the value is
-        // interpolated into `/data/data/$packageName` and passed to pm (audit slice4 P1-3).
+        // interpolated into `/data/data/$packageName` and passed to pm (audit).
         val packageName = rawPackageName ?: return false
         if (!dataAccessAllowed()) return false
         if (!InputValidationUtils.isValidPackageName(packageName)) return false

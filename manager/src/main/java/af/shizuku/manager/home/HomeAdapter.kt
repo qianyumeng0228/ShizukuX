@@ -58,7 +58,7 @@ class HomeAdapter(
         const val ID_FILES = 21L
         // Saved Wi-Fi passwords, read from the platform's config store through the root shell.
         const val ID_WIFI = 22L
-        // Device facts and the intent/activity launcher, the last two of the P1 set.
+        // Device facts and the intent/activity launcher, the last two of the landing set.
         const val ID_DEVICE_INFO = 23L
         const val ID_INTENTS = 24L
         // The platform's Doze whitelist: which apps the system is not allowed to freeze in the

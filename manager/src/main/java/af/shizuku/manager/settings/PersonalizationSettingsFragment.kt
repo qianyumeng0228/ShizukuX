@@ -244,7 +244,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // P2-3 personalization overlays (a2f7d959): bold typography / expanded headers /
+        // Personalization overlays (a2f7d959): bold typography / expanded headers /
         // corner rounding all feed into ThemeDelegateImpl's themeKey cache, so a non-recreate
         // onThemeChanged() re-resolves the overlay stack on the next theme lookup.
         findPreference<Preference>(KEY_BOLD_TYPOGRAPHY)?.setOnPreferenceChangeListener { _, _ ->

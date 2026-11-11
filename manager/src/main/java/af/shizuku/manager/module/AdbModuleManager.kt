@@ -234,7 +234,7 @@ object AdbModuleManager {
                         markScriptsExecutable(target)
                         val installed = readModule(target) ?: error("Installed module is unreadable.")
                         backup.deleteRecursively()
-                        // P1-5: module install as a Sentry breadcrumb.
+                        // Module install as a Sentry breadcrumb.
                         try {
                             io.sentry.Sentry.addBreadcrumb(
                                 io.sentry.Breadcrumb().apply {
@@ -396,7 +396,7 @@ object AdbModuleManager {
             stderr = stderr
         )
         writeLastLog(logFile, module, script, result, finished)
-        // P1-5: every module script run as a Sentry breadcrumb (roadmap P1-5 #3).
+        // Every module script run as a Sentry breadcrumb (roadmap).
         try {
             io.sentry.Sentry.addBreadcrumb(
                 io.sentry.Breadcrumb().apply {

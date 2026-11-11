@@ -14,7 +14,7 @@ public class ServerConstants {
     // install would otherwise never find "the manager app" and exit(MANAGER_APP_NOT_FOUND)
     // immediate. Not final so that correction can take effect everywhere this is read.
     // volatile: the correction happens on a background thread; reader threads elsewhere
-    // must observe the corrected flavor rather than the default (audit P3-12).
+    // must observe the corrected flavor rather than the default (audit).
     public static volatile String MANAGER_APPLICATION_ID = "xyz.shizuku.extra.api";
     public static final String PLUS_APPLICATION_ID = "xyz.shizuku.extra.api";
     public static final String DROPIN_APPLICATION_ID = "moe.shizuku.privileged.api";

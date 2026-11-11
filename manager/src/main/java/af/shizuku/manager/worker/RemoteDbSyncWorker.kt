@@ -70,7 +70,7 @@ open class RemoteDbSyncWorker(context: Context, params: WorkerParameters) : Coro
     /**
      * Test seam: subclasses override this to inject network failure without
      * touching java.net.URL — mockkConstructor(URL::class) hangs the JVM under
-     * JDK 21 (P0-遗留基建修复).
+     * JDK 21.
      */
     internal open fun doFetch(urlString: String): String? {
         val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {

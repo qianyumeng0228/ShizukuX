@@ -1295,7 +1295,7 @@
         <item>2</item>
         <item>3</item>
     </string-array>
-    <!-- 权限管理器卡片与页面（P2-2） -->
+    <!-- 权限管理器卡片与页面 -->
     <string name="home_permission_manager_title">权限管理器</string>
     <string name="home_permission_manager_summary">无需 root，为任意应用授予 shell 级权限</string>
     <string name="permission_manager_search_hint">搜索应用…</string>
@@ -1305,14 +1305,14 @@
     <string name="permission_manager_section_runtime">运行时权限</string>
     <string name="permission_manager_privileged_note">这些权限通常仅限系统或 root 应用使用，但可通过 ADB shell 进程授予。适用于需要 DUMP、READ_LOGS 等权限的备份应用（Neo Backup、Swift Backup 等）。</string>
     <string name="nav_back">返回</string>
-    <!-- 设备控制主页卡片（P2-1） -->
+    <!-- 设备控制主页卡片 -->
     <string name="home_device_control_title">设备控制</string>
     <string name="home_device_control_summary">通过 Shizuku 快捷调节系统设置与电源</string>
-    <!-- mDNS 阻断建议（P2-5） -->
+    <!-- mDNS 阻断建议 -->
     <string name="wadb_mdns_blocked_title">mDNS 端口发现多次超时</string>
     <string name="wadb_mdns_blocked_text">端口发现持续超时，设备可能屏蔽了组播流量（Vivo/FunTouchOS 常见）。请在设置中开启 TCP 模式，以获得不依赖 Wi-Fi 的可靠连接。</string>
     <string name="wadb_mdns_switch_tcp_action">打开 TCP 设置</string>
-    <!-- 个性化控件（P2-3） -->
+    <!-- 个性化控件 -->
     <string name="settings_bold_typography">粗体排版</string>
     <string name="settings_bold_typography_summary">标题与标题文字使用更粗字重（独立于 One UI 主题）</string>
     <string name="settings_expanded_headers">展开式标题栏</string>
@@ -1323,7 +1323,7 @@
     <string name="settings_follow_system_haptics">跟随系统触感反馈</string>
     <string name="settings_follow_system_haptics_summary">遵循系统触感反馈开关</string>
 
-    <!-- P2 新增功能汉化（备份 UI / 设备控制 / Home 卡） -->
+    <!-- 新增功能汉化（备份 UI / 设备控制 / Home 卡） -->
     <string name="backup_action_backup">备份</string>
     <string name="backup_action_freeze">冻结</string>
     <string name="backup_action_restore">恢复</string>
@@ -1492,7 +1492,7 @@
     <string name="settings_search">搜索</string>
     <string name="settings_su_bridge_mock_warning_title">Root 模拟（Ghosting）说明</string>
     <string name="settings_su_bridge_mock_warning_summary">“Root 模拟”会让应用以为你有 Root 权限。部分命令（如 reboot、dd 写分区、insmod）不会真正执行，只返回成功。如果你不确定，请保持关闭。</string>
-    <!-- 手机端 ADB 模块入口（P0） -->
+    <!-- 手机端 ADB 模块入口 -->
     <string name="action_back">返回</string>
     <string name="action_ok">确定</string>
     <string name="modules_count">已安装 %d 个</string>
@@ -1570,7 +1570,7 @@
     <string name="firewall_refresh">刷新</string>
     <string name="firewall_system_app">系统 · %1$s</string>
 
-    <!-- 按应用隐藏（P1-2）：被列应用在前台期间，临时隐藏设备级开关。 -->
+    <!-- 按应用隐藏：被列应用在前台期间，临时隐藏设备级开关。 -->
     <string name="hiding_title">按应用隐藏</string>
     <string name="home_hiding_description">在指定应用打开时隐藏开发者选项、调试、无障碍、私人 DNS 或 VPN</string>
     <string name="hiding_subtitle_count">已对 %d 个应用生效</string>

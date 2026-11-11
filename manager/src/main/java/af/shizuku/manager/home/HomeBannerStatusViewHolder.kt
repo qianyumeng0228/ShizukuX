@@ -172,7 +172,7 @@ class HomeBannerStatusViewHolder(
 
         // Same visibility gate as the diagnostics chip: only while the service is running.
         // Click lands on the diagnostics hub directly on its activity-log tab (the single
-        // consolidated log surface after P1's dedup).
+        // consolidated log surface after the dedup).
         logChip.visibility = if (ok) View.VISIBLE else View.GONE
         logChip.setOnClickListener {
             val activity = context.asActivity<android.app.Activity>() ?: return@setOnClickListener
