@@ -192,7 +192,7 @@ Die vollständige chinesische Endbenutzer-Dokumentation (Dienstverbindung, Wisse
 
 | Version | Typ | Datum | Highlights |
 |---|---|---|---|
-| **v13.7.0.k2017** | Vorabversion | 2026-11-11 | Liquid-Glass-Oberfläche im einheitlichen Container für fünf Ziele, App-basiertes Verstecken / Firewall / Autostart / Dunkelmodus / Akku-Whitelist / WLAN-Passwörter, ADB-Modul-Store mit gespiegelter Skript-Laufzeit, Root-Direktlese-Backup und P1-Audit-Abschluss |
+| **v13.7.0.k2017** | Vorabversion | 2026-11-11 | Liquid-Glass-Oberfläche im einheitlichen Container für fünf Ziele, App-basiertes Verstecken / Firewall / Autostart / Dunkelmodus / Akku-Whitelist / WLAN-Passwörter, ADB-Modul-Store mit gespiegelter Skript-Laufzeit, Root-Direktlese-Backup und Behebung aller Audit-Befunde hoher Priorität |
 | **v13.7.0.k2016** | Vorabversion | 2026-10-26 | Manuelles Stoppen bleibt gestoppt, Root-bewusster Start (isRooted-Fallback), schnellere Aktivierung (~2 Min → 9 s), Terminal-Tutorial-Export und Befehlsfixes |
 | v13.7.0.k2015 | Vorabversion | 2026-10-25 | 13 Fixes aus einem 53k-Zeilen-Audit, gehärteter Auto-Start/Crash-Recovery für drahtloses Debugging, Einstellungen in Allgemein/Berechtigung/Dienst/Diagnose neu organisiert |
 | v13.7.0.k2014 | Vorabversion | 2026-10-07 | AIDL-Transaktionscode-Offset-Kompatibilität, vollständige Gerätesteuerung/Backup-Suite, Stealth-Modus, AMOLED-Theme-Fix, Compat-Hub-Deinstallation mit einem Tipp |

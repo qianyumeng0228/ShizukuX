@@ -192,7 +192,7 @@ La documentazione completa in cinese per gli utenti finali (connessione al servi
 
 | Versione | Tipo | Data | Punti salienti |
 |---|---|---|---|
-| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Interfaccia liquid glass in un unico contenitore a cinque destinazioni, occultamento / firewall / avvio automatico / modalità scura forzata / whitelist batteria / password Wi-Fi per app, store di moduli ADB con runtime di script rispecchiato, backup in lettura diretta root e chiusura dell'audit P1 |
+| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Interfaccia liquid glass in un unico contenitore a cinque destinazioni, occultamento / firewall / avvio automatico / modalità scura forzata / whitelist batteria / password Wi-Fi per app, store di moduli ADB con runtime di script rispecchiato, backup in lettura diretta root e correzione di tutti i rilievi di audit ad alta priorità |
 | **v13.7.0.k2016** | Pre-release | 2026-10-26 | L'arresto manuale resta fermo, avvio consapevole del root (fallback isRooted), attivazione più rapida (~2 min → 9 s), esportazione del tutorial del terminale e correzioni dei comandi |
 | v13.7.0.k2015 | Pre-release | 2026-10-25 | 13 correzioni da un audit di 53 000 righe, auto-avvio / recupero dai crash rafforzati, impostazioni riorganizzate in Generale / Permesso / Servizio / Diagnostica |
 | v13.7.0.k2014 | Pre-release | 2026-10-07 | Compatibilità offset codici transazione AIDL, suite completa controllo del dispositivo / backup, modalità stealth, correzione tema AMOLED, disinstallazione Compat Hub con un tocco |

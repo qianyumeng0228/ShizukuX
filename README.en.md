@@ -192,7 +192,7 @@ End-user documentation (currently in Chinese: service connection, knowledge base
 
 | Version | Type | Date | Highlights |
 |---|---|---|---|
-| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Liquid-glass UI in a single five-destination container, per-app hiding / firewall / autostart / force-dark / battery whitelist / Wi-Fi passwords, ADB module store with a mirrored script runtime, root direct-read backup and P1 audit closure |
+| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Liquid-glass UI in a single five-destination container, per-app hiding / firewall / autostart / force-dark / battery whitelist / Wi-Fi passwords, ADB module store with a mirrored script runtime, root direct-read backup, plus fixes for every high-priority audit finding |
 | **v13.7.0.k2016** | Pre-release | 2026-10-26 | Manual stop stays stopped, root-aware start entry (isRooted fallback), faster activation (~2 min → 9 s), terminal-tutorial export & command fixes |
 | v13.7.0.k2015 | Pre-release | 2026-10-25 | 13 fixes from a 53k-line audit, hardened wireless-debugging auto-start / crash recovery, Settings reorganized into General / Permission / Service / Diagnostics |
 | v13.7.0.k2014 | Pre-release | 2026-10-07 | AIDL transaction-code offset compatibility, full device control / backup suite, Stealth Mode, AMOLED theme fix, one-tap Compat Hub uninstall |

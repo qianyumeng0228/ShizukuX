@@ -192,7 +192,7 @@ A documentação completa em chinês para utilizadores finais (ligação ao serv
 
 | Versão | Tipo | Data | Destaques |
 |---|---|---|---|
-| **v13.7.0.k2017** | Pré-versão | 2026-11-11 | Interface de vidro líquido num contentor único de cinco destinos, ocultação / firewall / arranque automático / modo escuro forçado / lista branca de bateria / palavras-passe Wi-Fi por aplicação, loja de módulos ADB com ambiente de scripts espelhado, cópia de segurança por leitura direta root e fecho da auditoria P1 |
+| **v13.7.0.k2017** | Pré-versão | 2026-11-11 | Interface de vidro líquido num contentor único de cinco destinos, ocultação / firewall / arranque automático / modo escuro forçado / lista branca de bateria / palavras-passe Wi-Fi por aplicação, loja de módulos ADB com ambiente de scripts espelhado, cópia de segurança por leitura direta root e correção de todos os achados de auditoria de alta prioridade |
 | **v13.7.0.k2016** | Pré-versão | 2026-10-26 | A paragem manual continua parada, arranque consciente do root (fallback isRooted), ativação mais rápida (~2 min → 9 s), exportação do tutorial de terminal e correções de comandos |
 | v13.7.0.k2015 | Pré-versão | 2026-10-25 | 13 correções de uma auditoria de 53 000 linhas, auto-arranque / recuperação de falhas reforçados, definições reorganizadas em Geral / Permissão / Serviço / Diagnóstico |
 | v13.7.0.k2014 | Pré-versão | 2026-10-07 | Compatibilidade de desvio de códigos de transação AIDL, suíte completa de controlo do dispositivo / cópia de segurança, modo furtivo, correção de tema AMOLED, remoção do Compat Hub com um toque |
