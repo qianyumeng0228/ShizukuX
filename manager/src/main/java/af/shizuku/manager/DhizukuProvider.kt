@@ -122,24 +122,46 @@ class DhizukuProvider : ContentProvider() {
                 // isCallerAuthorized() gate.
                 enforceCallingPermission("remote_transact")
 
-                // Clients assemble this parcel with Parcel.writeInterfaceToken(), which writes
-                // an int32 strict-mode header *followed by* the string16 descriptor. Reading
-                // only the string (readString) consumes just the string16, so the position
-                // stops on the header int and the following readStrongBinder() reads the
-                // descriptor bytes as a binder — every relayed call then fails with an empty
-                // result. Consume the header explicitly, then the descriptor. The descriptor
-                // value is logged but not compared: clients write several variants, and Knox
-                // on Android 16 can throw out of enforceInterface() before it advances the
-                // position, which would abort the relay instead of skipping a token. The
-                // authorization gate above remains the security boundary.
-                data.setDataPosition(0)
-                val strictPolicy = data.readInt()
-                val relayDescriptor = data.readString()
+                // Clients assemble this parcel with Parcel.writeInterfaceToken(), whose header
+                // size is platform dependent: older releases prefix the string16 descriptor
+                // with a single int32 strict-mode field (8 bytes), while Android 15+ prefixes
+                // it with three int32 fields (12 bytes: strict policy, work source uid, tag).
+                // A fixed readInt() + readString() therefore lands two fields short on newer
+                // platforms, and the following readStrongBinder() consumes the descriptor
+                // bytes as a binder — every relayed call then fails with an empty result.
+                // Locate the token by its known value instead of assuming a header length,
+                // which works for both layouts, then read the relay fields from the position
+                // immediately after it. The value is matched, not enforced: the authorization
+                // gate above remains the security boundary, and a mismatch simply aborts.
+                var descriptorOffset = -1
+                val scanLimit = minOf(data.dataSize(), 64)
+                var scanPos = 0
+                while (scanPos <= scanLimit - 4) {
+                    data.setDataPosition(scanPos)
+                    val candidate = try {
+                        data.readString()
+                    } catch (e: Exception) {
+                        null
+                    }
+                    if (candidate == BINDER_DESCRIPTOR) {
+                        descriptorOffset = scanPos
+                        break
+                    }
+                    scanPos += 4
+                }
+                if (descriptorOffset < 0) {
+                    Timber.tag(TAG).w("remoteTransact: interface token not found, relay aborted")
+                    return false
+                }
                 Timber.tag(TAG).d(
-                    "remoteTransact: strictPolicy=$strictPolicy descriptor=$relayDescriptor"
+                    "remoteTransact: descriptor=$BINDER_DESCRIPTOR offset=$descriptorOffset " +
+                    "size=${data.dataSize()} pos=${data.dataPosition()}"
                 )
 
-                val targetBinder = data.readStrongBinder() ?: return false
+                val targetBinder = data.readStrongBinder() ?: run {
+                    Timber.tag(TAG).w("remoteTransact: target binder missing at pos=${data.dataPosition()}")
+                    return false
+                }
                 val targetCode = data.readInt()
                 val targetFlags = data.readInt()
 
