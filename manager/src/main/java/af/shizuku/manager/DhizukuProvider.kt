@@ -122,15 +122,22 @@ class DhizukuProvider : ContentProvider() {
                 // isCallerAuthorized() gate.
                 enforceCallingPermission("remote_transact")
 
-                // Dhizuku clients may write several interface descriptor variants. Samsung
-                // Knox on Android 16 can throw from enforceInterface() *before* consuming the
-                // descriptor token, leaving data position at 0; readStrongBinder() would then
-                // read the descriptor bytes as a binder and corrupt the relay ("Binder
-                // invocation to an incorrect interface"). Skipping the descriptor with
-                // readString() is safe here: the authorization gate above is the real
-                // security boundary; the descriptor is Dhizuku-internal bookkeeping.
+                // Clients assemble this parcel with Parcel.writeInterfaceToken(), which writes
+                // an int32 strict-mode header *followed by* the string16 descriptor. Reading
+                // only the string (readString) consumes just the string16, so the position
+                // stops on the header int and the following readStrongBinder() reads the
+                // descriptor bytes as a binder — every relayed call then fails with an empty
+                // result. Consume the header explicitly, then the descriptor. The descriptor
+                // value is logged but not compared: clients write several variants, and Knox
+                // on Android 16 can throw out of enforceInterface() before it advances the
+                // position, which would abort the relay instead of skipping a token. The
+                // authorization gate above remains the security boundary.
                 data.setDataPosition(0)
-                data.readString() // consume/skip the interface descriptor token
+                val strictPolicy = data.readInt()
+                val relayDescriptor = data.readString()
+                Timber.tag(TAG).d(
+                    "remoteTransact: strictPolicy=$strictPolicy descriptor=$relayDescriptor"
+                )
 
                 val targetBinder = data.readStrongBinder() ?: return false
                 val targetCode = data.readInt()
