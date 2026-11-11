@@ -19,6 +19,10 @@ Shizuku consente alle app normali di chiamare direttamente le API di sistema tra
 
 </div>
 
+![ShizukuX interface overview](docs/images/tour.png)
+
+<p align="center"><sub>Da sinistra a destra: Home · App · Moduli ADB · Terminale · Impostazioni (screenshot da dispositivo reale, interfaccia in cinese semplificato)</sub></p>
+
 ## 📑 Indice
 
 - [🚀 Avvio rapido](#quickstart)
@@ -59,12 +63,21 @@ Ottieni l'ultima versione da [GitHub Releases](https://github.com/qianyumeng0228
 <a name="features"></a>
 ## ✨ Funzionalità principali di ShizukuX
 
+*   **Interfaccia liquid glass**: la barra delle schede è una lente liquida che segue il dito e si deforma alla pressione; Home, App, Moduli, Terminale e Impostazioni vivono in un unico contenitore e scorrono l'una nell'altra.
+*   **Occultamento per app**: sei segnali (processo, primo piano, accessibilità, ascolto notifiche, VPN, riavvio) decidono l'occultamento, e ogni app può indicare se riavviarsi dopo.
+*   **Firewall di rete per app**: blocca l'accesso alla rete app per app senza VPN permanente.
+*   **Gestione avvio automatico**: consente o blocca per app tramite `RUN_ANY_IN_BACKGROUND` e un gate di lista.
+*   **Modalità scura forzata per app**: il daemon gira indipendentemente dal processo dell'app e resta attivo dopo che l'app di destinazione è stata congelata.
+*   **Sistema di moduli ADB**: sfoglia e installa moduli della community dal telefono — store dei moduli, pagine di dettaglio, pannelli WebUI e un runtime di script che rispecchia l'albero del modulo in una directory leggibile dalla shell per soddisfare SELinux.
+*   **Whitelist di ottimizzazione batteria**: una scheda nella home porta direttamente all'elenco delle app esenti e lo stato si aggiorna in tempo reale.
+*   **Password Wi-Fi**: legge la connessione attuale e le reti salvate, le raggruppa per stato e analizza le voci chiave WPA/EAP.
+*   **Terminale integrato**: esegue i comandi come shell e mostra l'output, con salvataggio, rinomina ed eliminazione dei comandi frequenti.
 *   **Provider di permessi universale**: un'interfaccia che unifica **Root**, **ADB Shell** e **Dhizuku (proprietario del dispositivo)** come fonti di permessi.
 *   **Correzione tema OneUI 8+**: mantiene funzionanti i motori di tema come Hex Installer e Substratum su Android 16/17 e OneUI 8+.
 *   **Modalità Dhizuku**: condivide il Binder Device Owner di sistema con qualsiasi app che possieda il permesso Shizuku — configurabile via ADB, senza Root; una pagina dedicata **Livello di permesso** gestisce i tre livelli Shell / Root / DO.
 *   **Gestore permessi di precisione**: schermata dedicata per concedere/revocare i permessi Shizuku per app in massa, collegata alla scheda della schermata iniziale.
 *   **Controllo del dispositivo**: 18 operazioni in cinque categorie (connettività, display, audio, alimentazione, impostazioni di sistema — modalità aereo, luminosità automatica, rotazione automatica, scala animazioni, riavvio/spegnimento, ecc.); le voci pericolose vengono automaticamente disabilitate con un avviso in modalità ADB.
-*   **Backup e ripristino**: esportazione SAF verso directory pubbliche, backup/ripristino in batch (inclusi dati OBB), ripristino dei dati interni (`run-as` + tar), snapshot prima del ripristino e cronologia dei ripristini.
+*   **Backup e ripristino**: con root la directory privata dell'app viene letta e impacchettata direttamente, senza dover disinstallare l'app originale; esportazione SAF verso directory pubbliche, backup/ripristino in batch (inclusi dati OBB), ripristino dei dati interni (`run-as` + tar), con verifica dell'archivio (ArchiveVetting) e snapshot automatico prima del ripristino.
 *   **Gesti personalizzabili**: scorrimento a sinistra/destra, pressione lunga, ecc., configurabili per app.
 *   **Registro modifiche integrato**: vedi le novità dopo un aggiornamento senza uscire dall'app.
 *   **Gestione in batch**: seleziona più app per concedere/revocare permessi o nasconderle con un tocco.
@@ -179,6 +192,7 @@ La documentazione completa in cinese per gli utenti finali (connessione al servi
 
 | Versione | Tipo | Data | Punti salienti |
 |---|---|---|---|
+| **v13.7.0.k2017** | Pre-release | 2026-11-11 | Interfaccia liquid glass in un unico contenitore a cinque destinazioni, occultamento / firewall / avvio automatico / modalità scura forzata / whitelist batteria / password Wi-Fi per app, store di moduli ADB con runtime di script rispecchiato, backup in lettura diretta root e chiusura dell'audit P1 |
 | **v13.7.0.k2016** | Pre-release | 2026-10-26 | L'arresto manuale resta fermo, avvio consapevole del root (fallback isRooted), attivazione più rapida (~2 min → 9 s), esportazione del tutorial del terminale e correzioni dei comandi |
 | v13.7.0.k2015 | Pre-release | 2026-10-25 | 13 correzioni da un audit di 53 000 righe, auto-avvio / recupero dai crash rafforzati, impostazioni riorganizzate in Generale / Permesso / Servizio / Diagnostica |
 | v13.7.0.k2014 | Pre-release | 2026-10-07 | Compatibilità offset codici transazione AIDL, suite completa controllo del dispositivo / backup, modalità stealth, correzione tema AMOLED, disinstallazione Compat Hub con un tocco |

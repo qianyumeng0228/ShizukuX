@@ -19,6 +19,10 @@ Shizuku ermöglicht normalen Apps, über einen per **ADB / Root** gestarteten pr
 
 </div>
 
+![ShizukuX interface overview](docs/images/tour.png)
+
+<p align="center"><sub>Von links nach rechts: Start · Apps · ADB-Module · Terminal · Einstellungen (Aufnahmen vom Gerät, UI auf vereinfachtem Chinesisch)</sub></p>
+
 ## 📑 Inhaltsverzeichnis
 
 - [🚀 Schnellstart](#quickstart)
@@ -59,12 +63,21 @@ Laden Sie die neueste Version von [GitHub Releases](https://github.com/qianyumen
 <a name="features"></a>
 ## ✨ ShizukuX-Kernfunktionen
 
+*   **Liquid-Glass-Oberfläche**: Die Tableiste ist eine Flüssigkeitslinse, die dem Finger folgt, beim Drücken verformt sich das Glas; Start, Apps, Module, Terminal und Einstellungen liegen in einem gemeinsamen Container und gleiten ineinander.
+*   **App-basiertes Verstecken**: sechs Signale (Prozess, Vordergrund, Bedienungshilfe, Benachrichtigungs-Listener, VPN, Neustart) entscheiden, und pro App lässt sich wählen, ob nach dem Verstecken neu gestartet wird.
+*   **App-basierte Netzwerk-Firewall**: blockiert den Netzzugriff pro App ohne dauerhaftes VPN.
+*   **Autostart-Verwaltung**: erlaubt oder blockiert pro App auf Basis von `RUN_ANY_IN_BACKGROUND` und einem Listen-Gate.
+*   **Erzwungener Dunkelmodus pro App**: der Daemon läuft unabhängig vom App-Prozess und wirkt weiter, nachdem die Ziel-App eingefroren wurde.
+*   **ADB-Modulsystem**: Community-Module direkt auf dem Gerät durchsuchen und installieren – Modul-Store, Detailseiten, WebUI-Panels und eine Skript-Laufzeit, die den Modulbaum in ein shell-lesbares Verzeichnis spiegelt, um SELinux zu genügen.
+*   **Akku-Optimierungs-Whitelist**: eine Startbildschirm-Karte führt direkt zur Liste der von der Akku-Optimierung ausgenommenen Apps, der Status wird live aktualisiert.
+*   **WLAN-Passwörter**: liest aktuelle Verbindung und gespeicherte Netzwerke, gruppiert nach Status und parst WPA/EAP-Schlüsseleinträge.
+*   **Integriertes Terminal**: führt Befehle direkt als Shell aus und zeigt die Ausgabe, mit Speichern, Umbenennen und Löschen häufiger Befehle.
 *   **Universeller Berechtigungsanbieter**: eine Schnittstelle vereinheitlicht **Root**, **ADB Shell** und **Dhizuku (Gerätebesitzer)** als Berechtigungsquellen.
 *   **OneUI 8+-Theme-Fix**: hält Theme-Engines wie Hex Installer und Substratum auf Android 16/17 und OneUI 8+ am Laufen.
 *   **Dhizuku-Modus**: teilt den System-Device-Owner-Binder mit jeder App, die Shizuku-Berechtigung besitzt – per ADB konfigurierbar, ohne Root; eine eigene **Berechtigungsstufen**-Seite verwaltet Shell / Root / DO zentral.
 *   **Feingranularer Berechtigungsmanager**: eigener Bildschirm zum Batch-Erteilen/Entziehen von Shizuku-Berechtigungen pro App, verknüpft mit der Startbildschirm-Karte.
 *   **Gerätesteuerung**: 18 Operationen in fünf Kategorien (Konnektivität, Anzeige, Audio, Strom, Systemeinstellungen – Flugmodus, Auto-Helligkeit, Auto-Rotation, Animationsskalierung, Neustart/Herunterfahren usw.); gefährliche Aktionen werden im ADB-Modus automatisch deaktiviert und mit Hinweis versehen.
-*   **Backup & Wiederherstellung**: SAF-Export in öffentliche Verzeichnisse, Batch-Backup/Wiederherstellung (inkl. OBB-Daten), Wiederherstellung interner Daten (`run-as` + tar), Snapshots vor der Wiederherstellung und Wiederherstellungsverlauf.
+*   **Backup & Wiederherstellung**: mit Root wird das private App-Verzeichnis direkt gelesen und gepackt, sodass die Original-App nicht mehr deinstalliert werden muss; SAF-Export in öffentliche Verzeichnisse, Batch-Backup/Wiederherstellung (inkl. OBB-Daten), Wiederherstellung interner Daten (`run-as` + tar), abgesichert durch Archiv-Prüfung (ArchiveVetting) und automatische Snapshots.
 *   **Anpassbare Gesten**: Wischen nach links/rechts, langes Drücken usw., pro App konfigurierbar.
 *   **In-App-Änderungsprotokoll**: neue Funktionen direkt nach dem Update ansehen, ohne die App zu verlassen.
 *   **Batch-Verwaltung**: mehrere Apps auswählen und Berechtigungen erteilen/entziehen oder Apps mit einem Tipp ausblenden.
@@ -179,6 +192,7 @@ Die vollständige chinesische Endbenutzer-Dokumentation (Dienstverbindung, Wisse
 
 | Version | Typ | Datum | Highlights |
 |---|---|---|---|
+| **v13.7.0.k2017** | Vorabversion | 2026-11-11 | Liquid-Glass-Oberfläche im einheitlichen Container für fünf Ziele, App-basiertes Verstecken / Firewall / Autostart / Dunkelmodus / Akku-Whitelist / WLAN-Passwörter, ADB-Modul-Store mit gespiegelter Skript-Laufzeit, Root-Direktlese-Backup und P1-Audit-Abschluss |
 | **v13.7.0.k2016** | Vorabversion | 2026-10-26 | Manuelles Stoppen bleibt gestoppt, Root-bewusster Start (isRooted-Fallback), schnellere Aktivierung (~2 Min → 9 s), Terminal-Tutorial-Export und Befehlsfixes |
 | v13.7.0.k2015 | Vorabversion | 2026-10-25 | 13 Fixes aus einem 53k-Zeilen-Audit, gehärteter Auto-Start/Crash-Recovery für drahtloses Debugging, Einstellungen in Allgemein/Berechtigung/Dienst/Diagnose neu organisiert |
 | v13.7.0.k2014 | Vorabversion | 2026-10-07 | AIDL-Transaktionscode-Offset-Kompatibilität, vollständige Gerätesteuerung/Backup-Suite, Stealth-Modus, AMOLED-Theme-Fix, Compat-Hub-Deinstallation mit einem Tipp |
