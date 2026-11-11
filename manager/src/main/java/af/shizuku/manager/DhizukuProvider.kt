@@ -122,15 +122,22 @@ class DhizukuProvider : ContentProvider() {
                 // isCallerAuthorized() gate.
                 enforceCallingPermission("remote_transact")
 
-                // Dhizuku clients may write several interface descriptor variants. Samsung
-                // Knox on Android 16 can throw from enforceInterface() *before* consuming the
-                // descriptor token, leaving data position at 0; readStrongBinder() would then
-                // read the descriptor bytes as a binder and corrupt the relay ("Binder
-                // invocation to an incorrect interface"). Skipping the descriptor with
-                // readString() is safe here: the authorization gate above is the real
-                // security boundary; the descriptor is Dhizuku-internal bookkeeping.
-                data.setDataPosition(0)
-                data.readString() // consume/skip the interface descriptor token
+                // Dhizuku.remoteTransact() writes the token with writeInterfaceToken(), which puts
+                // header ints before the descriptor string, so it has to be read back with
+                // enforceInterface(). A plain readString() lands on those ints instead:
+                // readStrongBinder() then returns null and every relayed call fails. MDPC and
+                // OwnDroid send all their DevicePolicyManager calls through here.
+                var tokenOk = false
+                for (descriptor in arrayOf(BINDER_DESCRIPTOR, AIDL_DESCRIPTOR)) {
+                    data.setDataPosition(0)
+                    try {
+                        data.enforceInterface(descriptor)
+                        tokenOk = true
+                        break
+                    } catch (_: SecurityException) {
+                    }
+                }
+                if (!tokenOk) return false
 
                 val targetBinder = data.readStrongBinder() ?: return false
                 val targetCode = data.readInt()
