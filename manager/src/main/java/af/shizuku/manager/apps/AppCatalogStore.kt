@@ -7,15 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
-import android.os.Process
 import android.provider.Settings
 import timber.log.Timber
 
 /**
- * One entry of the "应用" tab: what the user added to this page, rendered from the live package
- * table so an uninstalled or updated app is reflected without touching the saved list.
+ * One entry of the "应用" tab. Always resolved from the live package table, so a package that
+ * disappeared shows up as 未安装 instead of stale data.
  */
 data class CatalogApp(
     val packageName: String,
@@ -28,56 +28,108 @@ data class CatalogApp(
 )
 
 /**
- * The curated package list behind the Apps tab.
+ * 应用页的三份状态：
  *
- * ShizukuX 的「应用」页只列用户自己加进来的软件，不再是内置工具目录：内置工具都能从首页卡片直达，
- * 在这里再放一份只会让"应用"这个词指代两件事。列表本身很小，用 SharedPreferences 存包名即可，
- * 标签和版本每次从 PackageManager 现读，避免缓存过期的名字。
- *
- * `com.omarea.vtools`（星野scene）是常驻第一条：它是这个分支的配套包，删掉列表项也删不掉它，
- * 只能取消"显示在首位"以外的顺序——见 [orderedPackages]。
+ * - **常用**：用户自己钉住的 4 个位置，顺序即显示顺序，和安装状态解耦（应用卸了仍占位，显示未安装）。
+ * - **全部应用**：星野scene 常驻 + 只收「从商店装的」和「用内置安装器装的」包，不再收手工挑的列表。
+ * - **隐藏**：每个包一个布尔值，配合被禁用的 launcher 组件，做到桌面不显示图标但仍能从本页启动。
  */
 object AppCatalogStore {
 
     private const val PREFS = "shizukux_apps_catalog"
-    private const val KEY_PACKAGES = "packages"
+    private const val KEY_MANAGED = "managed_packages"
+    private const val KEY_FAVORITES = "favorite_packages"
+    private const val KEY_HIDDEN_FLAG = "hidden_"
+    private const val KEY_HIDDEN_COMPONENT = "hidden_component_"
 
     const val SCENE_PACKAGE = "com.omarea.vtools"
     const val SCENE_LABEL = "星野scene"
+    const val MAX_FAVORITES = 4
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    /** Saved packages, Scene always first. */
-    fun orderedPackages(context: Context): List<String> {
-        val saved = prefs(context).getStringSet(KEY_PACKAGES, emptySet()).orEmpty()
+    // ------------------------------------------------------------------ 全部应用
+
+    /** 全部应用 = 星野scene + 通过商店/内置安装器装过的包。 */
+    fun managedPackages(context: Context): List<String> {
+        val saved = prefs(context).getStringSet(KEY_MANAGED, emptySet()).orEmpty()
             .filterNot { it == SCENE_PACKAGE }
             .sorted()
         return listOf(SCENE_PACKAGE) + saved
     }
 
-    fun isSaved(context: Context, packageName: String): Boolean =
+    fun isManaged(context: Context, packageName: String): Boolean =
         packageName == SCENE_PACKAGE ||
-            prefs(context).getStringSet(KEY_PACKAGES, emptySet()).orEmpty().contains(packageName)
+            prefs(context).getStringSet(KEY_MANAGED, emptySet()).orEmpty().contains(packageName)
 
-    fun add(context: Context, packages: Collection<String>) {
-        val current = prefs(context).getStringSet(KEY_PACKAGES, emptySet()).orEmpty().toMutableSet()
-        current.addAll(packages.filter { it != SCENE_PACKAGE })
-        prefs(context).edit().putStringSet(KEY_PACKAGES, current).apply()
+    /** Called after a successful install through the store or the built-in installer. */
+    fun addManaged(context: Context, packageName: String) {
+        if (packageName.isBlank() || packageName == SCENE_PACKAGE) return
+        val current = prefs(context).getStringSet(KEY_MANAGED, emptySet()).orEmpty().toMutableSet()
+        if (current.add(packageName)) {
+            prefs(context).edit().putStringSet(KEY_MANAGED, current).apply()
+        }
     }
 
-    /** Scene is pinned, so removing it from this list is a no-op rather than a hidden deletion. */
-    fun remove(context: Context, packageName: String) {
+    /** 卸载（连列表一起删）。星野scene 常驻，退化为只保留一行未安装。 */
+    fun removeManaged(context: Context, packageName: String) {
         if (packageName == SCENE_PACKAGE) return
-        val current = prefs(context).getStringSet(KEY_PACKAGES, emptySet()).orEmpty().toMutableSet()
+        val current = prefs(context).getStringSet(KEY_MANAGED, emptySet()).orEmpty().toMutableSet()
         current.remove(packageName)
-        prefs(context).edit().putStringSet(KEY_PACKAGES, current).apply()
+        prefs(context).edit().putStringSet(KEY_MANAGED, current).apply()
     }
+
+    // ------------------------------------------------------------------ 常用
+
+    /** 常用位，顺序固定；卸载后的包仍然保留，渲染成未安装。 */
+    fun favorites(context: Context): List<String> =
+        prefs(context).getString(KEY_FAVORITES, "").orEmpty()
+            .split('\n')
+            .filter { it.isNotBlank() }
+            .take(MAX_FAVORITES)
+
+    private fun saveFavorites(context: Context, list: List<String>) {
+        prefs(context).edit().putString(KEY_FAVORITES, list.take(MAX_FAVORITES).joinToString("\n")).apply()
+    }
+
+    fun addFavorite(context: Context, packageName: String): Boolean {
+        val current = favorites(context)
+        if (packageName.isBlank() || current.contains(packageName) || current.size >= MAX_FAVORITES) {
+            return false
+        }
+        saveFavorites(context, current + packageName)
+        return true
+    }
+
+    fun removeFavorite(context: Context, packageName: String) {
+        saveFavorites(context, favorites(context).filterNot { it == packageName })
+    }
+
+    fun isFavorite(context: Context, packageName: String): Boolean =
+        favorites(context).contains(packageName)
+
+    /** 交换/移动常用位置，长按拖动落点用这个。 */
+    fun moveFavorite(context: Context, from: Int, to: Int) {
+        val current = favorites(context).toMutableList()
+        if (from !in current.indices || to !in 0 until MAX_FAVORITES) return
+        if (from == to) return
+        if (to >= current.size) {
+            // 拖到空格：视为挪到队尾
+            val item = current.removeAt(from)
+            current.add(item)
+        } else {
+            val item = current.removeAt(from)
+            current.add(to, item)
+        }
+        saveFavorites(context, current)
+    }
+
+    // ------------------------------------------------------------------ 解析 / 启动
 
     fun displayLabel(context: Context, packageName: String, fallback: String): String =
         if (packageName == SCENE_PACKAGE) SCENE_LABEL else fallback
 
-    /** Resolves one package to a row; returns null when the package is gone and never installed. */
     fun resolve(context: Context, packageName: String): CatalogApp? {
         val pm = context.packageManager
         val info = try {
@@ -123,10 +175,7 @@ object AppCatalogStore {
         )
     }
 
-    /**
-     * Every launchable app on the device, for the "添加到应用页" picker.
-     * System apps are included: the user may legitimately want Settings or the camera on this page.
-     */
+    /** Every launchable-ish app on the device, for the 常用 picker. */
     fun installedApps(context: Context): List<CatalogApp> {
         val pm = context.packageManager
         val apps = try {
@@ -165,7 +214,18 @@ object AppCatalogStore {
         }.sortedBy { it.label.lowercase() }
     }
 
+    /**
+     * Launch an app, transparently re-enabling its launcher component when the icon is hidden
+     * and disabling it again right after the activity starts.
+     */
     fun launch(context: Context, packageName: String): Boolean {
+        if (isIconHidden(context, packageName)) {
+            val component = hiddenComponent(context, packageName) ?: return false
+            val command = "pm enable '$component'; am start -n '$component'; sleep 1; " +
+                "pm disable-user --user 0 '$component'"
+            val output = PrivilegedShell.run(command) ?: return false
+            return !output.contains("Error:") && !output.contains("Exception")
+        }
         val intent = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         return try {
@@ -184,19 +244,115 @@ object AppCatalogStore {
         runCatching { context.startActivity(intent) }
     }
 
-    /** Which component the launcher would open — used to ask "最近使用" about a concrete app. */
-    fun launchComponent(context: Context, packageName: String): ComponentName? =
-        context.packageManager.getLaunchIntentForPackage(packageName)?.component
+    // ------------------------------------------------------------------ 隐藏桌面图标
+
+    fun isIconHidden(context: Context, packageName: String): Boolean =
+        prefs(context).getBoolean(KEY_HIDDEN_FLAG + packageName, false)
+
+    fun hiddenComponent(context: Context, packageName: String): String? =
+        prefs(context).getString(KEY_HIDDEN_COMPONENT + packageName, null)
+
+    /** Launcher components of one package, including ones already disabled. */
+    fun launcherComponents(context: Context, packageName: String): List<String> {
+        val pm = context.packageManager
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
+        val resolved: List<ResolveInfo> = try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                pm.queryIntentActivities(
+                    intent,
+                    PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DISABLED_COMPONENTS.toLong())
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                pm.queryIntentActivities(intent, PackageManager.MATCH_DISABLED_COMPONENTS)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        val list = resolved.mapNotNull { info ->
+            info.activityInfo?.let { "${it.packageName}/${it.name}" }
+        }.distinct()
+        if (list.isEmpty()) {
+            pm.getLaunchIntentForPackage(packageName)?.component?.let {
+                return listOf("${it.packageName}/${it.className}")
+            }
+        }
+        return list
+    }
+
+    /**
+     * 隐藏 / 恢复桌面图标：只禁用 launcher 组件，不动包本身。
+     *
+     * Android 13 起，shell(uid 2000) 无法给 targetSdk ≥ 33 的应用改组件状态
+     * （`SecurityException: Shell cannot change component state`），所以有 root 时优先走 su；
+     * 都不行时返回带原因的错误，由界面如实提示，而不是假装成功。
+     */
+    fun setIconHidden(context: Context, packageName: String, hidden: Boolean): Result<Unit> {
+        val pm = context.packageManager
+        val components = launcherComponents(context, packageName)
+        if (components.isEmpty()) {
+            return Result.failure(IllegalStateException("这个应用没有可操作的桌面图标"))
+        }
+        if (!PrivilegedShell.available()) {
+            return Result.failure(IllegalStateException("Shizuku 服务未运行，也没有 root"))
+        }
+        val useRoot = PrivilegedShell.hasRoot()
+        val script = components.joinToString("; ") { comp ->
+            val inner = if (hidden) "pm disable-user --user 0 '$comp'" else "pm enable '$comp'"
+            if (useRoot) "su -c \"$inner\"" else inner
+        } + "; echo EXIT:$?"
+        val output = PrivilegedShell.run(script)
+            ?: return Result.failure(IllegalStateException("没有可用的 shell 权限"))
+
+        if (output.contains("cannot change component state") ||
+            output.contains("SecurityException") ||
+            output.contains("MANAGE_USERS")
+        ) {
+            return Result.failure(
+                IllegalStateException(
+                    "当前系统禁止用 shell 改组件状态（Android 13 起对 targetSdk ≥ 33 的应用生效）。" +
+                        "这个开关需要 root 或设备管理员（Device Owner）权限才能用。"
+                )
+            )
+        }
+
+        val applied = components.all { comp ->
+            val name = ComponentName.unflattenFromString(comp)
+            val state = try {
+                if (name == null) -1 else pm.getComponentEnabledSetting(name)
+            } catch (e: Exception) {
+                -1
+            }
+            if (hidden) {
+                state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED ||
+                    state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER ||
+                    state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED
+            } else {
+                state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
+                    state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+            }
+        }
+        if (!applied) {
+            return Result.failure(
+                IllegalStateException("命令执行后组件状态没有变化：${output.trim().takeLast(180)}")
+            )
+        }
+
+        prefs(context).edit().apply {
+            if (hidden) {
+                putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+                putString(KEY_HIDDEN_COMPONENT + packageName, components.first())
+            } else {
+                putBoolean(KEY_HIDDEN_FLAG + packageName, false)
+                remove(KEY_HIDDEN_COMPONENT + packageName)
+            }
+        }.apply()
+        return Result.success(Unit)
+    }
 }
 
 /**
- * "常用" ranking.
- *
- * 频次来自系统的 UsageStats（前台累计时长），不是从本页跳转次数——本页只统计"从这里点开"的次数，
- * 用户从桌面启动的软件会被完全漏掉，排行就失真了。
- *
- * 需要「使用情况访问」特殊权限；未授权时 [hasAccess] 返回 false，页面退化为"按加入顺序显示"并给出入口，
- * 而不是假装排行有效。
+ * 「常用」的候选来源：设备上所有已安装应用；排序仍按使用频次，方便找最近用的。
  */
 object AppUsageRanker {
 
@@ -208,14 +364,14 @@ object AppUsageRanker {
             val mode = if (Build.VERSION.SDK_INT >= 29) {
                 appOps.unsafeCheckOpNoThrow(
                     AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
+                    android.os.Process.myUid(),
                     context.packageName
                 )
             } else {
                 @Suppress("DEPRECATION")
                 appOps.checkOpNoThrow(
                     AppOpsManager.OPSTR_GET_USAGE_STATS,
-                    Process.myUid(),
+                    android.os.Process.myUid(),
                     context.packageName
                 )
             }
@@ -225,7 +381,6 @@ object AppUsageRanker {
         }
     }
 
-    /** Top-N packages by foreground time in the last [LOOKBACK_DAYS] days. */
     fun topPackages(context: Context, limit: Int): List<String> {
         if (!hasAccess(context)) return emptyList()
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager ?: return emptyList()

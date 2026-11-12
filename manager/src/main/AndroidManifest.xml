@@ -286,6 +286,11 @@
             android:name=".apps.AppStoreActivity"
             android:exported="false"
             android:label="应用商店" />
+
+        <activity
+            android:name=".apps.AppSettingsActivity"
+            android:exported="false"
+            android:label="应用设置" />
         <activity
             android:name=".firewall.FirewallActivity"
             android:exported="false"
