@@ -97,53 +97,23 @@ object SceneRelayManager {
         toastOnMain(context, R.string.scene_relay_activating, Toast.LENGTH_SHORT)
         scope.launch(Dispatchers.IO) {
             try {
-                // 0) Already resident? Don't respawn a duplicate daemon. But a resident process is
-                //    not enough: Scene's ADB mode only works when scene-daemon is *listening* on
-                //    its port (14754). A process that failed to bind (stale connection/TIME_WAIT
-                //    still occupying the port) stays alive yet unreachable, which makes Scene show
-                //    the "run this on your PC" dialog. Detect that and restart the daemon.
+                // 0) Already usable? A resident daemon alone is not enough: Scene only leaves its
+                //    "run this on your PC" dialog once the daemon is *listening* on 14754, and the
+                //    binary must be the one shipped by the Scene build installed right now — a
+                //    leftover daemon from an older build keeps Scene locked out even while it
+                //    listens (measured after the N1 upgrade). Anything that fails either check
+                //    falls through to a full redeploy, which kills the stale process first so the
+                //    freshly copied binary can bind the port.
                 val runningPid = queryDaemonPid()
-                if (runningPid.isNotEmpty()) {
-                    if (!awaitDaemonListening()) {
-                        android.util.Log.w(
-                            "SceneRelay",
-                            "daemon pid=$runningPid alive but 14754 not listening; restarting"
-                        )
-                        var recovered = false
-                        repeat(3) {
-                            if (restartDaemon()) {
-                                recovered = true;
-                                return@repeat
-                            }
-                            Thread.sleep(1000)
-                        }
-                        if (recovered) {
-                            val newPid = queryDaemonPid()
-                            withContext(Dispatchers.Main) {
-                                showResult(
-                                    context,
-                                    R.string.scene_relay_result_title,
-                                    context.getString(R.string.scene_relay_daemon_restarted, newPid),
-                                    silent
-                                )
-                            }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                showResult(
-                                    context,
-                                    R.string.scene_relay_result_title,
-                                    context.getString(R.string.scene_relay_listen_failed) + "\n\n" + listenDiagnosis(),
-                                    silent
-                                )
-                            }
-                        }
-                        return@launch
-                    }
+                val daemonUsable = runningPid.isNotEmpty() &&
+                    daemonMatchesSceneBuild() && awaitDaemonListening()
+                if (daemonUsable) {
                     // A resident + listening daemon already grants Scene its ADB
                     // permission, but the ShizukuX authorization list may still be missing
                     // Scene (e.g. after a data clear). Top the grant up so this path is
                     // indistinguishable from a fresh activation. The grant is binder IPC,
                     // so it runs on this IO coroutine, not on the main thread.
+                    android.util.Log.w("SceneRelay", "reusing daemon pid=$runningPid")
                     val granted = grantScene(context)
                     withContext(Dispatchers.Main) {
                         val sb = StringBuilder(
@@ -163,6 +133,13 @@ object SceneRelayManager {
 
                 // 1) Assemble the activation chain. Brevent's script is on disk once the app has
                 //    been opened once; Scene's never is, so extract it from Scene's own APK here.
+                //    The daemon that failed the checks above may still hold 14754 — the freshly
+                //    copied binary would exit on a failed bind and leave Scene locked out — so
+                //    release the port before up.sh deploys its own copy.
+                if (runningPid.isNotEmpty()) {
+                    android.util.Log.w("SceneRelay", "daemon pid=$runningPid unusable; redeploying")
+                    runShell("kill \$(pidof scene-daemon) 2>/dev/null; sleep 1")
+                }
                 val prepareError = prepareActivationFiles(context)
                 if (prepareError != null) {
                     // 1b) Recovery fallback: the top-level daemon (a previous successful deploy)
@@ -229,6 +206,7 @@ object SceneRelayManager {
                 //    would keep showing its PC-instruction dialog. If so, bounce the daemon.
                 var daemonPid = awaitDaemonPid()
                 var activated = daemonPid.isNotEmpty()
+                var listenDiag: String? = null
                 if (activated && !awaitDaemonListening()) {
                     android.util.Log.w("SceneRelay", "daemon pid=$daemonPid up but 14754 not listening; bouncing")
                     var recovered = false
@@ -246,6 +224,7 @@ object SceneRelayManager {
                         daemonPid = queryDaemonPid()
                     } else {
                         activated = false
+                        listenDiag = listenDiagnosis()
                     }
                 }
 
@@ -273,6 +252,9 @@ object SceneRelayManager {
                         sb.append("\n").append(context.getString(R.string.scene_relay_granted))
                     } else if (activated) {
                         sb.append("\n").append(context.getString(R.string.scene_relay_grant_failed))
+                    }
+                    if (listenDiag != null) {
+                        sb.append("\n\n").append(listenDiag)
                     }
                     if (output.isNotEmpty()) {
                         sb.append("\n\n").append(output)
@@ -387,8 +369,12 @@ object SceneRelayManager {
             android.util.Log.w("SceneRelay", "prepareActivationFiles: Scene official up.sh found: $externalUp")
             val extDir = externalUp.substringBeforeLast('/')
             // Mirror the daemon (any plausible native binary >1MB next to up.sh) into our dir.
+            // Probe the known filename first: a find|grep|head pipeline leaves the Shizuku pty
+            // process alive after head closes the pipe, so readText() never sees EOF and the
+            // whole activation coroutine hangs.
             val extDaemon = runShell(
-                "find \"$extDir\" -maxdepth 2 -type f -size +1M 2>/dev/null | grep -v busybox | head -1"
+                "if [ -f \"$extDir/daemon\" ]; then echo \"$extDir/daemon\"; " +
+                    "else find \"$extDir\" -maxdepth 2 -type f -size +1M -print -quit 2>/dev/null; fi"
             ).trim()
             if (extDaemon.isNotEmpty()) {
                 runShell("cp \"$extDaemon\" $DAEMON_BIN && chmod 777 $DAEMON_BIN")
@@ -513,7 +499,7 @@ object SceneRelayManager {
         for (c in candidates) {
             if (runShell("test -f \"$c\" && echo YES").trim() == "YES") return c
         }
-        val found = runShell("find \"$base\" -maxdepth 5 -name 'up.sh' 2>/dev/null | head -1").trim()
+        val found = runShell("find \"$base\" -maxdepth 5 -name 'up.sh' -print -quit 2>/dev/null").trim()
         return found.takeUnless { it.isEmpty() || it == SHELL_UNAVAILABLE }
     }
 
@@ -624,9 +610,15 @@ object SceneRelayManager {
      *  waitFor(timeout) does not catch. The merged stream reaching EOF is the exit signal. */
     private fun runShell(cmd: String): String {
         return try {
+            android.util.Log.w("SceneRelay", "runShell> $cmd")
             val p = Shizuku.newProcess(arrayOf("sh", "-c", cmd + " 2>&1"), null, TMP)
-                ?: return SHELL_UNAVAILABLE
-            p.inputStream.bufferedReader().use { it.readText() }
+                ?: run {
+                    android.util.Log.w("SceneRelay", "runShell> newProcess returned null")
+                    return SHELL_UNAVAILABLE
+                }
+            val text = p.inputStream.bufferedReader().use { it.readText() }
+            android.util.Log.w("SceneRelay", "runShell< ${text.trim().take(160)}")
+            text
         } catch (e: Throwable) {
             android.util.Log.w("SceneRelay", "runShell failed: cmd=$cmd err=${e.message}")
             SHELL_UNAVAILABLE
@@ -666,6 +658,123 @@ object SceneRelayManager {
         }
     }
 
+    /**
+     * Status probe for the authorization card: true only while Scene is actually wired to the
+     * daemon, i.e. 14754 carries a live connection — not merely while a daemon process exists.
+     *
+     * Why the process alone is not enough (measured on HyperOS / Android 16, two states):
+     *  - Scene in ADB mode: `/proc/net/tcp{,6}` shows `127.0.0.1:39A2 <peer> 01` (ESTABLISHED),
+     *    and no `0A` row at all.
+     *  - After the user stops Scene (leaves ADB mode): the daemon the user never started through
+     *    ShizukuX stays resident and goes back to `127.0.0.1:39A2 0.0.0.0:0 0A` (LISTEN) with no
+     *    `01` row. Scene is off, yet the process is alive — a pid-only predicate there reports
+     *    "active" for a relay the app cannot use.
+     * So: LISTEN alone means "daemon parked, nobody dialed in" (inactive); an ESTABLISHED row is
+     * the only signal that Scene holds the relay. This is also why [isDaemonListening] is the
+     * activation flow's own success check (the client has not connected yet at that point) while
+     * the persistent chip state uses the connection.
+     * Blocking IPC; call from an IO thread/coroutine, never the main thread.
+     */
+    fun isRelayActive(): Boolean =
+        queryDaemonPid().isNotEmpty() && isDaemonConnected() && daemonMatchesSceneBuild()
+
+    /**
+     * True when the daemon deployed at [/data/local/tmp/scene-daemon] came from the Scene build
+     * installed right now, i.e. the binary Scene itself would have deployed.
+     *
+     * Scene N1 dropped the daemon from the APK payload: it now writes its own copy plus up.sh into
+     * its external files dir and stays locked out of ADB mode (showing the "run `adb shell sh
+     * .../up.sh`" dialog) while /data/local/tmp/scene-daemon is a leftover from an older build.
+     * Measured on 2026.11 (Scene N1 2026.10 Beta9): shipped daemon 1,866,528 B vs the 1,775,652 B
+     * still deployed by the previous build — pid alive, 14754 connected, yet Scene kept asking for
+     * ADB. A pid+socket predicate alone calls that state active, so the packaged size is compared.
+     *
+     * Returns true whenever either side is unreadable, so this can only ever add a redeploy — it
+     * never blocks a relay that used to work. That is the compatibility guarantee for older Scene
+     * builds: their daemon lives inside the APK, and the size compared against is the very entry
+     * [prepareActivationFiles] extracts (same [resolveDaemonEntry]), so an old build always
+     * matches itself.
+     * Blocking IPC; call from an IO thread/coroutine, never the main thread.
+     */
+    private fun daemonMatchesSceneBuild(): Boolean {
+        val deployed = runShell("wc -c < $DAEMON_TARGET 2>/dev/null").trim().toLongOrNull() ?: return true
+        if (deployed <= 0L) return true
+        val packaged = scenePackagedDaemonSize() ?: return true
+        if (packaged <= 0L) return true
+        val match = deployed == packaged
+        if (!match) {
+            android.util.Log.w(
+                "SceneRelay",
+                "daemon build mismatch: deployed=$deployed packaged=$packaged; Scene will demand ADB until redeployed"
+            )
+        }
+        return match
+    }
+
+    /**
+     * Size of the daemon the *installed* Scene build would deploy, or null when its layout is
+     * not recognised.
+     *
+     * Two layouts exist:
+     * - Newer Scene (N1 2026.10+) no longer bundles the daemon: it releases its own copy into
+     *   `Android/data/<pkg>/{daemon,files/daemon,cache/daemon}` at runtime. That copy wins.
+     * - Older Scene keeps the binary inside the APK. [prepareActivationFiles] then extracts
+     *   exactly the entry [resolveDaemonEntry] picks, and the uncompressed `ZipEntry.size` is
+     *   what lands in /data/local/tmp — extractor and this check resolve the same entry, so an
+     *   old build can never be flagged as mismatched against its own deployment.
+     *
+     * null (unknown layout / APK unreadable) makes the caller treat the state as matching, so a
+     * Scene build this code has never seen is never locked out of ADB mode.
+     * Blocking IPC; call from an IO thread/coroutine, never the main thread.
+     */
+    private fun scenePackagedDaemonSize(): Long? {
+        val ext = runShell(
+            "for p in /sdcard/Android/data/$SCENE_PACKAGE/daemon " +
+                "/sdcard/Android/data/$SCENE_PACKAGE/files/daemon " +
+                "/sdcard/Android/data/$SCENE_PACKAGE/cache/daemon; do " +
+                "[ -f \$p ] && wc -c < \$p && break; done"
+        )
+        if (ext != SHELL_UNAVAILABLE) {
+            ext.trim().toLongOrNull()?.takeIf { it > 0L }?.let { return it }
+        }
+        val apk = runShell("pm path $SCENE_PACKAGE | sed 's/package://' | head -1").trim()
+        if (apk.isEmpty() || apk == SHELL_UNAVAILABLE) return null
+        val entry = resolveDaemonEntry(apk) ?: return null
+        return try {
+            java.util.zip.ZipFile(apk).use { zip -> zip.getEntry(entry)?.size }
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "scenePackagedDaemonSize failed: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * True when 127.0.0.1:14754 (0x39A2) has an ESTABLISHED (state 01) socket, i.e. Scene is
+     * connected. LISTEN (0A) alone does not count — see [isRelayActive]. `awk` reads the st
+     * column by position instead of grepping for " 01 ", which would also match the queue
+     * fields of an unrelated row.
+     */
+    private fun isDaemonConnected(): Boolean {
+        return try {
+            val p = Shizuku.newProcess(
+                arrayOf(
+                    "sh",
+                    "-c",
+                    "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2 | " +
+                        "awk '{ if (\$4 == \"01\") { print \"YES\"; exit } }'"
+                ),
+                null,
+                null
+            )
+            val out = p.inputStream.bufferedReader().use { it.readText() }
+            try { p.waitFor() } catch (ignored: Throwable) { /* exit code optional */ }
+            out.contains("YES")
+        } catch (e: Throwable) {
+            android.util.Log.w("SceneRelay", "isDaemonConnected failed: ${e.message}")
+            false
+        }
+    }
+
     /** Waits for scene-daemon to show up after activation (nohup spawns it async and some
      *  devices are slow to reflect the new process). Returns its PID or empty after [attempts]. */
     private fun awaitDaemonPid(attempts: Int = 4): String {
@@ -679,9 +788,14 @@ object SceneRelayManager {
     }
 
     /**
-     * True when scene-daemon is actually listening on 127.0.0.1:14754 (0x39A2), the port Scene
-     * connects to for its ADB mode. `cat /proc/net/tcp{,6}` works on every Android shell and is
-     * more reliable than ss/netstat, which OEM builds often drop.
+     * True when scene-daemon is reachable on 127.0.0.1:14754 (0x39A2) — either LISTEN (0A, nobody
+     * dialed in yet, the state right after activation) or ESTABLISHED (01, a client is attached).
+     *
+     * Both must count: the daemon drops its listen row once a client connects (measured), so a
+     * LISTEN-only check would call a healthy, in-use daemon "not listening" and make the
+     * activation flow bounce (kill) a relay that is currently working.
+     * `cat /proc/net/tcp{,6}` works on every Android shell and is more reliable than ss/netstat,
+     * which OEM builds often drop.
      */
     private fun isDaemonListening(): Boolean {
         return try {
@@ -689,7 +803,8 @@ object SceneRelayManager {
                 arrayOf(
                     "sh",
                     "-c",
-                    "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2 | grep -q ' 0A ' && echo YES || echo NO"
+                    "cat /proc/net/tcp /proc/net/tcp6 2>/dev/null | grep -i 39A2 | " +
+                        "awk '{ if (\$4 == \"0A\" || \$4 == \"01\") { print \"YES\"; exit } }'"
                 ),
                 null,
                 null

@@ -56,6 +56,21 @@
         android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- protectionLevel = signature|role. Must be declared for the permission table to even
+         contain it: without this line checkSelfPermission() is permanently DENIED no matter
+         whether the DEVICE_POLICY_MANAGEMENT role was granted. The role grant itself is done
+         via shell by DpDoDirectActivation (non-ADB device-owner activation path). -->
+    <uses-permission
+        android:name="android.permission.MANAGE_PROFILE_AND_DEVICE_OWNERS"
+        tools:ignore="ProtectedPermissions" />
+
+    <!-- RoleManager 在授予 DEVICE_POLICY_MANAGEMENT 时要求候选包声明该权限，
+         并存在匹配 ROLE_HOLDER_PROVISION_MANAGED_DEVICE_FROM_TRUSTED_SOURCE 的组件。
+         声明本身不改变授予结果（仍是 signature|role），但缺了它资格校验必败。 -->
+    <uses-permission
+        android:name="android.permission.LAUNCH_DEVICE_MANAGER_SETUP"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Per-app hiding reads why another app was closed, so a recents swipe does not leave the
          watch hiding for an app that is no longer there. Granted once by Shizuku over the shell. -->
     <uses-permission
@@ -80,21 +95,16 @@
         android:icon="@drawable/ic_system_icon"
         android:label="@string/permission_group_label" />
 
-    <permission
-        android:name="xyz.shizuku.extra.permission.MANAGER"
-        android:protectionLevel="signature" />
+    <!-- Permission DEFINITIONS for the xyz.shizuku.extra.* names live in the shizukux flavor
+         manifest (src/shizukux/AndroidManifest.xml): only the Extra flavor owns that package.
+         Keeping them here made the dropin build redeclare them as well, which fails with
+         INSTALL_FAILED_DUPLICATE_PERMISSION whenever xyz.shizuku.extra.api is installed. -->
     <uses-permission android:name="xyz.shizuku.extra.permission.MANAGER" />
 
     <!-- NOT flavor-scoped: this permission name is baked in as a literal constant in the
          client-facing api/provider library (ShizukuProvider.PERMISSION) that third-party apps
          compile against, so it must stay stable across flavors. -->
-    <permission
-        android:name="xyz.shizuku.extra.permission.API_V23"
-        android:description="@string/permission_description"
-        android:icon="@drawable/ic_system_icon"
-        android:label="@string/permission_label"
-        android:permissionGroup="${applicationId}.permission-group.API"
-        android:protectionLevel="dangerous" />
+    <uses-permission android:name="xyz.shizuku.extra.permission.API_V23" />
     
     <!-- moe.shizuku.manager.permission.API_V23 is the permission every stock Shizuku-API client is
          hardcoded to (ShizukuProvider.PERMISSION); the server OS-grants it on authorize
@@ -270,6 +280,12 @@
             android:exported="false"
             android:label="@string/modules_store_title" />
 
+        <!-- App store (apps.json from qianyumeng0228/shizukux-apps). Silent installs go through
+             Shizuku's shell uid, so this needs no REQUEST_INSTALL_PACKAGES or system installer. -->
+        <activity
+            android:name=".apps.AppStoreActivity"
+            android:exported="false"
+            android:label="应用商店" />
         <activity
             android:name=".firewall.FirewallActivity"
             android:exported="false"
@@ -563,6 +579,16 @@
                     It runs silently in the background when Shizuku is not active." />
         </service>
 
+        <service
+            android:name=".adb.SceneRelayService"
+            android:directBootAware="true"
+            android:exported="true"
+            tools:ignore="ExportedService">
+            <intent-filter>
+                <action android:name="${applicationId}.action.ACTIVATE_SCENE_ADB" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".receiver.BinderRequestReceiver"
             android:directBootAware="true"
@@ -690,6 +716,25 @@
                 <action android:name="android.app.action.TRANSFER_OWNERSHIP" />
             </intent-filter>
         </receiver>
+
+        <!-- RoleHolder 资格组件：RoleManager 授予 DEVICE_POLICY_MANAGEMENT 时会查找
+             匹配 ROLE_HOLDER_PROVISION_MANAGED_DEVICE_FROM_TRUSTED_SOURCE 且受
+             LAUNCH_DEVICE_MANAGER_SETUP（signature 级）保护的组件。
+             外部无法拉起（受签名权限保护）；被系统拉起后立即结束。 -->
+        <activity
+            android:name=".admin.RoleHolderProvisionActivity"
+            android:exported="true"
+            android:permission="android.permission.LAUNCH_DEVICE_MANAGER_SETUP"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.app.action.ROLE_HOLDER_PROVISION_MANAGED_DEVICE" />
+                <action android:name="android.app.action.ROLE_HOLDER_PROVISION_MANAGED_DEVICE_FROM_TRUSTED_SOURCE" />
+                <action android:name="android.app.action.ROLE_HOLDER_PROVISION_MANAGED_PROFILE" />
+                <action android:name="android.app.action.ROLE_HOLDER_PROVISION_MANAGED_PROFILE_FROM_TRUSTED_SOURCE" />
+                <action android:name="android.app.action.ROLE_HOLDER_PROVISION_FINALIZATION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name=".adb.AdbPairingService"

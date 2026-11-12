@@ -256,7 +256,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
     private fun Shell() {
         val pagerState = rememberPagerState(
             initialPage = requestedPage.intValue,
-            pageCount = { 5 }
+            pageCount = { 6 }
         )
         val scope = rememberCoroutineScope()
         // Settings search is a modal input state: the bar would otherwise sit under the results
@@ -277,7 +277,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 if (page == 0) homeCtl.adapter.updateData()
             }
         }
-        // currentPage + offset is exactly the continuous 0..4 position the pill expects, which is
+        // currentPage + offset is exactly the continuous 0..5 position the pill expects, which is
         // why the bar gained a positionFraction parameter instead of animating on its own.
         val positionFraction = pagerState.currentPage + pagerState.currentPageOffsetFraction
         // The bar's glass samples this layer, so the pager records itself once per frame and is
@@ -305,11 +305,11 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                         modifier = Modifier.fillMaxSize()
                     ) { page ->
                 when (page) {
-                    // The apps page hosts an AndroidView whose rows (and the "toggle all" header
-                    // most of all) consume ACTION_MOVE, so a horizontal drag that starts on that
-                    // band never reaches the pager and the page refuses to move. Claim the gesture
-                    // in the Initial pass - before the interop view sees it - and only once the
-                    // direction is clearly horizontal, so vertical list scrolling keeps working.
+                    // The "Authorize" page hosts an AndroidView whose rows (and the "toggle all"
+                    // header most of all) consume ACTION_MOVE, so a horizontal drag that starts on
+                    // that band never reaches the pager and the page refuses to move. Claim the
+                    // gesture in the Initial pass - before the interop view sees it - and only once
+                    // the direction is clearly horizontal, so vertical list scrolling keeps working.
                     1 -> Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -325,16 +325,21 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                                     )
                                 )
                             },
-                            showTabBar = false
+                            showTabBar = false,
+                            selectedTab = GlassTabs.INDEX_AUTHORIZE
                         )
                     }
                     2 -> ModulesPage()
                     3 -> TerminalPage()
-                    4 -> SettingsPage(settingsSearching)
+                    // The new "Apps" destination: a card catalogue of the capabilities built into
+                    // ShizukuX, in the same shape as the bundled-tools grid users already know.
+                    4 -> af.shizuku.manager.apps.AppsPage(
+                        onSelectTab = { scope.launch { pagerState.animateScrollToPage(it) } }
+                    )
+                    5 -> SettingsPage(settingsSearching)
                     0 -> HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
-                    // pageCount is 5 and 0..4 are all real pages, so this is only a guard for a
-                    // future tab that has no content yet: render nothing rather than a placeholder
-                    // that claims the page is still reachable from the bottom bar.
+                    // Every index 0..5 is a real page, so this only guards a future tab without
+                    // content: render nothing rather than a placeholder that claims reachability.
                     else -> {}
                 }
                 }
@@ -375,7 +380,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                 )
 
                 val lensDensity = LocalDensity.current
-                val lensUnit = (maxWidth - 36.dp) / 5
+                val lensUnit = (maxWidth - 36.dp) / 6
                 val lensPad = 24.dp
                 val lensRadius = 30.dp
                 val lensPillW = lensUnit - 10.dp
@@ -456,7 +461,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                                     val unitPx = lensUnit.toPx()
                                     dragFraction = if (unitPx > 0f) {
                                         ((down.x - 18.dp.toPx()) / unitPx - 0.5f)
-                                            .coerceIn(0f, 4f)
+                                            .coerceIn(0f, 5f)
                                     } else {
                                         pagerState.currentPage +
                                             pagerState.currentPageOffsetFraction
@@ -498,7 +503,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                                     // finger on the page itself would. Subtracting here pinned
                                     // the value at 0 and the glass never left the home slot.
                                     dragFraction = (cur + dragAmount / unitPx)
-                                        .coerceIn(0f, 4f)
+                                        .coerceIn(0f, 5f)
                                 }
                             }
                         },
@@ -544,6 +549,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                     onPressedChange = { lensPressed = it != null },
                     scale = barScale.value,
                     onHomeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_HOME) } },
+                    onAuthorizeClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_AUTHORIZE) } },
                     onAppsClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_APPS) } },
                     onModulesClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_MODULES) } },
                     onTerminalClick = { scope.launch { pagerState.animateScrollToPage(GlassTabs.INDEX_TERMINAL) } },
@@ -565,6 +571,7 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
             onHelpClick = { showHomeHelpDialog() },
             onRestoreHomeCards = { homeCtl.adapter.restoreAllCards() },
             onAppsClick = { pagerScrollTo(GlassTabs.INDEX_APPS) },
+            onAuthorizeClick = { pagerScrollTo(GlassTabs.INDEX_AUTHORIZE) },
             onModulesClick = { pagerScrollTo(GlassTabs.INDEX_MODULES) },
             onTerminalClick = { pagerScrollTo(GlassTabs.INDEX_TERMINAL) },
             recyclerViewProvider = { ctx, paddingValues -> homeCtl.provider(ctx, paddingValues) },

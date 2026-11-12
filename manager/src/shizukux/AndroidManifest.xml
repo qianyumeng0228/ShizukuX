@@ -13,4 +13,20 @@
         android:name="moe.shizuku.manager.permission.API_V23"
         tools:node="remove" />
 
+    <!-- Only this flavor owns xyz.shizuku.extra.api, so the DEFINITIONS of the Extra permissions
+         belong here. They used to sit in the shared main manifest, which made the dropin build
+         redeclare them too — and that collides with the installed xyz.shizuku.extra.api package
+         (INSTALL_FAILED_DUPLICATE_PERMISSION). -->
+    <permission
+        android:name="xyz.shizuku.extra.permission.MANAGER"
+        android:protectionLevel="signature" />
+
+    <permission
+        android:name="xyz.shizuku.extra.permission.API_V23"
+        android:description="@string/permission_description"
+        android:icon="@drawable/ic_system_icon"
+        android:label="@string/permission_label"
+        android:permissionGroup="${applicationId}.permission-group.API"
+        android:protectionLevel="dangerous" />
+
 </manifest>
