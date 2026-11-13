@@ -56,10 +56,12 @@ import kotlinx.coroutines.withContext
 /**
  * 单个应用的二级设置页。目前只有一项：隐藏桌面图标。
  *
- * 无 root、无 Device Owner 时，Android 13+ 的 shell 改不了组件状态（SecurityException），
- * `pm hide` 又要 MANAGE_USERS，因此走「从当前用户卸载、`-k` 保留数据」：
- * 包从 user 0 摘掉后桌面图标消失，应用数据目录保留；关闭开关时用安装时留存的 APK 装回，
- * 数据继续复用。这一机制意味着隐藏期间应用本身不可启动，界面文案已如实写明。
+ * 路径一（本应用是 Device Owner）：`DevicePolicyManager.setApplicationHidden`，不卸载、不动数据，
+ * 恢复瞬时完成。
+ * 路径二（无 DO）：Android 13+ 的 shell 改不了组件状态（`CHANGE_COMPONENT_ENABLED_STATE` 是
+ * `signature|privileged|role`，shell 对 targetSdk ≥ 33 的应用被显式拒绝），`pm hide` 又要
+ * MANAGE_USERS，因此走「从当前用户卸载、`-k` 保留数据」：包从 user 0 摘掉后桌面图标消失，
+ * 数据目录保留；关闭开关时用安装时留存的 APK 装回。两条路径的文案不同，避免误导。
  */
 class AppSettingsActivity : ComponentActivity() {
 
@@ -138,6 +140,9 @@ private fun AppSettingsScreen(
     onToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
+    val hiddenMode = androidx.compose.runtime.remember(packageName, hidden) {
+        AppCatalogStore.hiddenMode(context, packageName)
+    }
     val app = androidx.compose.runtime.remember(packageName) {
         AppCatalogStore.resolve(context, packageName)
     }
@@ -217,9 +222,13 @@ private fun AppSettingsScreen(
                     Text("隐藏桌面图标", fontSize = 14.sp)
                     Text(
                         if (hidden) {
-                            "已从当前用户卸载，桌面不再显示图标；数据保留，关闭开关会装回来"
+                            when (hiddenMode) {
+                                "component" -> "已隐藏桌面图标，应用与后台服务照常运行；关闭开关即恢复"
+                                "do" -> "已隐藏：包仍安装、数据未动，但系统视作未安装，隐藏期间不能启动"
+                                else -> "已从当前用户卸载，桌面不再显示图标；数据保留，关闭开关会装回来"
+                            }
                         } else {
-                            "开启后会从当前用户卸载该应用以移除桌面图标，数据保留"
+                            "开启后只移除桌面图标；应用仍在运行、数据不动"
                         },
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)

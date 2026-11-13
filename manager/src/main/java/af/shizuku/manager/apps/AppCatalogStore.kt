@@ -11,6 +11,7 @@ import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import af.shizuku.manager.settings.DeviceOwnerHelper
 import timber.log.Timber
 
 /**
@@ -42,8 +43,15 @@ object AppCatalogStore {
     private const val KEY_MANAGED = "managed_packages"
     private const val KEY_FAVORITES = "favorite_packages"
     private const val KEY_HIDDEN_FLAG = "hidden_"
+    private const val KEY_HIDDEN_MODE = "hidden_mode_"
+    private const val KEY_HIDDEN_COMPONENTS = "hidden_components_"
     private const val KEY_HIDDEN_LABEL = "hidden_label_"
     private const val KEY_HIDDEN_VERSION = "hidden_version_"
+    private const val MODE_COMPONENT = "component"
+    private const val MODE_DEVICE_POLICY = "do"
+    private const val MODE_PM = "pm"
+    private const val PERM_CHANGE_COMPONENT = "android.permission.CHANGE_COMPONENT_ENABLED_STATE"
+    private const val ROLE_DEVICE_POLICY_MANAGEMENT = "android.app.role.DEVICE_POLICY_MANAGEMENT"
 
     const val SCENE_PACKAGE = "com.omarea.vtools"
     const val SCENE_LABEL = "星野scene"
@@ -234,6 +242,53 @@ object AppCatalogStore {
         }.sortedBy { it.label.lowercase() }
     }
 
+    /** Any launcher entry still enabled for the package? 图标是否还会出现。 */
+    private fun hasEnabledLauncher(context: Context, packageName: String): Boolean {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER).setPackage(packageName)
+        val resolved: List<ResolveInfo> = try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                context.packageManager.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0L))
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.queryIntentActivities(intent, 0)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+        return resolved.any { it.activityInfo?.enabled == true }
+    }
+
+    /**
+     * 组件启停权限是否到手。`CHANGE_COMPONENT_ENABLED_STATE` 是 `signature|privileged|role`，
+     * 只有持有 `DEVICE_POLICY_MANAGEMENT` role 才会被下发；拿不到时用 Shizuku 的 shell 把自己加进
+     * role 持有者（`cmd role add-role-holder`），系统随即按 manifest 声明补发权限。
+     */
+    fun ensureComponentPermission(context: Context): Boolean {
+        fun granted() = context.checkSelfPermission(PERM_CHANGE_COMPONENT) == PackageManager.PERMISSION_GRANTED
+        if (granted()) return true
+        if (!PrivilegedShell.available()) return false
+        PrivilegedShell.run(
+            "cmd role add-role-holder --user 0 $ROLE_DEVICE_POLICY_MANAGEMENT '${context.packageName}'"
+        )
+        return granted()
+    }
+
+    private fun setLauncherComponentsEnabled(context: Context, components: List<String>, enabled: Boolean) {
+        val pm = context.packageManager
+        components.forEach { flat ->
+            val cn = ComponentName.unflattenFromString(flat) ?: return@forEach
+            runCatching {
+                pm.setComponentEnabledSetting(
+                    cn,
+                    if (enabled) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                    else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    // DONT_KILL_APP：只摘掉桌面入口，进程与后台服务照常运行
+                    PackageManager.DONT_KILL_APP
+                )
+            }
+        }
+    }
+
     /**
      * Launch an app. 图标隐藏期间包不在当前用户下，启动前先把它恢复回来（数据不动），
      * 恢复后开关会同步关闭，避免「看起来很隐藏、其实已经装回来了」的状态漂移。
@@ -265,6 +320,11 @@ object AppCatalogStore {
 
     fun isIconHidden(context: Context, packageName: String): Boolean =
         prefs(context).getBoolean(KEY_HIDDEN_FLAG + packageName, false)
+
+    /** 上次隐藏用的机制：component / do / pm，未隐藏时为 null。UI 文案据此区分。 */
+    fun hiddenMode(context: Context, packageName: String): String? =
+        if (!isIconHidden(context, packageName)) null
+        else prefs(context).getString(KEY_HIDDEN_MODE + packageName, null)
 
     fun isInstalledForUser0(packageName: String): Boolean =
         PrivilegedShell.run("pm list packages --user 0 '$packageName'")
@@ -298,29 +358,69 @@ object AppCatalogStore {
         return list
     }
 
+    /** Package visible to the calling app for its user (hidden / uninstalled-for-user both return false). */
+    private fun isVisible(context: Context, packageName: String): Boolean =
+        try {
+            context.packageManager.getApplicationInfo(packageName, 0)
+            true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        } catch (e: Exception) {
+            false
+        }
+
     /**
      * 隐藏 / 恢复桌面图标。
      *
-     * 无 root、无 Device Owner 时，Android 13+ 的 shell 既改不了组件状态
-     * （`SecurityException: Shell cannot change component state`），`pm hide` 又要 MANAGE_USERS，
-     * 因此这里走「从当前用户卸载、`-k` 保留数据」：包从 user 0 摘掉，桌面图标随之消失；
-     * 关闭开关时优先 `install-existing`，其次用安装时留存的 APK 重装，数据目录被 `-k` 保留并复用。
+     * 实现优先级：
+     * 1. 拿到 `CHANGE_COMPONENT_ENABLED_STATE`（signature|privileged|role，靠 `DEVICE_POLICY_MANAGEMENT`
+     *    role 下发）→ 只禁用目标应用的 launcher 组件（DONT_KILL_APP）。图标消失、包仍安装、
+     *    进程与后台服务继续运行；这是唯一满足「藏图标但照常跑」的路径。
+     * 2. 是 Device Owner → `DevicePolicyManager.setApplicationHidden`。图标消失、数据不动，但系统把包
+     *    视为该用户未安装，进程会停，隐藏期间不可启动。
+     * 3. 都没有 → 「从当前用户卸载、`-k` 保留数据」：关闭时 `install-existing`，其次用留存 APK 重装。
+     *
+     * 机制记录在本地，恢复时按上次用的那条还原，避免拿错方法去还原。
      */
     fun setIconHidden(context: Context, packageName: String, hidden: Boolean): Result<Unit> {
-        if (!PrivilegedShell.available()) {
-            return Result.failure(IllegalStateException("Shizuku 服务未运行，也没有 root"))
-        }
-        val useRoot = PrivilegedShell.hasRoot()
-        fun sh(command: String): String? =
-            PrivilegedShell.run(if (useRoot) "su -c \"$command\"" else command)
+        val deviceOwner = DeviceOwnerHelper.isDeviceOwner(context)
+        val mode = prefs(context).getString(KEY_HIDDEN_MODE + packageName, null)
 
         if (!hidden) {
-            if (isInstalledForUser0(packageName)) {
+            // 1) 上次是组件禁用 → 原地启用回来（应用一直没停过）
+            if (mode == MODE_COMPONENT) {
+                val stored = prefs(context).getString(KEY_HIDDEN_COMPONENTS + packageName, null)
+                    ?.split("\n")?.filter { it.isNotBlank() }.orEmpty()
+                val targets = stored.ifEmpty { launcherComponents(context, packageName) }
+                setLauncherComponentsEnabled(context, targets, true)
+                if (hasEnabledLauncher(context, packageName) || isVisible(context, packageName)) {
+                    markHidden(context, packageName, false)
+                    return Result.success(Unit)
+                }
+            }
+            // 2) 上次是 DO 隐藏（或不知道），先让 DO 解除隐藏
+            if (deviceOwner && mode != MODE_PM && mode != MODE_COMPONENT) {
+                DeviceOwnerHelper.setApplicationHidden(context, packageName, false)
+                if (isVisible(context, packageName)) {
+                    markHidden(context, packageName, false)
+                    return Result.success(Unit)
+                }
+            }
+            // 3) 已可见则无需再装
+            if (isVisible(context, packageName)) {
                 markHidden(context, packageName, false)
                 return Result.success(Unit)
             }
+            // 3) 走 shell 恢复（`-k` 卸载场景）
+            if (!PrivilegedShell.available()) {
+                return Result.failure(IllegalStateException("Shizuku 服务未运行，也没有 root"))
+            }
+            val useRoot = PrivilegedShell.hasRoot()
+            fun sh(command: String): String? =
+                PrivilegedShell.run(if (useRoot) "su -c \"$command\"" else command)
+
             var output = sh("cmd package install-existing --user 0 '$packageName'")
-            if (!isInstalledForUser0(packageName)) {
+            if (!isVisible(context, packageName)) {
                 val apk = ApkInstaller.storedApk(context, packageName)
                     ?: return Result.failure(
                         IllegalStateException(
@@ -333,7 +433,7 @@ object AppCatalogStore {
                 }
                 output = sh("pm install -r -d '$remote'; rm -f '$remote'")
             }
-            if (!isInstalledForUser0(packageName)) {
+            if (!isVisible(context, packageName)) {
                 return Result.failure(
                     IllegalStateException("恢复失败：${output?.trim()?.takeLast(160)}")
                 )
@@ -342,19 +442,71 @@ object AppCatalogStore {
             return Result.success(Unit)
         }
 
-        if (!isInstalledForUser0(packageName)) {
-            markHidden(context, packageName, true)
+        val resolved = resolve(context, packageName)
+
+        // 1) 只禁用 launcher 组件：应用继续运行（首选）
+        if (ensureComponentPermission(context)) {
+            val components = launcherComponents(context, packageName)
+            if (components.isNotEmpty()) {
+                setLauncherComponentsEnabled(context, components, false)
+                if (!hasEnabledLauncher(context, packageName)) {
+                    prefs(context).edit()
+                        .putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+                        .putString(KEY_HIDDEN_MODE + packageName, MODE_COMPONENT)
+                        .putString(KEY_HIDDEN_COMPONENTS + packageName, components.joinToString("\n"))
+                        .putString(KEY_HIDDEN_LABEL + packageName, resolved?.label ?: packageName)
+                        .putString(KEY_HIDDEN_VERSION + packageName, resolved?.versionName)
+                        .apply()
+                    return Result.success(Unit)
+                }
+            }
+        }
+
+        // 2) Device Owner：直接隐藏包
+        if (deviceOwner) {
+            val ok = DeviceOwnerHelper.setApplicationHidden(context, packageName, true)
+            if (ok && !isVisible(context, packageName)) {
+                prefs(context).edit()
+                    .putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+                    .putString(KEY_HIDDEN_MODE + packageName, MODE_DEVICE_POLICY)
+                    .putString(KEY_HIDDEN_LABEL + packageName, resolved?.label ?: packageName)
+                    .putString(KEY_HIDDEN_VERSION + packageName, resolved?.versionName)
+                    .apply()
+                return Result.success(Unit)
+            }
+        }
+
+        // 2) 无 DO（或 DO 隐藏失败）：从当前用户卸载、保留数据
+        if (!PrivilegedShell.available()) {
+            return Result.failure(
+                IllegalStateException(
+                    if (deviceOwner) "设备管理员隐藏未生效，且 Shizuku 未运行"
+                    else "Shizuku 服务未运行，也没有 root；开启设备管理员（DO）后可直接隐藏"
+                )
+            )
+        }
+        val useRoot = PrivilegedShell.hasRoot()
+        fun sh(command: String): String? =
+            PrivilegedShell.run(if (useRoot) "su -c \"$command\"" else command)
+
+        if (!isVisible(context, packageName)) {
+            prefs(context).edit()
+                .putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+                .putString(KEY_HIDDEN_MODE + packageName, MODE_PM)
+                .putString(KEY_HIDDEN_LABEL + packageName, resolved?.label ?: packageName)
+                .putString(KEY_HIDDEN_VERSION + packageName, resolved?.versionName)
+                .apply()
             return Result.success(Unit)
         }
-        val resolved = resolve(context, packageName)
         val output = sh("pm uninstall --user 0 -k '$packageName'")
-        if (isInstalledForUser0(packageName)) {
+        if (isVisible(context, packageName)) {
             return Result.failure(
                 IllegalStateException("无法隐藏：${output?.trim()?.takeLast(160)}")
             )
         }
         prefs(context).edit()
             .putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+            .putString(KEY_HIDDEN_MODE + packageName, MODE_PM)
             .putString(KEY_HIDDEN_LABEL + packageName, resolved?.label ?: packageName)
             .putString(KEY_HIDDEN_VERSION + packageName, resolved?.versionName)
             .apply()
@@ -365,11 +517,14 @@ object AppCatalogStore {
     fun clearIconHidden(context: Context, packageName: String) =
         markHidden(context, packageName, false)
 
-    private fun markHidden(context: Context, packageName: String, hidden: Boolean) {        prefs(context).edit().apply {
+    private fun markHidden(context: Context, packageName: String, hidden: Boolean) {
+        prefs(context).edit().apply {
             if (hidden) {
                 putBoolean(KEY_HIDDEN_FLAG + packageName, true)
             } else {
                 putBoolean(KEY_HIDDEN_FLAG + packageName, false)
+                remove(KEY_HIDDEN_MODE + packageName)
+                remove(KEY_HIDDEN_COMPONENTS + packageName)
                 remove(KEY_HIDDEN_LABEL + packageName)
                 remove(KEY_HIDDEN_VERSION + packageName)
             }

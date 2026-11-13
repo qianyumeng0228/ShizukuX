@@ -71,6 +71,14 @@
         android:name="android.permission.LAUNCH_DEVICE_MANAGER_SETUP"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- protectionLevel = signature|privileged|role，AOSP 的 role 是 DEVICE_POLICY_MANAGEMENT。
+         shell 用 pm grant 会被拒（"is managed by role"），必须靠 role 授予；声明了才进权限表。
+         拿到后可用自身 uid（不是 shell，因此不受 "Shell cannot change component state" 限制）
+         只禁用目标应用的 launcher 组件：图标消失、应用本体与进程继续运行。 -->
+    <uses-permission
+        android:name="android.permission.CHANGE_COMPONENT_ENABLED_STATE"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Per-app hiding reads why another app was closed, so a recents swipe does not leave the
          watch hiding for an app that is no longer there. Granted once by Shizuku over the shell. -->
     <uses-permission
