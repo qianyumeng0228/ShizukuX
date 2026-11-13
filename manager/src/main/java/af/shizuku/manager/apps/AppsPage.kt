@@ -48,6 +48,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,10 +67,13 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import af.shizuku.manager.home.compose.GlassTabStrip
 import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.GlassTabs
@@ -113,6 +117,16 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
 
     LaunchedEffect(refreshKey) { reload() }
 
+    // 从详情 / 设置二级页回来时，安装状态和「已隐藏」标记可能已变，回来就重读一次
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) refreshKey++
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val apkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             installProgress = 0f to "读取安装包"
@@ -131,10 +145,28 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
         uninstallTarget = null
         busyText = "正在卸载 ${app.label}"
         scope.launch {
-            val outcome = withContext(Dispatchers.IO) { ApkInstaller.uninstall(app.packageName) }
+            val outcome = withContext(Dispatchers.IO) {
+                if (app.iconHidden) {
+                    // 已隐藏 = 包已从当前用户摘掉，这里不再调 pm，只处理列表与留存状态
+                    AppCatalogStore.clearIconHidden(context, app.packageName)
+                    if (removeFromList) ApkInstaller.storedApk(context, app.packageName)?.delete()
+                    ApkInstaller.InstallOutcome(
+                        true,
+                        if (removeFromList) "已移除 ${app.label}" else "已隐藏，手机里没有该应用",
+                        app.packageName
+                    )
+                } else {
+                    // 「仅卸载应用」保留数据，之后「重新安装」能接回原数据；「卸载」连数据一起清
+                    ApkInstaller.uninstall(app.packageName, keepData = !removeFromList)
+                }
+            }
             busyText = null
             if (outcome.success) {
-                if (removeFromList) AppCatalogStore.removeManaged(context, app.packageName)
+                if (removeFromList) {
+                    AppCatalogStore.removeManaged(context, app.packageName)
+                    AppCatalogStore.clearIconHidden(context, app.packageName)
+                    AppCatalogStore.removeFavorite(context, app.packageName)
+                }
                 refreshKey++
             }
             Toast.makeText(context, outcome.message, Toast.LENGTH_LONG).show()
@@ -574,6 +606,8 @@ private fun FavoriteTile(
             Text(app.label, fontSize = 13.sp, maxLines = 1)
             if (!app.installed) {
                 Text("未安装", fontSize = 10.sp, color = MaterialTheme.colorScheme.error)
+            } else if (app.iconHidden) {
+                Text("已隐藏", fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -649,10 +683,10 @@ private fun AppRow(app: CatalogApp, onClick: () -> Unit, onLongClick: () -> Unit
         Column(modifier = Modifier.weight(1f)) {
             Text(app.label, fontSize = 13.sp, maxLines = 1)
             Text(
-                text = if (app.installed) {
-                    app.packageName + (app.versionName?.let { " · $it" } ?: "")
-                } else {
-                    "未安装 · 点击查看"
+                text = when {
+                    app.iconHidden -> app.packageName + " · 已隐藏桌面图标"
+                    app.installed -> app.packageName + (app.versionName?.let { " · $it" } ?: "")
+                    else -> "未安装 · 点击查看"
                 },
                 fontSize = 10.sp,
                 color = if (app.installed) {

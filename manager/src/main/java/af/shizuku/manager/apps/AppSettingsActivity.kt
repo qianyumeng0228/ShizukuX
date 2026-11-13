@@ -56,9 +56,10 @@ import kotlinx.coroutines.withContext
 /**
  * 单个应用的二级设置页。目前只有一项：隐藏桌面图标。
  *
- * 做法是禁用它的 launcher 组件（`pm disable-user <pkg>/<activity>`），只动组件不动包本身：
- * 应用进程、数据、推送都不受影响，桌面图标消失；从 ShizukuX 点「打开」时先临时启用、拉起、
- * 再禁用，做到「藏起来但还能用」。
+ * 无 root、无 Device Owner 时，Android 13+ 的 shell 改不了组件状态（SecurityException），
+ * `pm hide` 又要 MANAGE_USERS，因此走「从当前用户卸载、`-k` 保留数据」：
+ * 包从 user 0 摘掉后桌面图标消失，应用数据目录保留；关闭开关时用安装时留存的 APK 装回，
+ * 数据继续复用。这一机制意味着隐藏期间应用本身不可启动，界面文案已如实写明。
  */
 class AppSettingsActivity : ComponentActivity() {
 
@@ -216,9 +217,9 @@ private fun AppSettingsScreen(
                     Text("隐藏桌面图标", fontSize = 14.sp)
                     Text(
                         if (hidden) {
-                            "桌面已不显示图标；从 ShizukuX 打开时会临时恢复"
+                            "已从当前用户卸载，桌面不再显示图标；数据保留，关闭开关会装回来"
                         } else {
-                            "关闭后桌面会重新出现图标"
+                            "开启后会从当前用户卸载该应用以移除桌面图标，数据保留"
                         },
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)

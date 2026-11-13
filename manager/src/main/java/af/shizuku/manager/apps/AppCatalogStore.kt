@@ -24,7 +24,9 @@ data class CatalogApp(
     val versionCode: Long,
     val isSystem: Boolean,
     val installed: Boolean,
-    val info: ApplicationInfo?
+    val info: ApplicationInfo?,
+    /** 图标已被「隐藏桌面图标」摘掉：包不在当前用户下，但数据保留，本页仍算已装。 */
+    val iconHidden: Boolean = false
 )
 
 /**
@@ -40,7 +42,8 @@ object AppCatalogStore {
     private const val KEY_MANAGED = "managed_packages"
     private const val KEY_FAVORITES = "favorite_packages"
     private const val KEY_HIDDEN_FLAG = "hidden_"
-    private const val KEY_HIDDEN_COMPONENT = "hidden_component_"
+    private const val KEY_HIDDEN_LABEL = "hidden_label_"
+    private const val KEY_HIDDEN_VERSION = "hidden_version_"
 
     const val SCENE_PACKAGE = "com.omarea.vtools"
     const val SCENE_LABEL = "星野scene"
@@ -143,6 +146,23 @@ object AppCatalogStore {
             null
         }
         if (info == null) {
+            if (isIconHidden(context, packageName)) {
+                return CatalogApp(
+                    packageName = packageName,
+                    label = displayLabel(
+                        context,
+                        packageName,
+                        prefs(context).getString(KEY_HIDDEN_LABEL + packageName, null)
+                            ?: packageName
+                    ),
+                    versionName = prefs(context).getString(KEY_HIDDEN_VERSION + packageName, null),
+                    versionCode = 0,
+                    isSystem = false,
+                    installed = true,
+                    info = null,
+                    iconHidden = true
+                )
+            }
             return CatalogApp(
                 packageName = packageName,
                 label = displayLabel(context, packageName, packageName),
@@ -215,16 +235,13 @@ object AppCatalogStore {
     }
 
     /**
-     * Launch an app, transparently re-enabling its launcher component when the icon is hidden
-     * and disabling it again right after the activity starts.
+     * Launch an app. 图标隐藏期间包不在当前用户下，启动前先把它恢复回来（数据不动），
+     * 恢复后开关会同步关闭，避免「看起来很隐藏、其实已经装回来了」的状态漂移。
      */
     fun launch(context: Context, packageName: String): Boolean {
         if (isIconHidden(context, packageName)) {
-            val component = hiddenComponent(context, packageName) ?: return false
-            val command = "pm enable '$component'; am start -n '$component'; sleep 1; " +
-                "pm disable-user --user 0 '$component'"
-            val output = PrivilegedShell.run(command) ?: return false
-            return !output.contains("Error:") && !output.contains("Exception")
+            val restored = setIconHidden(context, packageName, false)
+            if (restored.isFailure) return false
         }
         val intent = context.packageManager.getLaunchIntentForPackage(packageName) ?: return false
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -249,8 +266,9 @@ object AppCatalogStore {
     fun isIconHidden(context: Context, packageName: String): Boolean =
         prefs(context).getBoolean(KEY_HIDDEN_FLAG + packageName, false)
 
-    fun hiddenComponent(context: Context, packageName: String): String? =
-        prefs(context).getString(KEY_HIDDEN_COMPONENT + packageName, null)
+    fun isInstalledForUser0(packageName: String): Boolean =
+        PrivilegedShell.run("pm list packages --user 0 '$packageName'")
+            ?.contains("package:$packageName") == true
 
     /** Launcher components of one package, including ones already disabled. */
     fun launcherComponents(context: Context, packageName: String): List<String> {
@@ -281,73 +299,81 @@ object AppCatalogStore {
     }
 
     /**
-     * 隐藏 / 恢复桌面图标：只禁用 launcher 组件，不动包本身。
+     * 隐藏 / 恢复桌面图标。
      *
-     * Android 13 起，shell(uid 2000) 无法给 targetSdk ≥ 33 的应用改组件状态
-     * （`SecurityException: Shell cannot change component state`），所以有 root 时优先走 su；
-     * 都不行时返回带原因的错误，由界面如实提示，而不是假装成功。
+     * 无 root、无 Device Owner 时，Android 13+ 的 shell 既改不了组件状态
+     * （`SecurityException: Shell cannot change component state`），`pm hide` 又要 MANAGE_USERS，
+     * 因此这里走「从当前用户卸载、`-k` 保留数据」：包从 user 0 摘掉，桌面图标随之消失；
+     * 关闭开关时优先 `install-existing`，其次用安装时留存的 APK 重装，数据目录被 `-k` 保留并复用。
      */
     fun setIconHidden(context: Context, packageName: String, hidden: Boolean): Result<Unit> {
-        val pm = context.packageManager
-        val components = launcherComponents(context, packageName)
-        if (components.isEmpty()) {
-            return Result.failure(IllegalStateException("这个应用没有可操作的桌面图标"))
-        }
         if (!PrivilegedShell.available()) {
             return Result.failure(IllegalStateException("Shizuku 服务未运行，也没有 root"))
         }
         val useRoot = PrivilegedShell.hasRoot()
-        val script = components.joinToString("; ") { comp ->
-            val inner = if (hidden) "pm disable-user --user 0 '$comp'" else "pm enable '$comp'"
-            if (useRoot) "su -c \"$inner\"" else inner
-        } + "; echo EXIT:$?"
-        val output = PrivilegedShell.run(script)
-            ?: return Result.failure(IllegalStateException("没有可用的 shell 权限"))
+        fun sh(command: String): String? =
+            PrivilegedShell.run(if (useRoot) "su -c \"$command\"" else command)
 
-        if (output.contains("cannot change component state") ||
-            output.contains("SecurityException") ||
-            output.contains("MANAGE_USERS")
-        ) {
-            return Result.failure(
-                IllegalStateException(
-                    "当前系统禁止用 shell 改组件状态（Android 13 起对 targetSdk ≥ 33 的应用生效）。" +
-                        "这个开关需要 root 或设备管理员（Device Owner）权限才能用。"
+        if (!hidden) {
+            if (isInstalledForUser0(packageName)) {
+                markHidden(context, packageName, false)
+                return Result.success(Unit)
+            }
+            var output = sh("cmd package install-existing --user 0 '$packageName'")
+            if (!isInstalledForUser0(packageName)) {
+                val apk = ApkInstaller.storedApk(context, packageName)
+                    ?: return Result.failure(
+                        IllegalStateException(
+                            "没有留存的安装包，无法恢复显示；请用右上角 + 重新安装，或到应用商店装回来。"
+                        )
+                    )
+                val remote = "/data/local/tmp/sx_restore_${System.currentTimeMillis()}.apk"
+                if (!PrivilegedShell.push(apk, remote) { _ -> }) {
+                    return Result.failure(IllegalStateException("无法把留存的安装包交给 shell"))
+                }
+                output = sh("pm install -r -d '$remote'; rm -f '$remote'")
+            }
+            if (!isInstalledForUser0(packageName)) {
+                return Result.failure(
+                    IllegalStateException("恢复失败：${output?.trim()?.takeLast(160)}")
                 )
-            )
+            }
+            markHidden(context, packageName, false)
+            return Result.success(Unit)
         }
 
-        val applied = components.all { comp ->
-            val name = ComponentName.unflattenFromString(comp)
-            val state = try {
-                if (name == null) -1 else pm.getComponentEnabledSetting(name)
-            } catch (e: Exception) {
-                -1
-            }
-            if (hidden) {
-                state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED ||
-                    state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER ||
-                    state == PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED
-            } else {
-                state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
-                    state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
-            }
+        if (!isInstalledForUser0(packageName)) {
+            markHidden(context, packageName, true)
+            return Result.success(Unit)
         }
-        if (!applied) {
+        val resolved = resolve(context, packageName)
+        val output = sh("pm uninstall --user 0 -k '$packageName'")
+        if (isInstalledForUser0(packageName)) {
             return Result.failure(
-                IllegalStateException("命令执行后组件状态没有变化：${output.trim().takeLast(180)}")
+                IllegalStateException("无法隐藏：${output?.trim()?.takeLast(160)}")
             )
         }
+        prefs(context).edit()
+            .putBoolean(KEY_HIDDEN_FLAG + packageName, true)
+            .putString(KEY_HIDDEN_LABEL + packageName, resolved?.label ?: packageName)
+            .putString(KEY_HIDDEN_VERSION + packageName, resolved?.versionName)
+            .apply()
+        return Result.success(Unit)
+    }
 
-        prefs(context).edit().apply {
+    /** 只清本地隐藏标记，不动包（列表移除、恢复失败等场景用）。 */
+    fun clearIconHidden(context: Context, packageName: String) =
+        markHidden(context, packageName, false)
+
+    private fun markHidden(context: Context, packageName: String, hidden: Boolean) {        prefs(context).edit().apply {
             if (hidden) {
                 putBoolean(KEY_HIDDEN_FLAG + packageName, true)
-                putString(KEY_HIDDEN_COMPONENT + packageName, components.first())
             } else {
                 putBoolean(KEY_HIDDEN_FLAG + packageName, false)
-                remove(KEY_HIDDEN_COMPONENT + packageName)
+                remove(KEY_HIDDEN_LABEL + packageName)
+                remove(KEY_HIDDEN_VERSION + packageName)
             }
         }.apply()
-        return Result.success(Unit)
     }
 }
 
