@@ -146,8 +146,8 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
         busyText = "正在卸载 ${app.label}"
         scope.launch {
             val outcome = withContext(Dispatchers.IO) {
-                if (app.iconHidden) {
-                    // 已隐藏 = 包已从当前用户摘掉，这里不再调 pm，只处理列表与留存状态
+                if (app.iconHidden && app.info == null) {
+                    // 已隐藏且包确实不在当前用户（卸载式隐藏/DO 隐藏）：这里不再调 pm，只处理列表与留存状态
                     AppCatalogStore.clearIconHidden(context, app.packageName)
                     if (removeFromList) ApkInstaller.storedApk(context, app.packageName)?.delete()
                     ApkInstaller.InstallOutcome(
@@ -156,6 +156,8 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
                         app.packageName
                     )
                 } else {
+                    // 组件式隐藏时包还在（只是没有桌面入口），先清掉隐藏记录再正常卸载
+                    if (app.iconHidden) AppCatalogStore.clearIconHidden(context, app.packageName)
                     // 「仅卸载应用」保留数据，之后「重新安装」能接回原数据；「卸载」连数据一起清
                     ApkInstaller.uninstall(app.packageName, keepData = !removeFromList)
                 }

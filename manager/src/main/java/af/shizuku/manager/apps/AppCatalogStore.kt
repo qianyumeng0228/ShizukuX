@@ -199,7 +199,9 @@ object AppCatalogStore {
             versionCode = versionCode,
             isSystem = (info.flags and ApplicationInfo.FLAG_SYSTEM) != 0,
             installed = true,
-            info = info
+            info = info,
+            // 组件模式隐藏时包仍然安装，只能靠本地记录判断；卸载模式则由上面的 null 分支走到。
+            iconHidden = isIconHidden(context, packageName)
         )
     }
 
