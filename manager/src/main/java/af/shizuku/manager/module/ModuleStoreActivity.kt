@@ -27,6 +27,13 @@ class ModuleStoreActivity : ComponentActivity() {
         }
     }
 
+    /** ZIP picker for the upload panel; validation happens after the document is returned. */
+    private val uploadPicker = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) ctl.inspectUpload(uri)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -41,7 +48,22 @@ class ModuleStoreActivity : ComponentActivity() {
                     onBack = { onBackPressedDispatcher.onBackPressed() },
                     onRefresh = { ctl.refresh() },
                     onInstall = { entry -> ctl.install(entry) },
-                    onDismissError = { ctl.dismissError() }
+                    onDismissError = { ctl.dismissError() },
+                    uploadState = ctl.uploadState,
+                    onOpenUpload = { ctl.openUpload() },
+                    onPickUpload = {
+                        uploadPicker.launch(
+                            arrayOf(
+                                "application/zip",
+                                "application/x-zip-compressed",
+                                "application/octet-stream"
+                            )
+                        )
+                    },
+                    onSubmitUpload = { ctl.submitUpload() },
+                    onDraftChange = { ctl.updateDraft(it) },
+                    onExportUpload = { ctl.exportUpload() },
+                    onDismissUpload = { ctl.dismissUpload() }
                 )
             }
         }

@@ -26,6 +26,11 @@ class ModuleStoreController(
     var state by mutableStateOf(ModuleStoreUiState())
         private set
 
+    /** Upload sheet state; kept apart from the catalog state so a failed submission cannot
+     *  disturb the list the user is browsing. */
+    var uploadState by mutableStateOf(ModuleUploadUiState())
+        private set
+
     fun refresh() {
         if (state.loading) return
         scope.launch {
@@ -93,5 +98,108 @@ class ModuleStoreController(
 
     fun dismissError() {
         state = state.copy(error = null)
+    }
+
+    // -- upload ------------------------------------------------------------
+
+    fun openUpload() {
+        uploadState = ModuleUploadUiState(visible = true)
+    }
+
+    fun dismissUpload() {
+        uploadState = ModuleUploadUiState()
+    }
+
+    /**
+     * Validates the picked ZIP. Everything runs locally first, so an archive that would be
+     * rejected by the installer never reaches the network.
+     */
+    fun inspectUpload(uri: Uri) {
+        if (uploadState.inspecting || uploadState.submitting) return
+        scope.launch {
+            uploadState = uploadState.copy(
+                visible = true,
+                inspecting = true,
+                error = null,
+                message = null,
+                done = false
+            )
+            runCatching { ModuleUploadClient.inspect(context, uri) }
+                .onSuccess { candidate ->
+                    uploadState = uploadState.copy(
+                        inspecting = false,
+                        candidate = candidate,
+                        draft = ModuleDraft.of(candidate)
+                    )
+                }
+                .onFailure { failure ->
+                    uploadState = uploadState.copy(
+                        inspecting = false,
+                        candidate = null,
+                        draft = null,
+                        error = context.getString(
+                            R.string.modules_upload_inspect_failed,
+                            failure.message ?: failure.toString()
+                        )
+                    )
+                }
+        }
+    }
+
+    /** Field-by-field edits from the upload sheet; nothing is repacked until submit. */
+    fun updateDraft(draft: ModuleDraft) {
+        if (uploadState.submitting) return
+        uploadState = uploadState.copy(draft = draft, message = null)
+    }
+
+    fun submitUpload() {
+        val candidate = uploadState.candidate ?: return
+        val draft = uploadState.draft ?: ModuleDraft.of(candidate)
+        if (uploadState.submitting) return
+        scope.launch {
+            uploadState = uploadState.copy(submitting = true, error = null, message = null)
+            runCatching { ModuleUploadClient.applyDraft(candidate, draft) }
+                .onSuccess { edited ->
+                    uploadState = uploadState.copy(candidate = edited)
+                    runCatching { ModuleUploadClient.submit(edited) }
+                        .onSuccess {
+                            uploadState = uploadState.copy(
+                                submitting = false,
+                                done = true,
+                                message = context.getString(R.string.modules_upload_ok)
+                            )
+                            onToast(context.getString(R.string.modules_upload_ok))
+                        }
+                        .onFailure { failure ->
+                            uploadState = uploadState.copy(
+                                submitting = false,
+                                error = context.getString(
+                                    R.string.modules_upload_failed,
+                                    failure.message ?: failure.toString()
+                                )
+                            )
+                        }
+                }
+                .onFailure { failure ->
+                    uploadState = uploadState.copy(
+                        submitting = false,
+                        error = context.getString(
+                            R.string.modules_upload_failed,
+                            failure.message ?: failure.toString()
+                        )
+                    )
+                }
+        }
+    }
+
+    /** No backend configured: hand the user the manifest so the module can still be submitted. */
+    fun exportUpload() {
+        val candidate = uploadState.candidate ?: return
+        val manifest = ModuleUploadClient.manifestJson(candidate)
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+        clipboard?.setPrimaryClip(
+            android.content.ClipData.newPlainText("module.prop submission", manifest)
+        )
+        onToast(context.getString(R.string.modules_upload_copied))
     }
 }

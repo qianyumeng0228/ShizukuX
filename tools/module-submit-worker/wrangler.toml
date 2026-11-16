@@ -1,0 +1,24 @@
+name = "shizukux-module-submit"
+main = "index.js"
+compatibility_date = "2025-06-01"
+
+# workers.dev is unreachable from mainland networks, so the endpoint is served from
+# an owned Cloudflare zone instead. This route is created by `wrangler deploy`.
+routes = [
+  { pattern = "submit.zanzhuwang.cc.cd", custom_domain = true }
+]
+
+# Secrets (set with `npx wrangler secret put <NAME>`):
+#   GITHUB_TOKEN  fine-grained PAT, contents:write on the catalog repo
+#   ADMIN_TOKEN   required by GET /pending and POST /review
+#   SUBMIT_TOKEN  optional shared secret checked against X-Submit-Token
+
+# Per-IP rate limit windows live in this namespace (3/min, 10/hour, 20/day).
+[[kv_namespaces]]
+binding = "SUBMIT_KV"
+id = "6b6b73b9483c45ab85e16180863245a4"
+
+[vars]
+GITHUB_OWNER = "qianyumeng0228"
+GITHUB_REPO = "shizukux-modules"
+GITHUB_BRANCH = "main"

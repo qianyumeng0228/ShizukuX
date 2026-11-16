@@ -70,6 +70,13 @@ internal fun ModuleStoreScreen(
     onRefresh: () -> Unit,
     onInstall: (ModuleStoreEntry) -> Unit,
     onDismissError: () -> Unit,
+    uploadState: ModuleUploadUiState = ModuleUploadUiState(),
+    onOpenUpload: () -> Unit = {},
+    onPickUpload: () -> Unit = {},
+    onDraftChange: (ModuleDraft) -> Unit = {},
+    onSubmitUpload: () -> Unit = {},
+    onExportUpload: () -> Unit = {},
+    onDismissUpload: () -> Unit = {},
     showTabBar: Boolean = false,
     onSelectTab: (Int) -> Unit = {}
 ) {
@@ -184,6 +191,7 @@ internal fun ModuleStoreScreen(
                 )
 
                 else -> Column(Modifier.fillMaxSize()) {
+                    UploadEntryCard(onClick = onOpenUpload)
                     OutlinedTextField(
                         value = query,
                         onValueChange = { query = it },
@@ -265,6 +273,61 @@ internal fun ModuleStoreScreen(
                 onInstall(entry)
             }
         )
+    }
+
+    if (uploadState.visible) {
+        ModuleUploadSheet(
+            state = uploadState,
+            onPick = onPickUpload,
+            onDraftChange = onDraftChange,
+            onSubmit = onSubmitUpload,
+            onExport = onExportUpload,
+            onDismiss = onDismissUpload
+        )
+    }
+}
+
+/**
+ * Entry row above the search field. Matches the catalog cards' surface treatment so the
+ * upload affordance reads as part of the store, not as a separate screen.
+ */
+@Composable
+private fun UploadEntryCard(onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.modules_upload_entry_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.modules_upload_entry_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            ShizukuIcon(
+                icon = R.drawable.ic_add_24,
+                contentDescription = null
+            )
+        }
     }
 }
 
