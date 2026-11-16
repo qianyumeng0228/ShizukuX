@@ -197,7 +197,7 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
 
         // The tab bar has to stay visible here too, otherwise tapping "应用" reads as leaving the
         // app's navigation instead of switching a tab.
-        af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_APPS)
+        af.shizuku.manager.utils.GlassTabBar.attach(this, rootView, af.shizuku.manager.utils.GlassTabs.INDEX_AUTHORIZE)
     }
 
     /**

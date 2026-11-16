@@ -37,6 +37,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onHelpClick: () -> Unit,
     onRestoreHomeCards: () -> Unit,
+    onAuthorizeClick: () -> Unit,
     onAppsClick: () -> Unit,
     onModulesClick: () -> Unit,
     onTerminalClick: () -> Unit,
@@ -172,6 +173,8 @@ fun HomeScreen(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 20.dp),
+                    onHomeClick = {},
+                    onAuthorizeClick = onAuthorizeClick,
                     onAppsClick = onAppsClick,
                     onModulesClick = onModulesClick,
                     onTerminalClick = onTerminalClick,

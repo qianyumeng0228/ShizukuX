@@ -41,7 +41,30 @@
     <string name="ui_style_classic">Classic</string>
     <string name="ui_style_glass">Liquid Glass</string>
     <string name="nav_home">Home</string>
+    <string name="nav_authorize">Authorize</string>
     <string name="nav_apps">Apps</string>
+    <!-- Catalogue page behind the Apps slot: cards open existing activities, so every label
+         here must name a capability that really exists in this build. -->
+    <string name="apps_catalog_section_common">Common</string>
+    <string name="apps_catalog_section_all">All apps</string>
+    <string name="apps_catalog_backup">App backup</string>
+    <string name="apps_catalog_firewall">Network firewall</string>
+    <string name="apps_catalog_battery">Battery optimization</string>
+    <string name="apps_catalog_permissions">Permission manager</string>
+    <string name="apps_catalog_hiding">Hide apps</string>
+    <string name="apps_catalog_autostart">Auto start</string>
+    <string name="apps_catalog_appops">App ops</string>
+    <string name="apps_catalog_files">Files</string>
+    <string name="apps_catalog_wifi">Wi-Fi passwords</string>
+    <string name="apps_catalog_device">Device info</string>
+    <string name="apps_catalog_intents">Intents</string>
+    <string name="apps_catalog_store">Module store</string>
+    <string name="apps_catalog_scripting">Scripting</string>
+    <string name="apps_catalog_system_hub">System hub</string>
+    <string name="apps_catalog_root_compat">Root compatibility</string>
+    <string name="apps_catalog_relay">External relay</string>
+    <string name="apps_catalog_dhizuku">Dhizuku apps</string>
+    <string name="apps_catalog_stealth">Stealth mode</string>
     <string name="nav_terminal">Terminal</string>
     <string name="nav_settings">Settings</string>
     <string name="nav_modules">Modules</string>
@@ -1282,6 +1305,21 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
 Please try the command-line method instead.</string>
     <string name="dhizuku_setup_command_line">Command-line activation (copy command)</string>
 
+    <!-- Non-ADB direct device-owner activation (ported from AxManagerD) -->
+    <string name="settings_direct_activation_title">Direct activation (skip app clone / accounts)</string>
+    <string name="settings_direct_activation_summary">Sets ShizukuX as Device Owner under its own UID. Unlike the dpm command, this path never checks for a second user, work profile, app clone or signed-in accounts — only the setup-wizard gate, which is opened temporarily.</string>
+    <string name="direct_activation_confirm_title">Direct activation?</string>
+    <string name="direct_activation_confirm_message">This grants the DEVICE_POLICY_MANAGEMENT role through the shell and temporarily sets user_setup_complete to 0 so the app can set itself as Device Owner.\n\nSide effects:\n• Home and Recents keys stop responding while the value is 0 (Back key and gesture navigation still work); it is restored automatically afterwards.\n• The role bypass switch stays enabled system-wide.\n• A device can hold only one Device Owner.\n\nContinue?</string>
+    <string name="direct_activation_running">Activating…</string>
+    <string name="direct_activation_success_title">Device Owner activated</string>
+    <string name="direct_activation_failure_title">Activation failed</string>
+    <string name="direct_activation_copy_log">Copy log</string>
+    <string name="direct_activation_log_copied">Log copied to clipboard</string>
+    <string name="direct_activation_success_toast">Device Owner set successfully via the direct path. Dhizuku mode enabled.</string>
+    <string name="direct_activation_already_title">Already the device owner</string>
+    <string name="direct_activation_already_message">ShizukuX already holds Device Owner, so there is nothing to activate — running the flow again would be rejected by the system as a duplicate.\n\nRemove Device Owner first if you need to uninstall or downgrade this app.</string>
+    <string name="direct_activation_already_remove">Remove Device Owner</string>
+
     <string name="dhizuku_setup_dhizuku_not_installed">Dhizuku app not found. Please install Dhizuku and set it as Device Owner first, then transfer the permission through it.</string>
     <string name="dhizuku_setup_dhizuku_launch">Open Dhizuku</string>
     <string name="dhizuku_status_active">Device Owner: Active</string>
@@ -1542,6 +1580,14 @@ Please try the command-line method instead.</string>
     <string name="settings_device_control_summary">Quick toggles for connectivity, display, audio, and power via Shizuku</string>
 
     <string name="backup_all_title">Back up all</string>
+    <string name="backup_all_confirm_title">Back up all apps?</string>
+    <string name="backup_all_confirm_msg">Will back up %1$d apps to %2$s.</string>
+    <string name="backup_all_confirm_start">Start backup</string>
+    <string name="backup_all_rootless_title">No ROOT — every app will be uninstalled and reinstalled</string>
+    <string name="backup_all_rootless_msg">Without root, app data is only reachable through a temporary debug build: each of the %1$d apps is uninstalled, re-signed, installed, uninstalled again and reinstalled. During that window its launcher icon disappears, and home-screen shortcuts, widgets and folder groups may break. If restoring the original fails, the app stays on the temporary signature and must be reinstalled manually. Grant ROOT first, or back apps up one at a time.</string>
+    <string name="backup_all_rootless_continue">Continue anyway</string>
+    <string name="backup_all_aborted">Could not restore the original %1$s — the batch stopped. Reinstall that app manually before continuing.</string>
+    <string name="backup_batch_skipped">Skipped %1$d system apps (they would be uninstalled without ROOT).</string>
     <string name="backup_show_system_apps">Show system apps</string>
     <string name="settings_search">Search</string>
     <string name="home_backup_summary_saf">Backups saved to %1$s</string>
@@ -1822,6 +1868,37 @@ This action cannot be undone. Continue?</string>
     <string name="modules_store_detail_updated">Updated</string>
     <string name="modules_store_search_hint">Search modules</string>
     <string name="modules_store_policy_note">Modules run through Shizuku. After installing, grant trust on the module page before its scripts can run.</string>
+    <string name="modules_upload_entry_title">Upload a module</string>
+    <string name="modules_upload_entry_desc">Submit a module ZIP - it goes live after review</string>
+    <string name="modules_upload_title">Upload a module</string>
+    <string name="modules_upload_intro">Pick a module ZIP that contains module.prop. Structure, size and digest are checked on this device before anything is submitted.</string>
+    <string name="modules_upload_pick">Choose a module ZIP</string>
+    <string name="modules_upload_inspecting">Checking…</string>
+    <string name="modules_upload_submit">Submit to store</string>
+    <string name="modules_upload_submitting">Submitting…</string>
+    <string name="modules_upload_ready">Checks passed. Ready to submit.</string>
+    <string name="modules_upload_no_backend">No submission server is configured. You can export the module manifest and submit it by hand instead.</string>
+    <string name="modules_upload_export">Export module manifest</string>
+    <string name="modules_upload_close">Close</string>
+    <string name="modules_upload_cancel">Cancel</string>
+    <string name="modules_upload_ok">Submitted - waiting for review</string>
+    <string name="modules_upload_failed">Submission failed: %1$s</string>
+    <string name="modules_upload_inspect_failed">Check failed: %1$s</string>
+    <string name="modules_upload_sha">SHA-256</string>
+    <string name="modules_upload_size">Size</string>
+    <string name="modules_upload_author">Author</string>
+    <string name="modules_upload_edit_section">Store details</string>
+    <string name="modules_upload_edit_hint">These values are written into module.prop so the store and the installed module agree. Module id and structure flags are fixed.</string>
+    <string name="modules_upload_field_name">Name</string>
+    <string name="modules_upload_field_name_zh">Chinese name</string>
+    <string name="modules_upload_field_author">Author</string>
+    <string name="modules_upload_field_version">Version</string>
+    <string name="modules_upload_field_version_code">Version code</string>
+    <string name="modules_upload_field_description">Description</string>
+    <string name="modules_upload_field_description_zh">Chinese description</string>
+    <string name="modules_upload_field_tags">Tags</string>
+    <string name="modules_upload_field_tags_hint">Up to 6, separated by commas</string>
+    <string name="modules_upload_copied">Module manifest copied</string>
     <string name="modules_store_empty_title">The catalog is empty</string>
     <string name="modules_store_empty_description">The repository returned no modules. Refresh, or check the repository contents.</string>
     <string name="modules_store_error_title">Cannot load the catalog</string>

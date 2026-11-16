@@ -59,9 +59,10 @@ object GlassTabBar {
                     GlassBottomBar(
                         selectedIndex = selectedIndex,
                         onHomeClick = { GlassTabs.open(activity, GlassTabs.INDEX_HOME) },
-                        onAppsClick = { GlassTabs.open(activity, GlassTabs.INDEX_APPS) },
+                        onAuthorizeClick = { GlassTabs.open(activity, GlassTabs.INDEX_AUTHORIZE) },
                         onModulesClick = { GlassTabs.open(activity, GlassTabs.INDEX_MODULES) },
                         onTerminalClick = { GlassTabs.open(activity, GlassTabs.INDEX_TERMINAL) },
+                        onAppsClick = { GlassTabs.open(activity, GlassTabs.INDEX_APPS) },
                         onSettingsClick = { GlassTabs.open(activity, GlassTabs.INDEX_SETTINGS) }
                     )
                 }

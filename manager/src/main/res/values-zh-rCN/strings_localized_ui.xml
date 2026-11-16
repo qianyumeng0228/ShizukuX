@@ -119,6 +119,7 @@
     <string name="settings_main_nav_permission_level_summary">设备所有者（DO）与 Dhizuku 模式</string>
     <string name="settings_device_owner_entry_title">设备所有者（DO）</string>
     <string name="settings_device_owner_tools_category_title">设备所有者工具</string>
+    <string name="settings_do_management_title">DO 管理</string>
     <string name="settings_screen_capture_lockdown_title">屏幕捕获锁定</string>
     <string name="settings_screen_capture_lockdown_summary">全局禁止截图和录屏</string>
     <string name="settings_usb_data_lockdown_title">USB 数据锁定</string>
@@ -300,6 +301,8 @@
     <string name="external_relay_owner_activating">正在写入系统设置…</string>
     <string name="external_relay_owner_done">已通过设备所有者开启开发者选项、USB 调试与无线调试</string>
     <string name="external_relay_owner_failed">开启失败：</string>
+    <string name="external_relay_state_active">已激活</string>
+    <string name="external_relay_state_inactive">未激活</string>
     <string name="dhizuku_owner_not_active">ShizukuX 不是设备所有者，无法直接写入系统设置</string>
     <string name="external_relay_brevent_card_title">黑阈（Brevent）中继授权</string>
     <string name="external_relay_brevent_card_package">me.piebridge.brevent</string>

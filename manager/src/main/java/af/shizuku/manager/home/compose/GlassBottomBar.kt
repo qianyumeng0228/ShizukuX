@@ -80,9 +80,12 @@ fun GlassBottomBar(
      */
     scale: Float = 1f,
     onHomeClick: () -> Unit = {},
-    onAppsClick: () -> Unit = {},
+    /** Index 1: the app list, relabelled "Authorize" because granting shell access is its job. */
+    onAuthorizeClick: () -> Unit = {},
     onModulesClick: () -> Unit = {},
     onTerminalClick: () -> Unit = {},
+    /** Index 4: the in-app tool catalogue, the new "Apps" destination. */
+    onAppsClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
     val dark = isSystemInDarkTheme()
@@ -130,7 +133,7 @@ fun GlassBottomBar(
                 .border(1.dp, stroke, barShape)
         )
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-            val unit = maxWidth / 5
+            val unit = maxWidth / 6
             // Glass lozenge: soft top highlight + faint diagonal sheen + 1dp rim, so the moving
             // highlight looks like a lit piece of glass rather than a flat selection colour.
             if (drawHighlight) {
@@ -203,17 +206,16 @@ fun GlassBottomBar(
                 )
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
-                    // ic_default_app_icon is an adaptive-icon wrapper, which painterResource
-                    // rejects at measure time ("Only VectorDrawables and rasterized asset types
-                    // are supported"), so the Apps tab uses the Android robot instead - which is
-                    // also what the label means, while the puzzle piece stays the modules glyph.
+                    // A shield with a check: this slot is the per-app authorization list, so the
+                    // glyph states what the page grants instead of repeating the app-list robot,
+                    // which now belongs to the catalogue slot further right.
                     index = 1,
                     onPressedChange = onPressedChange,
-                    iconRes = R.drawable.ic_android_24,
-                    label = stringResource(R.string.nav_apps),
+                    iconRes = R.drawable.ic_authorize_24,
+                    label = stringResource(R.string.nav_authorize),
                     tint = if (selectedIndex == 1) activeTint else idleTint,
                     selected = selectedIndex == 1,
-                    onClick = onAppsClick
+                    onClick = onAuthorizeClick
                 )
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
@@ -239,12 +241,24 @@ fun GlassBottomBar(
                 )
                 GlassNavItem(
                     modifier = Modifier.weight(1f),
+                    // The tool catalogue keeps the name and glyph the app list used to wear: it is
+                    // still "Apps", just a launcher for the capabilities built into ShizukuX.
                     index = 4,
+                    onPressedChange = onPressedChange,
+                    iconRes = R.drawable.ic_android_24,
+                    label = stringResource(R.string.nav_apps),
+                    tint = if (selectedIndex == 4) activeTint else idleTint,
+                    selected = selectedIndex == 4,
+                    onClick = onAppsClick
+                )
+                GlassNavItem(
+                    modifier = Modifier.weight(1f),
+                    index = 5,
                     onPressedChange = onPressedChange,
                     iconRes = R.drawable.ic_settings_outline_24,
                     label = stringResource(R.string.nav_settings),
-                    tint = if (selectedIndex == 4) activeTint else idleTint,
-                    selected = selectedIndex == 4,
+                    tint = if (selectedIndex == 5) activeTint else idleTint,
+                    selected = selectedIndex == 5,
                     onClick = onSettingsClick
                 )
             }
@@ -272,9 +286,10 @@ fun GlassTabStrip(
             selectedIndex = selectedIndex,
             positionFraction = positionFraction,
             onHomeClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_HOME) },
-            onAppsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_APPS) },
+            onAuthorizeClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_AUTHORIZE) },
             onModulesClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_MODULES) },
             onTerminalClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL) },
+            onAppsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_APPS) },
             onSettingsClick = { onSelectTab(af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS) }
         )
     }

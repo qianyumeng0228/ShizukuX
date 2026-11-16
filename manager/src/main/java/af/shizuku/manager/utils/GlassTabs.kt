@@ -15,14 +15,19 @@ import af.shizuku.manager.home.HomeActivity
  * HomeActivity), so opening a tab means opening that one container and asking its pager to land on
  * the requested page - and once inside, every further tap is a horizontal scroll, never an
  * activity launch.
+ *
+ * Index 1 is the app list, which is really an authorization surface (grant shell access per app),
+ * so it is labelled "Authorize". The catalogue of in-app tools owns index 4, between the terminal
+ * and settings, and keeps the "Apps" label plus the Android robot glyph.
  */
 object GlassTabs {
 
     const val INDEX_HOME = 0
-    const val INDEX_APPS = 1
+    const val INDEX_AUTHORIZE = 1
     const val INDEX_MODULES = 2
     const val INDEX_TERMINAL = 3
-    const val INDEX_SETTINGS = 4
+    const val INDEX_APPS = 4
+    const val INDEX_SETTINGS = 5
 
     /** Which page the container should show first when a tab bar opens it. */
     const val EXTRA_START_PAGE = "start_page"

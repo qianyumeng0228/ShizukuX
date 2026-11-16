@@ -42,6 +42,11 @@ fun AppsPage(
     controller: AppsController,
     onRootCompat: () -> Unit,
     showTabBar: Boolean = true,
+    /**
+     * Which nav slot this page occupies. The page moved from slot 1 to the "Authorize" slot, so
+     * hard-coding INDEX_APPS here would light up the catalogue tab instead of this one.
+     */
+    selectedTab: Int = GlassTabs.INDEX_AUTHORIZE,
     onSelectTab: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -152,7 +157,7 @@ fun AppsPage(
         },
         bottomBar = {
             if (showTabBar) {
-                GlassTabStrip(selectedIndex = GlassTabs.INDEX_APPS, onSelectTab = onSelectTab)
+                GlassTabStrip(selectedIndex = selectedTab, onSelectTab = onSelectTab)
             }
         }
     ) { innerPadding ->
