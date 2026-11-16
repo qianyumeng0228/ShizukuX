@@ -173,4 +173,12 @@ object BreventRelayManager {
             ""
         }
     }
+
+    /**
+     * Status probe for the authorization card: true while a resident brevent_daemon /
+     * brevent_server exists. Same predicate the activation flow uses to decide success, so the
+     * chip can never disagree with what the activation dialog just reported.
+     * Blocking IPC; call from an IO thread/coroutine, never the main thread.
+     */
+    fun isRelayActive(): Boolean = queryDaemonPid().isNotEmpty()
 }

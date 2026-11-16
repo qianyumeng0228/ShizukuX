@@ -70,21 +70,33 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Clear Device Owner button — only visible when app holds DO status.
-        // This page lays the rows out flat (no collapsible wrapper), so a plain isVisible
-        // assignment is safe here: nothing can overwrite it on expand/collapse.
-        val clearDoPref = findPreference<Preference>("clear_device_owner")
-        clearDoPref?.isVisible = isDeviceOwnerActive(requireContext())
-        clearDoPref?.setOnPreferenceClickListener {
+        // Non-ADB direct activation — the app sets itself as Device Owner under its own
+        // UID, which is the only path that does not check for a second user / work profile /
+        // app clone (or signed-in accounts). See DpDoDirectActivation for the AOSP rationale.
+        findPreference<Preference>("device_owner_direct_activation")?.setOnPreferenceClickListener {
+            val ctx = context ?: return@setOnPreferenceClickListener true
+            if (isDeviceOwnerActive(ctx)) {
+                showAlreadyDeviceOwnerDialog(ctx)
+            } else {
+                showDirectActivationDialog(ctx)
+            }
+            true
+        }
+
+        // "Remove Device Owner" / "Transfer Device Owner" only apply while this app actually holds
+        // DO. Both rows now live inside the collapsible DO management card, so their visibility has
+        // to go through setChildAvailable(): a direct isVisible assignment is overwritten by the
+        // card's expand/collapse pass, which would resurrect these rows after a collapsed-then-
+        // expanded cycle.
+        updateOwnerActionsVisibility(isDeviceOwnerActive(requireContext()))
+
+        findPreference<Preference>("clear_device_owner")?.setOnPreferenceClickListener {
             val ctx = context ?: return@setOnPreferenceClickListener true
             showClearDeviceOwnerDialog(ctx)
             true
         }
 
-        // Transfer Device Owner button — only visible when app holds DO status
-        val transferDoPref = findPreference<Preference>("transfer_device_owner")
-        transferDoPref?.isVisible = isDeviceOwnerActive(requireContext())
-        transferDoPref?.setOnPreferenceClickListener {
+        findPreference<Preference>("transfer_device_owner")?.setOnPreferenceClickListener {
             val ctx = context ?: return@setOnPreferenceClickListener true
             showTransferDeviceOwnerDialog(ctx)
             true
@@ -208,6 +220,13 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
         findPreference<Preference>("transfer_device_owner")?.isVisible = active
     }
 
+    /** Reveals/hides the two owner-only rows inside the collapsible DO management card. */
+    private fun updateOwnerActionsVisibility(visible: Boolean) {
+        val category = findPreference<CollapsiblePreferenceCategory>("category_do_management") ?: return
+        category.setChildAvailable("clear_device_owner", visible)
+        category.setChildAvailable("transfer_device_owner", visible)
+    }
+
     private fun showClearDeviceOwnerDialog(ctx: Context) {
         MaterialAlertDialogBuilder(ctx)
             .setTitle(R.string.dhizuku_clear_owner_title)
@@ -229,6 +248,7 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
                 dpm.clearProfileOwner(admin)
             }
             Toast.makeText(ctx, R.string.dhizuku_clear_owner_success, Toast.LENGTH_LONG).show()
+            updateOwnerActionsVisibility(false)
             // Refresh the UI to reflect the change
             val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
             if (dhizukuPref != null) {
@@ -239,6 +259,103 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
         } catch (e: Exception) {
             Toast.makeText(ctx, R.string.dhizuku_clear_owner_failure, Toast.LENGTH_LONG).show()
         }
+    }
+
+    /**
+     * 已是设备所有者时的提示框。
+     *
+     * 入口层先拦截，避免用户重跑七步流程；`DpDoDirectActivation.activate` 里的
+     * ALREADY_OWNER 分支是给直接调用该方法的调用方兜底的，正常 UI 路径不会走到。
+     */
+    private fun showAlreadyDeviceOwnerDialog(ctx: Context) {
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.direct_activation_already_title)
+            .setMessage(R.string.direct_activation_already_message)
+            .setPositiveButton(R.string.direct_activation_already_remove) { _, _ ->
+                showClearDeviceOwnerDialog(ctx)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    /**
+     * 非 ADB 直连激活入口：确认 → 后台执行 → 结果对话框（含完整日志，可复制）。
+     *
+     * 该路径会把 user_setup_complete 临时置 0（Home / 最近任务键短暂失灵），
+     * 因此必须先明确告知副作用再执行。
+     */
+    private fun showDirectActivationDialog(ctx: Context) {
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.direct_activation_confirm_title)
+            .setMessage(R.string.direct_activation_confirm_message)
+            .setPositiveButton(android.R.string.ok) { _, _ -> runDirectActivation(ctx) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun runDirectActivation(ctx: Context) {
+        if (!Shizuku.pingBinder()) {
+            Toast.makeText(ctx, R.string.dhizuku_setup_shizukux_not_running, Toast.LENGTH_LONG).show()
+            return
+        }
+        val progressDialog = MaterialAlertDialogBuilder(ctx)
+            .setTitle(R.string.direct_activation_running)
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val result = try {
+                DpDoDirectActivation.activate(ctx)
+            } catch (e: Throwable) {
+                DpDoDirectActivation.ActivationResult(
+                    stage = DpDoDirectActivation.Stage.SET_OWNER_THREW,
+                    success = false,
+                    message = e.message ?: e.javaClass.simpleName,
+                    log = listOf("Exception: ${e.javaClass.name}: ${e.message}")
+                )
+            }
+            withContext(Dispatchers.Main) {
+                progressDialog.dismiss()
+                if (result.success) {
+                    ShizukuSettings.setDhizukuModeEnabled(true)
+                    updateOwnerActionsVisibility(true)
+                    val dhizukuPref = findPreference<TwoStatePreference>(KEY_DHIZUKU_MODE)
+                    if (dhizukuPref != null) {
+                        dhizukuPref.isChecked = true
+                        updateDhizukuDeviceOwnerStatus(dhizukuPref)
+                    }
+                    Toast.makeText(ctx, R.string.direct_activation_success_toast, Toast.LENGTH_LONG).show()
+                }
+                showDirectActivationResult(ctx, result)
+            }
+        }
+    }
+
+    private fun showDirectActivationResult(
+        ctx: Context,
+        result: DpDoDirectActivation.ActivationResult
+    ) {
+        val body = buildString {
+            append(result.message)
+            if (result.log.isNotEmpty()) {
+                append("\n\n")
+                append(result.log.joinToString("\n"))
+            }
+        }
+        MaterialAlertDialogBuilder(ctx)
+            .setTitle(
+                if (result.success) R.string.direct_activation_success_title
+                else R.string.direct_activation_failure_title
+            )
+            .setMessage(body)
+            .setPositiveButton(android.R.string.ok, null)
+            .setNeutralButton(R.string.direct_activation_copy_log) { _, _ ->
+                val clipboard = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(ClipData.newPlainText("direct activation log", body))
+                Toast.makeText(ctx, R.string.direct_activation_log_copied, Toast.LENGTH_SHORT).show()
+            }
+            .show()
     }
 
     private fun showDhizukuSetupDialog(ctx: Context) {

@@ -39,6 +39,79 @@ class ExternalRelayAdapter(
             "$packageName/af.shizuku.manager.adb.ExternalRelayAutoService"
     }
 
+    /** Latest probe results for the two relayed apps. null means "not probed yet": the chip stays
+     *  hidden instead of claiming a state we have not actually measured. */
+    private var sceneActive: Boolean? = null
+    private var breventActive: Boolean? = null
+
+    /** True while an activation is in flight. The card shows an "activating" line in that window;
+     *  before this flag existed the line was written on click and nothing ever hid it again, so a
+     *  finished (or failed) run left "正在激活…" on screen indefinitely. */
+    private var sceneBusy = false
+    private var breventBusy = false
+
+    /** Marks Scene's activation as started/finished; re-binds the card so the status line tracks it. */
+    fun setSceneBusy(busy: Boolean) {
+        if (sceneBusy == busy) return
+        sceneBusy = busy
+        val position = items.indexOf(TYPE_SCENE)
+        if (position >= 0) notifyItemChanged(position)
+    }
+
+    /** Same contract as [setSceneBusy], for Brevent. */
+    fun setBreventBusy(busy: Boolean) {
+        if (breventBusy == busy) return
+        breventBusy = busy
+        val position = items.indexOf(TYPE_BREVENT)
+        if (position >= 0) notifyItemChanged(position)
+    }
+
+    /** Pushes the Scene probe result in. Call from the main thread after the IO probe returns. */
+    fun updateSceneState(active: Boolean?) {
+        if (sceneActive == active) return
+        sceneActive = active
+        val position = items.indexOf(TYPE_SCENE)
+        if (position >= 0) notifyItemChanged(position)
+    }
+
+    /** Pushes the Brevent probe result in. Call from the main thread after the IO probe returns. */
+    fun updateBreventState(active: Boolean?) {
+        if (breventActive == active) return
+        breventActive = active
+        val position = items.indexOf(TYPE_BREVENT)
+        if (position >= 0) notifyItemChanged(position)
+    }
+
+    /**
+     * Paints the state chip. Active uses the M3 primary container pair, inactive the surface
+     * variant pair, so the chip reads as "filled = working" in both light and dark themes and
+     * never hard-codes green/grey outside the palette.
+     */
+    private fun renderStateChip(chip: TextView, active: Boolean?) {
+        if (active == null) {
+            chip.visibility = android.view.View.GONE
+            return
+        }
+        chip.visibility = android.view.View.VISIBLE
+        chip.text = context.getString(
+            if (active) R.string.external_relay_state_active
+            else R.string.external_relay_state_inactive
+        )
+        val bgAttr = if (active) com.google.android.material.R.attr.colorPrimaryContainer
+        else com.google.android.material.R.attr.colorSurfaceVariant
+        val fgAttr = if (active) com.google.android.material.R.attr.colorOnPrimaryContainer
+        else com.google.android.material.R.attr.colorOnSurfaceVariant
+        chip.setTextColor(themeColor(fgAttr))
+        chip.backgroundTintList =
+            android.content.res.ColorStateList.valueOf(themeColor(bgAttr))
+    }
+
+    private fun themeColor(attr: Int): Int {
+        val value = android.util.TypedValue()
+        context.theme.resolveAttribute(attr, value, true)
+        return value.data
+    }
+
     /** Ordered list of relay entries; extend this when adding new relayed apps. */
     val items = mutableListOf<Int>()
 
@@ -178,26 +251,40 @@ class ExternalRelayAdapter(
     }
 
     inner class SceneViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
+        private val stateChip: TextView = itemView.findViewById(R.id.state_chip)
         private val statusText: TextView = itemView.findViewById(R.id.status_text)
         private val actionButton: MaterialButton = itemView.findViewById(R.id.action_button)
 
         fun bind() {
-            actionButton.setOnClickListener {
+            renderStateChip(stateChip, sceneActive)
+            if (sceneBusy) {
                 statusText.text = context.getString(R.string.external_relay_scene_activating)
                 statusText.visibility = android.view.View.VISIBLE
+            } else {
+                statusText.visibility = android.view.View.GONE
+            }
+            actionButton.setOnClickListener {
+                setSceneBusy(true)
                 onActivateScene()
             }
         }
     }
 
     inner class BreventViewHolder(itemView: android.view.View) : RecyclerView.ViewHolder(itemView) {
+        private val stateChip: TextView = itemView.findViewById(R.id.state_chip)
         private val statusText: TextView = itemView.findViewById(R.id.status_text)
         private val actionButton: MaterialButton = itemView.findViewById(R.id.action_button)
 
         fun bind() {
-            actionButton.setOnClickListener {
+            renderStateChip(stateChip, breventActive)
+            if (breventBusy) {
                 statusText.text = context.getString(R.string.external_relay_brevent_activating)
                 statusText.visibility = android.view.View.VISIBLE
+            } else {
+                statusText.visibility = android.view.View.GONE
+            }
+            actionButton.setOnClickListener {
+                setBreventBusy(true)
                 onActivateBrevent()
             }
         }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pill background for the relay state chip. The solid colour is a placeholder: the adapter
+     applies backgroundTintList from the current theme (colorPrimaryContainer when active,
+     colorSurfaceVariant when inactive), so the chip always follows the M3 palette instead of
+     hard-coding green/grey. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FFFFFFFF" />
+    <corners android:radius="999dp" />
+</shape>

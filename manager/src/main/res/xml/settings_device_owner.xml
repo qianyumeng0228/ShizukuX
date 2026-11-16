@@ -2,37 +2,58 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <af.shizuku.manager.settings.ExtraFeaturePreference
-        android:key="dhizuku_mode"
-        android:title="@string/settings_dhizuku_mode"
-        android:summary="@string/settings_dhizuku_mode_summary"
-        android:icon="@drawable/ic_admin_panel_settings_24"
-        app:infoTitle="@string/help_dhizuku_title"
-        app:infoDetail="@string/help_dhizuku_detail"
-        app:badgeType="plus" />
+    <!-- DO management: the Dhizuku switch, the two activation paths and the
+         remove / transfer actions live in one collapsible card, mirroring the
+         "Device Owner tools" group below. Clear / transfer start hidden and are
+         revealed through CollapsiblePreferenceCategory.setChildAvailable(), so an
+         expand-collapse cycle cannot resurrect rows that do not apply. -->
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_do_management"
+        android:title="@string/settings_do_management_title"
+        android:defaultValue="true">
 
-    <!-- Only shown when app is active Device Owner; tapping clears DO status -->
-    <Preference
-        android:key="clear_device_owner"
-        android:title="@string/settings_clear_device_owner"
-        android:summary="@string/settings_clear_device_owner_summary"
-        android:icon="@drawable/ic_delete_24"
-        android:visible="false" />
+        <af.shizuku.manager.settings.ExtraFeaturePreference
+            android:key="dhizuku_mode"
+            android:title="@string/settings_dhizuku_mode"
+            android:summary="@string/settings_dhizuku_mode_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            app:infoTitle="@string/help_dhizuku_title"
+            app:infoDetail="@string/help_dhizuku_detail"
+            app:badgeType="plus" />
 
-    <!-- Only shown when app is active Device Owner; tapping transfers DO to another app -->
-    <Preference
-        android:key="transfer_device_owner"
-        android:title="@string/settings_transfer_device_owner"
-        android:summary="@string/settings_transfer_device_owner_summary"
-        android:icon="@drawable/ic_swap_horiz_24"
-        android:visible="false" />
+        <!-- Non-ADB direct activation: the app sets itself as Device Owner under its own UID.
+             That path skips the "second user / work profile / app clone" and "accounts" gates
+             that always block `dpm set-device-owner` when run as shell. -->
+        <Preference
+            android:key="device_owner_direct_activation"
+            android:title="@string/settings_direct_activation_title"
+            android:summary="@string/settings_direct_activation_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
 
-    <!-- Dhizuku app management: list & control which apps may use the Dhizuku API -->
-    <Preference
-        android:key="dhizuku_app_management"
-        android:title="@string/dhizuku_app_management_title"
-        android:summary="@string/dhizuku_app_management_summary"
-        android:icon="@drawable/ic_admin_panel_settings_24" />
+        <!-- Only shown when app is active Device Owner; tapping clears DO status -->
+        <Preference
+            android:key="clear_device_owner"
+            android:title="@string/settings_clear_device_owner"
+            android:summary="@string/settings_clear_device_owner_summary"
+            android:icon="@drawable/ic_delete_24"
+            android:visible="false" />
+
+        <!-- Only shown when app is active Device Owner; tapping transfers DO to another app -->
+        <Preference
+            android:key="transfer_device_owner"
+            android:title="@string/settings_transfer_device_owner"
+            android:summary="@string/settings_transfer_device_owner_summary"
+            android:icon="@drawable/ic_swap_horiz_24"
+            android:visible="false" />
+
+        <!-- Dhizuku app management: list & control which apps may use the Dhizuku API -->
+        <Preference
+            android:key="dhizuku_app_management"
+            android:title="@string/dhizuku_app_management_title"
+            android:summary="@string/dhizuku_app_management_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
     <af.shizuku.manager.settings.CollapsiblePreferenceCategory
         android:key="category_dhizuku_admin"
