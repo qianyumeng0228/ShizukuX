@@ -65,7 +65,9 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             val succeeded: Int,
             val failed: Int,
             val path: String,
-            val isRestore: Boolean = false
+            val isRestore: Boolean = false,
+            /** System apps left out because a rootless batch would have uninstalled them. */
+            val skipped: Int = 0
         ) : BackupEvent()
         data class RestoreComplete(val pkg: String, val success: Boolean) : BackupEvent()
         data class FreezeChanged(val pkg: String, val nowFrozen: Boolean) : BackupEvent()
@@ -405,9 +407,19 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
             val rootDir = rootBackupDir()
             val total = apps.size
             var index = 0
+            var skipped = 0
+            var abortedPkg: String? = null
             for (entry in apps) {
                 val pkg = entry.packageName
                 if (pkg in _busyPackages.value) {
+                    index++
+                    continue
+                }
+                // Without root the only way to reach /data/data is temp-debug, which uninstalls
+                // and re-signs the package. Applying that to a system app can strip its updates
+                // for good, so system apps are excluded from the rootless batch.
+                if (rootDir == null && entry.isSystem) {
+                    skipped++
                     index++
                     continue
                 }
@@ -418,55 +430,64 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 _busyPackages.value = _busyPackages.value + pkg
                 var prepared = false
+                var restoreFailed = false
                 try {
                     ShizukuXAPI.BackupRestoreExtra.forceStop(pkg)
 
                     // Root path: one tar per app, nothing is uninstalled.
                     if (rootDir != null) {
                         if (RootBackup.backup(pkg, rootDir)) succeeded++ else failed++
-                        continue
-                    }
+                    } else {
+                        prepared = try {
+                            ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
+                        } catch (_: Exception) { false }
 
-                    prepared = try {
-                        ShizukuXAPI.ApkPatcher.prepareTempDebug(pkg)
-                    } catch (_: Exception) { false }
-
-                    var backedUpSomething = false
-                    val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
-                    if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr)) {
-                        backedUpSomething = true
+                        var backedUpSomething = false
+                        val dataPfd = try { ShizukuXAPI.ApkPatcher.streamDataDir(pkg) } catch (_: Exception) { null }
+                        if (dataPfd != null && streamPfdToBackup(dataPfd, safTreeUri, outputDir, pkg, "data.tar.gz", cr)) {
+                            backedUpSomething = true
+                        }
+                        val extPfd = try {
+                            ShizukuXAPI.BackupRestoreExtra.backupExternalData(
+                                pkg
+                            )
+                        } catch (_: Exception) { null }
+                        if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr)) {
+                            backedUpSomething = true
+                        }
+                        // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
+                        val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
+                        if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr)) {
+                            backedUpSomething = true
+                        }
+                        if (backedUpSomething) succeeded++ else failed++
                     }
-                    val extPfd = try {
-                        ShizukuXAPI.BackupRestoreExtra.backupExternalData(
-                            pkg
-                        )
-                    } catch (_: Exception) { null }
-                    if (extPfd != null && streamPfdToBackup(extPfd, safTreeUri, outputDir, pkg, "external.tar.gz", cr)) {
-                        backedUpSomething = true
-                    }
-                    // OBB data (upstream 737e394c): best-effort, null when the app has no OBB dir.
-                    val obbPfd = try { ShizukuXAPI.BackupRestoreExtra.backupObbData(pkg) } catch (_: Exception) { null }
-                    if (obbPfd != null && streamPfdToBackup(obbPfd, safTreeUri, outputDir, pkg, "obb.tar.gz", cr)) {
-                        backedUpSomething = true
-                    }
-                    if (backedUpSomething) succeeded++ else failed++
                 } catch (e: Exception) {
                     Timber.e(e, "Batch backup failed for $pkg")
                     failed++
                 } finally {
                     if (prepared) {
-                        try {
-                            ShizukuXAPI.ApkPatcher.restoreOriginal(
-                                pkg
-                            )
+                        restoreFailed = try {
+                            !ShizukuXAPI.ApkPatcher.restoreOriginal(pkg)
                         } catch (e: Exception) {
-                            Timber.e(
-                                e,
-                                "restoreOriginal failed for $pkg (post-backup cleanup)"
-                            )
+                            Timber.e(e, "restoreOriginal failed for $pkg (post-backup cleanup)")
+                            true
                         }
                     }
                     _busyPackages.value = _busyPackages.value - pkg
+                }
+                if (restoreFailed) {
+                    // Stop the whole batch: every remaining app would be torn down and
+                    // re-signed while this one is already stranded on the temporary build.
+                    abortedPkg = pkg
+                    _events.emit(
+                        BackupEvent.Failure(
+                            getApplication<Application>().getString(
+                                af.shizuku.manager.R.string.backup_all_aborted, pkg
+                            )
+                        )
+                    )
+                    break
                 }
             }
             val outputDesc = if (safTreeUri != null) {
@@ -475,7 +496,10 @@ class BackupViewModel(app: Application) : AndroidViewModel(app) {
                 outputDir?.absolutePath ?: "备份文件夹"
             }
             _batchProgress.value = BatchProgress(current = total, total = total, succeeded = succeeded, failed = failed)
-            _events.emit(BackupEvent.BatchComplete(succeeded, failed, outputDesc))
+            if (abortedPkg != null) {
+                Timber.w("batch backup aborted after $abortedPkg could not be restored")
+            }
+            _events.emit(BackupEvent.BatchComplete(succeeded, failed, outputDesc, skipped = skipped))
             _batchRunning.value = false
         }
     }

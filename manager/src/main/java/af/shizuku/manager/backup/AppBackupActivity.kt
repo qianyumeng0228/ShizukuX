@@ -20,6 +20,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.databinding.ActivityAppBackupBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AppBackupActivity : AppBarActivity() {
 
@@ -213,7 +214,10 @@ class AppBackupActivity : AppBarActivity() {
                             } else {
                                 getString(R.string.backup_batch_complete, event.succeeded, event.failed, event.path)
                             }
-                            val snackbar = Snackbar.make(rootView, msg, Snackbar.LENGTH_LONG)
+                            val skippedNote = if (event.skipped > 0) {
+                                "\n" + getString(R.string.backup_batch_skipped, event.skipped)
+                            } else ""
+                            val snackbar = Snackbar.make(rootView, msg + skippedNote, Snackbar.LENGTH_LONG)
                             snackbar.setAction(R.string.backup_history_action) { showRestoreHistory() }
                             snackbar.show()
                         }
@@ -292,9 +296,8 @@ class AppBackupActivity : AppBarActivity() {
         // the button isn't clickable-no-op during a running batch.
         backupAllItem?.isEnabled = !viewModel.batchRunning.value
 
-        // Add choose export directory as a dynamic menu item
-        menu.add(0, MENU_CHOOSE_DIR, 100, R.string.backup_choose_export_dir)
-            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+        // "Choose backup directory" lives in the menu XML next to the search action: the
+        // folder icon has to mean the folder picker, not "back up all" (user report).
         // Add restore history
         menu.add(0, MENU_HISTORY, 101, R.string.backup_history_title)
             .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
@@ -336,15 +339,8 @@ class AppBackupActivity : AppBarActivity() {
             MENU_RESTORE -> { startRestoreSelected(); true }
             MENU_SELECT_ALL -> { adapter.selectAll(); updateSelectionTitle(); true }
             MENU_CANCEL -> { exitSelectionMode(); true }
-            R.id.action_backup_all -> {
-                val safUri = getSafUri()
-                if (safUri != null) {
-                    viewModel.backupAll(safTreeUri = safUri)
-                } else {
-                    viewModel.backupAll(outputDir = getExternalFilesDir(null) ?: filesDir)
-                }
-                true
-            }
+            R.id.action_choose_dir -> { pickBackupDir(); true }
+            R.id.action_backup_all -> { confirmBackupAll(); true }
             R.id.action_show_system -> {
                 includeSystem = !includeSystem
                 item.isChecked = includeSystem
@@ -385,6 +381,53 @@ class AppBackupActivity : AppBarActivity() {
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .show()
+        }
+    }
+
+    /**
+     * Confirms a batch backup before it runs.
+     *
+     * Tapping the action used to start immediately. Without root every single app in the list
+     * is uninstalled, re-signed, installed, uninstalled again and reinstalled — the user
+     * described it as "tapping the folder icon made my apps disappear one by one" (this
+     * activity's folder icon was actually bound to 全部备份). The confirmation now names the
+     * target directory, and the rootless branch spells out the uninstall/reinstall cost.
+     */
+    private fun confirmBackupAll() {
+        val loaded = viewModel.state.value as? BackupViewModel.UiState.Loaded
+        val apps = loaded?.apps.orEmpty()
+        if (apps.isEmpty()) {
+            Snackbar.make(rootView, R.string.backup_restore_no_apps, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        // RootBackup.available() can block on a su prompt; resolve it off the main thread.
+        lifecycleScope.launch {
+            val rootDir = withContext(Dispatchers.IO) { getRootDir() }
+            if (isFinishing || isDestroyed) return@launch
+            if (rootDir != null) {
+                MaterialAlertDialogBuilder(this@AppBackupActivity)
+                    .setTitle(R.string.backup_all_confirm_title)
+                    .setMessage(getString(R.string.backup_all_confirm_msg, apps.size, rootDir))
+                    .setPositiveButton(R.string.backup_all_confirm_start) { _, _ -> startBackupAll() }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            } else {
+                MaterialAlertDialogBuilder(this@AppBackupActivity)
+                    .setTitle(R.string.backup_all_rootless_title)
+                    .setMessage(getString(R.string.backup_all_rootless_msg, apps.size))
+                    .setPositiveButton(R.string.backup_all_rootless_continue) { _, _ -> startBackupAll() }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }
+    }
+
+    private fun startBackupAll() {
+        val safUri = getSafUri()
+        if (safUri != null) {
+            viewModel.backupAll(safTreeUri = safUri)
+        } else {
+            viewModel.backupAll(outputDir = getExternalFilesDir(null) ?: filesDir)
         }
     }
 

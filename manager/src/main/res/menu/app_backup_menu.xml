@@ -9,9 +9,18 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom" />
 
+    <!-- Folder icon now means what it looks like: choosing the backup directory.
+         "Back up all" used to wear this icon, so a tap on the folder started a
+         destructive batch that uninstalls/reinstalls every app (user report). -->
+    <item
+        android:id="@+id/action_choose_dir"
+        android:icon="@drawable/ic_folder_24"
+        android:title="@string/backup_choose_export_dir"
+        app:showAsAction="ifRoom" />
+
     <item
         android:id="@+id/action_backup_all"
-        android:icon="@drawable/ic_folder_24"
+        android:icon="@drawable/ic_backup_all_24"
         android:title="@string/backup_all_title"
         app:showAsAction="ifRoom" />
 
