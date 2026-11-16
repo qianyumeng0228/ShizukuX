@@ -43,3 +43,6 @@ release_k2004/
 # Rust (adb-pairing crate) build artifacts
 rust/target/
 rust/Cargo.lock
+
+# local Cloudflare wrangler state (account cache)
+tools/module-submit-worker/.wrangler/
