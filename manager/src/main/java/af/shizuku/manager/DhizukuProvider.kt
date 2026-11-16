@@ -13,8 +13,14 @@ import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.os.Parcel
+import android.os.ParcelFileDescriptor
 import android.os.RemoteException
+import com.rosan.dhizuku.aidl.IDhizukuRemoteProcess
 import timber.log.Timber
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /**
  * Dhizuku Provider — implements the official Dhizuku server protocol so that
@@ -41,7 +47,10 @@ class DhizukuProvider : ContentProvider() {
         private const val BINDER_DESCRIPTOR = "com.rosan.dhizuku.server"
         private const val AIDL_DESCRIPTOR = "com.rosan.dhizuku.aidl.IDhizuku"
         private const val TRANSACT_CODE_REMOTE_BINDER = Binder.FIRST_CALL_TRANSACTION + 10
-        private const val SERVICE_VERSION_CODE = 7
+        // Official server API is at version 8 (adds lock-task-mode listeners). Clients that
+        // gate features on getVersionCode() must see the same value as the real Dhizuku.
+        private const val SERVICE_VERSION_CODE = 8
+        private const val SERVICE_VERSION_NAME = "8"
     }
 
     // ------------------------------------------------------------------
@@ -51,6 +60,12 @@ class DhizukuProvider : ContentProvider() {
     private fun isCallerAllowedToUseDhizuku(callingUid: Int): Boolean {
         if (callingUid == android.os.Process.myUid()) return true
         val ctx = context ?: return false
+
+        // The user-facing "Dhizuku mode" switch is the master gate for third-party access.
+        // It is checked here (not by failing the whole onTransact) so that unprivileged
+        // protocol calls such as getVersionCode()/isPermissionGranted() still answer
+        // coherently instead of leaving every caller with a half-broken binder.
+        if (!ShizukuSettings.isDhizukuModeEnabled()) return false
 
         af.shizuku.manager.database.DhizukuAppManager.ensureInitialized(ctx)
         val entity = af.shizuku.manager.database.DhizukuAppManager.findByUid(callingUid)
@@ -105,10 +120,11 @@ class DhizukuProvider : ContentProvider() {
 
         @Throws(RemoteException::class)
         override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
-            if (!ShizukuSettings.isDhizukuModeEnabled()) {
-                Timber.tag(TAG).w("Dhizuku mode disabled, rejecting transact code=$code")
-                return false
-            }
+            // NOTE: no blanket "Dhizuku mode off -> return false" here. Returning false from
+            // onTransact leaves the caller with an empty reply parcel, so every AIDL call
+            // (including isPermissionGranted) fails in an unspecified way and clients show
+            // "Dhizuku 已激活但授权无效". Authorization is enforced per privileged call via
+            // enforceCallingPermission(), which consults the mode switch.
 
             // Remote binder relay — the core Dhizuku feature.
             // Clients call Binder.transact(TRANSACT_CODE_REMOTE_BINDER, ...) with
@@ -202,7 +218,7 @@ class DhizukuProvider : ContentProvider() {
                 }
                 Binder.FIRST_CALL_TRANSACTION + 1 -> { // getVersionName
                     reply?.writeNoException()
-                    reply?.writeString(SERVICE_VERSION_CODE.toString())
+                    reply?.writeString(SERVICE_VERSION_NAME)
                     true
                 }
                 Binder.FIRST_CALL_TRANSACTION + 2 -> { // isPermissionGranted
@@ -217,19 +233,52 @@ class DhizukuProvider : ContentProvider() {
                     true
                 }
                 Binder.FIRST_CALL_TRANSACTION + 11 -> { // remoteProcess
-                    // Full implementation requires the AppProcess (app_process) mechanism that
-                    // the official Dhizuku uses to spawn privileged shell processes. ShizukuX
-                    // does not ship that component; clients that never call newProcess()
-                    // (e.g. Hail) are unaffected.
-                    reply?.writeNoException()
-                    reply?.writeStrongBinder(null)
-                    true
+                    // Official protocol: spawn a helper process on behalf of the authorized
+                    // client. Returning a null binder (the previous behaviour) makes clients
+                    // that use Dhizuku.newProcess() crash inside DhizukuRemoteProcess with
+                    // "Attempt to invoke interface method 'IBinder IInterface.asBinder()'
+                    // on a null object reference".
+                    try {
+                        val cmd = data.createStringArray()
+                        val env = data.createStringArray()
+                        val dir = data.readString()
+                        enforceCallingPermission("remote_process")
+                        if (cmd == null || cmd.isEmpty()) {
+                            throw IllegalArgumentException("cmd is empty")
+                        }
+                        val builder = ProcessBuilder(cmd.toList())
+                        if (!env.isNullOrEmpty()) {
+                            val environment = builder.environment()
+                            environment.clear()
+                            for (entry in env) {
+                                if (entry == null) continue
+                                val eq = entry.indexOf('=')
+                                if (eq <= 0) continue
+                                environment[entry.substring(0, eq)] = entry.substring(eq + 1)
+                            }
+                        }
+                        if (!dir.isNullOrEmpty()) builder.directory(java.io.File(dir))
+                        val process = builder.start()
+                        reply?.writeNoException()
+                        reply?.writeStrongBinder(RemoteProcessBinder(process))
+                        Timber.tag(TAG).d("remoteProcess started cmd=${cmd.joinToString(" ")}")
+                        true
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).w(e, "remoteProcess failed")
+                        try {
+                            reply?.writeException(e)
+                        } catch (ignored: Exception) {
+                        }
+                        true
+                    }
                 }
                 Binder.FIRST_CALL_TRANSACTION + 12, // bindUserService
                 Binder.FIRST_CALL_TRANSACTION + 13, // unbindUserService
-                Binder.FIRST_CALL_TRANSACTION + 14 -> { // unbindUserServiceByConnection
-                    // UserService hosting is not implemented. Accept the calls so that clients
-                    // using Dhizuku API's start/stop/bindUserService helpers don't crash.
+                Binder.FIRST_CALL_TRANSACTION + 14, // unbindUserServiceByConnection
+                Binder.FIRST_CALL_TRANSACTION + 17, // addLockTaskModeListener
+                Binder.FIRST_CALL_TRANSACTION + 18 -> { // removeLockTaskModeListener
+                    // UserService hosting and lock-task callbacks are not implemented. Accept the
+                    // calls so clients that assume server API version 8 don't hit an empty reply.
                     reply?.writeNoException()
                     true
                 }
@@ -284,6 +333,111 @@ class DhizukuProvider : ContentProvider() {
             } catch (e: Exception) {
                 Timber.tag(TAG).w(e, "setDelegatedScopes failed for pkg=$packageName")
             }
+        }
+    }
+
+    /**
+     * Wraps a local [Process] for the official IDhizukuRemoteProcess AIDL interface.
+     *
+     * Streams are bridged through [ParcelFileDescriptor] pipes exactly like the upstream
+     * server_api RemoteProcess, so clients (DhizukuRemoteProcess on the client side) get
+     * a live binder instead of null.
+     */
+    private class RemoteProcessBinder(private val process: Process) : IDhizukuRemoteProcess.Stub() {
+
+        companion object {
+            private val TRANSFER = Executors.newCachedThreadPool { runnable ->
+                Thread(runnable, "DhizukuRemoteProcess-transfer").apply { isDaemon = true }
+            }
+        }
+
+        private var outFd: ParcelFileDescriptor? = null
+        private var inFd: ParcelFileDescriptor? = null
+        private var errFd: ParcelFileDescriptor? = null
+
+        override fun getOutputStream(): ParcelFileDescriptor = synchronized(this) {
+            outFd ?: pipeTo(process.outputStream).also { outFd = it }
+        }
+
+        override fun getInputStream(): ParcelFileDescriptor = synchronized(this) {
+            inFd ?: pipeFrom(process.inputStream).also { inFd = it }
+        }
+
+        override fun getErrorStream(): ParcelFileDescriptor = synchronized(this) {
+            errFd ?: pipeFrom(process.errorStream).also { errFd = it }
+        }
+
+        override fun exitValue(): Int = process.exitValue()
+
+        override fun destroy() {
+            // Process.destroy() may throw IllegalThreadStateException on some vendor
+            // implementations; never leak that back to the client as a binder exception.
+            runCatching { process.destroy() }
+        }
+
+        override fun alive(): Boolean = try {
+            process.exitValue()
+            false
+        } catch (e: IllegalThreadStateException) {
+            true
+        }
+
+        override fun waitFor(): Int = try {
+            process.waitFor()
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            -1
+        }
+
+        override fun waitForTimeout(timeout: Long, unit: String): Boolean {
+            val timeUnit = runCatching { TimeUnit.valueOf(unit) }.getOrDefault(TimeUnit.MILLISECONDS)
+            val startTime = System.nanoTime()
+            var remaining = timeUnit.toNanos(timeout)
+            do {
+                try {
+                    process.exitValue()
+                    return true
+                } catch (e: IllegalThreadStateException) {
+                    if (remaining > 0) {
+                        try {
+                            Thread.sleep(Math.min(TimeUnit.NANOSECONDS.toMillis(remaining) + 1, 100))
+                        } catch (e2: InterruptedException) {
+                            Thread.currentThread().interrupt()
+                            return false
+                        }
+                    }
+                }
+                remaining = timeUnit.toNanos(timeout) - (System.nanoTime() - startTime)
+            } while (remaining > 0)
+            return false
+        }
+
+        private fun pipeFrom(source: InputStream): ParcelFileDescriptor {
+            val pipe = ParcelFileDescriptor.createPipe()
+            TRANSFER.execute {
+                try {
+                    ParcelFileDescriptor.AutoCloseOutputStream(pipe[1]).use { out -> source.copyTo(out) }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "remote process stdout/stderr transfer failed")
+                } finally {
+                    runCatching { source.close() }
+                }
+            }
+            return pipe[0]
+        }
+
+        private fun pipeTo(target: OutputStream): ParcelFileDescriptor {
+            val pipe = ParcelFileDescriptor.createPipe()
+            TRANSFER.execute {
+                try {
+                    ParcelFileDescriptor.AutoCloseInputStream(pipe[0]).use { input -> input.copyTo(target) }
+                } catch (e: Exception) {
+                    Timber.tag(TAG).w(e, "remote process stdin transfer failed")
+                } finally {
+                    runCatching { target.close() }
+                }
+            }
+            return pipe[1]
         }
     }
 

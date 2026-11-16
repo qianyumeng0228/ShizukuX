@@ -25,8 +25,12 @@ import timber.log.Timber
  *
  * We mirror dhizuku's RequestPermissionActivity:
  *  - grant immediately when the app is already authorized with a matching signature;
- *  - otherwise show an agree/refuse dialog (15s countdown, auto-deny on timeout);
- *  - persist the decision to DhizukuAppManager and report the result back to the listener.
+ *  - otherwise show an agree/refuse dialog with a visible 15s countdown;
+ *  - only a real user choice (allow / deny / dismiss) is persisted. A timeout, a lost
+ *    window focus or a dead client must never write a denial into the database: the
+ *    official client already aborts that request after 15s, and persisting the timeout
+ *    used to wipe a permission the user had granted earlier, which is exactly what made
+ *    authorized apps (e.g. InstallerX) look "authorized but unusable".
  */
 class RequestPermissionActivity : AppCompatActivity() {
 
@@ -41,6 +45,8 @@ class RequestPermissionActivity : AppCompatActivity() {
     private var targetUid = -1
     private var listener: IDhizukuRequestPermissionListener? = null
     private var grantResult = PackageManager.PERMISSION_DENIED
+    /** True only when the user actually answered (allow / deny / dismiss). */
+    private var persistDecision = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,16 +87,10 @@ class RequestPermissionActivity : AppCompatActivity() {
         finish()
     }
 
-    override fun onPause() {
-        super.onPause()
-        // Mirror dhizuku: a translucent singleInstance activity that loses focus is done.
-        finish()
-    }
-
     override fun finish() {
         super.finish()
         handler.removeCallbacksAndMessages(null)
-        if (targetUid != -1) {
+        if (persistDecision && targetUid != -1) {
             val signature = DhizukuAppsAdapter.getAppSignature(this, targetUid) ?: ""
             val allowed = grantResult == PackageManager.PERMISSION_GRANTED
             DhizukuAppManager.setAllowed(targetUid, signature, allowed)
@@ -137,22 +137,28 @@ class RequestPermissionActivity : AppCompatActivity() {
             .setMessage(getString(R.string.dhizuku_request_permission_message, label, AUTO_DENY_SECONDS))
             .setPositiveButton(R.string.dhizuku_request_permission_allow) { _, _ ->
                 grantResult = PackageManager.PERMISSION_GRANTED
+                persistDecision = true
                 finish()
             }
             .setNegativeButton(R.string.dhizuku_request_permission_deny) { _, _ ->
                 grantResult = PackageManager.PERMISSION_DENIED
+                persistDecision = true
                 finish()
             }
             .setOnCancelListener {
                 grantResult = PackageManager.PERMISSION_DENIED
+                persistDecision = true
                 finish()
             }
             .show()
 
-        // Auto-deny after AUTO_DENY_SECONDS, like dhizuku.
+        // Report DENIED to the client after AUTO_DENY_SECONDS (its own requestPermission()
+        // gives up at the same point), but keep whatever the user had granted before:
+        // a timeout is not a decision and must not be written into the database.
         handler.postDelayed({
             if (dialog.isShowing) {
                 grantResult = PackageManager.PERMISSION_DENIED
+                persistDecision = false
                 finish()
             }
         }, AUTO_DENY_SECONDS * 1000)
