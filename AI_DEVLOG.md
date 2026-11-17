@@ -123,6 +123,21 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — r2795：自动旋转被打开的真实成因，以及 restore 为什么不能碰 `wm user-rotation`
+
+`c3861d53`（r2795）。上一版（`5d570181`）把原因定在命令顺序，装机跑真实路径仍旧每次都回到 1；单轮手工实验不构成验证，这条教训已经写进 r2791 那节。本轮把 base 与实际命令原样打到 logcat（release 没有 Timber 输出，只能 `android.util.Log.w`），才拿到真正的两条：
+
+1. **base 采得太晚**。采样发生在应用已经进入前台之后，HyperOS 在那个时刻已经把 `accelerometer_rotation` 写成 1、`user-rotation` 写成 free。base 记成 1，restore 再把 1 写回去。
+2. **restore 抛异常会留下脏 base**。`PrivilegedShell.run` 抛异常时 `remove(KEY_BASE)` 不执行，脏 base 被下一轮采样复用，自己把自己强化。
+
+修法：restore 只发 `wm fixed-to-user-rotation` 加两条 `settings`，不再调 `wm user-rotation`——`free` 会写 `accelerometer_rotation=1`，而 `accelerometer_rotation=0` 又会让模式回到 `lock N`，两者互斥、谁最后落地谁赢；`PrivilegedShell.run` 包 try/catch，配好的 base 无论如何都清；采样前若读到 `fixed-to-user-rotation=enabled` 却没有 applied/base 标记，当成上一轮残留锁先 `disabled` 再采样；`current == null`（没有活动锁）也强制重采样。
+
+**对照实验（决定性）**：把该应用方向设回「关闭」，`refresh()` 走 `stopService` 分支，`dumpsys activity services | grep -c HidingWatchService` 为 0，即服务完全不运行。此时执行「`settings put system accelerometer_rotation 0` → 打开 Chrome」，得到 `chrome acc=1 urm=free`、回桌面仍 `acc=1 urm=free`。**这一步翻转与 ShizuX 无关，来自系统在应用切换时重置该开关**；restore 只是把采样到的 1 写回去，表象看起来像是我们干的。
+
+**仍未闭环**：设备是否处于被反复 `wm` 操作污染的状态，软件侧无法判定，需要在重启设备后复测同一组步骤。若仍翻转，即确认为 ROM 行为，修法转向「restore 永不写 1」——只把用户关掉的 0 恢复成 0，绝不去主动把它打开。
+
+顺带归档了 r2789（`f6f1c5fc`）与 r2790（`65acc29b`），两份都是用 worktree 按对应 commit 重新检出构建，不是复制改名。踩到的坑：worktree 不做 `git submodule update --init --recursive` 时，Gradle 配置阶段直接报 `Configuring project ':rish' without an existing directory is not allowed`。
+
 ### 2026-11-17 — r2791 → r2793：覆盖安装 abort、OFF 分支判死、自动旋转被打开
 
 三件事一起收，全部真机闭环，不是推断。
