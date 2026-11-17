@@ -143,6 +143,20 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
     const unsigned int restart_delay_secs = 5;
 
     for (;;) {
+        // An in-place update replaces the apk and its install directory. This supervisor
+        // keeps the path it was started with, so respawning after the switch can only ever
+        // exec app_process against a file that is gone -> ART aborts on the missing server
+        // class, every restart_delay_secs, forever (and a tombstone per attempt). Stop here
+        // instead: the Java side resolves the current apk through `pm path` and will start a
+        // fresh supervisor on the next attempt.
+        if (access(path, R_OK) != 0) {
+            LOGE("fatal: manager apk %s is gone (app updated?), stopping supervisor without restart", path);
+            if (pipe_write_fd != -1) {
+                close(pipe_write_fd);
+            }
+            exit(EXIT_FATAL_PM_PATH);
+        }
+
         pid_t pid = fork();
         if (pid == -1) {
             LOGE("fatal: can't fork shizuku_server");
@@ -311,6 +325,39 @@ static int switch_cgroup() {
 static char s_self_exe[PATH_MAX]{0};
 static ssize_t s_self_exe_len = 0;
 
+// Read /proc/<pid>/cmdline and look for a token.
+//
+// Needed because a supervisor started from an older install keeps the *old* apk path in
+// its argv. After an in-place update the new supervisor's own exe lives in a different
+// /data/app/~~hash directory, so the previous "same exe path" test no longer matches and
+// the stale supervisor survives. It then keeps respawning app_process against an apk that
+// no longer exists, which aborts with
+//   No pending exception expected: java.lang.ClassNotFoundException: <server class>
+// every 5 seconds (restart_delay_secs) and leaves a tombstone per round.
+// Matching on argv instead of on the exe path makes a supervisor from any install
+// directory recognisable, while still leaving the stock Shizuku supervisor alone: its
+// server name is a different token.
+static bool proc_cmdline_contains(pid_t pid, const char *needle) {
+    if (needle == nullptr || needle[0] == '\0') return false;
+
+    char path[64]{0};
+    snprintf(path, sizeof(path), "/proc/%d/cmdline", pid);
+    int fd = open(path, O_RDONLY | O_CLOEXEC);
+    if (fd < 0) return false;
+
+    char buf[PATH_MAX * 2]{0};
+    ssize_t n = read(fd, buf, sizeof(buf) - 1);
+    close(fd);
+    if (n <= 0) return false;
+
+    // cmdline entries are NUL separated; flatten them so a single strstr can match.
+    for (ssize_t i = 0; i < n; ++i) {
+        if (buf[i] == '\0') buf[i] = ' ';
+    }
+    buf[n] = '\0';
+    return strstr(buf, needle) != nullptr;
+}
+
 static void kill_old_processes() {
     s_self_exe_len = readlink("/proc/self/exe", s_self_exe, sizeof(s_self_exe) - 1);
     if (s_self_exe_len > 0) {
@@ -325,13 +372,33 @@ static void kill_old_processes() {
 
         bool is_server = (strcmp(SERVER_NAME, name) == 0);
         bool is_old_supervisor = false;
-        if (!is_server && s_self_exe_len > 0) {
-            char proc_exe_path[64]{0};
-            snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
-            char exe_buf[PATH_MAX]{0};
-            ssize_t len = readlink(proc_exe_path, exe_buf, sizeof(exe_buf) - 1);
-            if (len == s_self_exe_len && memcmp(exe_buf, s_self_exe, (size_t) len) == 0) {
-                is_old_supervisor = true;
+        if (!is_server) {
+            // Two independent signals, either one is enough:
+            //  1. same exe path as us (the ordinary "restarted from the same install" case);
+            //  2. a libshizuku.so supervisor whose argv carries our server name (survives
+            //     across install directories, see proc_cmdline_contains above).
+            if (s_self_exe_len > 0) {
+                char proc_exe_path[64]{0};
+                snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
+                char exe_buf[PATH_MAX]{0};
+                ssize_t len = readlink(proc_exe_path, exe_buf, sizeof(exe_buf) - 1);
+                if (len == s_self_exe_len && memcmp(exe_buf, s_self_exe, (size_t) len) == 0) {
+                    is_old_supervisor = true;
+                }
+            }
+
+            if (!is_old_supervisor && proc_cmdline_contains(pid, SERVER_NAME)) {
+                char proc_exe_path[64]{0};
+                snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
+                char exe_buf[PATH_MAX]{0};
+                ssize_t len = readlink(proc_exe_path, exe_buf, sizeof(exe_buf) - 1);
+                if (len > 0) {
+                    const char *base = strrchr(exe_buf, '/');
+                    base = (base != nullptr) ? base + 1 : exe_buf;
+                    if (strcmp(base, "libshizuku.so") == 0) {
+                        is_old_supervisor = true;
+                    }
+                }
             }
         }
 
