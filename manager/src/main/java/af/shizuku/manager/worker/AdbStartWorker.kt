@@ -47,6 +47,7 @@ import af.shizuku.manager.receiver.ShizukuReceiverStarter.WorkerState
 import af.shizuku.manager.receiver.ShizukuReceiverStarter.updateNotification
 import af.shizuku.manager.settings.BugReportDialogActivity
 import af.shizuku.manager.starter.Starter
+import af.shizuku.manager.utils.DebugSwitchState
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
@@ -190,11 +191,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
                 val observer = object : ContentObserver(null) {
                     override fun onChange(selfChange: Boolean) {
-                        when (Settings.Global.getInt(cr, "adb_wifi_enabled", 0)) {
-                            0 -> if (awaitingAuth) {
+                        when (EnvironmentUtils.wirelessDebuggingState(applicationContext)) {
+                            DebugSwitchState.OFF -> if (awaitingAuth) {
                                 close(SecurityException("Network is not authorized for wireless debugging"))
                             } else handleAuth()
-                            1 -> startDiscoveryWithTimeout()
+                            DebugSwitchState.ON -> startDiscoveryWithTimeout()
+                            // Android 17 QPR3 hides the setting, so a zero read is no longer
+                            // the framework refusing it. Keep looking for a port instead of
+                            // failing a start the user may well have enabled; the discovery
+                            // timeout still reports the missing switch if nothing shows up.
+                            DebugSwitchState.UNKNOWN -> startDiscoveryWithTimeout()
                         }
                     }
                 }
@@ -315,11 +321,11 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 delay(3_000)
                 if (!Shizuku.pingBinder()) return@withContext
 
-                val cr = applicationContext.contentResolver
                 // Read first: if the flag is already armed there is nothing to do —
                 // and, vitally, nothing to disturb. A live wireless-debugging session
-                // must never see a synthetic 0.
-                if (Settings.Global.getInt(cr, "adb_wifi_enabled", 0) == 1) {
+                // must never see a synthetic 0. A redacted read (Android 17) cannot
+                // prove the flag is armed, so it re-arms rather than skipping.
+                if (EnvironmentUtils.wirelessDebuggingState(applicationContext) == DebugSwitchState.ON) {
                     Timber.tag("AdbStartWorker").d("adb_wifi_enabled already 1, no-op")
                     return@withContext
                 }

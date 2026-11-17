@@ -19,6 +19,15 @@ private val appContext: Context
         throw IllegalStateException("EnvironmentUtils.appContext accessed before ShizukuApplication.appContext was initialized", e)
     }
 
+/**
+ * What a platform debugging switch says — including when Android hides the value.
+ *
+ * [UNKNOWN] is not [OFF]. Android 17 QPR3 redacts some debug settings to 0 for third-party
+ * apps, and a redacted read is byte-identical to a genuine "off", so the two states have to
+ * be told apart before anything is allowed to conclude that the user turned the switch off.
+ */
+enum class DebugSwitchState { ON, OFF, UNKNOWN }
+
 object EnvironmentUtils {
 
     @JvmStatic
@@ -225,6 +234,34 @@ object EnvironmentUtils {
         var port = af.shizuku.common.util.EnvironmentUtils.getAdbTcpPort()
         if (port == -1 && isTelevision() && !isTlsSupported()) port = ShizukuSettings.getTcpPort()
         return port
+    }
+
+    /**
+     * What the platform's wireless-debugging switch says, including when Android hides it.
+     *
+     * The value lives in the `adb_wifi_enabled` global setting, which the platform's own
+     * Developer options page writes and offers no read API for. Android 17 QPR3 redacts it
+     * for third-party apps, so a zero stops being proof that the toggle is off. Keeping the
+     * cases apart matters in both directions: treating a redacted zero as "off" closes a
+     * wireless start with a SecurityException before it ever looks for a port, and treating
+     * it as "on" would be equally wrong for paths that wait on the user enabling it.
+     */
+    @JvmStatic
+    fun wirelessDebuggingState(): DebugSwitchState = wirelessDebuggingState(appContext)
+
+    @JvmStatic
+    fun wirelessDebuggingState(context: Context): DebugSwitchState {
+        val raw = runCatching {
+            Settings.Global.getInt(context.contentResolver, "adb_wifi_enabled", 0) != 0
+        }.getOrNull()
+        return when {
+            raw == true -> DebugSwitchState.ON
+            // A readable zero is accepted as "off" only where the platform still hands the
+            // value out. On 37+ the zero is the redaction, not the toggle.
+            raw == false -> if (Build.VERSION.SDK_INT >= 37) DebugSwitchState.UNKNOWN else DebugSwitchState.OFF
+            // The read itself threw: nothing proves either state, on any platform.
+            else -> DebugSwitchState.UNKNOWN
+        }
     }
 
     /**

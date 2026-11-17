@@ -43,6 +43,27 @@ class AdbMdns(
     private var restartScheduled = false
     private var attempts = 0
 
+    /**
+     * Per-service resolve retry counters. A failed resolve used to be dropped without a
+     * trace (the callback was an empty override), so a device that once answered
+     * `FAILURE_ALREADY_ACTIVE` was never discovered again until the whole discovery restarted.
+     * All access happens on the main thread (NsdManager callbacks and [mdnsScope]).
+     */
+    private val resolveAttempts = HashMap<String, Int>()
+
+    /**
+     * Sightings this client is resolving, or has accepted, keyed by service name.
+     *
+     * A ROM that delivers one service's found event several times, each time as a fresh
+     * [NsdServiceInfo], would otherwise issue one resolve per delivery. Android 12 allows a
+     * single in-flight resolve per client, so only the first can answer; the rest fail with
+     * FAILURE_ALREADY_ACTIVE, and the one success is then dropped because the entry it was
+     * meant for had already been replaced. The port never reached the observer. Keeping the
+     * entry while its resolve is pending (and after it was accepted) turns a repeat into a
+     * duplicate sighting instead of a second resolve.
+     */
+    private val found = HashMap<String, NsdServiceInfo>()
+
     fun start() {
         if (running) return
         running = true
@@ -69,6 +90,8 @@ class AdbMdns(
         // scope alive (it is only used for the restart job, which we just cancelled).
         restartScheduled = false
         attempts = 0
+        found.clear()
+        resolveAttempts.clear()
         if (registered) {
             try {
                 nsdManager.stopServiceDiscovery(listener)
@@ -88,48 +111,132 @@ class AdbMdns(
     }
 
     private fun onServiceFound(info: NsdServiceInfo) {
-        nsdManager.resolveService(info, ResolveListener(this))
+        if (!running) return
+        val key = info.serviceName ?: return
+        // A name that already has an entry — either still being resolved or already accepted —
+        // is a duplicate sighting of the same service, not a new one.
+        if (key in found || key == serviceName) {
+            Timber.tag(TAG).v("onServiceFound: $key (duplicate, skipped)")
+            return
+        }
+        found[key] = info
+        resolve(info)
     }
 
-    private fun onServiceLost(info: NsdServiceInfo) {
-        if (info.serviceName == serviceName) observer.onChanged(-1)
+    private fun resolve(info: NsdServiceInfo) {
+        try {
+            nsdManager.resolveService(info, ResolveListener(this, info))
+        } catch (e: Throwable) {
+            // A resolve that could not even be submitted leaves no callback behind, so the
+            // entry has to go here or the next sighting would be skipped as a duplicate.
+            forget(info)
+            Timber.tag(TAG).w(e, "cannot resolve ${info.serviceName}")
+        }
     }
 
-    private fun onServiceResolved(resolvedService: NsdServiceInfo) {
-        val hostAddress = resolvedService.host.hostAddress
-        val isLocal = hostAddress == "127.0.0.1" || hostAddress == "::1" || resolvedService.host.isLoopbackAddress
+    /**
+     * Drops [info] from [found], but only while it is still the instance that was recorded:
+     * a callback for an older sighting must not clear the entry a newer one installed.
+     */
+    private fun forget(info: NsdServiceInfo) {
+        val key = info.serviceName ?: return
+        if (found[key] === info) found.remove(key)
+    }
 
-        if (running && (isLocal || NetworkInterface.getNetworkInterfaces()
-                .asSequence()
-                .any { networkInterface ->
-                    networkInterface.inetAddresses
-                        .asSequence()
-                        .any { hostAddress == it.hostAddress }
-                })
-            && isPortAvailable(resolvedService.port)
-        ) {
-            serviceName = resolvedService.serviceName
-            resolvedHost = if (isLocal || hostAddress == null) "127.0.0.1" else hostAddress
-            observer.onChanged(resolvedService.port)
-        } else if (running && ShizukuSettings.isAutoReconnectMdnsEnabled() && attempts < 5 && !restartScheduled) {
-            attempts++
-            restartScheduled = true
-            val delayMs = attempts * 1000L
-            restartJob = mdnsScope.launch {
-                delay(delayMs)
-                if (registered) {
-                    try {
-                        nsdManager.stopServiceDiscovery(listener)
-                    } catch (e: IllegalArgumentException) {
-                        Timber.tag(TAG).e(e, "listener not registered when restarting service discovery")
-                    }
-                }
-                delay(100L)
-                if (!registered) nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
-                restartScheduled = false
+    /**
+     * Bounded retry for a failed mDNS resolve, with linear backoff, reusing the same
+     * [NsdServiceInfo] record. Gives up after [MAX_RESOLVE_ATTEMPTS] so a permanently broken
+     * advertisement cannot spin forever.
+     */
+    private fun onResolveFailed(info: NsdServiceInfo, errorCode: Int) {
+        if (!running) return
+        val key = info.serviceName ?: return
+        // Nothing is in flight for this entry any more — it either failed outright or was
+        // refused because another resolve of this client still held the single slot. Either
+        // way the entry has to go, or the next sighting would be skipped as a duplicate.
+        forget(info)
+        val attempt = resolveAttempts[key] ?: 0
+        if (attempt >= MAX_RESOLVE_ATTEMPTS) {
+            Timber.tag(TAG).w("resolve of $key failed ($errorCode), giving up after $attempt retries")
+            return
+        }
+        resolveAttempts[key] = attempt + 1
+        Timber.tag(TAG).v("resolve of $key failed ($errorCode), retry ${attempt + 1}/$MAX_RESOLVE_ATTEMPTS")
+        mdnsScope.launch {
+            delay((attempt + 1) * 1000L)
+            if (running && key !in found && key != serviceName) {
+                found[key] = info
+                resolve(info)
             }
         }
     }
+
+    private fun onServiceLost(info: NsdServiceInfo) {
+        val key = info.serviceName ?: return
+        // The service is gone, so its entry must stop blocking the next announce of it.
+        found.remove(key)
+        resolveAttempts.remove(key)
+        if (key == serviceName) {
+            serviceName = null
+            observer.onChanged(-1)
+        }
+    }
+
+    private fun onServiceResolved(sighting: NsdServiceInfo, resolvedService: NsdServiceInfo) {
+        val key = resolvedService.serviceName ?: sighting.serviceName
+        val host = resolvedService.host
+        val hostAddress = host?.hostAddress
+        if (hostAddress == null) {
+            // No address to connect to: drop the entry so a later announce resolves again
+            // instead of being skipped as a duplicate.
+            forget(sighting)
+            Timber.tag(TAG).v("onServiceResolved: $key has no host")
+            return
+        }
+        val isLocal = hostAddress == "127.0.0.1" || hostAddress == "::1" || host.isLoopbackAddress
+
+        val accepted = try {
+            (isLocal || isOnLocalInterface(hostAddress)) && isPortAvailable(resolvedService.port)
+        } catch (e: Exception) {
+            // Interface enumeration and the port probe can throw, and this runs on a
+            // main-thread callback where an escape takes the app down. A probe that fails
+            // is a rejection, not a crash.
+            Timber.tag(TAG).w(e, "probe of $key failed")
+            false
+        }
+
+        if (running && accepted) {
+            serviceName = resolvedService.serviceName
+            resolvedHost = if (isLocal) "127.0.0.1" else hostAddress
+            resolveAttempts.remove(resolvedService.serviceName)
+            observer.onChanged(resolvedService.port)
+        } else {
+            forget(sighting)
+            if (running && ShizukuSettings.isAutoReconnectMdnsEnabled() && attempts < 5 && !restartScheduled) {
+                attempts++
+                restartScheduled = true
+                val delayMs = attempts * 1000L
+                restartJob = mdnsScope.launch {
+                    delay(delayMs)
+                    if (registered) {
+                        try {
+                            nsdManager.stopServiceDiscovery(listener)
+                        } catch (e: IllegalArgumentException) {
+                            Timber.tag(TAG).e(e, "listener not registered when restarting service discovery")
+                        }
+                    }
+                    delay(100L)
+                    if (!registered) nsdManager.discoverServices(serviceType, NsdManager.PROTOCOL_DNS_SD, listener)
+                    restartScheduled = false
+                }
+            }
+        }
+    }
+
+    private fun isOnLocalInterface(hostAddress: String): Boolean =
+        NetworkInterface.getNetworkInterfaces().asSequence().any { networkInterface ->
+            networkInterface.inetAddresses.asSequence().any { hostAddress == it.hostAddress }
+        }
 
     private fun isPortAvailable(port: Int) = try {
         ServerSocket().use {
@@ -174,16 +281,27 @@ class AdbMdns(
         }
     }
 
-    internal class ResolveListener(private val adbMdns: AdbMdns) : NsdManager.ResolveListener {
-        override fun onResolveFailed(nsdServiceInfo: NsdServiceInfo, i: Int) {}
+    internal class ResolveListener(
+        private val adbMdns: AdbMdns,
+        private val sighting: NsdServiceInfo
+    ) : NsdManager.ResolveListener {
+
+        // The callback hands back a copy of the submitted record, not the instance itself, so
+        // "is this still the entry I recorded?" could not be answered from the callback alone.
+        // Passing the remembered sighting keeps that comparison meaningful.
+        override fun onResolveFailed(nsdServiceInfo: NsdServiceInfo, errorCode: Int) {
+            adbMdns.onResolveFailed(sighting, errorCode)
+        }
 
         override fun onServiceResolved(nsdServiceInfo: NsdServiceInfo) {
-            adbMdns.onServiceResolved(nsdServiceInfo)
+            adbMdns.onServiceResolved(sighting, nsdServiceInfo)
         }
 
     }
 
     companion object {
+        private const val MAX_RESOLVE_ATTEMPTS = 3
+
         const val TLS_CONNECT = "_adb-tls-connect._tcp"
         const val TLS_PAIRING = "_adb-tls-pairing._tcp"
         const val TAG = "AdbMdns"

@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.SystemProperties
 import android.provider.Settings
 import af.shizuku.manager.database.ShizukuProcessUtils
+import af.shizuku.manager.utils.DebugSwitchState
 import af.shizuku.manager.utils.EnvironmentUtils
 import rikka.shizuku.Shizuku
 import timber.log.Timber
@@ -33,12 +34,15 @@ object DeveloperOptionsRestorer {
         return context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
     }
 
-    /** True when the wireless-debugging toggle actually stuck (reads the live key back). */
-    fun isWirelessDebuggingEnabled(context: Context): Boolean {
-        return runCatching {
-            Settings.Global.getInt(context.contentResolver, KEY_ADB_WIFI_ENABLED, 0) == 1
-        }.getOrDefault(false)
-    }
+    /**
+     * True when the wireless-debugging toggle actually stuck (reads the live key back).
+     *
+     * Android 17 redacts this key, so a zero there is unknown rather than "did not stick".
+     * The only caller uses this to decide whether to warn the user, and warning on every
+     * boot about a value nobody can read is worse than staying quiet.
+     */
+    fun isWirelessDebuggingEnabled(context: Context): Boolean =
+        EnvironmentUtils.wirelessDebuggingState(context) != DebugSwitchState.OFF
 
     /** Whether USB debugging itself is currently enabled (adb_enabled). */
     fun isUsbDebuggingEnabled(context: Context): Boolean {
