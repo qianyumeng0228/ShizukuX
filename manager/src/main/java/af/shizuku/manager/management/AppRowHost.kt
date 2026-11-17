@@ -16,6 +16,14 @@ import android.view.View
  * activity it lives in.
  */
 interface AppRowHost {
+    /**
+     * Whether the list is currently filtered to hidden apps. The long-press hide entry flips to
+     * "restore" under that filter, so a row has to know which wording applies before it builds
+     * the menu instead of after the tap. Only the container's app list can be in that state;
+     * every other host answers false.
+     */
+    val filterIsHidden: Boolean
+        get() = false
     fun onHideApp(packageName: String)
     fun onRowSwipe(item: PackageInfo, action: String, itemView: View)
 }

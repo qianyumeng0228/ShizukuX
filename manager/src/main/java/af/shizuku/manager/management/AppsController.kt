@@ -445,6 +445,8 @@ class AppsController(
 
     // ----- Hide callback -----
 
+    override val filterIsHidden: Boolean get() = viewModel.filterState == FilterState.HIDDEN
+
     /** Set by the hosting activity: the window content view that the undo snackbar attaches to. */
     var snackbarAnchor: android.view.ViewGroup? = null
 

@@ -168,6 +168,12 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
     // The apps page moved into the pager, so the rows can no longer reach their host by casting the
     // context to ApplicationManagementActivity. These two are what the rows actually needed from
     // it: the "hidden" long-press action and the TalkBack versions of the swipe gestures.
+    //
+    // A row's context chain ends at this activity, so this class — not the controller — is the
+    // host a row actually gets. filterIsHidden has to be forwarded here too, otherwise the row
+    // reads the interface default and keeps offering "hide" while the list shows hidden apps.
+    override val filterIsHidden: Boolean get() = appsCtl.filterIsHidden
+
     override fun onHideApp(packageName: String) {
         appsCtl.hideApp(packageName)
     }

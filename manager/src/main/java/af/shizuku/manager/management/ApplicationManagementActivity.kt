@@ -333,6 +333,8 @@ open class ApplicationManagementActivity : AppBarActivity(), AppViewHolder.Callb
 
     // ----- Hide callback -----
 
+    override val filterIsHidden: Boolean get() = viewModel.filterState == FilterState.HIDDEN
+
     /**
      * The platform Snackbar used to be shown on this page's coordinator root, but its action button
      * cannot be inflated on this theme and it landed behind the floating tab bar, so a hide from a
