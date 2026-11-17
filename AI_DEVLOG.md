@@ -123,6 +123,24 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — r2799：上游复查（ShizukuPlus / shevery / Shizuku-Next）与四项落地
+
+带代理重新 fetch 七个参考仓库：Dhizuku、Dhizuku-API、Nightzuku、AxManagerD 均已是最新；Shizuku-Next 落后 1、shevery 落后 7、ShizukuPlus 落后 26。逐条判断后跟了四项，其余归为「不适用 / 纯 UI 实验 / 自家生态」。
+
+**1. 冻结拒绝系统关键包**（ShizukuPlus `5817d005`，安全）
+冻结 System UI、设置、电话、权限组件或任何 persistent 应用会让设备在锁屏重启循环。ShizukuX 的 `ActivityManagerPlusImpl.freezeApp`（三段：`setApplicationEnabledSetting(3)` → `pm disable-user` → `cmd package suspend`）和 `BackupRestoreExtraImpl.freezeApp`（`pm disable-user --user 0`）都没有白名单，风险与上游一致。新增 `BootCriticalPackages.kt`（18 个包名 + `FLAG_PERSISTENT`，走 `Android17Compat.getApplicationInfo`），两个入口各加 `refuseFreeze`，命中返回 false 并 `Log.w`。
+
+**2. server 崩溃上报的栈一直被丢**（ShizukuPlus `b3f41aec`，可诊断性 + 隐私）
+不是"没发"，是**键名不一致**：server 写 `json.put("stacktrace", …)`（`ShizukuService.java:377`，全小写），manager 读 `optString("stackTrace", "")`（`ShizukuApplication.kt:530`，驼峰）。两者从来没对上，所以每一条 server 侧崩溃事件进 Sentry 时都没有栈。改为两种拼写都接受，并新增 `ServerStackTrace.kt`：上报前脱敏，帧与异常类保留，消息里的包名、路径、`key=value`、bearer token 打码。
+
+**3. 状态监听器隔离**（ShizukuPlus `2e2ae422`，健壮性）
+`ShizukuStateMachine` 的 `listeners.forEach { it(newState) }` 里任何一处抛异常都会中断循环，排在后面的订阅者停在旧状态，直到下一次切换。改成逐个 try/catch + `Timber.e`。
+
+**4. 终端导出的 su 改为 opt-in**（ShizukuPlus `a348e9e8`，用户风险）
+导出的 `su` 是 SU Bridge 包装，会顶掉终端应用自带的那一个（Termux 有），还自称 Magisk——银行 / 钱包类应用会据此标记。`TerminalAssets` 拆成 `BASE`（rish + dex + extra）与 `ALL`（+su），导出时按 `ShizukuSettings.isSuBridgeEnabled()` 决定是否写 su；清理阶段仍覆盖全集，所以关掉开关再导出一次就会把旧的 su 删掉。教程页文案（英文 + zh-rCN）同步改成条件表述。
+
+**不跟但记录**：shevery 的 `67759552`（把 `attachApplication` 的内联包归属检查抽成 `ClientPackageValidator`）——ShizukuX `ShizukuService.java:685-689` 已有等价检查；`8386afbc` / `bca0aec7` 是 content provider 的 binder UID 校验，ShizukuX 的 server 没有 provider 入口；ShizukuPlus 的 26 条里其余是 M3 卡片 / 图标 / 时间线等 UI 实验、Sentry 生态和 Crowdin CI。`82c5d47b` 的 jni `access()` → `open()` 属代码扫描告警，`starter.cpp` 的那处是"能否读"判断，后续 open 失败有错误分支，不构成可利用漏洞。
+
 ### 2026-11-18 — r2795：自动旋转被打开的真实成因，以及 restore 为什么不能碰 `wm user-rotation`
 
 `c3861d53`（r2795）。上一版（`5d570181`）把原因定在命令顺序，装机跑真实路径仍旧每次都回到 1；单轮手工实验不构成验证，这条教训已经写进 r2791 那节。本轮把 base 与实际命令原样打到 logcat（release 没有 Timber 输出，只能 `android.util.Log.w`），才拿到真正的两条：

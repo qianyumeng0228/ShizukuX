@@ -119,6 +119,7 @@ class ActivityManagerPlusImpl : IActivityManagerExtra.Stub() {
 
     override fun freezeApp(packageName: String?): Boolean {
         if (packageName == null) return false
+        if (BootCriticalPackages.refuseFreeze(TAG, packageName, callingUserId())) return false
         // Stage 1: COMPONENT_ENABLED_STATE_DISABLED_USER = 3 — user-level disable, reversible
         if (setApplicationEnabledSetting(packageName, 3)) return true
         if (!InputValidationUtils.isValidPackageName(packageName)) return false

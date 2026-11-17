@@ -73,7 +73,15 @@ object ShizukuStateMachine {
         val oldState = state.getAndUpdate { current -> transform(current).also { computed = it } }
         val newState = computed!!
         if(oldState != newState) {
-            listeners.forEach { it(newState) }
+            // Isolate each listener: one throwing listener used to abort the loop, so every
+            // listener after it kept rendering the previous state until the next transition.
+            listeners.forEach { listener ->
+                try {
+                    listener(newState)
+                } catch (e: Throwable) {
+                    Timber.tag("ShizukuStateMachine").e(e, "State listener failed on %s", newState)
+                }
+            }
             Timber.tag("ShizukuStateMachine").d(newState.toString())
 
             // Record which app build is starting this server instance. All deliberate start paths

@@ -15,7 +15,11 @@ object TerminalAssets {
     const val PLUS_NAME = "extra"
     const val SU_NAME = "su"
 
-    val ALL = listOf(SH_NAME, DEX_NAME, PLUS_NAME, SU_NAME)
+    /** rish and what it needs at runtime. Always exported. */
+    val BASE = listOf(SH_NAME, DEX_NAME, PLUS_NAME)
+
+    /** Everything this module can drop into a terminal folder, su included. */
+    val ALL = BASE + SU_NAME
 }
 
 private const val TAG = "TerminalExporter"
@@ -23,10 +27,19 @@ private const val TAG = "TerminalExporter"
 /**
  * Copies the rish helper set into [tree], returning `successCount to totalCount`.
  *
+ * [includeSu] is off unless SU Bridge is enabled: the exported `su` is a SU Bridge wrapper that
+ * replaces whatever su the terminal app already had (Termux ships one) and identifies itself as
+ * Magisk, which banking and wallet apps can flag. rish alone is what the guide is about. The
+ * stale copies step still covers the whole set, so exporting again without su removes an old one.
+ *
  * SAF query + createDocument + asset streaming copy (the dex is several MB) can take hundreds of
  * milliseconds on slow storage, so the whole export runs on IO; callers only post the Toast back.
  */
-suspend fun exportTerminalAssets(context: Context, tree: Uri): Pair<Int, Int> =
+suspend fun exportTerminalAssets(
+    context: Context,
+    tree: Uri,
+    includeSu: Boolean = ShizukuSettings.isSuBridgeEnabled(),
+): Pair<Int, Int> =
     withContext(Dispatchers.IO) {
         val cr = context.contentResolver
         val doc = DocumentsContract.buildDocumentUriUsingTree(
@@ -96,7 +109,8 @@ suspend fun exportTerminalAssets(context: Context, tree: Uri): Pair<Int, Int> =
             }
         }
 
-        val results = TerminalAssets.ALL.map { writeToDocument(it) }
+        val names = if (includeSu) TerminalAssets.ALL else TerminalAssets.BASE
+        val results = names.map { writeToDocument(it) }
         ShizukuSettings.setExportDirUri(tree.toString())
         results.count { it } to results.size
     }

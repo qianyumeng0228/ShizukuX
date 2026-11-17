@@ -689,6 +689,7 @@ class BackupRestoreExtraImpl(private val allowed: java.util.function.BooleanSupp
 
     override fun freezeApp(packageName: String?): Boolean {
         if (packageName.isNullOrBlank()) return false
+        if (BootCriticalPackages.refuseFreeze(TAG, packageName, 0)) return false
         val ok = ShellExecutor.execCode("pm", "disable-user", "--user", "0", packageName) == 0
         if (ok) frozenCache = null // state changed → drop frozen-package cache
         return ok

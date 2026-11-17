@@ -216,7 +216,7 @@
     <string name="terminal_tutorial_miui">用户反映 MIUI 破坏了导出功能所使用的存储访问框架。</string>
     <string name="terminal_tutorial_miui_2">如果您使用 MIUI，可能需要从 Shizuku APK 的 assets 目录中提取这些文件。</string>
     <string name="terminal_tutorial_1">将文件导出到新文件夹。</string>
-    <string name="terminal_tutorial_1_description">将导出四个文件：%1$s、%2$s、%3$s 和 %4$s。如果所选文件夹中已存在这些文件，则会将其删除。</string>
+    <string name="terminal_tutorial_1_description">%1$s、%2$s 和 %3$s 始终导出。%4$s 是 SU Bridge 包装，会取代终端应用自带的 su，仅在设置中开启「SU Bridge」时才导出。所选文件夹中的同名旧文件会先被删除。</string>
     <string name="terminal_export_files">导出文件</string>
     <string name="terminal_tutorial_2">使用终端应用将文件复制到其私有文件目录。</string>
     <string name="terminal_tutorial_2_description">提示：如果终端应用的主目录（~）位于私有文件目录中，将文件放在那里即可直接运行 %1$s，无需输入路径。\n\n否则，可以在终端应用的 %3$s 配置文件中为 %2$s 创建别名。</string>
@@ -538,7 +538,7 @@
     <string name="su_bridge_other_detected_apps"><![CDATA[检测到的其他 Root 应用]]></string>
     <string name="su_bridge_installed_root_app"><![CDATA[已安装的 Root 应用]]></string>
     <string name="su_bridge_suggested_root_app"><![CDATA[推荐的 Root 应用]]></string>
-    <string name="terminal_tutorial_export_summary"><![CDATA[将 %1$s、%2$s、%3$s 和 %4$s 导出到新文件夹。]]></string>
+    <string name="terminal_tutorial_export_summary"><![CDATA[将 %1$s、%2$s、%3$s（以及开启 SU Bridge 时的 %4$s）导出到新文件夹。]]></string>
     <string name="terminal_tutorial_copy_command"><![CDATA[cp /sdcard/chosen-folder/* /data/data/terminal.package.name/files]]></string>
     <string name="terminal_tutorial_copy_summary"><![CDATA[这会将导出的文件复制到终端应用的私有存储中。您还可以将 %1$s、%2$s 和 %3$s 添加到 <font face="monospace">.bashrc</font> 或 <font face="monospace">.zshrc</font>。]]></string>
     <string name="terminal_tutorial_run_command"><![CDATA[sh %1$s]]></string>

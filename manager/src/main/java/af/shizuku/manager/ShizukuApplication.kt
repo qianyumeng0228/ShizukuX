@@ -527,7 +527,13 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 val levelStr = jsonObject.optString("level", "error")
                 val tag = jsonObject.optString("tag", "ShizukuExtra")
                 val message = jsonObject.optString("message", "")
-                val stackTrace = jsonObject.optString("stackTrace", "")
+                // The server builds this object itself and writes "stacktrace" (all lowercase);
+                // this manager used to read "stackTrace", so the key never matched and every
+                // server crash report arrived without its stack. Accept both spellings so old
+                // and new servers both land here.
+                val stackTrace =
+                    jsonObject.optString("stacktrace", "")
+                        .ifBlank { jsonObject.optString("stackTrace", "") }
 
                 // Guard against a single device's hot-looping error from draining the shared
                 // quota by itself: skip re-sending the exact same tag+message within the
@@ -549,7 +555,10 @@ class ShizukuApplication : Application(), Configuration.Provider {
                     scope.setTag("server_side", "true")
                     scope.setTag("server_tag", tag)
                     if (stackTrace.isNotEmpty()) {
-                        scope.setExtra("stackTrace", stackTrace)
+                        scope.setExtra(
+                            "stackTrace",
+                            af.shizuku.manager.utils.redactServerStackTrace(stackTrace),
+                        )
                     }
                     val event = io.sentry.SentryEvent()
                     event.level = sentryLevel
