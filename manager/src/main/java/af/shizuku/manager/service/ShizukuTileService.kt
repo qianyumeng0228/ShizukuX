@@ -10,6 +10,7 @@ import android.service.quicksettings.TileService
 import android.widget.Toast
 import af.shizuku.manager.MainActivity
 import af.shizuku.manager.R
+import af.shizuku.manager.devicecontrol.refuseWhileLocked
 import af.shizuku.manager.utils.ShizukuStateMachine
 
 import androidx.work.WorkManager
@@ -55,6 +56,9 @@ class ShizukuTileService : TileService() {
     }
 
     override fun onClick() {
+        // Starting or stopping the server from the lock screen would hand the phone's holder
+        // the service and its grant list. Refuse while the keyguard is up (opt-in setting).
+        if (refuseWhileLocked()) return
         val state = ShizukuStateMachine.get()
         val isRunning = state == ShizukuStateMachine.State.RUNNING
         val isStarting = state == ShizukuStateMachine.State.STARTING

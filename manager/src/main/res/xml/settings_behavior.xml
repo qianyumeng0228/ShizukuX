@@ -106,4 +106,18 @@
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
+    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
+        android:key="category_quick_tiles"
+        android:title="@string/settings_quick_tiles_category_title"
+        android:defaultValue="true">
+
+        <SwitchPreferenceCompat
+            android:key="secure_quick_tiles"
+            android:title="@string/settings_secure_quick_tiles"
+            android:summary="@string/settings_secure_quick_tiles_summary"
+            android:icon="@drawable/ic_warning_24"
+            android:defaultValue="false" />
+
+    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
+
 </PreferenceScreen>

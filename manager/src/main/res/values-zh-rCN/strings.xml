@@ -562,6 +562,10 @@
     <string name="app_management_context_revoke"><![CDATA[撤销权限]]></string>
     <string name="app_management_context_hide"><![CDATA[从列表中隐藏]]></string>
     <string name="app_management_context_unhide"><![CDATA[恢复到列表]]></string>
+    <string name="settings_quick_tiles_category_title"><![CDATA[快捷磁贴]]></string>
+    <string name="settings_secure_quick_tiles"><![CDATA[锁屏时禁止磁贴改设置]]></string>
+    <string name="settings_secure_quick_tiles_summary"><![CDATA[磁贴仍显示真实状态，但手机锁定时拒绝执行任何变更。]]></string>
+    <string name="tile_blocked_while_locked"><![CDATA[请先解锁手机再操作此磁贴]]></string>
     <string name="app_management_no_launcher"><![CDATA[此应用没有启动器]]></string>
     <string name="app_management_package_copied"><![CDATA[已复制包名]]></string>
     <string name="app_management_log_permission_toggle"><![CDATA[切换权限：%s]]></string>

@@ -93,6 +93,12 @@ public class ShizukuSettings {
 
         // Home card extras (ShizukuX additions)
         public static final String KEY_SHOW_START_ADB_HOME = "show_start_adb_home";
+
+        /**
+         * Whether the quick tiles refuse to change anything while the keyguard is up.
+         * Off by default, so an existing install behaves exactly as before after updating.
+         */
+        public static final String KEY_SECURE_QUICK_TILES = "secure_quick_tiles";
         public static final String KEY_SHOW_BACKUP_APPS_HOME = "show_backup_apps_home";
         public static final String KEY_SHOW_DEVICE_CONTROL_HOME = "show_device_control_home";
         public static final String KEY_CARD_ORDER = "home_card_order";
@@ -1166,6 +1172,16 @@ public class ShizukuSettings {
     public static boolean showStartAdbHome() {
         SharedPreferences p = getPreferences();
         return p != null && p.getBoolean(Keys.KEY_SHOW_START_ADB_HOME, true);
+    }
+
+    /**
+     * Quick tiles read their state normally while locked, but changing anything the keyguard
+     * protects (airplane mode, brightness, rotation, animation scale, service start/stop) must
+     * wait for an unlock. Default false keeps the behaviour of existing installs unchanged.
+     */
+    public static boolean isSecureQuickTilesEnabled() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_SECURE_QUICK_TILES, false);
     }
 
     public static boolean showBackupAppsHome() {

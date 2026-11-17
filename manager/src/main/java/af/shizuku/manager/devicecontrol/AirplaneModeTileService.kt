@@ -24,6 +24,7 @@ class AirplaneModeTileService : TileService() {
 
     override fun onClick() {
         super.onClick()
+        if (refuseWhileLocked()) return
         if (busy) return
         busy = true
         val tile = qsTile ?: run { busy = false; return }
