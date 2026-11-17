@@ -123,6 +123,22 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2801：自动旋转"自己打开"的两个成因，以及锁定期间的自愈
+
+`1970355d`。r2795 / r2797 都没能让用户那边消停，本轮不再靠推理，直接在设备（2210132C / Android 16 / HyperOS）上把开关一步步改出来对照。
+
+**成因一：锁定期间开关被第三方改写，`applied` 标记让后续每轮直接返回。** 锁已生效时手工 `settings put system accelerometer_rotation 1`，屏幕仍是 `fixed-to-user=enabled`，但开关停在 1 —— 命中 `applyFor` 的 `current != null && current.first == foreground && current.second == wanted → return` 提前返回分支。用户看到的是"屏幕还竖着，自动旋转亮了"，k2799/k2800 都会这样。修法：该分支每轮只读 `accelerometer_rotation` 与 `fixed-to-user-rotation` 两项（比 `readDisplayState` 少两条命令），任一被外部改写就重新 `applyLock`，日志记 `relock`；重锁失败则清 `applied`，让下一轮重新采样。
+
+**成因二：空闲采样录下的其实是系统改写值。** `rememberIdleAutoRotate` 原先在任何"没有强制方向"的前台都会采样，而该 ROM 一旦有应用到前台就把开关写成 1，于是采到 1；下次进强制应用再 restore，1 被写回。k2800 加的 `isHome()` 约束只允许桌面/无前台采样，本轮确认这是对的原因；同时 base 在无可信 idle 时把 `autoRotate` 记 null，restore 跳过该项而不是猜一个值写回。
+
+**真机验证（k2801，`moe.shizuku.privileged.api` versionCode 2801）**
+- 锁定中 put acc=1 → 4 s 后回到 `acc=0 fixed=enabled`，日志 `relock fg=com.android.chrome mode=PORTRAIT ok=true`。
+- 用户关闭自动旋转（idle=0）：进 Chrome `fixed=enabled acc=0`，回桌面 `acc=0 fixed=disabled`。
+- 用户开启自动旋转（idle=1）：进 Chrome 被关到 0，回桌面恢复 1，日志 `restore base=…autoRotate=1`。
+- 中途在 Chrome 内把 acc 改成 1：回桌面 restore 用的是 base 里的 0，不是被改过的 1。
+
+**一处已知代价**：自愈每轮多两条 shell 命令。watch 本来就是 1200 ms 一轮并已读 `dumpsys`，实测未见明显耗电变化，若后续要压，可把校验降到每 3 轮一次。
+
 ### 2026-11-18 — r2799：上游复查（ShizukuPlus / shevery / Shizuku-Next）与四项落地
 
 带代理重新 fetch 七个参考仓库：Dhizuku、Dhizuku-API、Nightzuku、AxManagerD 均已是最新；Shizuku-Next 落后 1、shevery 落后 7、ShizukuPlus 落后 26。逐条判断后跟了四项，其余归为「不适用 / 纯 UI 实验 / 自家生态」。
