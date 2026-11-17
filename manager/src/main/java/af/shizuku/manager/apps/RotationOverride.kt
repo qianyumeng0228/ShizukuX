@@ -198,9 +198,13 @@ object RotationOverride {
 
         val commands = ArrayList<String>(4)
         base.fixedToUser?.let { commands.add("wm fixed-to-user-rotation $it") }
+        // `wm user-rotation` has to run before the two settings, not after: on HyperOS a
+        // `wm user-rotation free` writes accelerometer_rotation=1 itself, so a value restored
+        // before it is overwritten and the phone comes back with auto-rotate on even though the
+        // user had it off. Measured on 2210132C / Android 16.
+        base.userRotationMode?.let { commands.add("wm user-rotation $it") }
         base.autoRotate?.let { commands.add("settings put system accelerometer_rotation $it") }
         base.userRotation?.let { commands.add("settings put system user_rotation $it") }
-        base.userRotationMode?.let { commands.add("wm user-rotation $it") }
         if (commands.isNotEmpty()) {
             PrivilegedShell.run(commands.joinToString("; "))
         }
