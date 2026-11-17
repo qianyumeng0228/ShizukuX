@@ -375,8 +375,9 @@ static void kill_old_processes() {
         if (!is_server) {
             // Two independent signals, either one is enough:
             //  1. same exe path as us (the ordinary "restarted from the same install" case);
-            //  2. a libshizuku.so supervisor whose argv carries our server name (survives
-            //     across install directories, see proc_cmdline_contains above).
+            //  2. a libshizuku.so supervisor started against one of our manager apks (spotted
+            //     through argv, so it survives across install directories — see
+            //     proc_cmdline_contains above).
             if (s_self_exe_len > 0) {
                 char proc_exe_path[64]{0};
                 snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
@@ -387,7 +388,14 @@ static void kill_old_processes() {
                 }
             }
 
-            if (!is_old_supervisor && proc_cmdline_contains(pid, SERVER_NAME)) {
+            if (!is_old_supervisor) {
+                // A supervisor's own argv carries no server name — that token only shows up
+                // in the child it spawns. Identify our installs by the manager apk path the
+                // supervisor was started with instead: any libshizuku.so whose --apk points
+                // into one of our two packages is a stale supervisor of ours, regardless of
+                // which /data/app/~~hash directory it happens to live in. A stock Shizuku
+                // supervisor never matches, because its apk path carries a different package
+                // name.
                 char proc_exe_path[64]{0};
                 snprintf(proc_exe_path, sizeof(proc_exe_path), "/proc/%d/exe", pid);
                 char exe_buf[PATH_MAX]{0};
@@ -395,7 +403,10 @@ static void kill_old_processes() {
                 if (len > 0) {
                     const char *base = strrchr(exe_buf, '/');
                     base = (base != nullptr) ? base + 1 : exe_buf;
-                    if (strcmp(base, "libshizuku.so") == 0) {
+                    if (strcmp(base, "libshizuku.so") == 0 &&
+                        proc_cmdline_contains(pid, "--apk=") &&
+                        (proc_cmdline_contains(pid, PACKAGE_NAME) ||
+                         proc_cmdline_contains(pid, PACKAGE_NAME_DROPIN))) {
                         is_old_supervisor = true;
                     }
                 }
