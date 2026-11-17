@@ -39,6 +39,10 @@ include ":server", ":starter", ":shell", ":manager", ":common", ":database", ":c
 include ":core:ui"
 project(":core:ui").projectDir = file("core/ui")
 
+// Optional add-on APK that answers at the Dhizuku-API 2.4 authority and forwards to the manager.
+include ":dhizuku-compat"
+project(":dhizuku-compat").projectDir = file("dhizuku-compat")
+
 def root = "api"
 
 def propFile = file("local.properties")

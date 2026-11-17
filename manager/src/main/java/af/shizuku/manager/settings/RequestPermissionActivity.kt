@@ -115,7 +115,7 @@ class RequestPermissionActivity : AppCompatActivity() {
         // e.g. a PendingIntent) is tolerated so legitimate indirect launches keep working.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val launcherUid = launchedFromUid
-            if (launcherUid >= 0 && launcherUid != uid && launcherUid != android.os.Process.myUid()) {
+            if (launcherUid >= 0 && launcherUid != uid && !isTrustedForwarder(launcherUid)) {
                 Timber.tag(TAG).w("request uid=$uid does not match launcher uid=$launcherUid, rejecting")
                 return false
             }
@@ -124,6 +124,40 @@ class RequestPermissionActivity : AppCompatActivity() {
         listener = IDhizukuRequestPermissionListener.Stub.asInterface(binder)
         targetUid = uid
         return true
+    }
+
+    /**
+     * A forwarder necessarily changes the launching uid, so a request relayed by the optional
+     * Dhizuku compat add-on would otherwise fail the launchedFromUid == uid check.
+     *
+     * Only an APK signed with the manager's own certificate is trusted here: a third party
+     * cannot produce such a signature, so this does not widen the attack surface that the
+     * check was added to close — it only keeps our own relay working.
+     */
+    private fun isTrustedForwarder(launcherUid: Int): Boolean {
+        if (launcherUid < 0 || launcherUid == android.os.Process.myUid()) return true
+        val pm = packageManager
+        val launcherPackages = try {
+            pm.getPackagesForUid(launcherUid)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "getPackagesForUid($launcherUid) failed")
+            null
+        } ?: return false
+        val ownSignatures = try {
+            pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES).signatures
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "reading own signatures failed")
+            null
+        }
+        if (ownSignatures == null || ownSignatures.isEmpty()) return false
+        return launcherPackages.any { pkg ->
+            val signatures = try {
+                pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES).signatures
+            } catch (e: Exception) {
+                null
+            }
+            signatures != null && signatures.any { candidate -> ownSignatures.any { it == candidate } }
+        }
     }
 
     private fun showPermissionDialog(currentSignature: String?) {

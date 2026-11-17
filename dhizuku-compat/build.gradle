@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Optional add-on for apps built with Dhizuku-API 2.4 or older. Those clients hardcode the
+// official Dhizuku authority, so this tiny app claims it and forwards to the ShizukuX manager.
+// It cannot be installed next to the real Dhizuku app (same authority), which is why it ships
+// as a separate APK and is never bundled into the manager.
+android {
+    namespace 'af.shizuku.x.dhizuku'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId "af.shizuku.x.dhizuku"
+        minSdk 26
+        targetSdk 37
+        versionCode rootProject.ext.versionCode
+        versionName rootProject.ext.versionName + "-dhizuku-compat"
+    }
+
+    signingConfigs {
+        sign {}
+    }
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.sign
+            minifyEnabled false
+        }
+    }
+}
+
+apply from: rootProject.file("signing.gradle")

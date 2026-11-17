@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Forwards go to the ShizukuX manager by package, so it must be visible on Android 11+. -->
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+        <package android:name="xyz.shizuku.extra.api" />
+    </queries>
+
+    <application
+        android:label="@string/app_name"
+        android:hasCode="true"
+        android:icon="@drawable/ic_compat"
+        android:roundIcon="@drawable/ic_compat">
+
+        <!-- The one place allowed to claim a Dhizuku authority: Dhizuku-API <= 2.4 hardcodes
+             com.rosan.dhizuku.server.provider. By design this makes the APK uninstallable
+             next to the real Dhizuku app. -->
+        <provider
+            android:name=".DhizukuProviderProxy"
+            android:authorities="com.rosan.dhizuku.server.provider"
+            android:exported="true" />
+
+        <!-- Dhizuku-API <= 2.4 asks for permission with this implicit intent. -->
+        <activity
+            android:name=".ForwardPermissionActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="com.rosan.dhizuku.action.request.permission" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
