@@ -184,6 +184,10 @@ public class ShizukuSettings {
         public static final String KEY_LAST_SEEN_CHANGELOG_VERSION = "last_seen_changelog_version";
         public static final String KEY_SERVER_STARTED_BUILD = "server_started_build";
         public static final String KEY_LAST_SETTLED_STATE = "last_settled_shizuku_state";
+        /** Hours between background update checks; 0 disables the periodic worker entirely. */
+        public static final String KEY_UPDATE_CHECK_INTERVAL_HOURS = "update_check_interval_hours";
+        /** Highest versionCode already announced by a notification, so one release notifies once. */
+        public static final String KEY_LAST_NOTIFIED_UPDATE_CODE = "last_notified_update_code";
         /** Deliberate "the user wants the server down" flag, kept apart from the settled state.
          *  See {@link #isUserStoppedIntent()}. */
         public static final String KEY_USER_STOPPED_INTENT = "user_stopped_intent";
@@ -1373,6 +1377,23 @@ public class ShizukuSettings {
 
     public static void setAutoInstallEnabled(boolean enabled) {
         getPreferences().edit().putBoolean(Keys.KEY_AUTO_INSTALL_ENABLED, enabled).apply();
+    }
+
+    /** 0 (the default) means "no periodic check" — the app only checks when it is opened. */
+    public static int getUpdateCheckIntervalHours() {
+        return getPreferences().getInt(Keys.KEY_UPDATE_CHECK_INTERVAL_HOURS, 0);
+    }
+
+    public static void setUpdateCheckIntervalHours(int hours) {
+        getPreferences().edit().putInt(Keys.KEY_UPDATE_CHECK_INTERVAL_HOURS, hours).apply();
+    }
+
+    public static int getLastNotifiedUpdateCode() {
+        return getPreferences().getInt(Keys.KEY_LAST_NOTIFIED_UPDATE_CODE, 0);
+    }
+
+    public static void setLastNotifiedUpdateCode(int versionCode) {
+        getPreferences().edit().putInt(Keys.KEY_LAST_NOTIFIED_UPDATE_CODE, versionCode).apply();
     }
 
     public static long getLastUpdateCheckTime() {

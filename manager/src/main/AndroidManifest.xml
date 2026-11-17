@@ -654,6 +654,11 @@
         <receiver android:name=".receiver.NotifAttemptReceiver" />
         <receiver android:name=".receiver.NotifCancelReceiver" />
 
+        <!-- "Later" action on the background update notification: dismisses it in place. -->
+        <receiver
+            android:name=".worker.UpdateCheckWorker$LaterReceiver"
+            android:exported="false" />
+
         <!-- WorkManager is initialized manually via Configuration.Provider in ShizukuApplication.
              Removing WorkManagerInitializer here prevents the "already initialized" crash (#126). -->
         <provider

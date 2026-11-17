@@ -135,4 +135,19 @@
         <item>system</item>
     </string-array>
 
+    <!-- Background update check interval: 0 disables the periodic worker. -->
+    <string-array name="update_check_interval_entries">
+        <item>@string/update_interval_off</item>
+        <item>@string/update_interval_6h</item>
+        <item>@string/update_interval_12h</item>
+        <item>@string/update_interval_24h</item>
+    </string-array>
+
+    <string-array name="update_check_interval_values">
+        <item>0</item>
+        <item>6</item>
+        <item>12</item>
+        <item>24</item>
+    </string-array>
+
 </resources>

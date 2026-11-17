@@ -18,6 +18,7 @@ import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.ProjectLinks
 import af.shizuku.manager.update.UpdateChecker
 import af.shizuku.manager.update.UpdateManager
+import af.shizuku.manager.worker.UpdateCheckWorker
 import org.koin.android.ext.android.inject
 import timber.log.Timber
 
@@ -31,6 +32,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         private const val KEY_AUTO_UPDATE = "auto_update_enabled"
         private const val KEY_AUTO_INSTALL = "auto_install_enabled"
         private const val KEY_UPDATE_CHANNEL = "update_channel"
+        private const val KEY_UPDATE_INTERVAL = "update_check_interval"
         private const val KEY_CHECK_FOR_UPDATE = "check_for_update"
         private const val KEY_LAST_CHECK = "last_check_time"
     }
@@ -97,6 +99,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
         setupAutoUpdatePreference()
         setupAutoInstallPreference()
         setupChannelPreference()
+        setupIntervalPreference()
         setupCheckForUpdatePreference()
         updateLastCheckSummary()
     }
@@ -112,6 +115,9 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                 findPreference<TwoStatePreference>(KEY_AUTO_INSTALL)?.isChecked = false
                 ShizukuSettings.setAutoInstallEnabled(false)
             }
+            // Turning the master switch off must also tear down the periodic worker,
+            // otherwise background checks would keep running against the user's choice.
+            UpdateCheckWorker.schedule(requireContext())
             false
         }
     }
@@ -151,6 +157,21 @@ class AboutSettingsFragment : BaseSettingsFragment() {
                 ShizukuSettings.setUpdateChannel("stable")
                 true
             }
+        }
+    }
+
+    /**
+     * Background check interval. 0 is the default and keeps today's behaviour: the app only
+     * checks when it is opened. Any other value schedules the periodic worker.
+     */
+    private fun setupIntervalPreference() {
+        val pref = findPreference<ListPreference>(KEY_UPDATE_INTERVAL) ?: return
+        pref.value = ShizukuSettings.getUpdateCheckIntervalHours().toString()
+        pref.setOnPreferenceChangeListener { _, newValue ->
+            val hours = (newValue as String).toIntOrNull() ?: 0
+            ShizukuSettings.setUpdateCheckIntervalHours(hours)
+            UpdateCheckWorker.schedule(requireContext())
+            true
         }
     }
 

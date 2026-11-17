@@ -927,4 +927,14 @@
     <string name="settings_help"><![CDATA[帮助]]></string>
     <string name="settings_diagnostics_category"><![CDATA[诊断]]></string>
     <string name="settings_adb_category"><![CDATA[ADB 管理]]></string>
+    <string name="update_available_channel"><![CDATA[更新提醒]]></string>
+    <string name="update_available_notification_title"><![CDATA[ShizukuX %1$s 可用]]></string>
+    <string name="update_available_notification_title_pre"><![CDATA[ShizukuX %1$s（测试版）可用]]></string>
+    <string name="update_available_notification_text"><![CDATA[有新版本可以下载，点按打开 ShizukuX。]]></string>
+    <string name="settings_update_check_interval_title"><![CDATA[后台检查更新]]></string>
+    <string name="settings_update_check_interval_summary"><![CDATA[定期检查新版本并通知你。关闭时只在打开应用时检查。]]></string>
+    <string name="update_interval_off"><![CDATA[关闭]]></string>
+    <string name="update_interval_6h"><![CDATA[每 6 小时]]></string>
+    <string name="update_interval_12h"><![CDATA[每 12 小时]]></string>
+    <string name="update_interval_24h"><![CDATA[每 24 小时]]></string>
 </resources>

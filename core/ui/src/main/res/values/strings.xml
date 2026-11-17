@@ -874,4 +874,14 @@
     <string name="settings_help">Help</string>
     <string name="settings_diagnostics_category">Diagnostics</string>
     <string name="settings_adb_category">ADB Management</string>
+    <string name="update_available_channel">Update alerts</string>
+    <string name="update_available_notification_title">ShizukuX %1$s is available</string>
+    <string name="update_available_notification_title_pre">ShizukuX %1$s (pre-release) is available</string>
+    <string name="update_available_notification_text">A new version is ready to download. Tap to open ShizukuX.</string>
+    <string name="settings_update_check_interval_title">Background update check</string>
+    <string name="settings_update_check_interval_summary">Checks for a new release and notifies you. Off means the app only checks when opened.</string>
+    <string name="update_interval_off">Off</string>
+    <string name="update_interval_6h">Every 6 hours</string>
+    <string name="update_interval_12h">Every 12 hours</string>
+    <string name="update_interval_24h">Every 24 hours</string>
 </resources>

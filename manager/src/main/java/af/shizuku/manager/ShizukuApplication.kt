@@ -29,6 +29,7 @@ import rikka.shizuku.Shizuku
 import timber.log.Timber
 import af.shizuku.manager.di.appModule
 import af.shizuku.manager.worker.RemoteDbSyncWorker
+import af.shizuku.manager.worker.UpdateCheckWorker
 import android.os.UserManager
 import com.airbnb.mvrx.Mavericks
 import kotlinx.coroutines.CoroutineScope
@@ -569,6 +570,11 @@ class ShizukuApplication : Application(), Configuration.Provider {
                 RemoteDbSyncWorker.schedule(this)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to schedule RemoteDbSyncWorker")
+            }
+            try {
+                UpdateCheckWorker.schedule(this)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to schedule UpdateCheckWorker")
             }
         } else {
             Timber.w("Direct Boot mode: skipping RemoteDbSyncWorker scheduling")
