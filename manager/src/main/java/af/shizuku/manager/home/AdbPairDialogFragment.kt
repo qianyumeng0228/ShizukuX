@@ -234,7 +234,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }.onFailure {
                 _isPairing.postValue(false)
                 _result.postValue(PairingState.Failure(it))
-                Timber.e("adb pairing failed", it)
+                Timber.e("adb pairing failed (host=%s, port=%d, pwdLen=%d)", host, port, password.length, it)
             }.onSuccess {
                 _isPairing.postValue(false)
                 if (it) {
