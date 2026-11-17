@@ -561,6 +561,7 @@
     <string name="app_management_context_grant"><![CDATA[授予权限]]></string>
     <string name="app_management_context_revoke"><![CDATA[撤销权限]]></string>
     <string name="app_management_context_hide"><![CDATA[从列表中隐藏]]></string>
+    <string name="app_management_context_unhide"><![CDATA[恢复到列表]]></string>
     <string name="app_management_no_launcher"><![CDATA[此应用没有启动器]]></string>
     <string name="app_management_package_copied"><![CDATA[已复制包名]]></string>
     <string name="app_management_log_permission_toggle"><![CDATA[切换权限：%s]]></string>

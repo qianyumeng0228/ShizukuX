@@ -34,6 +34,10 @@ import kotlinx.coroutines.withContext
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.hiding.HidingWatchService
+import af.shizuku.manager.apps.PrivilegedShell
+import af.shizuku.manager.apps.RotationMode
+import af.shizuku.manager.apps.RotationOverride
 import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.databinding.AppListItemBinding
 import af.shizuku.manager.ktx.toHtml
@@ -113,6 +117,10 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             clipboard.setPrimaryClip(ClipData.newPlainText("package_name", packageName))
             Toast.makeText(v.context, R.string.app_management_package_copied, Toast.LENGTH_SHORT).show()
         }
+        // pkg is clickable, so it consumes the DOWN event and the row never sees a long press
+        // over the text; holding the package name used to just copy it instead of opening the
+        // row's menu. Forward the long press to the same handler the row uses.
+        pkg.setOnLongClickListener(this)
     }
 
     private inline val packageName get() = data.packageName
@@ -244,16 +252,24 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                 })
             }
             if (ShizukuSettings.getLongPressHideFromList()) {
-                add(LpAction(context.getString(R.string.app_management_context_hide)) {
+                // Under the hidden filter this entry restores the row (AppsController.onHideApp
+                // branches on filterState), so the label has to say "restore" there instead of
+                // promising to hide an app that is not in the visible list anyway.
+                val rowHost = context.findAppRowHost()
+                val hideLabel = context.getString(
+                    if (rowHost?.filterIsHidden == true) {
+                        R.string.app_management_context_unhide
+                    } else {
+                        R.string.app_management_context_hide
+                    }
+                )
+                add(LpAction(hideLabel) {
                     ActivityLogManager.log(
                         appLabel,
                         capturedPackage,
-                        context.getString(
-                            R.string.app_management_log_long_press,
-                            context.getString(R.string.app_management_context_hide)
-                        )
+                        context.getString(R.string.app_management_log_long_press, hideLabel)
                     )
-                    context.findAppRowHost()?.onHideApp(capturedPackage)
+                    rowHost?.onHideApp(capturedPackage)
                 })
             }
 
@@ -315,6 +331,57 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                         })
                     }
                 }
+            }
+
+            // Per-app rotation, ported from Shizuku-Next: a compat change for "follow system" and
+            // a display lock for the two forced modes. The long-press entry asks which mode, the
+            // same four the app's settings page offers.
+            if (RotationOverride.isSupported() && PrivilegedShell.available()) {
+                val isZh = Locale.getDefault().language.startsWith("zh")
+                val currentMode = runCatching { RotationOverride.modeFor(capturedPackage) }
+                    .getOrDefault(RotationMode.OFF)
+                val labelOf: (RotationMode) -> String = { mode ->
+                    when (mode) {
+                        RotationMode.OFF -> if (isZh) "关闭" else "Off"
+                        RotationMode.AUTO -> if (isZh) "跟随系统" else "Follow system"
+                        RotationMode.PORTRAIT -> if (isZh) "强制竖屏" else "Force portrait"
+                        RotationMode.LANDSCAPE -> if (isZh) "强制横屏" else "Force landscape"
+                    }
+                }
+                add(LpAction(
+                    (if (isZh) "屏幕方向 · " else "Rotation: ") + labelOf(currentMode)
+                ) {
+                    val host = context.asActivity<Activity>() ?: context
+                    MaterialAlertDialogBuilder(host)
+                        .setTitle(if (isZh) "屏幕方向 · $appLabel" else "Rotation · $appLabel")
+                        .setItems(RotationMode.values().map { labelOf(it) }.toTypedArray()) { _, which ->
+                            val mode = RotationMode.values()[which]
+                            CoroutineScope(Dispatchers.IO).launch {
+                                val ok = runCatching {
+                                    RotationOverride.setMode(capturedPackage, mode)
+                                }.getOrDefault(false)
+                                withContext(Dispatchers.Main) {
+                                    val text = if (isZh) {
+                                        if (ok) "屏幕方向：${labelOf(mode)}" else "屏幕方向设置失败"
+                                    } else {
+                                        if (ok) "Rotation: ${labelOf(mode)}" else "Failed to set rotation"
+                                    }
+                                    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+                                    if (ok) {
+                                        ActivityLogManager.log(
+                                            appLabel,
+                                            capturedPackage,
+                                            "Rotation mode -> ${mode.name}"
+                                        )
+                                        // The watch is what applies a forced mode; without it the
+                                        // setting would be saved and never acted on.
+                                        runCatching { HidingWatchService.refresh(context) }
+                                    }
+                                }
+                            }
+                        }
+                        .show()
+                })
             }
         }
     }

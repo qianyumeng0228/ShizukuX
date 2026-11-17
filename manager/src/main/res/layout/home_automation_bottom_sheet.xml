@@ -94,6 +94,8 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- 不要再加 app:prefixText="auth: "：extrasEditText 的文本本身已是 "auth:$token"，
+             叠加前缀会显示成 "auth: auth:xxx" 双重键名，误导用户复制出错值。 -->
         <com.google.android.material.textfield.TextInputLayout
             style="@style/StaticCopyTextInput"
             android:id="@+id/extrasLayout"
@@ -103,8 +105,7 @@
             android:maxLines="1"
             app:startIconCheckable="true"
             app:startIconDrawable="@drawable/ic_autorenew"
-            app:prefixTextColor="?colorOnSurfaceVariant"
-            app:prefixText="auth: ">
+            app:prefixTextColor="?colorOnSurfaceVariant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/extrasEditText"

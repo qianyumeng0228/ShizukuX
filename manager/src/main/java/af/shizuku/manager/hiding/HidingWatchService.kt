@@ -13,6 +13,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import af.shizuku.manager.R
+import af.shizuku.manager.apps.RotationOverride
 import af.shizuku.manager.force_dark.ForceDarkManager
 import af.shizuku.manager.utils.Logger.LOGGER
 import kotlinx.coroutines.CoroutineScope
@@ -71,13 +72,18 @@ class HidingWatchService : Service() {
          */
         fun refresh(context: Context) {
             val intent = Intent(context, HidingWatchService::class.java)
-            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch()) {
+            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch() &&
+                !RotationOverride.hasWorkToDo()
+            ) {
                 // No app left to act for, so nothing has a reason to stay hidden - and nothing for
                 // a watch to watch. Force dark belongs on this side of the line too: the switch it
                 // holds is device-wide, so it goes back with everything else rather than being
                 // left on by a service that is about to stop.
                 Hiding.restoreAll()
                 ForceDarkManager.restore()
+                // The forced rotation lock is device-wide in exactly the same way; leaving it on
+                // after the watch stops would pin the display with nothing left to undo it.
+                runCatching { RotationOverride.restore() }
                 runCatching { context.stopService(intent) }
                 return
             }
@@ -172,6 +178,9 @@ class HidingWatchService : Service() {
         running.set(false)
         holding.set(null)
         scope.cancel()
+        // The display is the one thing that must not be left behind: a lock whose watch is gone
+        // has nothing left to notice the app that asked for it has closed.
+        runCatching { RotationOverride.restore() }
         super.onDestroy()
     }
 
@@ -179,10 +188,13 @@ class HidingWatchService : Service() {
         var paused = false
 
         while (scope.isActive) {
-            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch()) {
+            if (!Hiding.hasWorkToDo() && !ForceDarkManager.needsInProcessWatch() &&
+                !RotationOverride.hasWorkToDo()
+            ) {
                 holding.set(null)
                 Hiding.restoreAll()
                 ForceDarkManager.restore()
+                runCatching { RotationOverride.restore() }
                 notifyOnce("idle", notification(hidingFor = null, paused = false))
                 stopSelf()
                 return
@@ -194,6 +206,7 @@ class HidingWatchService : Service() {
             if (!Hiding.canWatch()) {
                 Hiding.restoreAll()
                 ForceDarkManager.restore()
+                runCatching { RotationOverride.restore() }
                 notifyOnce("unavailable", notification(hidingFor = null, paused = false, unavailable = true))
                 stopSelf()
                 return
@@ -203,11 +216,14 @@ class HidingWatchService : Service() {
                 // Restored once on the way in, not once a second: hiding is suspended, so there
                 // is nothing to look at until somebody resumes it. Force dark is put back once
                 // here as well, because "give my settings back" is answered by the screen too -
-                // and a phone left dark would be the one part of it a user cannot miss.
+                // and a phone left dark would be the one part of it a user cannot miss. The
+                // rotation lock goes back for the same reason: it is the display, and there is
+                // no foreground pass running to say whose turn it is.
                 if (!paused) {
                     holding.set(null)
                     Hiding.restoreAll()
                     ForceDarkManager.restore()
+                    runCatching { RotationOverride.restore() }
                     notifyOnce("paused", notification(hidingFor = null, paused = true))
                     paused = true
                 }
@@ -226,6 +242,11 @@ class HidingWatchService : Service() {
             // disagree about what is on screen.
             runCatching { ForceDarkManager.applyFor(Hiding.lastInFront) }
                 .onFailure { LOGGER.w("the force-dark pass failed", it) }
+
+            // Same foreground, third device-wide rule: a forced rotation mode holds the display
+            // while its app is in front and puts it back the moment that app leaves.
+            runCatching { RotationOverride.applyFor(Hiding.lastInFront) }
+                .onFailure { LOGGER.w("the rotation pass failed", it) }
 
             // An app that has just been hidden for started before any of this, so it has read the
             // settings it objects to. Only a new process can read the hidden ones, which is what

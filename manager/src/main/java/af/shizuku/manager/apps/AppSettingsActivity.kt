@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -34,6 +36,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
+import af.shizuku.manager.hiding.HidingWatchService
 import af.shizuku.manager.utils.AppIconCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -72,6 +76,12 @@ class AppSettingsActivity : ComponentActivity() {
     private var hidden by mutableStateOf(false)
     private var working by mutableStateOf(false)
     private var errorMessage by mutableStateOf<String?>(null)
+    private var errorTitle by mutableStateOf("操作失败")
+
+    /** Android 16 的 per-app 方向覆盖；低于该版本系统没有这个 compat change。 */
+    private val rotationSupported = RotationOverride.isSupported()
+    private var rotationMode by mutableStateOf(RotationMode.OFF)
+    private var rotationWorking by mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +91,14 @@ class AppSettingsActivity : ComponentActivity() {
             return
         }
         hidden = AppCatalogStore.isIconHidden(this, packageName)
+        if (rotationSupported) {
+            lifecycleScope.launch {
+                rotationMode = withContext(Dispatchers.IO) {
+                    runCatching { RotationOverride.modeFor(packageName) }
+                        .getOrDefault(RotationMode.OFF)
+                }
+            }
+        }
 
         setContent {
             af.shizuku.core.ui.compose.AppTheme(
@@ -93,7 +111,36 @@ class AppSettingsActivity : ComponentActivity() {
                     packageName = packageName,
                     hidden = hidden,
                     working = working,
+                    rotationMode = rotationMode,
+                    rotationSupported = rotationSupported,
+                    rotationWorking = rotationWorking,
                     onBack = { onBackPressedDispatcher.onBackPressed() },
+                    onSelectMode = { mode ->
+                        if (rotationWorking || mode == rotationMode) return@AppSettingsScreen
+                        rotationWorking = true
+                        lifecycleScope.launch {
+                            val result = withContext(Dispatchers.IO) {
+                                runCatching { RotationOverride.setMode(packageName, mode) }
+                            }
+                            rotationWorking = false
+                            result.onSuccess { applied ->
+                                if (applied) {
+                                    rotationMode = mode
+                                    // A forced mode is held by the watch, which reads the foreground
+                                    // every pass: with no watch running nothing would ever lock.
+                                    runCatching {
+                                        HidingWatchService.refresh(this@AppSettingsActivity)
+                                    }
+                                } else {
+                                    errorTitle = "无法设置屏幕方向"
+                                    errorMessage = "系统没有接受这次改动"
+                                }
+                            }.onFailure {
+                                errorTitle = "无法设置屏幕方向"
+                                errorMessage = it.message ?: "操作失败"
+                            }
+                        }
+                    },
                     onToggle = { want ->
                         if (working) return@AppSettingsScreen
                         working = true
@@ -113,7 +160,7 @@ class AppSettingsActivity : ComponentActivity() {
                 errorMessage?.let { message ->
                     androidx.compose.material3.AlertDialog(
                         onDismissRequest = { errorMessage = null },
-                        title = { Text("无法切换桌面图标") },
+                        title = { Text(errorTitle) },
                         text = { Text(message, fontSize = 12.sp) },
                         confirmButton = {
                             androidx.compose.material3.TextButton(onClick = { errorMessage = null }) {
@@ -136,7 +183,11 @@ private fun AppSettingsScreen(
     packageName: String,
     hidden: Boolean,
     working: Boolean,
+    rotationMode: RotationMode,
+    rotationSupported: Boolean,
+    rotationWorking: Boolean,
     onBack: () -> Unit,
+    onSelectMode: (RotationMode) -> Unit,
     onToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -240,6 +291,93 @@ private fun AppSettingsScreen(
                     enabled = !working
                 )
             }
+
+            Spacer(Modifier.height(10.dp))
+            var modeDialog by remember { mutableStateOf(false) }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f))
+                    .clickable(enabled = rotationSupported && !rotationWorking) { modeDialog = true }
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("屏幕方向", fontSize = 14.sp)
+                    Text(
+                        if (!rotationSupported) {
+                            "需要 Android 16 及以上；这个功能依赖系统的方向覆盖"
+                        } else {
+                            modeNote(rotationMode) + if (rotationWorking) "（处理中）" else ""
+                        },
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                    )
+                }
+                Text(
+                    modeLabel(rotationMode),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            if (modeDialog) {
+                androidx.compose.material3.AlertDialog(
+                    onDismissRequest = { modeDialog = false },
+                    title = { Text("屏幕方向") },
+                    text = {
+                        Column {
+                            RotationMode.values().forEach { mode ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            modeDialog = false
+                                            onSelectMode(mode)
+                                        }
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = rotationMode == mode,
+                                        onClick = {
+                                            modeDialog = false
+                                            onSelectMode(mode)
+                                        }
+                                    )
+                                    Column {
+                                        Text(modeLabel(mode), fontSize = 14.sp)
+                                        Text(
+                                            modeNote(mode),
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        androidx.compose.material3.TextButton(onClick = { modeDialog = false }) {
+                            Text("取消")
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+private fun modeLabel(mode: RotationMode): String = when (mode) {
+    RotationMode.OFF -> "关闭"
+    RotationMode.AUTO -> "跟随系统"
+    RotationMode.PORTRAIT -> "强制竖屏"
+    RotationMode.LANDSCAPE -> "强制横屏"
+}
+
+private fun modeNote(mode: RotationMode): String = when (mode) {
+    RotationMode.OFF -> "不处理这个应用的方向"
+    RotationMode.AUTO -> "应用自己锁定的横屏/竖屏会被忽略，跟随系统旋转"
+    RotationMode.PORTRAIT -> "这个应用在前台时，整块屏幕锁成竖屏"
+    RotationMode.LANDSCAPE -> "这个应用在前台时，整块屏幕锁成横屏"
 }

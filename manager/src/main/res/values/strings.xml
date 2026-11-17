@@ -354,6 +354,8 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_context_grant">Grant permission</string>
     <string name="app_management_context_revoke">Revoke permission</string>
     <string name="app_management_context_hide">Hide from list</string>
+    <!-- The same menu entry restores a row while the list is filtered to hidden apps. -->
+    <string name="app_management_context_unhide">Restore to list</string>
     <string name="app_management_no_launcher">This app has no launcher</string>
     <string name="app_management_package_copied">Package name copied</string>
     <string name="app_management_log_permission_toggle">Toggle permission: %s</string>
