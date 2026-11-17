@@ -1,21 +1,33 @@
 package af.shizuku.manager
 
 import af.shizuku.manager.admin.DhizukuAdminReceiver
+import af.shizuku.manager.settings.SettingsActivity
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.database.Cursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.Parcel
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
+import android.widget.Toast
+import androidx.core.app.NotificationChannelCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import com.rosan.dhizuku.aidl.IDhizukuLockTaskModeListener
 import com.rosan.dhizuku.aidl.IDhizukuRemoteProcess
+import com.rosan.dhizuku.server_api.LockTaskModeListeners
 import timber.log.Timber
 import java.io.InputStream
 import java.io.OutputStream
@@ -51,7 +63,41 @@ class DhizukuProvider : ContentProvider() {
         // gate features on getVersionCode() must see the same value as the real Dhizuku.
         private const val SERVICE_VERSION_CODE = 8
         private const val SERVICE_VERSION_NAME = "8"
+
+        // Ownership guard (upstream Dhizuku 2.13, ba49af1 + 29ad03e).
+        private const val OWNERSHIP_BLOCKED_NOTIFICATION_ID = 1002
+        private const val OWNERSHIP_BLOCKED_CHANNEL_ID = "ownership_blocked"
+        private const val DPM_DESCRIPTOR = "android.app.admin.IDevicePolicyManager"
+
+        /**
+         * IDevicePolicyManager transactions that would drop or hand over our Device Owner
+         * status. Resolved reflectively because the constants are hidden and their values
+         * shift between platform releases. The flag says whether the call returns a boolean,
+         * so a blocked transaction can still write a well-formed reply.
+         */
+        private val ownershipTransactions: Map<Int, Boolean> by lazy {
+            runCatching {
+                val stub = Class.forName("android.app.admin.IDevicePolicyManager\$Stub")
+                listOf(
+                    "TRANSACTION_transferOwnership" to false,
+                    "TRANSACTION_clearDeviceOwner" to false,
+                    "TRANSACTION_clearDeviceOwnerApp" to false,
+                    "TRANSACTION_clearProfileOwner" to false,
+                    "TRANSACTION_setDeviceOwner" to true,
+                    "TRANSACTION_setProfileOwner" to true
+                ).mapNotNull { (name, returnsBoolean) ->
+                    runCatching {
+                        stub.getDeclaredField(name).apply { isAccessible = true }.getInt(null)
+                    }.getOrNull()?.let { it to returnsBoolean }
+                }.toMap()
+            }.onFailure {
+                Timber.tag(TAG).w(it, "Unable to resolve ownership transaction codes")
+            }.getOrDefault(emptyMap())
+        }
     }
+
+    /** One service instance per (uid, pid), dropped when the client binder dies. */
+    private val services = HashMap<String, DhizukuServiceBinder>()
 
     // ------------------------------------------------------------------
     // Authorization
@@ -127,10 +173,86 @@ class DhizukuProvider : ContentProvider() {
     }
 
     // ------------------------------------------------------------------
+    // Ownership guard
+    // ------------------------------------------------------------------
+
+    private fun isOwnershipChange(binder: IBinder?, code: Int): Boolean {
+        if (binder == null) return false
+        // The manager UI runs as our own uid; keep the activation / removal flows working.
+        if (Binder.getCallingUid() == android.os.Process.myUid()) return false
+        val descriptor = runCatching { binder.interfaceDescriptor }.getOrNull() ?: return false
+        if (descriptor != DPM_DESCRIPTOR) return false
+        return code in ownershipTransactions
+    }
+
+    /**
+     * Empties the reply so the client sees a neutral result instead of an owner change.
+     * Boolean-returning transactions get a "false" written back; void ones stay empty,
+     * which the client's AIDL stub reads as success-with-nothing-changed.
+     */
+    private fun blockOwnershipChange(code: Int, reply: Parcel?) {
+        reply?.apply {
+            setDataPosition(0)
+            setDataSize(0)
+            if (ownershipTransactions[code] == true) writeInt(0)
+        }
+        val ctx = context ?: return
+        Handler(Looper.getMainLooper()).post {
+            runCatching {
+                Toast.makeText(ctx, R.string.dhizuku_ownership_change_blocked, Toast.LENGTH_LONG).show()
+            }
+        }
+        notifyOwnershipBlocked(ctx)
+    }
+
+    private fun notifyOwnershipBlocked(ctx: Context) {
+        val manager = NotificationManagerCompat.from(ctx)
+        val channel = NotificationChannelCompat.Builder(
+            OWNERSHIP_BLOCKED_CHANNEL_ID,
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).setName(ctx.getString(R.string.dhizuku_ownership_changes_channel)).build()
+        manager.createNotificationChannel(channel)
+
+        val contentIntent = PendingIntent.getActivity(
+            ctx,
+            0,
+            Intent(ctx, SettingsActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(ctx, OWNERSHIP_BLOCKED_CHANNEL_ID)
+            .setContentTitle(ctx.getString(R.string.dhizuku_ownership_change_blocked))
+            .setContentText(ctx.getString(R.string.dhizuku_ownership_change_blocked_detail))
+            .setSmallIcon(R.drawable.ic_admin_panel_settings_24)
+            .setContentIntent(contentIntent)
+            .setAutoCancel(true)
+            .setOnlyAlertOnce(true)
+            .build()
+        runCatching { manager.notify(OWNERSHIP_BLOCKED_NOTIFICATION_ID, notification) }
+    }
+
+    // ------------------------------------------------------------------
     // IDhizuku Binder implementation (V2 AIDL + remote-binder relay)
     // ------------------------------------------------------------------
 
     private inner class DhizukuServiceBinder : Binder() {
+
+        /** Remote processes handed to this client; destroyed once its binder dies. */
+        private val processes = mutableListOf<RemoteProcessBinder>()
+
+        fun trackProcess(process: RemoteProcessBinder) {
+            synchronized(processes) { processes.add(process) }
+        }
+
+        fun destroyProcesses() {
+            val snapshot = synchronized(processes) {
+                val copy = processes.toList()
+                processes.clear()
+                copy
+            }
+            snapshot.forEach { runCatching { it.destroy() } }
+        }
 
         private val dpm: DevicePolicyManager? by lazy {
             context?.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager
@@ -205,6 +327,20 @@ class DhizukuProvider : ContentProvider() {
                 val targetCode = data.readInt()
                 val targetFlags = data.readInt()
 
+                // Ownership guard. A client with Dhizuku access holds the device-owner
+                // identity through us; letting it call transferOwnership / clearDeviceOwner
+                // would silently disable every other client and the whole Dhizuku surface.
+                // Off by default and switchable in the Device Owner settings page.
+                if (!ShizukuSettings.isAllowOwnershipChanges() &&
+                    isOwnershipChange(targetBinder, targetCode)
+                ) {
+                    Timber.tag(TAG).w(
+                        "blocked ownership change code=$targetCode uid=${Binder.getCallingUid()}"
+                    )
+                    blockOwnershipChange(targetCode, reply)
+                    return true
+                }
+
                 // Build a fresh Parcel containing only the target's payload.
                 // The Binder driver serializes from position 0, so we must not
                 // pass the original 'data' (its first token is our descriptor,
@@ -276,15 +412,20 @@ class DhizukuProvider : ContentProvider() {
                             environment.clear()
                             for (entry in env) {
                                 if (entry == null) continue
-                                val eq = entry.indexOf('=')
+                                // Match upstream: drop anything after an embedded NUL so a
+                                // client cannot smuggle a second assignment past the check.
+                                val clean = entry.substringBefore('\u0000')
+                                val eq = clean.indexOf('=')
                                 if (eq <= 0) continue
-                                environment[entry.substring(0, eq)] = entry.substring(eq + 1)
+                                environment[clean.substring(0, eq)] = clean.substring(eq + 1)
                             }
                         }
                         if (!dir.isNullOrEmpty()) builder.directory(java.io.File(dir))
                         val process = builder.start()
+                        val remote = RemoteProcessBinder(process)
+                        trackProcess(remote)
                         reply?.writeNoException()
-                        reply?.writeStrongBinder(RemoteProcessBinder(process))
+                        reply?.writeStrongBinder(remote)
                         Timber.tag(TAG).d("remoteProcess started cmd=${cmd.joinToString(" ")}")
                         true
                     } catch (e: Exception) {
@@ -298,11 +439,25 @@ class DhizukuProvider : ContentProvider() {
                 }
                 Binder.FIRST_CALL_TRANSACTION + 12, // bindUserService
                 Binder.FIRST_CALL_TRANSACTION + 13, // unbindUserService
-                Binder.FIRST_CALL_TRANSACTION + 14, // unbindUserServiceByConnection
-                Binder.FIRST_CALL_TRANSACTION + 17, // addLockTaskModeListener
+                Binder.FIRST_CALL_TRANSACTION + 14 -> { // unbindUserServiceByConnection
+                    // UserService hosting is not implemented. Accept the calls so clients that
+                    // assume server API version 8 don't hit an empty reply.
+                    reply?.writeNoException()
+                    true
+                }
+                Binder.FIRST_CALL_TRANSACTION + 17 -> { // addLockTaskModeListener
+                    val listener = data.readStrongBinder()
+                        ?.let { IDhizukuLockTaskModeListener.Stub.asInterface(it) }
+                    enforceCallingPermission("lock_task_mode_listener")
+                    if (listener != null) LockTaskModeListeners.add(listener)
+                    reply?.writeNoException()
+                    true
+                }
                 Binder.FIRST_CALL_TRANSACTION + 18 -> { // removeLockTaskModeListener
-                    // UserService hosting and lock-task callbacks are not implemented. Accept the
-                    // calls so clients that assume server API version 8 don't hit an empty reply.
+                    val listener = data.readStrongBinder()
+                        ?.let { IDhizukuLockTaskModeListener.Stub.asInterface(it) }
+                    enforceCallingPermission("lock_task_mode_listener")
+                    if (listener != null) LockTaskModeListeners.remove(listener)
                     reply?.writeNoException()
                     true
                 }
@@ -509,9 +664,39 @@ class DhizukuProvider : ContentProvider() {
         val clientBinder: IBinder? = extras.getBinder(EXTRA_CLIENT)
         Timber.tag(TAG).d("client binder present=${clientBinder != null}")
 
+        // Upstream keeps one service per (uid, pid) and drops it when the client binder
+        // dies — that is what scopes remote processes to the client instead of leaking
+        // them for the lifetime of the provider. A call without a client binder (adb
+        // `content call`, older integrations) still gets a throwaway instance so the
+        // protocol stays diagnosable.
+        if (clientBinder == null) {
+            val bundle = Bundle()
+            bundle.putBinder(PARAM_DHIZUKU_BINDER, DhizukuServiceBinder())
+            Timber.tag(TAG).d("Returning uncached DhizukuServiceBinder to uid=$callingUid")
+            return bundle
+        }
+
+        val key = "$callingUid:${Binder.getCallingPid()}"
+        val service = synchronized(services) {
+            services[key] ?: DhizukuServiceBinder().also { created ->
+                services[key] = created
+                try {
+                    clientBinder.linkToDeath({
+                        synchronized(services) {
+                            if (services[key] === created) services.remove(key)
+                        }
+                        created.destroyProcesses()
+                    }, 0)
+                } catch (e: RemoteException) {
+                    services.remove(key)
+                    return null
+                }
+            }
+        }
+
         val bundle = Bundle()
-        bundle.putBinder(PARAM_DHIZUKU_BINDER, DhizukuServiceBinder())
-        Timber.tag(TAG).d("Returning DhizukuServiceBinder to uid=$callingUid")
+        bundle.putBinder(PARAM_DHIZUKU_BINDER, service)
+        Timber.tag(TAG).d("Returning DhizukuServiceBinder to uid=$callingUid key=$key")
         return bundle
     }
 }

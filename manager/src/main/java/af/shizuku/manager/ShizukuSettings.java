@@ -59,6 +59,7 @@ public class ShizukuSettings {
 
         // Dhizuku & API (ShizukuX additions)
         public static final String KEY_DHIZUKU_MODE = "dhizuku_mode";
+        public static final String KEY_ALLOW_OWNERSHIP_CHANGES = "allow_ownership_changes";
         public static final String KEY_CUSTOM_API_ENABLED = "custom_api_enabled";
         public static final String KEY_SHELL_INTERCEPTOR_ENABLED = "shell_interceptor_enabled";
         public static final String KEY_AVF_MANAGER_ENABLED = "avf_manager_enabled";
@@ -861,6 +862,21 @@ public class ShizukuSettings {
     public static void setDhizukuModeEnabled(boolean enable) {
         SharedPreferences p = getPreferences();
         if (p != null) p.edit().putBoolean(Keys.KEY_DHIZUKU_MODE, enable).apply();
+    }
+
+    /**
+     * Whether Dhizuku clients may call the IDevicePolicyManager paths that clear or transfer
+     * device ownership. Off by default: a client with API access could otherwise drop our
+     * Device Owner status and take the whole Dhizuku surface down with it.
+     */
+    public static boolean isAllowOwnershipChanges() {
+        SharedPreferences p = getPreferences();
+        return p != null && p.getBoolean(Keys.KEY_ALLOW_OWNERSHIP_CHANGES, false);
+    }
+
+    public static void setAllowOwnershipChanges(boolean allow) {
+        SharedPreferences p = getPreferences();
+        if (p != null) p.edit().putBoolean(Keys.KEY_ALLOW_OWNERSHIP_CHANGES, allow).apply();
     }
 
     /** User's stated preference for themed (Material You) icons — we can't read or set the

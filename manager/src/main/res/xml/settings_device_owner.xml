@@ -62,6 +62,13 @@
         android:defaultValue="false">
 
         <SwitchPreferenceCompat
+            android:key="allow_ownership_changes"
+            android:title="@string/settings_allow_ownership_changes_title"
+            android:summary="@string/settings_allow_ownership_changes_summary"
+            android:icon="@drawable/ic_admin_panel_settings_24"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
             android:key="dhizuku_disable_screencap"
             android:title="@string/settings_screen_capture_lockdown_title"
             android:summary="@string/settings_screen_capture_lockdown_summary"

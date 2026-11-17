@@ -108,6 +108,18 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
             true
         }
 
+        // Ownership change guard — app-side flag, takes effect on the next Dhizuku call.
+        // Off by default so an authorized client cannot drop or transfer our Device Owner
+        // status; when a client actually tries, the provider blocks the transaction and
+        // raises a notification pointing back here.
+        findPreference<TwoStatePreference>("allow_ownership_changes")?.let { pref ->
+            pref.isChecked = ShizukuSettings.isAllowOwnershipChanges()
+            pref.setOnPreferenceChangeListener { _, newValue ->
+                ShizukuSettings.setAllowOwnershipChanges(newValue as? Boolean ?: false)
+                true
+            }
+        }
+
         // Device Owner Tools - Screen Capture Lockdown
         findPreference<TwoStatePreference>("dhizuku_disable_screencap")?.setOnPreferenceChangeListener { _, newValue ->
             val enabled = newValue as? Boolean ?: false

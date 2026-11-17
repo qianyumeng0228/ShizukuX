@@ -2055,4 +2055,9 @@ This action cannot be undone. Continue?</string>
     <string name="wifi_ssid_only_notice">Reading the passwords needs a granted Shizuku permission or root. The system config was unreachable, so this list shows the network names only.</string>
     <string name="wifi_key_need_root">Password unavailable</string>
     <string name="wifi_connected">Connected</string>
+    <string name="settings_allow_ownership_changes_title">Allow ownership changes</string>
+    <string name="settings_allow_ownership_changes_summary">Allow clients to change ownership (transfer or clear).\nThis is a security risk.</string>
+    <string name="dhizuku_ownership_change_blocked">Ownership changes are disabled by ShizukuX</string>
+    <string name="dhizuku_ownership_change_blocked_detail">An app tried to clear or transfer device ownership. The request was blocked. Enable "Allow ownership changes" in the Device Owner settings if you really need this.</string>
+    <string name="dhizuku_ownership_changes_channel">Ownership change blocked</string>
 </resources>

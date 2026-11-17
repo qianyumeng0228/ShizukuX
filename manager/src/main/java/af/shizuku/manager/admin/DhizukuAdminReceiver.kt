@@ -26,6 +26,18 @@ class DhizukuAdminReceiver : DeviceAdminReceiver() {
         Toast.makeText(context, R.string.dhizuku_device_owner_disabled, Toast.LENGTH_SHORT).show()
     }
 
+    // Relay lock-task transitions to Dhizuku clients that registered a listener through
+    // IDhizuku.addLockTaskModeListener (server API v8, upstream 6c7865e).
+    override fun onLockTaskModeEntering(context: Context, intent: Intent, pkg: String) {
+        super.onLockTaskModeEntering(context, intent, pkg)
+        com.rosan.dhizuku.server_api.LockTaskModeListeners.notifyLockTaskModeChanged(true, pkg)
+    }
+
+    override fun onLockTaskModeExiting(context: Context, intent: Intent) {
+        super.onLockTaskModeExiting(context, intent)
+        com.rosan.dhizuku.server_api.LockTaskModeListeners.notifyLockTaskModeChanged(false, null)
+    }
+
     override fun onTransferOwnershipComplete(context: Context, bundle: PersistableBundle?) {
         super.onTransferOwnershipComplete(context, bundle)
         try {

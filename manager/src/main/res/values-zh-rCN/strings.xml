@@ -1911,4 +1911,9 @@
     <string name="update_settings_github">GitHub</string>
     <string name="update_settings_github_pat">个人访问令牌</string>
     <string name="update_settings_github_pat_title">GitHub 个人访问令牌</string>
+    <string name="settings_allow_ownership_changes_title">允许更改所有者</string>
+    <string name="settings_allow_ownership_changes_summary">允许客户端更改所有者权限（转让或解除）。\n这存在安全风险。</string>
+    <string name="dhizuku_ownership_change_blocked">ShizukuX 已禁止更改所有者</string>
+    <string name="dhizuku_ownership_change_blocked_detail">某个应用试图清除或转让设备所有者权限，请求已被拦截。如确需允许，请在「设备所有者」设置中开启「允许更改所有者」。</string>
+    <string name="dhizuku_ownership_changes_channel">所有者变更拦截</string>
 </resources>
