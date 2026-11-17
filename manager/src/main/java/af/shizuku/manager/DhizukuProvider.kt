@@ -476,7 +476,14 @@ class DhizukuProvider : ContentProvider() {
                     try {
                         val connection = IDhizukuUserServiceConnection.Stub
                             .asInterface(data.readStrongBinder())
-                        val bundle = data.readBundle(javaClass.classLoader)
+                        // AIDL writes `in Bundle` with Parcel.writeTypedObject (an int32 marker
+                        // followed by the Parcelable), not with writeBundle. Parcel.readBundle
+                        // expects a leading length instead, so reading it that way consumes the
+                        // marker (1) as the length and throws
+                        // "Bundle length is not aligned by 4: 1". Mirror writeTypedObject.
+                        val bundle = if (data.readInt() != 0) {
+                            Bundle.CREATOR.createFromParcel(data)
+                        } else null
                         enforceCallingPermission("bind_user_service")
                         requireNotNull(connection) { "connection is null" }
                         val args = DhizukuUserServiceArgs(bundle ?: Bundle())
@@ -496,7 +503,14 @@ class DhizukuProvider : ContentProvider() {
                 }
                 Binder.FIRST_CALL_TRANSACTION + 13 -> { // unbindUserService
                     try {
-                        val bundle = data.readBundle(javaClass.classLoader)
+                        // AIDL writes `in Bundle` with Parcel.writeTypedObject (an int32 marker
+                        // followed by the Parcelable), not with writeBundle. Parcel.readBundle
+                        // expects a leading length instead, so reading it that way consumes the
+                        // marker (1) as the length and throws
+                        // "Bundle length is not aligned by 4: 1". Mirror writeTypedObject.
+                        val bundle = if (data.readInt() != 0) {
+                            Bundle.CREATOR.createFromParcel(data)
+                        } else null
                         enforceCallingPermission("unbind_user_service")
                         val args = DhizukuUserServiceArgs(bundle ?: Bundle())
                         enforceComponentBelongsToCaller(args.componentName, "unbind_user_service")
@@ -517,7 +531,14 @@ class DhizukuProvider : ContentProvider() {
                     try {
                         val connection = IDhizukuUserServiceConnection.Stub
                             .asInterface(data.readStrongBinder())
-                        val bundle = data.readBundle(javaClass.classLoader)
+                        // AIDL writes `in Bundle` with Parcel.writeTypedObject (an int32 marker
+                        // followed by the Parcelable), not with writeBundle. Parcel.readBundle
+                        // expects a leading length instead, so reading it that way consumes the
+                        // marker (1) as the length and throws
+                        // "Bundle length is not aligned by 4: 1". Mirror writeTypedObject.
+                        val bundle = if (data.readInt() != 0) {
+                            Bundle.CREATOR.createFromParcel(data)
+                        } else null
                         enforceCallingPermission("unbind_user_service")
                         requireNotNull(connection) { "connection is null" }
                         val args = DhizukuUserServiceArgs(bundle ?: Bundle())
