@@ -403,7 +403,11 @@ static void kill_old_processes() {
                 if (len > 0) {
                     const char *base = strrchr(exe_buf, '/');
                     base = (base != nullptr) ? base + 1 : exe_buf;
-                    if (strcmp(base, "libshizuku.so") == 0 &&
+                    // Prefix, not strcmp: once the install directory has been replaced the
+                    // kernel appends " (deleted)" to what /proc/<pid>/exe resolves to, so the
+                    // basename reads "libshizuku.so (deleted)". The suffix is ignored here; the
+                    // apk path in argv is what decides whether the process is ours.
+                    if (strncmp(base, "libshizuku.so", sizeof("libshizuku.so") - 1) == 0 &&
                         proc_cmdline_contains(pid, "--apk=") &&
                         (proc_cmdline_contains(pid, PACKAGE_NAME) ||
                          proc_cmdline_contains(pid, PACKAGE_NAME_DROPIN))) {
