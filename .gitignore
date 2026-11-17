@@ -46,3 +46,6 @@ rust/Cargo.lock
 
 # local Cloudflare wrangler state (account cache)
 tools/module-submit-worker/.wrangler/
+
+# local build logs (agent-generated)
+build_*.log

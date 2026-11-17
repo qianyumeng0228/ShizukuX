@@ -26,6 +26,13 @@ import javax.net.ssl.SSLSocket
 
 private const val TAG = "AdbClient"
 
+/**
+ * Upper bound for a single adb packet payload. adb itself caps payloads at 1 MiB
+ * (`A_MAXDATA`), so anything larger is a malformed or hostile header — rejecting it here
+ * prevents an attacker-controlled daemon from forcing a huge allocation.
+ */
+private const val MAX_PAYLOAD = 1024 * 1024
+
 class AdbClient(
     private val host: String,
     private val port: Int,
@@ -189,6 +196,9 @@ class AdbClient(
         val dataLength = buffer.int
         val checksum = buffer.int
         val magic = buffer.int
+        if (dataLength > MAX_PAYLOAD) {
+            throw IllegalArgumentException("invalid data length: $dataLength (max $MAX_PAYLOAD)")
+        }
         val data: ByteArray?
         if (dataLength >= 0) {
             data = ByteArray(dataLength)

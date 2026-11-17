@@ -3,6 +3,7 @@ package af.shizuku.manager.settings
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -108,6 +109,17 @@ class RequestPermissionActivity : AppCompatActivity() {
             .find { it.containsKey(PARAM_CLIENT_UID) } ?: return false
         val uid = bundle.getInt(PARAM_CLIENT_UID, -1)
         if (uid == -1) return false
+        // The uid inside the intent is attacker-controlled: without this check any app could
+        // launch the dialog naming a *different* package and trick the user into authorizing
+        // it. Require the launcher to be the app it claims to be; an unknown launcher (-1,
+        // e.g. a PendingIntent) is tolerated so legitimate indirect launches keep working.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val launcherUid = launchedFromUid
+            if (launcherUid >= 0 && launcherUid != uid && launcherUid != android.os.Process.myUid()) {
+                Timber.tag(TAG).w("request uid=$uid does not match launcher uid=$launcherUid, rejecting")
+                return false
+            }
+        }
         val binder = bundle.getBinder(PARAM_CLIENT_REQUEST_PERMISSION_BINDER) ?: return false
         listener = IDhizukuRequestPermissionListener.Stub.asInterface(binder)
         targetUid = uid

@@ -102,6 +102,30 @@ class DhizukuProvider : ContentProvider() {
         )
     }
 
+    /**
+     * Delegated scopes may only target the caller's own package. Without this gate a client
+     * that passed the general Dhizuku check could grant (or strip) device-policy delegation
+     * for arbitrary third-party packages. The owner app itself is exempt; a caller whose
+     * package list cannot be resolved is passed through rather than broken.
+     */
+    private fun enforceOwnPackage(packageName: String?, func: String) {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid == android.os.Process.myUid()) return
+        val ctx = context ?: throw SecurityException("Permission Denial: $func has no context")
+        val callerPackages = try {
+            ctx.packageManager.getPackagesForUid(callingUid)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "getPackagesForUid($callingUid) failed")
+            null
+        } ?: return
+        if (packageName == null || callerPackages.none { it == packageName }) {
+            throw SecurityException(
+                "Permission Denial: $func may only target the caller's own package " +
+                        "(target=$packageName, uid=$callingUid)"
+            )
+        }
+    }
+
     // ------------------------------------------------------------------
     // IDhizuku Binder implementation (V2 AIDL + remote-binder relay)
     // ------------------------------------------------------------------
@@ -311,6 +335,7 @@ class DhizukuProvider : ContentProvider() {
         private fun getDelegatedScopes(packageName: String?): Array<String> {
             try {
                 enforceCallingPermission("get_delegated_scopes")
+                enforceOwnPackage(packageName, "get_delegated_scopes")
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return emptyArray<String>()
                 val manager = dpm ?: return emptyArray<String>()
                 val admin = adminComponent ?: return emptyArray<String>()
@@ -325,6 +350,7 @@ class DhizukuProvider : ContentProvider() {
 
         private fun setDelegatedScopes(packageName: String?, scopes: Array<out String>?) {
             enforceCallingPermission("set_delegated_scopes")
+            enforceOwnPackage(packageName, "set_delegated_scopes")
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
             val manager = dpm ?: return
             val admin = adminComponent ?: return

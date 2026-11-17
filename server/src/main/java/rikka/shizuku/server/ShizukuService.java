@@ -104,6 +104,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     }
 
     public static ApplicationInfo getManagerApplicationInfo() {
+        pinManagerSignersFromClassPath();
         // Self-resolution first: the manager is the app that embeds this server, so when the
         // server runs from an app whose applicationId differs from the compiled-in defaults
         // (e.g. a debug/test build with applicationIdSuffix = ".debug"), the only way to find
@@ -186,6 +187,17 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     private static final int MAX_SERVER_LOGS = 100;
     private final ShizukuConfigManager configManager;
     private volatile int managerAppId;
+
+    /**
+     * Signer hashes of the manager APK this server was actually launched from, derived from
+     * {@code -Djava.class.path}. A manager package whose current signature does not match this
+     * pin is rejected even when it owns the manager uid (a repackaged APK, or a debug build that
+     * inherited the uid). {@code null} means the pin could not be established (class path is not
+     * an APK) and callers fall back to the uid check alone, exactly like the upstream forks.
+     */
+    private static volatile java.util.Set<String> pinnedManagerSignerHashes;
+    private static volatile String pinnedManagerPackage;
+    private static volatile boolean managerSignerPinResolved;
     // uid of the OTHER manager flavor (Plus vs Drop-In), if it's also installed; -1 if not. See
     // isManagerAppId() - both flavors are the same signed codebase, so trusting either is safe.
     private volatile int secondaryManagerAppId;
@@ -397,7 +409,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
     public boolean checkCallerManagerPermission(String func, int callingUid, int callingPid) {
         int appId = UserHandleCompat.getAppId(callingUid);
         if (isManagerAppId(appId)) {
-            return true;
+            return matchesPinnedManagerSigners(callingUid);
         }
         // managerAppId is resolved once at server start. If that resolve was stale or failed - the
         // manager was reinstalled and got a new uid, or the initial lookup raced the package manager
@@ -406,9 +418,99 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         // uid(s) on a miss (throttled so a denied third party can't spam package lookups) and retry,
         // so a genuine manager self-heals.
         if (refreshManagerAppIdsThrottled()) {
-            return isManagerAppId(appId);
+            return isManagerAppId(appId) && matchesPinnedManagerSigners(callingUid);
         }
         return false;
+    }
+
+    /**
+     * Pins the signer hashes of the APK this server was launched from. Called once, from
+     * {@link #getManagerApplicationInfo()}, so the pin is established before the first
+     * manager-permission check.
+     */
+    private static synchronized void pinManagerSignersFromClassPath() {
+        if (managerSignerPinResolved) return;
+        managerSignerPinResolved = true;
+        try {
+            String self = deriveSelfManagerApplicationId();
+            if (self == null) {
+                LOGGER.w("Manager signer pin unavailable: java.class.path is not an APK");
+                return;
+            }
+            java.util.Set<String> hashes = currentSignerHashes(self);
+            if (hashes == null || hashes.isEmpty()) {
+                LOGGER.w("Manager signer pin unavailable: no signatures for " + self);
+                return;
+            }
+            pinnedManagerSignerHashes = hashes;
+            pinnedManagerPackage = self;
+            LOGGER.i("Pinned manager signers for " + self);
+        } catch (Throwable t) {
+            LOGGER.w("Manager signer pin failed: " + t);
+        }
+    }
+
+    /** SHA-256 of every certificate the package currently ships, or null when unavailable. */
+    private static java.util.Set<String> currentSignerHashes(String packageName) {
+        try {
+            android.content.pm.PackageInfo pi = Android17Compat.getPackageInfo(
+                    packageName, android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES, 0);
+            if (pi == null) return null;
+            android.content.pm.Signature[] sigs;
+            if (pi.signingInfo != null) {
+                sigs = pi.signingInfo.hasMultipleSigners()
+                        ? pi.signingInfo.getApkContentsSigners()
+                        : pi.signingInfo.getSigningCertificateHistory();
+            } else {
+                sigs = pi.signatures;
+            }
+            if (sigs == null || sigs.length == 0) return null;
+            java.util.Set<String> out = new java.util.HashSet<>();
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            for (android.content.pm.Signature s : sigs) {
+                md.reset();
+                md.update(s.toByteArray());
+                byte[] digest = md.digest();
+                StringBuilder sb = new StringBuilder(digest.length * 2);
+                for (byte b : digest) {
+                    sb.append(Character.forDigit((b >> 4) & 0xF, 16));
+                    sb.append(Character.forDigit(b & 0xF, 16));
+                }
+                out.add(sb.toString());
+            }
+            return out;
+        } catch (Throwable t) {
+            LOGGER.w("currentSignerHashes(" + packageName + ") failed: " + t);
+            return null;
+        }
+    }
+
+    /**
+     * Rejects a manager-uid caller whose current APK signature no longer matches the one this
+     * server was launched from. Every lookup failure passes through: a broken package manager
+     * must never lock the real manager out.
+     */
+    private static boolean matchesPinnedManagerSigners(int callingUid) {
+        java.util.Set<String> pinned = pinnedManagerSignerHashes;
+        String pinnedPkg = pinnedManagerPackage;
+        if (pinned == null || pinnedPkg == null) return true;
+        try {
+            ApplicationInfo pinnedAi = Android17Compat.getApplicationInfo(pinnedPkg, 0, 0);
+            if (pinnedAi == null) return true;
+            // A second manager flavor installed side by side has its own uid; it already had to
+            // match the manager id to get here, so leave it to the uid check.
+            if (UserHandleCompat.getAppId(pinnedAi.uid) != UserHandleCompat.getAppId(callingUid)) return true;
+            java.util.Set<String> current = currentSignerHashes(pinnedPkg);
+            if (current == null || current.isEmpty()) return true;
+            for (String h : current) {
+                if (pinned.contains(h)) return true;
+            }
+            LOGGER.w("Manager uid=" + callingUid + " rejected: signature differs from the pinned manager");
+            return false;
+        } catch (Throwable t) {
+            LOGGER.w("matchesPinnedManagerSigners(" + callingUid + ") failed: " + t);
+            return true;
+        }
     }
 
     private boolean isManagerAppId(int appId) {
