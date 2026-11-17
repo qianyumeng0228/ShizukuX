@@ -155,7 +155,8 @@ class DhizukuProvider : ContentProvider() {
      * Delegated scopes may only target the caller's own package. Without this gate a client
      * that passed the general Dhizuku check could grant (or strip) device-policy delegation
      * for arbitrary third-party packages. The owner app itself is exempt; a caller whose
-     * package list cannot be resolved is passed through rather than broken.
+     * package list cannot be resolved is refused, matching upstream
+     * DhizukuService.enforcePackageBelongsToCaller (where packages == null throws).
      */
     private fun enforceOwnPackage(packageName: String?, func: String) {
         val callingUid = Binder.getCallingUid()
@@ -166,7 +167,12 @@ class DhizukuProvider : ContentProvider() {
         } catch (e: Exception) {
             Timber.tag(TAG).w(e, "getPackagesForUid($callingUid) failed")
             null
-        } ?: return
+        }
+        if (callerPackages == null) {
+            throw SecurityException(
+                "Permission Denial: $func cannot resolve the caller's packages (uid=$callingUid)"
+            )
+        }
         if (packageName == null || callerPackages.none { it == packageName }) {
             throw SecurityException(
                 "Permission Denial: $func may only target the caller's own package " +
@@ -176,10 +182,9 @@ class DhizukuProvider : ContentProvider() {
     }
 
     /**
-     * A UserService component must belong to the calling uid. Stricter than
-     * [enforceOwnPackage] on purpose: this path makes us load and execute another package's
-     * code, so an unresolvable package list is refused instead of passed through
-     * (upstream 541f988 enforceComponentBelongsToCaller is fail-closed too).
+     * A UserService component must belong to the calling uid. This path makes us load and
+     * execute another package's code, so an unresolvable package list is refused
+     * (upstream 541f988 enforceComponentBelongsToCaller is fail-closed as well).
      */
     private fun enforceComponentBelongsToCaller(component: ComponentName?, func: String) {
         if (component == null) throw SecurityException("Permission Denial: $func has no component")
