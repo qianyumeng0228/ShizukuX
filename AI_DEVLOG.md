@@ -123,6 +123,34 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-17 — r2791 → r2793：覆盖安装 abort、OFF 分支判死、自动旋转被打开
+
+三件事一起收，全部真机闭环，不是推断。
+
+**1. 覆盖安装后 5 秒 abort**（`f6f1c5fc` / `65acc29b` / `0728da15`）
+`starter.cpp` 的 `kill_old_processes()` 用 `readlink /proc/pid/exe` 精确 `memcmp` 判断旧守护；`install -r` 之后内核把 exe 解析成 `.../lib/arm64/libshizuku.so (deleted)`，精确比较失败 → 旧守护没被杀 → 5 秒后重启相位错乱。改成 `proc_cmdline_contains("--apk=")` + exe basename 前缀匹配，并给 `supervise_server()` 加 `access(path, R_OK)` 前置检查（apk 没了就 fatal 退出，不再空转）。
+
+**2. `adb_wifi_enabled` 的 OFF 分支**（`86c43ea8`）
+原逻辑 `awaitingAuth = true` 后 `timeoutJob?.cancel()`：第一次关开关既不 close 也不超时，Worker 永久挂起，要走 0→1→0 两步才会失败。改为未锁屏首次 OFF 直接 `close(SecurityException)` 交 `Result.retry()`；锁屏保留原意（等解锁后重新 arm）。真机验证：`dumpsys jobscheduler` 显示 job 立即结束，40 秒内被退避重试拉起。
+附带教训：**没有对照组的行为差异不能算验证**。第一次把翻转点定在 1050ms，补做同流程不翻开关的对照后 `control#2` 同样没起——那是 Worker 自身不稳定。
+
+**3. 自动隐藏把「自动旋转」打开**（`5d570181`，后被本节的重写取代）
+最初判断是 `restore()` 把 `wm user-rotation` 排在两个 `settings` 之后，被 `wm user-rotation free` 自带的 `accelerometer_rotation=1` 覆盖；调换顺序后单轮手工实验 acc 确实保持 0。但装机端到端每次都回到 1，单轮手工实验不构成验证。
+
+改成把 `base` 和实际命令原样打进 logcat（release 无 Timber，只能 `android.util.Log.w`）后，得到两条硬事实：
+
+- `base` 是在应用**已经进入前台之后**采样的。HyperOS 在那个时刻已经把 `accelerometer_rotation` 写成 1、`user-rotation` 写成 free，于是 base 记成 1，restore 再把 1 写回去。上一次 restore 若抛异常会跳过 prefs 清理，脏 base 又被下一轮复用，自己把自己强化。
+- `wm user-rotation free` 与 `accelerometer_rotation=0` 互斥：写 free 会置 1，写 0 会把模式改回 `lock N`。两者谁最后落地谁赢。
+
+据此把 restore 改成只发 `wm fixed-to-user-rotation` + `user_rotation` + `accelerometer_rotation` 三条 settings（不再碰 `wm user-rotation`），并补三处防护：`PrivilegedShell.run` 包 try/catch，prefs 无论如何都清；采样时若 `fixed-to-user-rotation=enabled` 又没有 applied/base，先当成上一轮残留锁清掉再采样；`current == null`（没有活动锁）也强制重采样。
+
+**对照结论**：把方向设回「关闭」让 watch 自己停下（`dumpsys activity services | grep -c HidingWatchService` = 0），服务完全不运行时执行「acc=0 → 打开 Chrome」，acc 依旧 0→1、user-rotation 由 lock 变 free。也就是说这一步翻转来自系统在应用切换时重置该开关，与本工具无关；restore 只是把采样到的 1 写回去、让它看起来像是我们干的。剩下的变量（ROM 行为是否会随重启恢复）需要在重启设备后复测。
+
+**仍未直接观测到的**：`SecurityException("Network is not authorized for wireless debugging")` 本体——`awaitingAuth` 只在「发现端口后、未锁屏」才为真，本机已配对、0.5 秒内就连上，没有授权窗口；要在未配对设备首次激活时才可能命中。`UNKNOWN` 分支要 SDK≥37，本机 36，只有代码级保证。
+
+**上游对照（A 项）**：`ref/Shizuku-Next` 的 `WirelessPortHunt.kt:173` 同样是 `awaitingAuth && !forced` 才 fail，`handleAuth()` 注释明写「等授权可以无限期等」。ShizukuX 的「首次即判死」是对上游的有意偏离（上游的无限等待在本机表现为 Worker 不自愈）；其余三条（`UNKNOWN` / `callerPackages == null` / 日志可读性）已与上游对齐，且日志已补 `android.util.Log.w`，release 可从 `adb logcat` 读回。详见 `I:\shizukux\_research\其他分支更新审计.md` 的 11.14 / 11.15。
+
+
 ### 2026-08-26 — Claude Code (Sonnet 5) [PRoot ShizukuPlus, icon rework + GitHub issue triage + Watchdog resilience]
 
 **All of the below eventually landed on `master`** across commits `34663bd4`..`c13bf851` (see `git log` for the full list) — the "not yet committed" note below is stale, kept for narrative order within this entry.

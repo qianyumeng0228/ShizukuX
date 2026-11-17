@@ -153,11 +153,22 @@ object RotationOverride {
         if (!PrivilegedShell.available()) return
 
         // The first lock records the display as the user had it. A base left in preferences is
-        // reused after a process restart: capturing the forced state as the base would make
-        // restore put the phone back into the lock it was trying to remove.
-        if (readBase() == null) {
-            val base = readDisplayState() ?: return
-            saveBase(base)
+        // reused after a process restart, because the applied marker survives the restart too —
+        // but a base with no applied marker behind it is left over from a restore that died
+        // before it could clear itself, and reusing it would put the phone back into whatever
+        // state that failed run produced.
+        var live = readDisplayState() ?: return
+        if (current == null && readBase() == null && live.fixedToUser == "enabled") {
+            // A display that is still fixed-to-user with no applied marker and no base is a lock
+            // this tool left behind, not the user's own state — the lock is only ever enabled by
+            // applyLock. Recorded as-is it would be written straight back by the next restore, so
+            // clear it first and read again.
+            PrivilegedShell.run("wm fixed-to-user-rotation disabled")
+            live = readDisplayState() ?: return
+        }
+        if (readBase() == null || current == null) {
+            android.util.Log.w("ShizukuX/Rotation", "sample fg=$foreground current=$current live=$live")
+            saveBase(live)
         }
 
         if (applyLock(wanted)) {
@@ -198,15 +209,28 @@ object RotationOverride {
 
         val commands = ArrayList<String>(4)
         base.fixedToUser?.let { commands.add("wm fixed-to-user-rotation $it") }
-        // `wm user-rotation` has to run before the two settings, not after: on HyperOS a
-        // `wm user-rotation free` writes accelerometer_rotation=1 itself, so a value restored
-        // before it is overwritten and the phone comes back with auto-rotate on even though the
-        // user had it off. Measured on 2210132C / Android 16.
-        base.userRotationMode?.let { commands.add("wm user-rotation $it") }
-        base.autoRotate?.let { commands.add("settings put system accelerometer_rotation $it") }
+        // `accelerometer_rotation` is the authority here, and `wm user-rotation` must not be
+        // used to restore it. The two are not independent on HyperOS (measured on 2210132C /
+        // Android 16): `wm user-rotation free` writes accelerometer_rotation=1, and writing
+        // accelerometer_rotation=0 puts the mode back to `lock <user_rotation>`. Each undoes the
+        // other, so whichever lands last decides — and a restore that ran `wm user-rotation free`
+        // after the settings came back with auto-rotate on even though the user had it off.
+        // Writing the two settings alone reproduces both original states exactly:
+        // 1 gives `free`, 0 gives `lock <user_rotation>`.
         base.userRotation?.let { commands.add("settings put system user_rotation $it") }
+        base.autoRotate?.let { commands.add("settings put system accelerometer_rotation $it") }
         if (commands.isNotEmpty()) {
-            PrivilegedShell.run(commands.joinToString("; "))
+            try {
+                val out = PrivilegedShell.run(commands.joinToString("; "))
+                // Release builds print no Timber, so this is the only way to read back what the
+                // restore actually did when a phone comes back with the wrong switch.
+                android.util.Log.w("ShizukuX/Rotation", "restore base=$base cmd=${commands.joinToString("; ")} out=${out?.trim()}")
+            } catch (e: Throwable) {
+                // The prefs are cleared below either way: a saved base that outlives its restore
+                // gets reused by the next lock and would restore the state this run failed to
+                // leave behind.
+                android.util.Log.w("ShizukuX/Rotation", "restore failed base=$base", e)
+            }
         }
 
         prefs().edit().remove(KEY_BASE).remove(KEY_APPLIED).apply()

@@ -125,8 +125,13 @@ class DeviceControlExtraImpl(private val allowed: java.util.function.BooleanSupp
     override fun setScreenTimeout(ms: Int): Boolean =
         settingsPut("system", "screen_off_timeout", ms.toString())
 
-    override fun setAutoRotateEnabled(enabled: Boolean): Boolean =
-        settingsPut("system", "accelerometer_rotation", if (enabled) "1" else "0")
+    override fun setAutoRotateEnabled(enabled: Boolean): Boolean {
+        // Auto-rotate kept flipping on by itself during the per-app rotation work. The value can
+        // be written from three places — this API, RotationOverride, and the auto-rotate tile —
+        // so every write from this side names its caller.
+        Log.w(TAG, "setAutoRotateEnabled($enabled) callerUid=${android.os.Binder.getCallingUid()}")
+        return settingsPut("system", "accelerometer_rotation", if (enabled) "1" else "0")
+    }
 
     // ── Audio ─────────────────────────────────────────────────────────────────
 
