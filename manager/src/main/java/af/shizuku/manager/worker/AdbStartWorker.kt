@@ -135,7 +135,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     if (p > 0) trySend(p)
                 }
 
-                var awaitingAuth = false
                 var timeoutJob: Job? = null
                 var unlockReceiver: BroadcastReceiver? = null
 
@@ -148,43 +147,42 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                fun handleAuth() {
-                    val km = applicationContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
-                    if (km.isKeyguardLocked) {
-                        val notification = ShizukuReceiverStarter.buildNotification(
-                            applicationContext,
-                            null
+                // 只在调用方确认「当前锁屏」后进入：锁屏期间的 OFF 通常是系统省电策略所为，
+                // 并非用户拒绝授权，所以等解锁后重新 arm 继续发现，而不是把这次启动判死。
+                fun awaitUnlockAndRearm() {
+                    val notification = ShizukuReceiverStarter.buildNotification(
+                        applicationContext,
+                        null
+                    )
+                    // On Android 14+ (API 34), ForegroundInfo must declare a foreground
+                    // service type or the OS throws InvalidForegroundServiceTypeException
+                    val foregroundInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        ForegroundInfo(
+                            ShizukuReceiverStarter.NOTIFICATION_ID,
+                            notification,
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
                         )
-                        // On Android 14+ (API 34), ForegroundInfo must declare a foreground
-                        // service type or the OS throws InvalidForegroundServiceTypeException
-                        val foregroundInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            ForegroundInfo(
-                                ShizukuReceiverStarter.NOTIFICATION_ID,
-                                notification,
-                                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
-                            )
-                        } else {
-                            ForegroundInfo(ShizukuReceiverStarter.NOTIFICATION_ID, notification)
-                        }
-                        setForegroundAsync(foregroundInfo)
+                    } else {
+                        ForegroundInfo(ShizukuReceiverStarter.NOTIFICATION_ID, notification)
+                    }
+                    setForegroundAsync(foregroundInfo)
 
-                        val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
-                        unlockReceiver = object : BroadcastReceiver() {
-                            override fun onReceive(context: Context, intent: Intent) {
-                                if (intent.action == Intent.ACTION_USER_PRESENT) {
-                                    context.unregisterReceiver(this)
-                                    unlockReceiver = null
-                                    AdbArm.armWifiEnabled(context)
-                                }
+                    val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
+                    unlockReceiver = object : BroadcastReceiver() {
+                        override fun onReceive(context: Context, intent: Intent) {
+                            if (intent.action == Intent.ACTION_USER_PRESENT) {
+                                context.unregisterReceiver(this)
+                                unlockReceiver = null
+                                AdbArm.armWifiEnabled(context)
                             }
                         }
-                        ContextCompat.registerReceiver(
-                            applicationContext,
-                            unlockReceiver,
-                            filter,
-                            ContextCompat.RECEIVER_NOT_EXPORTED
-                        )
-                    } else awaitingAuth = true
+                    }
+                    ContextCompat.registerReceiver(
+                        applicationContext,
+                        unlockReceiver,
+                        filter,
+                        ContextCompat.RECEIVER_NOT_EXPORTED
+                    )
                     timeoutJob?.cancel()
                     adbMdns.stop()
                 }
@@ -192,9 +190,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 val observer = object : ContentObserver(null) {
                     override fun onChange(selfChange: Boolean) {
                         when (EnvironmentUtils.wirelessDebuggingState(applicationContext)) {
-                            DebugSwitchState.OFF -> if (awaitingAuth) {
-                                close(SecurityException("Network is not authorized for wireless debugging"))
-                            } else handleAuth()
+                            // 用户（或系统省电策略）关掉了无线调试。锁屏时这多半是省电行为，
+                            // 不是用户拒绝授权：等解锁后重新 arm 再继续发现；其余情况直接判死。
+                            // 旧逻辑这里转去 handleAuth()，会把 15s 超时和 mDNS 一起取消，
+                            // 让 Worker 一直挂着直到被系统回收——表现为「点了启动什么都没发生」。
+                            DebugSwitchState.OFF ->
+                                if ((applicationContext.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager).isKeyguardLocked) {
+                                    awaitUnlockAndRearm()
+                                } else {
+                                    close(SecurityException("Network is not authorized for wireless debugging"))
+                                }
                             DebugSwitchState.ON -> startDiscoveryWithTimeout()
                             // Android 17 QPR3 hides the setting, so a zero read is no longer
                             // the framework refusing it. Keep looking for a port instead of
@@ -243,6 +248,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             throw e
         } catch (e: Exception) {
+            // The worker's failure reason used to live only in a Timber line, which release
+            // builds never print (DebugTree is planted under BuildConfig.DEBUG only), so the
+            // activity log showed a service that simply never came up with no explanation.
+            // Record it where the user can actually see it.
+            ActivityLogManager.log(
+                "Shizuku",
+                applicationContext.packageName,
+                "ADB worker failed: ${e.javaClass.simpleName}: ${e.message}"
+            )
             val ignored = listOf(
                 EOFException::class,
                 SecurityException::class,
