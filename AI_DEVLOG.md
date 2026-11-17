@@ -134,7 +134,9 @@ Things discussed or sketched that we never formally decided to build.
 
 **对照实验（决定性）**：把该应用方向设回「关闭」，`refresh()` 走 `stopService` 分支，`dumpsys activity services | grep -c HidingWatchService` 为 0，即服务完全不运行。此时执行「`settings put system accelerometer_rotation 0` → 打开 Chrome」，得到 `chrome acc=1 urm=free`、回桌面仍 `acc=1 urm=free`。**这一步翻转与 ShizuX 无关，来自系统在应用切换时重置该开关**；restore 只是把采样到的 1 写回去，表象看起来像是我们干的。
 
-**仍未闭环**：设备是否处于被反复 `wm` 操作污染的状态，软件侧无法判定，需要在重启设备后复测同一组步骤。若仍翻转，即确认为 ROM 行为，修法转向「restore 永不写 1」——只把用户关掉的 0 恢复成 0，绝不去主动把它打开。
+**重启后复测**：同一组步骤（`accelerometer_rotation=0` → 打开 Chrome）在重启后依旧 0→1，且此时服务未运行，确认为 ROM 行为而非设备被 `wm` 污染。
+
+**最终修法（r2797 / `c84fbc5a`）**：翻转虽然不是我们写的，但 base 是在应用「已经进入前台之后」采样的，永远记成 1，restore 再把 1 写回去。改为在「没有强制方向应用在前台」的每一轮里记录该开关（在 restore 之后读，那时设备已回到用户自己的状态），锁定时用它覆盖 base 的 `autoRotate`。双向真机验证：用户在桌面关着 → 退出后 `acc=0`；用户在桌面开着 → 退出后 `acc=1`。
 
 顺带归档了 r2789（`f6f1c5fc`）与 r2790（`65acc29b`），两份都是用 worktree 按对应 commit 重新检出构建，不是复制改名。踩到的坑：worktree 不做 `git submodule update --init --recursive` 时，Gradle 配置阶段直接报 `Configuring project ':rish' without an existing directory is not allowed`。
 
