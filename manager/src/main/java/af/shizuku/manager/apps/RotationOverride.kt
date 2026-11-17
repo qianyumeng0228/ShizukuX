@@ -47,6 +47,7 @@ object RotationOverride {
     private const val KEY_MODES = "modes"
     private const val KEY_BASE = "base"
     private const val KEY_APPLIED = "applied"
+    private const val KEY_IDLE_ACC = "idle_acc"
     private const val FIELD = "\u001f"
     private const val MARKER = "--rotation-field--"
 
@@ -145,6 +146,11 @@ object RotationOverride {
         val wanted = foreground?.let { modeFor(it) }?.takeIf { it.forced }
         if (wanted == null) {
             restore()
+            // On this ROM the switch is rewritten by the system itself when an app comes to the
+            // front, so the value read while a forced app is in front says nothing about what the
+            // user chose. The one moment the value is the user's own is the idle pass below, with
+            // the display back in its own state — remember it for the next sample.
+            rememberIdleAutoRotate()
             return
         }
 
@@ -167,8 +173,15 @@ object RotationOverride {
             live = readDisplayState() ?: return
         }
         if (readBase() == null || current == null) {
-            android.util.Log.w("ShizukuX/Rotation", "sample fg=$foreground current=$current live=$live")
-            saveBase(live)
+            // The auto-rotate half comes from the last idle pass when there is one: by the time a
+            // forced app is in front the system has already turned the switch back on, so `live`
+            // would record "on" no matter what the user chose.
+            val base = idleAutoRotate()?.let { live.copy(autoRotate = it) } ?: live
+            android.util.Log.w(
+                "ShizukuX/Rotation",
+                "sample fg=$foreground current=$current live=$live idle=${idleAutoRotate()} base=$base"
+            )
+            saveBase(base)
         }
 
         if (applyLock(wanted)) {
@@ -283,6 +296,27 @@ object RotationOverride {
                 state.userRotationMode
             ).joinToString(FIELD) { it ?: "" }
         ).apply()
+    }
+
+    /**
+     * The auto-rotate value last seen with no forced app in front, i.e. the one the user set.
+     *
+     * HyperOS flips `accelerometer_rotation` to 1 and `user-rotation` to free as soon as an app
+     * comes to the front — measured on 2210132C / Android 16, after a reboot, with this service
+     * not running at all — so a sample taken while the app is already in front cannot tell what
+     * the user chose. This is the only reading that can.
+     */
+    private fun idleAutoRotate(): String? = prefs().getString(KEY_IDLE_ACC, null)?.usable()
+
+    /** Called on every idle pass, after [restore] has put the display back. */
+    private fun rememberIdleAutoRotate() {
+        if (applied() != null || readBase() != null) return
+        val output = PrivilegedShell.run("settings get system accelerometer_rotation") ?: return
+        val acc = output.lineSequence().firstOrNull()?.trim()?.usable() ?: return
+        if (acc != idleAutoRotate()) {
+            prefs().edit().putString(KEY_IDLE_ACC, acc).apply()
+            android.util.Log.w("ShizukuX/Rotation", "idle acc=$acc")
+        }
     }
 
     private fun readBase(): DisplayState? {
