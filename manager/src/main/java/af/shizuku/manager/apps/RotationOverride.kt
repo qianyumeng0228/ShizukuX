@@ -1,6 +1,8 @@
 package af.shizuku.manager.apps
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import af.shizuku.manager.ShizukuApplication
 
@@ -150,12 +152,35 @@ object RotationOverride {
             // front, so the value read while a forced app is in front says nothing about what the
             // user chose. The one moment the value is the user's own is the idle pass below, with
             // the display back in its own state — remember it for the next sample.
-            rememberIdleAutoRotate()
+            //
+            // "Idle" has to mean the home screen, not "some app that is not forced": any app in
+            // front is enough for the system to rewrite the switch, so sampling there records the
+            // rewrite as if it were the user's choice and the next lock restores it, which is how
+            // the switch ended up on after a leave. Only the launcher (or nothing in front at all)
+            // is a moment the user can have set it themselves.
+            if (isHome(foreground)) rememberIdleAutoRotate()
             return
         }
 
         val current = applied()
-        if (current != null && current.first == foreground && current.second == wanted) return
+        if (current != null && current.first == foreground && current.second == wanted) {
+            // The lock is held, but this ROM and the apps on it can rewrite the two switches
+            // while the app stays in front — measured on 2210132C / Android 16: with the lock
+            // already applied, `accelerometer_rotation` went back to 1 on its own. That is the
+            // switch the user sees in quick settings, so a pass that trusts the applied marker
+            // alone leaves the tile lit while the screen is still pinned: "自动旋转被打开了".
+            // Each pass therefore re-reads the two things a lock owns and re-applies when either
+            // has been written by someone else.
+            if (lockStillHeld()) return
+            if (!PrivilegedShell.available()) return
+            val held = applyLock(wanted)
+            android.util.Log.w(
+                "ShizukuX/Rotation",
+                "relock fg=$foreground mode=${wanted.name} ok=$held"
+            )
+            if (!held) prefs().edit().remove(KEY_APPLIED).apply()
+            return
+        }
         if (!PrivilegedShell.available()) return
 
         // The first lock records the display as the user had it. A base left in preferences is
@@ -175,11 +200,15 @@ object RotationOverride {
         if (readBase() == null || current == null) {
             // The auto-rotate half comes from the last idle pass when there is one: by the time a
             // forced app is in front the system has already turned the switch back on, so `live`
-            // would record "on" no matter what the user chose.
-            val base = idleAutoRotate()?.let { live.copy(autoRotate = it) } ?: live
+            // would record "on" no matter what the user chose. With no idle reading there is no
+            // trustworthy value at all, and writing `live` back is what turned the switch on for
+            // users who had it off — so that half is left unrecorded and the restore leaves it
+            // alone rather than guessing.
+            val idle = idleAutoRotate()
+            val base = if (idle != null) live.copy(autoRotate = idle) else live.copy(autoRotate = null)
             android.util.Log.w(
                 "ShizukuX/Rotation",
-                "sample fg=$foreground current=$current live=$live idle=${idleAutoRotate()} base=$base"
+                "sample fg=$foreground current=$current live=$live idle=$idle base=$base"
             )
             saveBase(base)
         }
@@ -251,6 +280,23 @@ object RotationOverride {
 
     // ------------------------------------------------------------------ display state
 
+    /**
+     * Whether the app in front is the home screen, the one place the switch is the user's own.
+     *
+     * A null foreground counts: it means the platform did not name an app at all, which is the
+     * same kind of moment. Any other app is excluded because the system rewrites the switch as
+     * soon as one comes to the front on this ROM.
+     */
+    private fun isHome(packageName: String?): Boolean {
+        if (packageName == null) return true
+        val context = ShizukuApplication.appContext
+        val resolved = context.packageManager.resolveActivity(
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+        return resolved?.activityInfo?.packageName == packageName
+    }
+
     private fun readDisplayState(): DisplayState? {
         val output = PrivilegedShell.run(
             "settings get system accelerometer_rotation; echo $MARKER; " +
@@ -284,6 +330,23 @@ object RotationOverride {
             state.userRotation == rotation.toString() &&
             state.fixedToUser == "enabled" &&
             state.userRotationMode == "lock $rotation"
+    }
+
+    /**
+     * Whether the two switches a lock owns are still the ones [applyLock] wrote.
+     *
+     * Deliberately narrower than [readDisplayState]: this runs every watch pass, and only the
+     * auto-rotate switch and the fixed-to-user flag are read back — `user_rotation` follows the
+     * lock on its own and reading it would cost two more shell commands per pass.
+     */
+    private fun lockStillHeld(): Boolean {
+        val output = PrivilegedShell.run(
+            "settings get system accelerometer_rotation; echo $MARKER; wm fixed-to-user-rotation"
+        ) ?: return false
+        val fields = output.split(MARKER).map { it.trim() }
+        if (fields.size < 2) return false
+        return fields[0].firstLine()?.usable() == "0" &&
+            fields[1].firstLine()?.usable() == "enabled"
     }
 
     private fun saveBase(state: DisplayState) {
