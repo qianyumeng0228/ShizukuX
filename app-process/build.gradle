@@ -19,6 +19,9 @@ android {
 
 dependencies {
     compileOnly project(":api")
+    // NewProcess.java references ActivityThread / LoadedApk directly; the module was
+    // included in settings.gradle but never built, so these stubs were missing.
+    compileOnly libs.hidden.stub
     compileOnly 'androidx.annotation:annotation:1.6.0'
     implementation 'commons-cli:commons-cli:1.5.0'
     implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:4.3'

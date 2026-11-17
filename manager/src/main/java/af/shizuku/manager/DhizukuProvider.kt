@@ -27,7 +27,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.rosan.dhizuku.aidl.IDhizukuLockTaskModeListener
 import com.rosan.dhizuku.aidl.IDhizukuRemoteProcess
+import com.rosan.dhizuku.aidl.IDhizukuUserServiceConnection
+import com.rosan.dhizuku.api.DhizukuUserServiceArgs
 import com.rosan.dhizuku.server_api.LockTaskModeListeners
+import com.rosan.dhizuku.server_api.UserServiceConnections
 import timber.log.Timber
 import java.io.InputStream
 import java.io.OutputStream
@@ -168,6 +171,34 @@ class DhizukuProvider : ContentProvider() {
             throw SecurityException(
                 "Permission Denial: $func may only target the caller's own package " +
                         "(target=$packageName, uid=$callingUid)"
+            )
+        }
+    }
+
+    /**
+     * A UserService component must belong to the calling uid. Stricter than
+     * [enforceOwnPackage] on purpose: this path makes us load and execute another package's
+     * code, so an unresolvable package list is refused instead of passed through
+     * (upstream 541f988 enforceComponentBelongsToCaller is fail-closed too).
+     */
+    private fun enforceComponentBelongsToCaller(component: ComponentName?, func: String) {
+        if (component == null) throw SecurityException("Permission Denial: $func has no component")
+        val callingUid = Binder.getCallingUid()
+        if (callingUid == android.os.Process.myUid()) return
+        val ctx = context ?: throw SecurityException("Permission Denial: $func has no context")
+        val callerPackages = try {
+            ctx.packageManager.getPackagesForUid(callingUid)
+        } catch (e: Exception) {
+            Timber.tag(TAG).w(e, "getPackagesForUid($callingUid) failed")
+            null
+        } ?: throw SecurityException(
+            "Permission Denial: $func component=${component.flattenToShortString()} " +
+                    "does not resolve to uid=$callingUid"
+        )
+        if (callerPackages.none { it == component.packageName }) {
+            throw SecurityException(
+                "Permission Denial: $func may only target the caller's own package " +
+                        "(target=${component.packageName}, uid=$callingUid)"
             )
         }
     }
@@ -437,12 +468,71 @@ class DhizukuProvider : ContentProvider() {
                         true
                     }
                 }
-                Binder.FIRST_CALL_TRANSACTION + 12, // bindUserService
-                Binder.FIRST_CALL_TRANSACTION + 13, // unbindUserService
+                Binder.FIRST_CALL_TRANSACTION + 12 -> { // bindUserService
+                    // Upstream 541f988 / be2d2dc: the client hosts a Service class of its
+                    // own inside a detached process. The component must belong to the
+                    // calling uid — otherwise any authorized client could ask us to load
+                    // and run another package's code with Device Owner reach.
+                    try {
+                        val connection = IDhizukuUserServiceConnection.Stub
+                            .asInterface(data.readStrongBinder())
+                        val bundle = data.readBundle(javaClass.classLoader)
+                        enforceCallingPermission("bind_user_service")
+                        requireNotNull(connection) { "connection is null" }
+                        val args = DhizukuUserServiceArgs(bundle ?: Bundle())
+                        enforceComponentBelongsToCaller(args.componentName, "bind_user_service")
+                        UserServiceConnections.bind(
+                            Binder.getCallingUid(), Binder.getCallingPid(), args, connection
+                        )
+                        reply?.writeNoException()
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).w(e, "bindUserService failed")
+                        try {
+                            reply?.writeException(e)
+                        } catch (ignored: Exception) {
+                        }
+                    }
+                    true
+                }
+                Binder.FIRST_CALL_TRANSACTION + 13 -> { // unbindUserService
+                    try {
+                        val bundle = data.readBundle(javaClass.classLoader)
+                        enforceCallingPermission("unbind_user_service")
+                        val args = DhizukuUserServiceArgs(bundle ?: Bundle())
+                        enforceComponentBelongsToCaller(args.componentName, "unbind_user_service")
+                        UserServiceConnections.unbind(
+                            Binder.getCallingUid(), Binder.getCallingPid(), args
+                        )
+                        reply?.writeNoException()
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).w(e, "unbindUserService failed")
+                        try {
+                            reply?.writeException(e)
+                        } catch (ignored: Exception) {
+                        }
+                    }
+                    true
+                }
                 Binder.FIRST_CALL_TRANSACTION + 14 -> { // unbindUserServiceByConnection
-                    // UserService hosting is not implemented. Accept the calls so clients that
-                    // assume server API version 8 don't hit an empty reply.
-                    reply?.writeNoException()
+                    try {
+                        val connection = IDhizukuUserServiceConnection.Stub
+                            .asInterface(data.readStrongBinder())
+                        val bundle = data.readBundle(javaClass.classLoader)
+                        enforceCallingPermission("unbind_user_service")
+                        requireNotNull(connection) { "connection is null" }
+                        val args = DhizukuUserServiceArgs(bundle ?: Bundle())
+                        enforceComponentBelongsToCaller(args.componentName, "unbind_user_service")
+                        UserServiceConnections.unbind(
+                            Binder.getCallingUid(), Binder.getCallingPid(), args, connection
+                        )
+                        reply?.writeNoException()
+                    } catch (e: Exception) {
+                        Timber.tag(TAG).w(e, "unbindUserServiceByConnection failed")
+                        try {
+                            reply?.writeException(e)
+                        } catch (ignored: Exception) {
+                        }
+                    }
                     true
                 }
                 Binder.FIRST_CALL_TRANSACTION + 17 -> { // addLockTaskModeListener

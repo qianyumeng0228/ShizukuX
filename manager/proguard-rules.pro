@@ -187,3 +187,18 @@
 #-repackageclasses rikka.shizuku
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# ---------------------------------------------------------------------------
+# Dhizuku UserService hosting (app-process bridge)
+#
+# The detached app_process is started with the manager APK on its classpath and finds
+# its entry point plus the client's Service class by *name* (ComponentName.flatten ->
+# Class.forName inside createPackageContext). R8 must not rename, shrink or inline these,
+# otherwise the bridge silently dies with ClassNotFoundException at runtime.
+# ---------------------------------------------------------------------------
+-keep class com.rosan.app_process.** { *; }
+-keep class com.rosan.dhizuku.server_api.** { *; }
+-keep class com.rosan.dhizuku.aidl.** { *; }
+-keep class com.rosan.dhizuku.api.DhizukuUserServiceArgs { *; }
+-dontwarn android.app.ActivityThread
+-dontwarn android.app.LoadedApk

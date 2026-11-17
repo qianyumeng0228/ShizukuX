@@ -254,6 +254,10 @@ dependencies {
     implementation project(":provider")
     implementation project(":database")
     implementation project(":common")
+    // Dhizuku UserService hosting: needs AppProcess.None + isolatedServiceBinder to
+    // bring a client's Service up in a detached app_process. Nothing depended on this
+    // module before, so it had never been part of the APK.
+    implementation project(":app-process")
     api project(":core:ui")
 
     implementation libs.hidden.compat

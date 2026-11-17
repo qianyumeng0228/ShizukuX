@@ -2,7 +2,6 @@ package com.rosan.app_process;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityThread;
-import android.app.LoadedApk;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -117,7 +116,7 @@ public class NewProcess {
         return getActivityThread().getSystemContext();
     }
 
-    public static Context getUIDContext() throws PackageManager.NameNotFoundException, NoSuchFieldException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    public static Context getUIDContext() throws PackageManager.NameNotFoundException, NoSuchFieldException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, ClassNotFoundException {
         Context context = getSystemContext();
 
         int uid = Process.myUid();
@@ -130,14 +129,17 @@ public class NewProcess {
     }
 
     @SuppressLint("PrivateApi")
-    private static Context createAppContext(Context context, String packageName) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, PackageManager.NameNotFoundException, NoSuchFieldException {
+    private static Context createAppContext(Context context, String packageName) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, PackageManager.NameNotFoundException, NoSuchFieldException, ClassNotFoundException {
         Context impl = context.createPackageContext(packageName, Context.CONTEXT_IGNORE_SECURITY | Context.CONTEXT_INCLUDE_CODE);
         while (impl instanceof ContextWrapper) {
             impl = ((ContextWrapper) impl).getBaseContext();
         }
 
-        Method method = impl.getClass().getDeclaredMethod("createAppContext", ActivityThread.class, LoadedApk.class);
+        Class<?> loadedApkClass = Class.forName("android.app.LoadedApk");
+        Method method = impl.getClass().getDeclaredMethod("createAppContext", ActivityThread.class, loadedApkClass);
         method.setAccessible(true);
-        return (Context) method.invoke(null, getActivityThread(), getActivityThread().peekPackageInfo(packageName, true));
+        Method peekMethod = getActivityThread().getClass().getMethod("peekPackageInfo", String.class, boolean.class);
+        Object loadedApk = peekMethod.invoke(getActivityThread(), packageName, true);
+        return (Context) method.invoke(null, getActivityThread(), loadedApk);
     }
 }
