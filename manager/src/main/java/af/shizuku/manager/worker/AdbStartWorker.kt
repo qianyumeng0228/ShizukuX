@@ -257,6 +257,15 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 applicationContext.packageName,
                 "ADB worker failed: ${e.javaClass.simpleName}: ${e.message}"
             )
+            // The activity log page is how a user reads this back, but it is a screen inside the
+            // app: nobody can ask the phone for it over adb. Upstream's Diag writes to logcat for
+            // exactly that reason, so write there too -- this is the only copy a release build
+            // leaves anywhere reachable from outside the app.
+            android.util.Log.w(
+                "ShizukuX/AdbStartWorker",
+                "start failed: ${e.javaClass.simpleName}: ${e.message}",
+                e
+            )
             val ignored = listOf(
                 EOFException::class,
                 SecurityException::class,
