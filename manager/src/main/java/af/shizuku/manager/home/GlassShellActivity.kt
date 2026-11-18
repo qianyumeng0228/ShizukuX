@@ -818,16 +818,31 @@ private fun Modifier.horizontalSwipeToPager(
                     // Same rule the pager's own drag uses: past touch slop and clearly horizontal.
                     // The old 1.2x margin made a slightly slanted drag do nothing for the first
                     // stretch of travel, which read as the page being heavier than its neighbours.
-                    if (kotlin.math.abs(dx) > slop && kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
+                    // 0.7 slop, not the full touch slop: the page stays put for the whole slop
+                    // distance otherwise, and that dead zone is what reads as "have to push
+                    // harder to get it started". Still well past a jittery tap.
+                    if (kotlin.math.abs(dx) > slop * 0.7f && kotlin.math.abs(dx) > kotlin.math.abs(dy)) {
                         claimed = true
+                        // The card under the finger got a DOWN and will never see a MOVE now, so
+                        // its pressed scale has to be dropped here; otherwise it stays shrunk
+                        // for the entire swipe and the page looks held back.
+                        af.shizuku.manager.utils.MotionUtils.releaseActivePress()
                     }
                 }
                 if (claimed) {
+                    // Total travel, not only the pre-claim part. The release decision reads it,
+                    // and it used to freeze at touch slop, so nothing but a fast flick could
+                    // ever commit - everything slower snapped back, which felt like the page
+                    // refusing to move without force.
+                    dx += stepX
                     change.consume()
-                    // dispatchRawDelta is not clamped: an unconstrained long drag walks
-                    // currentPage past its neighbour mid-gesture, and the release would then
-                    // advance again from that new page. Keep the travel under half a page.
-                    val room = state.layoutInfo.viewportSize.width * 0.4f - kotlin.math.abs(travelled)
+                    // One full page of slack. The commit below prefers the page the finger
+                    // actually ended on, so a full-page drag cannot walk two pages, and the
+                    // content tracks the finger 1:1 instead of dying out halfway.
+                    // Viewport width is 0 until the first layout pass, and a swipe issued right
+                    // after launch could therefore clamp every step to 0 and do nothing.
+                    val pageWidth = state.layoutInfo.viewportSize.width.takeIf { it > 0 } ?: size.width
+                    val room = pageWidth - kotlin.math.abs(travelled)
                     val step = if (room <= 0f) 0f else stepX.coerceIn(-room, room)
                     travelled += step
                     // Raw delta is synchronous, so the page tracks the finger without needing a
@@ -849,9 +864,30 @@ private fun Modifier.horizontalSwipeToPager(
             // is what makes the page feel as light as the ones the pager drags itself. Without it
             // a quick swipe below the threshold snapped back, and that snap is the "damping" users
             // could feel only between the two pages that carry this gesture.
-            val flicked = kotlin.math.abs(velocity) > 0.8f
-            val far = kotlin.math.abs(dx) > size.width * 0.25f
-            val target = if (flicked || far) settled else startPage
-            scope.launch { state.animateScrollToPage(target) }
+            // Thresholds close to the pager's own: a slow drag only has to cover ~18% of the
+            // viewport, and a flick commits at a much gentler speed than before. The old values
+            // demanded either a hard flick or a long shove.
+            val flicked = kotlin.math.abs(velocity) > 0.5f
+            val far = kotlin.math.abs(dx) > size.width * 0.18f
+            val target = when {
+                // The drag already carried the pager past its neighbour's midpoint, so that
+                // neighbour is the page under the finger; committing elsewhere would jump back.
+                state.currentPage != startPage -> state.currentPage
+                flicked || far -> settled
+                else -> startPage
+            }
+            // A thrown page settles faster than a dragged one. ThisCompose's
+            // animateScrollToPage takes no initial velocity, so the nearest equivalent is a
+            // shorter spec: the old single 260ms spring made every gesture end with the same
+            // slow crawl.
+            scope.launch {
+                state.animateScrollToPage(
+                    target,
+                    animationSpec = tween(
+                        durationMillis = if (flicked) 170 else 240,
+                        easing = FastOutSlowInEasing
+                    )
+                )
+            }
         }
     }

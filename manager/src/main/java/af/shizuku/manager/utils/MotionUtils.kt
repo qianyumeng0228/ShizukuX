@@ -7,6 +7,19 @@ import androidx.dynamicanimation.animation.SpringForce
 
 object MotionUtils {
 
+    // Whoever is currently showing a pressed state. A horizontal swipe is claimed by the pager
+    // in the Initial pass, so the card never receives the MOVE that would normally drop the
+    // press - without this it stayed scaled down for the whole swipe, which reads as the page
+    // being held back even though it tracks the finger 1:1.
+    private var activeRelease: (() -> Unit)? = null
+
+    /** Drops any in-flight press, e.g. when a press turns into a page swipe. */
+    fun releaseActivePress() {
+        val rel = activeRelease ?: return
+        activeRelease = null
+        rel()
+    }
+
     /**
      * Applies a spring-based scale down/up effect on touch.
      */
@@ -51,6 +64,7 @@ object MotionUtils {
                     v?.animate()?.scaleX(scale)?.scaleY(scale)
                         ?.setDuration(af.shizuku.manager.ShizukuSettings.scaledAnimationDuration(100))
                         ?.start()
+                    activeRelease = { release() }
                 }
                 MotionEvent.ACTION_MOVE -> {
                     // Past slop the press became a scroll or a page swipe: drop the pressed state
@@ -63,6 +77,7 @@ object MotionUtils {
                     }
                 }
                 MotionEvent.ACTION_UP -> {
+                    activeRelease = null
                     release()
                     // MOVE never reaches this view once the surrounding pager claims the drag in
                     // the Initial pass, so `moved` can stay false through a whole swipe and the
@@ -74,7 +89,10 @@ object MotionUtils {
                         v?.let { HapticUtils.tap(it) }
                     }
                 }
-                MotionEvent.ACTION_CANCEL -> release()
+                MotionEvent.ACTION_CANCEL -> {
+                    activeRelease = null
+                    release()
+                }
             }
             false
         }
