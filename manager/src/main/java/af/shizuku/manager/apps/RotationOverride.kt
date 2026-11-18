@@ -219,12 +219,23 @@ object RotationOverride {
     }
 
     /** The forced mode currently holding the display, for the next pass. */
-    fun applied(): Pair<String, RotationMode>? {
-        val raw = prefs().getString(KEY_APPLIED, null) ?: return null
+    fun applied(): Pair<String, RotationMode>? {        val raw = prefs().getString(KEY_APPLIED, null) ?: return null
         val packageName = raw.substringBefore('=')
         val mode = RotationMode.from(raw.substringAfter('=', ""))
         if (packageName.isEmpty() || !mode.forced) return null
         return packageName to mode
+    }
+
+    /**
+     * Drops the lock markers a restart invalidated.
+     *
+     * The saved base describes the display as it was before the lock, and the applied marker
+     * describes what the watch was holding. Neither means anything after a reboot: the platform
+     * comes back with its own display defaults, and a restore driven by that old base would write
+     * a pre-restart value over them. The modes themselves stay - those are the user's list.
+     */
+    fun resetAfterBoot() {
+        prefs().edit().remove(KEY_BASE).remove(KEY_APPLIED).apply()
     }
 
     /**
@@ -249,7 +260,17 @@ object RotationOverride {
         // next watch pass put the display back instead of forgetting what it replaced.
         if (!PrivilegedShell.available()) return
 
-        val commands = ArrayList<String>(4)
+        // A base with no applied marker behind it is a leftover from a run that died before its
+        // restore finished. Writing it back would put the display into a state the user never
+        // asked for - and because the hiding module calls restore() whenever its own lists
+        // change, that leftover is enough to turn auto-rotate on "by itself" while the user is
+        // editing an unrelated list. It is dropped instead of replayed.
+        if (applied() == null) {
+            prefs().edit().remove(KEY_BASE).apply()
+            return
+        }
+
+        val commands = ArrayList<String>(5)
         base.fixedToUser?.let { commands.add("wm fixed-to-user-rotation $it") }
         // `accelerometer_rotation` is the authority here, and `wm user-rotation` must not be
         // used to restore it. The two are not independent on HyperOS (measured on 2210132C /
@@ -261,6 +282,16 @@ object RotationOverride {
         // 1 gives `free`, 0 gives `lock <user_rotation>`.
         base.userRotation?.let { commands.add("settings put system user_rotation $it") }
         base.autoRotate?.let { commands.add("settings put system accelerometer_rotation $it") }
+        // …but not every ROM derives the mode from that setting. On ColorOS the quick-settings
+        // tile keeps showing the last free/lock state even when accelerometer_rotation is written
+        // back to 0, so the tile stays lit while the display is locked - reported by an OPPO user
+        // as "自动旋转自己打开了". Shizuku-Next restores `wm user-rotation` last for this reason;
+        // the two values are written to agree, so the order cannot conflict on HyperOS either:
+        // `free` also writes accelerometer_rotation=1, `lock N` also writes it 0.
+        when (base.autoRotate) {
+            "0" -> base.userRotation?.let { commands.add("wm user-rotation lock $it") }
+            "1" -> commands.add("wm user-rotation free")
+        }
         if (commands.isNotEmpty()) {
             try {
                 val out = PrivilegedShell.run(commands.joinToString("; "))
