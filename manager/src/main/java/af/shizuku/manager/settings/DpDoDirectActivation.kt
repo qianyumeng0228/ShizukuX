@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Process
+import java.util.concurrent.atomic.AtomicBoolean
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
 import timber.log.Timber
@@ -287,7 +288,35 @@ object DpDoDirectActivation {
      *
      * @param onLog 可选实时日志回调（UI 展示用）。
      */
+    /**
+     * 并发闸门。
+     *
+     * 设置页可以反复进入再点确定，两次 activate() 交错时，后一次会把「已经被替换成
+     * ShizukuBinderWrapper 的 proxy」当成 original 记下来，还原时写回的还是 proxy——
+     * 进程内 mService 就永久停在 shell 身份上，后续所有 DPM 调用都会以 shell 执行。
+     * 这种情况静默发生，只会表现为「某些功能突然行为异常」，所以必须在入口处挡掉。
+     */
+    private val running = AtomicBoolean(false)
+
     fun activate(
+        context: Context,
+        onLog: ((String) -> Unit)? = null
+    ): ActivationResult {
+        if (!running.compareAndSet(false, true)) {
+            return ActivationResult(
+                Stage.SET_OWNER_THREW, false,
+                "另一次激活流程还在运行，本次没有执行。请等它结束后再看结果。",
+                listOf("activate() 并发调用，已直接返回")
+            )
+        }
+        try {
+            return activateInternal(context, onLog)
+        } finally {
+            running.set(false)
+        }
+    }
+
+    private fun activateInternal(
         context: Context,
         onLog: ((String) -> Unit)? = null
     ): ActivationResult {
@@ -625,8 +654,13 @@ object DpDoDirectActivation {
             onCallError?.invoke(desc)
             null
         } finally {
-            runCatching { field.set(dpm, original) }
-            note("  · mService 已还原为进程原始 binder")
+            val restored = runCatching { field.set(dpm, original) }.isSuccess
+            if (restored) {
+                note("  · mService 已还原为进程原始 binder")
+            } else {
+                // 还原失败会让本进程后续所有 DPM 调用继续以 shell 执行，必须说清楚。
+                note("  x mService 还原失败：本进程后续 DPM 调用可能仍以 shell 身份执行，重启应用即可恢复")
+            }
         }
     }
 
