@@ -1153,6 +1153,80 @@ coordinator_root fix (carried to Apr 23).
 
 ---
 
+## 2026-11-18 · k2807：设备所有者激活——账户结论更正、签名差异排除、恢复后刷内存态
+
+### 一、账户与分身不是判据（更正上一节）
+
+从 AOSP main 取到 `DevicePolicyManagerService.checkDeviceOwnerProvisioningPreConditionLocked`
+全文（本地 `_build/DPMS_main.java`）。`isAdb` 分支的真实结构是：
+
+```java
+if (isAdb) {
+    if (hasUserSetupCompleted(ensureSetUpUser)) {
+        if (nonTestNonPrecreatedUsersExist()) return STATUS_NONSYSTEM_USER_EXISTS;
+        if (hasIncompatibleAccountsOrNonAdb) return STATUS_ACCOUNTS_NOT_EMPTY;
+    }
+    return STATUS_OK;
+}
+```
+
+账户检查、应用分身检查、非系统用户检查全部在 `hasUserSetupCompleted` 为真的分支内。
+把 `user_setup_complete` 置 0 之后整块跳过，**不需要退系统账户、不需要删分身**。
+Dhizuku 的错误文案「make sure there are no accounts」只是它置 0 失败时的兜底提示。
+上一节「shell 路径要查账户与分身」的表述作废。
+
+`setDeviceOwner` 中 `hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccountsOnAnyUser()`
+在 shell 分支恒为 false，后续 `hasAccountsOnAnyUser()` 重检查也不触发。
+
+### 二、签名差异排除
+
+下载 Dhizuku 官方 v2.13.0 testkey 包，与本包 oppo-testkey 比对：
+
+| 项目 | Dhizuku 官方 | 本包 |
+| --- | --- | --- |
+| 证书 SHA-256 | `a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc` | 同 |
+| 证书 DN | `CN=Android, O=Android, ...` | 同 |
+| 包名 | `com.rosan.dhizuku` | `moe.shizuku.privileged.api` |
+
+同一把 AOSP testkey。OPPO 若放行 Dhizuku，就放行本包；除非白名单另绑包名/版本，
+但社区「Dhizuku 未改包名也能激活」与这一假设矛盾。签名不再是可疑点。
+
+### 三、恢复向导闸后补刷内存态
+
+Dhizuku 的 `restoreUserSetupComplete` 是「put 1 → `refreshUserSetupComplete`」。
+本版原先只 put 不 refresh，DPMS 内存态 `mUserSetupComplete` 仍为 false，系统继续按
+「向导未完成」处理（直到下次读键）。已补：`finally` 内在 shell 身份下调
+`invokeForceUpdateUserSetupComplete(dpm, 0, note)`，用显式 `withShellService<Boolean>`
+避免泛型推断失败。
+
+### 四、收回 Role 资格旁路
+
+第 1 步 `cmd role set-bypassing-role-qualification true` 打开的是系统级旁路，
+上一版用完不关，等于让本机任何应用都能绕过 Role 资格校验。已加第 8 步
+（`finally`，仅当确实打开过时执行 `... false`）。
+
+### 五、服务端转发链路复核（无缺陷）
+
+`api/server-shared/.../Service.java:152 transactRemote`：
+`enforceCallingPermission("transactRemote")` → 读 targetBinder/code/flags →
+`newData.appendFrom` → `Binder.clearCallingIdentity()` →
+`targetBinder.transact(...)` → `restoreCallingIdentity`。调用者 uid 切换正确。
+唯一风险点：`binder_firewall` 特性开启时会抛
+`SecurityException("Binder Firewall: Transaction blocked by ShizukuX policy")`。
+
+### 六、仍未覆盖
+
+无 ColorOS 真机；`mService` 字段名与 `IDevicePolicyManager$Stub.asInterface` 按 AOSP 写但
+未在该 ROM 验证；ColorOS 是否在 `setDeviceOwner` 前另做包名/DPC 特征校验无源码可查。
+定位只能靠一次失败日志（第 3 步 exit、第 3.5 步通道是否可用、`setDeviceOwner` 原文）。
+
+### 七、产物
+
+dropin `3C32C0A4…912BFCE`（14,304,209 B）／standard `9BA78EB6…046956F`（14,304,583 B）／
+oppo-testkey `23A96035…80ACD6B0`（14,298,722 B，testkey 单签名）。
+
+---
+
 ## Key Files Quick Reference
 
 | Area | File |

@@ -368,11 +368,13 @@ object DpDoDirectActivation {
         // ---------- 第 1 步：开启 Role 资格校验绕过 ----------
         note("")
         note("> 第 1 步：开启 Role 资格校验绕过（shell）")
+        var roleBypassOpened = false
         val bypass = shell("cmd role set-bypassing-role-qualification true")
         if (bypass == null) {
             return ActivationResult(Stage.SHELL_UNAVAILABLE, false, "无法执行 shell 命令。", log)
         }
         note("  exit=${bypass.exitCode}${if (bypass.output.isNotBlank()) " out=${bypass.output}" else ""}")
+        roleBypassOpened = bypass.exitCode == 0
         if (bypass.exitCode != 0) {
             note("  ! 该步失败通常会连带第 2 步失败；继续尝试")
         }
@@ -589,14 +591,25 @@ object DpDoDirectActivation {
                 var restored = false
                 repeat(2) { index ->
                     if (!restored) {
-                        val put = shell("settings put secure $SETTING_USER_SETUP_COMPLETE 1")
-                        val now = shell("settings get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
+                        val put = shell("settings --user 0 put secure $SETTING_USER_SETUP_COMPLETE 1")
+                        val now = shell("settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
                             ?.output?.trim()
                         note("  第 ${index + 1} 次恢复：exit=${put?.exitCode ?: "(失败)"} 回读=${now ?: "(未取到)"}")
                         restored = now == "1"
                     }
                 }
                 if (restored) {
+                    // 上游 Dhizuku 的 restoreUserSetupComplete 是「put 1 之后再 refreshUserSetupComplete」：
+                    // DPMS 的内存态 mUserSetupComplete 不会因为改了 Settings 就自动回 true，
+                    // 只改键不刷内存，系统会继续按「向导未完成」处理（直到下次读这个键为止）。
+                    val shellRefresh = withShellService<Boolean>(dpm, note) {
+                        invokeForceUpdateUserSetupComplete(dpm, 0, note)
+                    }
+                    val refreshed = shellRefresh != null
+                    note(
+                        if (refreshed) "  已同步内存态（forceUpdateUserSetupComplete）"
+                        else "  ! 内存态未同步（forceUpdate 失败）；设置值已是 1，重启后自然一致"
+                    )
                     note("  三键导航的 Home / 最近任务键应已恢复")
                 } else {
                     note("x 恢复失败：设备会停留在「未完成向导」状态，Home / 最近任务键失灵。")
@@ -604,6 +617,14 @@ object DpDoDirectActivation {
                     note("    adb shell settings put secure user_setup_complete 1")
                     note("    在终端里执行 settings put secure user_setup_complete 1")
                 }
+            }
+            // 第 1 步打开的 Role 资格旁路必须收回：留着它，本机任何应用都能绕过 Role 资格校验，
+            // 这是系统级安全状态，不该为了这次激活永久打开。
+            if (roleBypassOpened) {
+                note("")
+                note("> 第 8 步：关闭 Role 资格校验绕过（finally）")
+                val closed = shell("cmd role set-bypassing-role-qualification false")
+                note("  exit=${closed?.exitCode ?: "(失败)"}${if (closed?.output?.isNotBlank() == true) " out=${closed.output}" else ""}")
             }
         }
     }
