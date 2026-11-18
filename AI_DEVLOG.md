@@ -123,6 +123,29 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2806：自启动读错了 op，「别人能设设备所有者我不能」是签名不是链路
+
+**用户反馈的第一件**：系统设置里自启动是开的，ShizukuX 里是关的。查下来不是显示 bug，是读的根本不是同一个开关。旧实现只读 AOSP 的 `RUN_ANY_IN_BACKGROUND`（后台运行限制），而 ColorOS 的「自启动」是独立的 vendor op `AUTO_START`，系统设置页读写的是后者。两个开关各管一件事，任何时候都对不上。
+
+改法：`AutoStartManager` 启动时探一次——`cmd appops get <包>` 里有没有 `AUTO_START:` 行；没有行不代表没有这个 op（部分 ROM 只列被改过的 op），所以再补一次 `cmd appops query-op AUTO_START deny`，只有它回 "Unknown operation" 才判定本机没有。有就用 vendor op，没有回落 AOSP op。副标题同步写明当前是哪一种，避免继续让人以为这里改的是系统那个开关。
+
+顺带把 k2805 漏掉的四页补齐：自启动、按应用隐藏、强制深色、应用操作权限原先只在 `onCreate` 读一次，服务断开后挂着旧数据、失败还弹框。新增 `ServiceStateReloader`（用 `ShizukuStateMachine.isRunning()` 播种，避免 `addListener` 的同步首回调重复加载），四页 `onCreate` attach、`onDestroy` detach，`onFailure` 改成"服务不在时不弹窗"。
+
+**第二件（OPPO 设备所有者）**：把 Dhizuku 的 `ActivateViewModel` 原码和 issue #16 一起读了。结论分两半——
+
+- 调用链上我们并不弱：`DpDoDirectActivation` 用应用自身 uid（`isAdb=false`），系统只检查"向导是否完成"，账户、应用分身、第二用户都不参与判断；Dhizuku 走 shell 身份时要过账户检查，所以它不删账户时只能设 profile owner。我们已经在这条更短的路上。
+- 真正拦人的是签名。issue #16 原文：「OPPO 仅允许白名单内的应用、测试签名应用激活设备所有者」，他们为此另发 `Dhizuku_v2.13.0-testkey.apk`，证书主题 `CN=Android, O=Android, emailAddress=android@android.com`，即 AOSP testkey。自建签名在这一层就被拒，后面所有判据都不会被执行。
+
+所以本版不换签名（换成 testkey 会让现有用户无法覆盖安装，是需要单独决定的事），只在激活日志首行记录「签名类别」与「ROM 是否 OPPO 系」，并在 OPPO 系 + 自建签名的失败文案里直接说明是白名单导致的——否则用户只会看到"别人能行我不行"。
+
+**第三件（模块页底部）**：模块页由外壳托管，悬浮胶囊导航（66dp 高 + 20dp 抬起）画在页面之上，而 Scaffold 因为 `showTabBar=false` 不给底部 inset，最后一张卡片的「删除」被压掉一半。托管时底部留白改 104dp，独立打开仍 32dp。
+
+**第四件（首页↔授权手感）**：这两页之间挂了一段自定义水平手势（授权页是 AndroidView，会吞横向拖动），其他页由 pager 自己拖，两套判定必然手感不同。原实现要求横向位移超过纵向 1.2 倍才接管（斜一点的手指前段完全不动），松手只按「超过 18% 页宽」决定翻页（快速轻扫被弹回，那一下回弹就是用户说的"阻尼"）。现在方向判定与 pager 对齐，松手加 0.8px/ms 的速度判定，阈值提到 25%。
+
+**真机验证（2210132C / Android 16 / HyperOS）**：自启动页回落 AOSP op 并显示「本机没有独立的自启动开关，这里控制的是后台运行限制」；连续 kill 服务约 5 秒后页面自己变成「请先启动 Shizuku 服务 / 0 个应用」且无弹窗，服务恢复自动回到 176 个应用。强制深色页同样断→恢复自动重载（0 → 159 个应用，无弹窗）。模块页滚到最底，「记录模块」的「删除」完整显示且与胶囊留有间距。
+
+**注意**：`AUTO_START` 分支与 OPPO 签名结论都只在代码和上游资料层面确认，没有 ColorOS 真机；手势只能靠手感判断；模块页以外的其他 pager 托管页底部留白没有逐一核对。
+
 ### 2026-11-18 — k2805：服务断开时页面还在挂旧读数，而且会弹一个"操作未完成"
 
 k2804 的监听只在"变成 RUNNING"时 `load()`，反方向没管。结果是服务一断，页面把上一份读数继续挂在屏幕上——用户看到"设置还在"，可开关其实已经点不动；等真去点，失败提示又很像"要重做一遍"。同一件事的两个方向都要处理，只补一边等于把误导换个位置。
