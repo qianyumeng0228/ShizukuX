@@ -343,7 +343,19 @@ open class GlassShellActivity : af.shizuku.core.ui.AppActivity(),
                         onSelectTab = { scope.launch { pagerState.animateScrollToPage(it) } }
                     )
                     5 -> SettingsPage(settingsSearching)
-                    0 -> HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
+                    // Home hosts an AndroidView too: once its card list can scroll vertically,
+                    // the RecyclerView competes for a horizontal drag and the pager only gets the
+                    // leftover travel, which is what makes leaving Home feel damped. Claim the
+                    // gesture in the Initial pass exactly like the Authorize page does; claims only
+                    // happen once the movement is unmistakably horizontal, so list scrolling
+                    // and long-press drag stay untouched.
+                    0 -> Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .horizontalSwipeToPager(pagerState, scope)
+                    ) {
+                        HomePage(pagerScrollTo = { scope.launch { pagerState.animateScrollToPage(it) } })
+                    }
                     // Every index 0..5 is a real page, so this only guards a future tab without
                     // content: render nothing rather than a placeholder that claims reachability.
                     else -> {}
@@ -786,7 +798,14 @@ private fun Modifier.horizontalSwipeToPager(
             while (true) {
                 val event = awaitPointerEvent(PointerEventPass.Initial)
                 val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                if (!change.pressed) break
+                if (!change.pressed) {
+                    // Once this gesture belongs to the pager, the UP has to be consumed too. Left
+                    // alone, the hosted AndroidView sees a DOWN followed by an UP with no MOVE
+                    // between them and treats it as a click - pressing a home card or a row
+                    // fires its click feedback at the end of every swipe.
+                    if (claimed) change.consume()
+                    break
+                }
                 val stepX = change.position.x - change.previousPosition.x
                 val stepY = change.position.y - change.previousPosition.y
                 if (!claimed) {

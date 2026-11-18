@@ -64,7 +64,15 @@ object MotionUtils {
                 }
                 MotionEvent.ACTION_UP -> {
                     release()
-                    if (!moved) v?.let { HapticUtils.tap(it) }
+                    // MOVE never reaches this view once the surrounding pager claims the drag in
+                    // the Initial pass, so `moved` can stay false through a whole swipe and the
+                    // vibration fired on release. The UP still carries real coordinates, so judge
+                    // on total travel instead of on a flag only MOVE could raise.
+                    val travelX = kotlin.math.abs(event.rawX - downX)
+                    val travelY = kotlin.math.abs(event.rawY - downY)
+                    if (!moved && travelX <= slop && travelY <= slop) {
+                        v?.let { HapticUtils.tap(it) }
+                    }
                 }
                 MotionEvent.ACTION_CANCEL -> release()
             }
