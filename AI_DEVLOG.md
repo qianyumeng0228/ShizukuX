@@ -1321,8 +1321,65 @@ oppo-testkey `E32B0D45…36A5`（14,298,722 B，testkey 单签名）。
 ### 八、仍未覆盖
 
 `binder_firewall` 开启时会拦截 `transactRemote`（README 有写，代码层没做前置校验）；
-`FirewallActivity` / `BatteryWhitelistActivity` 的服务恢复自动刷新只有代码路径，无设备观测；
-开机恢复写回未在真实重启里验证。
+`FirewallActivity` / `BatteryWhitelistActivity` 的服务恢复自动刷新只有代码路径，无设备观测。
+
+---
+
+## 2026-11-19 · k2814–k2815：开机恢复的真实重启验证——广播 ANR、写不进去、以及一个漏掉的条件
+
+### 一、起点
+
+一直没在真实重启里验证过开机恢复。这轮补上，第一次重启就抓到了问题：
+`BOOT_COMPLETED` 派发约 60 秒后，系统记了一条
+`ANR in moe.shizuku.privileged.api -- Broadcast ... BootRestoreReceiver`
+（`bgAnr=true`，`anrType=broadcast`）。
+
+原因很直接：`BootRestoreReceiver` 在 `goAsync()` 里等 shell，最多 30×3s = 90 秒，
+而后台广播的生存期是 60 秒。**这个等待从一开始就在一个平台已经放弃的窗口里跑。**
+本次 `shell up after 42s`——90 秒的上限只比实际可用时间多出不到一倍，ColorOS 上更慢就是必挂。
+
+### 二、三个缺陷
+
+| # | 缺陷 | 证据 |
+| --- | --- | --- |
+| 1 | 等待跑在广播里，必然 ANR | 重启后 system 日志 `anrType=broadcast` |
+| 2 | 写入不回读，`restored=true` 而设备仍报 1 | k2814 日志 `restored=true, acc=1`，两分钟后 acc 仍是 1 |
+| 3 | 没设任何强制规则时，自动旋转根本不在恢复条件里 | 条件只查 `RotationOverride/Hiding/ForceDark`，用户只关了自动旋转就等于没设过 |
+
+第 2 条是这次最有价值的发现。补做对照实验：手动 `settings put ... 0` 在开机 2.5 分钟后
+稳定生效（`wm` 同步变成 `lock 0`），说明写入本身没问题——是**开机早期的写入会被系统后续
+初始化覆盖**。单写一次、不看结果，就会得到一个"成功"的假象。
+
+### 三、修法（k2814 / k2815）
+
+1. **等待搬出广播**：新增 `BootRestoreService`（前台服务，`specialUse`）。Receiver 只做
+   `resetAfterBoot()` + 条件判断 + `startForegroundService`，毫秒级返回，不再 `goAsync`。
+2. **等待上限 90s → 180s**（60 次 × 3s）。
+3. **条件补上自动旋转**：`AutoRotatePreference.value() != null` 也算待恢复项。
+4. **写入后回读确认**：每 5 秒读一次，未保持就重写，最多 6 次（30 秒），每次写都打日志。
+5. **`LOCKED_BOOT_COMPLETED` 直接返回**：credential-encrypted 存储那时读不到，
+   原来在这个 action 上读 prefs 本身就可能抛异常。
+6. **release 可读日志**：`android.util.Log.w` 固定标签 `ShizukuX/BootRestore`。
+
+### 四、验证（真机 `bc757a76`，两次重启）
+
+| 项目 | 结果 |
+| --- | --- |
+| 旧版（k2813） | 广播 ANR ✓ 复现；重启后 acc 仍 1 |
+| 未重启路径（`MY_PACKAGE_REPLACED`） | `shell up after 3s`，写入完成，无 ANR |
+| k2815 真实重启 | `shell up after 42s, wanted=0 acc=0 wrote=true attempts=1` |
+| 重启后开关 | `1 → 0`，`wm` = `lock 0` |
+| 广播 ANR | 0 条 |
+| 隐藏规则 | `HidingWatchService` 前台运行（id 1452 / channel `hiding`） |
+
+对照实验（证明第 2 条不是写入权限问题）：开机稳定后手动
+`settings put system accelerometer_rotation 0`，`+2s` 与 `+10s` 都保持 0，`wm` 同步变 `lock 0`。
+
+### 五、留给后来者的两条
+
+- **广播里不要等**：`goAsync` 给的是秒，不是分钟。任何"等某个进程起来"的逻辑都属于服务。
+- **写系统开关必须回读**：`settings put` 返回成功只说明命令被接受，不说明值留下了；
+  HyperOS 启动阶段会重写 `accelerometer_rotation`。
 
 ---
 

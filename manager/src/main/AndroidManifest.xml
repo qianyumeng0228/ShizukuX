@@ -540,6 +540,19 @@
             </intent-filter>
         </receiver>
 
+        <!-- The waiting half of the boot restore: the shell can take longer to come up than a
+             broadcast is allowed to live (measured: the platform posts a broadcast ANR around
+             sixty seconds in), so the wait runs in a foreground service and the receiver returns
+             immediately. Short-lived: it stops itself once the rules are back. -->
+        <service
+            android:name=".hiding.BootRestoreService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Puts the per-app rules back after a restart. The privileged shell can take minutes to come up, which is longer than a broadcast receiver is allowed to hold a boot broadcast, so the wait has to run in a foreground service. It stops itself as soon as the rules are back." />
+        </service>
+
 
         <!-- The start that is made before the first unlock after a restart. WorkManager cannot run
              then (its database is in credential-encrypted storage), so the same start is made here:

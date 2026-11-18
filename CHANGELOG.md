@@ -34,6 +34,10 @@ All notable changes to ShizukuX (formerly ShizukuPlus) are documented here.
 - **Ruled out the signature as the OPPO blocker** — the `-oppo-testkey` build and Dhizuku's official `-testkey` v2.13.0 share certificate SHA-256 `a40da80a…f5dc`; any ROM that admits Dhizuku admits this build.
 - **Restoring `user_setup_complete` now also refreshes DPMS's in-memory state** through `forceUpdateUserSetupComplete`, instead of only writing the secure setting.
 - **The role-qualification bypass is now closed in `finally`** — it was previously left open, which let any app on the device skip Role qualification.
+- **The boot restore no longer runs inside a broadcast** — it used to keep a `goAsync` receiver open for up to 90 s while waiting for the shell. On a real restart the platform posted a broadcast ANR 60 s in (`anrType=broadcast`), so the whole restore was working in a window the system had already given up on. The waiting now runs in a short-lived foreground service (`BootRestoreService`); the receiver reads preferences, queues the service and returns in milliseconds. The wait itself went from 90 s to 180 s.
+- **A remembered auto-rotate value is now enough to restore on its own** — it used to count only when a forced rotation, hiding or force-dark rule existed, so a user who had only switched auto-rotate off in this app got it turned back on by the platform at every restart with nothing to undo it.
+- **Switch writes are verified and repeated** — `restored=true` used to mean "the command was issued", while the device still reported 1 two minutes later: a write six seconds into boot is accepted and then rewritten back by the system as it finishes starting. Each write is now read back after five seconds and repeated up to six times, and the outcome is logged under `ShizukuX/BootRestore` (readable in release builds, unlike Timber).
+- **`LOCKED_BOOT_COMPLETED` is no longer handled** — the preferences are in credential-encrypted storage and unreadable before the first unlock; reading them there risked throwing. The pre-unlock start stays with the direct-boot ADB starter.
 
 ### ✨ Enhancements
 
