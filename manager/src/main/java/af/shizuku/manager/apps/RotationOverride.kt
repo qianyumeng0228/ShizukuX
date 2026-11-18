@@ -235,7 +235,10 @@ object RotationOverride {
      * a pre-restart value over them. The modes themselves stay - those are the user's list.
      */
     fun resetAfterBoot() {
-        prefs().edit().remove(KEY_BASE).remove(KEY_APPLIED).apply()
+        // The idle reading goes with them: it was sampled before the restart, and the platform
+        // has since put its own default in place, so using it would record a pre-restart value
+        // as the one to come back to.
+        prefs().edit().remove(KEY_BASE).remove(KEY_APPLIED).remove(KEY_IDLE_ACC).apply()
     }
 
     /**

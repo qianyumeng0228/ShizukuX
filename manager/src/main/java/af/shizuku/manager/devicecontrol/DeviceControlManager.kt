@@ -59,7 +59,13 @@ object DeviceControlManager {
 
     fun setAutoBrightness(enabled: Boolean): Boolean = dc().setAutoBrightnessEnabled(enabled)
 
-    fun setAutoRotate(enabled: Boolean): Boolean = dc().setAutoRotateEnabled(enabled)
+    fun setAutoRotate(enabled: Boolean): Boolean {
+        val applied = dc().setAutoRotateEnabled(enabled)
+        // Remembered only when the platform confirmed it: a failed write must not become the
+        // value that is put back after the next restart.
+        if (applied) AutoRotatePreference.remember(enabled)
+        return applied
+    }
 
     // ── Audio ─────────────────────────────────────────────────────────────────
 

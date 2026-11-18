@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import af.shizuku.manager.apps.PrivilegedShell
 import af.shizuku.manager.apps.RotationOverride
+import af.shizuku.manager.devicecontrol.AutoRotatePreference
 import af.shizuku.manager.force_dark.ForceDarkManager
 import af.shizuku.manager.utils.Logger.LOGGER
 import kotlin.concurrent.thread
@@ -56,6 +57,21 @@ class BootRestoreReceiver : BroadcastReceiver() {
                         if (PrivilegedShell.available()) break
                         Thread.sleep(3000)
                     }
+
+                    // The platform comes back with auto-rotate on, whatever the user had it at,
+                    // so the switch has to be put back before the watch starts sampling it -
+                    // otherwise the first idle pass records the platform's default as the user's
+                    // choice. Runs first for that reason, not after the refresh.
+                    if (PrivilegedShell.available()) {
+                        val restored = runCatching {
+                            AutoRotatePreference.restore(
+                                available = { PrivilegedShell.available() },
+                                run = { cmd -> PrivilegedShell.run(cmd) }
+                            )
+                        }.getOrDefault(false)
+                        if (restored) LOGGER.w("boot restore put the auto-rotate switch back")
+                    }
+
                     HidingWatchService.refresh(app)
                 }
             } catch (t: Throwable) {
