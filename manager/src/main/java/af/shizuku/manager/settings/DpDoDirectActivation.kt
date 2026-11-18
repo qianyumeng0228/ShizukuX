@@ -339,6 +339,10 @@ object DpDoDirectActivation {
         note("管理组件：${admin.flattenToShortString()}")
         note("调用身份：应用自身 uid=${Process.myUid()}（isAdb=false → 非 ADB 分支）")
         note("SDK=${Build.VERSION.SDK_INT}（setDeviceOwner 签名按此选择）")
+
+        // 应用自身身份路径是否可用。Role / MAPDO 任一失败只关掉这条回退路径，
+        // 不再终止整个流程——shell 身份路径与它们无关，上游 Dhizuku 正是这么做的。
+        var selfPathAllowed = true
         // The signing identity is part of the answer on OPPO: the platform only lets
         // whitelisted or testkey-signed packages become owner (Dhizuku discussion #16), so a
         // fully correct call path still ends in a refusal on a self-signed build. Recording it
@@ -384,19 +388,12 @@ object DpDoDirectActivation {
         }
         note("  exit=${grant.exitCode}${if (grant.output.isNotBlank()) " out=${grant.output}" else ""}")
         if (grant.exitCode != 0) {
-            // 部分 ROM 忽略 bypass 开关：资格校验永远不通，继续走只会得到误导性的「权限缺失」结论
-            note("x Role 授予被系统拒绝：本机 ROM 未采纳 set-bypassing-role-qualification")
-            return ActivationResult(
-                Stage.ROLE_GRANT_FAILED, false,
-                "系统拒绝了 DEVICE_POLICY_MANAGEMENT Role 授予（cmd role add-role-holder 失败）。\n\n" +
-                        "这类 ROM 会校验 RoleHolder 组件（ROLE_HOLDER_PROVISION_* 一组 action）与 " +
-                        "LAUNCH_DEVICE_MANAGER_SETUP 权限，而该权限本身只能由这个 Role 授予，" +
-                        "两者互为前提形成死锁；cmd role set-bypassing-role-qualification 在这类 ROM 上不生效。\n\n" +
-                        "可行的替代：\n" +
-                        "① 关闭「手机分身 / 第二用户 / 工作资料」后，改用 ADB 方式设置设备所有者；\n" +
-                        "② 在具备 root 的设备上走这条直连激活。",
-                log
-            )
+            // 与上游 Dhizuku 对照后的修正：它的 activateAsDeviceOwnerByShizuku 全程在
+            // requireBinderWrapperDevicePolicyManager 里以 shell 身份跑 setActiveAdmin +
+            // setDeviceOwner，从不申请 DEVICE_POLICY_MANAGEMENT Role。所以 Role 失败只意味着
+            // “应用自身身份这条路走不通”，不该让整个流程在这里终止。
+            note("x Role 授予被系统拒绝：应用自身身份路径不可用（shell 身份路径不依赖它，继续）")
+            selfPathAllowed = false
         }
 
         // 记录当前 Role 持有者，便于失败排查
@@ -413,22 +410,18 @@ object DpDoDirectActivation {
         )
         val shellEvidence = dumpsys?.output
         if (!hasManageProfileAndDeviceOwners(context, shellEvidence)) {
-            note("x 未持有 $PERM_MANAGE_PROFILE_AND_DEVICE_OWNERS")
+            note("x 未持有 $PERM_MANAGE_PROFILE_AND_DEVICE_OWNERS（应用自身身份路径不可用）")
             note("  application 侧判据为 DENIED；shell 侧证据：${shellEvidence?.ifBlank { "(空)" } ?: "(未取到)"}")
-            note("  常见原因：AndroidManifest 未声明该权限，或 Role 授予未生效（可稍等数秒重试）")
-            return ActivationResult(
-                Stage.PERMISSION_MISSING, false,
-                "本应用尚未获得设备策略管理角色（DP Role）带来的 MANAGE_PROFILE_AND_DEVICE_OWNERS，" +
-                        "无法使用非 ADB 直连路径。",
-                log
-            )
+            note("  shell 身份路径不受影响，继续")
+            selfPathAllowed = false
+        } else {
+            note("v 已持有 $PERM_MANAGE_PROFILE_AND_DEVICE_OWNERS（DP Role 生效）")
         }
-        note("v 已持有 $PERM_MANAGE_PROFILE_AND_DEVICE_OWNERS（DP Role 生效）")
 
         // ---------- 第 3 步：临时打开向导闸 ----------
         note("")
         note("> 第 3 步：检查并临时打开向导闸（user_setup_complete）")
-        val currentSetup = shell("settings get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
+        val currentSetup = shell("settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
         val setupValue = currentSetup?.output?.trim()
         note("  当前 USER_SETUP_COMPLETE=${setupValue ?: "(未取到)"}")
 
@@ -436,8 +429,8 @@ object DpDoDirectActivation {
         if (setupValue == "1") {
             note("  设备已完成开机向导 → 需要临时置 0（副作用：三键导航 Home / 最近任务短暂失灵）")
             val write = shell(
-                "settings put secure $SETTING_USER_SETUP_COMPLETE 0; sleep 1; " +
-                        "echo $SETUP_READBACK_TAG\$(settings get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null)"
+                "settings --user 0 put secure $SETTING_USER_SETUP_COMPLETE 0; sleep 1; " +
+                        "echo $SETUP_READBACK_TAG\$(settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null)"
             )
             if (write == null) {
                 return ActivationResult(Stage.SHELL_UNAVAILABLE, false, "无法执行 shell 命令。", log)
@@ -448,18 +441,51 @@ object DpDoDirectActivation {
                 ?.trim()
             note("  回读：USER_SETUP_COMPLETE=${readBack ?: "(无标记)"}")
             if (readBack != "0") {
-                note("x 无法把 user_setup_complete 置 0（部分 ROM 限制 shell 写入）")
-                return ActivationResult(
-                    Stage.SETUP_COMPLETED, false,
-                    "无法临时关闭开机向导闸（user_setup_complete 置 0 失败）。" +
-                            "本流程在这类 ROM 上不可用，请改用其它激活入口。",
-                    log
-                )
+                // 上游 Dhizuku 的 bypassUserSetupComplete 在 put 失败时只是「不 bypass」并继续，
+                // 不中止流程；这里对齐它——最终是否放行由 setDeviceOwner 的返回决定。
+                note("  ! 没能把 user_setup_complete 置 0；继续尝试（以 setDeviceOwner 的结果为准）")
             }
-            needRestore = true
+            needRestore = readBack == "0"
         }
 
         try {
+            // ---------- 第 3.5 步（首选）：以 shell 身份完整激活（对齐上游 Dhizuku） ----------
+            //
+            // Dhizuku 的 activateAsDeviceOwnerByShizuku 是：
+            //   delay(1500)                      // 等账户缓存刷新
+            //   bypassUserSetupComplete(userId)  // settings put 0 + forceUpdate
+            //   wrapper { setActiveAdmin(who, true, userId); setDeviceOwner(who, null, userId) }
+            //   restore
+            // 全程 shell 身份，不申请 Role。既然形状一致，就把这条路径提到首选，
+            // 应用自身身份只作回退——否则 Role 一旦被严格 ROM 拒绝，流程在第 2 步就断了。
+            note("")
+            note("> 第 3.5 步（首选）：以 shell 身份完整激活（对齐 Dhizuku 路径）")
+            note("  等待 1.5s 让账户缓存刷新（Dhizuku 在同一位置 delay(1500)）")
+            runCatching { Thread.sleep(1500) }
+            val shellFirst = activateAsShellIdentity(dpm, admin, 0, note)
+            if (shellFirst.attempt?.code == STATUS_OK) {
+                val nowOwner = runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)
+                note("v shell 身份激活成功，isDeviceOwnerApp=$nowOwner")
+                return ActivationResult(
+                    Stage.OK, true,
+                    if (nowOwner) "已激活设备所有者（shell 身份路径，对齐 Dhizuku）。"
+                    else "系统接受了 setDeviceOwner，但复核未通过，请重启后确认。",
+                    log
+                )
+            }
+            note("  ! shell 身份未通过：${explainAttempt(shellFirst.attempt)}")
+            if (!selfPathAllowed) {
+                note("  应用自身身份路径也不可用（Role / MAPDO 未落地），到此为止")
+                return ActivationResult(
+                    Stage.SET_OWNER_REJECTED, false,
+                    "shell 身份被拒：${explainAttempt(shellFirst.attempt)}\n\n" +
+                            "本机同时拒绝了 DEVICE_POLICY_MANAGEMENT Role，应用自身身份路径也不可用，" +
+                            "没有其它可试的路径。",
+                    log
+                )
+            }
+            note("  回退到应用自身身份路径重试")
+
             // ---------- 第 4 步：把 Settings 值同步进 DPM 内存态 ----------
             note("")
             note("> 第 4 步：反射调用 forceUpdateUserSetupComplete(0)（同步内存态）")
@@ -715,9 +741,9 @@ object DpDoDirectActivation {
         note: (String) -> Unit
     ): Boolean {
         try {
-            val method = DevicePolicyManager::class.java.getMethod(
+            val method = DevicePolicyManager::class.java.getDeclaredMethod(
                 "forceUpdateUserSetupComplete", Integer.TYPE
-            )
+            ).apply { isAccessible = true }
             method.invoke(dpm, userId)
             note("v forceUpdateUserSetupComplete($userId) 调用成功")
             return true
@@ -727,7 +753,8 @@ object DpDoDirectActivation {
         }
         // 部分分支只保留无参版本（Dhizuku 也做了同样的回退），再试一次。
         return try {
-            val noArg = DevicePolicyManager::class.java.getMethod("forceUpdateUserSetupComplete")
+            val noArg = DevicePolicyManager::class.java.getDeclaredMethod("forceUpdateUserSetupComplete")
+                .apply { isAccessible = true }
             noArg.invoke(dpm)
             note("v forceUpdateUserSetupComplete()（无参版本）调用成功")
             true
@@ -762,7 +789,9 @@ object DpDoDirectActivation {
                         else -> it!!.javaClass
                     }
                 }.toTypedArray()
-                val method = DevicePolicyManager::class.java.getMethod("setActiveAdmin", *types)
+                val method = DevicePolicyManager::class.java
+                    .getDeclaredMethod("setActiveAdmin", *types)
+                    .apply { isAccessible = true }
                 method.invoke(dpm, *args)
                 note("v setActiveAdmin(${args.size} 参) 调用成功")
                 return true
@@ -797,18 +826,18 @@ object DpDoDirectActivation {
         for (useThreeArgs in order) {
             try {
                 val method = if (useThreeArgs) {
-                    DevicePolicyManager::class.java.getMethod(
+                    DevicePolicyManager::class.java.getDeclaredMethod(
                         "setDeviceOwner",
                         ComponentName::class.java,
                         String::class.java,
                         Integer.TYPE
-                    )
+                    ).apply { isAccessible = true }
                 } else {
-                    DevicePolicyManager::class.java.getMethod(
+                    DevicePolicyManager::class.java.getDeclaredMethod(
                         "setDeviceOwner",
                         ComponentName::class.java,
                         Integer.TYPE
-                    )
+                    ).apply { isAccessible = true }
                 }
                 val result = if (useThreeArgs) {
                     method.invoke(dpm, admin, null, userId)
