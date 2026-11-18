@@ -315,7 +315,12 @@ step "Checking settings XML string references resolve"
 MISSING_STRINGS=$(python3 - <<'PYEOF'
 import re, glob
 defined = set()
-for f in glob.glob('manager/src/main/res/values*/*.xml'):
+# Strings are merged across modules at resource-link time, so a preference XML in manager may
+# legitimately reference a string that lives in core/ui or common. Scanning only manager's
+# values/ produced a false FAIL for settings_update_check_interval_* (defined in core/ui).
+for f in glob.glob('**/src/main/res/values*/*.xml', recursive=True):
+    if '/build/' in f.replace('\\', '/') or f.startswith('build/'):
+        continue
     defined.update(re.findall(r'<string name="([^"]+)"', open(f, encoding='utf-8').read()))
 missing = []
 for f in glob.glob('manager/src/main/res/xml/settings_*.xml'):
