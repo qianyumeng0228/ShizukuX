@@ -123,6 +123,20 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2805：服务断开时页面还在挂旧读数，而且会弹一个"操作未完成"
+
+k2804 的监听只在"变成 RUNNING"时 `load()`，反方向没管。结果是服务一断，页面把上一份读数继续挂在屏幕上——用户看到"设置还在"，可开关其实已经点不动；等真去点，失败提示又很像"要重做一遍"。同一件事的两个方向都要处理，只补一边等于把误导换个位置。
+
+改成 `if (running != serviceRunning) load()`：两个方向都重载。服务断开 → 页面切到"请先启动 Shizuku 服务 / 当前系统无法读取状态"；服务回来 → 页面自己刷回真实列表和开关。
+
+顺带修掉一处弹窗：`BatteryWhitelistActivity` 原先在读取失败时弹"操作未完成（Shizuku 未运行，启动服务后才能管理白名单）"。服务只是暂时不在，却弹一个失败框，读起来就是"你刚才的改动没成功"。现在服务不在时只更新页面状态、不弹框，只有服务活着真报错才弹；`FirewallActivity` 的 `onFailure` 同样加了 `FirewallManager.isAvailable()` 判断。
+
+**真机验证（2210132C / Android 16 / HyperOS）**：该服务被杀后约 1 秒就被 Watchdog 拉起，单次 `kill` 抓不到中间态，因此用设备端循环（24 次、间隔 0.3 s，约 7 秒窗口）连续杀。
+- 防火墙页（已加载 156 个应用的状态下）：服务断 → 自动变「请先启动 Shizuku 服务」「当前系统无法读取状态」「0 个应用」「没有匹配的应用」；服务恢复（新 pid）→ **未退出页面**，自动刷回「已拦截 0 个应用」「156 个应用」与完整列表。
+- 电池页：服务断 → 副标题变「Shizuku 未运行，启动服务后才能管理白名单」，列表 0 个应用，**无对话框**；服务恢复 → 自动刷回「已加入白名单 52 / 540 个应用」与完整列表，白名单开关状态保持。
+
+**顺带发现的构建坑**：`:dhizuku-compat:assembleRelease` 不传 `-PshizukuVersionCode` 时用的是模块默认值（这次出成 2807 / `13.6.0.r2807`），和 manager 的版本号对不上；补传参数后为 2805。
+
 ### 2026-11-18 — k2804：重启后"设置要重做"，丢的不是设置，是页面的读取能力
 
 先把"到底丢了什么"查清楚，结论和用户描述相反：重启后 `GET_USAGE_STATS` 仍 allow，`DUMP` / `WRITE_SECURE_SETTINGS` 仍 granted，Doze 白名单 71 行全在，`chain3` 也还是原值。规则一条没丢——它们本来就存在系统里，这个应用从不自己存一份。
@@ -132,6 +146,8 @@ Things discussed or sketched that we never formally decided to build.
 k2803 解决的是"服务自己回来"（`BootRestoreReceiver`）。这一版补另一半：两页监听 `ShizukuStateMachine`，从非 RUNNING 变 RUNNING 时重新加载，服务回来列表就跟着回来。监听器 `onCreate` 注册、`onDestroy` 注销；初始值取当前状态，避免 `addListener` 的同步首回调与 `onCreate` 里第一次加载撞在一起。
 
 **未完成**：这两个页面的自动刷新没有 UI 端到端验证。`FirewallActivity` 在 manifest 里是 `exported=false`，`am start` 被系统拒（`Permission Denial`）；首页卡片走 `startWithSceneTransition`，自动化点击三次都没进去。所以"服务恢复后页面自动刷新"目前只是编译通过 + 代码路径正确，没有设备上的观测证据。
+
+**后续（k2805 已补齐）**：上面这段说的"单向监听"本身是半个修复——服务断开时页面仍挂旧读数。k2805 改成双向重载，并在设备上跑通了两个页面的断/恢复全程；`exported=false` 也不是死路，从首页卡片点进去即可（坐标按实际 1080×2400 折算，约 1.2 倍）。
 
 ### 2026-11-18 — k2803：重启后自动旋转被写回 1，是因为没人把它改回去，而采样又把 1 当成了用户选择
 
