@@ -1227,6 +1227,105 @@ oppo-testkey `23A96035…80ACD6B0`（14,298,722 B，testkey 单签名）。
 
 ---
 
+## 2026-11-19 · k2810–k2812：首页横滑的误振、抢手势与一次翻两页
+
+首页是 `AndroidView` 包着的 RecyclerView，横向拖动必须由 pager 在 Initial pass 抢过来，
+否则列表会吃掉位移。这条链路此前只做到「能翻页」，三个缺陷叠在一起。
+
+### 一、误振（k2810，`4ebfd959`）
+
+`MotionUtils.applySpringTouch` 在 `ACTION_DOWN` 就发 `HapticUtils.tap`。
+横滑被 pager 认领后宿主收不到任何 `MOVE`，原来的「没移动过」判定在 `UP` 仍然成立，
+于是照振。改为在 `UP` 用 `rawX/rawY` 与按下点的实际坐标差判定——
+哪怕一个 MOVE 都没收到，也能看出手指移动过。
+真机 `logcat -b system` 过滤 `ibrat|haptic`，四次滑动 0 条。
+
+### 二、首页漏了手势 modifier（k2810，`88d64d50`）
+
+page 0 的 `Box` 没包 `horizontalSwipeToPager`，其 RecyclerView 在垂直可滚动时会
+吃掉大半横向位移，所以「首页往外划特别费劲」。补上 modifier，并在认领后连 `UP`
+一起 `consume()`，否则宿主会把「DOWN + UP」当成一次点击。
+
+### 三、一次翻两页（k2811，`cdf5081c`）
+
+`dispatchRawDelta` 不做 clamp：长距离拖动把 `currentPage` 中途推过邻页，
+松手又从新的页码上 +1。真机实测「首页左滑一次落到 ADB 模块页」（`phone_left.png`）。
+现在记录 `startPage`，按手指实际落点结算，位移上限一页。
+
+### 四、k2812 构建失败（留档）
+
+想给 `animateScrollToPage` 传 `initialVelocity` 按甩动强度选弹簧，
+编译报 `No parameter with name 'initialVelocity' found`——
+当前 Compose 版本的 `PagerState` 没有这个参数。改为按 `flicked` 选 170 / 240ms 的 `tween`。
+
+### 五、验证（k2811）
+
+- **拖动是否 1:1**：`input motionevent` 分步注入 DOWN / MOVE×5 / UP，手指 -200px 时截图，
+  页面位移约 200px（`k2811_dragmid.png` 可见首页左移、右侧露出授权页）。
+- **慢速拖能否翻页**：250px / 600ms 双向都翻页，每次一页；此前必须「用力甩」才翻。
+- **帧率**：`dumpsys gfxinfo` reset 后滑一次，340 帧 0 jank，90th 17ms，99th 40ms。
+- **落点**：验证翻页必须看落点页码，不能只看「是否切页」——旧版就是切了，只是切了两页。
+
+---
+
+## 2026-11-19 · k2813：真正的「被按住」感——按压状态、死区与松手衔接
+
+### 一、起点
+
+前三轮修完，用户仍反馈「阻尼感还有点大，与后面其他页面按钮之间的顺滑比不了」。
+`gfxinfo` 已经 0 jank，所以不是渲染；问题在手势本身的四个观感叠加。
+
+### 二、按压状态在整段滑动里不释放（主因，`2f32c618`）
+
+卡片按下缩到 0.97。横滑被 pager 认领后卡片再也收不到 `MOVE`，
+缩放在整段滑动中都挂着——视觉上就是页面一直被手指「按住」，推起来发沉。
+
+`MotionUtils` 新增 `activeRelease` 登记（`DOWN` 赋值、`UP`/`CANCEL` 清空）与
+`releaseActivePress()`；`horizontalSwipeToPager` 在认领的瞬间调用，卡片立即弹回。
+这是本轮最像「阻尼」的一项，也是前三轮一直没找到的那一项。
+
+### 三、位移上限压得太死
+
+原先拖动的位移被压在一屏的 0.4：手指滑 650px，只有 432px 生效，剩下路程页面不动。
+放宽到一整页；同时 `viewportSize.width` 首帧为 0 时回退到 `pointerInput` 的 `size.width`，
+否则刚启动时的滑动每一步都被 clamp 成 0。
+
+### 四、死区与松手衔接
+
+- 认领阈值从一整格 touch slop 降到 0.7 格（约 17px）；
+- 松手动画从统一 260ms 弹簧改成甩动 170ms / 拖动 240ms。
+
+### 五、验证（k2813，真机 `bc757a76`）
+
+| 项目 | 方法 | 结果 |
+| --- | --- | --- |
+| 拖动跟手 | 分步 `motionevent`，手指 -200px 时截图 | 页面位移约 200px |
+| 慢速拖双向翻页 | `input swipe` 250px / 600ms | 均翻页，每次一页 |
+| 渲染 | `dumpsys gfxinfo` | 762 帧 0 jank；90th 17ms，99th 20ms；Missed Vsync 0，Slow UI thread 0 |
+| 振动 | `logcat -b system` 过滤 | 0 条 |
+
+### 六、两个必须记住的结论
+
+1. **与底部按钮的「顺」不可能完全等同**：底部导航是 `animateScrollToPage` 纯动画，
+   没有手势输入，天然匀速；手势翻页由手指逐帧驱动。1:1 跟手 + 不掉帧 + 松手不顿，
+   已经是原生 ViewPager2 的体感上限。
+2. **冷启动首触可能不生效**：应用刚装完、窗口首帧未 ready 时，第一次横向触摸可能无效，
+   第二次起正常。不是逻辑问题，也没加补偿逻辑。
+
+### 七、产物
+
+dropin `9E0654CF…44D5`（14,305,181 B）／standard `0E8D944F…B804`（14,305,126 B）／
+oppo-testkey `E32B0D45…36A5`（14,298,722 B，testkey 单签名）。
+三包 README 在 `I:\shizukux\dist\ShizukuX-13.7.0.k2813\`，含五项真机测量表。
+
+### 八、仍未覆盖
+
+`binder_firewall` 开启时会拦截 `transactRemote`（README 有写，代码层没做前置校验）；
+`FirewallActivity` / `BatteryWhitelistActivity` 的服务恢复自动刷新只有代码路径，无设备观测；
+开机恢复写回未在真实重启里验证。
+
+---
+
 ## Key Files Quick Reference
 
 | Area | File |
