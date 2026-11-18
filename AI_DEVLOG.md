@@ -123,6 +123,16 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2802：OPPO 反馈没解决，恢复少了一条 `wm user-rotation`，以及重启后到底丢了什么
+
+上一版（k2801）在小米 13 Pro 上三条路径都对，OPPO 用户仍然复现。这轮先把上游看了一遍：Shizuku-Next 的 `restore` 是 `fixed-to-user → accelerometer_rotation → user_rotation → wm user-rotation`，我们 r2795 因为 HyperOS 上 `free` 会写 `accelerometer_rotation=1` 而把最后一条整个删了。删得过头了——ColorOS 的快捷开关读的是 `user-rotation` 的 `free`/`lock N`，不是那个 settings 键，所以 `accelerometer_rotation` 回到 0 之后图标照样亮着。现在按基线成对写：`accelerometer_rotation=0` 补 `wm user-rotation lock <user_rotation>`，`=1` 补 `wm user-rotation free`。两个值与 settings 键本来就一致（`free` 写 1、`lock N` 写 0），所以 HyperOS 上不会互踩，真机两条路径都回归通过。
+
+第二个改动是 `restore()` 的 `applied` 守卫。隐藏模块在列表变化时会调 `Hiding.restoreAll()` + `RotationOverride.restore()`，而 `restore()` 原来只要看到 base 就写回——一份上次恢复中途失败留下的 base 会被反复重放，等于把很久以前（甚至上一台状态）的开关值写回当前设备。现在没有活动锁定就只丢 base、不写任何命令。
+
+第三个是 `BootRestoreReceiver`。真机重启后实测：`GET_USAGE_STATS` 仍 allow，三条 pm 权限仍 granted，Doze 白名单仍在（71 行），但 `accelerometer_rotation` 回到 1、`shizuku_plus_server` 没起。也就是说权限和规则本身没丢，丢的是提供 shell 的服务；用户看到的"设置要重做"是服务没起来导致页面读不到。接收器在开机后先丢掉旧锁定标记，再等服务可用（最多 90 秒）重新拉起监听服务。90 秒远超广播的 goAsync 窗口，这一点是已知隐患，后续若在 ColorOS 上观察不到生效，应先改成 WorkManager 续跑。
+
+**未完成**：开机恢复没有端到端验证。本机重启后停在锁屏，无法自动解锁继续操作；OPPO 侧的表现也需要真机。
+
 ### 2026-11-18 — k2801：自动旋转"自己打开"的两个成因，以及锁定期间的自愈
 
 `1970355d`。r2795 / r2797 都没能让用户那边消停，本轮不再靠推理，直接在设备（2210132C / Android 16 / HyperOS）上把开关一步步改出来对照。
