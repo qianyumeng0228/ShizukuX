@@ -178,7 +178,7 @@ object ShizukuReceiverStarter {
                         }
                     }
                 } else {
-                    AdbStartWorker.enqueue(context)
+                    AdbStartWorker.enqueue(context, immediate = forceStart)
                     updateNotification(context, WorkerState.RUNNING)
                 }
             } else {

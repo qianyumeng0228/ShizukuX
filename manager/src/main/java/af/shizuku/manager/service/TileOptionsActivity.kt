@@ -92,7 +92,9 @@ class TileOptionsActivity : AppCompatActivity() {
                     ShizukuStateMachine.update()
                 }
             } else {
-                runOnUiThread { AdbStartWorker.enqueue(this) }
+                // The button the user just pressed: expedite it rather than leave it to
+                // JobScheduler's next batch.
+                runOnUiThread { AdbStartWorker.enqueue(this, immediate = true) }
             }
         }
     }

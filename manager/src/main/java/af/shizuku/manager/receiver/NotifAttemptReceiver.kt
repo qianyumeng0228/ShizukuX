@@ -7,6 +7,7 @@ import af.shizuku.manager.worker.AdbStartWorker
 
 class NotifAttemptReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        AdbStartWorker.enqueue(context)
+        // The notification's retry button: the user is watching this attempt.
+        AdbStartWorker.enqueue(context, immediate = true)
     }
 }

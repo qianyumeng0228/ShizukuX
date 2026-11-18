@@ -54,7 +54,37 @@ import rikka.shizuku.Shizuku
 import timber.log.Timber
 
 class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
+    /**
+     * Only reached on Android 11 and below, where WorkManager runs expedited work in a foreground
+     * service: without this, `setExpedited` throws before `doWork` ever gets a chance. The
+     * notification is the same one the worker shows itself, so an expedited start looks exactly
+     * like an ordinary one.
+     */
+    override suspend fun getForegroundInfo(): ForegroundInfo = buildForegroundInfo()
+
+    private fun buildForegroundInfo(): ForegroundInfo {
+        val notification = ShizukuReceiverStarter.buildNotification(applicationContext, null)
+        // Android 14+ rejects a foreground service whose type the manifest does not declare.
+        // WorkManager's SystemForegroundService is declared as shortService in ours, and the
+        // worker's own setForegroundAsync calls use the same type -- both must agree.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            ForegroundInfo(
+                ShizukuReceiverStarter.NOTIFICATION_ID,
+                notification,
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
+            )
+        } else {
+            ForegroundInfo(ShizukuReceiverStarter.NOTIFICATION_ID, notification)
+        }
+    }
+
     override suspend fun doWork(): Result {
+        // Says which queue this attempt came from. A release build has no Timber, so this is the
+        // only place a "did my tap actually expedite the start" question can be answered from.
+        android.util.Log.i(
+            "ShizukuX/AdbStartWorker",
+            "doWork begin: attempt=$runAttemptCount immediate=${inputData.getBoolean(KEY_IMMEDIATE, false)}"
+        )
         try {
             // Last line of defence: this worker is enqueued by the tile, the starter and the boot
             // path, and a request queued before the user stopped the server must not survive that
@@ -150,22 +180,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 // 只在调用方确认「当前锁屏」后进入：锁屏期间的 OFF 通常是系统省电策略所为，
                 // 并非用户拒绝授权，所以等解锁后重新 arm 继续发现，而不是把这次启动判死。
                 fun awaitUnlockAndRearm() {
-                    val notification = ShizukuReceiverStarter.buildNotification(
-                        applicationContext,
-                        null
-                    )
-                    // On Android 14+ (API 34), ForegroundInfo must declare a foreground
-                    // service type or the OS throws InvalidForegroundServiceTypeException
-                    val foregroundInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        ForegroundInfo(
-                            ShizukuReceiverStarter.NOTIFICATION_ID,
-                            notification,
-                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SHORT_SERVICE
-                        )
-                    } else {
-                        ForegroundInfo(ShizukuReceiverStarter.NOTIFICATION_ID, notification)
-                    }
-                    setForegroundAsync(foregroundInfo)
+                    setForegroundAsync(buildForegroundInfo())
 
                     val filter = IntentFilter(Intent.ACTION_USER_PRESENT)
                     unlockReceiver = object : BroadcastReceiver() {
@@ -430,7 +445,19 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     companion object {
-        fun enqueue(context: Context) {
+        /**
+         * Queue a start.
+         *
+         * [immediate] marks a start somebody is waiting on right now: the tile, the notification's
+         * retry action, the authenticated START broadcast, the settings page. Those are expedited,
+         * because ordinary one-time work waits for JobScheduler's next batch and on a dozing device
+         * that can be minutes — the difference between "tap and it starts" and "tap and nothing
+         * happens". Boot sync and the watchdog stay ordinary: they run unattended and must not burn
+         * the expedited quota.
+         *
+         * Out of quota the request still runs, just as ordinary work.
+         */
+        fun enqueue(context: Context, immediate: Boolean = false) {
             // WorkManager uses credential-encrypted storage which is unavailable during direct boot.
             // Skip enqueueing until the user has unlocked their device.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -443,9 +470,22 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 cb.setRequiredNetworkType(NetworkType.UNMETERED)
             val constraints = cb.build()
 
-            val request = OneTimeWorkRequestBuilder<AdbStartWorker>()
+            val requestBuilder = OneTimeWorkRequestBuilder<AdbStartWorker>()
                 .setConstraints(constraints)
-                .build()
+                .setInputData(workDataOf(KEY_IMMEDIATE to immediate))
+            if (immediate) {
+                requestBuilder.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                android.util.Log.i(
+                    "ShizukuX/AdbStartWorker",
+                    "start queued as expedited work"
+                )
+            } else {
+                android.util.Log.i(
+                    "ShizukuX/AdbStartWorker",
+                    "start queued as ordinary work"
+                )
+            }
+            val request = requestBuilder.build()
 
             // Use KEEP while a key offer is waiting for a dialog response — REPLACE would cancel
             // the current connection and create another "Allow USB debugging?" dialog.
@@ -458,6 +498,9 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
         }
         const val CHANNEL_ID = "AdbStartWorker"
         const val NOTIFICATION_ID = 1448
+
+        /** Carried into the worker so a log line can say which queue the attempt came from. */
+        const val KEY_IMMEDIATE = "immediate"
         private const val NOTIFICATION_ID_MDNS_BLOCKED = 1449
     }
 }

@@ -95,7 +95,12 @@ class ShizukuTileService : TileService() {
                                 updateTile()
                             }
                     } else {
-                        af.shizuku.manager.worker.AdbStartWorker.enqueue(this@ShizukuTileService)
+                        // Tapping the tile: the user is watching, so do not let the start wait
+                        // for JobScheduler's next batch.
+                        af.shizuku.manager.worker.AdbStartWorker.enqueue(
+                            this@ShizukuTileService,
+                            immediate = true
+                        )
                     }
                 }
             }
