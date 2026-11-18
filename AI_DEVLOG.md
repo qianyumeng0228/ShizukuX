@@ -155,6 +155,8 @@ boolean hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccou
 
 **交付前包级复核**：`aapt2 dump xmltree` 确认 dropin 与 standard 两包的设备管理组件都解析为 `af.shizuku.manager.admin.DhizukuAdminReceiver`（standard 的 applicationId 与 namespace 不同，最容易在这里错）；R8 `mapping.txt` 确认 `rikka.shizuku.ShizukuBinderWrapper -> rt4` 以及 `DpDoDirectActivation$OwnerAttempt` / `$ShellOwnerOutcome` 都在包内，不会 `NoClassDefFoundError`；`api/…/ShizukuBinderWrapper.java` 的 `transact` 走 `Shizuku.transactRemote`，与 `pingBinder` 前置一致；三包 sha256 与 README 表逐条一致。另把向导闸恢复改成"回写 + 回读 + 重试一次"，恢复失败时把人工命令写进日志，避免用户拿到一台 Home 键失灵的机器却不知道怎么办。
 
+**再一轮深查（并发与还原）**：`activate()` 原先没有互斥，设置页可以重复进入再点确定，两个流程交错时后一次会把「已被替换成 `ShizukuBinderWrapper` 的 proxy」当作 original 记下来，还原写回的仍是 proxy —— 进程内 `mService` 永久停在 shell 身份上，且毫无日志。现在加 `AtomicBoolean` 闸门，第二次直接返回「另一次激活流程还在运行」。同时 `withShellService` 的 `finally` 原先无条件打印「mService 已还原」，还原失败也照打；改为按 `runCatching` 结果分别输出，失败时写明「重启应用即可恢复」。
+
 **仍未覆盖**：无 ColorOS 真机，`mService` 字段与 `Stub.asInterface` 按 AOSP 实现写但没跑过；`checkDeviceOwnerProvisioningPreConditionLocked` 的定义未取到（抓取只有调用点），`isAdb=true` 分支的具体判据是按错误文案反推的。定位仍需用户侧一次失败日志。
 
 ### 2026-11-18 — k2806：自启动读错了 op，「别人能设设备所有者我不能」是签名不是链路
