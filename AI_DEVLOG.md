@@ -123,6 +123,16 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2804：重启后"设置要重做"，丢的不是设置，是页面的读取能力
+
+先把"到底丢了什么"查清楚，结论和用户描述相反：重启后 `GET_USAGE_STATS` 仍 allow，`DUMP` / `WRITE_SECURE_SETTINGS` 仍 granted，Doze 白名单 71 行全在，`chain3` 也还是原值。规则一条没丢——它们本来就存在系统里，这个应用从不自己存一份。
+
+真正丢的是提供 shell 的服务。服务不在时，`FirewallActivity` 与 `BatteryWhitelistActivity` 读不到系统状态，只能停在那句"需要服务"的提示上；用户照着空状态把规则重设一遍，事后读到的记忆就是"重启后要重新设置"。
+
+k2803 解决的是"服务自己回来"（`BootRestoreReceiver`）。这一版补另一半：两页监听 `ShizukuStateMachine`，从非 RUNNING 变 RUNNING 时重新加载，服务回来列表就跟着回来。监听器 `onCreate` 注册、`onDestroy` 注销；初始值取当前状态，避免 `addListener` 的同步首回调与 `onCreate` 里第一次加载撞在一起。
+
+**未完成**：这两个页面的自动刷新没有 UI 端到端验证。`FirewallActivity` 在 manifest 里是 `exported=false`，`am start` 被系统拒（`Permission Denial`）；首页卡片走 `startWithSceneTransition`，自动化点击三次都没进去。所以"服务恢复后页面自动刷新"目前只是编译通过 + 代码路径正确，没有设备上的观测证据。
+
 ### 2026-11-18 — k2803：重启后自动旋转被写回 1，是因为没人把它改回去，而采样又把 1 当成了用户选择
 
 重启后实测 `accelerometer_rotation` 一定是 1，跟重启前用户设的什么无关——这是平台的默认值，不是我们写的。真正的问题在两头：一头是没有东西把它改回去；另一头是 `HidingWatchService` 启动后的第一轮空闲采样读到这个 1，把它记成"用户的选择"，从此每次恢复都往 1 写。
