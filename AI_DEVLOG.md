@@ -142,7 +142,16 @@ boolean hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccou
 
 **本版改动**：`DpDoDirectActivation` 第 6 步（应用自身）被拒后自动进第 6b 步——用 Dhizuku 同款手法换 `mService`，以 shell 身份重跑 `forceUpdateUserSetupComplete` / `setActiveAdmin` / `setDeviceOwner`，无条件还原；失败时结果框**分列两条路径的判决**，日志带 `cmd user list` 与每步系统原文，可一键复制。
 
-**验证**：`BUILD SUCCESSFUL`（dropin 6m52s / standard 5m11s）；三包 sha256 已入 README；testkey 版 `apksigner verify` 单签名、指纹 `a40da8…f5dc`、`zipalign -c` 通过；`classes.dex` 中检出 `android.app.admin.IDevicePolicyManager$Stub` 与「第 6b 步」，确认新代码进包而非旧产物。
+**同轮复核修掉四处**（第一版编译通过但逻辑不可靠，逐行对源码后改）：
+
+1. **签名回退会盖掉真实原因**：A14+ 先试两参、失败再试三参，A16 上三参重载已不存在，第二次的 `NoSuchMethodException` 覆盖了第一次的 `SecurityException`，日志只剩"方法找不到"。现在只有 `NoSuchMethodException` 才换签名，方法存在但被拒立即定性。
+2. **`SecurityException` 原文被丢**：原来只在 `IllegalStateException` / `IllegalArgumentException` 时打印原文，而缺 `MANAGE_PROFILE_AND_DEVICE_OWNERS` 抛的正是 `SecurityException`。现在所有异常都记原文。
+3. **解释改按系统原文判读**：`STATUS_*` 真实数值不在公开 SDK 里（抓 `DevicePolicyManagerService` 全文也没有常量定义），`errorCodeFromMessage` 的映射不可靠，纯按数字会把账户问题说成分身问题。
+4. **`forceUpdateUserSetupComplete` 补无参回退**（Dhizuku 同样做了这一步）。
+
+顺带核实：A16 的 `DevicePolicyManager.setDeviceOwner(ComponentName, int)` 确实存在，内部转 `mService.setDeviceOwner(who, userId, true)`，与 DPMS 的三参对上；`ShizukuApplication` 在 SDK≥28 无条件执行 `HiddenApiBypass.setHiddenApiExemptions("")`，反射隐藏 API 的前提成立。
+
+**验证**：最终构建 `BUILD SUCCESSFUL`（2m47s）；三包 sha256 已入 README；testkey 版 `apksigner verify` 单签名、指纹 `a40da8…f5dc`、`zipalign -c` 通过；`classes.dex` 检出 `IDevicePolicyManager$Stub`、`ShizukuBinderWrapper`、「第 6b 步」、`无参 forceUpdateUserSetupComplete 也失败`、`shell 身份调用被系统拒绝`，且负向对照串计数为 0，确认是本轮代码而非旧产物。
 
 **仍未覆盖**：无 ColorOS 真机，`mService` 字段与 `Stub.asInterface` 按 AOSP 实现写但没跑过；`checkDeviceOwnerProvisioningPreConditionLocked` 的定义未取到（抓取只有调用点），`isAdb=true` 分支的具体判据是按错误文案反推的。定位仍需用户侧一次失败日志。
 

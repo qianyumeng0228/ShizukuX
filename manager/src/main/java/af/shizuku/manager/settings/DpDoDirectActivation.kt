@@ -467,7 +467,7 @@ object DpDoDirectActivation {
             // ---------- 第 6 步：setDeviceOwner（应用自身身份） ----------
             note("")
             note("> 第 6 步：反射调用 setDeviceOwner(self, …, 0)")
-            val selfCode = invokeSetDeviceOwner(dpm, admin, 0, note)
+            val selfAttempt = invokeSetDeviceOwner(dpm, admin, 0, note)
 
             var nowOwner = runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)
             note("复查 isDeviceOwnerApp($pkg) = $nowOwner")
@@ -505,15 +505,12 @@ object DpDoDirectActivation {
             }
 
             // 两条路径都被拒：分别给出判决，避免只看到一个笼统的「被拒绝」。
-            val primary = when {
-                selfCode != null -> explainStatusCode(selfCode)
-                else -> "应用自身身份：调用抛出异常且未能识别原因（见上方日志的系统原文）"
+            val primary = if (selfAttempt.code == null && selfAttempt.systemMessage == null) {
+                "调用抛出异常且没能读出原因（见上方日志的系统原文）"
+            } else {
+                explainAttempt(selfAttempt)
             }
-            val secondary = when {
-                shellOutcome.code != null -> explainStatusCode(shellOutcome.code)
-                shellOutcome.error != null -> "shell 身份：调用抛出异常 —— ${shellOutcome.error}"
-                else -> "shell 身份：未能完成调用（见上方日志）"
-            }
+            val secondary = shellOutcome.error ?: explainAttempt(shellOutcome.attempt)
             val bothMessage = buildString {
                 append("两条身份路径都被系统拒绝，激活未完成。\n\n")
                 append("① 应用自身身份（isAdb=false）：").append(primary).append("\n\n")
@@ -521,10 +518,11 @@ object DpDoDirectActivation {
                 append(signingHint(context))
             }
 
-            return when {
-                selfCode != null -> ActivationResult(Stage.SET_OWNER_REJECTED, false, bothMessage, log)
-                else -> ActivationResult(Stage.SET_OWNER_THREW, false, bothMessage, log)
-            }
+            val rejectedBySystem = selfAttempt.code != null || selfAttempt.systemMessage != null
+            return ActivationResult(
+                if (rejectedBySystem) Stage.SET_OWNER_REJECTED else Stage.SET_OWNER_THREW,
+                false, bothMessage, log
+            )
         } finally {
             // ---------- 第 7 步：恢复向导状态 ----------
             if (needRestore) {
@@ -541,9 +539,9 @@ object DpDoDirectActivation {
     // shell 身份通道（Dhizuku 的 mService 替换法）
     // ---------------------------------------------------------------------
 
-    /** shell 身份路径的判决：`code` 是 `STATUS_*`，`error` 是通道或反射异常摘要。 */
+    /** shell 身份路径的判决：`attempt` 是 DPMS 的回应，`error` 是通道或授权异常摘要。 */
     private data class ShellOwnerOutcome(
-        val code: Int?,
+        val attempt: OwnerAttempt?,
         val error: String?
     )
 
@@ -561,6 +559,7 @@ object DpDoDirectActivation {
     private fun <T> withShellService(
         dpm: DevicePolicyManager,
         note: (String) -> Unit,
+        onCallError: ((String) -> Unit)? = null,
         block: () -> T
     ): T? {
         if (!Shizuku.pingBinder()) {
@@ -601,7 +600,11 @@ object DpDoDirectActivation {
             block()
         } catch (t: Throwable) {
             val real = unwrap(t)
-            note("  x shell 身份调用抛出：${real?.javaClass?.simpleName}: ${real?.message}")
+            val desc = "${real?.javaClass?.simpleName}: ${real?.message}"
+            note("  x shell 身份调用抛出：$desc")
+            // 与「通道不可用」区分开：这里 Binder 已经换成 shell 了，失败是系统拒绝，
+            // 不是替换失败，混在一起会得出错误结论。
+            onCallError?.invoke(desc)
             null
         } finally {
             runCatching { field.set(dpm, original) }
@@ -620,19 +623,24 @@ object DpDoDirectActivation {
         userId: Int,
         note: (String) -> Unit
     ): ShellOwnerOutcome {
-        var code: Int? = null
-        val switched = withShellService(dpm, note) {
+        var attempt: OwnerAttempt? = null
+        var callError: String? = null
+        val switched = withShellService(dpm, note, onCallError = { callError = it }) {
             note("  · 同步向导闸内存态（shell 身份）")
             invokeForceUpdateUserSetupComplete(dpm, userId, note)
             note("  · 注册设备管理员（shell 身份，refreshing=true）")
             invokeSetActiveAdmin(dpm, admin, note)
             note("  · 以 shell 身份调用 setDeviceOwner")
-            code = invokeSetDeviceOwner(dpm, admin, userId, note)
+            attempt = invokeSetDeviceOwner(dpm, admin, userId, note)
             true
         } ?: false
-        val error = if (switched) null else "shell 身份通道不可用（服务未运行或 mService 不可替换）"
-        note("  shell 身份路径结果：code=${code ?: "(无)"} error=${error ?: "(无)"}")
-        return ShellOwnerOutcome(code, error)
+        val error = when {
+            callError != null -> "shell 身份调用被系统拒绝 —— $callError"
+            !switched -> "shell 身份通道不可用（服务未运行或 mService 不可替换）"
+            else -> null
+        }
+        note("  shell 身份路径结果：code=${attempt?.code ?: "(无)"} error=${error ?: "(无)"}")
+        return ShellOwnerOutcome(attempt, error)
     }
 
     // ---------------------------------------------------------------------
@@ -653,18 +661,30 @@ object DpDoDirectActivation {
         dpm: DevicePolicyManager,
         userId: Int,
         note: (String) -> Unit
-    ): Boolean = try {
-        val method = DevicePolicyManager::class.java.getMethod(
-            "forceUpdateUserSetupComplete", Integer.TYPE
-        )
-        method.invoke(dpm, userId)
-        note("v forceUpdateUserSetupComplete($userId) 调用成功")
-        true
-    } catch (t: Throwable) {
-        val real = unwrap(t)
-        note("  forceUpdateUserSetupComplete 失败：${real?.javaClass?.simpleName}: ${real?.message}")
-        Timber.tag(TAG).w(real ?: t, "forceUpdateUserSetupComplete failed")
-        false
+    ): Boolean {
+        try {
+            val method = DevicePolicyManager::class.java.getMethod(
+                "forceUpdateUserSetupComplete", Integer.TYPE
+            )
+            method.invoke(dpm, userId)
+            note("v forceUpdateUserSetupComplete($userId) 调用成功")
+            return true
+        } catch (t: Throwable) {
+            val real = unwrap(t)
+            note("  单参 forceUpdateUserSetupComplete 失败：${real?.javaClass?.simpleName}: ${real?.message}")
+        }
+        // 部分分支只保留无参版本（Dhizuku 也做了同样的回退），再试一次。
+        return try {
+            val noArg = DevicePolicyManager::class.java.getMethod("forceUpdateUserSetupComplete")
+            noArg.invoke(dpm)
+            note("v forceUpdateUserSetupComplete()（无参版本）调用成功")
+            true
+        } catch (t2: Throwable) {
+            val real2 = unwrap(t2)
+            note("  无参 forceUpdateUserSetupComplete 也失败：${real2?.javaClass?.simpleName}: ${real2?.message}")
+            Timber.tag(TAG).w(real2 ?: t2, "forceUpdateUserSetupComplete failed")
+            false
+        }
     }
 
     /**
@@ -708,19 +728,19 @@ object DpDoDirectActivation {
      * 签名在 Android 14 发生断裂：
      * | 版本 | 签名 |
      * | Android 13 | `setDeviceOwner(ComponentName, String ownerName, int userId)` |
-     * | Android 14+ | `setDeviceOwner(ComponentName, int userId)` |
+     * | Android 14+ | `setDeviceOwner(ComponentName, int userId)`（内部转 `mService.setDeviceOwner(who, userId, true)`） |
      *
-     * @return STATUS_OK / 其它错误码；抛异常时返回 null。
+     * 返回值里带回系统原文：AOSP 的 `STATUS_*` 数值不在公开 SDK 中，按文案反查出来的数字
+     * 在不同分支上未必对得上，所以有原文时一律以原文为准解释。
      */
     private fun invokeSetDeviceOwner(
         dpm: DevicePolicyManager,
         admin: ComponentName,
         userId: Int,
         note: (String) -> Unit
-    ): Int? {
+    ): OwnerAttempt {
         val twoArgsFirst = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE // API 34
         val order = if (twoArgsFirst) listOf(false, true) else listOf(true, false)
-        var lastError: Throwable? = null
 
         for (useThreeArgs in order) {
             try {
@@ -745,36 +765,36 @@ object DpDoDirectActivation {
                 }
                 val ok = (result as? Boolean) ?: false
                 note("  setDeviceOwner 调用成功（${if (useThreeArgs) "三参 / Android 13" else "两参 / Android 14+"}），返回：$ok")
-                return if (ok) STATUS_OK else STATUS_REJECTED_GENERIC
+                return if (ok) OwnerAttempt(STATUS_OK, null) else OwnerAttempt(STATUS_REJECTED_GENERIC, null)
             } catch (t: Throwable) {
-                lastError = t
                 val real = unwrap(t)
-                note("  setDeviceOwner(${if (useThreeArgs) "三参" else "两参"}) 失败：${real?.javaClass?.simpleName}: ${real?.message}")
+                note("  setDeviceOwner(${if (useThreeArgs) "三参" else "两参"}) 抛出：${real?.javaClass?.simpleName}: ${real?.message}")
+                if (real == null) return OwnerAttempt(null, null)
+                if (real is NoSuchMethodException) {
+                    // 当前版本没有这个重载，继续试另一种签名。
+                    continue
+                }
+                // 方法存在、但系统拒绝：这就是真实判决，不能再回退去试另一种重载。
+                // 否则 A16 上三参已不存在，后一次尝试的 NoSuchMethodException 会盖掉
+                // 第一次的真实原因（比如 SecurityException / 账户非空），日志就骗人了。
+                val message = real.message
+                note("  系统原文：${message ?: "(无)"}")
+                if (real.javaClass.name.endsWith("ServiceSpecificException")) {
+                    val code = runCatching {
+                        real.javaClass.getMethod("getErrorCode").invoke(real) as? Int
+                    }.getOrNull()
+                    note("  识别为 ServiceSpecificException（Android 14+ 路径），errorCode=$code")
+                    return OwnerAttempt(code, message)
+                }
+                // 任何异常都保留原文：SecurityException（缺 MANAGE_PROFILE_AND_DEVICE_OWNERS）
+                // 与厂商自定义异常的真实理由只在这一行里能看见。
+                Timber.tag(TAG).w(real, "setDeviceOwner threw")
+                return OwnerAttempt(errorCodeFromMessage(message), message)
             }
         }
 
-        val real = unwrap(lastError)
-        if (real == null) return null
-
-        // Android 14+ 的 provisioning 失败可能是 ServiceSpecificException（hidden API，
-        // 不直接引用类型，按类名匹配并反射 getErrorCode()）。
-        val realClassName = real.javaClass.name
-        if (realClassName.endsWith("ServiceSpecificException")) {
-            val code = runCatching {
-                real.javaClass.getMethod("getErrorCode").invoke(real) as? Int
-            }.getOrNull()
-            note("  识别为 ServiceSpecificException（Android 14+ 路径），errorCode=$code")
-            note("  系统原文：${real.message}")
-            return code?.takeIf { it != 0 } ?: errorCodeFromMessage(real.message) ?: STATUS_REJECTED_GENERIC
-        }
-
-        if (real is IllegalStateException || real is IllegalArgumentException) {
-            note("  系统原文：${real.message}")
-            return errorCodeFromMessage(real.message) ?: STATUS_REJECTED_GENERIC
-        }
-
-        Timber.tag(TAG).w(real, "setDeviceOwner threw")
-        return null
+        // 两种签名都不存在（极不寻常）：没有可用的判决信息。
+        return OwnerAttempt(null, null)
     }
 
     /** 剥掉 `InvocationTargetException` 包装，取出真实异常。 */
@@ -805,6 +825,57 @@ object DpDoDirectActivation {
             m.contains("already paired", true) -> 7                   // STATUS_HAS_PAIRED
             else -> null
         }
+    }
+
+    /** 一次 `setDeviceOwner` 尝试的判决：`code` 是反查出来的 `STATUS_*`，`systemMessage` 是系统原文。 */
+    private data class OwnerAttempt(
+        val code: Int?,
+        val systemMessage: String?
+    )
+
+    /**
+     * 把一次尝试翻译成人话。
+     *
+     * 有系统原文时按原文判读：`STATUS_*` 的真实数值不在公开 SDK 里，`errorCodeFromMessage`
+     * 的映射一旦与某分支的实际常量对不上，纯按数字解释就会张冠李戴（把账户问题说成分身问题）。
+     */
+    private fun explainAttempt(attempt: OwnerAttempt?): String {
+        if (attempt == null) return "调用抛出异常且没能读出原因（见日志「系统原文」一行）"
+        val msg = attempt.systemMessage?.trim()
+        if (!msg.isNullOrEmpty()) {
+            return when {
+                msg.contains("already set-up", true) ->
+                    "设备已完成开机向导，且临时置 0 没生效（系统原文：$msg）"
+
+                msg.contains("already some accounts", true) ->
+                    "设备上存在账户（系统原文：$msg）"
+
+                msg.contains("already several users", true) ->
+                    "存在第二用户 / 工作资料 / 应用分身（系统原文：$msg）"
+
+                msg.contains("already paired", true) ->
+                    "设备已与其它设备配对（系统原文：$msg）"
+
+                msg.contains("device owner is already set", true) ->
+                    "设备已有设备所有者（系统原文：$msg）"
+
+                msg.contains("already has a profile owner", true) ->
+                    "当前用户已有资料所有者（系统原文：$msg）"
+
+                msg.contains("is not system user", true) ->
+                    "目标用户不是机主（系统原文：$msg）"
+
+                msg.contains("not running", true) ->
+                    "目标用户未运行（系统原文：$msg）"
+
+                msg.contains("unsupported DPC", true) ->
+                    "该 DPC 不支持无头设备所有者模式（系统原文：$msg）"
+
+                else -> "系统拒绝（系统原文：$msg）"
+            }
+        }
+        if (attempt.code == null) return "调用抛出异常且没能读出原因（见日志「系统原文」一行）"
+        return explainStatusCode(attempt.code)
     }
 
     /** 把 provisioning 错误码翻译成可读原因。 */
