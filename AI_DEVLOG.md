@@ -146,6 +146,14 @@ Things discussed or sketched that we never formally decided to build.
 
 **注意**：`AUTO_START` 分支与 OPPO 签名结论都只在代码和上游资料层面确认，没有 ColorOS 真机；手势只能靠手感判断；模块页以外的其他 pager 托管页底部留白没有逐一核对。
 
+**OPPO 渠道包（同日补做）**：社区里两种说法拼起来就是答案——OwnDroid「单独出 testkey 版本」，管理员补一句「这个 testkey 是 AOSP 的，ColorOS 只接受这个签名，也就是 MT 的默认签名」。拿用户提供的 `ColorAOSP` 包验了一遍，它的证书正是 AOSP testkey（`a40da80a59d170caa950cf15c18c454d47a39b26989d8b640ecd745ba71bf5dc`，`CN=Android, O=Android, android@android.com`）。
+
+于是从 AOSP `platform/build` 取 `testkey.pk8` / `testkey.x509.pem`，转成 JKS，对 k2806 的 dropin 包重签，产出 `ShizukuX-13.7.0.k2806-oppo-testkey.apk`。证书指纹与 Dhizuku `-testkey`、OwnDroid testkey 版、ColorAOSP 完全一致，`apksigner verify` 单签名、`zipalign -c` 通过。
+
+包名仍是 `moe.shizuku.privileged.api`（Dhizuku 兼容层的 authority 与包名绑定，不改），代价是与自签 dropin 同包名不同签名——**装 OPPO 版前必须卸载现有 Shizuku / ShizukuX**，卸载会清数据、需要重新授权。这也是 Dhizuku 官方发 testkey 包时的既有形态。
+
+未在真机安装：本机 adb 已掉线，且卸载重装会拆掉当前验证环境。可用证据是两包证书指纹不同（`a5451d07…` vs `a40da80a…`），足以说明系统会以 `INSTALL_FAILED_UPDATE_INCOMPATIBLE` 拒绝覆盖。
+
 ### 2026-11-18 — k2805：服务断开时页面还在挂旧读数，而且会弹一个"操作未完成"
 
 k2804 的监听只在"变成 RUNNING"时 `load()`，反方向没管。结果是服务一断，页面把上一份读数继续挂在屏幕上——用户看到"设置还在"，可开关其实已经点不动；等真去点，失败提示又很像"要重做一遍"。同一件事的两个方向都要处理，只补一边等于把误导换个位置。
