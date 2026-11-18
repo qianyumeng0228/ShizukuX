@@ -12,6 +12,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import af.shizuku.manager.R
+import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.database.DhizukuAppManager
 import af.shizuku.manager.database.DhizukuAppRoom
 import com.google.android.material.button.MaterialButton
@@ -91,6 +92,10 @@ class DhizukuAppsAdapter(
             allowSwitch.setOnCheckedChangeListener { _, isChecked ->
                 val sig = getAppSignature(context, item.uid) ?: ""
                 DhizukuAppManager.setAllowed(item.uid, sig, isChecked)
+                // Turning access off has to take the delegated scopes with it. They live in the
+                // system and are exercised on the client's own uid, so flipping the switch alone
+                // would leave a "not allowed" app still able to drive DevicePolicyManager.
+                if (!isChecked) AuthorizationManager.clearDhizukuScopes(item.packageName)
                 onChanged()
             }
 
@@ -98,6 +103,7 @@ class DhizukuAppsAdapter(
             blockButton.setOnClickListener {
                 val sig = getAppSignature(context, item.uid) ?: ""
                 DhizukuAppManager.setBlocked(item.uid, sig, !blocked)
+                if (!blocked) AuthorizationManager.clearDhizukuScopes(item.packageName)
                 onChanged()
             }
         }

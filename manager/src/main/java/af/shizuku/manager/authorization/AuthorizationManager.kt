@@ -1,15 +1,23 @@
 package af.shizuku.manager.authorization
 
+import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Parcel
 import af.shizuku.manager.BuildConfig
 import af.shizuku.manager.Manifest
+import af.shizuku.manager.ShizukuApplication
+import af.shizuku.manager.admin.DhizukuAdminReceiver
+import af.shizuku.manager.database.DhizukuAppManager
 import af.shizuku.manager.utils.Logger.LOGGER
 import af.shizuku.manager.utils.ShizukuSystemApis
 import rikka.shizuku.server.ServerConstants
 import rikka.parcelablelist.ParcelableListSlice
 import rikka.shizuku.Shizuku
+import timber.log.Timber
+import java.security.MessageDigest
 import java.util.*
 
 object AuthorizationManager {
@@ -146,6 +154,13 @@ object AuthorizationManager {
     }
 
     fun revoke(packageName: String, uid: Int) {
+        // Dhizuku access goes first and always. A Dhizuku grant is a second, independent
+        // permission with its own consequences: the app may keep driving DevicePolicyManager
+        // through delegated scopes long after its Shizuku flag is gone, so revoking only the
+        // flag leaves a "revoked" app in working order. Clearing the grant and the delegations
+        // before the Shizuku call, and not inside its catch, is what makes a revoke final.
+        revokeDhizukuGrant(packageName, uid)
+        clearDhizukuScopes(packageName)
         try {
             if (Shizuku.isPreV11()) {
                 ShizukuSystemApis.revokeRuntimePermission(packageName, Manifest.permission.API_V23, uid / 100000)
@@ -154,6 +169,61 @@ object AuthorizationManager {
             }
         } catch (e: Throwable) {
             // Ignore error from incompatible server
+        }
+    }
+
+    /**
+     * Turn this app's Dhizuku grant off without deleting the record.
+     *
+     * The record is kept with `allowApi = false` so the Dhizuku screen still shows the app as
+     * refused instead of making it look like it never asked. Only an existing record is touched:
+     * revoking a Shizuku permission must not create a Dhizuku entry for an app that never used it.
+     */
+    private fun revokeDhizukuGrant(packageName: String, uid: Int) {
+        try {
+            val ctx = ShizukuApplication.appContext
+            DhizukuAppManager.ensureInitialized(ctx)
+            if (DhizukuAppManager.findByUid(uid) == null) return
+            DhizukuAppManager.setAllowed(uid, signatureOf(packageName), false)
+        } catch (t: Throwable) {
+            Timber.w(t, "clearing the Dhizuku grant failed for %s", packageName)
+        }
+    }
+
+    /** SHA-256 of the app's signing certificate, the fingerprint DhizukuProvider compares. */
+    private fun signatureOf(packageName: String): String {
+        return try {
+            val info = ShizukuApplication.appContext.packageManager
+                .getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            val signature = info.signatures?.firstOrNull()?.toByteArray() ?: return ""
+            MessageDigest.getInstance("SHA-256").digest(signature)
+                .joinToString("") { String.format("%02x", it) }
+        } catch (t: Throwable) {
+            ""
+        }
+    }
+
+    /**
+     * Drop every DevicePolicyManager delegation we handed to [packageName].
+     *
+     * Delegated scopes live in the system, not in our storage: a client that asked for them
+     * (Hail takes DELEGATION_BLOCK_UNINSTALL to freeze apps) can call the DPM on its own uid
+     * afterwards, whether or not our own record still allows it. Removing the record alone
+     * therefore does not remove the power. No-op unless this app is the owner.
+     */
+    fun clearDhizukuScopes(packageName: String) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        if (packageName.isEmpty()) return
+        try {
+            val ctx = ShizukuApplication.appContext
+            val dpm = ctx.getSystemService(DevicePolicyManager::class.java) ?: return
+            if (!dpm.isDeviceOwnerApp(ctx.packageName) && !dpm.isProfileOwnerApp(ctx.packageName)) return
+            val admin = ComponentName(ctx, DhizukuAdminReceiver::class.java)
+            if (dpm.getDelegatedScopes(admin, packageName).isEmpty()) return
+            dpm.setDelegatedScopes(admin, packageName, emptyList())
+            Timber.i("Dhizuku scopes cleared for %s", packageName)
+        } catch (t: Throwable) {
+            Timber.w(t, "clearing the Dhizuku scopes failed for %s", packageName)
         }
     }
 }

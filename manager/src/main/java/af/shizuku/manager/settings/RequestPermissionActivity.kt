@@ -10,6 +10,7 @@ import android.os.Looper
 import androidx.appcompat.app.AppCompatActivity
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
+import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.database.DhizukuAppManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.rosan.dhizuku.aidl.IDhizukuRequestPermissionListener
@@ -95,6 +96,13 @@ class RequestPermissionActivity : AppCompatActivity() {
             val signature = DhizukuAppsAdapter.getAppSignature(this, targetUid) ?: ""
             val allowed = grantResult == PackageManager.PERMISSION_GRANTED
             DhizukuAppManager.setAllowed(targetUid, signature, allowed)
+            // A deny must also strip anything this app was delegated earlier: those scopes work
+            // on the client's own uid and would keep working for an app the user just refused.
+            if (!allowed) {
+                packageManager.getPackagesForUid(targetUid)?.firstOrNull()?.let {
+                    AuthorizationManager.clearDhizukuScopes(it)
+                }
+            }
             Timber.tag(TAG).i("uid=$targetUid result=${if (allowed) "granted" else "denied"}")
         }
         // The client app may have died/unbound during the dialog; a dead binder would otherwise
