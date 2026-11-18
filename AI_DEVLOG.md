@@ -123,6 +123,16 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2803：重启后自动旋转被写回 1，是因为没人把它改回去，而采样又把 1 当成了用户选择
+
+重启后实测 `accelerometer_rotation` 一定是 1，跟重启前用户设的什么无关——这是平台的默认值，不是我们写的。真正的问题在两头：一头是没有东西把它改回去；另一头是 `HidingWatchService` 启动后的第一轮空闲采样读到这个 1，把它记成"用户的选择"，从此每次恢复都往 1 写。
+
+现在加 `AutoRotatePreference`：只在用户自己点开关、并且平台回读确认已生效时记一份（`DeviceControlManager.setAutoRotate`），采样值一律不采信——采样回答的是"现在是什么"，不是"用户要什么"。开机时 `BootRestoreReceiver` 在 refresh 之前先比对并写回，顺序不能反，否则采样又抢在前面。
+
+顺带把 `resetAfterBoot()` 清掉 `KEY_IDLE_ACC`：重启前的采样值配上重启后的平台默认值，等于把最不该用的那份组合拿去当目标。
+
+**验证**：k2803 装机后方向回归通过——Chrome 内 `acc=0 / urm=lock 0 / fixed=enabled`，回桌面 `acc=1 / urm=free / fixed=disabled`。开机链路在真实重启里通了（`BOOT_COMPLETED` 送达、`HidingWatchService` 由应用自己拉起、server 在跑），但**写回本身没有在重启场景跑过**：设备重启后停在锁屏，脚本解不了锁。OPPO 侧仍无真机。
+
 ### 2026-11-18 — k2802：OPPO 反馈没解决，恢复少了一条 `wm user-rotation`，以及重启后到底丢了什么
 
 上一版（k2801）在小米 13 Pro 上三条路径都对，OPPO 用户仍然复现。这轮先把上游看了一遍：Shizuku-Next 的 `restore` 是 `fixed-to-user → accelerometer_rotation → user_rotation → wm user-rotation`，我们 r2795 因为 HyperOS 上 `free` 会写 `accelerometer_rotation=1` 而把最后一条整个删了。删得过头了——ColorOS 的快捷开关读的是 `user-rotation` 的 `free`/`lock N`，不是那个 settings 键，所以 `accelerometer_rotation` 回到 0 之后图标照样亮着。现在按基线成对写：`accelerometer_rotation=0` 补 `wm user-rotation lock <user_rotation>`，`=1` 补 `wm user-rotation free`。两个值与 settings 键本来就一致（`free` 写 1、`lock N` 写 0），所以 HyperOS 上不会互踩，真机两条路径都回归通过。
