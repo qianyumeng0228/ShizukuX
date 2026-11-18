@@ -108,5 +108,5 @@ git -C F:\shizukux\ShizukuX push gitee master
 
 ---
 
-**当前基线**：`master` @ `66a09843`，13.7.0.k2813，已装 `bc757a76`
+**当前基线**：13.7.0.k2813，已装 `bc757a76`（APK 构建于 `2f32c618`，本文档补记于其后一次提交）
 **维护人**：qianyumeng0228
