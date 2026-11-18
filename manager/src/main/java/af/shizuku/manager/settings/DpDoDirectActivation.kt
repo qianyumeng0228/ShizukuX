@@ -5,8 +5,11 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.IBinder
+import android.os.IInterface
 import android.os.Process
 import rikka.shizuku.Shizuku
+import rikka.shizuku.ShizukuBinderWrapper
 import timber.log.Timber
 
 /**
@@ -461,35 +464,66 @@ object DpDoDirectActivation {
             }
             note("v 已成为设备管理员")
 
-            // ---------- 第 6 步：setDeviceOwner ----------
+            // ---------- 第 6 步：setDeviceOwner（应用自身身份） ----------
             note("")
             note("> 第 6 步：反射调用 setDeviceOwner(self, …, 0)")
-            val ownerCode = invokeSetDeviceOwner(dpm, admin, 0, note)
+            val selfCode = invokeSetDeviceOwner(dpm, admin, 0, note)
 
-            val nowOwner = runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)
+            var nowOwner = runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)
             note("复查 isDeviceOwnerApp($pkg) = $nowOwner")
-
-            return when {
-                nowOwner -> ActivationResult(
+            if (nowOwner) {
+                return ActivationResult(
                     Stage.OK, true,
                     "已成功激活设备所有者（非 ADB 直连路径，未删除账户、未关闭应用分身）。",
                     log
                 )
+            }
 
-                ownerCode != null -> ActivationResult(
-                    Stage.SET_OWNER_REJECTED, false, explainStatusCode(ownerCode) + signingHint(context), log
-                )
+            // ---------- 第 6b 步：改用 shell 身份重试 ----------
+            // Dhizuku 的做法是把这个 dpm 实例的私有字段 mService 换成 ShizukuBinderWrapper，
+            // 之后照常调用 dpm 的方法，Binder 调用者就变成 shell(2000)。两者的差别正是
+            // DPMS 里的 `isAdb(caller)`：shell 走 if 分支（查账户 / 分身 / 向导闸），
+            // 应用自身走 else 分支（只查向导闸，但要求 MANAGE_PROFILE_AND_DEVICE_OWNERS）。
+            // 厂商 ROM 可能只放行其中一条，所以两条都试，日志分别留证。
+            note("")
+            note("> 第 6b 步：换 shell(2000) 身份重试 setDeviceOwner（Dhizuku 同款 mService 替换）")
+            note("  与第 6 步的唯一差别是 Binder 调用者身份；此分支会受账户 / 分身 / 向导闸约束")
+            val userList = shell("cmd user list 2>/dev/null")?.output
+                ?.lineSequence()?.filter { it.isNotBlank() }?.joinToString(" ; ")
+                ?: "(未取到)"
+            note("  cmd user list：$userList")
 
-                else -> ActivationResult(
-                    Stage.SET_OWNER_THREW, false,
-                    "setDeviceOwner 调用抛出异常且未能识别原因，激活未完成。\n\n" +
-                            "常见原因：\n" +
-                            "① 设备已完成开机向导，且临时置 0 未生效；\n" +
-                            "② DP Role 权限尚未异步落地（可稍等数秒重试）；\n" +
-                            "③ 本应用尚未成为 active admin；\n" +
-                            "④ 厂商 ROM 封锁了该 API。" + signingHint(context),
+            val shellOutcome = activateAsShellIdentity(dpm, admin, 0, note)
+            nowOwner = runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)
+            note("复查 isDeviceOwnerApp($pkg) = $nowOwner")
+            if (nowOwner) {
+                return ActivationResult(
+                    Stage.OK, true,
+                    "已成功激活设备所有者（以 shell 身份完成，未删除账户、未关闭应用分身）。",
                     log
                 )
+            }
+
+            // 两条路径都被拒：分别给出判决，避免只看到一个笼统的「被拒绝」。
+            val primary = when {
+                selfCode != null -> explainStatusCode(selfCode)
+                else -> "应用自身身份：调用抛出异常且未能识别原因（见上方日志的系统原文）"
+            }
+            val secondary = when {
+                shellOutcome.code != null -> explainStatusCode(shellOutcome.code)
+                shellOutcome.error != null -> "shell 身份：调用抛出异常 —— ${shellOutcome.error}"
+                else -> "shell 身份：未能完成调用（见上方日志）"
+            }
+            val bothMessage = buildString {
+                append("两条身份路径都被系统拒绝，激活未完成。\n\n")
+                append("① 应用自身身份（isAdb=false）：").append(primary).append("\n\n")
+                append("② shell 身份（isAdb=true）：").append(secondary)
+                append(signingHint(context))
+            }
+
+            return when {
+                selfCode != null -> ActivationResult(Stage.SET_OWNER_REJECTED, false, bothMessage, log)
+                else -> ActivationResult(Stage.SET_OWNER_THREW, false, bothMessage, log)
             }
         } finally {
             // ---------- 第 7 步：恢复向导状态 ----------
@@ -501,6 +535,104 @@ object DpDoDirectActivation {
                 note("  三键导航的 Home / 最近任务键应已恢复")
             }
         }
+    }
+
+    // ---------------------------------------------------------------------
+    // shell 身份通道（Dhizuku 的 mService 替换法）
+    // ---------------------------------------------------------------------
+
+    /** shell 身份路径的判决：`code` 是 `STATUS_*`，`error` 是通道或反射异常摘要。 */
+    private data class ShellOwnerOutcome(
+        val code: Int?,
+        val error: String?
+    )
+
+    /**
+     * 把本进程 `DevicePolicyManager` 实例的私有字段 `mService` 临时替换为
+     * `ShizukuBinderWrapper(原 binder)`，让后续 `dpm.xxx()` 的 Binder 调用以 shell(2000)
+     * 身份抵达 DPMS，结束后无条件还原。
+     *
+     * 与 Dhizuku 的 `requireBinderWrapperDevicePolicyManager` 同一手法：不改接口面，只换底层
+     * Binder，因此 `DevicePolicyManager` 的 Java 层封装（含 A14+ 的两参 `setDeviceOwner`）
+     * 全部照旧可用。
+     *
+     * @return null 表示通道不可用（服务未运行 / ROM 裁剪了 mService 字段 / 包装失败）。
+     */
+    private fun <T> withShellService(
+        dpm: DevicePolicyManager,
+        note: (String) -> Unit,
+        block: () -> T
+    ): T? {
+        if (!Shizuku.pingBinder()) {
+            note("  ! ShizukuX 服务未运行，无法切换到 shell 身份")
+            return null
+        }
+        val field = runCatching {
+            DevicePolicyManager::class.java.getDeclaredField("mService").apply { isAccessible = true }
+        }.getOrNull()
+        if (field == null) {
+            note("  ! 反射 DevicePolicyManager#mService 失败（该 ROM 裁剪了此字段）")
+            return null
+        }
+        val original = runCatching { field.get(dpm) as? IInterface }.getOrNull()
+        val originalBinder = original?.asBinder()
+        if (originalBinder == null) {
+            note("  ! mService 不是可用的 IInterface，无法包装")
+            return null
+        }
+        val asInterface = runCatching {
+            Class.forName("android.app.admin.IDevicePolicyManager\$Stub")
+                .getMethod("asInterface", IBinder::class.java)
+        }.getOrNull()
+        if (asInterface == null) {
+            note("  ! 找不到 IDevicePolicyManager\$Stub.asInterface")
+            return null
+        }
+        val wrapped = runCatching {
+            asInterface.invoke(null, ShizukuBinderWrapper(originalBinder))
+        }.getOrNull()
+        if (wrapped == null) {
+            note("  ! ShizukuBinderWrapper 包装失败")
+            return null
+        }
+        return try {
+            field.set(dpm, wrapped)
+            note("  v mService 已替换为 ShizukuBinderWrapper（Binder 调用者 = shell）")
+            block()
+        } catch (t: Throwable) {
+            val real = unwrap(t)
+            note("  x shell 身份调用抛出：${real?.javaClass?.simpleName}: ${real?.message}")
+            null
+        } finally {
+            runCatching { field.set(dpm, original) }
+            note("  · mService 已还原为进程原始 binder")
+        }
+    }
+
+    /**
+     * 以 shell 身份完整走一遍 forceUpdate + setActiveAdmin + setDeviceOwner。
+     *
+     * 各步复用应用侧的反射封装——`mService` 已被替换，所以这些调用此刻就是 shell 身份。
+     */
+    private fun activateAsShellIdentity(
+        dpm: DevicePolicyManager,
+        admin: ComponentName,
+        userId: Int,
+        note: (String) -> Unit
+    ): ShellOwnerOutcome {
+        var code: Int? = null
+        val switched = withShellService(dpm, note) {
+            note("  · 同步向导闸内存态（shell 身份）")
+            invokeForceUpdateUserSetupComplete(dpm, userId, note)
+            note("  · 注册设备管理员（shell 身份，refreshing=true）")
+            invokeSetActiveAdmin(dpm, admin, note)
+            note("  · 以 shell 身份调用 setDeviceOwner")
+            code = invokeSetDeviceOwner(dpm, admin, userId, note)
+            true
+        } ?: false
+        val error = if (switched) null else "shell 身份通道不可用（服务未运行或 mService 不可替换）"
+        note("  shell 身份路径结果：code=${code ?: "(无)"} error=${error ?: "(无)"}")
+        return ShellOwnerOutcome(code, error)
     }
 
     // ---------------------------------------------------------------------

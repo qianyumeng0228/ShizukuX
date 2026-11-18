@@ -123,6 +123,29 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-18 — k2807：testkey 也激活不了，回到代码把 Dhizuku 的身份路径补齐
+
+**起点**：k2806 的 `-oppo-testkey` 包实测装上后，直连激活仍然失败。上一版把原因归给"签名白名单"，被实装结果否掉了，只能重新取证。
+
+**Dhizuku 真正的手法**（`ActivateViewModel.kt` → `requireBinderWrapperDevicePolicyManager`）：不看 Binder 接口面，而是反射把本进程 `DevicePolicyManager` 的私有字段 `mService` 换成 `ShizukuBinderWrapper(原 binder)`，然后**照旧调用 `DevicePolicyManager` 的方法**（`setActiveAdmin` / `setDeviceOwner` / `forceUpdateUserSetupComplete`），`finally` 还原。Java 对象和方法都没变，变的只有 Binder 的目标，所以到达 DPMS 的调用者是 shell(2000)。
+
+**两条路径的分野**（AOSP main `DevicePolicyManagerService.java` 原文）：
+
+```java
+boolean hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccountsOnAnyUser();
+```
+
+- 应用自身身份（本项目原来那条）：该变量恒真 → 跳过"非 test-only 且存在账户就拒"，账户/分身/多用户都不参与；但紧接的 `enforceCanSetDeviceOwnerLocked` 里非 ADB 分支第一句就是 `Preconditions.checkCallAuthorization(hasCallingOrSelfPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS))`，不满足**抛 SecurityException**。这权限靠 `DEVICE_POLICY_MANAGEMENT` Role 换来，ROM 裁掉角色这条就死。
+- shell 身份（Dhizuku 那条）：不要这个权限，但要过 `checkDeviceOwnerProvisioningPreConditionLocked(..., isAdb=true, ...)`，账户/多用户/向导闸/`STATUS_HAS_PAIRED` 全参与。
+
+所以不是"谁更宽松"，是**卡的关卡不同**：一条卡 Role 权限，一条卡账户与分身。只试一条就判断"链路没问题、是签名问题"，正是 k2806 的错误。
+
+**本版改动**：`DpDoDirectActivation` 第 6 步（应用自身）被拒后自动进第 6b 步——用 Dhizuku 同款手法换 `mService`，以 shell 身份重跑 `forceUpdateUserSetupComplete` / `setActiveAdmin` / `setDeviceOwner`，无条件还原；失败时结果框**分列两条路径的判决**，日志带 `cmd user list` 与每步系统原文，可一键复制。
+
+**验证**：`BUILD SUCCESSFUL`（dropin 6m52s / standard 5m11s）；三包 sha256 已入 README；testkey 版 `apksigner verify` 单签名、指纹 `a40da8…f5dc`、`zipalign -c` 通过；`classes.dex` 中检出 `android.app.admin.IDevicePolicyManager$Stub` 与「第 6b 步」，确认新代码进包而非旧产物。
+
+**仍未覆盖**：无 ColorOS 真机，`mService` 字段与 `Stub.asInterface` 按 AOSP 实现写但没跑过；`checkDeviceOwnerProvisioningPreConditionLocked` 的定义未取到（抓取只有调用点），`isAdb=true` 分支的具体判据是按错误文案反推的。定位仍需用户侧一次失败日志。
+
 ### 2026-11-18 — k2806：自启动读错了 op，「别人能设设备所有者我不能」是签名不是链路
 
 **用户反馈的第一件**：系统设置里自启动是开的，ShizukuX 里是关的。查下来不是显示 bug，是读的根本不是同一个开关。旧实现只读 AOSP 的 `RUN_ANY_IN_BACKGROUND`（后台运行限制），而 ColorOS 的「自启动」是独立的 vendor op `AUTO_START`，系统设置页读写的是后者。两个开关各管一件事，任何时候都对不上。
