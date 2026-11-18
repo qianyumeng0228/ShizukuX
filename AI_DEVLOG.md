@@ -1381,6 +1381,82 @@ oppo-testkey `E32B0D45…36A5`（14,298,722 B，testkey 单签名）。
 - **写系统开关必须回读**：`settings put` 返回成功只说明命令被接受，不说明值留下了；
   HyperOS 启动阶段会重写 `accelerometer_rotation`。
 
+## 2026-11-19 · k2816–k2817：两个上游提交的取舍——expedited 启动与「撤销必须连同 Dhizuku 一起清」
+
+### 一、研究的是哪两个提交
+
+| 项 | 上游 | 内容 |
+| --- | --- | --- |
+| 6 | Shizuku-Next `5db8d002` | `AdbStartWorker.getForegroundInfo()` + `enqueue` 的 `setExpedited` + `ManualStartReceiver` 的 `replaceInFlight` |
+| 7 | ShizukuPlus `62c5beea` | 新增 `DhizukuGrants`（本地表）、`DhizukuProvider` 不再要求服务在跑、`AuthorizationManager.revoke` 先清 Dhizuku |
+
+### 二、取舍与依据
+
+**第 6 项：移植 1、2，不移植 3。**
+本项目的 `enqueue()` 是唯一入口，所有启动路径共用，没有任何一条路自带 expedited；
+`NotifAttemptReceiver` / `TileOptionsActivity` / `ShizukuTileService` / `ShizukuReceiverStarter`
+都是用户能感知的"我现在就要它起来"。上游第 3 点（`replaceInFlight`）在本项目已有等价物：
+`ShizukuReceiverStarter.start(forceStart=true)` 直接越过 10 秒的 `START_DEDUP_WINDOW_MS`
+自动启动去重门，`ManualStartReceiver` 本来就传 `true`；而 `enqueue` 用
+`ExistingWorkPolicy.REPLACE`（只有 `AdbStarter.keyOfferInFlight` 时才 KEEP）。
+
+本地化差异：manifest 里 `androidx.work.impl.foreground.SystemForegroundService` 被声明为
+`foregroundServiceType="shortService"`，不是上游的 `specialUse`。所以 `buildForegroundInfo()`
+必须用 `FOREGROUND_SERVICE_TYPE_SHORT_SERVICE`，否则 API 34+ 直接抛类型不匹配。
+
+**第 7 项：本项目 90% 已有等价物，只补"撤销不清 delegated scopes"。**
+`DhizukuAppManager`（Room）已经承担了上游 `DhizukuGrants` 的职责，`DhizukuProvider`
+的授权判定本来就先查本地表、签名 SHA-256 校验，**没有**上游那个"服务未运行就 return null"的
+gate（全仓 grep `ShizukuStateMachine` 在 `DhizukuProvider` 里 0 命中）。真正的缺口是：
+`AuthorizationManager.revoke()` 只清 Shizuku 权限位，Dhizuku 表里的 `allowApi` 和
+`setDelegatedScopes` 授权的 scope 都留在原地。
+
+刻意**不做**的两件：
+- **不把 Shizuku 授权镜像进 Dhizuku 表**（上游做法）。本项目 legacy fallback 只覆盖"从未走过
+  Dhizuku 弹窗"的老授权，镜像会扩大权限面，而且必须同时改 `revoke` 才不出现"撤销了却还能用"。
+- **不把 Room 迁到 device-protected storage**。要连带改 DB context 与迁移，收益边缘；
+  现有 `ensureInitialized` 的异常会被 catch 成拒绝，属于安全降级。
+
+### 三、改了什么
+
+第 6 项（`worker/AdbStartWorker.kt` 等）：
+1. 类开头新增 `override suspend fun getForegroundInfo()` 与 `buildForegroundInfo()`（复用
+   `ShizukuReceiverStarter.buildNotification`，SDK≥34 用 `SHORT_SERVICE`）。
+2. `awaitUnlockAndRearm()` 里内联的 `ForegroundInfo` 构造改为 `setForegroundAsync(buildForegroundInfo())`。
+3. `enqueue(context, immediate = false)`：`immediate` 时 `setExpedited(RUN_AS_NON_EXPEDITED_WORK_REQUEST)`，
+   并把 `immediate` 塞进 inputData（`KEY_IMMEDIATE`），让 release 日志能说清这次是谁排的队。
+4. 调用点：`ShizukuReceiverStarter:181` → `enqueue(context, immediate = forceStart)`；
+   `NotifAttemptReceiver` / `ShizukuTileService` / `TileOptionsActivity` → `immediate = true`。
+   watchdog 的 root 回退仍是无参（那是后台自动行为）。
+
+第 7 项（`authorization/AuthorizationManager.kt` 为主）：
+1. `revoke()` **最前面**插 `revokeDhizukuGrant(packageName, uid)` + `clearDhizukuScopes(packageName)`，
+   再改 Shizuku 权限位——与上游注释同一个理由：delegated scope 才是 Dhizuku 应用真正能动手的东西
+   （Hail 靠它冻结），Shizuku 那边失败不能把它们留下。
+2. `revokeDhizukuGrant`：`findByUid` 判空后 `setAllowed(uid, signature, false)`，**保留记录不删除**，
+   Dhizuku 页因此显示"已拒绝"而不是消失。
+3. `clearDhizukuScopes`：SDK<O / 空包名 → return；非 DO/PO → return；`getDelegatedScopes` 为空 → no-op；
+   否则 `setDelegatedScopes(admin, pkg, emptyList())`。
+4. 另外两个不走 `revoke()` 的入口补上：`DhizukuAppsAdapter`（关开关、点"屏蔽应用"）、
+   `RequestPermissionActivity`（拒绝弹窗）。
+
+覆盖面：`revoke()` 的 7 个调用点（TvActivity / AppManagement / AppsController / AppViewHolder /
+ToggleAllViewHolder）全部自动获得清理。
+
+### 四、验证（真机 `bc757a76`，Android 16 / HyperOS）
+
+| 项目 | 做法 | 结果 |
+| --- | --- | --- |
+| expedited 真的生效 | `cmd statusbar add-tile` + `click-tile`（磁贴 `onClick` → `start(immediate=true)`） | `05:40:44.842 start queued as expedited work` → `05:40:44.874 doWork begin: attempt=0 immediate=true`，**调度延迟 32ms**，server 起来（PID 1989） |
+| 撤销清 Dhizuku 表 | 应用管理页撤销 InstallerX → 回 Dhizuku 应用管理页 | "允许访问 Dhizuku"由开变关，记录仍在（未被删除） |
+| 撤销不清别的 | 撤销 IMD → 恢复 | 无崩溃、无 `FATAL EXCEPTION`，恢复后开关回开；测试后两个应用均已还原 |
+
+### 五、两个坑
+
+- **`Data.getBoolean(key)` 没有单参重载**，必须给默认值，否则 `No value passed for parameter 'defaultValue'`。
+- **`ExistingWorkPolicy.KEEP` 时新 inputData 不生效**，worker 读到的是旧那次的值。这只影响日志
+  准确度，不影响行为；`REPLACE` 是默认真实路径。
+
 ---
 
 ## Key Files Quick Reference
