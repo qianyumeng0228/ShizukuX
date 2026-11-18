@@ -113,7 +113,9 @@ class FirewallActivity : ComponentActivity() {
      */
     private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
         val running = state == ShizukuStateMachine.State.RUNNING
-        if (running && !serviceRunning && !isFinishing) load()
+        // Either direction matters: losing the service must show "需要服务" instead of leaving
+        // the last reading on screen, and getting it back must replace that with the real rules.
+        if (running != serviceRunning && !isFinishing) load()
         serviceRunning = running
     }
 
@@ -203,7 +205,11 @@ class FirewallActivity : ComponentActivity() {
                     chainOn = FirewallManager.chainOn()
                     loaded = true
                 }
-                .onFailure { message = it.message ?: it.toString() }
+                .onFailure {
+                    // A missing service is a state, not a failed operation; the header already
+                    // says so. A dialog here reads as "your rules failed, set them again".
+                    if (FirewallManager.isAvailable()) message = it.message ?: it.toString()
+                }
 
             refreshing = false
         }

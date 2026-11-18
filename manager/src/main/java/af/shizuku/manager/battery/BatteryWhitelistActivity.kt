@@ -111,7 +111,9 @@ class BatteryWhitelistActivity : ComponentActivity() {
      */
     private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
         val running = state == ShizukuStateMachine.State.RUNNING
-        if (running && !serviceRunning && !isFinishing) load()
+        // Both directions: losing the service has to show the empty state rather than keep the
+        // last reading, and regaining it has to put the real whitelist back.
+        if (running != serviceRunning && !isFinishing) load()
         serviceRunning = running
     }
 
@@ -179,7 +181,11 @@ class BatteryWhitelistActivity : ComponentActivity() {
                     kinds = whitelist.entries
                     available = serviceAvailable && whitelist.error == null
                     loaded = true
-                    message = whitelist.error?.let { describeError(it) }
+                    // A service that is merely absent is not a failed operation: the page already
+                    // says it is not running, and a dialog on top of that reads as "your change
+                    // failed, do it again" - the impression this listener exists to remove. Only
+                    // an error reported while talking to a live service gets a dialog.
+                    message = if (serviceAvailable) whitelist.error?.let { describeError(it) } else null
                 }
                 .onFailure { message = it.message ?: it.toString() }
 
