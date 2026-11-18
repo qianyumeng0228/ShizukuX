@@ -97,8 +97,9 @@ git -C F:\shizukux\ShizukuX push gitee master
       （代码层只有 README 提示，没有前置校验）
 - [ ] ColorOS 真机未验证：`mService` 字段名与 `IDevicePolicyManager$Stub.asInterface`
       按 AOSP 写，只在 HyperOS 跑通
-- [ ] 开机恢复写回未在真实重启里验证；`BootRestoreReceiver` 等 service 最多 90 秒，
-      超过广播 `goAsync` 窗口，若 ColorOS 不生效需改 WorkManager 续跑
+- [x] 开机恢复写回已在真实重启验证（k2815：`shell up after 42s, wanted=0 acc=0`，
+      `wm` 变 `lock 0`，无 ANR）；等待已移入前台服务 `BootRestoreService`（180 秒上限），
+      不再受广播 `goAsync` 窗口限制
 - [ ] 冷启动后首次横向触摸可能不生效（窗口首帧未 ready），第二次起正常
 
 ## 八、发布后
