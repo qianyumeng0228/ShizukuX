@@ -153,6 +153,8 @@ boolean hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccou
 
 **验证**：最终构建 `BUILD SUCCESSFUL`（2m47s）；三包 sha256 已入 README；testkey 版 `apksigner verify` 单签名、指纹 `a40da8…f5dc`、`zipalign -c` 通过；`classes.dex` 检出 `IDevicePolicyManager$Stub`、`ShizukuBinderWrapper`、「第 6b 步」、`无参 forceUpdateUserSetupComplete 也失败`、`shell 身份调用被系统拒绝`，且负向对照串计数为 0，确认是本轮代码而非旧产物。
 
+**交付前包级复核**：`aapt2 dump xmltree` 确认 dropin 与 standard 两包的设备管理组件都解析为 `af.shizuku.manager.admin.DhizukuAdminReceiver`（standard 的 applicationId 与 namespace 不同，最容易在这里错）；R8 `mapping.txt` 确认 `rikka.shizuku.ShizukuBinderWrapper -> rt4` 以及 `DpDoDirectActivation$OwnerAttempt` / `$ShellOwnerOutcome` 都在包内，不会 `NoClassDefFoundError`；`api/…/ShizukuBinderWrapper.java` 的 `transact` 走 `Shizuku.transactRemote`，与 `pingBinder` 前置一致；三包 sha256 与 README 表逐条一致。另把向导闸恢复改成"回写 + 回读 + 重试一次"，恢复失败时把人工命令写进日志，避免用户拿到一台 Home 键失灵的机器却不知道怎么办。
+
 **仍未覆盖**：无 ColorOS 真机，`mService` 字段与 `Stub.asInterface` 按 AOSP 实现写但没跑过；`checkDeviceOwnerProvisioningPreConditionLocked` 的定义未取到（抓取只有调用点），`isAdb=true` 分支的具体判据是按错误文案反推的。定位仍需用户侧一次失败日志。
 
 ### 2026-11-18 — k2806：自启动读错了 op，「别人能设设备所有者我不能」是签名不是链路
