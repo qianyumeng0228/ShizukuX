@@ -1659,6 +1659,8 @@
     <string name="autostart_title">自启动管理</string>
     <string name="home_autostart_description">禁止你选定的应用在后台自行启动</string>
     <string name="autostart_blocked_count">已禁止 %d 个应用</string>
+    <string name="autostart_source_vendor">与手机设置里的自启动开关同源</string>
+    <string name="autostart_source_background">本机没有独立的自启动开关，这里控制的是后台运行限制</string>
     <string name="autostart_gate_title">整份名单一起生效</string>
     <string name="autostart_gate_summary">关掉会立刻把当前被禁止的应用全部恢复为允许，名单保留；重新打开时按名单原样恢复禁止。</string>
     <string name="autostart_gate_on">正在按名单生效</string>

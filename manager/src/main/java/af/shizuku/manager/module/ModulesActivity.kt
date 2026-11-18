@@ -283,7 +283,16 @@ internal fun ModulesScreen(
 
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 32.dp),
+                    // The shell draws one floating tab strip over every page instead of a Scaffold
+                    // bottom bar, so a hosted page gets no bottom inset from the Scaffold: the last
+                    // card's 删除 button ended up underneath the strip. Reserve the strip's own
+                    // height (66.dp bar + 20.dp lift) plus the usual gap when hosted.
+                    contentPadding = PaddingValues(
+                        16.dp,
+                        8.dp,
+                        16.dp,
+                        if (showTabBar) 32.dp else 104.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     if (!serviceRunning) {

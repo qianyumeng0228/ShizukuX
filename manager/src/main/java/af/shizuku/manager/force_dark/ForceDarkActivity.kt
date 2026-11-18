@@ -63,6 +63,7 @@ import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.hiding.HidingWatchService
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ServiceStateReloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,6 +102,11 @@ class ForceDarkActivity : ComponentActivity() {
     private var busyPackage by mutableStateOf<String?>(null)
     private var message by mutableStateOf<Int?>(null)
 
+    /** Reloads when the service appears or disappears: this page reads through it. */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) load()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -132,6 +138,12 @@ class ForceDarkActivity : ComponentActivity() {
             }
         }
         load()
+        serviceReloader.attach()
+    }
+
+    override fun onDestroy() {
+        serviceReloader.detach()
+        super.onDestroy()
     }
 
     private fun load() {
@@ -172,7 +184,11 @@ class ForceDarkActivity : ComponentActivity() {
                     writesSwitches = ForceDarkManager.writesSwitches()
                     loaded = true
                 }
-                .onFailure { message = R.string.force_dark_action_failed }
+                .onFailure {
+                    // A service that is merely away is a state; the header says so and the
+                    // listener reloads. A dialog here reads as "the change failed, do it again".
+                    if (ForceDarkManager.isAvailable()) message = R.string.force_dark_action_failed
+                }
 
             refreshing = false
         }

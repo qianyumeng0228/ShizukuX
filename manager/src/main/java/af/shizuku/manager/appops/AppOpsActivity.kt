@@ -65,6 +65,7 @@ import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ServiceStateReloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,6 +97,11 @@ class AppOpsActivity : ComponentActivity() {
     private var loaded by mutableStateOf(false)
     private var refreshing by mutableStateOf(false)
     private var message by mutableStateOf<String?>(null)
+
+    /** Reloads when the service appears or disappears: the restriction list is read through it. */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) load()
+    }
 
     /** Non-null while the detail pane is open; holds the package it shows. */
     private var detail by mutableStateOf<String?>(null)
@@ -141,6 +147,12 @@ class AppOpsActivity : ComponentActivity() {
             }
         }
         load()
+        serviceReloader.attach()
+    }
+
+    override fun onDestroy() {
+        serviceReloader.detach()
+        super.onDestroy()
     }
 
     private fun load() {
@@ -178,7 +190,11 @@ class AppOpsActivity : ComponentActivity() {
                     checked = true
                     loaded = true
                 }
-                .onFailure { message = it.message ?: it.toString() }
+                .onFailure {
+                    // Only a live service reporting a real error deserves a dialog; an absent
+                    // service is a state the header already shows.
+                    if (AppOpsManager.isAvailable()) message = it.message ?: it.toString()
+                }
             refreshing = false
         }
     }

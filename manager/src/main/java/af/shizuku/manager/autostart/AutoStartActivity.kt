@@ -62,6 +62,7 @@ import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ServiceStateReloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -96,6 +97,15 @@ class AutoStartActivity : ComponentActivity() {
     private var refreshing by mutableStateOf(false)
     private var busyPackage by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
+    private var vendorOp by mutableStateOf(false)
+
+    /**
+     * Reloads when the service comes up or goes away: the list is read through it, so an empty
+     * list while it is away is a state, not a lost setting.
+     */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) load()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +125,7 @@ class AutoStartActivity : ComponentActivity() {
                     refreshing = refreshing,
                     busyPackage = busyPackage,
                     message = message,
+                    vendorOp = vendorOp,
                     onBack = { finish() },
                     onRefresh = { load() },
                     onGateChange = { on -> setGate(on) },
@@ -123,7 +134,13 @@ class AutoStartActivity : ComponentActivity() {
                 )
             }
         }
+        serviceReloader.attach()
         load()
+    }
+
+    override fun onDestroy() {
+        serviceReloader.detach()
+        super.onDestroy()
     }
 
     private fun load() {
@@ -157,10 +174,14 @@ class AutoStartActivity : ComponentActivity() {
                     apps = list
                     blocked = denied
                     available = AutoStartManager.isAvailable()
+                    vendorOp = AutoStartManager.usesVendorOp()
                     gateOn = AutoStartManager.isGateOn()
                     loaded = true
                 }
-                .onFailure { message = it.message ?: it.toString() }
+                .onFailure {
+                    // Service merely absent is a state, not a failed operation: no dialog.
+                    if (AutoStartManager.isAvailable()) message = it.message ?: it.toString()
+                }
 
             refreshing = false
         }
@@ -209,6 +230,7 @@ private fun AutoStartScreen(
     refreshing: Boolean,
     busyPackage: String?,
     message: String?,
+    vendorOp: Boolean,
     onBack: () -> Unit,
     onRefresh: () -> Unit,
     onGateChange: (Boolean) -> Unit,
@@ -265,6 +287,22 @@ private fun AutoStartScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1
                         )
+                        if (available) {
+                            // Which record this screen drives, said out loud. On a ROM without a
+                            // separate autostart op the list is the background limit, and calling
+                            // that "自启动" is exactly how this screen once disagreed with the
+                            // phone's own settings screen.
+                            Text(
+                                text = stringResource(
+                                    if (vendorOp) R.string.autostart_source_vendor
+                                    else R.string.autostart_source_background
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 },
                 navigationIcon = {

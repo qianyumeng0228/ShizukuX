@@ -21,8 +21,59 @@ import rikka.shizuku.Shizuku
  */
 object AutoStartManager {
 
-    /** The op behind autostart: the blunter half of RUN_IN_BACKGROUND. */
+    /**
+     * The op behind autostart.
+     *
+     * `RUN_ANY_IN_BACKGROUND` is the AOSP half of it, but ColorOS (and several other vendor ROMs)
+     * keep a separate autostart switch with its own op, `AUTO_START` - that is the one the phone's
+     * settings screen reads and writes, and reading the AOSP op instead is how this screen once
+     * reported "allowed" for an app the system had blocked. The op is therefore resolved on the
+     * device instead of assumed: if `appops get` reports an `AUTO_START` record, that is the stock
+     * switch and it wins.
+     */
     const val OP = "RUN_ANY_IN_BACKGROUND"
+
+    /** The vendor op, when this ROM has one. */
+    private const val VENDOR_OP = "AUTO_START"
+
+    /** Resolved once per process: the op does not change while the app is running. */
+    private var resolvedOp: String? = null
+
+    /** The op this device reports for autostart, vendor one first. */
+    fun op(): String = resolvedOp ?: detectOp().also { resolvedOp = it }
+
+    /** True when the screen is driving the ROM's own autostart record rather than the AOSP one. */
+    fun usesVendorOp(): Boolean = op() == VENDOR_OP
+
+    /**
+     * Picks the op by asking the platform which ones it has.
+     *
+     * A single `appops get` on one installed package lists every op the platform knows, so one
+     * round trip decides it. Any package will do; shell's own record is the cheapest to ask for.
+     */
+    private fun detectOp(): String {
+        val sample = installedPackages()
+            .firstOrNull { it == "com.android.shell" }
+            ?: installedPackages().firstOrNull()
+            ?: return OP
+        val listing = shell("cmd appops get $sample")
+        if (listing != null &&
+            listing.lineSequence().any { it.trimStart().startsWith("$VENDOR_OP:") }
+        ) {
+            return VENDOR_OP
+        }
+        // A build may print only the ops a package actually touched, so an absent line does not
+        // prove the op is missing. Asking it directly separates "no record here" from "no such
+        // op": an unknown name is answered with an error, an existing one with a (possibly empty)
+        // list of packages.
+        val probe = shell("cmd appops query-op $VENDOR_OP deny")
+        val known = probe != null &&
+            !probe.contains("Unknown operation", ignoreCase = true) &&
+            !probe.contains("Error", ignoreCase = true) &&
+            !probe.contains("error", ignoreCase = true)
+        return if (known) VENDOR_OP else OP
+    }
+
 
     private const val PREF_GATE = "autostart_gate"
     private const val PREF_KEPT = "autostart_kept"
@@ -56,7 +107,7 @@ object AutoStartManager {
      * from records alone is how a screen says "3 blocked" over a list of one.
      */
     fun blocked(): Set<String> =
-        parseReported(shell("cmd appops query-op $OP deny"))
+        parseReported(shell("cmd appops query-op ${op()} deny"))
             .intersect(installedPackages())
 
     /** The installed package names, in one command. */
@@ -93,7 +144,7 @@ object AutoStartManager {
      */
     fun setBlocked(context: Context, packageName: String, blocked: Boolean): Boolean {
         val mode = if (blocked) "deny" else "allow"
-        shell("cmd appops set $packageName $OP $mode")
+        shell("cmd appops set $packageName ${op()} $mode")
         val applied = readOp(packageName) == blocked
         // A write while the gate is off is a user saying "this one too". Turning the gate back on
         // re-applies the list it kept, which the switch's own label then claims is in force - so
@@ -131,7 +182,7 @@ object AutoStartManager {
 
     private fun setBlockedQuietly(packageName: String, blocked: Boolean): Boolean {
         val mode = if (blocked) "deny" else "allow"
-        shell("cmd appops set $packageName $OP $mode")
+        shell("cmd appops set $packageName ${op()} $mode")
         return readOp(packageName) == blocked
     }
 
@@ -144,9 +195,10 @@ object AutoStartManager {
      * successful write look like a failure.
      */
     private fun readOp(packageName: String): Boolean? {
-        val line = shell("cmd appops get $packageName $OP")
+        val name = op()
+        val line = shell("cmd appops get $packageName $name")
             ?.lineSequence()
-            ?.firstOrNull { it.contains(OP) }
+            ?.firstOrNull { it.contains(name) }
             ?.trim()
             ?: return null
         val value = line.substringAfter(':', "")

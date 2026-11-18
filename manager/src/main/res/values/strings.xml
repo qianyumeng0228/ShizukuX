@@ -1732,6 +1732,8 @@ This action cannot be undone. Continue?</string>
     <string name="autostart_title">Autostart</string>
     <string name="home_autostart_description">Stop the apps you pick from starting on their own in the background</string>
     <string name="autostart_blocked_count">%d apps blocked</string>
+    <string name="autostart_source_vendor">Same record as the phone\'s autostart switch</string>
+    <string name="autostart_source_background">No separate autostart op here — this is the background-run limit</string>
     <string name="autostart_gate_title">Block the whole list</string>
     <string name="autostart_gate_summary">Turning this off allows every app that is currently denied and keeps the list, so turning it back on puts exactly those apps back.</string>
     <string name="autostart_gate_on">Applied to the list</string>

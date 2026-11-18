@@ -67,6 +67,7 @@ import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ServiceStateReloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -118,6 +119,11 @@ class HidingActivity : ComponentActivity() {
     private var busy by mutableStateOf(false)
     private var busyKey by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
+
+    /** Reloads the signal rows and lists when the service appears or disappears. */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) refresh()
+    }
 
     // Kept here rather than inside the list, because the list is dropped and rebuilt on every
     // refresh: a chip choice or a search term held there would jump back to the default the
@@ -201,6 +207,9 @@ class HidingActivity : ComponentActivity() {
             }
         }
         refresh()
+        // The signal states and the lists are read through the service, so losing it shows an
+        // empty page and getting it back has to bring the lists back without a re-enter.
+        serviceReloader.attach()
         lifecycleScope.launch(Dispatchers.IO) {
             // Opening the page is also how the watch comes back after the process that held it was
             // killed: a list is a standing rule, and one left without a watch would be a rule
@@ -212,6 +221,11 @@ class HidingActivity : ComponentActivity() {
             // work at all. Asked for quietly, on IO, the same way the watch asks.
             HidingGrants.ensureQuietly()
         }
+    }
+
+    override fun onDestroy() {
+        serviceReloader.detach()
+        super.onDestroy()
     }
 
     /**

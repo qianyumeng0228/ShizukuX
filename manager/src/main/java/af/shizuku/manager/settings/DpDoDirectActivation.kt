@@ -207,6 +207,72 @@ object DpDoDirectActivation {
     /** 设备所有者管理组件（与 manifest 注册的 DhizukuAdminReceiver 对应）。 */
     fun adminComponent(context: Context): ComponentName = DeviceOwnerHelper.adminComponent(context)
 
+    /**
+     * 本应用当前签名的类别人话，用于激活日志。
+     *
+     * AOSP 的 platform testkey 证书主题固定带 `android@android.com`，因此按它区分即可：
+     * Dhizuku 发布的 `-testkey` 包与 MT 管理器"默认"签名都属于这一支，也正是 OPPO 放行的
+     * 那一支（Dhizuku 讨论 #16）。
+     */
+    private fun signingKind(context: Context): String = runCatching {
+        val certs = context.packageManager
+            .getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            .signingInfo
+            ?.apkContentsSigners
+            .orEmpty()
+        if (certs.isEmpty()) return@runCatching "未知（读不到签名）"
+        val factory = java.security.cert.CertificateFactory.getInstance("X.509")
+        val testKey = certs.any { cert ->
+            // Signature carries DER bytes, not the certificate itself: parse it before reading
+            // the subject, which is where the testkey identity lives.
+            val subject = runCatching {
+                val parsed = factory.generateCertificate(
+                    java.io.ByteArrayInputStream(cert.toByteArray())
+                ) as java.security.cert.X509Certificate
+                parsed.subjectX500Principal.name
+            }.getOrDefault("")
+            subject.contains("android@android.com") || subject.contains("CN=Android")
+        }
+        if (testKey) "testkey（AOSP 测试签名，OPPO 放行）" else "自建签名（OPPO 不放行设备所有者）"
+    }.getOrDefault("未知（读取签名失败）")
+
+    /**
+     * 是否为 OPPO 系 ROM（OPPO / realme / 一加，含 ColorOS）。
+     *
+     * 三家共用同一套设备所有者签名白名单，判定合并处理；只用于给失败结果补一条可执行的
+     * 解释，不改变任何激活行为。
+     */
+    private fun oppoFamily(): Boolean = runCatching {
+        val props = Class.forName("android.os.SystemProperties")
+            .getMethod("get", String::class.java)
+        val marks = listOf(
+            "ro.build.version.opporom",
+            "ro.build.version.oplusrom",
+            "ro.product.system.brand",
+            "ro.product.brand",
+            "ro.vendor.product.brand"
+        ).mapNotNull { key ->
+            runCatching { props.invoke(null, key) as? String }.getOrNull()
+        }
+        val all = (marks + Build.MANUFACTURER + Build.BRAND).joinToString(" ").lowercase()
+        all.contains("oppo") || all.contains("realme") ||
+            all.contains("oneplus") || all.contains("coloros")
+    }.getOrDefault(false)
+
+    /**
+     * 失败结果里追加的签名说明，OPPO 系且本包非 testkey 时才返回内容。
+     *
+     * 这一层校验发生在 `DevicePolicyManagerService` 入口，早于账号、分身、向导闸的全部判据，
+     * 所以调用链再对也一定被拒；不写清原因，用户只会看到"别人能行我不行"。
+     */
+    private fun signingHint(context: Context): String {
+        if (!oppoFamily()) return ""
+        if (signingKind(context).startsWith("testkey")) return ""
+        return "\n\n★ 本机是 OPPO 系 ROM，系统只允许白名单应用或 testkey 签名应用激活设备所有者" +
+                "（Dhizuku 讨论 #16 原文）。本应用是自建签名，这一层校验在进入激活流程之前就拒绝了，" +
+                "与上面列出的任何原因都无关——需要用 testkey 签名重新打包安装后才能通过。"
+    }
+
     // ---------------------------------------------------------------------
     // 主流程
     // ---------------------------------------------------------------------
@@ -241,6 +307,12 @@ object DpDoDirectActivation {
         note("管理组件：${admin.flattenToShortString()}")
         note("调用身份：应用自身 uid=${Process.myUid()}（isAdb=false → 非 ADB 分支）")
         note("SDK=${Build.VERSION.SDK_INT}（setDeviceOwner 签名按此选择）")
+        // The signing identity is part of the answer on OPPO: the platform only lets
+        // whitelisted or testkey-signed packages become owner (Dhizuku discussion #16), so a
+        // fully correct call path still ends in a refusal on a self-signed build. Recording it
+        // up front turns "it just does not work" into a reason.
+        note("签名：${signingKind(context)}")
+        note("ROM：${Build.MANUFACTURER} / ${Build.BRAND}${if (oppoFamily()) "（OPPO 系，设备所有者受签名白名单限制）" else ""}")
 
         if (runCatching { dpm.isDeviceOwnerApp(pkg) }.getOrDefault(false)) {
             note("v 本应用已是设备所有者，无需重复激活")
@@ -405,7 +477,7 @@ object DpDoDirectActivation {
                 )
 
                 ownerCode != null -> ActivationResult(
-                    Stage.SET_OWNER_REJECTED, false, explainStatusCode(ownerCode), log
+                    Stage.SET_OWNER_REJECTED, false, explainStatusCode(ownerCode) + signingHint(context), log
                 )
 
                 else -> ActivationResult(
@@ -415,7 +487,7 @@ object DpDoDirectActivation {
                             "① 设备已完成开机向导，且临时置 0 未生效；\n" +
                             "② DP Role 权限尚未异步落地（可稍等数秒重试）；\n" +
                             "③ 本应用尚未成为 active admin；\n" +
-                            "④ 厂商 ROM 封锁了该 API。",
+                            "④ 厂商 ROM 封锁了该 API。" + signingHint(context),
                     log
                 )
             }
