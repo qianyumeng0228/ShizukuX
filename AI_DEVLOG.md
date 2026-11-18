@@ -157,6 +157,12 @@ boolean hasIncompatibleAccountsOrNonAdb = !isAdb(caller) || hasIncompatibleAccou
 
 **再一轮深查（并发与还原）**：`activate()` 原先没有互斥，设置页可以重复进入再点确定，两个流程交错时后一次会把「已被替换成 `ShizukuBinderWrapper` 的 proxy」当作 original 记下来，还原写回的仍是 proxy —— 进程内 `mService` 永久停在 shell 身份上，且毫无日志。现在加 `AtomicBoolean` 闸门，第二次直接返回「另一次激活流程还在运行」。同时 `withShellService` 的 `finally` 原先无条件打印「mService 已还原」，还原失败也照打；改为按 `runCatching` 结果分别输出，失败时写明「重启应用即可恢复」。
 
+**与上游 Dhizuku 逐项对齐（最后一轮）**：读完 `ref/Dhizuku/…/ActivateViewModel.kt` 全文后，发现三处结构性偏差并逐一改掉：
+
+1. **首选身份错了**。Dhizuku 的 `activateAsDeviceOwnerByShizuku` 全程在 `requireBinderWrapperDevicePolicyManager` 内以 shell 身份跑 `setActiveAdmin(who, true, userId)` → `setDeviceOwner(who, null, userId)`，**从不申请 DP Role**；本版旧实现把「应用自身身份」当首选，而它依赖 `DEVICE_POLICY_MANAGEMENT` Role，只要 `cmd role add-role-holder` 被严格 ROM 拒绝就在第 2 步终止，永远到不了 shell 路径。现在新增第 3.5 步：shell 身份为首选，应用自身身份降为回退；Role / MAPDO 失败只置 `selfPathAllowed = false`，不再 return。
+2. **反射取值方式**。Dhizuku 三个方法全部用 `getDeclaredMethod` + `isAccessible = true`，本版本用 `getMethod`（只找 public，且不设可访问）。已全部改成 Declared。
+3. **细节对齐**：首选路径前 `Thread.sleep(1500)` 等账户缓存（Dhizuku 的 `delay(1500)`）；`settings` 读取与写入补 `--user 0`（Dhizuku 用 `--user`）；`user_setup_complete` 置 0 失败不再终止（Dhizuku 的 `bypassUserSetupComplete` 同样只是不 bypass 并继续）。
+
 **仍未覆盖**：无 ColorOS 真机，`mService` 字段与 `Stub.asInterface` 按 AOSP 实现写但没跑过；`checkDeviceOwnerProvisioningPreConditionLocked` 的定义未取到（抓取只有调用点），`isAdb=true` 分支的具体判据是按错误文案反推的。定位仍需用户侧一次失败日志。
 
 ### 2026-11-18 — k2806：自启动读错了 op，「别人能设设备所有者我不能」是签名不是链路
