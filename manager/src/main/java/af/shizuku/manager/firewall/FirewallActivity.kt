@@ -61,6 +61,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ShizukuStateMachine
 import af.shizuku.manager.utils.ShizukuSystemApis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,6 +100,23 @@ class FirewallActivity : ComponentActivity() {
     private var busyUid by mutableStateOf<Int?>(null)
     private var message by mutableStateOf<String?>(null)
 
+    /**
+     * Whether the service was running at the last state the listener saw, seeded with the current
+     * one so the immediate first callback from addListener() does not reload on top of onCreate().
+     */
+    private var serviceRunning = ShizukuStateMachine.isRunning()
+
+    /**
+     * A page opened before the service was up shows "需要服务" and, until this listener existed,
+     * stayed that way: the rules were never lost - they live in the platform - but the page kept
+     * rendering the empty state the user read as "重启后要重新设置". Coming back up reloads it.
+     */
+    private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
+        val running = state == ShizukuStateMachine.State.RUNNING
+        if (running && !serviceRunning && !isFinishing) load()
+        serviceRunning = running
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -125,7 +143,13 @@ class FirewallActivity : ComponentActivity() {
                 )
             }
         }
+        ShizukuStateMachine.addListener(serviceListener)
         load()
+    }
+
+    override fun onDestroy() {
+        ShizukuStateMachine.removeListener(serviceListener)
+        super.onDestroy()
     }
 
     private fun load() {

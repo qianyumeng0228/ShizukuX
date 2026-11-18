@@ -62,6 +62,7 @@ import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
+import af.shizuku.manager.utils.ShizukuStateMachine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -97,6 +98,23 @@ class BatteryWhitelistActivity : ComponentActivity() {
     private var busyPackage by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
 
+    /**
+     * Seeded with the current state so the immediate first callback from addListener() does not
+     * reload on top of onCreate().
+     */
+    private var serviceRunning = ShizukuStateMachine.isRunning()
+
+    /**
+     * The whitelist lives in the platform and survives a restart; what does not is the page's
+     * ability to read it. Before this listener, a page opened before the service came back kept
+     * showing the empty state until the user backed out and returned, which reads as "要重新设置".
+     */
+    private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
+        val running = state == ShizukuStateMachine.State.RUNNING
+        if (running && !serviceRunning && !isFinishing) load()
+        serviceRunning = running
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -121,7 +139,13 @@ class BatteryWhitelistActivity : ComponentActivity() {
                 )
             }
         }
+        ShizukuStateMachine.addListener(serviceListener)
         load()
+    }
+
+    override fun onDestroy() {
+        ShizukuStateMachine.removeListener(serviceListener)
+        super.onDestroy()
     }
 
     private fun load() {
