@@ -789,8 +789,12 @@ private fun Modifier.horizontalSwipeToPager(
         val slop = viewConfiguration.touchSlop
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            // Where the gesture began. currentPage moves by itself once a drag crosses half a
+            // page, so committing from it at release would advance twice on a long swipe.
+            val startPage = state.currentPage
             var dx = 0f
             var dy = 0f
+            var travelled = 0f
             var claimed = false
             var lastX = down.position.x
             var lastTime = down.uptimeMillis
@@ -820,9 +824,15 @@ private fun Modifier.horizontalSwipeToPager(
                 }
                 if (claimed) {
                     change.consume()
+                    // dispatchRawDelta is not clamped: an unconstrained long drag walks
+                    // currentPage past its neighbour mid-gesture, and the release would then
+                    // advance again from that new page. Keep the travel under half a page.
+                    val room = state.layoutInfo.viewportSize.width * 0.4f - kotlin.math.abs(travelled)
+                    val step = if (room <= 0f) 0f else stepX.coerceIn(-room, room)
+                    travelled += step
                     // Raw delta is synchronous, so the page tracks the finger without needing a
                     // suspending scroll call that this restricted gesture scope cannot make.
-                    state.dispatchRawDelta(-stepX)
+                    state.dispatchRawDelta(-step)
                     val elapsed = (change.uptimeMillis - lastTime).coerceAtLeast(1L)
                     velocity = (change.position.x - lastX) / elapsed
                     lastX = change.position.x
@@ -831,9 +841,9 @@ private fun Modifier.horizontalSwipeToPager(
             }
             if (!claimed) return@awaitEachGesture
             val settled = when {
-                dx < 0 -> state.currentPage + 1
-                dx > 0 -> state.currentPage - 1
-                else -> state.currentPage
+                dx < 0 -> startPage + 1
+                dx > 0 -> startPage - 1
+                else -> startPage
             }.coerceIn(0, state.pageCount - 1)
             // A flick commits even when the finger travelled less than a quarter of a page, which
             // is what makes the page feel as light as the ones the pager drags itself. Without it
@@ -841,7 +851,7 @@ private fun Modifier.horizontalSwipeToPager(
             // could feel only between the two pages that carry this gesture.
             val flicked = kotlin.math.abs(velocity) > 0.8f
             val far = kotlin.math.abs(dx) > size.width * 0.25f
-            val target = if (flicked || far) settled else state.currentPage
+            val target = if (flicked || far) settled else startPage
             scope.launch { state.animateScrollToPage(target) }
         }
     }
