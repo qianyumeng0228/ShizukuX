@@ -525,12 +525,30 @@ object DpDoDirectActivation {
             )
         } finally {
             // ---------- 第 7 步：恢复向导状态 ----------
+            // 这一步失败会留下「设备未完成向导」的状态：三键导航的 Home / 最近任务失灵。
+            // 所以必须回读确认，失败再试一次，并把人工恢复方式写进日志——否则用户只看到
+            // 「激活失败」和一台按键失灵的机器，不知道该做什么。
             if (needRestore) {
                 note("")
                 note("> 第 7 步：恢复 USER_SETUP_COMPLETE=1（shell，finally）")
-                val restore = shell("settings put secure $SETTING_USER_SETUP_COMPLETE 1")
-                note("  exit=${restore?.exitCode ?: "(失败)"}${if (restore != null && restore.output.isNotBlank()) " out=${restore.output}" else ""}")
-                note("  三键导航的 Home / 最近任务键应已恢复")
+                var restored = false
+                repeat(2) { index ->
+                    if (!restored) {
+                        val put = shell("settings put secure $SETTING_USER_SETUP_COMPLETE 1")
+                        val now = shell("settings get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
+                            ?.output?.trim()
+                        note("  第 ${index + 1} 次恢复：exit=${put?.exitCode ?: "(失败)"} 回读=${now ?: "(未取到)"}")
+                        restored = now == "1"
+                    }
+                }
+                if (restored) {
+                    note("  三键导航的 Home / 最近任务键应已恢复")
+                } else {
+                    note("x 恢复失败：设备会停留在「未完成向导」状态，Home / 最近任务键失灵。")
+                    note("  手动恢复（任选其一）：")
+                    note("    adb shell settings put secure user_setup_complete 1")
+                    note("    在终端里执行 settings put secure user_setup_complete 1")
+                }
             }
         }
     }
