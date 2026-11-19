@@ -1613,6 +1613,62 @@ OPPO 上依然起不来。门现在同时接受「本应用持权」与「服务
 
 ---
 
+## 2026-11-19 · k2820 — 更新链路四条：下错包、先卸载、403 当「已是最新」、镜像 404
+
+这轮只改更新路径，四条互不依赖，一起提交。
+
+### 1. 资产名匹配：`Drop-In` 里的连字符
+
+GitHub 资产实际叫 `ShizukuX-Drop-In-v<ver>.apk`，旧代码判 `contains("dropin")`——连字符把词拆开，
+**永远 false**。于是 dropin 分支落到 `apkAssets.firstOrNull()`：可能拿到 Compat-Hub 或标准包；
+standard 分支的排除条件也漏掉 `Drop-In`，反过来可能拿 dropin 包。包名、签名都不对，装不上。
+现在按变体判：`Drop-In` / `drop_in` / `dropin` 归一为 dropin，其余非 `compat` 为标准；
+**删掉 `firstOrNull()` 兜底**，匹配不到就 `requiresManualDownload = true` 引导去 release 页，
+不再假装「已是最新」（旧代码那行 `?: return CheckResult.UpToDate` 一并删了）。
+
+### 2. 强制更新：`pm uninstall` 拿掉，改成同步等退出码
+
+脚本原先是 `pm uninstall` → `pm install -r -d`，再 `nohup ... &` 后台跑。卸载会清
+`/data/user/0/<pkg>`（设置、按 uid 存的授权记录、Dhizuku 配置），重装 UID 变化使记录全部失效；
+install 失败时应用已经没了，后台进程又把失败吞掉。现在：只 `pm install -r -d`；
+失败 `exit 3`；不再 `nohup`，root / Shizuku 两支都同步 `waitFor` 并检查退出码，
+失败返回 false 让上层走系统安装器。签名冲突的正确结果是**装不上但旧包还在**，不是先擦掉。
+
+### 3. 非 2xx 不再等于 UpToDate
+
+`fetchJson` 对 403/404/5xx 返回 null，`checkViaApi` 把它变成 `UpToDate`，首页随即写
+`setLastUpdateCheckTime(now)` 锁 24 小时；Atom 兜底只在**抛出异常**时才走，403 不抛异常，
+于是限流完全隐形。现在非 2xx 直接抛 `IOException`，payload 类型不符也抛，重试与 Atom 兜底才真正生效。
+
+### 4. CF 镜像移出下载列表
+
+`fd.shizukux.xyz/.../releases/download/<asset>` 对 4 个资产名全 404（含 k2016 旧版），
+同名字在 COS 是 200（`ShizukuX-v13.7.0.k2017.apk` 14,123,770 B）。它排第一，每次下载先白等 3s 探测。
+顺序改为 COS → GitHub；常量 `MIRROR_CF` 保留并注明现状，修好可直接加回。
+
+### 5. 撤回的两条（用户否掉）
+
+- 「更新内容」为空：k2817–k2819 是测试包，GitHub 上无对应 release（实测 tag 404），**预期行为，不修**。
+- stable 渠道对 `.k` 报「有更新」：仅测试包手动切 stable 时出现，正式 `.r` 包遇不到，**不修**。
+
+### 6. 验证
+
+- 编译：`compileDropinReleaseKotlin` EXIT=0；`assembleDropinRelease + assembleShizukuXRelease` BUILD SUCCESSFUL 6m03s。
+- 产物：三包 14,310,310 / 14,310,463 / 14,306,914 B；dropin/standard 证书 `a5451d07…b6767`，
+  oppo-testkey `a40da80a…bf5dc`；包名与 versionCode 2820 均正确。
+- 真机 `bc757a76`：`install -r` 成功，`dumpsys` 报 2820；关于页正常显示「ShizukuX 13.7.0.k2820」、
+  更新频道「开发版本」、自动检查/自动安装开关与预期一致，无崩溃。
+- 产物级静态校验（解开 APK 的 `classes.dex` 做字节检索）：`drop-in` / `unexpected releases payload`
+  / `pm install -r -d /data/local/tmp/update.apk || exit 3` 均命中，旧标记
+  `nohup sh /data/local/tmp/force_update.sh` **0 次**——确认新脚本进包、旧写法已消失。
+  用同一套规则对三个真实资产名复算：dropin 包只匹配 `ShizukuX-Drop-In-…`，
+  标准包只匹配 `ShizukuX-v…`，旧规则对 `Drop-In` 匹配为 false（复现了原 bug）。
+- **未验**：端到端「发现更新 → 走 COS 下载 → 安装」。当前 2820 高于线上所有 tag（最新 k2017=2017），
+  检查结果必然 UpToDate，下载分支在真机上无法触发；release 包不种 `Timber.DebugTree`，
+  logcat 也拿不到 `UpdateChecker` 日志。此段只能靠源码 + DEX 校验。
+
+---
+
 ## Key Files Quick Reference
 
 | Area | File |

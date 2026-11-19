@@ -20,12 +20,16 @@ object ProjectLinks {
 
     /**
      * Multi-source download mirrors for APK updates.
-     * Ordered by priority — first source that responds wins.
      * Each entry is a URL template: $MIRROR/<assetFileName>
+     *
+     * MIRROR_CF is kept for reference but NOT used by UpdateChecker: as of 2026-11-19 every
+     * /releases/download/<asset> path under fd.shizukux.xyz returns 404 (assets are not
+     * synced), while the same names on COS return 200. It stays defined so it can be re-added
+     * once the mirror rule is fixed and verified.
      */
-    // 1. Cloudflare CDN (fd.shizukux.xyz) — fast global, cached from GitHub releases
+    // Cloudflare CDN (fd.shizukux.xyz) — currently 404 for release assets, see above
     const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
-    // 2. Tencent COS (Guangzhou) — domestic China direct connect, last resort
+    // Tencent COS (Guangzhou) — domestic China direct connect, verified 200 for release assets
     const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"

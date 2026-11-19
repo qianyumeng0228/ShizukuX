@@ -114,7 +114,7 @@ object UpdateChecker {
     private fun checkViaApi(channel: String): CheckResult {
         val json: JSONObject = if (isPrereleaseChannel(channel)) {
             val arr = fetchJson("$RELEASES_URL?per_page=10") as? JSONArray
-                ?: return CheckResult.UpToDate
+                ?: throw IOException("unexpected releases payload")
             (0 until arr.length())
                 .map { arr.getJSONObject(it) }
                 .firstOrNull {
@@ -122,7 +122,7 @@ object UpdateChecker {
                 }
                 ?: return CheckResult.UpToDate
         } else {
-            fetchJson(LATEST_URL) as? JSONObject ?: return CheckResult.UpToDate
+            fetchJson(LATEST_URL) as? JSONObject ?: throw IOException("unexpected latest payload")
         }
 
         val tagName = json.getString("tag_name")
@@ -137,39 +137,47 @@ object UpdateChecker {
             .map { assets.getJSONObject(it) }
             .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
 
-        // 资产名规则（与 GitHub Release 实际上传文件名一致）：
-        //   manager-dropin-release.apk（Drop-In） / manager-shizukux-release.apk（标准版） / compat-release.apk（Compat-Hub）
-        // gh CLI 的 #label 只是 display label，不改资产文件名，所以匹配按实际文件名来。
-        val targetAsset = if (isDropIn) {
-            apkAssets.firstOrNull {
-                val name = it.getString("name")
-                name.contains("dropin", ignoreCase = true)
-            }
-        } else {
-            apkAssets.firstOrNull {
-                val name = it.getString("name")
-                !name.contains("dropin", ignoreCase = true)
-                        && !name.contains("compat", ignoreCase = true)
-            }
-        } ?: apkAssets.firstOrNull()
+        // Release assets are named ShizukuX-<Variant>-v<version>.apk:
+        //   ShizukuX-v13.7.0.k2017.apk            → standard
+        //   ShizukuX-Drop-In-v13.7.0.k2017.apk    → drop-in (moe.shizuku.privileged.api)
+        //   ShizukuX-Compat-Hub-v13.7.0.k2017.apk → compat hub
+        // The old manager-*-release.apk names are gone. Matching on the hyphenated "Drop-In"
+        // is required: `contains("dropin")` never matches it, so the drop-in branch used to fall
+        // through to the first APK and could hand a Compat-Hub or standard build to a drop-in
+        // install (and a Drop-In build to a standard one).
+        val targetAsset = apkAssets.firstOrNull { asset ->
+            val name = asset.getString("name")
+            if (isDropIn) isDropInAsset(name) else isStandardAsset(name)
+        }
 
         // Build multi-source download URL list (ordered by priority).
-        // UpdateManager will probe each mirror and use the first reachable one.
-        // Priority: Cloudflare CDN → GitHub direct → Tencent COS (last resort).
-        val assetName = targetAsset?.getString("name") ?: return CheckResult.UpToDate
-        val githubUrl = targetAsset.optString("browser_download_url")
-        val downloadUrls = buildList {
-            add("${ProjectLinks.MIRROR_CF}/$assetName")
-            if (githubUrl.isNotBlank()) add(githubUrl)
-            add("${ProjectLinks.MIRROR_COS}/$assetName")
+        // UpdateManager probes each source and uses the first reachable one.
+        // Tencent COS first (verified 200 for release assets, Guangzhou direct), GitHub
+        // second. The Cloudflare mirror is intentionally not used: every
+        // /releases/download/<asset> path under fd.shizukux.xyz returns 404 as of 2026-11-19.
+        val assetName = targetAsset?.getString("name").orEmpty()
+        val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
+        val downloadUrls = if (targetAsset != null) {
+            buildList {
+                add("${ProjectLinks.MIRROR_COS}/$assetName")
+                if (githubUrl.isNotBlank()) add(githubUrl)
+            }
+        } else {
+            emptyList()
         }
+        // No matching variant in this release: still report that a newer version exists, but
+        // send the user to the release page instead of downloading an APK we cannot identify.
+        val requiresManualDownload = downloadUrls.isEmpty()
 
         val versionCode = parseVersionCode(versionName)
 
         return if (isNewerVersion(versionName, BuildConfig.VERSION_NAME)) {
             Timber.tag(TAG).d("Update available: $versionName (channel=$channel, current=${BuildConfig.VERSION_NAME})")
             CheckResult.UpdateAvailable(
-                UpdateInfo(versionName, versionCode, releaseNotes, downloadUrls, publishedAt, isPrerelease)
+                UpdateInfo(
+                    versionName, versionCode, releaseNotes, downloadUrls, publishedAt,
+                    isPrerelease, requiresManualDownload
+                )
             )
         } else {
             Timber.tag(TAG).d("Already on latest ($channel): ${BuildConfig.VERSION_NAME}")
@@ -249,6 +257,22 @@ object UpdateChecker {
         this is UnknownHostException || this is SocketTimeoutException ||
         this is ConnectException || this is SSLException || this is IOException
 
+    /**
+     * "Drop-In" contains a hyphen, so a plain `contains("dropin")` check misses it. All three
+     * spellings are accepted in case the release workflow renames the asset again.
+     */
+    private fun isDropInAsset(name: String): Boolean =
+        name.lowercase().let {
+            it.contains("drop-in") || it.contains("dropin") || it.contains("drop_in")
+        }
+
+    /** Everything that is neither the drop-in nor the compat-hub asset. */
+    private fun isStandardAsset(name: String): Boolean =
+        name.lowercase().let {
+            !it.contains("drop-in") && !it.contains("dropin") && !it.contains("drop_in") &&
+                !it.contains("compat")
+        }
+
     private fun isPrereleaseChannel(channel: String): Boolean =
         channel.equals("dev", ignoreCase = true) || channel.equals("beta", ignoreCase = true)
 
@@ -262,8 +286,11 @@ object UpdateChecker {
         }
         try {
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+                // Not "no data": a 403 rate limit / 404 / 5xx must fail the attempt so the caller
+                // retries and the Atom fallback gets a chance, instead of reporting "already up
+                // to date" (and locking that answer in for 24 hours) when the API is unreachable.
                 Timber.tag(TAG).w("HTTP ${connection.responseCode} from $urlString")
-                return null
+                throw IOException("HTTP ${connection.responseCode} from $urlString")
             }
             val body = connection.inputStream.bufferedReader().use { it.readText() }
             return if (body.trimStart().startsWith("[")) JSONArray(body) else JSONObject(body)
