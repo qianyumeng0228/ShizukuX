@@ -33,6 +33,14 @@ object ProjectLinks {
     const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
     // Tencent COS (Guangzhou) — domestic China direct connect, verified 200 for release assets
     const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
+    /**
+     * Gitee mirror — same asset layout as GitHub releases, no auth for public repos.
+     * The redirect chain is gitee.com/releases/download/<tag>/<asset> → attach_files/...
+     * → foruda.gitee.com (signed, short-lived). DownloadManager follows both hops.
+     * Assets that Gitee's scanner rejected upstream are stored there as <name>.apk.zip, so
+     * a lookup by the GitHub asset name returns 404 for those tags and the probe skips it.
+     */
+    const val MIRROR_GITEE = "https://gitee.com/qianyumeng0228/ShizukuX/releases/download"
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"

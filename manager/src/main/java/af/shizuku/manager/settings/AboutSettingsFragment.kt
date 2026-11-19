@@ -317,7 +317,7 @@ class AboutSettingsFragment : BaseSettingsFragment() {
             builder
                 .setMessage(getString(R.string.update_available_message, info.versionName))
                 .setPositiveButton(R.string.update_download) { _, _ ->
-                    updateManager.downloadUpdate(info.downloadUrls, info.versionName)
+                    updateManager.downloadUpdate(info.downloadUrls, info.versionName, info.expectedSize)
                 }
         }
 

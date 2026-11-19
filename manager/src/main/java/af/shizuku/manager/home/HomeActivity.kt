@@ -136,7 +136,9 @@ open class HomeActivity : GlassShellActivity() {
             builder.setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleases() }
         } else {
             builder.setPositiveButton(R.string.update_download) { _, _ ->
-                UpdateManager(this).downloadUpdate(updateInfo.downloadUrls, updateInfo.versionName)
+                UpdateManager(this).downloadUpdate(
+                    updateInfo.downloadUrls, updateInfo.versionName, updateInfo.expectedSize
+                )
             }
         }
 

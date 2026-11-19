@@ -61,9 +61,11 @@ class UpdateManager(private val context: Context) {
      * Download update APK from the best available mirror.
      * @param downloadUrls Ordered list of mirror URLs — fastest reachable one wins.
      * @param versionName Version name for display
+     * @param expectedSize Byte size reported by GitHub for this asset; mirrors serving a
+     *   different file (size mismatch) are skipped. -1 disables the check.
      */
     @SuppressLint("Range")
-    fun downloadUpdate(downloadUrls: List<String>, versionName: String) {
+    fun downloadUpdate(downloadUrls: List<String>, versionName: String, expectedSize: Long = -1) {
         createNotificationChannel()
 
         scope.launch(Dispatchers.IO) {
@@ -77,7 +79,7 @@ class UpdateManager(private val context: Context) {
             cleanup()
 
             // Probe mirrors concurrently — pick the first one that responds
-            val bestUrl = pickBestMirror(downloadUrls)
+            val bestUrl = pickBestMirror(downloadUrls, expectedSize)
             if (bestUrl == null) {
                 Timber.tag(TAG).e("All mirrors unreachable")
                 showDownloadErrorNotification()
@@ -85,15 +87,21 @@ class UpdateManager(private val context: Context) {
             }
 
             Timber.tag(TAG).d("Using mirror: $bestUrl")
-            startDownload(bestUrl, file, versionName)
+            startDownload(bestUrl, file, versionName, expectedSize)
         }
     }
 
     /**
      * Probe each mirror with a quick HEAD request and return the first one that serves
-     * an actual APK (not an HTML error page). Tries them in order — first valid wins.
+     * an actual APK (not an HTML error page, not a same-named file of a different size).
+     * Tries them in order — first valid wins.
+     *
+     * [expectedSize] comes from the GitHub release asset list. It catches mirrors that hold
+     * a different file under the same name — most importantly the Gitee entries stored as
+     * `<name>.apk.zip` (localised scanner rejection), which must not be handed to the
+     * installer as an APK. A 2% tolerance covers CDN/asset metadata rounding.
      */
-    private suspend fun pickBestMirror(urls: List<String>): String? = withContext(Dispatchers.IO) {
+    private suspend fun pickBestMirror(urls: List<String>, expectedSize: Long = -1): String? = withContext(Dispatchers.IO) {
         for (url in urls) {
             try {
                 val conn = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
@@ -101,6 +109,7 @@ class UpdateManager(private val context: Context) {
                     connectTimeout = 3000
                     readTimeout = 3000
                     instanceFollowRedirects = true
+                    setRequestProperty("User-Agent", "ShizukuX/${BuildConfig.VERSION_NAME}")
                 }
                 val code = conn.responseCode
                 val contentType = conn.contentType ?: ""
@@ -111,11 +120,15 @@ class UpdateManager(private val context: Context) {
                 val looksLikeHtml = contentType.startsWith("text/html", ignoreCase = true)
                 // Also reject tiny responses (< 1 MB) — APKs are always > 5 MB.
                 val tooSmall = contentLength in 1 until 1_000_000
-                if (code in 200..399 && !looksLikeHtml && !tooSmall) {
+                // Reject a size that does not match the published asset (zip uploads,
+                // stale objects, error interstitials served with a plausible type).
+                val sizeMismatch = expectedSize > 0 && contentLength > 0 &&
+                        kotlin.math.abs(contentLength - expectedSize) > expectedSize * 0.02
+                if (code in 200..399 && !looksLikeHtml && !tooSmall && !sizeMismatch) {
                     Timber.tag(TAG).d("Mirror reachable: $url (HTTP $code, type=$contentType, len=$contentLength)")
                     return@withContext url
                 }
-                Timber.tag(TAG).w("Mirror $url rejected: HTTP $code, type=$contentType, len=$contentLength")
+                Timber.tag(TAG).w("Mirror $url rejected: HTTP $code, type=$contentType, len=$contentLength, expected=$expectedSize")
             } catch (e: Exception) {
                 Timber.tag(TAG).w("Mirror $url unreachable: ${e.message}")
             }
@@ -123,7 +136,7 @@ class UpdateManager(private val context: Context) {
         null
     }
 
-    private fun startDownload(downloadUrl: String, file: File, versionName: String) {
+    private fun startDownload(downloadUrl: String, file: File, versionName: String, expectedSize: Long = -1) {
         val request = DownloadManager.Request(Uri.parse(downloadUrl))
             .setTitle(context.getString(R.string.update_downloading_title))
             .setDescription(context.getString(R.string.update_downloading_description, versionName))
@@ -144,7 +157,7 @@ class UpdateManager(private val context: Context) {
                 .apply()
 
             Timber.tag(TAG).d("Download started: $downloadUrl, ID: $downloadId")
-            monitorDownload(downloadId, file, versionName)
+            monitorDownload(downloadId, file, versionName, expectedSize)
         } catch (e: Exception) {
             Timber.tag(TAG).e(e, "Failed to start download")
             Sentry.captureException(e)
@@ -155,7 +168,7 @@ class UpdateManager(private val context: Context) {
     /**
      * Monitor download progress
      */
-    private fun monitorDownload(downloadId: Long, file: File, versionName: String) {
+    private fun monitorDownload(downloadId: Long, file: File, versionName: String, expectedSize: Long = -1) {
         monitorJob?.cancel()
         monitorJob = scope.launch {
             // Consecutive times the DownloadManager row for [downloadId] was missing. If the
@@ -209,6 +222,20 @@ class UpdateManager(private val context: Context) {
 
                         when (status) {
                             DownloadManager.STATUS_SUCCESSFUL -> {
+                                // A truncated body or a mirror that answered with a different
+                                // file under the same name would only fail later, at install
+                                // time, with a vague "App not installed". Reject it here.
+                                val actualSize = file.length()
+                                val wrongSize = expectedSize > 0 && actualSize > 0 &&
+                                        kotlin.math.abs(actualSize - expectedSize) > expectedSize * 0.02
+                                if (wrongSize) {
+                                    Timber.tag(TAG).e(
+                                        "Downloaded size $actualSize != expected $expectedSize; discarding"
+                                    )
+                                    file.delete()
+                                    showDownloadErrorNotification(DownloadManager.ERROR_HTTP_DATA_ERROR)
+                                    break
+                                }
                                 Timber.tag(TAG).d("Download completed: ${file.absolutePath}")
                                 onDownloadComplete(file, versionName)
                                 break
@@ -281,6 +308,15 @@ class UpdateManager(private val context: Context) {
         // front with a clear explanation instead of silently failing.
         val downloadedCode = readApkVersionCode(file)
         val installedCode = BuildConfig.VERSION_CODE
+        // Unreadable manifest means the file is not an installable APK at all (a mirror
+        // handed us a zip/HTML body that still passed the HEAD probe). Don't send the user
+        // into a doomed installer session.
+        if (downloadedCode == -1) {
+            Timber.tag(TAG).w("Downloaded file is not a readable APK; discarding")
+            file.delete()
+            showDownloadErrorNotification(DownloadManager.ERROR_HTTP_DATA_ERROR)
+            return
+        }
         if (downloadedCode > 0 && downloadedCode < installedCode) {
             Timber.tag(TAG).w(
                 "Downloaded APK versionCode $downloadedCode < installed $installedCode; refusing install"

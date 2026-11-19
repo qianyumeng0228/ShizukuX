@@ -42,6 +42,9 @@ object UpdateChecker {
         val downloadUrls: List<String>,
         val publishedAt: String,
         val isPrerelease: Boolean,
+        // Byte size of the asset as reported by GitHub. Used by mirrors to reject a same-named
+        // but different file (e.g. a Gitee <name>.apk.zip upload, or a stale COS object).
+        val expectedSize: Long = -1,
         // True when only the Atom fallback succeeded — no direct APK URL available.
         val requiresManualDownload: Boolean = false
     )
@@ -157,13 +160,19 @@ object UpdateChecker {
         //                          /<owner>/<repo>/releases/download/<tag>/<asset>. Without the
         //                          tag GitHub answers 404 (that was the "mirror is broken").
         //                          Once the edge cache is warm, HEAD is ~2 s.
+        //   Gitee                — GitHub-release mirror; public, no token. Two redirects later
+        //                          it serves from foruda.gitee.com at ~2 MB/s in mainland China.
+        //                          Assets the Gitee scanner rejected are stored as
+        //                          <name>.apk.zip, so a name-based lookup 404s and gets skipped.
         //   GitHub direct        — last resort.
         val assetName = targetAsset?.getString("name").orEmpty()
         val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
+        val assetSize = targetAsset?.optLong("size", -1L) ?: -1L
         val downloadUrls = if (targetAsset != null) {
             buildList {
                 add("${ProjectLinks.MIRROR_COS}/$assetName")
                 add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
+                add("${ProjectLinks.MIRROR_GITEE}/$tagName/$assetName")
                 if (githubUrl.isNotBlank()) add(githubUrl)
             }
         } else {
@@ -180,7 +189,7 @@ object UpdateChecker {
             CheckResult.UpdateAvailable(
                 UpdateInfo(
                     versionName, versionCode, releaseNotes, downloadUrls, publishedAt,
-                    isPrerelease, requiresManualDownload
+                    isPrerelease, assetSize, requiresManualDownload
                 )
             )
         } else {
