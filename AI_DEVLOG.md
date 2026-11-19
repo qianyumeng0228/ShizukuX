@@ -1718,11 +1718,40 @@ k2820 把 `fd.shizukux.xyz` 从下载列表里摘掉，理由是「4 个资产�
   旧 `nohup sh /data/local/tmp/force_update.sh` 0 次。
 - **仍然验不到端到端下载**：2821 高于线上所有 tag，检查必然 UpToDate。
 
-### 5. 没做 / 做不了
+### 5. Worker 侧：`cacheEverything`（同日补齐）
 
-- Worker 源码不在仓库（仓库里只有 `tools/module-submit-worker`），本机也没有 `CLOUDFLARE_API_TOKEN` /
-  `CLOUDFLARE_ACCOUNT_ID`，所以无法预热门 cache、无法把冷启动 27 s 压下去。它只作为第二源，
-  冷缓存超时（探测 3 s）会直接落到 COS，不影响下载。
+镜像冷启动慢，根因不在客户端而在 Worker：它只设了响应头 `Cache-Control: public, max-age=86400`，
+而 **Worker 生成的响应默认不进入 CDN 缓存**，`cf-cache-status` 恒为 `DYNAMIC`，每次请求都穿透到
+GitHub。于是给回源 `fetch` 加：
+
+```js
+cf: {
+  cacheEverything: true,
+  cacheTtlByStatus: { '200-299': 86400, '301-302': 3600, '404': 60, '500-599': 0 }
+}
+```
+
+404 只留 60 秒，避免「资产还没传上来」的状态被缓存一整天。
+
+实测（石家庄 → CF SJC）：
+
+| 场景 | 改前 | 改后 |
+| --- | --- | --- |
+| 冷资产 HEAD 第一次 | 27 s | 7.5 s（`MISS`） |
+| 同 URL 第二次 | 27 s | 1.9 s（`HIT`，`age=4`） |
+| 已热资产 | 1.7–3.2 s | 1.4 s（`HIT`） |
+| 完整下载 Compat-Hub 656,024 B | — | SHA-256 与 GitHub 一致 |
+
+冷启动 3–8 秒仍高于客户端 3 秒探测超时，第一个访问某 PoP 的用户会跳过 CF 落到 COS；不影响下载。
+
+线上面板里没有可写的内联编辑器：Quick Edit 是跨进程 iframe（VS Code web，不暴露 `monaco`，
+`bu` 的键盘事件到不了），直接对 `/api/v4/.../workers/scripts` 发 PUT 会被 dashboard 的 WAF 拦
+（403 `Sorry, you have been blocked`）。最终用 `bu.iframe_target` 拿到 OOPIF 的 targetId，
+`Target.attachToTarget` 后在该 session 里 `Input.dispatchKeyEvent` / `Input.insertText` 才写进去。
+注意 `Input.insertText` 会让 Monaco 对每个 `\n` 应用 autoIndent，缩进会层层累加——改用系统剪贴板
++ `Ctrl+V` 粘贴才保留原缩进。
+
+源码与回滚说明：`I:\shizukux\cf-proxy-worker\`（线上版本 `b8fe6760`，回滚到 `f366adf3`）。
 
 ---
 
