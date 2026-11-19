@@ -1234,6 +1234,14 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="update_available_message">A new version %1$s is available for download.</string>
     <string name="update_download">Download</string>
     <string name="update_later">Later</string>
+    <string name="update_card_title">New version found</string>
+    <string name="update_card_version">Version %1$s</string>
+    <string name="update_card_connecting">Connecting to %1$s (%2$d/%3$d)</string>
+    <string name="update_card_downloading">Downloading from %1$s — %2$d%% (%3$d/%4$d)</string>
+    <string name="update_card_ready">Download complete, preparing install…</string>
+    <string name="update_card_failed">All four sources failed. Check your network and try again.</string>
+    <string name="update_card_close">Close</string>
+    <string name="update_card_background">Background</string>
     <string name="update_release_notes">Release Notes</string>
     <string name="update_up_to_date_title">Up to Date</string>
     <string name="update_up_to_date_message">You\'re already using the latest version (%1$s).</string>

@@ -154,26 +154,27 @@ object UpdateChecker {
         }
 
         // Build multi-source download URL list (ordered by priority).
-        // UpdateManager probes each source and uses the first reachable one.
-        //   COS (Guangzhou)      — flat asset name, ~200 ms HEAD from mainland China.
-        //   Cloudflare (fd.*)    — a GitHub reverse proxy, NOT a flat object store: it needs
-        //                          /<owner>/<repo>/releases/download/<tag>/<asset>. Without the
-        //                          tag GitHub answers 404 (that was the "mirror is broken").
-        //                          Once the edge cache is warm, HEAD is ~2 s.
-        //   Gitee                — GitHub-release mirror; public, no token. Two redirects later
-        //                          it serves from foruda.gitee.com at ~2 MB/s in mainland China.
-        //                          Assets the Gitee scanner rejected are stored as
-        //                          <name>.apk.zip, so a name-based lookup 404s and gets skipped.
-        //   GitHub direct        — last resort.
+        // UpdateManager tries each source in turn and only moves on when the download fails.
+        //   Gitee               — GitHub-release mirror; public, no token. Two redirects later
+        //                         it serves from foruda.gitee.com at ~2 MB/s in mainland China.
+        //                         Assets the Gitee scanner rejected are stored as
+        //                         <name>.apk.zip, so a name-based lookup 404s and gets skipped.
+        //   GitHub direct       — original source.
+        //   Cloudflare (fd.*)   — a GitHub reverse proxy, NOT a flat object store: it needs
+        //                         /<owner>/<repo>/releases/download/<tag>/<asset>. Without the
+        //                         tag GitHub answers 404 (that was the "mirror is broken").
+        //                         Once the edge cache is warm, HEAD is ~2 s.
+        //   COS (Guangzhou)     — flat asset name, ~200 ms HEAD from mainland China; kept last
+        //                         because it is only updated for formal releases.
         val assetName = targetAsset?.getString("name").orEmpty()
         val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
         val assetSize = targetAsset?.optLong("size", -1L) ?: -1L
         val downloadUrls = if (targetAsset != null) {
             buildList {
-                add("${ProjectLinks.MIRROR_COS}/$assetName")
-                add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
                 add("${ProjectLinks.MIRROR_GITEE}/$tagName/$assetName")
                 if (githubUrl.isNotBlank()) add(githubUrl)
+                add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
+                add("${ProjectLinks.MIRROR_COS}/$assetName")
             }
         } else {
             emptyList()

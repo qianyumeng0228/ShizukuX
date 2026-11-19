@@ -17,6 +17,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.ProjectLinks
 import af.shizuku.manager.update.UpdateChecker
+import af.shizuku.manager.update.UpdateDownloadCard
 import af.shizuku.manager.update.UpdateManager
 import af.shizuku.manager.worker.UpdateCheckWorker
 import org.koin.android.ext.android.inject
@@ -25,7 +26,14 @@ import timber.log.Timber
 class AboutSettingsFragment : BaseSettingsFragment() {
 
     private var versionClickCount = 0
+    private var updateCard: UpdateDownloadCard? = null
     private val updateManager: UpdateManager by inject()
+
+    override fun onDestroyView() {
+        updateCard?.dismiss()
+        updateCard = null
+        super.onDestroyView()
+    }
 
     companion object {
         private const val TAG = "AboutSettingsFragment"
@@ -301,27 +309,22 @@ class AboutSettingsFragment : BaseSettingsFragment() {
 
     private fun showUpdateAvailableDialog(info: UpdateChecker.UpdateInfo) {
         val context = context ?: return
-        val devBadge = if (info.isPrerelease) " (${getString(R.string.update_prerelease_badge)})" else ""
-        val builder = MaterialAlertDialogBuilder(context)
-            .setTitle(getString(R.string.update_available_title) + devBadge)
-            .setNegativeButton(R.string.update_later, null)
-            .setNeutralButton(R.string.update_release_notes) { _, _ ->
-                openReleasesPage()
-            }
-
-        if (info.requiresManualDownload) {
-            builder
-                .setMessage(getString(R.string.update_available_manual_message, info.versionName))
-                .setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleasesPage() }
-        } else {
-            builder
-                .setMessage(getString(R.string.update_available_message, info.versionName))
-                .setPositiveButton(R.string.update_download) { _, _ ->
-                    updateManager.downloadUpdate(info.downloadUrls, info.versionName, info.expectedSize)
-                }
+        if (!info.requiresManualDownload) {
+            updateManager.downloadUpdate(info.downloadUrls, info.versionName, info.expectedSize)
+            val activity = activity as? androidx.activity.ComponentActivity ?: return
+            updateCard?.dismiss()
+            updateCard = UpdateDownloadCard(activity).also { it.show(info.versionName) }
+            return
         }
 
-        builder.show()
+        val devBadge = if (info.isPrerelease) " (${getString(R.string.update_prerelease_badge)})" else ""
+        MaterialAlertDialogBuilder(context)
+            .setTitle(getString(R.string.update_available_title) + devBadge)
+            .setMessage(getString(R.string.update_available_manual_message, info.versionName))
+            .setNegativeButton(R.string.update_later, null)
+            .setNeutralButton(R.string.update_release_notes) { _, _ -> openReleasesPage() }
+            .setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleasesPage() }
+            .show()
     }
 
     private fun showUpToDateDialog() {

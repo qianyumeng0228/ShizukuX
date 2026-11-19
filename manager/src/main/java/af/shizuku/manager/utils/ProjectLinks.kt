@@ -28,7 +28,10 @@ object ProjectLinks {
      *           which is what made the mirror look broken. With the tag it returns the APK,
      *           ~2 s from a warm edge cache; cold cache is ~27 s.
      *
-     * UpdateChecker probes each source before downloading; COS (≈200 ms) is tried first.
+     * UpdateChecker builds the download list in this fixed order, and UpdateManager walks it
+     * one source at a time: Gitee → GitHub → CF → COS. The next entry is tried only after
+     * the previous one actually failed (enqueue rejection, HTTP error, truncated body, or
+     * a same-named file whose size differs from the GitHub asset by more than 2%).
      */
     const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
     // Tencent COS (Guangzhou) — domestic China direct connect, verified 200 for release assets
@@ -38,7 +41,7 @@ object ProjectLinks {
      * The redirect chain is gitee.com/releases/download/<tag>/<asset> → attach_files/...
      * → foruda.gitee.com (signed, short-lived). DownloadManager follows both hops.
      * Assets that Gitee's scanner rejected upstream are stored there as <name>.apk.zip, so
-     * a lookup by the GitHub asset name returns 404 for those tags and the probe skips it.
+     * a lookup by the GitHub asset name returns 404 for those tags and the relay skips it.
      */
     const val MIRROR_GITEE = "https://gitee.com/qianyumeng0228/ShizukuX/releases/download"
 

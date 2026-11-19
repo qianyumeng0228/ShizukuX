@@ -1068,6 +1068,14 @@
     <string name="update_available_message"><![CDATA[新版本%1$s可供下载。]]></string>
     <string name="update_download"><![CDATA[下载]]></string>
     <string name="update_later"><![CDATA[之后]]></string>
+    <string name="update_card_title"><![CDATA[发现新版本]]></string>
+    <string name="update_card_version"><![CDATA[版本 %1$s]]></string>
+    <string name="update_card_connecting"><![CDATA[正在连接 %1$s（%2$d/%3$d）]]></string>
+    <string name="update_card_downloading"><![CDATA[正在从 %1$s 下载 %2$d%%（%3$d/%4$d）]]></string>
+    <string name="update_card_ready"><![CDATA[下载完成，正在准备安装]]></string>
+    <string name="update_card_failed"><![CDATA[四条线路都失败了，请检查网络后重试]]></string>
+    <string name="update_card_close"><![CDATA[关闭]]></string>
+    <string name="update_card_background"><![CDATA[后台下载]]></string>
     <string name="update_release_notes"><![CDATA[发行说明]]></string>
     <string name="update_up_to_date_title"><![CDATA[最新]]></string>
     <string name="update_up_to_date_message"><![CDATA[您已经在使用最新版本（%1$s）。]]></string>

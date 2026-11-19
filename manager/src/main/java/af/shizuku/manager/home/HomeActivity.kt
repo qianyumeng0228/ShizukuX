@@ -3,6 +3,7 @@ package af.shizuku.manager.home
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.update.UpdateChecker
+import af.shizuku.manager.update.UpdateDownloadCard
 import af.shizuku.manager.update.UpdateManager
 import android.content.Intent
 import android.net.Uri
@@ -95,10 +96,23 @@ open class HomeActivity : GlassShellActivity() {
         }
     }
 
+    private var updateCard: UpdateDownloadCard? = null
+
     /**
-     * Show update available popup dialog
+     * Normal updates go straight into the download card: the relay starts immediately and the
+     * card shows which source is being tried plus the two actions (关闭 / 后台下载).
+     * Only the "no matching APK asset" case still needs the old release-notes dialog.
      */
     private fun showUpdateAvailableDialog(updateInfo: UpdateChecker.UpdateInfo) {
+        if (!updateInfo.requiresManualDownload) {
+            UpdateManager(this).downloadUpdate(
+                updateInfo.downloadUrls, updateInfo.versionName, updateInfo.expectedSize
+            )
+            updateCard?.dismiss()
+            updateCard = UpdateDownloadCard(this).also { it.show(updateInfo.versionName) }
+            return
+        }
+
         val dialogView = layoutInflater.inflate(R.layout.dialog_update_available, null)
         dialogView.findViewById<TextView>(R.id.update_version_name).text =
             getString(R.string.update_version_name, updateInfo.versionName)
@@ -126,23 +140,19 @@ open class HomeActivity : GlassShellActivity() {
             )
         }
 
-        val builder = MaterialAlertDialogBuilder(this)
+        MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_available_title)
             .setView(dialogView)
             .setNegativeButton(R.string.update_later, null)
             .setNeutralButton(R.string.update_release_notes) { _, _ -> openReleases() }
+            .setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleases() }
+            .show()
+    }
 
-        if (updateInfo.requiresManualDownload) {
-            builder.setPositiveButton(R.string.update_view_on_github) { _, _ -> openReleases() }
-        } else {
-            builder.setPositiveButton(R.string.update_download) { _, _ ->
-                UpdateManager(this).downloadUpdate(
-                    updateInfo.downloadUrls, updateInfo.versionName, updateInfo.expectedSize
-                )
-            }
-        }
-
-        builder.show()
+    override fun onDestroy() {
+        updateCard?.dismiss()
+        updateCard = null
+        super.onDestroy()
     }
 
     companion object {
