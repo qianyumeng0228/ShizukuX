@@ -132,7 +132,7 @@ object ShizukuStateMachine {
                         val context = ShizukuApplication.appContext
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                if (AdbArm.disarmWifiEnabled(context)) {
+                                if (AdbArm.disarmWifiEnabledSuspend(context)) {
                                     Timber.tag("ShizukuStateMachine").i("auto-closed TCP port (disabled wireless debugging)")
                                 }
                             } catch (e: Exception) {
@@ -211,7 +211,12 @@ object ShizukuStateMachine {
                     val context = ShizukuApplication.appContext
                     val shouldDisableUsbDebugging = ShizukuSettings.getAutoDisableUsbDebugging()
                     if (shouldDisableUsbDebugging) {
-                        AdbArm.disarmUsbDebugging(context)
+                        // The server route starts a shell process and waits for it. setDead runs
+                        // on the main thread for a user-requested stop and in a binder-death
+                        // callback, so the write is handed to IO instead of waiting here.
+                        CoroutineScope(Dispatchers.IO).launch {
+                            AdbArm.disarmUsbDebuggingSuspend(context)
+                        }
                     }
                 } catch (e: UninitializedPropertyAccessException) {
                     Timber.tag("ShizukuStateMachine").w("Skipping USB debugging disable: appContext not initialized yet")

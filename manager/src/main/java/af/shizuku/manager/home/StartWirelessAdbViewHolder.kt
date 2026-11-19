@@ -16,6 +16,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import af.shizuku.manager.Helps
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.R
@@ -145,51 +146,60 @@ class StartWirelessAdbViewHolder(
 
             // One-tap arm through the AdbArm choke point: WRITE_SECURE_SETTINGS writes
             // ADB_ENABLED + adb_allowed_connection_time + adb_wifi_enabled; Device Owner
-            // (dhizuku) writes the two allowlisted ADB keys as fallback.
-            AdbArm.arm(context)
+            // (dhizuku) writes the two allowlisted ADB keys as fallback; a running server
+            // writes them as shell when the ROM refuses the grant.
+            //
+            // Never on the main thread — the server route shells out — and everything below
+            // depends on the result (port discovery reads what arm() just wrote), so the
+            // whole tail moves into one coroutine instead of racing the write.
+            scope.launch {
+                withContext(Dispatchers.IO) { AdbArm.armSuspend(context) }
 
-            // NOTE: no longer gate on Settings.Global.ADB_ENABLED (USB debugging). Wireless
-            // debugging (Android 11+ TLS) works with USB debugging off; gating on it made the
-            // one-tap flow bounce users to the "enable USB debugging" dialog for no reason.
+                // NOTE: no longer gate on Settings.Global.ADB_ENABLED (USB debugging). Wireless
+                // debugging (Android 11+ TLS) works with USB debugging off; gating on it made the
+                // one-tap flow bounce users to the "enable USB debugging" dialog for no reason.
 
-            val sysPropPort = EnvironmentUtils.getAdbTcpPort()
-            val discoveredPort = withState(homeModel) { it.discoveredAdbPort }
-            val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
-            val lastPort = ShizukuSettings.getLastPort()
-            val validTcpPort = when {
-                tcpPort in 1..65535 -> tcpPort
-                lastPort in 1..65535 -> lastPort
-                else -> -1
-            }
-
-            if (validTcpPort <= 0 && !EnvironmentUtils.isTlsSupported()) {
-                // Pre-Android-11 path: classic ADB-over-TCP needs USB debugging enabled.
-                if (!EnvironmentUtils.isAdbEnabled()) {
-                    WadbEnableUsbDebuggingDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-                    return@setOnClickListener
+                val sysPropPort = EnvironmentUtils.getAdbTcpPort()
+                val discoveredPort = withState(homeModel) { it.discoveredAdbPort }
+                val tcpPort = if (sysPropPort in 1..65535) sysPropPort else discoveredPort
+                val lastPort = ShizukuSettings.getLastPort()
+                val validTcpPort = when {
+                    tcpPort in 1..65535 -> tcpPort
+                    lastPort in 1..65535 -> lastPort
+                    else -> -1
                 }
-                WadbNotEnabledDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
-            } else if (validTcpPort <= 0) {
-                // Android 11+ wireless debugging: no known port yet — launch the new
-                // step-by-step starter screen, which detects the port, enables wireless
-                // debugging, pairs and starts the service automatically (one-tap flow).
-                val intent = Intent(context, StarterActivity::class.java)
-                val activity = context.asActivity<android.app.Activity>()
-                if (activity != null) {
-                    activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+
+                if (validTcpPort <= 0 && !EnvironmentUtils.isTlsSupported()) {
+                    // Pre-Android-11 path: classic ADB-over-TCP needs USB debugging enabled.
+                    if (!EnvironmentUtils.isAdbEnabled()) {
+                        WadbEnableUsbDebuggingDialogFragment().show(
+                            context.asActivity<FragmentActivity>().supportFragmentManager
+                        )
+                        return@launch
+                    }
+                    WadbNotEnabledDialogFragment().show(context.asActivity<FragmentActivity>().supportFragmentManager)
+                } else if (validTcpPort <= 0) {
+                    // Android 11+ wireless debugging: no known port yet — launch the new
+                    // step-by-step starter screen, which detects the port, enables wireless
+                    // debugging, pairs and starts the service automatically (one-tap flow).
+                    val intent = Intent(context, StarterActivity::class.java)
+                    val activity = context.asActivity<android.app.Activity>()
+                    if (activity != null) {
+                        activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+                    } else {
+                        context.startActivity(intent)
+                    }
                 } else {
-                    context.startActivity(intent)
-                }
-            } else {
-                // Known port (TCP mode on or off): the starter screen handles pairing itself.
-                val intent = Intent(context, StarterActivity::class.java).apply {
-                    putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
-                }
-                val activity = context.asActivity<android.app.Activity>()
-                if (activity != null) {
-                    activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
-                } else {
-                    context.startActivity(intent)
+                    // Known port (TCP mode on or off): the starter screen handles pairing itself.
+                    val intent = Intent(context, StarterActivity::class.java).apply {
+                        putExtra(StarterActivity.EXTRA_PORT, validTcpPort)
+                    }
+                    val activity = context.asActivity<android.app.Activity>()
+                    if (activity != null) {
+                        activity.startWithSceneTransition(intent, binding.icon, "icon_wireless_adb")
+                    } else {
+                        context.startActivity(intent)
+                    }
                 }
             }
         }

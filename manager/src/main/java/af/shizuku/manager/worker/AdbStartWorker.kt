@@ -20,6 +20,7 @@ import androidx.work.*
 import java.io.EOFException
 import java.util.concurrent.TimeoutException
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
@@ -108,7 +109,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             // Arming routes through the AdbArm choke point: WRITE_SECURE_SETTINGS when
             // held, otherwise Device Owner (dhizuku) fallback for the allowlisted keys.
-            AdbArm.armUsbDebugging(applicationContext)
+            AdbArm.armUsbDebuggingSuspend(applicationContext)
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && !ShizukuSettings.getTcpMode()) {
@@ -188,7 +189,10 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                             if (intent.action == Intent.ACTION_USER_PRESENT) {
                                 context.unregisterReceiver(this)
                                 unlockReceiver = null
-                                AdbArm.armWifiEnabled(context)
+                                // Receiver callbacks are main-thread: the server route shells out.
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    AdbArm.armWifiEnabledSuspend(context)
+                                }
                             }
                         }
                     }
@@ -225,7 +229,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                     }
                 }
 
-                AdbArm.armWifiEnabled(applicationContext)
+                AdbArm.armWifiEnabledSuspend(applicationContext)
                 cr.registerContentObserver(Settings.Global.getUriFor("adb_wifi_enabled"), false, observer)
                 startDiscoveryWithTimeout()
 

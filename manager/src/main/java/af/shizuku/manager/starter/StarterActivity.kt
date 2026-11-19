@@ -825,8 +825,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 Timber.tag("StarterActivity").w("Device-owner enable failed: $ownerErr; falling through")
             }
+            // The pairing assistant is the last resort: when AdbArm has any route (direct,
+            // Device Owner, or a running server that writes settings as shell) we arm the
+            // switch ourselves and only fall back to clicking it by hand when none exists.
             val autoWireless = autoPairingMode && appContext.isPairingAssistantEnabled() &&
-                appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
+                !AdbArm.canArm(appContext)
             insertStep(
                 0,
                 StarterStep(
@@ -929,7 +932,9 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun tryAutoEnableWirelessDebugging() {
         val context = appContext
         if (AdbArm.canArm(context)) {
-            AdbArm.arm(context)
+            // AdbArm can arm through the running server (Method.SHIZUKU_SERVER), which starts
+            // a shell process — hop off the main dispatcher before writing.
+            withContext(Dispatchers.IO) { AdbArm.armSuspend(context) }
             updateStep(
                 if (autoPairingMode) "one_tap_wireless" else "enable_wireless",
                 StepStatus.COMPLETED,
@@ -1115,8 +1120,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 Timber.tag("StarterActivity").w("Device-owner enable failed: $ownerErr; falling through")
             }
+            // Same rule as the method above: the assistant is only for a phone where AdbArm
+            // has no route at all.
             val autoWireless = appContext.isPairingAssistantEnabled() &&
-                appContext.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED
+                !AdbArm.canArm(appContext)
             if (autoWireless) {
                 // The assistant can only click the settings switch, and HyperOS-class ROMs
                 // disable that switch unless a Wi-Fi network is *connected*. Detect it up

@@ -12,6 +12,7 @@ import javax.net.ssl.SSLException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.database.ActivityLogManager
@@ -194,14 +195,18 @@ object AdbStarter {
             throw e
         } finally {
             if (startedSuccessfully && ShizukuSettings.getAutoDisableUsbDebugging())
-                AdbArm.disarmWifiEnabled(context)
+                // Cannot wait for a shell process in a cancelled/finishing start: run the
+                // write unconditionally on IO so cancelling the start cannot leave the port open.
+                withContext(NonCancellable + Dispatchers.IO) {
+                    AdbArm.disarmWifiEnabledSuspend(context)
+                }
         }
     }
 
     suspend fun stopTcp(context: Context, port: Int) {
         if (port !in 1..65535) return
         runCatching {
-            AdbArm.armUsbDebugging(context)
+            AdbArm.armUsbDebuggingSuspend(context)
 
             if (!EnvironmentUtils.isAdbEnabled()) throw IllegalStateException("ADB is not enabled")
 

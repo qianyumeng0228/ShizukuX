@@ -88,7 +88,7 @@ class LockedBootStartService : Service() {
             // Arm wireless debugging through the AdbArm choke point (WRITE_SECURE_SETTINGS
             // or Device Owner) — everything this start needs is in device-protected storage
             // or system settings, none of which wait for the unlock.
-            AdbArm.arm(context)
+            AdbArm.armSuspend(context)
 
             // Fast probe for a live wireless-debugging port on loopback. No mDNS, no long
             // discovery: before the unlock a long search is more likely stuck on the lock

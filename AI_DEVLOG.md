@@ -1565,6 +1565,52 @@ Next 那套有三块：
 `Shizuku.newProcess("settings put global <key> <value> && echo ok")`，用 `echo ok` 判成功，
 `adb_allowed_connection_time` 也照写（这条键没有 allowlist 限制，shell 能写）。
 
+## 2026-11-19 · k2819 — AdbArm 第三条写入路径（server 代写 settings）
+
+按上一轮的建议实施，但**看过代码后改了三点**，另外补上了一条上一轮没看见、却更致命的门。
+
+### 1. 硬门（上一轮漏掉的根因）
+
+`ShizukuReceiverStarter:112` 把整条 ADB 启动分支包在
+`if (checkSelfPermission(WRITE_SECURE_SETTINGS) == GRANTED)` 里，`else` 直接
+`showPermissionErrorNotification()`。也就是说权限监控下 `AdbStartWorker` **根本不入队**：
+开机、守护、磁贴、通知重试四条路全在进 worker 前被拒。只在 `AdbArm` 里加一条写入路径，
+OPPO 上依然起不来。门现在同时接受「本应用持权」与「服务正在运行」。
+
+### 2. 与上一轮建议的偏差
+
+1. **不用 `&& echo ok` 判成功**。`settings put` 成功不打印任何东西，`echo ok` 仍然要读 stdout，
+   而读流本身会阻塞、超时只能盖住 `waitFor`；Android 17 上部分键还读不回来，读回校验也不可靠。
+   最终用 `>/dev/null 2>&1` + 退出码，并对 `waitFor` 加 5s `withTimeout` + `runInterruptible`。
+2. **同步 API 不落 server 分支**。`arm` / `armUsbDebugging` / `armWifiEnabled` /
+   `disarmWifiEnabled` / `disarmUsbDebugging` 这五个同步函数遇到 `SHIZUKU_SERVER` 只记日志、
+   返回 `NONE` / `false`，真正执行走新增的 5 个 `*Suspend`（每个自己 `withContext(IO)`）。
+   这样不需要在 `method()` 里判断调用线程——那既不可靠，也会随调用点变化而失效。
+3. **`StartWirelessAdbViewHolder` 不是"把 arm 包进 IO"就完**。arm 之后的端口发现读的正是
+   刚写入的值，单把 arm 异步化会退化成读写竞争。整段尾部移进同一个 `scope.launch`，
+   arm 用 `withContext(IO)`，保持"先写后读"的原时序。
+
+### 3. 线程位置（逐个核过，不再"又发现一处"）
+
+8 个调用点里 4 个原本在主线程：`StartWirelessAdbViewHolder:149`（点击回调）、
+`StarterActivity:931`、`ShizukuStateMachine:214`（`setDead` 的 `transition{}`）、
+`BaseSettingsFragment:254`（`lifecycleScope`，经 `AdbStarter.stopTcp`）。另外
+`AdbStartWorker:191` 的 `AdbArm.armWifiEnabled` 在 `BroadcastReceiver.onReceive` 里，同样是主线程。
+改完后全仓库 13 处 `AdbArm.*` 只剩 suspend 版与只读的 `canArm`。
+
+### 4. 没做
+
+- `pm grant`：`GRANT_RUNTIME_PERMISSIONS` 正是权限监控拦的位，服务端 attach 时已试过并失败。
+- 服务端：一行未动。
+
+### 5. 验证
+
+- 小米 `bc757a76`：覆盖安装、冷启动、一键启动（进入 StarterActivity → 5 步全勾 → 回首页，
+  服务仍在运行）、`logcat -s AdbArm` 无告警、`logcat -b crash` 无记录。
+- 顺带用 `adb shell`（与 `newProcess` 同 uid、同命令）验证了 `settings put` 在本 ROM 上的
+  退出码与读回值，确认命令本身有效、且没有破坏 `adb_wifi_enabled` / `adb_allowed_connection_time`。
+- **未验**：ColorOS 上 `SHIZUKU_SERVER` 整链（需要 `hasWSS=false` 且服务在运行）。
+
 ---
 
 ## Key Files Quick Reference

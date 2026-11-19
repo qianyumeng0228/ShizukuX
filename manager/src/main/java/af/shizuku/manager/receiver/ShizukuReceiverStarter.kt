@@ -109,7 +109,13 @@ object ShizukuReceiverStarter {
         if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
             rootStart(context)
         } else if (ShizukuSettings.getLastLaunchMode() == LaunchMethod.ADB) {
-            if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED) {
+            // A running server is shell and holds WRITE_SECURE_SETTINGS itself, so an ADB
+            // start no longer needs the app to hold the permission: AdbStartWorker arms
+            // through it (AdbArm.Method.SHIZUKU_SERVER). Without this second half the entire
+            // background start was refused before the worker even ran on ROMs whose permission
+            // monitor blocks the grant (ColorOS/OxygenOS), leaving only the UI pairing assistant.
+            if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED ||
+                runCatching { Shizuku.pingBinder() }.getOrDefault(false)) {
                 // v25: probe the wireless-debugging preconditions before committing to
                 // AdbStartWorker. v24 on-device testing showed the watchdog recovering into a
                 // dead end when SP mode=ADB but wireless debugging was never armed (no TCP port /
