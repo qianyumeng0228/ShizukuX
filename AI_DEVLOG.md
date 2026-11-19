@@ -1669,6 +1669,63 @@ install 失败时应用已经没了，后台进程又把失败吞掉。现在：
 
 ---
 
+## 2026-11-19 · k2821 — CF 镜像不是坏，是少了一层 tag
+
+k2820 把 `fd.shizukux.xyz` 从下载列表里摘掉，理由是「4 个资产名全 404」。用户要求修复，于是先把这个
+域名查清楚——结论推翻了 k2820 的判断。
+
+### 1. 它是什么
+
+- `GET /` → 403 `Forbidden`（9 B `text/plain`）；`GET /<asset>` 同样 403 → 有路径白名单。
+- `GET /qianyumeng0228/ShizukuX/releases/download/<asset>`（无 tag）→ **404，但 body 是 GitHub 自己的
+  HTML**（226,894 B，带 `data-color-mode` 等页面特征）。
+
+也就是说它是一个**把路径反代到 github.com 的 Worker**，不是对象存储。GitHub 的 release 下载地址是
+`github.com/<owner>/<repo>/releases/download/<tag>/<asset>`，少 tag 必然 404——Worker 没错，
+错在客户端套用了 COS 的平铺模板。
+
+### 2. 实测（`<tag>/<asset>`）
+
+| URL | 状态 | 字节 | 耗时 |
+| --- | --- | --- | --- |
+| CF `v13.7.0.k2017/ShizukuX-v13.7.0.k2017.apk` | 200 | 14,123,770 | 27,452 ms（冷） |
+| GitHub 同一路径 | 200 | 14,123,770 | 20,512 ms |
+| CF `…/ShizukuX-Drop-In-v13.7.0.k2017.apk` | 200 | 14,123,468 | 15,771 ms |
+| CF HEAD（同 URL，第二次） | 200 | — | 1,710 / 3,200 ms，`age=1313` |
+| CF `v13.7.0.k2016/…k2016.apk` | 200 | 12,443,733 | 1,667 ms |
+| CF `v13.7.0.r2003/…r2003.apk` | 200 | 12,443,744 | 7,516 ms |
+| CF `v13.7.0.k2017/ShizukuX-Compat-Hub-…apk` | 200 | 656,024 | 1,672 ms |
+| 腾讯 COS 同一资产 HEAD ×3 | 200 | 14,123,770 | 276 / 225 / 181 ms |
+
+`cf-cache-status: DYNAMIC` 但 `Age` 在涨，说明 Worker 自己回填了边缘缓存：冷启动 27 s，命中后 ≈2 s。
+
+### 3. 改法
+
+只改客户端 URL 模板，不动 Worker：
+
+- `UpdateChecker`：`"${ProjectLinks.MIRROR_CF}/$tagName/$assetName"`，tag 取自 release JSON 的 `tag_name`；
+- 顺序 **COS → CF → GitHub**：COS 200 ms 级，CF 命中缓存 2 s 级，GitHub 直连 20 s 级；
+- `ProjectLinks` 注释改成「两种模板不同：COS 平铺、CF 需 tag」。
+
+### 4. 验证
+
+- 编译 EXIT=0（4m42s），构建 BUILD SUCCESSFUL，三包 14,310,428 / 14,310,185 / 14,306,914 B。
+- 证书：dropin/standard `a5451d07…b6767`，oppo-testkey `a40da80a…bf5dc`；包名 dropin/oppo
+  `moe.shizuku.privileged.api`、standard `xyz.shizuku.extra.api`；versionCode 2821。
+  （首次把 oppo-testkey 从 standard 复制，包名错了，改为从 dropin 基底 zipalign 重签后才对。）
+- 真机 `bc757a76`：`install -r` Success，`dumpsys` 报 2821。
+- DEX 检索：两个镜像前缀各 1 次，`pm install -r -d … || exit 3` 1 次，
+  旧 `nohup sh /data/local/tmp/force_update.sh` 0 次。
+- **仍然验不到端到端下载**：2821 高于线上所有 tag，检查必然 UpToDate。
+
+### 5. 没做 / 做不了
+
+- Worker 源码不在仓库（仓库里只有 `tools/module-submit-worker`），本机也没有 `CLOUDFLARE_API_TOKEN` /
+  `CLOUDFLARE_ACCOUNT_ID`，所以无法预热门 cache、无法把冷启动 27 s 压下去。它只作为第二源，
+  冷缓存超时（探测 3 s）会直接落到 COS，不影响下载。
+
+---
+
 ## Key Files Quick Reference
 
 | Area | File |

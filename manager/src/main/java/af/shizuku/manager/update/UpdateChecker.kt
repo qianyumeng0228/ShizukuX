@@ -152,14 +152,18 @@ object UpdateChecker {
 
         // Build multi-source download URL list (ordered by priority).
         // UpdateManager probes each source and uses the first reachable one.
-        // Tencent COS first (verified 200 for release assets, Guangzhou direct), GitHub
-        // second. The Cloudflare mirror is intentionally not used: every
-        // /releases/download/<asset> path under fd.shizukux.xyz returns 404 as of 2026-11-19.
+        //   COS (Guangzhou)      — flat asset name, ~200 ms HEAD from mainland China.
+        //   Cloudflare (fd.*)    — a GitHub reverse proxy, NOT a flat object store: it needs
+        //                          /<owner>/<repo>/releases/download/<tag>/<asset>. Without the
+        //                          tag GitHub answers 404 (that was the "mirror is broken").
+        //                          Once the edge cache is warm, HEAD is ~2 s.
+        //   GitHub direct        — last resort.
         val assetName = targetAsset?.getString("name").orEmpty()
         val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
         val downloadUrls = if (targetAsset != null) {
             buildList {
                 add("${ProjectLinks.MIRROR_COS}/$assetName")
+                add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
                 if (githubUrl.isNotBlank()) add(githubUrl)
             }
         } else {

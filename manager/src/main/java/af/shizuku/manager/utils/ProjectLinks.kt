@@ -19,15 +19,17 @@ object ProjectLinks {
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
 
     /**
-     * Multi-source download mirrors for APK updates.
-     * Each entry is a URL template: $MIRROR/<assetFileName>
+     * Multi-source download mirrors for APK updates. Templates differ per source:
      *
-     * MIRROR_CF is kept for reference but NOT used by UpdateChecker: as of 2026-11-19 every
-     * /releases/download/<asset> path under fd.shizukux.xyz returns 404 (assets are not
-     * synced), while the same names on COS return 200. It stays defined so it can be re-added
-     * once the mirror rule is fixed and verified.
+     *   COS   — flat file name:            $MIRROR_COS/<assetName>
+     *   CF    — GitHub reverse proxy, tag required:
+     *           $MIRROR_CF/<tagName>/<assetName>
+     *           Dropping the tag makes GitHub answer 404 (with GitHub's own HTML body),
+     *           which is what made the mirror look broken. With the tag it returns the APK,
+     *           ~2 s from a warm edge cache; cold cache is ~27 s.
+     *
+     * UpdateChecker probes each source before downloading; COS (≈200 ms) is tried first.
      */
-    // Cloudflare CDN (fd.shizukux.xyz) — currently 404 for release assets, see above
     const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
     // Tencent COS (Guangzhou) — domestic China direct connect, verified 200 for release assets
     const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
