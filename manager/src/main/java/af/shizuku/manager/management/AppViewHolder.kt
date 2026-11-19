@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
+import af.shizuku.manager.home.showAdbLimitedDialog
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.hiding.HidingWatchService
 import af.shizuku.manager.apps.PrivilegedShell
@@ -243,9 +244,12 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                                 }
                             }
                         } catch (e: SecurityException) {
-                            val uidCheck = runCatching { Shizuku.getUid() }.getOrDefault(-1)
+                            // null means the call itself failed (dead binder): nothing to explain.
+                            // Only a live, non-root server can be blocked by the ROM, so only
+                            // that case is worth a dialog (same rule as Nightzuku's getOrNull()).
+                            val uidCheck = runCatching { Shizuku.getUid() }.getOrNull()
                             withContext(Dispatchers.Main) {
-                                if (uidCheck != 0) showAdbLimitedDialog(context)
+                                if (uidCheck != null && uidCheck != 0) context.showAdbLimitedDialog()
                             }
                         }
                     }
@@ -417,9 +421,9 @@ class AppViewHolder(private val binding: AppListItemBinding) :
                     }
                 }
             } catch (e: SecurityException) {
-                val uidCheck = runCatching { Shizuku.getUid() }.getOrDefault(-1)
+                val uidCheck = runCatching { Shizuku.getUid() }.getOrNull()
                 withContext(Dispatchers.Main) {
-                    if (uidCheck != 0) showAdbLimitedDialog(context)
+                    if (uidCheck != null && uidCheck != 0) context.showAdbLimitedDialog()
                 }
             }
         }
@@ -449,27 +453,6 @@ class AppViewHolder(private val binding: AppListItemBinding) :
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         }
-    }
-
-    private fun showAdbLimitedDialog(context: Context) {
-        // MaterialAlertDialogBuilder requires Activity theme; resolve via asActivity
-        // (callers pass v.context from ViewHolder click handlers).
-        val host = context.asActivity<Activity>() ?: context
-        val dialog = MaterialAlertDialogBuilder(host)
-            .setTitle(R.string.app_management_dialog_adb_is_limited_title)
-            .setMessage(
-                host.getString(
-                    R.string.app_management_dialog_adb_is_limited_message,
-                    Helps.ADB.get()
-                ).toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-            )
-            .setPositiveButton(android.R.string.ok, null)
-            .create()
-        dialog.setOnShowListener {
-            (it as AlertDialog).findViewById<TextView>(android.R.id.message)?.movementMethod =
-                LinkMovementMethod.getInstance()
-        }
-        runCatching { dialog.show() }
     }
 
     private fun showEnhancementSettings(context: Context, metadata: AppContextManager.AppMetadata) {

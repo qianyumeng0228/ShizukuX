@@ -128,6 +128,22 @@ class RequestPermissionActivity : AppActivity() {
             }
 
             if (isFinishing || isDestroyed) return@launch
+
+            // GRANT_RUNTIME_PERMISSIONS is only a convenience grant here. The server records
+            // ClientRecord.allowed and FLAG_ALLOWED BEFORE trying grantRuntimePermission, and
+            // both checkCallerPermission() and Service.checkSelfPermission() answer from that
+            // record, so authorization still works when ColorOS/OxygenOS permission monitoring
+            // blocks the system grant. Denying here made every such device unable to authorize
+            // anything. The one genuine dependency left is a pre-v11 server, which grants
+            // through pm and needs the permission itself.
+            if (Shizuku.isPreV11() && !hasSelfPermission) {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    dispatchResult(uid, pid, requestCode, allowed = false, onetime = true)
+                }
+                showSelfPermissionMissingDialog()
+                return@launch
+            }
+
             showPermissionDialog(uid, pid, requestCode, ai, callingPackage, hasSelfPermission)
         }
     }
@@ -142,15 +158,8 @@ class RequestPermissionActivity : AppActivity() {
     }
 
     private fun showPermissionDialog(uid: Int, pid: Int, requestCode: Int, ai: ApplicationInfo?, callingPackage: String?, hasSelfPermission: Boolean) {
-        if (!hasSelfPermission) {
-            // Can't grant — dispatch denial and show informational dialog
-            lifecycleScope.launch(Dispatchers.IO) {
-                dispatchResult(uid, pid, requestCode, allowed = false, onetime = true)
-            }
-            showSelfPermissionMissingDialog()
-            return
-        }
-
+        // hasSelfPermission no longer gates the dialog: see the note in onCreate. It is kept
+        // so the confirmation copy can explain the ROM restriction without blocking the user.
         val label = ai?.let {
             try {
                 it.loadLabel(packageManager)

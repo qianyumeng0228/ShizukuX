@@ -148,8 +148,13 @@ object AuthorizationManager {
             } else {
                 Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, FLAG_ALLOWED)
             }
+        } catch (e: SecurityException) {
+            // The server refused: the caller must surface this. Swallowing it made a failed
+            // grant look exactly like a successful one (switch flipped back, no message).
+            throw e
         } catch (e: Throwable) {
-            // Ignore error from incompatible server
+            // Ignore error from an incompatible server (binder shape/version mismatch only).
+            LOGGER.w(e, "grant failed for %s", packageName)
         }
     }
 
@@ -167,8 +172,10 @@ object AuthorizationManager {
             } else {
                 Shizuku.updateFlagsForUid(uid, MASK_PERMISSION, 0)
             }
+        } catch (e: SecurityException) {
+            throw e
         } catch (e: Throwable) {
-            // Ignore error from incompatible server
+            LOGGER.w(e, "revoke failed for %s", packageName)
         }
     }
 

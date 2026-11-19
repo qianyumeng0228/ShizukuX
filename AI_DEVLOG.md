@@ -1459,6 +1459,114 @@ ToggleAllViewHolder）全部自动获得清理。
 
 ---
 
+## 2026-11-19 · k2818：权限监控下为什么授权其实是真的，以及 Next 那个 fallback 该不该抄
+
+### 一、问题从哪来
+
+用户给 OPPO 测试机出包时反馈：ColorOS 开着「权限监控」，所有应用授权都失败。项目里三处
+`hasSelfPermission`（`RequestPermissionActivity`、`HomeViewModel` 首页卡、`AppsController`）
+在 `checkSelfPermission(GRANT_RUNTIME_PERMISSIONS) != GRANTED` 时一律按下不可用处理，其中
+`RequestPermissionActivity` 直接 `dispatchResult(allowed = false)`——权限监控拦的正是这个权限
+（`pm grant` 和它授出的位都拿不到），于是"授权"这条路整条死掉。
+
+### 二、服务端到底怎么记授权（这决定能不能放宽）
+
+顺着调用链把四个点全部读了一遍，结论是**授权结果与系统权限位无关**：
+
+| 位置 | 事实 |
+| --- | --- |
+| `ShizukuService.dispatchPermissionConfirmationResult()` | 先写 `record.allowed`，再 `configManager.update(uid, ..., FLAG_ALLOWED)`，之后才 `grantRuntimePermission`；后者失败只 `LOGGER.w`（`2271-2276`） |
+| `ShizukuService.checkCallerPermission()` / `Service.checkSelfPermission()`（`api/server-shared/Service.java:336-344`，`final`） | 都从 `ClientRecord.allowed` 回答，不查调用方系统权限 |
+| `ClientManager.addClient():73-77` | attach 时 `clientRecord.allowed = configManager.find(uid).isAllowed()`，进程重启也恢复 |
+| `ShizukuConfigManager.updateLocked()` | `packages` 为空也按 uid 建 entry，`MASK_PERMISSION` 同步落盘，授权不会因为"没有包"而丢 |
+| `ShizukuService:734` | 下发 `BIND_APPLICATION_PERMISSION_GRANTED = record.allowed` |
+| `api/api/Shizuku.java:951-952 / 996-1003` | root 模式直接 GRANTED；只缓存 GRANTED 不缓存 DENIED，授权后立即生效 |
+| `ShizukuService.migratePermissionGrants():238-276` | 受限 ROM 上首次回填系统权限必然全失败，只记日志后 `markPermGrantMigrationDone()`，不再重试——这解释了为什么"权限监控"是一个长期状态 |
+
+唯一真的依赖系统权限的是 **pre-v11 服务端**：那时没有 `ClientRecord.allowed`，服务端靠 `pm grant`
+把权限授给调用方。所以阻断条件收窄成 `Shizuku.isPreV11() && !hasSelfPermission`。
+
+### 三、四家上游怎么做（同一份符号穷举，不是抽样）
+
+| 项目 | `RequestPermissionActivity` 预检 | 失败提示 |
+| --- | --- | --- |
+| Shizuku-Next | `permission || serverUid != 2000` 才放行 | 有 |
+| shevery | 只判 `DeviceOwner \|\| callerTrusted`，完全不看 ADB 权限 | 有 |
+| Nightzuku | 无预检，直接 three-button 确认框 | 有 |
+| ShizukuPlus | `if (!hasSelfPermission)` 直接拒（与本项目同源） | 有 |
+
+四家共同点：**都不吞异常**。ShizukuPlus `AuthorizationManager.kt:125-168` 是
+`catch SecurityException → throw e`；我们的 `catch (Throwable) {}` 来自更早的上游 `0728f3bb`，
+是落后而不是特色。
+
+### 四、改了什么
+
+1. `RequestPermissionActivity`：阻断条件收窄为 pre-v11；`showPermissionDialog` 里的
+   `if (!hasSelfPermission)` 块删除（参数保留，注明"不再阻断"）。
+2. `AuthorizationManager.grant/revoke`：`catch (SecurityException) { throw e }` +
+   `catch (Throwable) { LOGGER.w(...) }`。
+3. `AppViewHolder` 两处 `getOrDefault(-1)` → `getOrNull()`（`-1` 会被当成合法 uid），
+   判空后 `context.showAdbLimitedDialog()`。
+4. `AppsController.toggle_permission` 的 Toast 换成同一弹窗。
+5. 新增 `Context.showAdbLimitedDialog()`（`home/AdbPermissionGuide.kt`），OPPO 分支选专用文案；
+   用 `asActivity<Activity>()` 取 Activity theme，`runCatching { dialog.show() }` 兜底。
+6. 文案：标题统一「系统权限受限（授权已生效）」，说明改为"授权本身有效，仅直接查系统权限的
+   应用可能提示未授权"；`doctor_tip_oppo_permission` 同步改写。
+
+服务端一行未改。理由：`grantRuntimePermission` 在受限 ROM 上必然失败，改它没有收益。
+
+### 五、验证（真机 `bc757a76`）
+
+小米上 `dumpsys package com.android.shell` 的 `GRANT_RUNTIME_PERMISSIONS: granted=true`，
+受限路径在本机不可构造，所以只验回归：
+
+| 项目 | 做法 | 结果 |
+| --- | --- | --- |
+| 覆盖安装 | `install -r` dropin | Success，`versionName=ShizukuX 13.7.0.k2818` |
+| 冷启动 | force-stop → `am start` | 首页"正在运行 / 版本 13.7, ADB" |
+| 授权页 | 进「应用管理 / 全部」 | 与 k2817 一致 |
+| 撤销 | 关 InstallerX | 立即变关，无弹窗、无回弹 |
+| 恢复 | 再开 InstallerX | 回开，状态还原 |
+| 崩溃 | `logcat -b crash` + 全量 `FATAL` 检索 | 无 |
+
+### 六、借鉴点（Shizuku-Next）：研究结论是"值得抄 settings 兜底，不值得抄 pm grant"
+
+Next 那套有三块：
+
+| 位置 | 内容 |
+| --- | --- |
+| `StartPermissions.kt:104` | `canWriteSecureSettings() = hasWriteSecureSettings() \|\| Shizuku.pingBinder()` |
+| `:157-202` | `writeGlobal(key, value, direct)`：先 `runCatching { direct() }`，失败则**非主线程**用 `runShellCommand("settings put global $key $value")` 兜底；可读时读回确认，Android 17 隐藏的键用 `&& echo ok` 标记 |
+| `:221-229` | `grantWriteSecureSettingsIfNeeded()`：通过运行中的 server 执行 `pm grant`，每装一次最多一次 |
+
+对照本项目：
+
+- `pm grant` 那一块**没有价值**：ColorOS 权限监控拦的正是 `GRANT_RUNTIME_PERMISSIONS`，
+  由 shell 执行 `pm grant` 一样被拦（`ShizukuService:737-741` 在 attach 时已经试过，失败只记日志）。
+- `settings put` 那一块**有真实价值**：shell（uid 2000）自己持有 `WRITE_SECURE_SETTINGS`，
+  写设置不经过"授予"这一步，权限监控不拦。本项目已有现成通道
+  （`Shizuku.newProcess(arrayOf("sh","-c","settings put global ..."), null, null)`，
+  `AdbStartWorker:371`、`Hiding.kt:773-777`、`PrivilegedShell:32` 都在用）。
+- 现状缺口：`AdbArm.method()` 只有 `WRITE_SECURE_SETTINGS` / `DEVICE_OWNER` / `NONE` 三条路。
+  权限监控下前者拿不到、后者没激活 → `NONE` → 一键开无线调试直接退回手动流程。
+
+**结论：值得做，但应作为独立一轮（k2819），不进 k2818。** 原因不是收益小，而是它挂在启动链路上：
+
+1. `AdbArm` 五处写入（`arm` / `armUsbDebugging` / `armWifiEnabled` / `disarmWifiEnabled` /
+   `disarmUsbDebugging`）都要加第三分支，每处都要判 `Shizuku.newProcess` 返回 null 与 exit code；
+2. `method()` 会被 `BroadcastReceiver`（`ShizukuReceiverStarter`）与 boot worker 调用，
+   `settings put` 会阻塞等服务端应答——Next 自己就为此强制"非主线程才允许 fallback"，
+   我们得先把每个调用点的线程位置核一遍，否则会变成广播 ANR（k2814 刚修过这一类）；
+3. 必须真机在 OPPO 上验（小米上 `hasWriteSecureSettings=true`，永远进不了这条分支，
+   等于没验）。
+
+建议的落法（下一轮照此做）：`AdbArm` 增加 `Method.SHIZUKU_SERVER`，`method()` 里排在
+`DEVICE_OWNER` 之后、`NONE` 之前，条件是 `Shizuku.pingBinder()`；每个写入分支走
+`Shizuku.newProcess("settings put global <key> <value> && echo ok")`，用 `echo ok` 判成功，
+`adb_allowed_connection_time` 也照写（这条键没有 allowlist 限制，shell 能写）。
+
+---
+
 ## Key Files Quick Reference
 
 | Area | File |

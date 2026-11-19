@@ -345,8 +345,8 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <!-- Home - Learn more -->
 
     <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">You need to take an extra step</string>
-    <string name="home_adb_is_limited_description">Your device manufacturer has restricted adb permissions and apps using Shizuku will not work properly.\n\nUsually, this limitation can be lifted by adjusting some options in \"Developer options\". Please read the help for details on how to do this.\n\nYou may need to restart Shizuku for the operation to take effect.</string>
+    <string name="home_adb_is_limited_title">System permission is limited</string>
+    <string name="home_adb_is_limited_description">Your device manufacturer blocks the system permission that normally comes with a Shizuku grant.\n\nShizukuX authorization still works: the server records the grant before asking for the system permission, and apps read that record. A few apps that check the system permission directly may still report \"not authorized\".\n\nRead the help for the switch that lifts this restriction.</string>
 
     <!-- Application management - context menu -->
     <string name="app_management_context_open_app">Open app</string>
@@ -386,9 +386,9 @@ Alternatively, while the pop-up is open, pull down the notification shade and ty
     <string name="app_management_sort_last_updated">Last updated</string>
 
     <!-- Application management -->
-    <string name="app_management_dialog_adb_is_limited_title">The permission of adb is limited</string>
-    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[It\'s highly possible that your device manufacturer limits the permission of adb.<p>There may be a solution for your system in <b><a href=\"%1$s\">this document</a></b>.]]></string>
-    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/OnePlus restricts ADB permissions (the server lacks the system grant), so apps cannot receive Shizuku authorization. Turn off "Permission monitor" in Developer options (a separate ColorOS 12+ switch; if there is no such button, switch the device language to English and turn off "Disable system optimization"), then <b>reboot the phone</b>. After rebooting, restart Shizuku and authorization will work.]]></string>
+    <string name="app_management_dialog_adb_is_limited_title">System permission is limited (grant applied)</string>
+    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[Your device manufacturer blocks the system permission that usually comes with a Shizuku grant. The authorization itself was saved, and most apps work. A few apps that check the system permission directly may still report "not authorized".<p>See <b><a href=\"%1$s\">this document</a></b> for a device-specific switch.]]></string>
+    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/OnePlus blocks the system permission grant (GRANT_RUNTIME_PERMISSIONS). The authorization was still saved and most apps work; apps that check the system permission directly may report "not authorized". To also get the system grant, turn off "Permission monitor" in Developer options (a separate ColorOS 12+ switch; if there is no such button, switch the device language to English and turn off "Disable system optimization"), then <b>reboot the phone</b>.]]></string>
     <string name="app_management_item_summary_requires_root">* requires Shizuku runs with root</string>
     <string name="app_management_item_summary_partial_root">⚠ Partially supported — some functions still need Shizuku with root</string>
     <string name="app_management_item_summary_requires_plus">* requires ShizukuX Enhanced API</string>
@@ -843,7 +843,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="doctor_status_enabled_must_off">Enabled (Must be OFF)</string>
     <string name="doctor_status_review_sleeping_apps">Review (Check sleeping apps)</string>
     <string name="doctor_tip_xiaomi">Xiaomi/HyperOS: Enable "USB Debugging (Security Settings)" in Developer Options.</string>
-    <string name="doctor_tip_oppo_permission">Oppo/Realme/OnePlus: Disable "Permission Monitoring" in Developer Options to prevent background service kills.</string>
+    <string name="doctor_tip_oppo_permission">Oppo/Realme/OnePlus: permission monitoring blocks the system permission grant. ShizukuX authorization is unaffected; a few apps that check the system permission directly may report "not authorized". Disabling it also prevents background service kills.</string>
     <string name="doctor_tip_tcl_background">TCL: Ensure ShizukuX is added to "Auto-start" and "High background power consumption" allowlists in Settings.</string>
     <string name="doctor_tip_battery">Disable battery optimization for ShizukuX to prevent it from being killed in the background.</string>
     <string name="doctor_tip_adb">Wireless debugging must be active for Shizuku to start in non-root mode after a reboot.</string>

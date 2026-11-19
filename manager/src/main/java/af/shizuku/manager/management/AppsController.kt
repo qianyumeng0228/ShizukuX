@@ -36,8 +36,10 @@ import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.authorization.AuthorizationManager
 import af.shizuku.manager.database.ActivityLogManager
+import af.shizuku.manager.home.showAdbLimitedDialog
 import af.shizuku.manager.databinding.AppsActivityBinding
 import af.shizuku.manager.databinding.SwipeHintOverlayBinding
+import rikka.shizuku.Shizuku
 import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.ShizukuStateMachine
 import rikka.lifecycle.Status
@@ -602,11 +604,11 @@ class AppsController(
                     }
                     adapter.notifyItemChanged(0)
                 } catch (e: SecurityException) {
-                    Toast.makeText(
-                        host,
-                        R.string.app_management_dialog_adb_is_limited_title,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    // A Toast alone left the user without any explanation of what to change.
+                    // Use the same dialog as the long-press and switch paths, and stay quiet
+                    // when the server is gone or root (root is never blocked by the ROM).
+                    val uidCheck = runCatching { Shizuku.getUid() }.getOrNull()
+                    if (uidCheck != null && uidCheck != 0) host.showAdbLimitedDialog()
                 }
             }
             "hide_from_list" -> onHideApp(item.packageName)

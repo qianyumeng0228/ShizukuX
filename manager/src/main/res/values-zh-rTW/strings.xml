@@ -94,12 +94,12 @@
     <string name="home_automation_dialog_label_target">目標</string>
     <!-- Home - Learn more -->
     <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">您需要進行額外的步驟</string>
-    <string name="home_adb_is_limited_description">您的裝置製造商限制了 ADB 的權限，使用 Shizuku
-        的應用程式無法正常運作。\n\n通常，在「開發人員選項」中調整一些選項即可解除此限制。請閱讀說明來瞭解具體的作業方式。\n\n您可能需要重新啟動 Shizuku 以使作業生效。</string>
+    <string name="home_adb_is_limited_title">系統權限受限</string>
+    <string name="home_adb_is_limited_description">您的裝置製造商攔截了通常隨 Shizuku 授權一併下發的系統權限。\n\nShizukuX 的授權本身仍然有效：伺服器先寫入授權記錄、再嘗試補授系統權限，應用程式讀取的是授權記錄。少數直接檢查系統權限的應用程式可能仍顯示「未授權」。\n\n如需同時取得系統權限，請閱讀說明中的開關指示。</string>
     <!-- Application management -->
-    <string name="app_management_dialog_adb_is_limited_title">ADB 權限受限</string>
-    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[這極有可能是你的裝置製造商限制了 ADB 的權限。<p><b><a href=\"%1$s\">此文件</a></b>中可能有針對你的系統的解決方案。]]></string>
+    <string name="app_management_dialog_adb_is_limited_title">系統權限受限（授權已生效）</string>
+    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[裝置製造商攔截了通常隨 Shizuku 授權下發的系統權限。授權記錄已儲存，絕大多數應用程式可正常使用；少數直接檢查系統權限的應用程式可能仍顯示「未授權」。<p>針對您裝置的開關說明見<b><a href=\"%1$s\">此文件</a></b>。]]></string>
+    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/OnePlus 攔截了系統權限授予（GRANT_RUNTIME_PERMISSIONS）。授權記錄已儲存，絕大多數應用程式可正常使用；直接檢查系統權限的應用程式可能顯示「未授權」。如需同時取得系統權限，請在開發人員選項中關閉「權限監控」（ColorOS 12+ 獨立開關；沒有該按鈕則把裝置語言切為英文，關閉 "Disable system optimization"），然後<b>重新啟動手機</b>。]]></string>
     <string name="app_management_item_summary_requires_root">* 需要以 Root 執行的 Shizuku</string>
     <string name="app_management_toggle_all">切換全部</string>
     <!-- Terminal -->

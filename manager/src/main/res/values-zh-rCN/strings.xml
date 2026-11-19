@@ -201,13 +201,12 @@
     <string name="home_automation_dialog_label_target">目标</string>
     <!-- Home - Learn more -->
     <!-- Home - Adb permissions limited -->
-    <string name="home_adb_is_limited_title">您需要进行额外的步骤</string>
-    <string name="home_adb_is_limited_description">您的设备制造商限制了 ADB 的权限，使用 Shizuku
-        的应用无法正常工作。\n\n通常，在“开发者选项”中调整一些选项即可解除此限制。请阅读帮助来了解具体的操作方式。\n\n您可能需要重新启动 Shizuku 以使操作生效。</string>
+    <string name="home_adb_is_limited_title">系统权限受限</string>
+    <string name="home_adb_is_limited_description">您的设备制造商拦截了通常随 Shizuku 授权一并下发的系统权限。\n\nShizukuX 的授权本身仍然有效：服务端先写入授权记录、再尝试补授系统权限，应用读取的是授权记录。少数直接检查系统权限的应用可能仍提示「未授权」。\n\n如需同时拿到系统权限，请阅读帮助中的开关说明。</string>
     <!-- Application management -->
-    <string name="app_management_dialog_adb_is_limited_title">ADB 权限受限</string>
-    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[这很可能是设备制造商限制了 ADB 权限。<p><b><a href="%1$s">此文档</a></b>中可能有针对您设备的解决方案。]]></string>
-    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/一加系统限制了 ADB 权限（服务端缺少系统授予权限），导致应用无法获得 Shizuku 授权。请在开发者选项中关闭「权限监控」（ColorOS 12+ 的独立开关；没有该按钮则把设备语言切换为英文，再关闭 "Disable system optimization"），然后<b>重启手机</b>。重启后重新启动 Shizuku，授权即可正常。]]></string>
+    <string name="app_management_dialog_adb_is_limited_title">系统权限受限（授权已生效）</string>
+    <string name="app_management_dialog_adb_is_limited_message"><![CDATA[设备制造商拦截了通常随 Shizuku 授权下发的系统权限。授权记录已保存，绝大多数应用可正常使用；少数直接检查系统权限的应用可能仍提示「未授权」。<p>针对您设备的开关说明见<b><a href="%1$s">此文档</a></b>。]]></string>
+    <string name="app_management_dialog_adb_is_limited_oppo"><![CDATA[OPPO/一加拦截了系统权限授予（GRANT_RUNTIME_PERMISSIONS）。授权记录已保存，绝大多数应用可正常使用；直接检查系统权限的应用可能提示「未授权」。如需同时拿到系统权限，请在开发者选项中关闭「权限监控」（ColorOS 12+ 独立开关；没有该按钮则把设备语言切为英文，关闭 "Disable system optimization"），然后<b>重启手机</b>。]]></string>
     <string name="app_management_item_summary_requires_root">* 需要在 Root 模式下运行的 Shizuku</string>
     <string name="app_management_toggle_all">切换全部</string>
     <!-- Terminal -->
@@ -864,7 +863,7 @@
     <string name="doctor_status_enabled_must_off"><![CDATA[已启用（必须关闭）]]></string>
     <string name="doctor_status_review_sleeping_apps"><![CDATA[需要查看（检查休眠应用）]]></string>
     <string name="doctor_tip_xiaomi"><![CDATA[小米/HyperOS：在开发者选项中启用“USB 调试（安全设置）”。]]></string>
-    <string name="doctor_tip_oppo_permission"><![CDATA[OPPO/Realme/OnePlus：在开发者选项中禁用“权限监控”，防止后台服务被终止。]]></string>
+    <string name="doctor_tip_oppo_permission"><![CDATA[OPPO/Realme/OnePlus：权限监控会拦截系统权限授予。ShizukuX 授权不受影响，少数直接检查系统权限的应用可能提示「未授权」；关闭它还可避免后台服务被终止。]]></string>
     <string name="doctor_tip_tcl_background"><![CDATA[TCL：请将 ShizukuX 加入“设置”中的“自动启动”和“高后台功耗”白名单。]]></string>
     <string name="doctor_tip_battery"><![CDATA[关闭 ShizukuX 的电池优化，防止它在后台被终止。]]></string>
     <string name="doctor_tip_adb"><![CDATA[无线调试必须保持启用，Shizuku 才能在重启后以非 Root 模式启动。]]></string>
