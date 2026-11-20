@@ -17,6 +17,10 @@ object ProjectLinks {
 
     const val API_RELEASES = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases"
     const val API_LATEST_RELEASE = "https://api.github.com/repos/qianyumeng0228/ShizukuX/releases/latest"
+    // Gitee API v5 — second-choice version probe (anonymous works on public repos).
+    // /releases/latest returns the newest non-prerelease, /releases lists all releases
+    // ordered by id (NOT by created_at), so callers must sort themselves.
+    const val API_RELEASES_GITEE = "https://gitee.com/api/v5/repos/qianyumeng0228/ShizukuX/releases"
 
     /**
      * Multi-source download mirrors for APK updates. Templates differ per source:
@@ -29,13 +33,18 @@ object ProjectLinks {
      *           ~2 s from a warm edge cache; cold cache is ~27 s.
      *
      * UpdateChecker builds the download list in this fixed order, and UpdateManager walks it
-     * one source at a time: Gitee → GitHub → CF → COS. The next entry is tried only after
-     * the previous one actually failed (enqueue rejection, HTTP error, truncated body, or
-     * a same-named file whose size differs from the GitHub asset by more than 2%).
+     * one source at a time: Gitee → CNB → JihuLab → GitHub → CF → COS. The next entry
+     * is tried only after the previous one actually failed (enqueue rejection, HTTP error,
+     * truncated body, or a same-named file whose size differs from the GitHub asset by more
+     * than 2%).
      */
     const val MIRROR_CF = "https://fd.shizukux.xyz/qianyumeng0228/ShizukuX/releases/download"
-    // Tencent COS (Guangzhou) — domestic China direct connect, verified 200 for release assets
-    const val MIRROR_COS = "https://shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com"
+    // Tencent COS (Guangzhou) — domestic China direct connect. Must go through the bound
+    // custom origin domain: COS rejects APK/IPA downloads on its default
+    // *.cos.<region>.myqcloud.com host (403 DownloadForbidden), so cos.shizukux.xyz
+    // (CNAME → bucket domain, TLS via the cert bound in the COS console) is the only
+    // usable entry point.
+    const val MIRROR_COS = "https://cos.shizukux.xyz"
     /**
      * Gitee mirror — same asset layout as GitHub releases, no auth for public repos.
      * The redirect chain is gitee.com/releases/download/<tag>/<asset> → attach_files/...
@@ -44,6 +53,18 @@ object ProjectLinks {
      * a lookup by the GitHub asset name returns 404 for those tags and the relay skips it.
      */
     const val MIRROR_GITEE = "https://gitee.com/qianyumeng0228/ShizukuX/releases/download"
+
+    /**
+     * 国内镜像源，均为 GitHub release 资产的同步副本（assets 由备份库原样上传，匿名可下载）：
+     *
+     *   CNB (cnb.cool) — 路径含 `/-/`：/$tag/$assetName（必须用 cnb.cool 主域，
+     *                    api.cnb.cool 对匿名下载返回 401）
+     *   JihuLab      — 极狐 GitLab 没有 release 二进制托管，APK 存在 Generic Package Registry，
+     *                  下载 URL 形如 /projects/<用 %2F 编码的路径>/packages/generic/<pkg>/<tag>/<asset>
+     *                  实测公库匿名 200，无需令牌。
+     */
+    const val MIRROR_CNB = "https://cnb.cool/ShizukuX/ShizukuX/-/releases/download"
+    const val MIRROR_JIHULAB = "https://jihulab.com/api/v4/projects/qianyumeng0228%2FShizukuX/packages/generic/ShizukuX"
 
     const val APP_CONTEXT_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"
     const val APPS_DB = "https://raw.githubusercontent.com/qianyumeng0228/ShizukuX/master/database/apps.json"

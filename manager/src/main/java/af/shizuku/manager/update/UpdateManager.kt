@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import timber.log.Timber
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
@@ -25,9 +26,11 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Manages downloading and installing updates.
  *
- * The download itself is a four-source relay: every URL in the list is tried in order,
+ * The download itself is a relay: every URL in the list is tried in order,
  * the next one starts only after the previous attempt actually failed (HTTP error,
  * DownloadManager failure, truncated body, or a same-named file of the wrong size).
+ * Gitee sometimes serves `<name>.apk.zip` instead of `<name>.apk`; such an archive is
+ * unwrapped and its inner APK size-checked before install (see [resolveInstallableApk]).
  * Progress is published through [state] so the in-app card and the status-bar
  * notification show the same numbers.
  *
@@ -73,6 +76,8 @@ class UpdateManager(private val context: Context) {
         private const val READY_NOTIFICATION_ID = 2102
         private const val ERROR_NOTIFICATION_ID = 2103
         private const val DOWNLOAD_ID_PREF = "update_download_id"
+        /** Hard cap for an APK inside a mirror-supplied zip (zip-bomb guard). */
+        private const val MAX_UNWRAPPED_APK_BYTES = 300L * 1024 * 1024
 
         private val _state = MutableStateFlow<State>(State.Idle)
         val state: StateFlow<State> = _state
@@ -172,7 +177,12 @@ class UpdateManager(private val context: Context) {
             ctx.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
                 .edit().putLong(DOWNLOAD_ID_PREF, id).apply()
 
-            val outcome = monitor(ctx, id, file, versionName, source, index + 1, urls.size, expectedSize)
+            val outcome = monitor(
+                ctx, id, file, versionName, source, index + 1, urls.size,
+                // A Gitee `.apk.zip` entry is a zip wrapper by design, so its transfer size
+                // cannot match the GitHub asset size; the unwrapped APK is checked instead.
+                if (url.endsWith(".zip", ignoreCase = true)) -1L else expectedSize
+            )
             activeDownloadId = -1
             if (!currentCoroutineContext().isActive) {
                 file.delete()
@@ -181,8 +191,16 @@ class UpdateManager(private val context: Context) {
 
             when (outcome) {
                 Outcome.SUCCESS -> {
+                    Log.i(TAG, "Download completed via $source (${file.length()} bytes)")
+                    val apk = resolveInstallableApk(ctx, file, expectedSize, versionName)
+                    if (apk == null) {
+                        Timber.tag(TAG).w("Source $source delivered an unusable archive, trying next")
+                        runCatching { (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(id) }
+                        file.delete()
+                        continue
+                    }
                     _state.value = State.Ready(versionName)
-                    onDownloadComplete(file, versionName)
+                    onDownloadComplete(apk, versionName)
                     return
                 }
                 Outcome.FAILED -> {
@@ -200,6 +218,90 @@ class UpdateManager(private val context: Context) {
         Timber.tag(TAG).e("All ${urls.size} sources failed")
         _state.value = State.Failed(versionName)
         if (backgroundMode) notifyError(ctx)
+    }
+
+    /**
+     * Turns whatever the relay saved into an installable APK.
+     *
+     * Mirrors normally serve the APK itself, but Gitee's malware scanner has historically
+     * renamed some assets to `<name>.apk.zip` — a zip wrapper that holds exactly one APK
+     * (verified on v13.7.0.r2002: 9,804,980 B zip → 12,155,126 B inner APK). DownloadManager
+     * saves those as a zip, which the package installer cannot handle, so the archive is
+     * unwrapped here. The extracted size is then checked against the GitHub asset size, which
+     * is the guard the raw zip could never satisfy.
+     *
+     * Returns the installable APK, the original file when it already is an APK, or null when
+     * the archive is unusable (so the relay moves on to the next source).
+     */
+    private fun resolveInstallableApk(
+        ctx: Context,
+        file: File,
+        expectedSize: Long,
+        versionName: String
+    ): File? {
+        if (!isZipArchive(file)) return file
+        val dir = file.parentFile
+            ?: ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?: return null
+        val staging = File(dir, "ShizukuX-v$versionName.unzip.apk")
+        staging.delete()
+        var extractedSize = -1L
+        try {
+            java.util.zip.ZipFile(file).use { zip ->
+                val apkEntries = zip.entries().asSequence()
+                    .filter { !it.isDirectory && it.name.endsWith(".apk", ignoreCase = true) }
+                    .toList()
+                if (apkEntries.size != 1) {
+                    Timber.tag(TAG).w("Archive holds ${apkEntries.size} APK entries; expected exactly 1")
+                    return null
+                }
+                val entry = apkEntries.first()
+                if (entry.size > MAX_UNWRAPPED_APK_BYTES) {
+                    Timber.tag(TAG).w("Archive entry too large: ${entry.size} bytes")
+                    return null
+                }
+                zip.getInputStream(entry).use { input ->
+                    staging.outputStream().use { output -> input.copyTo(output) }
+                }
+                extractedSize = staging.length()
+            }
+            if (extractedSize <= 0) {
+                Timber.tag(TAG).w("Archive entry produced no bytes")
+                return null
+            }
+            if (expectedSize > 0 && kotlin.math.abs(extractedSize - expectedSize) > expectedSize * 0.02) {
+                Timber.tag(TAG).w("Unwrapped APK $extractedSize B mismatches expected $expectedSize B")
+                return null
+            }
+            val target = File(dir, "ShizukuX-v$versionName.apk")
+            target.delete()
+            if (!staging.renameTo(target)) {
+                staging.copyTo(target, overwrite = true)
+                staging.delete()
+            }
+            file.delete()
+            Timber.tag(TAG).i("Unwrapped ${file.name} → ${target.name} ($extractedSize bytes)")
+            return target
+        } catch (e: Exception) {
+            Timber.tag(TAG).e(e, "Failed to unwrap update archive")
+            return null
+        } finally {
+            staging.delete()
+        }
+    }
+
+    /** ZIP local-file-header magic (PK\x03\x04). The downloaded file keeps an `.apk` name, so
+     *  the content — not the extension — decides how it is handled. */
+    private fun isZipArchive(file: File): Boolean = try {
+        java.io.RandomAccessFile(file, "r").use { raf ->
+            if (raf.length() < 4) return false
+            val magic = ByteArray(4)
+            raf.readFully(magic)
+            magic[0] == 0x50.toByte() && magic[1] == 0x4B.toByte() &&
+                    magic[2] == 0x03.toByte() && magic[3] == 0x04.toByte()
+        }
+    } catch (e: Exception) {
+        false
     }
 
     private fun enqueue(ctx: Context, url: String, file: File): Long {
@@ -360,7 +462,7 @@ class UpdateManager(private val context: Context) {
     private fun cleanupOtherApks(keep: File) {
         try {
             val dir = appCtx?.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: return
-            dir.listFiles { f -> f.name.endsWith(".apk") && f.absolutePath != keep.absolutePath }
+            dir.listFiles { f -> (f.name.endsWith(".apk") || f.name.endsWith(".zip")) && f.absolutePath != keep.absolutePath }
                 ?.forEach { it.delete() }
         } catch (e: Exception) {
             Timber.tag(TAG).w(e, "Cleanup of old APKs failed")
@@ -608,6 +710,8 @@ class UpdateManager(private val context: Context) {
     /** Human-readable source label used by the card ("Gitee" / "GitHub" / ...). */
     private fun sourceLabel(url: String): String = when {
         url.contains("gitee.com", ignoreCase = true) -> "Gitee"
+        url.contains("cnb.cool", ignoreCase = true) -> "CNB"
+        url.contains("jihulab.com", ignoreCase = true) -> "JihuLab"
         url.contains("github.com", ignoreCase = true) -> "GitHub"
         url.contains("fd.shizukux.xyz", ignoreCase = true) -> "Cloudflare"
         url.contains("cos.ap-guangzhou", ignoreCase = true) -> "COS"

@@ -123,6 +123,77 @@ Things discussed or sketched that we never formally decided to build.
 
 ## Session History (newest first)
 
+### 2026-11-20 — COS 403 收口：绑定自定义源站域名 cos.shizukux.xyz（CNAME + 免费证书 + 强制 HTTPS）
+
+**为什么**：COS 默认域名 `shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com` 对 APK 一律回 `403 DownloadForbidden`（HEAD 反而 200，所以只看 HEAD 会误判成「源可用」）。腾讯云策略是 APK/IPA 不允许走默认域名公开分发，必须绑自定义域名，于是按方案 1 绑 `cos.shizukux.xyz`。
+
+**做了什么**：
+- 腾讯云 COS 控制台（桶 `shizukux-updates-1442128143` / ap-guangzhou / 域名与传输管理）添加「自定义源站域名」`cos.shizukux.xyz`，源站类型默认源站，CNAME 指向桶默认域名；控制台域名归属校验通过、状态「上线」。
+- Cloudflare（`shizukux.xyz`，NS `clarissa/nolan.ns.cloudflare.com`）新增 CNAME 记录 `cos` → `shizukux-updates-1442128143.cos.ap-guangzhou.myqcloud.com`，**DNS only（灰云）**——走橙云会把 CNAME 藏起来，Tencent 侧的 CNAME 校验与后续复核都可能失败。
+- 证书：腾讯云 SSL 申请免费 DV 单域名证书（ID `cVQhAg2v`，TrustAsia C1 DV Free，到期 2027-02-18），域名验证用手动 DNS：Cloudflare 加 TXT `_dnsauth.cos` = `20261119222918ah2zm3klwydv12rzp83g4nywtx6g9p9`（注意值是长串，页面上第一次只看到前缀，照后半截抄会校验不过）。
+- COS 域名行「绑定证书」选「已托管证书（原腾讯云证书）」→ 选 `cVQhAg2v`，并打开「强制 HTTPS」。
+- `ProjectLinks.kt` 的 `MIRROR_COS` 从默认域名换成 `https://cos.shizukux.xyz`，注释写明默认域名被平台禁分发的原因。
+
+**验证数据（生效后复测）**：
+- 三资产 Range 首字节：`ShizukuX` 206/12,443,744、`Drop-In` 206/12,443,294、`Compat-Hub` 206/650,832。
+- 完整下载 `ShizukuX-v13.7.0.r2003.apk` → 200，落盘 12,443,744 B，与本地产物一致。
+- 证书主体 `CN=cos.shizukux.xyz`（此前是 `CN=*.cos.ap-guangzhou.myqcloud.com`）；四个边缘 IP（27.155.119.179/.140、113.240.77.195、175.6.91.141）HTTP 全部 302 → `https://cos.shizukux.xyz/...`。
+- 公网 DNS（8.8.8.8）解析到 CNAME 链正常。
+- 编译 `:manager:compileShizukuxReleaseKotlin` → BUILD SUCCESSFUL（5m 48s）。
+
+**尚未做 / 要注意**：
+- 免费证书 90 天（2027-02-18 到期），到期前必须重新申请并把新证书绑回该域名，否则 COS 的 HTTPS 会退回默认证书、下载直接证书错误。
+- k2018 三包是按旧 7 源（含 GitCode、`MIRROR_COS` 仍是默认域名）构建的，不含本次「剔除 GitCode + 换 COS 域名」改动；要带上这些改动得重出三包。
+- 绑定/换证书后边缘生效不是瞬时的，实测约 10 分钟才在全部节点换成新证书，期间会看到同一 IP 时而 200 时而 `UserCnameInvalid`。
+
+### 2026-11-20 — 剔除 GitCode：接力链收敛为 Gitee → CNB → JihuLab → GitHub → CF → COS
+
+**为什么**：GitCode 有个硬限制——**单个仓库最多标记 20 个预发布版本**（Web API 直接回 `预发布版本最多标记20个`）。36 个 release 里有 31 个 k 系列，注定有一批挂不上「预发布」，稳定/开发两条线的语义在三平台里没法对齐。既然对齐不了，就把这个源从更新接力里拿掉，而不是留一个标记不全的镜像。
+
+**改了什么**：
+- `ProjectLinks.kt` 删掉 `MIRROR_GITCODE` 常量，注释里的三源改双源（CNB + JihuLab），接力顺序注释同步为 `Gitee → CNB → JihuLab → GitHub → CF → COS`。
+- `UpdateChecker.kt` 的 `downloadUrls` 去掉 GitCode 那一项，顺序注释同步。
+- `UpdateManager.sourceLabel()` 去掉 `gitcode.com → "GitCode"` 分支。
+
+**顺带记下 GitCode 的两个接口事实**（以后要复用不至于再踩）：
+- v5 `PATCH /releases/{tag}` 只认真实可写字段 `tag_name / name / body`，`release_status` 能改、`prerelease` 传了也静默忽略。
+- 真正管预发布的是 Web 端 v2：`PUT https://web-api.gitcode.com/api/v2/projects/{repoId}/releases/{tag}`，body 为 `{tag_name, name, description, release_status}`，`release_status` 是数字——`0`=普通、`1`=预发布、latest 单独。`description` 必须原样回传，否则正文被覆盖。这条 PUT 还会原样保留 release 资产（实测 3 个 APK 未丢）。
+
+**同日补账与排查**：
+- Gitee 原缺 `v13.7.0.r2003`（release 总数 35、无该 tag 的 release，tag 本身在、commit `d55ce074`）。已用 `/releases` POST 重建（release id `1333991`，name/prerelease 与 GitHub 一致），三资产 12,443,744 / 12,443,294 / 650,832 上传成功、未被改名为 `.apk.zip`，`releases/download/v13.7.0.r2003/<asset>` 三路实测 200 且体积正确；正文只把 6 个下载链接基址换成 gitee，长度仍 21,956。
+- **COS 源已失效，根因不是 ACL**：GET 返回 `403 DownloadForbidden`，XML 原文 `<Message>The APK/IPA file is not allowed to be distributed in a public network using COS default domain, please use custom domain instead.</Message>`。腾讯云对 APK/IPA 走 COS 默认域名（`*.cos.ap-guangzhou.myqcloud.com`）一律拦下载，HEAD 反而 200（所以只看 HEAD 会误判为可用）。要救只有两条路：给桶绑自定义域名（DNS CNAME + COS 自定义域名配置），或把这个末位源删掉。目前 `cos.shizukux.xyz / dl.shizukux.xyz` 均无 DNS 记录，即没有已绑的域名。
+
+
+### 2026-11-20 — k2018：三个国内镜像接入更新接力，并在真机逐源验证
+
+**做了什么**：`ProjectLinks.kt` 新增 GitCode / CNB / JihuLab 三个下载基址，`UpdateChecker.kt` 的 `downloadUrls` 从「Gitee → GitHub → CF → COS」扩展成「Gitee → GitCode → CNB → JihuLab → GitHub → CF → COS」，`UpdateManager.sourceLabel()` 补上三个来源名，成功分支加 `Log.i(TAG, "Download completed via $source (${file.length()} bytes)")`。
+
+**为什么先放国内镜像**：Gitee 之后紧跟三个直传镜像，大陆网络下不依赖 GitHub 与 CF 的回源；GitHub / CF / COS 作为后置兜底，顺序语义未变（失败才轮到下一个）。
+
+**GitCode 历史坏账已修**：`v13.7.0.r2001` 的三个资产其实是 k2010 的构建产物（12,153,488 B，aapt 读出 `versionCode=2024 / k2010`）。API 侧三条路都堵死——`DELETE /releases/{tag|id}` 均 405、`attach_files` 端点 404、同名 `upload_url` 重传返回 203 且不替换旧资产。最终走网页：发行版列表 `?page=` 无效但页脚 1–4 可点（每页 10 条），r2001 在第 4 页末条，`删除 → 确认` 后再用 `push_releases.ps1`（不带 `-AllTags` 只补缺失版本）重建，三个资产体积/哈希与 `gitee-release-backup` 完全一致（12,153,389 / 12,153,203 / 650,827，standard SHA256 `90BF4AB4…0C69E6`、`versionCode=2025`、`versionName=13.7.0.r2001`）。
+
+**逐源真机验证**（小米 13 Pro，Android 16，`/system/bin/curl` 与 app 内 DownloadManager 两条腿都跑过）：
+- 315 个 URL（35 tag × 3 资产 × 3 平台）设备侧 GET/Range：200/206 共 312，体积累加与本地一致；GitCode 不支持 HEAD（401）、CNB 部分请求忽略 Range 返 200 全量，两者都不影响 DownloadManager。
+- app 内按「只留一个源」的三版测试包各自跑一次检查更新，`UpdateManager` 日志分别为 `Download completed via GitCode / CNB / JihuLab (14123770 bytes)`，落盘体积与 GitHub k2017 standard 一致。
+
+**三包**：`versionCode=2241`、`versionName=ShizukuX 13.7.0.k2018`。standard `a5451d07…b6767`、dropin `a5451d07…b6767`、oppo-testkey `a40da80a…bf5dc`（AOSP testkey，从 dropin 基底去旧签名 → zipalign → apksigner 重签，`zipalign -c -p 4` 与 `apksigner verify` 均通过）。
+
+**关于 k2016/k2011 的 `.apk.zip`（复核后不成立）**：三平台上这两版的 Drop-In / Compat-Hub 都以 canonical `.apk` 命名挂着，下载后 `aapt2` 读出 `versionCode 2032 / k2016`、`2025 / k2011`，与 `gitee-release-backup` 里的内层 APK **SHA256 完全相同**（k2016 Drop-In `970C6733…23EFE6`、k2011 Drop-In `1071FE6D…19FF93`）；CNB / JihuLab 的 `content-length` 也等于解包后的 APK 大小，而非 zip 包大小。备份目录里那两个 `.apk.zip` 只是本地存档形态，上传脚本 `ResolveLocalApk` 会解包后按 canonical 名上传，所以远端没有 zip 残留（正文里仍写着 `.apk.zip` 的写法问题见下段）。
+
+**正文链接全量清理（同日）**：三平台 35×3 份正文逐份抓取、抽链接、跑可达性，问题分两类。
+- **`.apk.zip` 死链**：k2016 的 Drop-In、k2011 的 Drop-In 与 Compat-Hub 正文里写的是 `.apk.zip` 地址，资产本体早已是 canonical `.apk`，实测 404（说明“远端挂着 zip”是正文写法问题，不是资产问题）。k2016 那份的链接还带 `StizukuX` 拼写。
+- **历史版本列表指回 Gitee**：12 份正文的 `Recent Releases` 表里写着 `gitee.com/.../releases/tag/<tag>`，实测 302 到 `repository/blazearchive/<tag>.zip`——用户点进去下到的是源码包，不是 APK。
+
+替换规则统一成「本平台直链」：`.apk.zip` → `.apk`；`gitee .../releases/tag/<tag>` → 该平台该 tag 的 standard APK 直链（GitCode `releases/download`、CNB `cnb.cool/.../-/releases/download`、极狐 generic package，数字项目 id 形式，与正文原有链接写法一致）。改动份数：GitCode 3（k2016 / k2011 / r2001）、CNB 14、极狐 14。
+
+**写入事故与修复**：第一次 PATCH k2016 时正文被写坏——英文里所有 `h` 变成 `t`（`https` → `tttps`、`ShizukuX` → `StizukuX` 30 处），且替换规则因 `Shizuku-` 少了结尾 `X` 未命中。发现方式是把远端正文回读后**逐字符**比对（只看长度和“回读一致”会漏，因为坏版本自身也被当作基准）。修法是拿最初抓取的干净正文重建、写 payload 到文件用 `curl --data-binary @file` 发送，再逐字符比对 `remote == expected`。
+
+**复核结果**：三平台各 35 个 release，正文里 `.apk.zip`、`gitee.com`、`tttps`/`Stizuku` 计数全为 0；184 个唯一链接全部 200/206，无失效。
+
+**CNB 的 `make_latest`（同日补齐）**：CNB 更新发行版走 `PATCH /ShizukuX/ShizukuX/-/releases/{release_id}`（用 tag 或 PUT 都 404），字段名是 `make_latest` 且**必须传字符串**（`{"make_latest":"true"}`；传 bool 会 400 `cannot unmarshal bool into Go struct field .make_latest of type string`）。`is_latest` / `latest` 都是只读，写了也不生效。该标记**单值**：给另一条置 true 会自动把原先那条清成 false。已把 `v13.7.0.k2017`（versionCode 2240，库里最高的已发布版本）标为最新，`GET /-/releases/latest` 现在返回 k2017。
+
+**仍未做**：GitCode 发行版列表上「最新版本」标签还挂在 `v13.6.0.r2001` 上（按创建时间算的旧标记），这一处待确认是否要改。
+
 ### 2026-11-18 — k2807：testkey 也激活不了，回到代码把 Dhizuku 的身份路径补齐
 
 **起点**：k2806 的 `-oppo-testkey` 包实测装上后，直连激活仍然失败。上一版把原因归给"签名白名单"，被实装结果否掉了，只能重新取证。
@@ -1754,6 +1825,47 @@ cf: {
 源码与回滚说明：`I:\shizukux\cf-proxy-worker\`（线上版本 `b8fe6760`，回滚到 `f366adf3`）。
 
 ---
+
+## 2026-11-20 · 更新检测三级探测 + Gitee `.apk.zip` 自解包
+
+检测与下载彻底解耦，检测改为三级递进，下载仍是六源接力：
+
+1. **GitHub API**（权威源，最多 2 次、间隔 2 s）。稳定版 `GET /releases/latest`，预发布
+   `GET /releases?per_page=10` 取第一条 `prerelease && !draft`。它带 `size` 字段，
+   下载期的体积校验靠它。
+2. **Gitee API v5**（`/releases/latest`、`/releases?per_page=20&page=1`，匿名可用）。
+   GitHub 两次都失败时启用。Gitee 资产**没有 size 字段**，因此 `expectedSize = -1`，
+   体积守卫自动跳过。列表接口按 release id 升序而非时间倒序，预发布通道改为按版本戳取最大，
+   不能直接取第一行。
+3. **Atom feed**（仅稳定版）。两个 API 都拿不到时只判断“有更新”，`requiresManualDownload = true`
+   让用户去 Releases 页。预发布通道不降级到 Atom。
+
+下载地址仍由 `buildDownloadUrls(tagName, assetName, githubUrl, extraGiteeNames)` 统一生成：
+Gitee → Gitee zip 变体 → CNB → JihuLab → GitHub → CF → COS（`cos.shizukux.xyz`）。
+
+**Gitee 扫描器改名问题**：部分资产在 Gitee 上被存成 `<name>.apk.zip`（zip 里只有一个同名 APK）。
+已在两处处理：
+
+- 探测端 `checkViaGitee` 把 `<canonical>.zip` 追加在 Gitee 首站之后，排队顺延自然会命中；
+- 下载端 `UpdateManager.resolveInstallableApk` 按 PK\x03\x04 魔数识别 zip（不看扩展名——下载落盘
+  文件名固定是 `ShizukuX-v<ver>.apk`），校验“恰好一个 .apk 条目”、条目 ≤300 MB，解到
+  `ShizukuX-v<ver>.unzip.apk`，再按 GitHub asset 体积 ±2% 复核，通过后改名成正式 APK 并删掉 zip。
+  任一步不满足就视为该源不可用，删除任务与文件、顺延下一源，不会把 zip 交给安装器。
+- `monitor(...)` 对 `.zip` 结尾的 URL 传 `-1L` 跳过传输期体积校验（zip 体积本就与 APK 不同），
+  改由解包后的体积复核把关；`cleanupOtherApks` 的清理范围也扩到 `.zip`。
+- 实测样本：`ShizukuX-Drop-In-v13.7.0.r2002.apk.zip` 200，9,804,980 B，解压后 12,155,126 B，
+  zip 内确只有一项 `ShizukuX-Drop-In-v13.7.0.r2002.apk`。
+
+验证：`:manager:assembleShizukuXRelease` BUILD SUCCESSFUL（4 m 27 s），产物
+`manager-shizukux-release.apk` 14,320,288 B，dex 中确认含 `Archive holds` /
+`Unwrapped` / `Archive entry too large` / `gitee_api` 四处新增字面量。
+
+**本机构建环境坑**：本轮 F: 盘出现“删除即被还原”的文件系统行为（删除后 3~6 s 文件带着旧的
+mtime 重新出现，同一操作在 C: 正常），Gradle 的增量 javac（stash-dir）、`lintVitalRelease`、
+CMake `.cxx` 暂存、HTML problems report 移动全部报 `IOException: Failed to delete` /
+`FileAlreadyExistsException`。用一次性初始化脚本把 `buildDir` 与
+`externalNativeBuild.cmake.buildStagingDirectory` 重定位到 `C:\Users\32818\_sx` 即可构建成功；
+脚本不入库，仅在本地 `-I` 传入。
 
 ## Key Files Quick Reference
 

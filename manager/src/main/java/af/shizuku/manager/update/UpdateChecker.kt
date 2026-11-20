@@ -28,6 +28,10 @@ object UpdateChecker {
     private const val TAG = "UpdateChecker"
     private const val RELEASES_URL = ProjectLinks.API_RELEASES
     private const val LATEST_URL = "$RELEASES_URL/latest"
+    // Second-choice version probe. Gitee's API is reachable from mainland China without a token,
+    // which is exactly what GitHub's api.github.com often is not.
+    private const val GITEE_RELEASES_URL = ProjectLinks.API_RELEASES_GITEE
+    private const val GITEE_LATEST_URL = "$GITEE_RELEASES_URL/latest"
     // Fallback: GitHub's Atom feed is served from github.com CDN — different IP range
     // than api.github.com, so routing issues specific to that host don't affect it.
     private const val ATOM_URL = ProjectLinks.RELEASES_ATOM
@@ -56,16 +60,19 @@ object UpdateChecker {
     }
 
     /**
-     * Check for an update, with retry + Atom feed fallback.
+     * Check for an update with a three-tier probe.
      *
-     * Strategy:
-     *   1. Try GitHub API (up to 2 attempts, 2 s apart)
-     *   2. For Stable, if both fail with a network error, fall back to the GitHub
-     *      Atom feed (can detect an update exists but can't supply a download URL
-     *      - user is directed to GitHub Releases manually). Pre-release channels
-     *      only use the Releases API because the Atom feed has no reliable
-     *      prerelease flag.
-     *   3. If the allowed strategy for the selected channel fails -> NetworkError
+     * Probe order:
+     *   1. GitHub API (up to 2 attempts, 2 s apart) — authoritative: it carries the prerelease
+     *      flag, the asset byte size (the relay uses it to reject a wrong file) and a direct URL.
+     *   2. Gitee API v5 — same release data served from a mainland host, anonymous, but without
+     *      asset sizes. Used only when GitHub is unreachable, so the app still notices new
+     *      versions on networks where api.github.com is blocked or timing out.
+     *   3. GitHub Atom feed (stable channel only) — can tell that an update exists but gives no
+     *      download URL, so the user is sent to the Releases page.
+     *
+     * Whichever probe answered, the download list is built the same way
+     * (Gitee → CNB → JihuLab → GitHub → CF → COS): detection and delivery stay decoupled.
      */
     suspend fun checkForUpdate(channel: String = "stable"): CheckResult = withContext(Dispatchers.IO) {
         val transaction = Sentry.startTransaction("UpdateCheck", "check_for_update")
@@ -83,7 +90,7 @@ object UpdateChecker {
                     span.throwable = e
                     span.finish(io.sentry.SpanStatus.INTERNAL_ERROR)
                     if (e.isNetworkError()) {
-                        Timber.tag(TAG).w("Update check attempt ${attempt + 1} failed (network): ${e.message}")
+                        Timber.tag(TAG).w("GitHub probe attempt ${attempt + 1} failed (network): ${e.message}")
                     } else {
                         Sentry.captureException(e)
                         return@withContext CheckResult.NetworkError
@@ -91,12 +98,25 @@ object UpdateChecker {
                 }
             }
 
+            // GitHub is unreachable — probe Gitee before degrading to a link-only answer.
+            val giteeSpan = transaction.startChild("gitee_api", "fallback")
+            try {
+                val result = checkViaGitee(channel)
+                giteeSpan.finish(io.sentry.SpanStatus.OK)
+                Timber.tag(TAG).i("Update probed via Gitee fallback")
+                return@withContext result
+            } catch (e: Exception) {
+                giteeSpan.throwable = e
+                giteeSpan.finish(io.sentry.SpanStatus.INTERNAL_ERROR)
+                Timber.tag(TAG).w(e, "Gitee probe failed")
+            }
+
             if (isPrereleaseChannel(channel)) {
-                Timber.tag(TAG).w("API unreachable after 2 attempts; skipping Atom fallback for pre-release channel")
+                Timber.tag(TAG).w("Both API probes unreachable; skipping Atom fallback for pre-release channel")
                 return@withContext CheckResult.NetworkError
             }
 
-            Timber.tag(TAG).w("API unreachable after 2 attempts, trying Atom feed fallback")
+            Timber.tag(TAG).w("Both API probes unreachable, trying Atom feed fallback")
             val fallbackSpan = transaction.startChild("atom_feed", "fallback")
             try {
                 val fallback = checkViaAtomFeed()
@@ -153,29 +173,11 @@ object UpdateChecker {
             if (isDropIn) isDropInAsset(name) else isStandardAsset(name)
         }
 
-        // Build multi-source download URL list (ordered by priority).
-        // UpdateManager tries each source in turn and only moves on when the download fails.
-        //   Gitee               — GitHub-release mirror; public, no token. Two redirects later
-        //                         it serves from foruda.gitee.com at ~2 MB/s in mainland China.
-        //                         Assets the Gitee scanner rejected are stored as
-        //                         <name>.apk.zip, so a name-based lookup 404s and gets skipped.
-        //   GitHub direct       — original source.
-        //   Cloudflare (fd.*)   — a GitHub reverse proxy, NOT a flat object store: it needs
-        //                         /<owner>/<repo>/releases/download/<tag>/<asset>. Without the
-        //                         tag GitHub answers 404 (that was the "mirror is broken").
-        //                         Once the edge cache is warm, HEAD is ~2 s.
-        //   COS (Guangzhou)     — flat asset name, ~200 ms HEAD from mainland China; kept last
-        //                         because it is only updated for formal releases.
         val assetName = targetAsset?.getString("name").orEmpty()
         val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
         val assetSize = targetAsset?.optLong("size", -1L) ?: -1L
         val downloadUrls = if (targetAsset != null) {
-            buildList {
-                add("${ProjectLinks.MIRROR_GITEE}/$tagName/$assetName")
-                if (githubUrl.isNotBlank()) add(githubUrl)
-                add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
-                add("${ProjectLinks.MIRROR_COS}/$assetName")
-            }
+            buildDownloadUrls(tagName, assetName, githubUrl)
         } else {
             emptyList()
         }
@@ -198,6 +200,112 @@ object UpdateChecker {
             CheckResult.UpToDate
         }
     }
+
+    /**
+     * Builds the multi-source download list for one release asset, in relay order.
+     *
+     * Order: Gitee → CNB → JihuLab → GitHub → Cloudflare → COS. UpdateManager tries each entry
+     * in turn and only moves on when the previous one actually failed.
+     *   Gitee           — release mirror, anonymous; serves from foruda.gitee.com in mainland.
+     *                     Gitee's scanner sometimes stores an asset as `<name>.apk.zip` (a zip
+     *                     wrapper around the real APK); those extra names are queued right after
+     *                     the canonical one and UpdateManager unwraps them before installing.
+     *   CNB             — 国内托管，只有 cnb.cool 主域可匿名下载（api.cnb.cool 会 401）。
+     *   JihuLab         — 极狐 GitLab Generic Package Registry，匿名 200。
+     *   GitHub          — original source (direct URL passed in, or rebuilt from the tag).
+     *   Cloudflare      — GitHub reverse proxy; needs /<owner>/<repo>/releases/download/<tag>/<asset>.
+     *   COS             — flat asset name on the bound custom domain (cos.shizukux.xyz).
+     */
+    private fun buildDownloadUrls(
+        tagName: String,
+        assetName: String,
+        githubUrl: String,
+        extraGiteeNames: List<String> = emptyList()
+    ): List<String> = buildList {
+        add("${ProjectLinks.MIRROR_GITEE}/$tagName/$assetName")
+        extraGiteeNames.forEach { add("${ProjectLinks.MIRROR_GITEE}/$tagName/$it") }
+        add("${ProjectLinks.MIRROR_CNB}/$tagName/$assetName")
+        add("${ProjectLinks.MIRROR_JIHULAB}/$tagName/$assetName")
+        add(
+            githubUrl.takeIf { it.isNotBlank() }
+                ?: "${ProjectLinks.REPOSITORY}/releases/download/$tagName/$assetName"
+        )
+        add("${ProjectLinks.MIRROR_CF}/$tagName/$assetName")
+        add("${ProjectLinks.MIRROR_COS}/$assetName")
+    }
+
+    /**
+     * Second-tier probe: Gitee API v5. Same release metadata as GitHub (tag, body, prerelease
+     * flag, asset names) but no asset byte sizes, so [UpdateInfo.expectedSize] is left at -1
+     * and the relay's size guard is skipped for this result.
+     *
+     * The list endpoint is ordered by release id, not by date, so the pre-release channel
+     * picks the newest candidate by version stamp instead of taking the first row.
+     */
+    private fun checkViaGitee(channel: String): CheckResult {
+        val isDropIn = BuildConfig.APPLICATION_ID == "moe.shizuku.privileged.api"
+        val json: JSONObject = if (isPrereleaseChannel(channel)) {
+            val arr = fetchJson("$GITEE_RELEASES_URL?per_page=20&page=1", accept = "application/json") as? JSONArray
+                ?: throw IOException("unexpected gitee releases payload")
+            val candidates = (0 until arr.length())
+                .map { arr.getJSONObject(it) }
+                .filter { it.optBoolean("prerelease", false) }
+            var best: JSONObject? = null
+            for (candidate in candidates) {
+                val tag = candidate.optString("tag_name")
+                if (tag.isBlank()) continue
+                if (best == null || isNewerVersion(tag.removePrefix("v"), best.optString("tag_name").removePrefix("v"))) {
+                    best = candidate
+                }
+            }
+            best ?: return CheckResult.UpToDate
+        } else {
+            fetchJson(GITEE_LATEST_URL, accept = "application/json") as? JSONObject
+                ?: throw IOException("unexpected gitee latest payload")
+        }
+
+        val tagName = json.optString("tag_name")
+        if (tagName.isBlank()) throw IOException("gitee release without tag_name")
+        val versionName = tagName.removePrefix("v")
+        val releaseNotes = json.optString("body", "")
+        val publishedAt = json.optString("created_at", "")
+        val isPrerelease = json.optBoolean("prerelease", false)
+
+        val assets = json.optJSONArray("assets") ?: JSONArray()
+        val names = (0 until assets.length())
+            .map { assets.getJSONObject(it).optString("name") }
+            .filter { it.endsWith(".apk", true) || it.endsWith(".apk.zip", true) }
+
+        val targetBase = names.map { baseAssetName(it) }
+            .firstOrNull { if (isDropIn) isDropInAsset(it) else isStandardAsset(it) }
+        val giteeZipNames = if (targetBase != null) {
+            names.filter { it.equals("$targetBase.zip", ignoreCase = true) }
+        } else {
+            emptyList()
+        }
+        val downloadUrls = if (targetBase != null) {
+            buildDownloadUrls(tagName, targetBase, "", giteeZipNames)
+        } else {
+            emptyList()
+        }
+
+        return if (isNewerVersion(versionName, BuildConfig.VERSION_NAME)) {
+            Timber.tag(TAG).d("Update available via Gitee: $versionName (current=${BuildConfig.VERSION_NAME})")
+            CheckResult.UpdateAvailable(
+                UpdateInfo(
+                    versionName, parseVersionCode(versionName), releaseNotes, downloadUrls,
+                    publishedAt, isPrerelease, -1L, downloadUrls.isEmpty()
+                )
+            )
+        } else {
+            Timber.tag(TAG).d("Already on latest (Gitee): ${BuildConfig.VERSION_NAME}")
+            CheckResult.UpToDate
+        }
+    }
+
+    /** Strips Gitee's `.zip` wrapper suffix: `x.apk.zip` → `x.apk`, anything else unchanged. */
+    private fun baseAssetName(name: String): String =
+        if (name.endsWith(".zip", ignoreCase = true)) name.dropLast(4) else name
 
     /**
      * Fetches the release notes body for a specific tag (e.g. "v13.6.0.r2162") — used by the
@@ -290,12 +398,12 @@ object UpdateChecker {
     private fun isPrereleaseChannel(channel: String): Boolean =
         channel.equals("dev", ignoreCase = true) || channel.equals("beta", ignoreCase = true)
 
-    private fun fetchJson(urlString: String): Any? {
+    private fun fetchJson(urlString: String, accept: String = "application/vnd.github.v3+json"): Any? {
         val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             connectTimeout = CONNECT_TIMEOUT_MS
             readTimeout = READ_TIMEOUT_MS
-            setRequestProperty("Accept", "application/vnd.github.v3+json")
+            setRequestProperty("Accept", accept)
             setRequestProperty("User-Agent", "ShizukuX/${BuildConfig.VERSION_NAME}")
         }
         try {
