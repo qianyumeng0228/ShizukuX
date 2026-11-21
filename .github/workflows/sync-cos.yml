@@ -101,15 +101,16 @@ jobs:
           chmod 600 ~/.config/rclone/rclone.conf
 
           # A single TCP stream from GitHub's US runners to Guangzhou is
-          # heavily throttled. Use COS multipart uploads and a small amount
-          # of file-level parallelism instead of one giant PUT.
+          # heavily throttled, and COS also dislikes multiple concurrent
+          # file uploads. Upload one file at a time, but split each file
+          # into COS multipart parts to get parallelism inside one object.
           rclone copy ./assets "cos:${COS_BUCKET}/" \
             --checksum \
             --s3-no-check-bucket \
             --s3-upload-cutoff 5Mi \
             --s3-upload-concurrency 4 \
-            --transfers 2 \
-            --checkers 2 \
+            --transfers 1 \
+            --checkers 1 \
             --retries 4 \
             --low-level-retries 5 \
             --timeout 90s \
