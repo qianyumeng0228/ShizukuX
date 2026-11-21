@@ -1,0 +1,7 @@
+[cos]
+type = s3
+provider = TencentCOS
+access_key_id = <COS_SECRET_ID>
+secret_access_key = <COS_SECRET_KEY>
+endpoint = https://cos.ap-guangzhou.myqcloud.com
+acl = private

@@ -1,8 +1,8 @@
-name: Publish Release Mirrors
+name: Publish Release Mirrors (Manual Fallback)
 
 on:
-  release:
-    types: [published, edited]
+  # Release-time mirroring now runs on the Tencent Cloud worker. This workflow
+  # is kept only as a manual fallback for emergency re-publishing.
   workflow_dispatch:
     inputs:
       tag:

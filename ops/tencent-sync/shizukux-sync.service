@@ -1,0 +1,19 @@
+[Unit]
+Description=ShizukuX release mirror sync worker
+Documentation=https://github.com/qianyumeng0228/ShizukuX
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/shizukux-sync
+ExecStart=/opt/shizukux-sync/run.sh
+TimeoutStartSec=3600
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+
+# Keep the service from inheriting a stale environment.
+Environment=PYTHONUNBUFFERED=1

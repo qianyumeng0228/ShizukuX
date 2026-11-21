@@ -1,8 +1,8 @@
 name: Sync Release Assets to CDN Mirrors
 
 on:
-  release:
-    types: [published, updated, edited]
+  # Release assets are uploaded to COS by the Tencent Cloud worker. GitHub
+  # Actions only publishes R2 here; cleanup remains scheduled.
   schedule:
     # Daily cleanup at 00:00 UTC (08:00 Beijing)
     - cron: '0 0 * * *'
@@ -51,93 +51,7 @@ jobs:
           echo "upload=${UPLOAD}" >> "$GITHUB_OUTPUT"
           echo "upload=${UPLOAD} tag=${TAG}"
 
-  # COS is the slow / China-side leg. It has its own job and its own retries,
-  # so a slow or failing COS run cannot delay or block R2.
-  cos:
-    name: Tencent COS
-    needs: prepare
-    if: needs.prepare.outputs.upload == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 75
-    steps:
-      - name: Download all release assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.prepare.outputs.tag }}
-        run: |
-          set -euo pipefail
-          mkdir -p ./assets
-          gh release download "$TAG" \
-            --repo "${{ github.repository }}" \
-            --dir ./assets \
-            --clobber
-
-      - name: Install rclone
-        run: |
-          set -euo pipefail
-          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip
-          unzip -q /tmp/rclone.zip -d /tmp/rclone
-          sudo install -m 755 /tmp/rclone/rclone-*/rclone /usr/local/bin/rclone
-          rclone version | head -n 1
-
-      - name: Upload to Tencent COS
-        env:
-          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
-          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
-          COS_BUCKET: ${{ secrets.COS_BUCKET }}
-          COS_REGION: ${{ secrets.COS_REGION }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.config/rclone
-          cat > ~/.config/rclone/rclone.conf <<EOF
-          [cos]
-          type = s3
-          provider = TencentCOS
-          access_key_id = ${COS_SECRET_ID}
-          secret_access_key = ${COS_SECRET_KEY}
-          endpoint = https://cos.${COS_REGION}.myqcloud.com
-          acl = private
-          EOF
-          chmod 600 ~/.config/rclone/rclone.conf
-
-          # Do not use --checksum here: for missing/multipart objects rclone
-          # may try to fetch remote hashes first, which stalls on this link.
-          # --size-only skips already-uploaded objects; the explicit MD5
-          # verification below catches any same-size/different-content case.
-          rclone copy ./assets "cos:${COS_BUCKET}/" \
-            --size-only \
-            --s3-no-check-bucket \
-            --s3-upload-cutoff 5Mi \
-            --s3-upload-concurrency 4 \
-            --transfers 1 \
-            --checkers 1 \
-            --retries 4 \
-            --low-level-retries 5 \
-            --timeout 90s \
-            --contimeout 20s \
-            --stats 15s \
-            --stats-one-line \
-            -v
-
-          echo "Verifying COS object MD5 against downloaded release assets"
-          failed=0
-          for f in ./assets/*; do
-            [ -f "$f" ] || continue
-            fname="$(basename "$f")"
-            local_md5="$(md5sum "$f" | awk '{print $1}')"
-            remote_md5="$(rclone md5sum "cos:${COS_BUCKET}/${fname}" --s3-no-check-bucket 2>/dev/null | awk '{print $1}')"
-            if [ "$local_md5" != "$remote_md5" ]; then
-              echo "::error::COS MD5 mismatch: ${fname} local=${local_md5} remote=${remote_md5}"
-              failed=1
-            else
-              echo "COS OK ${fname} md5=${local_md5}"
-            fi
-          done
-          if [ "$failed" -ne 0 ]; then
-            exit 1
-          fi
-
-  # R2 is global and fast. It runs in parallel with COS and never waits for it.
+  # R2 is the global fast mirror and the source the Tencent worker downloads from.
   r2:
     name: Cloudflare R2
     needs: prepare

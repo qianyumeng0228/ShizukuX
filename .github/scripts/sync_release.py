@@ -24,6 +24,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -198,6 +199,10 @@ def push_tag(platform: str, tag: str, token: str) -> None:
     }
     host = hosts[platform]
     remote = f"https://oauth2:{quote(token, safe='')}@{host}"
+    existing = run_git(["ls-remote", "--refs", remote, f"refs/tags/{tag}"], token)
+    if existing.stdout.strip():
+        log(f"{platform}: tag {tag} is present")
+        return
     # The checkout has full history, but fetch the tag explicitly so a manual
     # dispatch can also work from a branch checkout that did not include it.
     run_git(["fetch", "origin", f"refs/tags/{tag}:refs/tags/{tag}", "--force"], token)
@@ -477,23 +482,49 @@ def gitee_delete_asset(release_id: int, asset_id: int, token: str) -> None:
 
 def gitee_upload_asset(release_id: int, name: str, path: Path, token: str) -> None:
     for attempt in range(1, 4):
+        config_path = Path(tempfile.gettempdir()) / f"gitee-upload-{os.getpid()}-{attempt}.conf"
+        response_path = Path(tempfile.gettempdir()) / f"gitee-upload-{os.getpid()}-{attempt}.json"
         try:
-            with path.open("rb") as handle:
-                response = requests.post(
-                    f"{GITEE_API}/releases/{release_id}/attach_files",
-                    params={"access_token": token},
-                    files={"file": (name, handle, "application/vnd.android.package-archive")},
-                    headers={"User-Agent": UA},
-                    timeout=(30, 600),
-                )
-            if response.status_code in (200, 201):
+            config = (
+                f'url = "{GITEE_API}/releases/{release_id}/attach_files?access_token={token}"\n'
+                f'form = "file=@{path};type=application/vnd.android.package-archive"\n'
+                f'output = "{response_path}"\n'
+            )
+            config_path.write_text(config, encoding="utf-8")
+            os.chmod(config_path, 0o600)
+            result = subprocess.run(
+                [
+                    "curl",
+                    "-sS",
+                    "--http1.1",
+                    "--max-time",
+                    "600",
+                    "--config",
+                    str(config_path),
+                    "-w",
+                    "%{http_code}",
+                ],
+                text=True,
+                capture_output=True,
+                timeout=660,
+            )
+            status_text = (result.stdout or "").strip().splitlines()
+            status = status_text[-1] if status_text else "000"
+            body = response_path.read_text(encoding="utf-8", errors="replace") if response_path.is_file() else ""
+            if result.returncode == 0 and status in ("200", "201"):
                 log(f"gitee: uploaded {name}")
                 return
             if attempt == 3:
-                fail(f"Gitee upload {name} HTTP {response.status_code}: {response.text[:1200]}")
-        except requests.RequestException as error:
+                fail(f"Gitee upload {name} HTTP {status}: {body[:1200]}")
+        except (OSError, subprocess.SubprocessError) as error:
             if attempt == 3:
                 fail(f"Gitee upload {name} failed: {error}")
+        finally:
+            for temporary in (config_path, response_path):
+                try:
+                    temporary.unlink()
+                except FileNotFoundError:
+                    pass
         time.sleep(5 * attempt)
 
 
