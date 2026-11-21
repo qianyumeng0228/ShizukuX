@@ -95,7 +95,7 @@ jobs:
             ok=0
             for attempt in 1 2; do
               echo "COS upload ${fname} attempt ${attempt}/2"
-              if timeout 300 coscmd upload -s "$f" "$fname"; then
+              if timeout 300 coscmd upload "$f" "$fname"; then
                 ok=1
                 break
               fi
