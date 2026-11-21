@@ -100,19 +100,20 @@ jobs:
           EOF
           chmod 600 ~/.config/rclone/rclone.conf
 
-          # COS does not implement HeadBucket, so rclone's existence check
-          # returns 403 and falls back to CreateBucket. Disable that check.
-          # --checksum compares the local MD5 with COS ETag (single-part MD5),
-          # which makes reruns skip already-identical objects.
+          # GitHub's US runners reach Guangzhou over a slow, unstable
+          # cross-border link. Parallel PUTs can leave several connections
+          # stalled, so upload one file at a time and fail fast on a dead
+          # connection instead of letting it hang until the job timeout.
           rclone copy ./assets "cos:${COS_BUCKET}/" \
             --checksum \
             --s3-no-check-bucket \
             --s3-upload-cutoff 200Mi \
-            --transfers 6 \
-            --retries 3 \
-            --low-level-retries 10 \
-            --timeout 300s \
-            --contimeout 30s \
+            --transfers 1 \
+            --checkers 1 \
+            --retries 4 \
+            --low-level-retries 5 \
+            --timeout 90s \
+            --contimeout 20s \
             --stats 15s \
             --stats-one-line \
             -v
