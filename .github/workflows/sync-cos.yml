@@ -93,9 +93,9 @@ jobs:
             [ -f "$f" ] || continue
             fname="$(basename "$f")"
             ok=0
-            for attempt in 1 2 3; do
-              echo "COS upload ${fname} attempt ${attempt}/3"
-              if timeout 120 coscmd upload "$f" "$fname"; then
+            for attempt in 1 2; do
+              echo "COS upload ${fname} attempt ${attempt}/2"
+              if timeout 300 coscmd upload -s "$f" "$fname"; then
                 ok=1
                 break
               fi
