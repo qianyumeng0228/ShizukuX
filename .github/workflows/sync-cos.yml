@@ -1,8 +1,10 @@
 name: Sync Release Assets to CDN Mirrors
 
 on:
-  # Release assets are uploaded to COS by the Tencent Cloud worker. GitHub
-  # Actions only publishes R2 here; cleanup remains scheduled.
+  # GitHub Actions keeps publishing the global R2 mirror on release. COS and
+  # the China platforms are handled by the Tencent Cloud worker.
+  release:
+    types: [published, updated, edited]
   schedule:
     # Daily cleanup at 00:00 UTC (08:00 Beijing)
     - cron: '0 0 * * *'
