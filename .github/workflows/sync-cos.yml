@@ -100,12 +100,12 @@ jobs:
           EOF
           chmod 600 ~/.config/rclone/rclone.conf
 
-          # A single TCP stream from GitHub's US runners to Guangzhou is
-          # heavily throttled, and COS also dislikes multiple concurrent
-          # file uploads. Upload one file at a time, but split each file
-          # into COS multipart parts to get parallelism inside one object.
+          # Do not use --checksum here: for missing/multipart objects rclone
+          # may try to fetch remote hashes first, which stalls on this link.
+          # --size-only skips already-uploaded objects; the explicit MD5
+          # verification below catches any same-size/different-content case.
           rclone copy ./assets "cos:${COS_BUCKET}/" \
-            --checksum \
+            --size-only \
             --s3-no-check-bucket \
             --s3-upload-cutoff 5Mi \
             --s3-upload-concurrency 4 \
