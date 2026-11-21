@@ -100,16 +100,16 @@ jobs:
           EOF
           chmod 600 ~/.config/rclone/rclone.conf
 
-          # GitHub's US runners reach Guangzhou over a slow, unstable
-          # cross-border link. Parallel PUTs can leave several connections
-          # stalled, so upload one file at a time and fail fast on a dead
-          # connection instead of letting it hang until the job timeout.
+          # A single TCP stream from GitHub's US runners to Guangzhou is
+          # heavily throttled. Use COS multipart uploads and a small amount
+          # of file-level parallelism instead of one giant PUT.
           rclone copy ./assets "cos:${COS_BUCKET}/" \
             --checksum \
             --s3-no-check-bucket \
-            --s3-upload-cutoff 200Mi \
-            --transfers 1 \
-            --checkers 1 \
+            --s3-upload-cutoff 5Mi \
+            --s3-upload-concurrency 4 \
+            --transfers 2 \
+            --checkers 2 \
             --retries 4 \
             --low-level-retries 5 \
             --timeout 90s \
