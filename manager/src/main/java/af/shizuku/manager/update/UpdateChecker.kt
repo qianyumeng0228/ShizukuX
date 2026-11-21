@@ -1,17 +1,23 @@
 package af.shizuku.manager.update
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Xml
 import timber.log.Timber
 import io.sentry.Sentry
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import javax.net.ssl.SSLException
 import kotlinx.coroutines.withContext
 import af.shizuku.manager.BuildConfig
+import af.shizuku.manager.ShizukuApplication
 import af.shizuku.manager.utils.ProjectLinks
 import org.json.JSONArray
 import org.json.JSONObject
@@ -156,28 +162,31 @@ object UpdateChecker {
 
         val assets = json.getJSONArray("assets")
         val isDropIn = BuildConfig.APPLICATION_ID == "moe.shizuku.privileged.api"
+        // The OPPO package is not a separate flavor: it is the Drop-In APK re-signed with the
+        // AOSP testkey, so package name alone cannot tell it apart. Read our own signing
+        // certificate; a normal Drop-In must never be offered an update that would fail with
+        // INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+        val isOppoTestKey = isDropIn && isOppoTestKeyBuild()
         val apkAssets = (0 until assets.length())
             .map { assets.getJSONObject(it) }
             .filter { it.getString("name").endsWith(".apk", ignoreCase = true) }
+        val assetNames = apkAssets.map { it.getString("name") }
 
         // Release assets are named ShizukuX-<Variant>-v<version>.apk:
         //   ShizukuX-v13.7.0.k2017.apk            → standard
         //   ShizukuX-Drop-In-v13.7.0.k2017.apk    → drop-in (moe.shizuku.privileged.api)
+        //   ShizukuX-OPPO-Drop-In-v13.7.0.k2017.apk → OPPO drop-in (AOSP testkey)
+        //   ShizukuX-13.7.0.k2017-oppo-testkey.apk → legacy OPPO testkey spelling
         //   ShizukuX-Compat-Hub-v13.7.0.k2017.apk → compat hub
-        // The old manager-*-release.apk names are gone. Matching on the hyphenated "Drop-In"
-        // is required: `contains("dropin")` never matches it, so the drop-in branch used to fall
-        // through to the first APK and could hand a Compat-Hub or standard build to a drop-in
-        // install (and a Drop-In build to a standard one).
-        val targetAsset = apkAssets.firstOrNull { asset ->
-            val name = asset.getString("name")
-            if (isDropIn) isDropInAsset(name) else isStandardAsset(name)
-        }
-
-        val assetName = targetAsset?.getString("name").orEmpty()
+        // The OPPO branch is checked first: both OPPO names contain "drop-in", so the old
+        // isDropInAsset() alone would hand a normal Drop-In update to a testkey install.
+        val selectedName = selectAssetName(assetNames, isDropIn, isOppoTestKey)
+        val targetAsset = apkAssets.firstOrNull { it.getString("name") == selectedName }
+        val targetAssetName = selectedName.orEmpty()
         val githubUrl = targetAsset?.optString("browser_download_url").orEmpty()
         val assetSize = targetAsset?.optLong("size", -1L) ?: -1L
         val downloadUrls = if (targetAsset != null) {
-            buildDownloadUrls(tagName, assetName, githubUrl)
+            buildDownloadUrls(tagName, targetAssetName, githubUrl)
         } else {
             emptyList()
         }
@@ -244,6 +253,7 @@ object UpdateChecker {
      */
     private fun checkViaGitee(channel: String): CheckResult {
         val isDropIn = BuildConfig.APPLICATION_ID == "moe.shizuku.privileged.api"
+        val isOppoTestKey = isDropIn && isOppoTestKeyBuild()
         val json: JSONObject = if (isPrereleaseChannel(channel)) {
             val arr = fetchJson("$GITEE_RELEASES_URL?per_page=20&page=1", accept = "application/json") as? JSONArray
                 ?: throw IOException("unexpected gitee releases payload")
@@ -276,8 +286,11 @@ object UpdateChecker {
             .map { assets.getJSONObject(it).optString("name") }
             .filter { it.endsWith(".apk", true) || it.endsWith(".apk.zip", true) }
 
-        val targetBase = names.map { baseAssetName(it) }
-            .firstOrNull { if (isDropIn) isDropInAsset(it) else isStandardAsset(it) }
+        val targetBase = selectAssetName(
+            names.map { baseAssetName(it) },
+            isDropIn,
+            isOppoTestKey
+        )
         val giteeZipNames = if (targetBase != null) {
             names.filter { it.equals("$targetBase.zip", ignoreCase = true) }
         } else {
@@ -380,6 +393,30 @@ object UpdateChecker {
         this is ConnectException || this is SSLException || this is IOException
 
     /**
+     * Chooses exactly one release asset for the installed package.
+     *
+     * OPPO is checked first and is a strict branch: an OPPO/testkey install must never fall
+     * back to the project-signed Drop-In. `INSTALL_FAILED_UPDATE_INCOMPATIBLE` is the result
+     * of mixing those two, and the updater cannot repair a signature mismatch by retrying
+     * another mirror.
+     */
+    internal fun selectAssetName(
+        assetNames: List<String>,
+        isDropIn: Boolean,
+        isOppoTestKey: Boolean
+    ): String? = assetNames.firstOrNull { name ->
+        when {
+            isOppoTestKey -> isOppoAsset(name)
+            isDropIn -> isDropInAsset(name) && !isOppoAsset(name)
+            else -> isStandardAsset(name)
+        }
+    }
+
+    /** Any OPPO channel asset, including the legacy `-oppo-testkey` spelling. */
+    private fun isOppoAsset(name: String): Boolean =
+        name.lowercase().contains("oppo")
+
+    /**
      * "Drop-In" contains a hyphen, so a plain `contains("dropin")` check misses it. All three
      * spellings are accepted in case the release workflow renames the asset again.
      */
@@ -394,6 +431,39 @@ object UpdateChecker {
             !it.contains("drop-in") && !it.contains("dropin") && !it.contains("drop_in") &&
                 !it.contains("compat")
         }
+
+    /**
+     * True only for the AOSP-testkey-signed OPPO package. The package name is identical to
+     * the normal Drop-In, so the signing certificate is the only stable discriminator:
+     * AOSP's platform testkey carries `android@android.com` in its subject.
+     */
+    private fun isOppoTestKeyBuild(): Boolean = runCatching {
+        val context = ShizukuApplication.appContext
+        val certs = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            context.packageManager
+                .getPackageInfo(context.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                .signingInfo
+                ?.apkContentsSigners
+                .orEmpty()
+        } else {
+            @Suppress("DEPRECATION")
+            context.packageManager
+                .getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
+                .signatures
+                .orEmpty()
+        }
+        if (certs.isEmpty()) return@runCatching false
+        val factory = CertificateFactory.getInstance("X.509")
+        certs.any { cert ->
+            val subject = runCatching {
+                val parsed = factory.generateCertificate(
+                    ByteArrayInputStream(cert.toByteArray())
+                ) as X509Certificate
+                parsed.subjectX500Principal.name
+            }.getOrDefault("")
+            subject.contains("android@android.com") || subject.contains("CN=Android")
+        }
+    }.getOrDefault(false)
 
     private fun isPrereleaseChannel(channel: String): Boolean =
         channel.equals("dev", ignoreCase = true) || channel.equals("beta", ignoreCase = true)
