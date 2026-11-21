@@ -227,9 +227,11 @@ class DeviceOwnerSettingsFragment : BaseSettingsFragment() {
             pref.isChecked = true
             ShizukuSettings.setDhizukuModeEnabled(true)
         }
-        // Show/hide the Clear Owner and Transfer Owner buttons based on active status
-        findPreference<Preference>("clear_device_owner")?.isVisible = active
-        findPreference<Preference>("transfer_device_owner")?.isVisible = active
+        // Show/hide the Clear Owner and Transfer Owner buttons based on active status.
+        // Must go through the collapsible card: a direct isVisible assignment is overwritten by
+        // updateChildren() on the next expand/collapse pass, which resurrects rows that should be
+        // hidden (and hides rows that should be visible).
+        updateOwnerActionsVisibility(active)
     }
 
     /** Reveals/hides the two owner-only rows inside the collapsible DO management card. */

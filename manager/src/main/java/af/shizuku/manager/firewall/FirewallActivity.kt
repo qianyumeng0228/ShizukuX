@@ -61,7 +61,7 @@ import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
-import af.shizuku.manager.utils.ShizukuStateMachine
+import af.shizuku.manager.utils.ServiceStateReloader
 import af.shizuku.manager.utils.ShizukuSystemApis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -97,26 +97,14 @@ class FirewallActivity : ComponentActivity() {
     private var blocked by mutableStateOf<Set<Int>>(emptySet())
     private var loaded by mutableStateOf(false)
     private var refreshing by mutableStateOf(false)
+    /** A reload requested while one is running: the last request must not be lost. */
+    private var pendingReload = false
     private var busyUid by mutableStateOf<Int?>(null)
     private var message by mutableStateOf<String?>(null)
 
-    /**
-     * Whether the service was running at the last state the listener saw, seeded with the current
-     * one so the immediate first callback from addListener() does not reload on top of onCreate().
-     */
-    private var serviceRunning = ShizukuStateMachine.isRunning()
-
-    /**
-     * A page opened before the service was up shows "需要服务" and, until this listener existed,
-     * stayed that way: the rules were never lost - they live in the platform - but the page kept
-     * rendering the empty state the user read as "重启后要重新设置". Coming back up reloads it.
-     */
-    private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
-        val running = state == ShizukuStateMachine.State.RUNNING
-        // Either direction matters: losing the service must show "需要服务" instead of leaving
-        // the last reading on screen, and getting it back must replace that with the real rules.
-        if (running != serviceRunning && !isFinishing) load()
-        serviceRunning = running
+    /** Reloads when the service appears or disappears: the rules are read through it. */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) load()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -145,17 +133,22 @@ class FirewallActivity : ComponentActivity() {
                 )
             }
         }
-        ShizukuStateMachine.addListener(serviceListener)
+        // Attach before the first load: a service that appears between the two must be able to
+        // schedule a reload instead of being missed because the seed already saw it as running.
+        serviceReloader.attach()
         load()
     }
 
     override fun onDestroy() {
-        ShizukuStateMachine.removeListener(serviceListener)
+        serviceReloader.detach()
         super.onDestroy()
     }
 
     private fun load() {
-        if (refreshing) return
+        if (refreshing) {
+            pendingReload = true
+            return
+        }
         refreshing = true
         lifecycleScope.launch {
             val snapshot = withContext(Dispatchers.IO) {
@@ -212,6 +205,10 @@ class FirewallActivity : ComponentActivity() {
                 }
 
             refreshing = false
+            if (pendingReload && !isFinishing) {
+                pendingReload = false
+                load()
+            }
         }
     }
 

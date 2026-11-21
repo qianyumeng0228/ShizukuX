@@ -3,14 +3,18 @@ package af.shizuku.manager.autostart
 import android.content.Context
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.utils.Logger.LOGGER
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 import rikka.shizuku.Shizuku
 
 /**
  * Per-app autostart blocking, on the platform's own app-op record.
  *
- * The op is `RUN_ANY_IN_BACKGROUND`: denying it is what the platform's "restrict background
- * activity" does to an app, and it is the only lever a manager can pull without a module. Nothing
- * is remembered here that the platform can be asked for - the list of blocked apps is read out of
+ * The op is `RUN_ANY_IN_BACKGROUND` on AOSP: denying it is what the platform's "restrict
+ * background activity" does to an app. ROMs such as ColorOS keep a separate autostart switch with
+ * its own op, `AUTO_START`; [op] resolves which record this device actually exposes. Nothing is
+ * remembered here that the platform can be asked for - the list of blocked apps is read out of
  * `cmd appops query-op` in one round trip, and every write is read back before it is reported,
  * because `cmd appops set` exits 0 for an app it did not change.
  *
@@ -36,39 +40,50 @@ object AutoStartManager {
     /** The vendor op, when this ROM has one. */
     private const val VENDOR_OP = "AUTO_START"
 
-    /** Resolved once per process: the op does not change while the app is running. */
+    /**
+     * Resolved once per process, and only after a round trip that actually answered.
+     *
+     * The service can be absent when a page opens first. Caching the AOSP fallback then would
+     * turn "could not ask yet" into "this ROM has no vendor op" for the rest of the process,
+     * so the fallback is returned but not stored until [detectOp] has a real answer.
+     */
+    @Volatile
     private var resolvedOp: String? = null
 
+    /** Reads a process stream without blocking the caller forever; daemon threads do not pin the app. */
+    private val shellExecutor = Executors.newCachedThreadPool { runnable ->
+        Thread(runnable, "autostart-shell").apply { isDaemon = true }
+    }
+
+    private const val SHELL_TIMEOUT_SECONDS = 10L
+
     /** The op this device reports for autostart, vendor one first. */
-    fun op(): String = resolvedOp ?: detectOp().also { resolvedOp = it }
+    fun op(): String = resolvedOp ?: detectOp()?.also { resolvedOp = it } ?: OP
 
     /** True when the screen is driving the ROM's own autostart record rather than the AOSP one. */
-    fun usesVendorOp(): Boolean = op() == VENDOR_OP
+    fun usesVendorOp(): Boolean = resolvedOp == VENDOR_OP
 
     /**
-     * Picks the op by asking the platform which ones it has.
-     *
-     * A single `appops get` on one installed package lists every op the platform knows, so one
-     * round trip decides it. Any package will do; shell's own record is the cheapest to ask for.
+     * Picks the op by asking the platform which ones it has, or null when the service could not
+     * answer. A null result is deliberately not cached: a page that opened before the service
+     * came up must be able to ask again and find `AUTO_START`.
      */
-    private fun detectOp(): String {
-        val sample = installedPackages()
-            .firstOrNull { it == "com.android.shell" }
-            ?: installedPackages().firstOrNull()
-            ?: return OP
-        val listing = shell("cmd appops get $sample")
-        if (listing != null &&
-            listing.lineSequence().any { it.trimStart().startsWith("$VENDOR_OP:") }
-        ) {
+    private fun detectOp(): String? {
+        if (!isAvailable()) return null
+        val packages = installedPackages()
+        val sample = packages.firstOrNull { it == "com.android.shell" }
+            ?: packages.firstOrNull()
+            ?: return null
+        val listing = shell("cmd appops get $sample") ?: return null
+        if (listing.lineSequence().any { it.trimStart().startsWith("$VENDOR_OP:") }) {
             return VENDOR_OP
         }
         // A build may print only the ops a package actually touched, so an absent line does not
         // prove the op is missing. Asking it directly separates "no record here" from "no such
         // op": an unknown name is answered with an error, an existing one with a (possibly empty)
         // list of packages.
-        val probe = shell("cmd appops query-op $VENDOR_OP deny")
-        val known = probe != null &&
-            !probe.contains("Unknown operation", ignoreCase = true) &&
+        val probe = shell("cmd appops query-op $VENDOR_OP deny") ?: return null
+        val known = !probe.contains("Unknown operation", ignoreCase = true) &&
             !probe.contains("Error", ignoreCase = true) &&
             !probe.contains("error", ignoreCase = true)
         return if (known) VENDOR_OP else OP
@@ -100,7 +115,7 @@ object AutoStartManager {
     }
 
     /**
-     * The installed packages [OP] is denied for, read in one command.
+     * The installed packages [op] is denied for, read in one command.
      *
      * `query-op` answers with the op service's own records, which can outlive the app they were
      * made for, so the names are intersected with what the device actually has. A count built
@@ -134,11 +149,11 @@ object AutoStartManager {
             ?.toSet()
             ?: emptySet()
 
-    /** Whether [packageName] is denied [OP], or null when the platform could not be asked. */
+    /** Whether [packageName] is denied [op], or null when the platform could not be asked. */
     fun isBlocked(packageName: String): Boolean? = readOp(packageName)
 
     /**
-     * Sets [OP] for one app and answers whether it took.
+     * Sets [op] for one app and answers whether it took.
      *
      * The read-back is the answer: a ROM can accept the verb and leave the record alone.
      */
@@ -187,12 +202,12 @@ object AutoStartManager {
     }
 
     /**
-     * The mode [OP] holds for [packageName] as allow or deny, or null when it was not read.
+     * The mode [op] holds for [packageName] as allow or deny, or null when it was not read.
      *
-     * `appops get` prints `RUN_ANY_IN_BACKGROUND: deny; time=+5d7h... ago` on this platform and
-     * `<OP>: mode=deny` on some others, so the mode is taken from between the colon and the first
-     * semicolon rather than from a fixed offset. Leaving the timestamp attached is what makes a
-     * successful write look like a failure.
+     * `appops get` prints `RUN_ANY_IN_BACKGROUND: deny; time=+5d7h... ago` on AOSP and
+     * `AUTO_START: deny; ...` on ROMs that expose the vendor switch, so the mode is taken from
+     * between the colon and the first semicolon rather than from a fixed offset. Leaving the
+     * timestamp attached is what makes a successful write look like a failure.
      */
     private fun readOp(packageName: String): Boolean? {
         val name = op()
@@ -216,15 +231,35 @@ object AutoStartManager {
     /**
      * Runs one shell command as the Shizuku user and answers its stdout, or null when it did not
      * run or did not succeed.
+     *
+     * stdout and stderr are merged (`2>&1`), so a command that writes more stderr than the pipe
+     * buffer holds cannot block before stdout reaches EOF. Reading the merged stream to EOF is
+     * also the exit signal: this project already established that `ShizukuProcess.waitFor()` is
+     * unreliable on some OEM builds, so it is deliberately not used here. A timeout destroys a
+     * wedged process and returns null instead of leaving the page spinning forever.
      */
     private fun shell(cmd: String): String? {
         if (!isAvailable()) return null
         var process: Process? = null
         return try {
-            process = Shizuku.newProcess(arrayOf("sh", "-c", cmd), null, null)
-            val out = process.inputStream.bufferedReader().readText().trim()
-            process.errorStream.bufferedReader().readText()
-            if (process.waitFor() == 0) out else null
+            val p = Shizuku.newProcess(arrayOf("sh", "-c", "{ $cmd ; } 2>&1"), null, null)
+                ?: throw IllegalStateException("Shizuku.newProcess returned null")
+            process = p
+            val read = shellExecutor.submit<String> {
+                p.inputStream.bufferedReader().use { it.readText() }
+            }
+            try {
+                read.get(SHELL_TIMEOUT_SECONDS, TimeUnit.SECONDS).trim()
+            } catch (_: TimeoutException) {
+                p.destroy()
+                // destroy() closes the stream on most builds; take whatever was already buffered,
+                // then give up rather than block the caller on a process that never exits.
+                try {
+                    read.get(1, TimeUnit.SECONDS).trim()
+                } catch (_: Throwable) {
+                    null
+                }
+            }
         } catch (t: Throwable) {
             LOGGER.w("autostart shell failed: ${t.message}")
             null

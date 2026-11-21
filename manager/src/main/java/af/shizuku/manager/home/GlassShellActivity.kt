@@ -812,8 +812,11 @@ private fun Modifier.horizontalSwipeToPager(
                 }
                 val stepX = change.position.x - change.previousPosition.x
                 val stepY = change.position.y - change.previousPosition.y
+                // Count every event exactly once. The claim test needs the total before it flips,
+                // and the pager/target math below needs every step after it; adding in both
+                // branches made the claiming event contribute twice.
+                dx += stepX
                 if (!claimed) {
-                    dx += stepX
                     dy += stepY
                     // Same rule the pager's own drag uses: past touch slop and clearly horizontal.
                     // The old 1.2x margin made a slightly slanted drag do nothing for the first
@@ -834,7 +837,6 @@ private fun Modifier.horizontalSwipeToPager(
                     // and it used to freeze at touch slop, so nothing but a fast flick could
                     // ever commit - everything slower snapped back, which felt like the page
                     // refusing to move without force.
-                    dx += stepX
                     change.consume()
                     // One full page of slack. The commit below prefers the page the finger
                     // actually ended on, so a full-page drag cannot walk two pages, and the

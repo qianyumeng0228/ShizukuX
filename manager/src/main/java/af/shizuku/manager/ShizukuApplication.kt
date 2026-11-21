@@ -602,6 +602,12 @@ class ShizukuApplication : Application(), Configuration.Provider {
         // Prewarm root check on a background thread early to avoid main thread delays/ANRs
         af.shizuku.manager.utils.EnvironmentUtils.prewarmAsync()
 
+        // 启动兜底：上一次激活如果死在 finally 之前（进程被杀 / 崩溃），
+        // user_setup_complete 会停在 0，三键导航的 Home / 最近任务键随之中断。
+        // 监听 binder 的每次到达，而不是固定等 10s：开机时进程可能先起、服务后起。
+        af.shizuku.manager.settings.DpDoDirectActivation
+            .installStuckUserSetupRecovery(this@ShizukuApplication)
+
         // 1. Run security check
         if (af.shizuku.manager.security.SecurityGuard.isTampered()) {
             Timber.e("Security violation: Environment tampered!")

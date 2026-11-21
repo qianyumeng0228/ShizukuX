@@ -81,7 +81,11 @@ private data class AutoStartApp(
 )
 
 /**
- * Per-app autostart blocking, on the platform's `RUN_ANY_IN_BACKGROUND` op.
+ * Per-app autostart blocking, on the platform's autostart op.
+ *
+ * The op is resolved on the device: ROMs with a separate vendor switch expose `AUTO_START`, and
+ * the AOSP `RUN_ANY_IN_BACKGROUND` record is the fallback. Both are read through the same
+ * [AutoStartManager], so the label under the title always names the record being driven.
  *
  * Two things on one screen: a switch for the whole list (the gate), and one switch per app for the
  * op itself. Both are read back from the platform instead of being remembered, so a list that
@@ -95,6 +99,8 @@ class AutoStartActivity : ComponentActivity() {
     private var blocked by mutableStateOf<Set<String>>(emptySet())
     private var loaded by mutableStateOf(false)
     private var refreshing by mutableStateOf(false)
+    /** A reload requested while one is running: the last request must not be lost. */
+    private var pendingReload = false
     private var busyPackage by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
     private var vendorOp by mutableStateOf(false)
@@ -144,7 +150,10 @@ class AutoStartActivity : ComponentActivity() {
     }
 
     private fun load() {
-        if (refreshing) return
+        if (refreshing) {
+            pendingReload = true
+            return
+        }
         refreshing = true
         lifecycleScope.launch {
             val snapshot = withContext(Dispatchers.IO) {
@@ -184,6 +193,10 @@ class AutoStartActivity : ComponentActivity() {
                 }
 
             refreshing = false
+            if (pendingReload && !isFinishing) {
+                pendingReload = false
+                load()
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package af.shizuku.manager.appops
 
+import af.shizuku.manager.autostart.AutoStartManager
 import af.shizuku.manager.utils.Logger.LOGGER
 import af.shizuku.manager.utils.ShizukuWait
 import rikka.shizuku.Shizuku
@@ -68,6 +69,7 @@ object AppOpsManager {
         "WRITE_CLIPBOARD" to "写入剪贴板",
         "RUN_IN_BACKGROUND" to "后台运行",
         "RUN_ANY_IN_BACKGROUND" to "后台自启",
+        "AUTO_START" to "厂商自启动",
         "START_FOREGROUND" to "启动前台服务",
         "WAKE_LOCK" to "保持唤醒",
         "VIBRATE" to "震动",
@@ -107,7 +109,9 @@ object AppOpsManager {
      *
      * The whole dump cannot be used: the platform records an `ignore` for every op an app has no
      * permission for, so counting all of them turns almost every installed app into "restricted".
-     * These are the consequential ones a user actually blocks in App Ops.
+     * These are the consequential ones a user actually blocks in App Ops. The autostart screen's
+     * resolved op is added at scan time, because a ROM may expose a vendor op instead of the
+     * AOSP `RUN_ANY_IN_BACKGROUND` listed here.
      */
     private val CORE_OPS = setOf(
         "CAMERA", "RECORD_AUDIO", "FINE_LOCATION", "COARSE_LOCATION", "READ_CONTACTS",
@@ -289,6 +293,10 @@ object AppOpsManager {
         if (candidates.isEmpty()) return emptySet()
         val wanted = candidates.toHashSet()
         val out = shell(SCAN) ?: return emptySet()
+        // The autostart screen may resolve a vendor op (`AUTO_START` on ColorOS) instead of the
+        // AOSP `RUN_ANY_IN_BACKGROUND`. Count whichever op it actually drives as well, so the
+        // "restricted" filter and that screen cannot disagree about the same app.
+        val autostartOp = runCatching { AutoStartManager.op() }.getOrDefault(AutoStartManager.OP)
         val limited = mutableSetOf<String>()
         var current: String? = null
         out.lineSequence().forEach { raw ->
@@ -303,7 +311,7 @@ object AppOpsManager {
             val close = line.indexOf(')', open + 1)
             if (open < 0 || close < 0) return@forEach
             val name = line.substring(0, open).trim()
-            if (name !in CORE_OPS) return@forEach
+            if (name !in CORE_OPS && name != autostartOp) return@forEach
             // `(allow / switch COARSE_LOCATION=allow)` carries a modifier: only the first word is
             // the effective mode of the op itself.
             val mode = line.substring(open + 1, close).trim().substringBefore(' ').trim()

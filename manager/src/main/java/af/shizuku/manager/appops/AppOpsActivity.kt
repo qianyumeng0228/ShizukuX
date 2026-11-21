@@ -96,6 +96,8 @@ class AppOpsActivity : ComponentActivity() {
     private var restricted by mutableStateOf<Set<String>>(emptySet())
     private var loaded by mutableStateOf(false)
     private var refreshing by mutableStateOf(false)
+    /** A reload requested while one is running: the last request must not be lost. */
+    private var pendingReload = false
     private var message by mutableStateOf<String?>(null)
 
     /** Reloads when the service appears or disappears: the restriction list is read through it. */
@@ -146,8 +148,10 @@ class AppOpsActivity : ComponentActivity() {
                 )
             }
         }
-        load()
+        // Attach before the first load: a service that appears between the two must be able to
+        // schedule a reload instead of being missed because the seed already saw it as running.
         serviceReloader.attach()
+        load()
     }
 
     override fun onDestroy() {
@@ -156,7 +160,10 @@ class AppOpsActivity : ComponentActivity() {
     }
 
     private fun load() {
-        if (refreshing) return
+        if (refreshing) {
+            pendingReload = true
+            return
+        }
         refreshing = true
         lifecycleScope.launch {
             val snapshot = withContext(Dispatchers.IO) {
@@ -196,6 +203,10 @@ class AppOpsActivity : ComponentActivity() {
                     if (AppOpsManager.isAvailable()) message = it.message ?: it.toString()
                 }
             refreshing = false
+            if (pendingReload && !isFinishing) {
+                pendingReload = false
+                load()
+            }
         }
     }
 

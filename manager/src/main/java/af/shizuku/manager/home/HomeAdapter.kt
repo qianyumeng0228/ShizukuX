@@ -47,7 +47,8 @@ class HomeAdapter(
         // Per-app hiding on the platform settings: what a restrictive app reads, held off while
         // it is in front.
         const val ID_HIDING = 17L
-        // Per-app autostart blocking on the platform's RUN_ANY_IN_BACKGROUND op.
+        // Per-app autostart blocking on the platform's autostart op (vendor AUTO_START when the
+        // ROM exposes it, AOSP RUN_ANY_IN_BACKGROUND otherwise).
         const val ID_AUTOSTART = 18L
         // Per-app force dark: the device-wide night mode held while a chosen app is in front.
         const val ID_FORCE_DARK = 19L

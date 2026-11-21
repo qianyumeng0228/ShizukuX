@@ -62,7 +62,7 @@ import af.shizuku.manager.app.ThemeHelper
 import af.shizuku.manager.firewall.PackageEnumerator
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import af.shizuku.manager.utils.AppIconCache
-import af.shizuku.manager.utils.ShizukuStateMachine
+import af.shizuku.manager.utils.ServiceStateReloader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,26 +95,14 @@ class BatteryWhitelistActivity : ComponentActivity() {
     private var kinds by mutableStateOf<Map<String, BatteryWhitelistManager.Kind>>(emptyMap())
     private var loaded by mutableStateOf(false)
     private var refreshing by mutableStateOf(false)
+    /** A reload requested while one is running: the last request must not be lost. */
+    private var pendingReload = false
     private var busyPackage by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
 
-    /**
-     * Seeded with the current state so the immediate first callback from addListener() does not
-     * reload on top of onCreate().
-     */
-    private var serviceRunning = ShizukuStateMachine.isRunning()
-
-    /**
-     * The whitelist lives in the platform and survives a restart; what does not is the page's
-     * ability to read it. Before this listener, a page opened before the service came back kept
-     * showing the empty state until the user backed out and returned, which reads as "要重新设置".
-     */
-    private val serviceListener: (ShizukuStateMachine.State) -> Unit = { state ->
-        val running = state == ShizukuStateMachine.State.RUNNING
-        // Both directions: losing the service has to show the empty state rather than keep the
-        // last reading, and regaining it has to put the real whitelist back.
-        if (running != serviceRunning && !isFinishing) load()
-        serviceRunning = running
+    /** Reloads when the service appears or disappears: the whitelist is read through it. */
+    private val serviceReloader = ServiceStateReloader {
+        if (!isFinishing) load()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -141,17 +129,22 @@ class BatteryWhitelistActivity : ComponentActivity() {
                 )
             }
         }
-        ShizukuStateMachine.addListener(serviceListener)
+        // Attach before the first load: a service that appears between the two must be able to
+        // schedule a reload instead of being missed because the seed already saw it as running.
+        serviceReloader.attach()
         load()
     }
 
     override fun onDestroy() {
-        ShizukuStateMachine.removeListener(serviceListener)
+        serviceReloader.detach()
         super.onDestroy()
     }
 
     private fun load() {
-        if (refreshing) return
+        if (refreshing) {
+            pendingReload = true
+            return
+        }
         refreshing = true
         lifecycleScope.launch {
             val snapshot = withContext(Dispatchers.IO) {
@@ -190,6 +183,10 @@ class BatteryWhitelistActivity : ComponentActivity() {
                 .onFailure { message = it.message ?: it.toString() }
 
             refreshing = false
+            if (pendingReload && !isFinishing) {
+                pendingReload = false
+                load()
+            }
         }
     }
 

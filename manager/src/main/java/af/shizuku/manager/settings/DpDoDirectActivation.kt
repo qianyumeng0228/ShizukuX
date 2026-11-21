@@ -8,9 +8,12 @@ import android.os.Build
 import android.os.IBinder
 import android.os.IInterface
 import android.os.Process
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import rikka.shizuku.Shizuku
 import rikka.shizuku.ShizukuBinderWrapper
+import rikka.shizuku.ShizukuRemoteProcess
 import timber.log.Timber
 
 /**
@@ -96,6 +99,9 @@ object DpDoDirectActivation {
 
     private const val SETUP_READBACK_TAG = "SX_SETUP_NOW="
 
+    /** `shell()` 超时时的伪退出码；非 0，所有按 exitCode 判成败的调用点会当作失败处理。 */
+    private const val SHELL_TIMEOUT_EXIT_CODE = -1
+
     /**
      * `Shizuku.newProcess` 不保证继承完整 shell 环境，显式给出 PATH / HOME 等，
      * 否则 `cmd`、`settings`、`dumpsys` 可能找不到。
@@ -161,23 +167,83 @@ object DpDoDirectActivation {
     /**
      * 以 Shizuku 服务的 shell(uid 2000) 身份执行一条命令。
      *
-     * @return null 表示进程创建失败（服务未运行 / 调用异常）。
+     * stdout / stderr 各自在独立线程里读：顺序读会让「stderr 写满管道 → 子进程阻塞 → stdout
+     * 不 EOF」互相等死（300 KB stderr 的对照实验里，顺序读 8 秒仍阻塞，并发读 43 ms 完成）。
+     * 再加一个兜底超时，命令卡住时不再让 UI 永久停在进度框。
+     *
+     * @return null 表示进程创建失败（服务未运行 / 调用异常）；超时返回 exitCode = -1。
      */
-    fun shell(command: String): ShellResult? {
+    fun shell(command: String, timeoutSeconds: Long = 20): ShellResult? {
+        // 注意：本文件 import 了 android.os.Process（进程 uid 判断用），这里的进程类型必须
+        // 写成 java.lang.Process，否则会解析成 android.os.Process（没有输入流/destroy）。
+        var process: java.lang.Process? = null
         return try {
-            val process = Shizuku.newProcess(
+            val p = Shizuku.newProcess(
                 arrayOf("/system/bin/sh", "-c", command),
                 SHELL_ENV,
                 "/data/local/tmp"
             )
-            val stdout = process.inputStream.bufferedReader().readText()
-            val stderr = process.errorStream.bufferedReader().readText()
-            val exitCode = process.waitFor()
-            ShellResult(exitCode, (stdout + stderr).trim())
+            process = p
+
+            val stdoutRef = AtomicReference("")
+            val stderrRef = AtomicReference("")
+            val stdoutReader = Thread {
+                stdoutRef.set(runCatching {
+                    p.inputStream.bufferedReader().use { it.readText() }
+                }.getOrDefault(""))
+            }.apply { isDaemon = true; name = "sx-shell-stdout"; start() }
+            val stderrReader = Thread {
+                stderrRef.set(runCatching {
+                    p.errorStream.bufferedReader().use { it.readText() }
+                }.getOrDefault(""))
+            }.apply { isDaemon = true; name = "sx-shell-stderr"; start() }
+
+            val exited = try {
+                if (p is ShizukuRemoteProcess) {
+                    p.waitForTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                } else {
+                    pollExit(p, timeoutSeconds)
+                }
+            } catch (t: Throwable) {
+                Timber.tag(TAG).w(t, "waitForTimeout failed: $command")
+                false
+            }
+
+            if (!exited) {
+                runCatching { p.destroy() }
+                stdoutReader.join(1500)
+                stderrReader.join(1500)
+                Timber.tag(TAG).w("shell timed out after %ds: %s", timeoutSeconds, command)
+                return ShellResult(SHELL_TIMEOUT_EXIT_CODE, "shell 超时（${timeoutSeconds}s）：$command")
+            }
+
+            stdoutReader.join(3000)
+            stderrReader.join(3000)
+            ShellResult(p.exitValue(), (stdoutRef.get() + stderrRef.get()).trim())
         } catch (t: Throwable) {
+            runCatching { process?.destroy() }
             Timber.tag(TAG).w(t, "shell failed: $command")
             null
         }
+    }
+
+    /** minSdk 24 上没有 `Process.waitFor(timeout, unit)` 的可靠实现，用轮询 exitValue 兜底。 */
+    private fun pollExit(process: java.lang.Process, timeoutSeconds: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutSeconds * 1000
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                process.exitValue()
+                return true
+            } catch (e: IllegalThreadStateException) {
+                try {
+                    Thread.sleep(20)
+                } catch (interrupted: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                    return false
+                }
+            }
+        }
+        return false
     }
 
     // ---------------------------------------------------------------------
@@ -298,6 +364,9 @@ object DpDoDirectActivation {
      */
     private val running = AtomicBoolean(false)
 
+    /** 只安装一次恢复监听，避免 Application.onCreate 之外的重复调用叠加 listener。 */
+    private val recoveryInstalled = AtomicBoolean(false)
+
     fun activate(
         context: Context,
         onLog: ((String) -> Unit)? = null
@@ -313,6 +382,69 @@ object DpDoDirectActivation {
             return activateInternal(context, onLog)
         } finally {
             running.set(false)
+        }
+    }
+
+    /**
+     * 安装启动兜底：上一次激活如果死在 `finally` 之前（进程被杀 / 崩溃），
+     * `user_setup_complete` 会停在 0，三键导航的 Home / 最近任务键随之中断。
+     *
+     * 不能再用「进程启动后固定等 10 秒」：开机时应用进程可能已经被拉起，但 Shizuku 服务
+     * 还没就绪；10 秒后线程退出，之后服务再起来也不会重新触发。这里改为监听 binder 的
+     * 每次到达（sticky 会在已就绪时立即回调），服务早到、晚到、重启都能覆盖。
+     *
+     * 回调里再起后台线程，避免 `shell()` 的阻塞调用落在主线程。
+     */
+    fun installStuckUserSetupRecovery(context: Context) {
+        if (!recoveryInstalled.compareAndSet(false, true)) return
+        val appContext = context.applicationContext
+        runCatching {
+            Shizuku.addBinderReceivedListenerSticky(
+                Shizuku.OnBinderReceivedListener {
+                    Thread {
+                        recoverStuckUserSetupComplete(appContext)
+                    }.apply {
+                        isDaemon = true
+                        name = "sx-setup-gate-recover"
+                    }.start()
+                }
+            )
+        }.onFailure {
+            Timber.tag(TAG).w(it, "install stuck user_setup_complete recovery failed")
+        }
+    }
+
+    private fun recoverStuckUserSetupComplete(context: Context) {
+        // 和 activate() 共用 running 闸：恢复期间不能让同一进程里的激活把向导闸又置 0，
+        // 也不能让恢复把激活刚置的 0 改回 1。
+        if (!running.compareAndSet(false, true)) return
+        try {
+            restoreStuckUserSetupComplete(context)
+        } catch (t: Throwable) {
+            Timber.tag(TAG).w(t, "recover stuck user_setup_complete failed")
+        } finally {
+            running.set(false)
+        }
+    }
+
+    private fun restoreStuckUserSetupComplete(context: Context) {
+        val setup = shell("settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
+            ?.output?.trim()
+        if (setup != "0") return
+        val provisioned = shell("settings get global device_provisioned 2>/dev/null")
+            ?.output?.trim()
+        if (provisioned != "1") return
+
+        val put = shell("settings --user 0 put secure $SETTING_USER_SETUP_COMPLETE 1")
+        val now = shell("settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null")
+            ?.output?.trim()
+        Timber.tag(TAG).i("recovered stuck user_setup_complete: putExit=${put?.exitCode} now=$now")
+        if (now != "1") return
+
+        // 只改键不刷内存，DPMS 仍可能按「未完成向导」处理；能刷就刷，失败也不影响下次启动重试。
+        val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as? DevicePolicyManager ?: return
+        runCatching {
+            withShellService(dpm, { }) { invokeForceUpdateUserSetupComplete(dpm, 0, { }) }
         }
     }
 
@@ -369,12 +501,28 @@ object DpDoDirectActivation {
         note("")
         note("> 第 1 步：开启 Role 资格校验绕过（shell）")
         var roleBypassOpened = false
+
+        /** 收回第 1 步打开的旁路。返回 false 表示没收掉（服务已不可用），调用方要把这个后果写进日志。 */
+        fun closeRoleBypass(): Boolean {
+            if (!roleBypassOpened) return true
+            note("")
+            note("> 第 8 步：关闭 Role 资格校验绕过（shell）")
+            val closed = shell("cmd role set-bypassing-role-qualification false")
+            note("  exit=${closed?.exitCode ?: "(失败)"}${if (closed?.output?.isNotBlank() == true) " out=${closed.output}" else ""}")
+            if (closed != null && closed.exitCode == 0) {
+                roleBypassOpened = false
+                return true
+            }
+            return false
+        }
+
         val bypass = shell("cmd role set-bypassing-role-qualification true")
         if (bypass == null) {
             return ActivationResult(Stage.SHELL_UNAVAILABLE, false, "无法执行 shell 命令。", log)
         }
         note("  exit=${bypass.exitCode}${if (bypass.output.isNotBlank()) " out=${bypass.output}" else ""}")
-        roleBypassOpened = bypass.exitCode == 0
+        // 超时（-1）不能当成“没打开”：命令可能已经落到系统里，只是响应在服务掉线前丢了。
+        roleBypassOpened = bypass.exitCode == 0 || bypass.exitCode == SHELL_TIMEOUT_EXIT_CODE
         if (bypass.exitCode != 0) {
             note("  ! 该步失败通常会连带第 2 步失败；继续尝试")
         }
@@ -386,7 +534,13 @@ object DpDoDirectActivation {
             "cmd role add-role-holder --user 0 $ROLE_DEVICE_POLICY_MANAGEMENT $pkg"
         )
         if (grant == null) {
-            return ActivationResult(Stage.SHELL_UNAVAILABLE, false, "无法执行 shell 命令。", log)
+            // 服务恰好在第 1、2 步之间掉线：必须先收回第 1 步打开的旁路，否则它留到重启。
+            val closed = closeRoleBypass()
+            return ActivationResult(
+                Stage.SHELL_UNAVAILABLE, false,
+                "无法执行 shell 命令。" + if (!closed) "（Role 旁路未能收回，重启系统前会保持开启）" else "",
+                log
+            )
         }
         note("  exit=${grant.exitCode}${if (grant.output.isNotBlank()) " out=${grant.output}" else ""}")
         if (grant.exitCode != 0) {
@@ -396,6 +550,12 @@ object DpDoDirectActivation {
             // “应用自身身份这条路走不通”，不该让整个流程在这里终止。
             note("x Role 授予被系统拒绝：应用自身身份路径不可用（shell 身份路径不依赖它，继续）")
             selfPathAllowed = false
+        }
+
+        // 第 2 步之后不再需要 Role 资格旁路；尽早收回，缩小“进程死在第 3 步之后”时
+        // 把系统级旁路留到重启的窗口。finally 里仍保留一次兜底。
+        if (!closeRoleBypass()) {
+            note("  x Role 旁路未能在第 2 步后收回（shell 通道不可用）；结束时再试一次")
         }
 
         // 记录当前 Role 持有者，便于失败排查
@@ -429,25 +589,39 @@ object DpDoDirectActivation {
 
         var needRestore = false
         if (setupValue == "1") {
+            // 只要原值是 1 就按「可能需要恢复」处理：恢复到 1 本身幂等，不能把是否恢复
+            // 寄托在回读上——回读标记丢了（输出截断 / get 失败）时，设备会被留在 0。
+            // 上游 Dhizuku 的判据也是「原值 1 且 put 退出码 0」，不看回读。
+            needRestore = true
             note("  设备已完成开机向导 → 需要临时置 0（副作用：三键导航 Home / 最近任务短暂失灵）")
             val write = shell(
                 "settings --user 0 put secure $SETTING_USER_SETUP_COMPLETE 0; sleep 1; " +
                         "echo $SETUP_READBACK_TAG\$(settings --user 0 get secure $SETTING_USER_SETUP_COMPLETE 2>/dev/null)"
             )
             if (write == null) {
-                return ActivationResult(Stage.SHELL_UNAVAILABLE, false, "无法执行 shell 命令。", log)
+                note("  ! 写命令没有执行成功（shell 通道异常）；结束时仍会尝试恢复为 1")
+            } else {
+                val readBack = write.output.lineSequence()
+                    .firstOrNull { it.startsWith(SETUP_READBACK_TAG) }
+                    ?.substringAfter(SETUP_READBACK_TAG)
+                    ?.trim()
+                note("  回读：USER_SETUP_COMPLETE=${readBack ?: "(无标记)"}")
+                if (readBack != "0") {
+                    // 上游 Dhizuku 的 bypassUserSetupComplete 在 put 失败时只是「不 bypass」并继续，
+                    // 不中止流程；这里对齐它——最终是否放行由 setDeviceOwner 的返回决定。
+                    note("  ! 无法确认是否置 0（put 可能已生效）；继续尝试，结束时仍会恢复为 1")
+                }
             }
-            val readBack = write.output.lineSequence()
-                .firstOrNull { it.startsWith(SETUP_READBACK_TAG) }
-                ?.substringAfter(SETUP_READBACK_TAG)
-                ?.trim()
-            note("  回读：USER_SETUP_COMPLETE=${readBack ?: "(无标记)"}")
-            if (readBack != "0") {
-                // 上游 Dhizuku 的 bypassUserSetupComplete 在 put 失败时只是「不 bypass」并继续，
-                // 不中止流程；这里对齐它——最终是否放行由 setDeviceOwner 的返回决定。
-                note("  ! 没能把 user_setup_complete 置 0；继续尝试（以 setDeviceOwner 的结果为准）")
+        } else if (setupValue == "0") {
+            // 上一次激活死在 finally 之前留下的 0：这次激活结束后要把它恢复正常。
+            // 只有 device_provisioned == 1 才能确定不是真正的开机向导未完成。
+            val provisioned = shell("settings get global device_provisioned 2>/dev/null")
+                ?.output?.trim()
+            note("  当前已是 0；device_provisioned=${provisioned ?: "(未取到)"}")
+            if (provisioned == "1") {
+                needRestore = true
+                note("  这是上次激活残留的 0（设备已完成向导）→ 结束时恢复为 1")
             }
-            needRestore = readBack == "0"
         }
 
         try {
@@ -618,13 +792,10 @@ object DpDoDirectActivation {
                     note("    在终端里执行 settings put secure user_setup_complete 1")
                 }
             }
-            // 第 1 步打开的 Role 资格旁路必须收回：留着它，本机任何应用都能绕过 Role 资格校验，
-            // 这是系统级安全状态，不该为了这次激活永久打开。
-            if (roleBypassOpened) {
-                note("")
-                note("> 第 8 步：关闭 Role 资格校验绕过（finally）")
-                val closed = shell("cmd role set-bypassing-role-qualification false")
-                note("  exit=${closed?.exitCode ?: "(失败)"}${if (closed?.output?.isNotBlank() == true) " out=${closed.output}" else ""}")
+            // 第 1 步打开的 Role 资格旁路必须收回：它是系统级的全局开关，不该为了这次激活留着。
+            // 收回失败要写进日志，别让「服务刚好死在收尾」变成静默残留。
+            if (!closeRoleBypass()) {
+                note("  x Role 旁路未能收回（shell 通道不可用），重启系统前会保持开启")
             }
         }
     }

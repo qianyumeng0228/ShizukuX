@@ -119,6 +119,8 @@ class HidingActivity : ComponentActivity() {
     private var busy by mutableStateOf(false)
     private var busyKey by mutableStateOf<String?>(null)
     private var message by mutableStateOf<String?>(null)
+    /** Last refresh wins: a completion from an older read must not overwrite a newer snapshot. */
+    private var refreshGeneration = 0
 
     /** Reloads the signal rows and lists when the service appears or disappears. */
     private val serviceReloader = ServiceStateReloader {
@@ -206,10 +208,10 @@ class HidingActivity : ComponentActivity() {
                 )
             }
         }
-        refresh()
-        // The signal states and the lists are read through the service, so losing it shows an
-        // empty page and getting it back has to bring the lists back without a re-enter.
+        // Attach before the first read: a service that appears between the two must be able to
+        // schedule another read instead of being missed because the seed already saw it running.
         serviceReloader.attach()
+        refresh()
         lifecycleScope.launch(Dispatchers.IO) {
             // Opening the page is also how the watch comes back after the process that held it was
             // killed: a list is a standing rule, and one left without a watch would be a rule
@@ -235,8 +237,11 @@ class HidingActivity : ComponentActivity() {
      * stop warning about it without a restart of the screen.
      */
     private fun refresh() {
+        val generation = ++refreshGeneration
+        // Read the selected signal on the main thread; reading Composition state from the IO
+        // snapshot below is not safe and can observe a different page than the one being drawn.
+        val selectedSignal = selected
         lifecycleScope.launch {
-            loaded = false
             val snapshot = withContext(Dispatchers.IO) {
                 Snapshot(
                     available = Hiding.shellAvailable(),
@@ -247,9 +252,12 @@ class HidingActivity : ComponentActivity() {
                     rows = Signal.entries.map { signal ->
                         SignalRow(signal, Hiding.isSignalEnabled(signal), Hiding.appsFor(signal).size)
                     },
-                    listed = selected?.let { Hiding.appsFor(it) } ?: emptySet()
+                    listed = selectedSignal?.let { Hiding.appsFor(it) } ?: emptySet()
                 )
             }
+            // The service can flap while this read is in flight. Only the latest refresh may
+            // publish its snapshot; otherwise an older, slower read can put stale lists back.
+            if (generation != refreshGeneration) return@launch
             available = snapshot.available
             usageAccess = snapshot.usageAccess
             restartOnOpen = snapshot.restartOnOpen
