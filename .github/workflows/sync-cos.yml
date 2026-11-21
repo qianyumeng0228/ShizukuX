@@ -26,10 +26,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  sync:
-    name: COS + R2
+  prepare:
+    name: Resolve target
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    outputs:
+      tag: ${{ steps.vars.outputs.tag }}
+      upload: ${{ steps.vars.outputs.upload }}
     steps:
       - name: Resolve inputs
         id: vars
@@ -49,12 +51,19 @@ jobs:
           echo "upload=${UPLOAD}" >> "$GITHUB_OUTPUT"
           echo "upload=${UPLOAD} tag=${TAG}"
 
+  # COS is the slow / China-side leg. It has its own job and its own retries,
+  # so a slow or failing COS run cannot delay or block R2.
+  cos:
+    name: Tencent COS
+    needs: prepare
+    if: needs.prepare.outputs.upload == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
       - name: Download all release assets
-        id: download
-        if: steps.vars.outputs.upload == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.vars.outputs.tag }}
+          TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           set -euo pipefail
           mkdir -p ./assets
@@ -64,13 +73,9 @@ jobs:
             --clobber
 
       - name: Install coscmd
-        if: steps.vars.outputs.upload == 'true'
         run: python -m pip install --disable-pip-version-check coscmd
 
-      # COS is the slow / China-side leg. Retry each object, but do not prevent
-      # the R2 step below from running when an upload ultimately fails.
       - name: Upload to Tencent COS
-        if: steps.vars.outputs.upload == 'true'
         env:
           COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
           COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
@@ -102,14 +107,31 @@ jobs:
             fi
           done
           if [ "$failed" -ne 0 ]; then
-            echo "::warning::COS upload incomplete; R2 will still run"
+            echo "::warning::COS upload incomplete; the COS job will fail"
             exit 1
           fi
 
-      # Always run when assets were downloaded. If COS failed, this still
-      # publishes the global R2 copy and makes the failure isolated.
+  # R2 is global and fast. It runs in parallel with COS and never waits for it.
+  r2:
+    name: Cloudflare R2
+    needs: prepare
+    if: needs.prepare.outputs.upload == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Download all release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          mkdir -p ./assets
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
+            --dir ./assets \
+            --clobber
+
       - name: Upload to Cloudflare R2
-        if: always() && steps.vars.outputs.upload == 'true' && steps.download.outcome == 'success'
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --acl public-read --follow-symlinks
@@ -120,9 +142,14 @@ jobs:
           AWS_S3_ENDPOINT: https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           SOURCE_DIR: ./assets
 
-      # Daily cleanup, or an explicit workflow_dispatch with cleanup_only.
+  # Daily cleanup, or an explicit workflow_dispatch with cleanup_only.
+  cleanup:
+    name: Clean COS orphans
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.cleanup_only == true)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
       - name: Cleanup COS orphans
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.cleanup_only == true)
         env:
           GH_TOKEN: ${{ github.token }}
           COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
