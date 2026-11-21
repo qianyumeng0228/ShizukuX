@@ -29,7 +29,7 @@ jobs:
   sync:
     name: COS + R2
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
     steps:
       - name: Resolve inputs
         id: vars
@@ -90,7 +90,7 @@ jobs:
             ok=0
             for attempt in 1 2 3; do
               echo "COS upload ${fname} attempt ${attempt}/3"
-              if timeout 180 coscmd upload "$f" "$fname"; then
+              if timeout 120 coscmd upload "$f" "$fname"; then
                 ok=1
                 break
               fi
