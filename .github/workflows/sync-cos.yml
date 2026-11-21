@@ -7,44 +7,109 @@ on:
     # Daily cleanup at 00:00 UTC (08:00 Beijing)
     - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload; leave empty for cleanup only"
+        required: false
+        type: string
+      cleanup_only:
+        description: "Only delete orphaned COS objects"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cdn-${{ github.event.release.tag_name || inputs.tag || 'cleanup' }}
+  cancel-in-progress: false
 
 jobs:
   sync:
+    name: COS + R2
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
+      - name: Resolve inputs
+        id: vars
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          CLEANUP_ONLY: ${{ inputs.cleanup_only }}
+        run: |
+          set -euo pipefail
+          TAG="${EVENT_TAG:-$INPUT_TAG}"
+          if [ -n "$TAG" ] && [ "${CLEANUP_ONLY:-false}" != "true" ]; then
+            UPLOAD=true
+          else
+            UPLOAD=false
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "upload=${UPLOAD}" >> "$GITHUB_OUTPUT"
+          echo "upload=${UPLOAD} tag=${TAG}"
+
       - name: Download all release assets
-        if: github.event_name == 'release'
+        id: download
+        if: steps.vars.outputs.upload == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
         run: |
+          set -euo pipefail
           mkdir -p ./assets
-          gh release download ${{ github.event.release.tag_name }} \
-            --repo ${{ github.repository }} \
+          gh release download "$TAG" \
+            --repo "${{ github.repository }}" \
             --dir ./assets \
             --clobber
 
-      # --- Tencent COS (China domestic) ---
       - name: Install coscmd
-        if: github.event_name == 'release'
-        run: pip install coscmd
+        if: steps.vars.outputs.upload == 'true'
+        run: python -m pip install --disable-pip-version-check coscmd
 
+      # COS is the slow / China-side leg. Retry each object, but do not prevent
+      # the R2 step below from running when an upload ultimately fails.
       - name: Upload to Tencent COS
-        if: github.event_name == 'release'
+        if: steps.vars.outputs.upload == 'true'
+        env:
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
         run: |
+          set -u
           coscmd config \
-            -a ${{ secrets.COS_SECRET_ID }} \
-            -s ${{ secrets.COS_SECRET_KEY }} \
-            -b ${{ secrets.COS_BUCKET }} \
-            -r ${{ secrets.COS_REGION }}
+            -a "$COS_SECRET_ID" \
+            -s "$COS_SECRET_KEY" \
+            -b "$COS_BUCKET" \
+            -r "$COS_REGION"
+          failed=0
           for f in ./assets/*; do
-            fname=$(basename "$f")
-            echo "Uploading $fname to COS ..."
-            coscmd upload "$f" "$fname"
+            [ -f "$f" ] || continue
+            fname="$(basename "$f")"
+            ok=0
+            for attempt in 1 2 3; do
+              echo "COS upload ${fname} attempt ${attempt}/3"
+              if timeout 180 coscmd upload "$f" "$fname"; then
+                ok=1
+                break
+              fi
+              sleep $((attempt * 10))
+            done
+            if [ "$ok" -ne 1 ]; then
+              echo "::error::COS upload failed: ${fname}"
+              failed=1
+            fi
           done
+          if [ "$failed" -ne 0 ]; then
+            echo "::warning::COS upload incomplete; R2 will still run"
+            exit 1
+          fi
 
-      # --- Cloudflare R2 (global CDN) ---
+      # Always run when assets were downloaded. If COS failed, this still
+      # publishes the global R2 copy and makes the failure isolated.
       - name: Upload to Cloudflare R2
-        if: github.event_name == 'release'
+        if: always() && steps.vars.outputs.upload == 'true' && steps.download.outcome == 'success'
         uses: jakejarvis/s3-sync-action@master
         with:
           args: --acl public-read --follow-symlinks
@@ -55,24 +120,30 @@ jobs:
           AWS_S3_ENDPOINT: https://${{ secrets.CF_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
           SOURCE_DIR: ./assets
 
-      # --- Daily cleanup: delete orphans ---
-      - name: Cleanup COS orphans (daily)
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      # Daily cleanup, or an explicit workflow_dispatch with cleanup_only.
+      - name: Cleanup COS orphans
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.cleanup_only == true)
         env:
           GH_TOKEN: ${{ github.token }}
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
         run: |
-          pip install coscmd
-          coscmd config -a ${{ secrets.COS_SECRET_ID }} -s ${{ secrets.COS_SECRET_KEY }} -b ${{ secrets.COS_BUCKET }} -r ${{ secrets.COS_REGION }}
-          gh release list --repo ${{ github.repository }} --limit 200 | awk '{print $1}' > /tmp/tags.txt
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check coscmd
+          coscmd config -a "$COS_SECRET_ID" -s "$COS_SECRET_KEY" -b "$COS_BUCKET" -r "$COS_REGION"
+          gh release list --repo "${{ github.repository }}" --limit 200 --json tagName -q '.[].tagName' > /tmp/tags.txt
           mkdir -p /tmp/ref
-          while read tag; do
-            gh release download "$tag" --repo ${{ github.repository }} --dir /tmp/ref --clobber 2>/dev/null || true
+          while read -r tag; do
+            [ -n "$tag" ] || continue
+            gh release download "$tag" --repo "${{ github.repository }}" --dir /tmp/ref --clobber 2>/dev/null || true
           done < /tmp/tags.txt
-          ls /tmp/ref/ 2>/dev/null | sort > /tmp/declared.txt
+          find /tmp/ref -maxdepth 1 -type f -printf '%f\n' 2>/dev/null | sort > /tmp/declared.txt
           coscmd list | grep -oP '[A-Za-z0-9._-]+\.apk$' | sort > /tmp/cos.txt
           comm -23 /tmp/cos.txt /tmp/declared.txt > /tmp/orphans.txt
-          while read obj; do
-            [ -z "$obj" ] && continue
-            echo "Deleting orphan: $obj"
+          while read -r obj; do
+            [ -n "$obj" ] || continue
+            echo "Deleting orphan: ${obj}"
             coscmd delete "$obj" || true
           done < /tmp/orphans.txt
