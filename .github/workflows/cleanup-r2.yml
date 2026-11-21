@@ -1,0 +1,64 @@
+name: Cleanup R2 Test Objects
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag whose six assets should be deleted from R2"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Install rclone
+        run: |
+          set -euo pipefail
+          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip
+          unzip -q /tmp/rclone.zip -d /tmp/rclone
+          sudo install -m 755 /tmp/rclone/rclone-*/rclone /usr/local/bin/rclone
+          rclone version | head -n 1
+
+      - name: Delete six test objects
+        env:
+          TAG: ${{ inputs.tag }}
+          CF_R2_BUCKET: ${{ secrets.CF_R2_BUCKET }}
+          CF_R2_ACCOUNT_ID: ${{ secrets.CF_R2_ACCOUNT_ID }}
+          CF_R2_ACCESS_KEY_ID: ${{ secrets.CF_R2_ACCESS_KEY_ID }}
+          CF_R2_SECRET_ACCESS_KEY: ${{ secrets.CF_R2_SECRET_ACCESS_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [r2]
+          type = s3
+          provider = Cloudflare
+          access_key_id = ${CF_R2_ACCESS_KEY_ID}
+          secret_access_key = ${CF_R2_SECRET_ACCESS_KEY}
+          endpoint = https://${CF_R2_ACCOUNT_ID}.r2.cloudflarestorage.com
+          acl = private
+          EOF
+          chmod 600 ~/.config/rclone/rclone.conf
+
+          for name in \
+            "ShizukuX-${TAG}.apk" \
+            "ShizukuX-Drop-In-${TAG}.apk" \
+            "ShizukuX-Compat-Hub-${TAG}.apk" \
+            "ShizukuX-OPPO-Drop-In-${TAG}.apk" \
+            "${TAG}.zip" \
+            "${TAG}.tar.gz"
+          do
+            rclone deletefile "r2:${CF_R2_BUCKET}/${name}" --s3-no-check-bucket || true
+            echo "deleted ${name}"
+          done
+
+          if rclone lsf "r2:${CF_R2_BUCKET}" --s3-no-check-bucket | grep -F "${TAG}"; then
+            echo "::error::R2 still contains ${TAG}"
+            exit 1
+          fi
+          echo "R2 ${TAG} clear"
