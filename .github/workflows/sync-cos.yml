@@ -72,8 +72,13 @@ jobs:
             --dir ./assets \
             --clobber
 
-      - name: Install coscmd
-        run: python -m pip install --disable-pip-version-check coscmd
+      - name: Install rclone
+        run: |
+          set -euo pipefail
+          curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/rclone.zip
+          unzip -q /tmp/rclone.zip -d /tmp/rclone
+          sudo install -m 755 /tmp/rclone/rclone-*/rclone /usr/local/bin/rclone
+          rclone version | head -n 1
 
       - name: Upload to Tencent COS
         env:
@@ -82,32 +87,51 @@ jobs:
           COS_BUCKET: ${{ secrets.COS_BUCKET }}
           COS_REGION: ${{ secrets.COS_REGION }}
         run: |
-          set -u
-          coscmd config \
-            -a "$COS_SECRET_ID" \
-            -s "$COS_SECRET_KEY" \
-            -b "$COS_BUCKET" \
-            -r "$COS_REGION"
+          set -euo pipefail
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf <<EOF
+          [cos]
+          type = s3
+          provider = TencentCOS
+          access_key_id = ${COS_SECRET_ID}
+          secret_access_key = ${COS_SECRET_KEY}
+          endpoint = https://cos.${COS_REGION}.myqcloud.com
+          acl = private
+          EOF
+          chmod 600 ~/.config/rclone/rclone.conf
+
+          # COS does not implement HeadBucket, so rclone's existence check
+          # returns 403 and falls back to CreateBucket. Disable that check.
+          # --checksum compares the local MD5 with COS ETag (single-part MD5),
+          # which makes reruns skip already-identical objects.
+          rclone copy ./assets "cos:${COS_BUCKET}/" \
+            --checksum \
+            --s3-no-check-bucket \
+            --s3-upload-cutoff 200Mi \
+            --transfers 6 \
+            --retries 3 \
+            --low-level-retries 10 \
+            --timeout 300s \
+            --contimeout 30s \
+            --stats 15s \
+            --stats-one-line \
+            -v
+
+          echo "Verifying COS object MD5 against downloaded release assets"
           failed=0
           for f in ./assets/*; do
             [ -f "$f" ] || continue
             fname="$(basename "$f")"
-            ok=0
-            for attempt in 1 2; do
-              echo "COS upload ${fname} attempt ${attempt}/2"
-              if timeout 300 coscmd upload "$f" "$fname"; then
-                ok=1
-                break
-              fi
-              sleep $((attempt * 10))
-            done
-            if [ "$ok" -ne 1 ]; then
-              echo "::error::COS upload failed: ${fname}"
+            local_md5="$(md5sum "$f" | awk '{print $1}')"
+            remote_md5="$(rclone md5sum "cos:${COS_BUCKET}/${fname}" --s3-no-check-bucket 2>/dev/null | awk '{print $1}')"
+            if [ "$local_md5" != "$remote_md5" ]; then
+              echo "::error::COS MD5 mismatch: ${fname} local=${local_md5} remote=${remote_md5}"
               failed=1
+            else
+              echo "COS OK ${fname} md5=${local_md5}"
             fi
           done
           if [ "$failed" -ne 0 ]; then
-            echo "::warning::COS upload incomplete; the COS job will fail"
             exit 1
           fi
 
