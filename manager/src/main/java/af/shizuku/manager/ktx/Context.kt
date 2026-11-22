@@ -47,22 +47,25 @@ fun Context.cardSurfaceColor(): Int {
     }
     val base = themeColor(com.google.android.material.R.attr.colorSurfaceContainerHigh)
     val theme = af.shizuku.manager.ShizukuSettings.getWallpaperTheme()
-    if (theme == af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_ORIGINAL) return base
+    if (theme != af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_WHITE_MIKU &&
+        theme != af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_BLACK_MIKU
+    ) return base
     return androidx.core.graphics.ColorUtils.setAlphaComponent(base, (CARD_BG_ALPHA * 255f).toInt())
 }
 
 /** 1dp hairline used as the glass card stroke: light on dark, near-black on light. */
 @ColorInt
 fun Context.glassStrokeColor(): Int =
-    if (isNightMode()) 0x24FFFFFF else 0x1F000000
+    if (isNightMode()) 0x3DFFFFFF else 0x59FFFFFF
 
 private fun Context.isNightMode(): Boolean =
     (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
 
-// Deep-glass fill: translucent white on dark (#FFFFFF .10), milky white on light (#FFFFFF .55).
-private val GLASS_FILL_DARK = 0x1AFFFFFF
-private val GLASS_FILL_LIGHT = 0xF2FFFFFF.toInt()
+// Low-alpha glass fill, matching Kyant0's .4 tray / .08 web tint rather than the first pass's
+// 65%-white milky pane. The actual refraction is supplied by the Compose Backdrop overlay.
+private val GLASS_FILL_DARK = 0x10FFFFFF
+private val GLASS_FILL_LIGHT = 0x1AFFFFFF
 
 /**
  * Resolves a `?attr/shapeAppearanceCorner*` theme attribute to its absolute corner size in

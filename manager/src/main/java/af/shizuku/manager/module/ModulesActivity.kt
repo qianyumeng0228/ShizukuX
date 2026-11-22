@@ -34,15 +34,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +53,9 @@ import androidx.lifecycle.lifecycleScope
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.app.ThemeHelper
+import af.shizuku.manager.home.compose.GlassCard
+import af.shizuku.manager.home.compose.GlassPageMetrics
+import af.shizuku.manager.home.compose.GlassPageScaffold
 import af.shizuku.manager.ui.compose.ShizukuIcon
 import kotlinx.coroutines.launch
 import rikka.shizuku.Shizuku
@@ -192,82 +191,48 @@ internal fun ModulesScreen(
     // catalog actually translated are present; everything else keeps its module.prop text.
     catalogLocalization: Map<String, Pair<String?, String?>> = emptyMap()
 ) {
-    Scaffold(
-        // AppTheme already paints the shared glass gradient behind every Compose page; an opaque
-        // Scaffold surface cut it off right below the app bar, leaving this page flat white.
-        containerColor = Color.Transparent,
-        bottomBar = {
-            if (showTabBar) {
-                // Same floating bar as every other destination - leaving it off this page made a
-                // tab switch look like navigating away from the app's tab strip.
-                af.shizuku.manager.home.compose.GlassTabStrip(
-                    selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_MODULES,
-                    onSelectTab = onSelectTab
+    GlassPageScaffold(
+        title = stringResourceCompat(R.string.modules_title),
+        subtitle = if (!loaded) {
+            stringResourceCompat(R.string.modules_settings_title)
+        } else {
+            stringResourceCompat(R.string.modules_count, modules.size)
+        },
+        navigationIcon = {
+            // The tab bar opens this page as a sibling of home, so the up arrow would be lying
+            // about the nav graph; the system back gesture still returns there.
+            if (showBack) {
+                IconButton(onClick = onBack) {
+                    ShizukuIcon(
+                        icon = R.drawable.ic_arrow_back_24,
+                        contentDescription = stringResourceCompat(R.string.action_back)
+                    )
+                }
+            }
+        },
+        actions = {
+            IconButton(onClick = onOpenStore) {
+                ShizukuIcon(
+                    icon = R.drawable.ic_outline_store_24,
+                    contentDescription = stringResourceCompat(R.string.modules_store_title)
+                )
+            }
+            IconButton(onClick = onInstall, enabled = !installing) {
+                ShizukuIcon(
+                    icon = R.drawable.ic_install_24,
+                    contentDescription = stringResourceCompat(R.string.modules_install_zip)
+                )
+            }
+            IconButton(onClick = onCheck, enabled = !checking) {
+                ShizukuIcon(
+                    icon = R.drawable.ic_refresh_24,
+                    contentDescription = stringResourceCompat(R.string.modules_background_check_short)
                 )
             }
         },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = stringResourceCompat(R.string.modules_title),
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1
-                        )
-                        Text(
-                            text = if (!loaded) {
-                                stringResourceCompat(R.string.modules_settings_title)
-                            } else {
-                                stringResourceCompat(R.string.modules_count, modules.size)
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
-                    }
-                },
-                navigationIcon = {
-                    // The tab bar opens this page as a sibling of home, so the up arrow would be
-                    // lying about the nav graph; the system back gesture still returns there.
-                    if (showBack) {
-                        IconButton(onClick = onBack) {
-                            ShizukuIcon(
-                                icon = R.drawable.ic_arrow_back_24,
-                                contentDescription = stringResourceCompat(R.string.action_back)
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onOpenStore) {
-                        ShizukuIcon(
-                            icon = R.drawable.ic_outline_store_24,
-                            contentDescription = stringResourceCompat(R.string.modules_store_title)
-                        )
-                    }
-                    IconButton(onClick = onInstall, enabled = !installing) {
-                        ShizukuIcon(
-                            icon = R.drawable.ic_install_24,
-                            contentDescription = stringResourceCompat(R.string.modules_install_zip)
-                        )
-                    }
-                    IconButton(onClick = onCheck, enabled = !checking) {
-                        ShizukuIcon(
-                            icon = R.drawable.ic_refresh_24,
-                            contentDescription = stringResourceCompat(R.string.modules_background_check_short)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    // AppTheme already paints the shared glass gradient behind every page; an
-                    // opaque app-bar fill cut a flat white band across it, so this page read as a
-                    // different material from the rest of the skin.
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
-                )
-            )
-        }
+        showTabBar = showTabBar,
+        selectedTab = af.shizuku.manager.utils.GlassTabs.INDEX_MODULES,
+        onSelectTab = onSelectTab
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             when {
@@ -288,12 +253,12 @@ internal fun ModulesScreen(
                     // card's 删除 button ended up underneath the strip. Reserve the strip's own
                     // height (66.dp bar + 20.dp lift) plus the usual gap when hosted.
                     contentPadding = PaddingValues(
-                        16.dp,
+                        GlassPageMetrics.HorizontalPadding,
                         8.dp,
-                        16.dp,
-                        if (showTabBar) 32.dp else 104.dp
+                        GlassPageMetrics.HorizontalPadding,
+                        GlassPageMetrics.bottomInset(showTabBar)
                     ),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(GlassPageMetrics.CardSpacing)
                 ) {
                     if (!serviceRunning) {
                         item {
@@ -449,11 +414,9 @@ private fun ModuleCard(
     val displayName = catalog?.first?.takeIf { preferChinese } ?: module.name
     val displayDescription = catalog?.second?.takeIf { preferChinese } ?: module.description
 
-    Surface(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        tonalElevation = 0.dp
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.Top) {

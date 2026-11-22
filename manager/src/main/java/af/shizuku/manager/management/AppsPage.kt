@@ -1,41 +1,60 @@
 package af.shizuku.manager.management
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import af.shizuku.manager.R
-import af.shizuku.manager.home.compose.GlassTabStrip
+import af.shizuku.manager.home.compose.GlassPageMetrics
+import af.shizuku.manager.home.compose.GlassPageScaffold
 import af.shizuku.manager.utils.GlassTabs
 
 /**
  * The apps destination inside the single container.
  *
  * The list itself is still the XML page ([AppsController.pageView]): rows, swipe backgrounds and
- * decorations stay exactly as they were on the standalone page. What is rebuilt here is the shell
- * around it — the container owns the tab strip and the app bar, so the title, the selection state
- * and the overflow menu (sort + SU bridge, or the five bulk actions while selecting) are drawn in
- * Compose instead of by an OptionsMenu that no longer exists.
+ * decorations stay exactly as they were on the standalone page. The shell around it is now shared:
+ * the container owns the tab strip and the header, and the search field, refresh action and filter
+ * chips are Compose controls above the list instead of the XML AppBarLayout. The overflow menu
+ * (sort + SU bridge, or the five bulk actions while selecting) stays in the shared header too.
  */
 @Composable
 fun AppsPage(
@@ -54,33 +73,23 @@ fun AppsPage(
     val selectionMode = controller.selectionMode
     val selectionCount = controller.selectionCount
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = if (selectionMode) {
-                            stringResource(R.string.app_management_selected, selectionCount)
-                        } else {
-                            stringResource(R.string.home_app_management_title)
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1
+    GlassPageScaffold(
+        title = if (selectionMode) {
+            stringResource(R.string.app_management_selected, selectionCount)
+        } else {
+            stringResource(R.string.home_app_management_title)
+        },
+        navigationIcon = {
+            if (selectionMode) {
+                IconButton(onClick = { controller.exitSelection() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_back_24),
+                        contentDescription = stringResource(R.string.accessibility_back)
                     )
-                },
-                navigationIcon = {
-                    if (selectionMode) {
-                        IconButton(onClick = { controller.exitSelection() }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_back_24),
-                                contentDescription = stringResource(R.string.accessibility_back)
-                            )
-                        }
-                    }
-                },
-                actions = {
+                }
+            }
+        },
+        actions = {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_more_vert_24),
@@ -146,30 +155,172 @@ fun AppsPage(
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            )
         },
-        bottomBar = {
-            if (showTabBar) {
-                GlassTabStrip(selectedIndex = selectedTab, onSelectTab = onSelectTab)
-            }
-        }
+        showTabBar = showTabBar,
+        selectedTab = selectedTab,
+        onSelectTab = onSelectTab
     ) { innerPadding ->
-        AndroidView(
-            factory = { controller.pageView(context) },
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    top = innerPadding.calculateTopPadding(),
-                    bottom = innerPadding.calculateBottomPadding()
+                .padding(innerPadding)
+        ) {
+            AuthorizationSearchBar(
+                query = controller.searchQuery,
+                onQueryChange = controller::updateSearchQuery,
+                onRefresh = controller::refresh
+            )
+            AuthorizationFilterRow(
+                selected = controller.filterState,
+                onSelect = controller::updateFilterState
+            )
+            AndroidView(
+                factory = { controller.pageView(context) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        }
+    }
+}
+
+private val authorizationFilters = listOf(
+    FilterState.ALL to R.string.app_management_filter_all,
+    FilterState.GRANTED to R.string.app_management_filter_granted,
+    FilterState.DENIED to R.string.app_management_filter_denied,
+    FilterState.HIDDEN to R.string.app_management_filter_hidden
+)
+
+@Composable
+private fun AuthorizationSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onRefresh: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = GlassPageMetrics.HorizontalPadding,
+                end = GlassPageMetrics.HorizontalPadding,
+                top = 4.dp
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text(stringResource(R.string.app_management_hint_search)) },
+            leadingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_search_24),
+                    contentDescription = null
                 )
+            },
+            singleLine = true,
+            shape = CircleShape,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.32f),
+                cursorColor = MaterialTheme.colorScheme.primary,
+                focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         )
+        IconButton(
+            onClick = onRefresh,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_refresh_24),
+                contentDescription = stringResource(R.string.app_management_action_refresh),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuthorizationFilterRow(
+    selected: FilterState,
+    onSelect: (FilterState) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(
+                start = GlassPageMetrics.HorizontalPadding,
+                end = GlassPageMetrics.HorizontalPadding,
+                top = 6.dp,
+                bottom = 8.dp
+            ),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        authorizationFilters.forEach { (state, labelRes) ->
+            AuthorizationFilterPill(
+                label = stringResource(labelRes),
+                selected = selected == state,
+                onClick = { onSelect(state) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun AuthorizationFilterPill(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val container = if (selected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
+    val content = if (selected) {
+        MaterialTheme.colorScheme.onPrimaryContainer
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val outline = if (selected) {
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+    }
+    Box(
+        modifier = Modifier
+            .height(32.dp)
+            .clip(CircleShape)
+            .background(container)
+            .border(BorderStroke(1.dp, outline), CircleShape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (selected) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_check_24),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = content
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = content,
+                maxLines = 1
+            )
+        }
     }
 }
 
@@ -197,3 +348,5 @@ private fun SortItem(text: String, checked: Boolean, onClick: () -> Unit) {
         onClick = onClick
     )
 }
+
+

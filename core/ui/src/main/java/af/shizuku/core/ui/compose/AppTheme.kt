@@ -1,19 +1,17 @@
 package af.shizuku.core.ui.compose
 
 import android.content.Context
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -169,8 +167,8 @@ private fun glassScheme(dark: Boolean): ColorScheme = if (dark) {
         surfaceVariant = Color(0x661A2136), onSurfaceVariant = Color(0xFFA9B4C6),
         surfaceBright = Color(0x801E2740), surfaceDim = Color(0x800C111C),
         surfaceContainerLowest = Color(0x660A0E17), surfaceContainerLow = Color(0x66121828),
-        surfaceContainer = Color(0x66161D2F), surfaceContainerHigh = Color(0xFF1B2336),
-        surfaceContainerHighest = Color(0xFF202A40),
+        surfaceContainer = Color(0x66161D2F), surfaceContainerHigh = Color(0x661B2336),
+        surfaceContainerHighest = Color(0x80202A40),
         outline = Color(0xFF8E86A8), outlineVariant = Color(0xFF4A4560),
         error = Color(0xFFFFB4AB), onError = Color(0xFF690005),
         errorContainer = Color(0xFF93000A), onErrorContainer = Color(0xFFFFDAD6),
@@ -183,12 +181,12 @@ private fun glassScheme(dark: Boolean): ColorScheme = if (dark) {
         secondaryContainer = Color(0xFFE8E1FF), onSecondaryContainer = Color(0xFF241A45),
         tertiary = Color(0xFF8A76D8), onTertiary = Color.White,
         background = Color.Transparent, onBackground = Color(0xFF1B1B22),
-        surface = Color(0xCCF7F6FC), onSurface = Color(0xFF1B1B22),
-        surfaceVariant = Color(0xCCE7E4F2), onSurfaceVariant = Color(0xFF54505F),
-        surfaceBright = Color(0xE6FFFFFF), surfaceDim = Color(0xCEE4E1EE),
-        surfaceContainerLowest = Color(0xF7FFFFFF), surfaceContainerLow = Color(0xF2F8F7FE),
-        surfaceContainer = Color(0xF2FBFAFF), surfaceContainerHigh = Color(0xFFF3F1FB),
-        surfaceContainerHighest = Color(0xFFEDEAF9),
+        surface = Color(0xA6F7F6FC), onSurface = Color(0xFF1B1B22),
+        surfaceVariant = Color(0x99E7E4F2), onSurfaceVariant = Color(0xFF54505F),
+        surfaceBright = Color(0xCCFFFFFF), surfaceDim = Color(0xB8E4E1EE),
+        surfaceContainerLowest = Color(0xCCFFFFFF), surfaceContainerLow = Color(0xB8F8F7FE),
+        surfaceContainer = Color(0xB8FBFAFF), surfaceContainerHigh = Color(0xA6F3F1FB),
+        surfaceContainerHighest = Color(0x99EDEAF9),
         outline = Color(0xFF7C7690), outlineVariant = Color(0xFFCCC6DC),
         error = Color(0xFFBA1A1A), onError = Color.White,
         errorContainer = Color(0xFFFFDAD6), onErrorContainer = Color(0xFF410002),
@@ -213,6 +211,9 @@ fun AppTheme(
     // ComponentActivity screens) pass this in so they still get the glass palette + backdrop
     // instead of falling back to the classic scheme.
     forceGlass: Boolean = false,
+    // The shell records its own background layer for the navigation Backdrop, so it draws the
+    // wallpaper itself. Every other host lets AppTheme paint the one wallpaper layer.
+    drawGlassWallpaper: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val context = LocalContext.current
@@ -260,11 +261,19 @@ fun AppTheme(
     ) {
         CompositionLocalProvider(LocalGlassUi provides glass) {
             if (glass) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .drawBehind { drawGlassBackdrop(darkTheme) }
-                ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (drawGlassWallpaper) {
+                        // One image layer for the whole screen. The shell opts out because it
+                        // records the wallpaper into its Backdrop layer itself.
+                        GlassWallpaper()
+                        if (darkTheme) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.12f))
+                            )
+                        }
+                    }
                     content()
                 }
             } else {
@@ -272,43 +281,4 @@ fun AppTheme(
             }
         }
     }
-}
-
-/**
- * Static backdrop for the glass skin, matching manager/.../WallpaperBackground.kt's GlassBackground
- * so sub-pages and the home screen share one look. Drawn once (no per-frame work): a vertical
- * three-stop gradient plus two soft radial highlights.
- */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawGlassBackdrop(dark: Boolean) {
-    val h = size.height
-    val w = size.width
-    val base = listOf(
-        Color(0xFF25335A), Color(0xFF121829), Color(0xFF080B12)
-    )
-    val light = listOf(
-        Color(0xFFEEF2FE), Color(0xFFE6EBFA), Color(0xFFDDE4F6)
-    )
-    drawRect(
-        brush = Brush.verticalGradient(if (dark) base else light, startY = 0f, endY = h)
-    )
-    drawRect(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x398B6CFF),
-                Color(0x008B6CFF)
-            ),
-            center = Offset(w * 0.12f, h * 0.10f),
-            radius = w * 0.9f
-        )
-    )
-    drawRect(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                Color(0x2E4C8DFF),
-                Color(0x004C8DFF)
-            ),
-            center = Offset(w * 0.92f, h * 0.88f),
-            radius = w * 0.85f
-        )
-    )
 }

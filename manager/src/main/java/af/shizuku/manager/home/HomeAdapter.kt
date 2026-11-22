@@ -1,6 +1,11 @@
 package af.shizuku.manager.home
 
 import android.os.Build
+import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.airbnb.mvrx.withState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -9,6 +14,7 @@ import kotlinx.coroutines.withContext
 import af.shizuku.manager.ShizukuSettings
 import af.shizuku.manager.ktx.cardSurfaceColor
 import af.shizuku.manager.ktx.glassStrokeColor
+import af.shizuku.manager.home.compose.GlassCardOverlay
 import af.shizuku.manager.model.ServiceStatus
 import af.shizuku.manager.utils.EnvironmentUtils
 import af.shizuku.common.util.UserHandleCompat
@@ -399,6 +405,32 @@ class HomeAdapter(
     }
 
     /**
+     * Mounts the real Backdrop lens under an XML card's contents. The overlay must stay at index 0
+     * so the title, summary and buttons remain crisp; it is not clickable and is recreated with
+     * the holder, so RecyclerView recycling cannot leak a stale composition.
+     */
+    private fun installGlassBackdrop(card: com.google.android.material.card.MaterialCardView) {
+        if (card.getChildAt(0) is ComposeView) return
+        val density = card.resources.displayMetrics.density
+        val radiusDp = if (card.radius > 0f) card.radius / density else 28f
+        val overlay = ComposeView(card.context).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            isClickable = false
+            isFocusable = false
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            setContent { GlassCardOverlay(radiusDp) }
+        }
+        card.addView(
+            overlay,
+            0,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+    }
+
+    /**
      * Applies the themed card surface color to a non-hero card container. The merged hero header
      * (HomeBannerStatusViewHolder) keeps its own transparent banner background, so it is skipped.
      */
@@ -413,6 +445,7 @@ class HomeAdapter(
             card.strokeWidth = kotlin.math.max(1, ctx.resources.displayMetrics.density.toInt())
             card.strokeColor = ctx.glassStrokeColor()
             card.cardElevation = 0f
+            installGlassBackdrop(card)
         } else {
             card.strokeWidth = 0
         }

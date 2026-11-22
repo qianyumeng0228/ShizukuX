@@ -46,8 +46,8 @@ object IconStyleHelper {
     // theme's own primary so varied hues still read as "this app's palette" rather than random.
     private const val HUE_SLOTS = 12
 
-    fun current(): Style = Style.fromKey(ShizukuSettings.getIconStyle())
-    fun currentColorMode(): ColorMode = ColorMode.fromKey(ShizukuSettings.getIconColorMode())
+    fun current(): Style = Style.STANDARD
+    fun currentColorMode(): ColorMode = ColorMode.UNIFORM
 
     fun applyToTree(
         context: Context,
@@ -175,41 +175,15 @@ object IconStyleHelper {
     }
 
     /**
-     * The Two-Tone pill's background shape, following the same "app personality" dial as
-     * container corners (see ThemeDelegateImpl's shape_style overlays) instead of always being
-     * a plain circle - "zen" keeps an asymmetric leaf/droplet look, others use progressively
-     * more/less rounded rectangles. Falls back to a plain circle when expressive shapes are off.
-     *
-     * Public so status-driven icons (e.g. ServerStatusViewHolder, StartStockShizukuViewHolder)
-     * that must keep their own semantic ok/error color logic instead of the user's color-mode
-     * setting can still share the same shape, rather than reaching for the static
-     * shape_droplet_background drawable directly and drifting out of sync with shape_style.
+     * The status-icon pill background. Icon shape preferences were removed from Appearance, so
+     * this is always a plain circle; semantic status cards still share it so their ok/error
+     * colors stay consistent with the rest of the Home screen.
      */
     fun pillBackground(context: Context, color: Int): Drawable {
-        if (!ShizukuSettings.isExpressiveShapesEnabled()) {
-            return GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(color)
-            }
-        }
-        return when (ShizukuSettings.getShapeStyle()) {
-            "zen" -> leafDrawable(context, color)
-            "classic" -> GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 2 * context.resources.displayMetrics.density
-                setColor(color)
-            }
-            "squircle" -> GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 14 * context.resources.displayMetrics.density
-                setColor(color)
-            }
-            "cut" -> cutDrawable(context, color)
-            else -> GradientDrawable().apply { // "modern"
-                shape = GradientDrawable.RECTANGLE
-                cornerRadius = 8 * context.resources.displayMetrics.density
-                setColor(color)
-            }
+        // Icon shapes were removed from Appearance: every status pill is a plain circle now.
+        return GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(color)
         }
     }
 
@@ -289,10 +263,9 @@ object IconStyleHelper {
      * Applies a semantic status pill (server ok/error, ADB-permission-limited warning,
      * incompatible-server warning) — these always render as a Two-Tone-style pill regardless of
      * the user's icon Style setting, since muting an error/warning to Standard/Outlined would lose
-     * the color signal. Still routes the shape through [pillBackground] so it follows shape_style,
-     * and clears the ImageView's static 12dp `CardIcon.Droplet` XML padding to 0 - without this,
-     * these pills render visibly smaller/off-center than every Style-driven card's Two-Tone pill,
-     * which gets 0 padding via [applyToCardIcon].
+     * the color signal. [pillBackground] now always returns a plain circle, and this clears the
+     * ImageView's static 12dp `CardIcon.Droplet` XML padding to 0 so these pills render at the
+     * same size as every Style-driven card's Two-Tone pill.
      */
     fun applyToStatusCardIcon(imageView: ImageView, pillColor: Int, tintColor: Int) {
         val context = imageView.context

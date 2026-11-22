@@ -26,7 +26,7 @@
          in, so the card edge sits 12dp from the screen edge. M3ECardItemDecoration used to paint
          its panes 16dp in, which left XML pages 4dp narrower than their Compose twins whenever
          the two were compared side by side. Content padding is the sum: 12dp edge + 14dp inset. -->
-    <dimen name="glass_card_margin">12dp</dimen>
-    <dimen name="glass_card_content_padding">26dp</dimen>
+    <dimen name="glass_card_margin">16dp</dimen>
+    <dimen name="glass_card_content_padding">16dp</dimen>
 
 </resources>

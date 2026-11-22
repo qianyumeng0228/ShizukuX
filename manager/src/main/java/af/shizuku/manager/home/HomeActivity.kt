@@ -34,9 +34,7 @@ open class HomeActivity : GlassShellActivity() {
             "start_wireless_adb" -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 startActivity(Intent(this, af.shizuku.manager.starter.StarterActivity::class.java))
             }
-            "open_terminal" -> startActivity(
-                Intent(this, af.shizuku.manager.shell.ShellTutorialActivity::class.java)
-            )
+            "open_terminal" -> requestTab(af.shizuku.manager.utils.GlassTabs.INDEX_TERMINAL)
         }
 
         // Cold-start launch from the ADB pairing success notification. onNewIntent() is only called

@@ -20,7 +20,25 @@
         android:name="xyz.shizuku.extra.permission.API_V23"
         tools:node="remove" />
 
+    <!-- Drop-in release owns the stock provider and permission names, but its debug
+         variant has a .debug application ID and is intended to coexist with stock.
+         Claiming either fixed name makes installation fail before the UI can be tested.
+         Debug uses only its application-scoped provider; stock API compatibility remains
+         a release-flavor concern. These removals are no-ops for the Extra debug variant. -->
+    <permission-group
+        android:name="moe.shizuku.manager.permission-group.API"
+        tools:node="remove" />
+
+    <permission
+        android:name="moe.shizuku.manager.permission.API_V23"
+        tools:node="remove" />
+
     <application>
+        <provider
+            android:name=".ShizukuManagerProvider"
+            android:authorities="${applicationId}.shizuku"
+            tools:replace="android:authorities" />
+
         <!-- Debug-only diagnostic activity for verifying the Dhizuku client protocol -->
         <activity
             android:name=".DhizukuProtoCheckActivity"

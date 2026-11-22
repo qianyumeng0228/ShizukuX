@@ -12,12 +12,10 @@ class ThemeDelegateImpl : ThemeDelegate {
     override fun getThemeKey(context: Context): String {
         val customAccent = ShizukuSettings.getPreferences().getString("custom_accent", "DEFAULT")
         return ThemeHelper.getTheme(context) + ThemeHelper.isUsingSystemColor() + customAccent +
-            ShizukuSettings.isExpressiveShapesEnabled() + ShizukuSettings.getShapeStyle() +
-            ShizukuSettings.getIconStyle() + ShizukuSettings.getIconColorMode() +
             ShizukuSettings.isOneUiThemeEnabled() + ShizukuSettings.isOneHandedModeEnabled() +
             ShizukuSettings.getWallpaperTheme() +
             ShizukuSettings.isBoldTypographyEnabled() + ShizukuSettings.isExpandedHeadersEnabled() +
-            ShizukuSettings.getCornerRoundingOverride() + ShizukuSettings.getUiStyle()
+            ShizukuSettings.getUiStyle()
     }
 
     override fun isUsingSystemColor(): Boolean {
@@ -47,23 +45,6 @@ class ThemeDelegateImpl : ThemeDelegate {
             }
         }
 
-        if (!ShizukuSettings.isExpressiveShapesEnabled()) {
-            // shape_style's preference entry is UI-disabled while expressive_shapes is off, so
-            // it doesn't apply here regardless of its stored value - flatten to plain Material3.
-            theme.applyStyle(R.style.ThemeOverlay_Shapes_Standard, true)
-        } else {
-            val shapeStyleRes = when (ShizukuSettings.getShapeStyle()) {
-                "modern" -> R.style.ThemeOverlay_Shape_Modern
-                "classic" -> R.style.ThemeOverlay_Shape_Classic
-                "squircle" -> R.style.ThemeOverlay_Shape_Squircle
-                "cut" -> R.style.ThemeOverlay_Shape_Cut
-                else -> 0 // "zen" (default): keep the base Material3Expressive corner scale
-            }
-            if (shapeStyleRes != 0) {
-                theme.applyStyle(shapeStyleRes, true)
-            }
-        }
-
         // Bold typography overlay applied before One UI so One UI's values win when both are on.
         if (ShizukuSettings.isBoldTypographyEnabled()) {
             theme.applyStyle(R.style.ThemeOverlay_Typography_Bold, true)
@@ -76,26 +57,12 @@ class ThemeDelegateImpl : ThemeDelegate {
             theme.applyStyle(R.style.ThemeOverlay_OneUI, true)
         }
 
-        // Liquid-glass skin: applied after One UI/bold so its accent + corner scale wins, but
-        // before the explicit corner-rounding override (that one is a user-tuned fine control).
+        // Liquid-glass skin: applied after One UI/bold so its accent + corner scale wins.
         if (ShizukuSettings.isGlassUi()) {
             if (context.resources.configuration.isNight())
                 theme.applyStyle(R.style.ThemeOverlay_Glass, true)
             else
                 theme.applyStyle(R.style.ThemeOverlay_Glass_Light, true)
-        }
-
-        // Corner rounding overlay applied last so it wins over both shape_style and One UI corners.
-        // "default" = Modern's 32dp ExtraLarge (already set by shape overlay); "system" = no overlay.
-        val cornerOverlayRes = when (ShizukuSettings.getCornerRoundingOverride()) {
-            "gentle"   -> R.style.ThemeOverlay_CornerRounding_Gentle
-            "standard" -> R.style.ThemeOverlay_CornerRounding_Standard
-            "large"    -> R.style.ThemeOverlay_CornerRounding_Large
-            "maximum"  -> R.style.ThemeOverlay_CornerRounding_Maximum
-            else -> 0
-        }
-        if (cornerOverlayRes != 0) {
-            theme.applyStyle(cornerOverlayRes, true)
         }
 
         theme.applyStyle(ThemeHelper.getThemeStyleRes(context), true)

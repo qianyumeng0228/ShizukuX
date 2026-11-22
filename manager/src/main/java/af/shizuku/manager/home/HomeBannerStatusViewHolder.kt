@@ -59,11 +59,13 @@ class HomeBannerStatusViewHolder(
 
         // --- Wallpaper theme & "not activated" red state --------------------------------
         val wallpaperTheme = af.shizuku.manager.ShizukuSettings.getWallpaperTheme()
-        val isOriginal = wallpaperTheme == af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_ORIGINAL
         val isBlackMiku = wallpaperTheme == af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_BLACK_MIKU
+        val isWhiteMiku = wallpaperTheme == af.shizuku.manager.ShizukuSettings.WALLPAPER_THEME_WHITE_MIKU
+        val hasMikuArtwork = isBlackMiku || isWhiteMiku
 
-        // Banner: themed artwork in wallpaper modes; plain status container in "original".
-        if (isOriginal) {
+        // Banner: artwork only for the two Miku wallpapers. Apple Minimal and Original keep the
+        // plain status container so their wallpaper does not smuggle in an unrelated Miku card.
+        if (!hasMikuArtwork) {
             bannerImage.visibility = View.GONE
             bannerScrim.visibility = View.GONE
         } else {
@@ -81,7 +83,7 @@ class HomeBannerStatusViewHolder(
             context, com.google.android.material.R.attr.colorErrorContainer, android.graphics.Color.TRANSPARENT
         )
         val errorColor = ContextCompat.getColor(context, R.color.status_error)
-        if (isOriginal) {
+        if (!hasMikuArtwork) {
             // Stock look: card fills with the status container color, no artwork.
             cardView.setCardBackgroundColor(if (ok) primaryContainer else errorContainer)
         } else {
@@ -91,7 +93,7 @@ class HomeBannerStatusViewHolder(
         val density = context.resources.displayMetrics.density
         cardView.strokeWidth = if (ok) 0 else (2.5f * density).toInt()
         cardView.strokeColor = errorColor
-        if (ok || isOriginal) {
+        if (ok || !hasMikuArtwork) {
             errorOverlay.visibility = View.GONE
         } else {
             errorOverlay.visibility = View.VISIBLE

@@ -147,13 +147,9 @@ public class ShizukuSettings {
         public static final String KEY_VIRUSTOTAL_API_KEY = "virustotal_api_key";
         public static final String KEY_PITHUS_API_KEY = "pithus_api_key";
 
-        public static final String KEY_EXPRESSIVE_SHAPES = "expressive_shapes";
         public static final String KEY_SENTRY_LIMIT_REACHED = "sentry_limit_reached";
         public static final String KEY_EXPRESSIVE_ANIMATIONS = "expressive_animations";
         public static final String KEY_HAPTIC_FEEDBACK = "haptic_feedback";
-        public static final String KEY_ICON_STYLE = "icon_style";
-        public static final String KEY_ICON_COLOR_MODE = "icon_color_mode";
-        public static final String KEY_SHAPE_STYLE = "shape_style";
         public static final String KEY_ANIMATION_INTENSITY = "animation_intensity";
         public static final String KEY_EDGE_TO_EDGE = "edge_to_edge_enabled";
         public static final String KEY_BLUR_UI = "blur_ui_enabled";
@@ -164,7 +160,6 @@ public class ShizukuSettings {
         public static final String KEY_WALLPAPER_THEME = "wallpaper_theme";
         public static final String KEY_BOLD_TYPOGRAPHY = "bold_typography";
         public static final String KEY_EXPANDED_HEADERS = "expanded_headers_enabled";
-        public static final String KEY_CORNER_ROUNDING_OVERRIDE = "corner_rounding_override";
         public static final String KEY_FOLLOW_SYSTEM_ANIMATIONS = "follow_system_animations";
         public static final String KEY_FOLLOW_SYSTEM_HAPTICS = "follow_system_haptics";
 
@@ -309,10 +304,6 @@ public class ShizukuSettings {
         getPreferences().edit().putBoolean(Keys.KEY_HOME_NOTIF_PERMISSION_REQUESTED, requested).apply();
     }
 
-    public static boolean isExpressiveShapesEnabled() {
-        return getPreferences().getBoolean(Keys.KEY_EXPRESSIVE_SHAPES, true);
-    }
-
     public static boolean isExpressiveAnimationsEnabled() {
         return getPreferences().getBoolean(Keys.KEY_EXPRESSIVE_ANIMATIONS, true);
     }
@@ -324,18 +315,6 @@ public class ShizukuSettings {
             if (systemHaptic == 0) return false;
         }
         return getPreferences().getBoolean(Keys.KEY_HAPTIC_FEEDBACK, true);
-    }
-
-    public static String getIconStyle() {
-        return getPreferences().getString(Keys.KEY_ICON_STYLE, "standard");
-    }
-
-    public static String getIconColorMode() {
-        return getPreferences().getString(Keys.KEY_ICON_COLOR_MODE, "uniform");
-    }
-
-    public static String getShapeStyle() {
-        return getPreferences().getString(Keys.KEY_SHAPE_STYLE, "zen");
     }
 
     public static boolean isEdgeToEdgeEnabled() {
@@ -350,9 +329,21 @@ public class ShizukuSettings {
         return getPreferences().getBoolean(Keys.KEY_ONEUI_THEME, false);
     }
 
-    /** The active UI skin: {@link #UI_STYLE_CLASSIC} (default) or {@link #UI_STYLE_GLASS}. */
+    /** The active UI skin: {@link #UI_STYLE_GLASS} (default) or {@link #UI_STYLE_CLASSIC}. */
     public static String getUiStyle() {
-        return getPreferences().getString(Keys.KEY_UI_STYLE, UI_STYLE_CLASSIC);
+        // Existing explicit choices are preserved; only installs without a saved skin move
+        // to the liquid-glass UI so the upgraded material is visible on first launch.
+        return getPreferences().getString(Keys.KEY_UI_STYLE, UI_STYLE_GLASS);
+    }
+
+    /**
+     * Persist the skin before asking the Activity to recreate. The preference dialog writes its
+     * value only after the change listener returns, so recreating from inside the listener used to
+     * rebuild the Activity against the previous skin and leave mixed glass/classic pages.
+     */
+    public static void setUiStyle(String value) {
+        if (!UI_STYLE_CLASSIC.equals(value) && !UI_STYLE_GLASS.equals(value)) return;
+        getPreferences().edit().putString(Keys.KEY_UI_STYLE, value).apply();
     }
 
     public static boolean isGlassUi() {
@@ -374,10 +365,6 @@ public class ShizukuSettings {
         return getPreferences().getBoolean(Keys.KEY_EXPANDED_HEADERS, false);
     }
 
-    public static String getCornerRoundingOverride() {
-        return getPreferences().getString(Keys.KEY_CORNER_ROUNDING_OVERRIDE, "default");
-    }
-
     public static boolean isFollowSystemAnimations() {
         return getPreferences().getBoolean(Keys.KEY_FOLLOW_SYSTEM_ANIMATIONS, false);
     }
@@ -386,14 +373,16 @@ public class ShizukuSettings {
         return getPreferences().getBoolean(Keys.KEY_FOLLOW_SYSTEM_HAPTICS, false);
     }
 
-    // Wallpaper theme (ShizukuX beautification): "white_miku" = light Miku wallpaper,
-    // "black_miku" = dark cyberpunk Miku wallpaper, "original" = no wallpaper (stock theme bg).
+    // Wallpaper theme (ShizukuX beautification): "apple" = the restrained Apple-style liquid
+    // wallpaper, "white_miku" = light Miku wallpaper, "black_miku" = dark cyberpunk Miku wallpaper,
+    // "original" = legacy glass photo / stock gradient outside the glass skin.
+    public static final String WALLPAPER_THEME_APPLE = "apple";
     public static final String WALLPAPER_THEME_WHITE_MIKU = "white_miku";
     public static final String WALLPAPER_THEME_BLACK_MIKU = "black_miku";
     public static final String WALLPAPER_THEME_ORIGINAL = "original";
 
     public static String getWallpaperTheme() {
-        return getPreferences().getString(Keys.KEY_WALLPAPER_THEME, WALLPAPER_THEME_ORIGINAL);
+        return getPreferences().getString(Keys.KEY_WALLPAPER_THEME, WALLPAPER_THEME_APPLE);
     }
 
     public static void setWallpaperTheme(String value) {

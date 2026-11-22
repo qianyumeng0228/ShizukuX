@@ -77,18 +77,11 @@ fun HomeScreen(
                     }
                 },
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = when {
-                        // Glass skin: a translucent scrim so the gradient/blooms read through the
-                        // collapsed header instead of snapping to an opaque surface band.
-                        ShizukuSettings.isGlassUi() ->
-                            MaterialTheme.colorScheme.surface.copy(
-                                alpha = if (isSystemInDarkTheme()) 0.62f else 0.80f
-                            )
-                        ShizukuSettings.isBlurUiEnabled() ->
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.82f)
-                        else -> MaterialTheme.colorScheme.surfaceContainer
-                    }
+                    // The list scrolls under the bar, so a transparent container showed a live
+                    // copy of the cards behind the title ("拖影"). Keep the mist tone, but make
+                    // the bar's own surface opaque enough that no scrolling content paints through.
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 ),
                 scrollBehavior = scrollBehavior
             )
@@ -110,9 +103,14 @@ fun HomeScreen(
             },
             label = "oneHandedScale"
         )
-        // Liquid-glass skin reserves room for the floating pill navigation (66dp + 20dp offset
-        // + breathing space); the classic skin keeps the original 72dp.
-        val bottomExtra = if (ShizukuSettings.isGlassUi()) 132.dp else 72.dp
+        // Inside the shell (showTabBar=false) the container owns the bottom inset: the glass pill
+        // floats over the list, while the classic skin reserves a real navigation-bar band. Adding
+        // a page-level 72dp there as well left a blank strip above the classic bar.
+        val bottomExtra = when {
+            showTabBar -> 72.dp
+            ShizukuSettings.isGlassUi() -> 132.dp
+            else -> 0.dp
+        }
         val adjustedPadding = PaddingValues(
             top = innerPadding.calculateTopPadding(),
             bottom = innerPadding.calculateBottomPadding() + bottomExtra
@@ -122,11 +120,18 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = scale,
-                        scaleY = scale,
-                        // Pivot at bottom-center (Samsung OneUI style)
-                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                    .then(
+                        if (isOneHanded) {
+                            Modifier.graphicsLayer(
+                                scaleX = scale,
+                                scaleY = scale,
+                                // Pivot at bottom-center (Samsung OneUI style)
+                                transformOrigin =
+                                    androidx.compose.ui.graphics.TransformOrigin(0.5f, 1f)
+                            )
+                        } else {
+                            Modifier
+                        }
                     )
             ) {
             if (showEmptyState) {

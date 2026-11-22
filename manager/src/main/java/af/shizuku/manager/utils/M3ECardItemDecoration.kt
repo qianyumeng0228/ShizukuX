@@ -24,13 +24,12 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     private val glassFillPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val glassStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     protected val isGlassSkin = af.shizuku.manager.ShizukuSettings.isGlassUi()
-    private var darkGlass = false
-    // Matches every other 28dp/ExtraLarge card in the app (see #333) and follows the Shape
-    // Style setting (Modern/Classic/Squircle) instead of a fixed radius.
+    // Matches every other 28dp/ExtraLarge card in the app (see #333). The radius comes from the
+    // active theme token (classic base / One UI / glass overlay); the user shape override was
+    // removed from Appearance.
     protected val cornerRadius = context.themeCornerSizePx(com.google.android.material.R.attr.shapeAppearanceCornerExtraLarge)
-    // Same 12dp inset the Compose pages use (Modifier.padding(horizontal = 12.dp)), so a list
-    // card and a Compose row card line up at the same x when the two page families are seen one
-    // after the other. Items compensate with glass_card_content_padding.
+    // Same 16dp gutter as home and the Compose pages, so native list cards, terminal guide cards
+    // and Compose cards share one edge. Rows add their own 16dp content padding.
     protected val cardMargin = context.resources.getDimension(R.dimen.glass_card_margin)
     protected val density = context.resources.displayMetrics.density
 
@@ -40,14 +39,10 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
         dividerPaint.strokeWidth = 1f * density
 
         if (isGlassSkin) {
-            val dark = (context.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
             glassFillPaint.color = context.cardSurfaceColor()
             glassStrokePaint.style = Paint.Style.STROKE
             glassStrokePaint.strokeWidth = 1f * density
             glassStrokePaint.color = context.glassStrokeColor()
-            this.darkGlass = dark
         }
     }
 
@@ -104,17 +99,8 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
 
     protected fun drawCard(c: Canvas, parent: RecyclerView, top: Float, bottom: Float) {
         if (isGlassSkin) {
-            if (bottom > top) {
-                glassFillPaint.shader = android.graphics.LinearGradient(
-                    0f, top, 0f, bottom,
-                    if (darkGlass) GLASS_TOP_DARK else GLASS_TOP_LIGHT,
-                    if (darkGlass) GLASS_BOTTOM_DARK else GLASS_BOTTOM_LIGHT,
-                    android.graphics.Shader.TileMode.CLAMP
-                )
-            }
             val r = cornerRadius
             c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, r, r, glassFillPaint)
-            glassFillPaint.shader = null
             c.drawRoundRect(cardMargin, top, parent.width - cardMargin, bottom, r, r, glassStrokePaint)
             return
         }
@@ -122,11 +108,10 @@ abstract class M3ECardItemDecoration(context: Context) : RecyclerView.ItemDecora
     }
 
     private companion object {
-        // Top of the glass pane: a touch brighter than its bottom edge, per the design spec
-        // (rgba(255,255,255,.10) -> .045 on dark, .55 -> .42 on light).
-        val GLASS_TOP_DARK = 0x1AFFFFFF
-        val GLASS_BOTTOM_DARK = 0x0CFFFFFF
-        val GLASS_TOP_LIGHT = 0xF7FFFFFF.toInt()
-        val GLASS_BOTTOM_LIGHT = 0xE9FFFFFF.toInt()
+        // Edge light stays visible while the centre remains clear enough to show the backdrop.
+        val GLASS_TOP_DARK = 0x24FFFFFF
+        val GLASS_BOTTOM_DARK = 0x12FFFFFF
+        val GLASS_TOP_LIGHT = 0xB8FFFFFF.toInt()
+        val GLASS_BOTTOM_LIGHT = 0x8CFFFFFF.toInt()
     }
 }

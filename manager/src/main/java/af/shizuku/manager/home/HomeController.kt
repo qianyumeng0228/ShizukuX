@@ -33,6 +33,7 @@ import af.shizuku.manager.utils.HapticUtils
 import af.shizuku.manager.utils.SettingsHelper
 import af.shizuku.manager.utils.SettingsPage
 import af.shizuku.manager.utils.ShizukuStateMachine
+import af.shizuku.manager.home.compose.LiquidGlassBackdropHolder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import rikka.core.ktx.unsafeLazy
@@ -229,6 +230,15 @@ class HomeController(
         val dexPadding = if (isDeX) (48 * host.resources.displayMetrics.density).toInt() else 0
 
         recyclerView.adapter = adapter
+        // Home cards' live glass backdrop is the heaviest per-frame cost while the native list
+        // moves. Suspend only that effect during drag/fling; restore it when the list settles.
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                LiquidGlassBackdropHolder.setScrolling(
+                    newState != RecyclerView.SCROLL_STATE_IDLE
+                )
+            }
+        })
         (recyclerView.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         recyclerView.fixEdgeEffect()
 

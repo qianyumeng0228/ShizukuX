@@ -101,6 +101,14 @@ class AppsController(
     var selectionCount by mutableStateOf(0)
         private set
 
+    /** Observable copy of the search text for the Compose search field. */
+    var searchQuery by mutableStateOf(viewModel.searchQuery)
+        private set
+
+    /** Observable copy of the active filter for the Compose chip row. */
+    var filterState by mutableStateOf(viewModel.filterState)
+        private set
+
     private lateinit var binding: AppsActivityBinding
     private lateinit var hostRoot: View
     private lateinit var recyclerView: RecyclerView
@@ -141,52 +149,38 @@ class AppsController(
     }
 
     val sortOrder: SortOrder get() = viewModel.sortOrder
-    val filterState: FilterState get() = viewModel.filterState
+
+    fun updateSearchQuery(query: String) {
+        if (searchQuery == query) return
+        searchQuery = query
+        viewModel.setSearch(query)
+    }
+
+    fun updateFilterState(state: FilterState) {
+        if (filterState == state) return
+        filterState = state
+        viewModel.setFilter(state)
+    }
 
     /**
-     * The page view, created once and then handed back every time the pager re-composes this
+     * The list-only view, created once and then handed back every time the pager re-composes this
      * destination. The pager does evict pages beyond its offscreen window, and a freshly inflated
      * binding would come up with no adapter attached — a blank white list. Reusing the same view
      * keeps the RecyclerView, its scroll position and its decorations intact.
      *
-     * The page is assembled exactly the way the standalone activity assembled it: the coordinator
-     * + app bar (search field and filter chips) comes from `apps_appbar_activity`, and the list
-     * from `apps_activity` is added as its scrolling view. Only the title toolbar is dropped —
-     * the container's Compose app bar owns the title now.
+     * The search field, refresh action and filter chips no longer live in the page root: the
+     * container draws them in Compose inside [af.shizuku.manager.home.compose.GlassPageScaffold],
+     * so the XML app bar (and its second top bar) is not inflated here at all. The standalone
+     * activity still uses `apps_appbar_activity` directly; only this hosted path is list-only.
      */
     fun pageView(context: Context): View {
         cachedRoot?.let { return it }
         val inflater = android.view.LayoutInflater.from(context)
-        val page = inflater.inflate(R.layout.apps_appbar_activity, null, false)
-                as androidx.coordinatorlayout.widget.CoordinatorLayout
-        hostRoot = page
-
-        val appbar = page.findViewById<com.google.android.material.appbar.AppBarLayout>(
-            R.id.toolbar_container
-        )
-        appbar?.findViewById<View>(R.id.toolbar)?.visibility = View.GONE
-        if (appbar != null && af.shizuku.core.ui.compose.isGlassTheme(context)) {
-            val night = (context.resources.configuration.uiMode and
-                    android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES
-            appbar.background = androidx.core.content.res.ResourcesCompat.getDrawable(
-                context.resources,
-                if (night) R.drawable.glass_appbar_scrim else R.drawable.glass_appbar_scrim_light,
-                context.theme
-            )
-            appbar.isLiftOnScroll = false
-        }
-
-        val b = AppsActivityBinding.inflate(inflater, page, false)
+        val b = AppsActivityBinding.inflate(inflater, null, false)
+        hostRoot = b.root
         attach(b)
-        val lp = androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
-        )
-        lp.behavior = com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior()
-        page.addView(b.root, lp)
-
-        cachedRoot = page
-        return page
+        cachedRoot = b.root
+        return b.root
     }
 
     /**
@@ -204,28 +198,26 @@ class AppsController(
         emptyState = emptyStateView
         applyEmptyState(emptyStateView)
 
-        // These two live in the app bar of the page root, not in the list binding, so they are
-        // looked up by id exactly like the standalone activity did.
+        // The standalone activity still owns an XML search field and chip group; the hosted page
+        // draws the same controls in Compose above this list, so these lookups are optional.
         hostRoot.findViewById<android.widget.EditText>(R.id.search_edit_text)
-            .doOnTextChanged { text, _, _, _ ->
-                viewModel.setSearch(text?.toString() ?: "")
+            ?.doOnTextChanged { text, _, _, _ ->
+                updateSearchQuery(text?.toString() ?: "")
             }
         hostRoot.findViewById<com.google.android.material.chip.ChipGroup>(R.id.filter_chip_group)
-            .setOnCheckedStateChangeListener { _, checkedIds ->
+            ?.setOnCheckedStateChangeListener { _, checkedIds ->
                 val first = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
                 when (first) {
-                    R.id.chip_all -> viewModel.setFilter(FilterState.ALL)
-                    R.id.chip_granted -> viewModel.setFilter(FilterState.GRANTED)
-                    R.id.chip_denied -> viewModel.setFilter(FilterState.DENIED)
-                    R.id.chip_hidden -> viewModel.setFilter(FilterState.HIDDEN)
+                    R.id.chip_all -> updateFilterState(FilterState.ALL)
+                    R.id.chip_granted -> updateFilterState(FilterState.GRANTED)
+                    R.id.chip_denied -> updateFilterState(FilterState.DENIED)
+                    R.id.chip_hidden -> updateFilterState(FilterState.HIDDEN)
                 }
             }
 
         // The container hides this page's title toolbar, and the options menu goes with it, so the
-        // explicit reload entry lives in the page body. It runs the same pass as onResume and the
-        // state listener ([refresh] -> AppsViewModel.load) and spins the icon once as feedback.
-        // There is deliberately no in-flight flag: load() is generation-guarded, so a second tap
-        // only costs one extra pass and can never leave the button stuck disabled.
+        // explicit reload entry lives above the list. The Compose header calls [refresh] directly;
+        // the XML button remains for the standalone activity's own layout.
         val refreshButton = hostRoot.findViewById<android.widget.ImageButton>(
             R.id.action_refresh_apps
         )
@@ -748,3 +740,4 @@ class AppsController(
 
     private fun dpToPx(dp: Float) = dp * host.resources.displayMetrics.density
 }
+

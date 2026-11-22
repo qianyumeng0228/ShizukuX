@@ -28,11 +28,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import af.shizuku.manager.R
+import af.shizuku.manager.home.compose.GlassPageScaffold
 import af.shizuku.manager.settings.SettingsSearchEngine
 import android.widget.FrameLayout
 import androidx.compose.ui.Alignment
@@ -85,153 +84,121 @@ fun SettingsScreen(
         },
         label = "settingsOneHandedScale"
     )
+    // Do not keep a full-screen graphicsLayer around at the default 1.0 scale. A layer in front
+    // of the hosted Preference RecyclerView forces every scroll frame through an offscreen buffer
+    // and was the main difference from the Compose LazyColumn on Home. The layer is only needed
+    // while one-handed mode is actually scaling the panel.
+    val oneHandedGraphics = if (oneHandedScale != 1f) {
+        Modifier.graphicsLayer(
+            scaleX = oneHandedScale,
+            scaleY = oneHandedScale,
+            transformOrigin = TransformOrigin(0.5f, 1f)
+        )
+    } else {
+        Modifier
+    }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // PERF: WallpaperBackground removed from settings. ShizukuExtra (which settings are
-        // modeled on) has no wallpaper layer; drawing a full-screen image + scrim + breathe
-        // gradient in Compose every frame under a scrolling Preference list was the source of
-        // the "stutter/tugging" feel. The settings list now uses the plain Scaffold surface,
-        // exactly like stock ShizukuExtra.
-        //
-        // Liquid-glass skin: the gradient backdrop is now painted once by AppTheme
-        // (core/ui AppTheme.drawGlassBackdrop) for every Compose screen, so this Scaffold only has
-        // to stay transparent to let it through - no per-screen wallpaper layer any more.
+    val isGlass = af.shizuku.manager.ShizukuSettings.isGlassUi()
+    val isBlur = af.shizuku.manager.ShizukuSettings.isBlurUiEnabled()
+    val useLargeTopBar = isOneUi && !isSearchActive
 
-        Scaffold(
-            containerColor = Color.Transparent,
-            bottomBar = {
-                // Search is a modal input state: the results list is the only thing that matters
-                // there, and keeping the tab strip under it left the last result row squeezed
-                // against the bar with the IME over it. Backing out of search (back / clear)
-                // brings the strip straight back, so this costs no navigation.
-                if (showTabBar && !isSearchActive) {
-                    // The tab strip has to stay here too: without it, tapping "设置" from the home
-                    // page looked like leaving the app's navigation rather than switching a tab.
-                    af.shizuku.manager.home.compose.GlassTabStrip(
-                        selectedIndex = af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS,
-                        onSelectTab = onSelectTab
+    // PERF: WallpaperBackground removed from settings. ShizukuExtra (which settings are
+    // modeled on) has no wallpaper layer; drawing a full-screen image + scrim + breathe
+    // gradient in Compose every frame under a scrolling Preference list was the source of
+    // the "stutter/tugging" feel. The settings list now uses the plain Scaffold surface,
+    // exactly like stock ShizukuExtra.
+    //
+    // Liquid-glass skin: the gradient backdrop is now painted once by AppTheme
+    // (core/ui AppTheme.drawGlassBackdrop) for every Compose screen, so this shell only has
+    // to stay transparent to let it through - no per-screen wallpaper layer any more.
+    GlassPageScaffold(
+        title = title,
+        large = useLargeTopBar,
+        scrollBehavior = if (useLargeTopBar) scrollBehavior else null,
+        navigationIcon = {
+            if (isSearchActive || showBack) {
+                IconButton(onClick = {
+                    if (isSearchActive) {
+                        isSearchActive = false
+                        searchQuery = ""
+                        onSearchQueryChanged("")
+                    } else {
+                        onNavigateUp()
+                    }
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_back_24),
+                        contentDescription = stringResource(R.string.accessibility_back)
                     )
                 }
-            },
-        topBar = {
-            if (isOneUi && !isSearchActive) {
-                LargeTopAppBar(
-                    title = {
-                        Text(
-                            text = title,
-                            // Samsung OneUI 6/7 uses W800 (ExtraBold) for the large expanded header
-                            style = MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 28.sp,
-                                letterSpacing = (-0.5).sp
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    navigationIcon = {
-                        if (showBack) {
-                            IconButton(onClick = { onNavigateUp() }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_back_24),
-                                    contentDescription = stringResource(R.string.accessibility_back)
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_search_24),
-                                contentDescription = stringResource(R.string.accessibility_search)
-                            )
-                        }
-                    },
-                    // Samsung OneUI: transparent container until scrolled, then subtle surface tint
-                    colors = TopAppBarDefaults.largeTopAppBarColors(
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = if (af.shizuku.manager.ShizukuSettings.isBlurUiEnabled())
-                            MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
-                        else
-                            MaterialTheme.colorScheme.surfaceContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onSurface,
-                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
-                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    scrollBehavior = scrollBehavior
-                )
-            } else {
-                TopAppBar(
-                    title = {
-                        if (isSearchActive) {
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = {
-                                    searchQuery = it
-                                    onSearchQueryChanged(it)
-                                },
-                                placeholder = { Text(stringResource(R.string.settings_search_hint_compose)) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent
-                                ),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = KeyboardActions(onSearch = { /* Handle search */ })
-                            )
-                            LaunchedEffect(Unit) {
-                                focusRequester.requestFocus()
-                            }
-                        } else {
-                            Text(text = title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    },
-                    navigationIcon = {
-                        if (isSearchActive || showBack) {
-                            IconButton(onClick = {
-                                if (isSearchActive) {
-                                    isSearchActive = false
-                                    searchQuery = ""
-                                    onSearchQueryChanged("")
-                                } else {
-                                    onNavigateUp()
-                                }
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_back_24),
-                                    contentDescription = stringResource(R.string.accessibility_back)
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        if (!isSearchActive) {
-                            IconButton(onClick = { isSearchActive = true }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_search_24),
-                                    contentDescription = stringResource(R.string.accessibility_search)
-                                )
-                            }
-                        } else if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = {
-                                searchQuery = ""
-                                onSearchQueryChanged("")
-                            }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_close_24),
-                                    contentDescription = stringResource(R.string.settings_search_clear)
-                                )
-                            }
-                        }
-                    }
-                )
             }
-        }
+        },
+        actions = {
+            if (!isSearchActive) {
+                IconButton(onClick = { isSearchActive = true }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_search_24),
+                        contentDescription = stringResource(R.string.accessibility_search)
+                    )
+                }
+            } else if (searchQuery.isNotEmpty()) {
+                IconButton(onClick = {
+                    searchQuery = ""
+                    onSearchQueryChanged("")
+                }) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_close_24),
+                        contentDescription = stringResource(R.string.settings_search_clear)
+                    )
+                }
+            }
+        },
+        titleContent = if (isSearchActive) {
+            {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                        onSearchQueryChanged(it)
+                    },
+                    placeholder = { Text(stringResource(R.string.settings_search_hint_compose)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { /* Handle search */ })
+                )
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
+                }
+            }
+        } else null,
+        // Samsung OneUI keeps the large header transparent until it collapses; the normal
+        // header uses the opaque classic surface so it matches the rest of the non-glass skin.
+        containerColor = when {
+            useLargeTopBar -> Color.Transparent
+            isGlass -> Color.Transparent
+            else -> MaterialTheme.colorScheme.surface
+        },
+        scrolledContainerColor = when {
+            isGlass -> Color.Transparent
+            isBlur -> MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+            else -> MaterialTheme.colorScheme.surfaceContainer
+        },
+        // Search is a modal input state: the results list is the only thing that matters
+        // there, and keeping the tab strip under it left the last result row squeezed against
+        // the bar with the IME over it. Backing out of search (back / clear) brings the strip
+        // straight back, so this costs no navigation.
+        showTabBar = showTabBar && !isSearchActive,
+        selectedTab = af.shizuku.manager.utils.GlassTabs.INDEX_SETTINGS,
+        onSelectTab = onSelectTab
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             // Fragment Container for Preferences — apply Samsung OneUI one-handed scale+pivot transform
@@ -248,11 +215,7 @@ fun SettingsScreen(
                 },
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer(
-                        scaleX = oneHandedScale,
-                        scaleY = oneHandedScale,
-                        transformOrigin = TransformOrigin(0.5f, 1f)
-                    )
+                    .then(oneHandedGraphics)
                     .padding(
                         top = innerPadding.calculateTopPadding(),
                         bottom = innerPadding.calculateBottomPadding()
@@ -304,7 +267,6 @@ fun SettingsScreen(
                 }
             }
         }
-    }
     }
 }
 

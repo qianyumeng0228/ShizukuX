@@ -156,21 +156,20 @@ private fun CatalogSection(titleRes: Int, entries: List<CatalogEntry>, onOpen: (
 
 @Composable
 private fun CatalogCard(entry: CatalogEntry, modifier: Modifier, onOpen: (Class<*>) -> Unit) {
-    val shape = RoundedCornerShape(24.dp)
-    Box(
-        modifier = modifier
-            .height(56.dp)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.78f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), shape)
-            .clickable { onOpen(entry.target) },
+    LiquidGlassSurface(
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(24.dp),
+        onClick = { onOpen(entry.target) },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = stringResource(entry.labelRes),
             fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1
+            maxLines = 2,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 10.dp)
         )
     }
 }

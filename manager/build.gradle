@@ -289,13 +289,20 @@ dependencies {
     implementation libs.kotlinx.serialization.json
     implementation libs.lottie
     implementation libs.markwon.core
-    debugImplementation libs.leakcanary
+    // LeakCanary is intentionally left out of the visual-verification drop-in build: its
+    // service-lifecycle watchdog races the debug service restart and auto-opens a full-screen
+    // leak report on every launch, covering the UI being tested. Release is unaffected.
+    // debugImplementation libs.leakcanary
 
     implementation libs.androidx.tv.foundation
     implementation libs.androidx.tv.material
     implementation libs.wear.compose.foundation
     implementation libs.wear.compose.material3
     implementation libs.compose.material.icons.extended
+    // Real backdrop sampling and AGSL refraction for the liquid-glass Compose surfaces.
+    implementation libs.kyant.backdrop
+    // The exact ContinuousCapsule superellipse used by Kyant0's reference components.
+    implementation libs.kyant.capsule
 
     implementation libs.material
 

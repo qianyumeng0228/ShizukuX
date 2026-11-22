@@ -72,6 +72,7 @@
     <string name="settings_one_handed_mode_summary">Shift interactive content toward the bottom of the screen for comfortable thumb reach</string>
     <string name="settings_wallpaper">Wallpaper</string>
     <string name="settings_wallpaper_summary">Background wallpaper theme</string>
+    <string name="settings_wallpaper_apple">Mist Minimal</string>
     <string name="settings_wallpaper_original">Original</string>
     <string name="settings_wallpaper_white_miku">White Miku</string>
     <string name="settings_wallpaper_black_miku">Black Miku</string>
@@ -1066,7 +1067,7 @@ To make sure the watchdog itself survives, allow ShizukuX to keep running in the
     <string name="settings_main_nav_feature_hub_summary">Manage exclusive Extra capabilities</string>
     <string name="settings_main_nav_root_compat_title">Root &amp; Compatibility</string>
     <string name="settings_main_nav_root_compat_summary">ADB connection, SU bridge, rootless integration, and stock Shizuku compatibility</string>
-    <string name="settings_main_nav_appearance_summary">Theme, shapes, icons, motion, home layout, and language</string>
+    <string name="settings_main_nav_appearance_summary">Theme, wallpaper, motion, haptics, home layout, and language</string>
     <string name="settings_main_nav_app_interactions_title">App Interactions</string>
     <string name="settings_main_nav_app_interactions_summary">Gestures, long-press actions, and install verification</string>
     <string name="settings_main_nav_startup_behavior_title">Startup &amp; Behavior</string>

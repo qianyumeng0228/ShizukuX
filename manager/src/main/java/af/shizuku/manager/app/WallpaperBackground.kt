@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import af.shizuku.core.ui.compose.GlassWallpaper
 import af.shizuku.manager.R
 import af.shizuku.manager.ShizukuSettings
 
@@ -38,17 +39,22 @@ import af.shizuku.manager.ShizukuSettings
  */
 @Composable
 fun WallpaperBackground(content: @Composable () -> Unit) {
-    // Liquid-glass skin owns its background: a deep violet-blue gradient with two soft light
-    // blooms, so the translucent glass cards have something to sit on. It takes precedence over
-    // the wallpaper themes because the glass skin is a complete look, not a tint.
+    // The glass skin's wallpaper is painted once by the host:
+    //  - GlassShellActivity records it into the navigation Backdrop;
+    //  - every other Compose host lets AppTheme draw it.
+    // Drawing another copy here was the third full-screen image under the home list.
     if (ShizukuSettings.isGlassUi()) {
-        GlassBackground(content)
+        content()
         return
     }
 
     val theme = ShizukuSettings.getWallpaperTheme()
 
-    if (theme == ShizukuSettings.WALLPAPER_THEME_ORIGINAL) {
+    // Only the two Miku wallpapers paint a photographic background in the classic skin.
+    // Mist Minimal is a glass-skin wallpaper, and "original" remains the stock gradient.
+    if (theme == ShizukuSettings.WALLPAPER_THEME_ORIGINAL ||
+        theme == ShizukuSettings.WALLPAPER_THEME_APPLE
+    ) {
         OriginalGradientBackground(content)
         return
     }
@@ -113,54 +119,24 @@ fun WallpaperBackground(content: @Composable () -> Unit) {
 }
 
 /**
- * Liquid-glass page background: a deep vertical gradient plus two soft radial light blooms
- * (violet top-left, blue bottom-right). Fully static - no per-frame animation - so it costs
- * nothing behind a scrolling RecyclerView.
+ * Liquid-glass page background.
+ *
+ * The selected artwork is resolved by [GlassWallpaper]: the quiet mist wallpaper by default,
+ * while White Miku / Black Miku / the Kyant reference photo remain selectable. The shell records
+ * this exact composable into its background Backdrop, which is why it must be one layer only.
  */
 @Composable
 fun GlassBackground(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
-    val base = if (dark) {
-        Brush.verticalGradient(
-            0f to Color(0xFF25335A), 0.45f to Color(0xFF121829), 1f to Color(0xFF080B12)
-        )
-    } else {
-        Brush.verticalGradient(
-            0f to Color(0xFFEEF2FE), 0.45f to Color(0xFFE6EBFA), 1f to Color(0xFFDDE4F6)
-        )
-    }
-    val bloomTop = if (dark) Color(0xFFB9A7FF).copy(alpha = 0.26f) else Color(0xFF9C8AF0).copy(alpha = 0.20f)
-    val bloomBottom = if (dark) Color(0xFF5AA0FF).copy(alpha = 0.16f) else Color(0xFF83B4FF).copy(alpha = 0.14f)
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(base)
-            .drawBehind {
-                val centerTop = Offset(-size.width * 0.10f, -size.height * 0.02f)
-                val radiusTop = size.width * 0.85f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(bloomTop, Color.Transparent),
-                        center = centerTop,
-                        radius = radiusTop
-                    ),
-                    radius = radiusTop,
-                    center = centerTop
-                )
-                val centerBottom = Offset(size.width * 1.05f, size.height * 0.95f)
-                val radiusBottom = size.width * 0.90f
-                drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(bloomBottom, Color.Transparent),
-                        center = centerBottom,
-                        radius = radiusBottom
-                    ),
-                    radius = radiusBottom,
-                    center = centerBottom
-                )
-            }
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        GlassWallpaper()
+        if (dark) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.12f))
+            )
+        }
         content()
     }
 }

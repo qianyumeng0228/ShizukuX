@@ -248,6 +248,7 @@
     <string name="settings_use_system_color">使用系统主题颜色</string>
     <string name="settings_wallpaper">壁纸</string>
     <string name="settings_wallpaper_summary">背景壁纸主题</string>
+    <string name="settings_wallpaper_apple">雾白极简</string>
     <string name="settings_wallpaper_white_miku">白色初音</string>
     <string name="settings_wallpaper_black_miku">黑色初音</string>
     <string name="settings_wallpaper_original">原版</string>
@@ -427,7 +428,7 @@
     <string name="settings_main_nav_feature_hub_summary">管理 ShizukuX 专属功能</string>
     <string name="settings_main_nav_root_compat_title">Root 与兼容性</string>
     <string name="settings_main_nav_root_compat_summary">ADB 连接、SU 桥接、无 Root 集成以及原版 Shizuku 兼容性</string>
-    <string name="settings_main_nav_appearance_summary">主题、形状、图标、动效、主页布局和语言</string>
+    <string name="settings_main_nav_appearance_summary">主题、壁纸、动效、触感、主页和语言</string>
     <string name="settings_main_nav_app_interactions_title">应用交互</string>
     <string name="settings_main_nav_app_interactions_summary">手势、长按操作和安装验证</string>
     <string name="settings_main_nav_startup_behavior_title">启动与行为</string>

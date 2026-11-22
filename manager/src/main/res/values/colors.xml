@@ -27,8 +27,6 @@
     <color name="system_accent3_600">#7D5260</color>
     <color name="system_accent1_400">#D0BCFF</color>
 
-    <!-- 1dp hairline for the glass cards drawn in XML. Must stay equal to glassStrokeColor()
-         in ktx/Context.kt (0x1F000000 light / 0x24FFFFFF dark) so an XML card and a
-         M3ECardItemDecoration card read as the same material. -->
-    <color name="glass_card_stroke">#1F000000</color>
+    <!-- 1dp edge light for XML glass cards; kept equal to glassStrokeColor(). -->
+    <color name="glass_card_stroke">#59FFFFFF</color>
 </resources>

@@ -47,6 +47,7 @@
     </string-array>
 
     <string-array name="wallpaper_themes">
+        <item>@string/settings_wallpaper_apple</item>
         <item>@string/settings_wallpaper_white_miku</item>
         <item>@string/settings_wallpaper_black_miku</item>
         <item>@string/settings_wallpaper_original</item>

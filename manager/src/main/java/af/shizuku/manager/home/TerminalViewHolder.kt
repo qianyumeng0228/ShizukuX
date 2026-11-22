@@ -1,6 +1,5 @@
 package af.shizuku.manager.home
 
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -10,9 +9,8 @@ import androidx.core.view.isVisible
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.HomeItemContainerBinding
 import af.shizuku.manager.databinding.HomeTerminalBinding
-import af.shizuku.manager.ktx.startWithSceneTransition
 import af.shizuku.manager.model.ServiceStatus
-import af.shizuku.manager.shell.ShellTutorialActivity
+import af.shizuku.manager.utils.GlassTabs
 import af.shizuku.manager.utils.IconStyleHelper
 import rikka.recyclerview.BaseViewHolder
 import rikka.recyclerview.BaseViewHolder.Creator
@@ -68,9 +66,10 @@ class TerminalViewHolder(
 
     override fun onClick(v: View) {
         val activity = v.context.asActivity<android.app.Activity>() ?: return
-        activity.startWithSceneTransition(
-            Intent(activity, ShellTutorialActivity::class.java),
-            binding.icon, "icon_terminal"
-        )
+        if (activity is HomeActivity) {
+            activity.requestTab(GlassTabs.INDEX_TERMINAL)
+        } else {
+            GlassTabs.open(activity, GlassTabs.INDEX_TERMINAL)
+        }
     }
 }

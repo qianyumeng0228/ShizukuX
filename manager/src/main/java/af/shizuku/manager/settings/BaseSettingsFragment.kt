@@ -186,6 +186,10 @@ abstract class BaseSettingsFragment : PreferenceFragmentCompat() {
         recyclerView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
         recyclerView.setPadding(cardMarginPx + contentPaddingPx, 0, cardMarginPx + contentPaddingPx, 0)
         recyclerView.clipToPadding = false
+        // Preference rows are cheap to keep around and expensive to re-inflate/bind while a long
+        // settings page is flinging. The default cache of two screens-worth leaves too little
+        // head start for the next bind; keep a few extra rows resident so scrolling stays smooth.
+        recyclerView.setItemViewCacheSize(16)
         // The M3E card styling already frames rows visually; the system vertical scrollbar thumb
         // popping in on the right edge during scroll adds a second moving element that reads as
         // "tugging"/laggy. Hide it.

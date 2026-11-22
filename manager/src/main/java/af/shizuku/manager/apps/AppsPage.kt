@@ -7,7 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitLongPressOrCancellation
@@ -15,6 +17,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,9 +30,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Storefront
@@ -42,11 +48,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -60,21 +63,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import af.shizuku.manager.home.compose.GlassTabStrip
+import af.shizuku.manager.home.compose.GlassPageMetrics
+import af.shizuku.manager.home.compose.GlassPageScaffold
+import af.shizuku.manager.home.compose.LiquidGlassSurface
 import af.shizuku.manager.utils.AppIconCache
 import af.shizuku.manager.utils.GlassTabs
 import kotlinx.coroutines.Dispatchers
@@ -89,9 +97,10 @@ import kotlinx.coroutines.withContext
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
+fun AppsPage(onSelectTab: (Int) -> Unit = {}, showTabBar: Boolean = true) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val focusManager = LocalFocusManager.current
 
     var favorites by remember { mutableStateOf<List<CatalogApp>>(emptyList()) }
     var managed by remember { mutableStateOf<List<CatalogApp>>(emptyList()) }
@@ -194,63 +203,120 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
         }
     }
 
-    Scaffold(
-        containerColor = Color.Transparent,
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "应用", fontWeight = FontWeight.SemiBold) },
-                actions = {
-                    IconButton(onClick = {
-                        context.startActivity(Intent(context, AppStoreActivity::class.java))
-                    }) {
-                        Icon(Icons.Outlined.Storefront, contentDescription = "应用商店")
-                    }
-                    IconButton(onClick = {
-                        if (!ApkInstaller.privilegeAvailable()) {
-                            Toast.makeText(context, "Shizuku 服务未运行，无法静默安装", Toast.LENGTH_LONG).show()
-                        } else {
-                            apkPicker.launch(
-                                arrayOf(
-                                    "application/vnd.android.package-archive",
-                                    "application/zip",
-                                    "application/octet-stream"
-                                )
-                            )
-                        }
-                    }) {
-                        Icon(Icons.Outlined.Add, contentDescription = "安装安装包")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
+    GlassPageScaffold(
+        title = "应用",
+        actions = {
+            IconButton(onClick = {
+                context.startActivity(Intent(context, AppStoreActivity::class.java))
+            }) {
+                Icon(Icons.Outlined.Storefront, contentDescription = "应用商店")
+            }
+            IconButton(onClick = {
+                if (!ApkInstaller.privilegeAvailable()) {
+                    Toast.makeText(context, "Shizuku 服务未运行，无法静默安装", Toast.LENGTH_LONG).show()
+                } else {
+                    apkPicker.launch(
+                        arrayOf(
+                            "application/vnd.android.package-archive",
+                            "application/zip",
+                            "application/octet-stream"
+                        )
+                    )
+                }
+            }) {
+                Icon(Icons.Outlined.Add, contentDescription = "安装安装包")
+            }
         },
-        bottomBar = {
-            GlassTabStrip(selectedIndex = GlassTabs.INDEX_APPS, onSelectTab = onSelectTab)
-        }
-    ) { padding ->
-        Column(
+        showTabBar = showTabBar,
+        selectedTab = GlassTabs.INDEX_APPS,
+        onSelectTab = onSelectTab
+    ) { padding ->        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
             // ---- 搜索（移到常用上方）----
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
+            val searchShape = RoundedCornerShape(20.dp)
+            LiquidGlassSurface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodySmall,
-                leadingIcon = {
-                    Icon(Icons.Outlined.Search, contentDescription = null, modifier = Modifier.size(18.dp))
-                },
-                placeholder = { Text("搜索应用", fontSize = 12.sp) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None)
-            )
+                    .padding(horizontal = GlassPageMetrics.HorizontalPadding)
+                    .height(52.dp),
+                shape = searchShape
+            ) {
+                val dark = isSystemInDarkTheme()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Color(0xFF111318).copy(alpha = if (dark) 0.10f else 0.035f),
+                            searchShape
+                        )
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = if (dark) 0.18f else 0.55f),
+                            searchShape
+                        )
+                ) {
+                    BasicTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        modifier = Modifier.fillMaxSize(),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.None,
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                        decorationBox = { innerTextField ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(start = 16.dp, end = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Search,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Box(modifier = Modifier.weight(1f)) {
+                                    if (query.isEmpty()) {
+                                        Text(
+                                            "搜索应用",
+                                            fontSize = 13.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                .copy(alpha = 0.55f)
+                                        )
+                                    }
+                                    innerTextField()
+                                }
+                                if (query.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { query = "" },
+                                        modifier = Modifier.size(32.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Close,
+                                            contentDescription = "清除搜索",
+                                            modifier = Modifier.size(17.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                .copy(alpha = 0.72f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    )
+                }
+            }
             Spacer(Modifier.height(12.dp))
 
             if (query.isBlank()) {
@@ -260,7 +326,7 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f),
-                    modifier = Modifier.padding(horizontal = 18.dp)
+                    modifier = Modifier.padding(horizontal = GlassPageMetrics.HorizontalPadding)
                 )
                 Spacer(Modifier.height(10.dp))
                 FavoriteGrid(
@@ -281,7 +347,7 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp),
+                    .padding(horizontal = GlassPageMetrics.HorizontalPadding),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -306,7 +372,10 @@ fun AppsPage(onSelectTab: (Int) -> Unit = {}) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .padding(horizontal = 18.dp)
+                    .padding(horizontal = GlassPageMetrics.HorizontalPadding),
+                contentPadding = PaddingValues(
+                    bottom = GlassPageMetrics.bottomInset(showTabBar)
+                )
             ) {
                 items(visible, key = { it.packageName }) { app ->
                     AppRow(
@@ -464,7 +533,7 @@ private fun FavoriteGrid(
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
 
-    Column(modifier = Modifier.padding(horizontal = 18.dp)) {
+    Column(modifier = Modifier.padding(horizontal = GlassPageMetrics.HorizontalPadding)) {
         val counts = favorites.size + if (canAdd) 1 else 0
         val rows = (counts + 1) / 2
         (0 until rows).forEach { r ->
@@ -529,7 +598,7 @@ private fun FavoriteTile(
         app.info?.let { AppIconCache.getOrLoadBitmap(context, it, 0, 96) }
     }
     val shape = RoundedCornerShape(20.dp)
-    Row(
+    LiquidGlassSurface(
         modifier = Modifier
             .height(64.dp)
             .onGloballyPositioned { onBounds(it.boundsInRoot()) }
@@ -538,10 +607,13 @@ private fun FavoriteTile(
                 translationY = dragOffset.y
                 alpha = if (dragging) 0.85f else 1f
                 scaleX = if (dragging) 1.04f else 1f
-                scaleY = if (dragging) 1.04f else 1f
-            }
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.78f))
+                scaleY = if (dragging) 0.94f else 1f
+            },
+        shape = shape
+    ) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
             .pointerInput(app.packageName) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -613,31 +685,34 @@ private fun FavoriteTile(
             }
         }
     }
+    }
 }
 
 @Composable
 private fun AddTile(onClick: () -> Unit) {
-    val shape = RoundedCornerShape(20.dp)
-    Row(
-        modifier = Modifier
-            .height(64.dp)
-            .clip(shape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+    LiquidGlassSurface(
+        modifier = Modifier.height(64.dp),
+        shape = RoundedCornerShape(20.dp),
+        onClick = onClick
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Add, contentDescription = "添加常用", modifier = Modifier.size(20.dp))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Outlined.Add, contentDescription = "添加常用", modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Text("添加常用", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
         }
-        Spacer(Modifier.width(10.dp))
-        Text("添加常用", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
     }
 }
 
@@ -647,12 +722,15 @@ private fun AppRow(app: CatalogApp, onClick: () -> Unit, onLongClick: () -> Unit
     val bitmap = remember(app.packageName, app.installed) {
         app.info?.let { AppIconCache.getOrLoadBitmap(context, it, 0, 96) }
     }
-    Row(
+    LiquidGlassSurface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.78f))
+            .height(56.dp),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
             .pointerInput(app.packageName, app.installed) {
                 detectTapGestures(
                     onTap = { onClick() },
@@ -708,6 +786,7 @@ private fun AppRow(app: CatalogApp, onClick: () -> Unit, onLongClick: () -> Unit
             )
         }
     }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -724,7 +803,7 @@ private fun FavoritePickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit)
         }
     }
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = GlassPageMetrics.HorizontalPadding, vertical = 8.dp)) {
             Text("添加到常用", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Text(
                 "最多 4 个；长按常用图标可以移除或拖动换位",

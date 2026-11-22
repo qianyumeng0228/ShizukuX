@@ -38,11 +38,7 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
     private lateinit var customAccentPreference: Preference
     private lateinit var languagePreference: ListPreference
     private lateinit var translationPreference: Preference
-    private lateinit var expressiveShapesPreference: TwoStatePreference
     private lateinit var expressiveAnimationsPreference: TwoStatePreference
-    private lateinit var iconStylePreference: ListPreference
-    private lateinit var iconColorModePreference: Preference
-    private lateinit var shapeStylePreference: ListPreference
     private lateinit var animationIntensityPreference: ListPreference
     private lateinit var edgeToEdgePreference: TwoStatePreference
     private lateinit var blurUiPreference: TwoStatePreference
@@ -131,7 +127,10 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         // original -> the user's 主题 (light/dark) setting with the stock gradient background.
         findPreference<Preference>("wallpaper_theme")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is String && ShizukuSettings.getWallpaperTheme() != newValue) {
+                // Persist first: the preference framework writes its value after this listener
+                // returns, but AppTheme/GlassWallpaperState recompose immediately.
                 ShizukuSettings.setWallpaperTheme(newValue)
+                af.shizuku.core.ui.compose.GlassWallpaperState.update(newValue)
                 val forced = ShizukuSettings.getWallpaperForcedNightMode()
                 AppCompatDelegate.setDefaultNightMode(
                     if (forced != -1) forced else ShizukuSettings.getNightMode()
@@ -147,42 +146,18 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
         // and the Canvas card skin key off this value, so the current page must be rebuilt.
         findPreference<Preference>("ui_style")?.setOnPreferenceChangeListener { _, newValue ->
             if (newValue is String && ShizukuSettings.getUiStyle() != newValue) {
+                // SimpleMenuPreference only persists after this listener returns. Recreating
+                // before that rebuilt against the previous skin and mixed classic pages with the
+                // glass shell's photo + pill, which is exactly the broken render users saw.
+                ShizukuSettings.setUiStyle(newValue)
                 applyTheme(requiresRecreate = true)
             }
             true
         }
 
-        // 2. M3 Expressive Controls
-        expressiveShapesPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_SHAPES))
+        // 2. Motion controls
         expressiveAnimationsPreference = requireNotNull(findPreference(KEY_EXPRESSIVE_ANIMATIONS))
-        iconStylePreference = requireNotNull(findPreference(KEY_ICON_STYLE))
-        iconColorModePreference = requireNotNull(findPreference(KEY_ICON_COLOR_MODE))
-        shapeStylePreference = requireNotNull(findPreference(KEY_SHAPE_STYLE))
         animationIntensityPreference = requireNotNull(findPreference(KEY_ANIMATION_INTENSITY))
-
-        // Only meaningful for the Two-Tone icon style - recreate() (triggered by iconStylePreference's
-        // own listener below) recalculates this fresh from the persisted value on every style change.
-        iconColorModePreference.isVisible = iconStylePreference.value == "twotone"
-
-        expressiveShapesPreference.setOnPreferenceChangeListener { _, _ ->
-            applyTheme(requiresRecreate = false)
-            true
-        }
-
-        shapeStylePreference.setOnPreferenceChangeListener { _, _ ->
-            applyTheme(requiresRecreate = false)
-            true
-        }
-
-        iconStylePreference.setOnPreferenceChangeListener { _, _ ->
-            applyTheme(requiresRecreate = false)
-            true
-        }
-
-        iconColorModePreference.setOnPreferenceChangeListener { _, _ ->
-            applyTheme(requiresRecreate = false)
-            true
-        }
 
         expressiveAnimationsPreference.setOnPreferenceChangeListener { _, _ ->
             applyTheme(requiresRecreate = false)
@@ -244,18 +219,14 @@ class PersonalizationSettingsFragment : BaseSettingsFragment() {
             true
         }
 
-        // Personalization overlays (a2f7d959): bold typography / expanded headers /
-        // corner rounding all feed into ThemeDelegateImpl's themeKey cache, so a non-recreate
+        // Personalization overlays (a2f7d959): bold typography / expanded headers
+        // feed into ThemeDelegateImpl's themeKey cache, so a non-recreate
         // onThemeChanged() re-resolves the overlay stack on the next theme lookup.
         findPreference<Preference>(KEY_BOLD_TYPOGRAPHY)?.setOnPreferenceChangeListener { _, _ ->
             applyTheme(requiresRecreate = false)
             true
         }
         findPreference<Preference>(KEY_EXPANDED_HEADERS)?.setOnPreferenceChangeListener { _, _ ->
-            applyTheme(requiresRecreate = false)
-            true
-        }
-        findPreference<Preference>(KEY_CORNER_ROUNDING_OVERRIDE)?.setOnPreferenceChangeListener { _, _ ->
             applyTheme(requiresRecreate = false)
             true
         }

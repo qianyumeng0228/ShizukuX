@@ -699,6 +699,22 @@ class ShizukuApplication : Application(), Configuration.Provider {
         try {
             initializeManagers()
 
+            // One-time upgrade from the old glass background: users who still had the legacy
+            // "original" photo selected get the new restrained Apple wallpaper once. The explicit
+            // migration flag means choosing "original" later is preserved.
+            val wallpaperPrefs = ShizukuSettings.getPreferences()
+            if (!wallpaperPrefs.getBoolean("apple_wallpaper_v3_migrated", false)) {
+                val editor = wallpaperPrefs.edit()
+                    .putBoolean("apple_wallpaper_v3_migrated", true)
+                if (ShizukuSettings.getWallpaperTheme() == ShizukuSettings.WALLPAPER_THEME_ORIGINAL) {
+                    editor.putString(
+                        ShizukuSettings.Keys.KEY_WALLPAPER_THEME,
+                        ShizukuSettings.WALLPAPER_THEME_APPLE
+                    )
+                }
+                editor.apply()
+            }
+            af.shizuku.core.ui.compose.GlassWallpaperState.update(ShizukuSettings.getWallpaperTheme())
             // ShizukuX beautification: apply the wallpaper-forced color scheme on every app start
             // (white miku -> light, black miku -> dark) so home and settings pages stay consistent
             // even after the process restarts. AppCompatDelegate persists the mode, but forcing it

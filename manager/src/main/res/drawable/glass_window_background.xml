@@ -46,4 +46,26 @@
                 android:type="radial" />
         </shape>
     </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.08"
+                android:centerY="0.72"
+                android:endColor="#007DE4CD"
+                android:gradientRadius="680dp"
+                android:startColor="#247DE4CD"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.92"
+                android:centerY="0.28"
+                android:endColor="#00FFC8A9"
+                android:gradientRadius="560dp"
+                android:startColor="#1AFFC8A9"
+                android:type="radial" />
+        </shape>
+    </item>
 </layer-list>

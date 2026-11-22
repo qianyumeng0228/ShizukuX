@@ -3,17 +3,23 @@ package af.shizuku.manager.shell
 import af.shizuku.manager.Helps
 import af.shizuku.manager.R
 import af.shizuku.manager.databinding.TerminalTutorialActivityBinding
+import af.shizuku.manager.ktx.applyGlassCardSurface
+import af.shizuku.manager.ktx.applyGlassButtonSurface
 import af.shizuku.manager.ktx.toHtml
 import af.shizuku.manager.utils.CustomTabsHelper
 import af.shizuku.manager.utils.EnvironmentUtils
 import android.content.Context
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
+import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import rikka.compatibility.DeviceCompatibility
 import rikka.html.text.HtmlCompat
@@ -94,6 +100,40 @@ fun buildTerminalPage(
         binding.consoleOutput.text = context.getString(R.string.terminal_console_output_empty)
     }
     renderSavedCommands(context, binding)
+    applyGlassToTerminalCards(binding.root)
+    binding.consoleRun.applyGlassButtonSurface()
+    binding.button1.applyGlassButtonSurface()
+}
+
+/**
+ * Terminal cards are inflated from XML, so they do not inherit the Compose glass surface used by
+ * home/app cards. Walk the already-built page once and attach the shared card overlay to every
+ * MaterialCardView. The MIUI warning keeps a low-alpha error tint; the other cards use the same
+ * 10% white fill + hairline + live backdrop as the rest of the app.
+ */
+private fun applyGlassToTerminalCards(root: ViewGroup) {
+    val cards = ArrayList<MaterialCardView>()
+    fun collect(view: View) {
+        if (view is MaterialCardView) cards.add(view)
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) collect(view.getChildAt(index))
+        }
+    }
+    collect(root)
+
+    cards.forEach { card ->
+        val fill = if (card.id == R.id.miui) {
+            val errorContainer = MaterialColors.getColor(
+                card,
+                com.google.android.material.R.attr.colorErrorContainer,
+                0
+            )
+            ColorUtils.setAlphaComponent(errorContainer, 0x33)
+        } else {
+            null
+        }
+        card.applyGlassCardSurface(fill)
+    }
 }
 
 /** The output box starts with the placeholder line, so the first real output must replace it. */

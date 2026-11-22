@@ -19,7 +19,7 @@
             android:key="ui_style"
             android:title="@string/settings_ui_style"
             android:summary="@string/settings_ui_style_summary"
-            android:defaultValue="classic"
+            android:defaultValue="glass"
             android:entries="@array/ui_styles"
             android:entryValues="@array/ui_styles_value"
             android:icon="@drawable/ic_palette_24" />
@@ -70,61 +70,10 @@
             android:key="wallpaper_theme"
             android:title="@string/settings_wallpaper"
             android:summary="%s"
-            android:defaultValue="original"
+            android:defaultValue="apple"
             android:entries="@array/wallpaper_themes"
             android:entryValues="@array/wallpaper_themes_value"
             android:icon="@drawable/ic_wallpaper_24" />
-
-    </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
-
-    <af.shizuku.manager.settings.CollapsiblePreferenceCategory
-        android:key="category_shape_style"
-        android:title="@string/settings_shape_icon_style_category_title"
-        android:defaultValue="true">
-
-        <SwitchPreferenceCompat
-            android:key="expressive_shapes"
-            android:title="@string/settings_expressive_shapes"
-            android:summary="@string/settings_expressive_shapes_summary"
-            android:defaultValue="true"
-            android:icon="@drawable/ic_palette_24" />
-
-        <rikka.preference.SimpleMenuPreference
-            android:key="shape_style"
-            android:title="@string/settings_shape_style"
-            android:summary="%s"
-            android:defaultValue="zen"
-            android:entries="@array/shape_styles"
-            android:entryValues="@array/shape_styles_value"
-            android:dependency="expressive_shapes"
-            android:icon="@drawable/ic_settings_suggest_24" />
-
-        <rikka.preference.SimpleMenuPreference
-            android:key="icon_style"
-            android:title="@string/settings_icon_style"
-            android:summary="%s"
-            android:defaultValue="standard"
-            android:entries="@array/icon_styles"
-            android:entryValues="@array/icon_styles_value"
-            android:icon="@drawable/ic_monochrome" />
-
-        <rikka.preference.SimpleMenuPreference
-            android:key="icon_color_mode"
-            android:title="@string/settings_icon_color_mode"
-            android:summary="%s"
-            android:defaultValue="uniform"
-            android:entries="@array/icon_color_modes"
-            android:entryValues="@array/icon_color_modes_value"
-            android:icon="@drawable/ic_palette_24" />
-
-        <rikka.preference.SimpleMenuPreference
-            android:key="corner_rounding_override"
-            android:title="@string/settings_corner_rounding_override"
-            app:useSimpleSummaryProvider="true"
-            android:defaultValue="default"
-            android:entries="@array/corner_rounding_entries"
-            android:entryValues="@array/corner_rounding_values"
-            android:icon="@drawable/ic_window_24" />
 
     </af.shizuku.manager.settings.CollapsiblePreferenceCategory>
 
